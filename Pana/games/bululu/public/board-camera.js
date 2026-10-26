@@ -5,6 +5,7 @@
 // the button to return; the scenic spots and the minimap jump it somewhere.
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as THREE from 'three';
+import { loc } from '/engine/i18n.js';
 
 const SHOTS = {
   far: [0, 30, 36],        // a big chunk of the island (the minimap shows all of it)
@@ -43,7 +44,7 @@ export function createBoardCamera({ camera, dom, canLook, lookButton, places }) 
       cam.look.copy(looker.target);
     }
     lookButton.classList.toggle('on', on);
-    lookButton.innerHTML = `${on ? 'Volver' : 'Ver tablero'} <kbd class="pk-kbd" data-pana-hint>Tab</kbd>`;
+    lookButton.innerHTML = `${on ? loc('Volver') : loc('Ver tablero')} <kbd class="pk-kbd" data-pana-hint>Tab</kbd>`;
     if (!on) places.value = '';
   }
   // Free look at a point from above and south of it (the minimap's tap).

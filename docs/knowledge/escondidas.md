@@ -169,3 +169,8 @@ Reliquia with two real clients each. It changes every shared control, checks
 read-only guests, reset, mobile modal bounds, host migration and configured
 start effects. This includes hidden Reliquia hints and its nine real trap
 meshes, Pepazo flags and Cocina arepas-only chaos orders.
+
+Round events (`state.events[].text`) and the host's private notices are
+Spanish source marked `locKey`, with names in `vars`; `game.js` shows them
+through `loc(text, vars)`. Disguise names come from the shared plaza prop
+catalog in Spanish and are translated at display (`PROP_NAMES` in `game.js`).

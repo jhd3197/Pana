@@ -129,6 +129,12 @@ Previews are real or absent: the stick response comes from `inputAxis`, the
 Mando monitor reads the connected pad, and Imagen measures the running
 scene with `engine/perf.js`. Nothing is estimated.
 
+**Idioma** (globe icon) sets `language`: `auto` (the browser's) or a code from
+`LANGUAGES` in `engine/i18n.js`. A new language applies on the next load: the
+hub and `/ajustes.html` reload at once (`game: false` from `createGameMenu`
+with `pause: false`), a game shows a "Recargar ahora" note in the detail panel
+because reloading restarts the match. See `pana-i18n.md`.
+
 Inside a game, each device category opens on **Cómo se juega** (that
 device's controls and the game's tips), then its tuning tabs and **Ayudas**
 (hint device and visibility). The hub has no help tabs. The category

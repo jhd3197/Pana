@@ -1,3 +1,4 @@
+// i18n-ignore-file: jugada names for the Studio workbench only (the game shows none)
 // Jugadas locas: the Studio workbench's twenty plays, tied to real outcomes.
 // Pure (no DOM, no Three.js): the host picks one when a result happens and
 // stores its id in the state, so every screen plays the same jugada. The pick

@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import { THREE,M,box,mesh,tube,put,finish,clear,instances,scatter,foundation,sign } from './world-kit.js';
 import { landPath,landPatch } from './landscape-kit.js';
 import { colonialHouse } from '/engine/models/props/colonial-house.js';

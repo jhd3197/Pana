@@ -3,7 +3,7 @@
 // Three.js) so any page can import it.
 
 import { normalizeWardrobe, wardrobeColor } from './wardrobe.js';
-
+import { loc } from './i18n.js';
 const KEY = 'pana:avatar';
 const NAME_KEY = 'pana:name';
 
@@ -24,40 +24,40 @@ export const COLORS = ['#ff4b4b', '#ffc629', '#2ad1b2', '#3d7bf2', '#8e4de8', '#
 
 export const OPTIONS = {
   hat: [
-    { id: 'chef', label: 'Gorro de chef' },
-    { id: 'band', label: 'Cinta deportiva' },
-    { id: 'gorra', label: 'Gorra' },
-    { id: 'gorra-atras', label: 'Gorra al revés' },
-    { id: 'pesca', label: 'Pescador' },
-    { id: 'lana', label: 'Gorro de lana' },
-    { id: 'llanero', label: 'Llanero' },
-    { id: 'corona', label: 'Corona' },
-    { id: 'none', label: 'Nada' },
+    { id: 'chef', label: loc('Gorro de chef') },
+    { id: 'band', label: loc('Cinta deportiva') },
+    { id: 'gorra', label: loc('Gorra') },
+    { id: 'gorra-atras', label: loc('Gorra al revés') },
+    { id: 'pesca', label: loc('Pescador') },
+    { id: 'lana', label: loc('Gorro de lana') },
+    { id: 'llanero', label: loc('Llanero') },
+    { id: 'corona', label: loc('Corona') },
+    { id: 'none', label: loc('Nada') },
   ],
   glasses: [
-    { id: 'redondos', label: 'Redondos' },
-    { id: 'sol', label: 'De sol' },
-    { id: 'fiesta', label: 'De fiesta' },
-    { id: 'none', label: 'Nada' },
+    { id: 'redondos', label: loc('Redondos') },
+    { id: 'sol', label: loc('De sol') },
+    { id: 'fiesta', label: loc('De fiesta') },
+    { id: 'none', label: loc('Nada') },
   ],
   outfit: [
-    { id: 'franela', label: 'Franela' },
-    { id: 'deportivo', label: 'Deportivo' },
-    { id: 'hoodie', label: 'Hoodie' },
-    { id: 'hawaiana', label: 'Playera' },
-    { id: 'chef', label: 'Delantal de chef' },
+    { id: 'franela', label: loc('Franela') },
+    { id: 'deportivo', label: loc('Deportivo') },
+    { id: 'hoodie', label: loc('Hoodie') },
+    { id: 'hawaiana', label: loc('Playera') },
+    { id: 'chef', label: loc('Delantal de chef') },
   ],
   face: [
-    { id: 'cool', label: 'Tranquilo' },
-    { id: 'feliz', label: 'Feliz' },
-    { id: 'lengua', label: 'Hablar' },
-    { id: 'ojazos', label: 'Ojazos' },
-    { id: 'wow', label: 'Reír' },
+    { id: 'cool', label: loc('Tranquilo') },
+    { id: 'feliz', label: loc('Feliz') },
+    { id: 'lengua', label: loc('Hablar') },
+    { id: 'ojazos', label: loc('Ojazos') },
+    { id: 'wow', label: loc('Reír') },
   ],
   extra: [
-    { id: 'none', label: 'Nada' },
-    { id: 'cadena', label: 'Cadena' },
-    { id: 'pulseras', label: 'Muñequeras' },
+    { id: 'none', label: loc('Nada') },
+    { id: 'cadena', label: loc('Cadena') },
+    { id: 'pulseras', label: loc('Muñequeras') },
   ],
 };
 

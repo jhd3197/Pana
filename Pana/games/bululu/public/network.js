@@ -1,10 +1,11 @@
 import { HostRoom } from '/engine/net.js';
 import { acceptsChoice, cleanInput, IDLE_INPUT } from './online-rules.js';
+import { loc } from '/engine/i18n.js';
 
 export class BululuRoom extends HostRoom {
   constructor(options) {
-    super({ ...options, game: 'bululu', protocol: 'bululu-v2',
-      texts: { full: 'Sala llena: ya hay seis panas. Puedes jugar con bots.' } });
+    super({ ...options, game: 'bululu', protocol: 'bululu-v3',
+      texts: { full: loc('Sala llena: ya hay seis panas. Puedes jugar con bots.') } });
     this.events = options.events;
     this.inputs = new Map();
     this.history = [];
@@ -15,7 +16,7 @@ export class BululuRoom extends HostRoom {
   memberJoined() { this.events.members(); this.publish(); }
   memberLeft(id) { this.inputs.delete(id); this.events.members(); }
   memberHello() { this.events.members(); this.publish(); }
-  statusText() { return `Sala ${this.code} · ${this.members.size}/6 panas`; }
+  statusText() { return loc('Sala {code} · {n}/6 panas', { code: this.code, n: this.members.size }); }
   publish(state = this.state) {
     if (!this.isHost || !state) return;
     this.state = state;

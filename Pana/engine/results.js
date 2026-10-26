@@ -19,7 +19,9 @@ export function rosterRow({ rank, lead, name, detail, end, score = false, me = f
   const row = el(tag, ['pk-row', className, me && 'is-me'].filter(Boolean).join(' '));
   if (rank != null) row.append(el('b', 'pk-row-n', rank));
   if (lead) row.append(lead);
-  const label = el('span', 'pk-row-name', name);
+  // A player named like a phrase ("Pausa") keeps their name; callers pass
+  // team names already through loc().
+  const label = el('span', 'pk-row-name', name); label.translate = false;
   if (detail) label.append(el('small', '', detail));
   row.append(label);
   if (end != null) row.append(el(score ? 'b' : 'span', score ? 'pk-row-end pk-row-score' : 'pk-row-end', end));

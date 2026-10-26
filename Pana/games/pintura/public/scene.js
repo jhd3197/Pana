@@ -86,7 +86,7 @@ export function createScene(canvas) {
   function place(model, x, z, angle = 0) { model.position.set(x * SPREAD, 0, z * SPREAD); model.rotation.y = angle; scenery.add(model); cameraBounds.push(new THREE.Box3().setFromObject(model)); }
   const colors = [0xe3ad54, 0x5c9da7, 0xe79874, 0x8ba776];
   for (let i = 0; i < 4; i++) {
-    const x = [-18, -10.5, 10.5, 18][i]; place(house({ w: 7, h: 7 + i % 2, seed: i, color: colors[i], label: ['CAFÉ COCO', 'BUENA GENTE', 'LA BODEGUITA', 'MÁS PANAS'][i] }), x, -27);
+    const x = [-18, -10.5, 10.5, 18][i]; place(house({ w: 7, h: 7 + i % 2, seed: i, color: colors[i], label: ['CAFÉ COCO', 'BUENA GENTE', 'LA BODEGUITA', 'MÁS PANAS'][i] }), x, -27); // i18n-ignore: world signage
     for (const side of [-1, 1]) place(house({ w: 7, h: 6 + i % 2, seed: i + 4, color: colors[(i + 1) % 4] }), side * 28, -15 + i * 9, -side * Math.PI / 2);
   }
   place(church(), 0, -28);

@@ -1,11 +1,12 @@
+import { loc } from './i18n.js';
 // Shared vocabulary; games retain their own serialized values and rules.
 export function botParticipation(id = 'bots', on = true, off = false, value = on) {
-  return { id, label: 'Jugar con', default: value, choices: [[off, 'Solo panas'], [on, 'Panas y bots']] };
+  return { id, label: loc('Jugar con'), default: value, choices: [[off, loc('Solo panas')], [on, loc('Panas y bots')]] };
 }
 
 export function botLevel(id, easy, normal, hard, extra = {}) {
-  return { id, label: 'Nivel de bots', default: normal,
-    choices: [[easy, 'Fácil'], [normal, 'Normal'], [hard, 'Difícil']], ...extra };
+  return { id, label: loc('Nivel de bots'), default: normal,
+    choices: [[easy, loc('Fácil')], [normal, loc('Normal')], [hard, loc('Difícil')]], ...extra };
 }
 
 export function isRoomFieldVisible(field, values) {

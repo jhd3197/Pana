@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles, participants, playable } from '../public/rules.js';
+import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles, participants, playable, lineText } from '../public/rules.js';
 import { QUESTIONS, CATEGORIES, PACKS } from '../public/questions.js';
 import fs from 'node:fs';
 import { voiceKey, narrationLines, revealLines, CORRECT_INTRO } from '../public/voice-key.js';
@@ -154,9 +154,9 @@ test('the last answer reveals and settles immediately, blocking further changes'
   assert.equal(game.reveal.done, true);
   assert.equal(act(game, SEATS, 'answer', { choice: right(game) }), false);
   assert.equal(act(game, SEATS, 'cancel'), false);
-  assert.ok(game.hostLine.includes(game.question.answers[right(game)]));
+  assert.ok(lineText(game.hostLine).includes(game.question.answers[right(game)]));
   toReveal(game);
-  assert.match(game.hostLine, /Solo P3 se la sabía/);
+  assert.match(lineText(game.hostLine), /Solo P3 se la sabía/);
   assert.equal(game.players[2].step, 1);
   assert.equal(game.players[0].step, 0);
 });
@@ -169,8 +169,8 @@ test('a wrong answer drops to the last safe step; doble o nada drops one safe st
   for (let i = 1; i <= SEATS; i++) act(game, i, 'answer', { choice: wrong(game) });
   toReveal(game);
   assert.deepEqual(game.players.slice(0, 3).map(p => p.step), [4, 8, 0]);
-  assert.ok(game.callouts.some(c => /chivo y sin el mecate/.test(c.text) && c.seat === 0));
-  assert.match(game.hostLine, /fuera de base/);
+  assert.ok(game.callouts.some(c => /chivo y sin el mecate/.test(lineText(c)) && c.seat === 0));
+  assert.match(lineText(game.hostLine), /fuera de base/);
 });
 
 test('a right answer climbs, doble climbs two, and speed earns bonus mangos', () => {
@@ -182,7 +182,7 @@ test('a right answer climbs, doble climbs two, and speed earns bonus mangos', ()
   assert.equal(game.players[0].step, 2);
   assert.equal(game.players[1].step, 1);
   assert.ok(game.players[0].bonus > game.players[1].bonus);
-  assert.match(game.hostLine, /Palo/);
+  assert.match(lineText(game.hostLine), /Palo/);
 });
 
 test('copiarse follows the pana, chains through copies, and the host calls it out', () => {
@@ -197,7 +197,7 @@ test('copiarse follows the pana, chains through copies, and the host calls it ou
   for (let i = 5; i <= SEATS; i++) act(game, i, 'answer', { choice: right(game) });
   toReveal(game);
   assert.equal(game.players[1].stats.betrayed, 1);
-  assert.ok(game.callouts.some(c => c.text.startsWith('P1 se copió de P2… ¡y P2 puso la')));
+  assert.ok(game.callouts.some(c => lineText(c).startsWith('P1 se copió de P2… ¡y P2 puso la')));
   assert.equal(act(game, 1, 'copy', { target: 1 }), false, 'one use per game');
 });
 
@@ -402,7 +402,7 @@ test('copying a departing pana never substitutes a bot or scores the empty seat'
   act(game, 1, 'copy', { target: 1 }); game.removePlayer(2);
   act(game, 3, 'answer', { choice: right(game) });
   assert.equal(game.reveal.done, true);
-  assert.ok(game.callouts.some(c => c.text.includes('P1 se copió de P2')));
+  assert.ok(game.callouts.some(c => lineText(c).includes('P1 se copió de P2')));
   assert.equal(game.players[1].stats.betrayed, 0);
   assert.equal(game.players[1].outcome, null);
 });

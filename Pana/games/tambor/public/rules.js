@@ -13,27 +13,40 @@ import {
   STATIONS, songFor, secondsPerBeat, songBeats, notesBetween, isDuelo, phraseOf, playable, isGolpeBeat,
   golpePattern, INTRO_BARS, BEATS_PER_BAR, COUNT_IN,
 } from './songs.js';
+import { loc, locKey, formatList } from '../../../engine/i18n.js';
 
 export const BOT_SEAT = 1000, RUEDA_SIZE = 8, GOLPE_SIZE = 4, DRUMS = 4, BREAK = 7, SWEATY = 48;
-export const BOT_NAMES = ['Don Pancho', 'Lola', 'Cheo', 'Nena', 'Tito', 'Mari', 'Toño', 'Cuqui'];
+export const BOT_NAMES = ['Don Pancho', 'Lola', 'Cheo', 'Nena', 'Tito', 'Mari', 'Toño', 'Cuqui']; // i18n-ignore: names
 export const BOT_SKILL = { facil: .7, normal: .84, duro: .93 };
 export const GRADES = ['perfect', 'good', 'miss'];
 // What each call asks for. `len` is how many beats the move lasts after its hit.
+// The calls are what the MCP sings and stay Spanish; the hints are locKey().
 export const MOVES = {
-  cadera: { name: '¡Cadera!', len: 0, hint: '← o → en el golpe' },
-  vuelta: { name: '¡Vuelta!', len: 0, hint: 'La flecha y luego Espacio' },
-  panuelo: { name: '¡Pañuelo!', len: 2, hint: 'Mantén Espacio dos tiempos' },
-  pegate: { name: '¡Pégate!', len: 1, hint: '↑ una sola vez' },
-  abajo: { name: '¡Abajo!', len: 2, hint: 'Mantén ↓ dos tiempos' },
-  golpe: { name: '¡Golpe!', len: 1, hint: 'Espacio y quieto' },
+  cadera: { name: '¡Cadera!', len: 0, hint: locKey('← o → en el golpe') }, // i18n-ignore: call
+  vuelta: { name: '¡Vuelta!', len: 0, hint: locKey('La flecha y luego Espacio') }, // i18n-ignore: call
+  panuelo: { name: '¡Pañuelo!', len: 2, hint: locKey('Mantén Espacio dos tiempos') }, // i18n-ignore: call
+  pegate: { name: '¡Pégate!', len: 1, hint: locKey('↑ una sola vez') }, // i18n-ignore: call
+  abajo: { name: '¡Abajo!', len: 2, hint: locKey('Mantén ↓ dos tiempos') }, // i18n-ignore: call
+  golpe: { name: '¡Golpe!', len: 1, hint: locKey('Espacio y quieto') }, // i18n-ignore: call
 };
 export const MOVE_IDS = Object.keys(MOVES);
-export const DICHOS = ['¡Palo!', '¡Golpe!', 'Más aburrido que mocho en piñata', '¡Pedazo de loco!'];
+// Dichos, the MCP's barks and the dicho titles stay Spanish in every language.
+export const DICHOS = ['¡Palo!', '¡Golpe!', 'Más aburrido que mocho en piñata', '¡Pedazo de loco!']; // i18n-ignore: dichos
 export const TITLES = {
-  rey: 'Rey o Reina de la rueda', mano: 'Mano de oro', suda: 'Suda más que un maracucho encerrado',
-  plomo: 'Pies de plomo', mocho: 'Más aburrido que mocho en piñata', palo: '¡Palo!',
+  rey: locKey('Rey o Reina de la rueda'), mano: locKey('Mano de oro'), suda: 'Suda más que un maracucho encerrado', // i18n-ignore: dicho
+  plomo: locKey('Pies de plomo'), mocho: 'Más aburrido que mocho en piñata', palo: '¡Palo!', // i18n-ignore: dichos
 };
-const MISS_LINES = ['¡Me agarró fuera de base!', '¡Más cadera, chamo!', '¡Despierta, pana!'];
+const MISS_LINES = ['¡Me agarró fuera de base!', '¡Más cadera, chamo!', '¡Despierta, pana!']; // i18n-ignore: barks
+
+// A var is a value, a list of names or { key } (Spanish text). Spoken keeps
+// Spanish for the MCP's voice; shown translates for this screen.
+function eventVars(vars, shown) {
+  if (!vars) return vars;
+  return Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, Array.isArray(v) ? shown ? formatList(v) : v.join(' y ')
+    : v && typeof v === 'object' ? shown ? loc(v.key) : v.key : v]));
+}
+export const eventSpoken = e => e.text.replace(/\{(\w+)\}/g, (m, k) => eventVars(e.vars, false)?.[k] ?? m);
+export const eventShown = e => loc(e.text, eventVars(e.vars, true));
 
 // What a member may send each tick (see the header).
 const count = (v) => Number.isSafeInteger(v) && v >= 0 ? Math.min(v, 1e6) : 0;
@@ -78,8 +91,10 @@ export class Rueda {
   get track() { return songFor(this.song?.track ?? 0); }
   player(id) { return this.players.find(p => p.id === id); }
   beatNow() { return this.song ? (this.now - this.song.startAt) / 1000 / secondsPerBeat(this.track) : 0; }
-  event(kind, text, extra = {}) {
-    this.events.push({ n: this.nextEvent++, kind, text, ...extra });
+  // text is the Spanish source (locKey) and vars its values: the MCP speaks it
+  // in Spanish (eventSpoken) and each screen shows it translated (eventShown).
+  event(kind, text, extra = {}, vars) {
+    this.events.push({ n: this.nextEvent++, kind, text, ...extra, ...(vars ? { vars } : {}) });
     if (this.events.length > 12) this.events.shift();
   }
 
@@ -125,7 +140,7 @@ export class Rueda {
       seen: { drum: { p: 0, g: 0, m: 0, s: 0 }, clap: { on: 0, off: 0 } } });
     this.assignRoles(index);
     if (this.mode === 'golpe') this.golpe = { round: 0, start: 8, len: 0, notes: null, results: {}, alive: this.players.map(p => p.id) };
-    this.event('song', `${song.name} · ${song.tempo}`);
+    this.event('song', locKey('{song} · {tempo}'), {}, { song: song.name, tempo: { key: song.tempo } });
   }
 
   // Who dances, who drums, who waits. Panas who danced the least go first,
@@ -183,7 +198,7 @@ export class Rueda {
     const slot = p.slot, turn = this.vacate(p, beat, false);
     if (p.stats.fastestKick == null || turn < p.stats.fastestKick) p.stats.fastestKick = turn;
     this.line.push(p.id);
-    this.event('kick', `¡Sal de la rueda, ${p.name}!`, { id: p.id });
+    this.event('kick', locKey('¡Sal de la rueda, {name}!'), { id: p.id }, { name: p.name });
     this.callIn(slot, beat + 2);
   }
 
@@ -203,7 +218,7 @@ export class Rueda {
     if (!p || this.phase !== 'song' || p.role !== 'crowd' || p.used || p.benched || !['rueda', 'relevo'].includes(this.mode)) return false;
     if (!this.line.includes(id)) return false;
     p.used = true; this.line = [id, ...this.line.filter(x => x !== id)];
-    this.event('entrar', `¡${p.name} quiere entrar!`, { id });
+    this.event('entrar', locKey('¡{name} quiere entrar!'), { id }, { name: p.name });
     return true;
   }
 
@@ -215,15 +230,15 @@ export class Rueda {
     if (this.entering.some(e => e.id === id)) return false;
     if (!ok || !isGolpeBeat(this.track, beat) || Math.abs(now - beat) > 2) {
       p.benched = true; this.line = this.line.filter(x => x !== id);
-      this.event('kick', `¡Fuera de tiempo! ¡Sal de la rueda, ${p.name}!`, { id });
+      this.event('kick', locKey('¡Fuera de tiempo! ¡Sal de la rueda, {name}!'), { id }, { name: p.name });
       return true;
     }
     const current = this.player(this.slots[0]);
     this.line = this.line.filter(x => x !== id);
     if (current) {
       this.vacate(current, now, false); this.line.push(current.id);
-      this.event('relevo', `¡Relevo! ${p.name} entra por ${current.name}`, { id });
-    } else this.event('enter', `¡Entra, ${p.name}!`, { id });
+      this.event('relevo', locKey('¡Relevo! {name} entra por {other}'), { id }, { name: p.name, other: current.name });
+    } else this.event('enter', locKey('¡Entra, {name}!'), { id }, { name: p.name });
     this.entering = this.entering.filter(e => e.slot !== 0);
     this.seat(p, 0, now);
     return true;
@@ -247,7 +262,7 @@ export class Rueda {
       this.entering = this.entering.filter(x => x !== e);
       if (!p || this.slots[e.slot] != null) { if (p) this.line.unshift(p.id); continue; }
       this.seat(p, e.slot, beat);
-      this.event('enter', `¡Entra, ${p.name}!`, { id: p.id });
+      this.event('enter', locKey('¡Entra, {name}!'), { id: p.id }, { name: p.name });
     }
     this.issueCalls(beat);
     this.resolveCalls(beat);
@@ -332,7 +347,7 @@ export class Rueda {
       if (!playable(song, target)) continue;
       const messy = this.sabor < .45 && draw(this) < .5 ? .5 : 0;
       const w = callWindow(this.sabor, this.bulla), duelo = this.slots.length > 1 && isDuelo(song, target);
-      if (duelo && this.dueloPhrase !== phraseOf(song, target)) { this.dueloPhrase = phraseOf(song, target); this.event('duelo', '¡Duelo! Cada quien con lo suyo'); }
+      if (duelo && this.dueloPhrase !== phraseOf(song, target)) { this.dueloPhrase = phraseOf(song, target); this.event('duelo', locKey('¡Duelo! Cada quien con lo suyo')); }
       let first = null, dir = draw(this) < .5 ? 'left' : 'right';
       this.slots.forEach((id, slot) => {
         if (id == null) return;
@@ -368,13 +383,13 @@ export class Rueda {
     if (grade !== 'miss') {
       p.score += grade === 'perfect' ? 15 : 10; p.stats.hits++; p.streak++;
       if (grade === 'perfect') p.stats.perfect++;
-      if (p.streak % 4 === 0) this.event('mcp', '¡Eso es!', { id: p.id });
+      if (p.streak % 4 === 0) this.event('mcp', '¡Eso es!', { id: p.id }); // i18n-ignore: bark
       return;
     }
     p.misses++; p.streak = 0; p.stats.missed++;
     if (this.mode === 'toque') return;
     if (p.misses >= this.options.misses) this.kick(p, beat);
-    else this.event('miss', call.move === 'cadera' ? '¡Más cadera, chamo!' : MISS_LINES[(call.id + p.misses) % MISS_LINES.length], { id: p.id });
+    else this.event('miss', call.move === 'cadera' ? MISS_LINES[1] : MISS_LINES[(call.id + p.misses) % MISS_LINES.length], { id: p.id });
   }
 
   // ¡Golpe!: the MCP plays a pattern, everyone repeats it, whoever misses is out.
@@ -383,7 +398,7 @@ export class Rueda {
     if (!g.notes) {
       if (beat < g.start - 4) return;
       g.round++; Object.assign(g, golpePattern(g.round, () => draw(this)), { results: {} });
-      this.event('golpe', `Ronda ${g.round}: escucha al MCP y repite`);
+      this.event('golpe', locKey('Ronda {n}: escucha al MCP y repite'), {}, { n: g.round });
       return;
     }
     const judged = g.start + g.len * 2 + 1, spb = secondsPerBeat(this.track);
@@ -397,12 +412,12 @@ export class Rueda {
     }
     if (g.alive.some(id => !(id in g.results))) return;
     const out = g.alive.filter(id => !g.results[id]);
-    if (out.length === g.alive.length) this.event('golpe', '¡Nadie lo sacó! Otra vez');
+    if (out.length === g.alive.length) this.event('golpe', locKey('¡Nadie lo sacó! Otra vez'));
     else {
       for (const id of out) { const p = this.player(id); p.role = 'out'; p.stats.rounds = g.round - 1; }
       g.alive = g.alive.filter(id => g.results[id]);
       for (const id of g.alive) { const p = this.player(id); p.score += 10; p.stats.rounds = g.round; }
-      if (out.length) this.event('kick', `¡Sal de la rueda, ${out.map(id => this.player(id).name).join(' y ')}!`, { id: out[0] });
+      if (out.length) this.event('kick', locKey('¡Sal de la rueda, {name}!'), { id: out[0] }, { name: out.map(id => this.player(id).name) });
     }
     if (g.alive.length <= 1) return this.finish();
     Object.assign(g, { notes: null, start: Math.ceil((beat + 2) / BEATS_PER_BAR) * BEATS_PER_BAR + 4 });
@@ -416,7 +431,7 @@ export class Rueda {
       if (p.role === 'drum') { p.stats.drummed++; const bonus = Math.round(sabor * 40); p.score += bonus; p.stats.drum += bonus; }
     }
     this.calls = []; this.entering = [];
-    this.event('end', `¡Eso es! Sabor de la rueda: ${Math.round(sabor * 100)} %`);
+    this.event('end', locKey('¡Eso es! Sabor de la rueda: {n} %'), {}, { n: Math.round(sabor * 100) });
     if (this.songIndex + 1 < this.options.songs) { this.phase = 'break'; this.breakLeft = BREAK; } else this.finish();
   }
 
@@ -427,7 +442,10 @@ export class Rueda {
     const ranked = this.ranking();
     this.winner = this.mode === 'golpe' ? this.golpe.alive[0] ?? ranked[0]?.id ?? null : ranked[0]?.id ?? null;
     this.titles = this.mode === 'golpe' ? [] : awardTitles(this.players);
-    this.event('final', this.mode === 'toque' ? `¡La rueda sonó! ${this.team} puntos entre todos` : `¡${this.player(this.winner)?.name ?? 'Nadie'} se la llevó!`);
+    const winner = this.player(this.winner)?.name;
+    if (this.mode === 'toque') this.event('final', locKey('¡La rueda sonó! {n} puntos entre todos'), {}, { n: this.team });
+    else if (winner != null) this.event('final', locKey('¡{name} se la llevó!'), {}, { name: winner });
+    else this.event('final', locKey('¡Nadie se la llevó!'));
   }
 
   ranking() { return rankPlayers(this.players, this.mode); }
@@ -448,11 +466,11 @@ export function awardTitles(players) {
   };
   const titles = [];
   const give = (key, p, detail) => { if (p) titles.push({ key, id: p.id, title: TITLES[key], detail }); };
-  give('rey', best(p => p.stats.danceBeats), 'más tiempo bailando en el centro');
-  give('mano', best(p => p.stats.drum), 'el mejor tambor de la rueda');
-  give('suda', best(p => p.stats.longest, SWEATY / 2), 'el turno más largo sin salir');
-  give('plomo', best(p => p.stats.fastestKick == null ? null : 1000 - p.stats.fastestKick), 'lo sacaron más rápido que a nadie');
-  give('mocho', best(p => p.stats.wait), 'el que más esperó en la gente');
-  give('palo', best(p => p.stats.perfect), 'más llamados perfectos');
+  give('rey', best(p => p.stats.danceBeats), locKey('más tiempo bailando en el centro'));
+  give('mano', best(p => p.stats.drum), locKey('el mejor tambor de la rueda'));
+  give('suda', best(p => p.stats.longest, SWEATY / 2), locKey('el turno más largo sin salir'));
+  give('plomo', best(p => p.stats.fastestKick == null ? null : 1000 - p.stats.fastestKick), locKey('lo sacaron más rápido que a nadie'));
+  give('mocho', best(p => p.stats.wait), locKey('el que más esperó en la gente'));
+  give('palo', best(p => p.stats.perfect), locKey('más llamados perfectos'));
   return titles;
 }

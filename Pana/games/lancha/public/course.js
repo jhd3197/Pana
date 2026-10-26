@@ -1,3 +1,4 @@
+// i18n-ignore-file: river sections and landmarks are place names.
 // Lancha's course: Caño del Sipapo → Raudales de Atures → el Orinoco →
 // Puerto Ayacucho. About twice Curiara's river in length and width, because a
 // lancha runs near 55 km/h. The machinery (splines, levels, currents, guide

@@ -1,3 +1,4 @@
+// i18n-ignore-file: dichos stay Spanish in every language (docs/knowledge/pana-i18n.md).
 // Venezuelan dichos for NPC barks, shared by every game. Pools are grouped by
 // mood; each game maps its own events onto them. A line marked `crude` only
 // plays when the table opts into "más criollo" (pajúo, pacuso, latazo…).

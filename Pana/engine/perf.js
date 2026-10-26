@@ -5,7 +5,7 @@
 // numbers; benchmarks through window.PANA_PERF. Nothing is measured until
 // someone starts it, so loading it costs nothing.
 import { watchRenderers, boundRenderers, drawNow, getSettings, onSettings, renderStep, renderScaleNow } from './settings.js';
-
+import { loc } from './i18n.js';
 const KEEP = 600;           // frames kept, ~10 s at 60 Hz
 const FREEZE_MS = 50;
 const frames = [];          // { at, dt, drawn, draws, triangles, cpu }
@@ -139,10 +139,10 @@ const thousands = n => n == null ? '–' : n >= 1e6 ? `${(n / 1e6).toFixed(2)} M
 function paint() {
   const p = snapshot({ seconds: 2 }), r = p.resolution;
   overlay.textContent = [
-    `${fmt(p.fps, 0)} fps · ${fmt(p.frameMs.p50)} ms (p95 ${fmt(p.frameMs.p95)} · peor ${fmt(p.frameMs.worst, 0)})`,
+    loc('{fps} fps · {p50} ms (p95 {p95} · peor {worst})', { fps: fmt(p.fps, 0), p50: fmt(p.frameMs.p50), p95: fmt(p.frameMs.p95), worst: fmt(p.frameMs.worst, 0) }),
     `CPU ${fmt(p.cpuMs)} ms${p.gpuMs != null ? ` · GPU ${fmt(p.gpuMs)} ms` : ''}`,
-    `${thousands(p.draws)} llamadas · ${thousands(p.triangles)} triángulos`,
-    r ? `${r.drawn[0]}×${r.drawn[1]} (×${fmt(r.ratio, 2)})${p.autoStep ? ` · auto ${Math.round(p.autoScale * 100)} %` : ''}` : 'Sin escena 3D',
+    loc('{draws} llamadas · {triangles} triángulos', { draws: thousands(p.draws), triangles: thousands(p.triangles) }),
+    r ? `${r.drawn[0]}×${r.drawn[1]} (×${fmt(r.ratio, 2)})${p.autoStep ? ` · auto ${Math.round(p.autoScale * 100)} %` : ''}` : loc('Sin escena 3D'),
   ].join('\n');
 }
 export function showPerf() {

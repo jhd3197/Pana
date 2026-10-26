@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { poseFace } from './studio-finish.js';
 import { MOMENTS, MOMENT_NAMES } from './moment-events.js';
+import { loc } from '/engine/i18n.js';
 const clamp=t=>Math.max(0,Math.min(1,t));
 const smooth=t=>{t=clamp(t);return t*t*(3-2*t);};
 
@@ -17,7 +18,7 @@ export function createMomentVisual(kind,color='#ffc629') {
     const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;
     const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map,depthWrite:false})),width=Math.min(2.4,Math.max(.65,canvas.width/200));sprite.scale.set(width,width*100/canvas.width,1);return sprite;
   }
-  const text=kind==='block'?'¡Juntos!':kind==='sleep'?'Z z z':kind==='suspense'?'…':kind==='podium'?'¡Campeón!':MOMENT_NAMES[MOMENTS.indexOf(kind)];
+  const text=kind==='block'?loc('¡Juntos!'):kind==='sleep'?'Z z z':kind==='suspense'?'…':kind==='podium'?loc('¡Campeón!'):loc(MOMENT_NAMES[MOMENTS.indexOf(kind)]);
   const label=textSprite(text);label.name='moment-caption';if(kind==='nomoves')label.scale.multiplyScalar(.65);root.add(label);
   const props=new THREE.Group();root.add(props);
   const mat=new THREE.MeshStandardMaterial({color,roughness:.5});

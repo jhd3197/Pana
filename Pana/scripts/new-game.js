@@ -3,7 +3,7 @@
 // lobby, menu, results, pure rules with tests and a two-client browser suite.
 //
 //   npm run new-game -- <id> [--kind table|live] [--name "Nombre"] [--players 4]
-//                            [--color #rrggbb] [--description "…"]
+//                            [--color #rrggbb] [--description "…"] [--description-en "…"]
 //   .\dev.ps1 new-game <id> -Kind live
 //
 // --kind table: turn-based at a table (cards, dice, board games) → TableRoom.
@@ -40,7 +40,12 @@ export function options(argv) {
   const description = args.description || (kind === 'table'
     ? `Una mesa 3D en la plaza para ${players} panas. Juega con tus panas o contra bots.`
     : `Corre por la plaza 3D con tus panas. Recoge más mangos que nadie antes de que se acabe el tiempo.`);
-  return { id, kind, players, color: color.toLowerCase(), name, description };
+  // The English the hub shows (public/locales/en.json); a custom description
+  // without one is left to translate (npm run i18n -- check names it).
+  const descriptionEn = args['description-en'] || (args.description ? '' : kind === 'table'
+    ? `A 3D table in the plaza for ${players} players. Play with your friends or against bots.`
+    : `Run around the 3D plaza with your friends. Grab more mangos than anyone before time runs out.`);
+  return { id, kind, players, color: color.toLowerCase(), name, description, descriptionEn };
 }
 
 function fill(text, values) {
@@ -74,6 +79,8 @@ export function createGame(argv, { root = app, docs = path.join(repo, 'docs', 'k
     kindText: o.kind === 'table' ? 'turn-based table game' : 'real-time game',
     roomText: o.kind === 'table' ? 'table room' : 'live room',
     roomFile: o.kind === 'table' ? 'table-room.js' : 'live-room.js',
+    // Inside JSON strings (public/locales/en.json).
+    ...Object.fromEntries(['name', 'description', 'descriptionEn'].map(k => [`${k}Json`, JSON.stringify(o[k]).slice(1, -1)])),
   };
   const written = [];
   copyTree(path.join(templates, 'common'), dir, values, written);
@@ -95,7 +102,9 @@ Next:
   3. npm test, then npm run test:browser -- ${game.id}
   4. Add the game to README.md, docs/knowledge/README.md and CHANGELOG.md (Unreleased).
   5. Launcher art: npm run launcher-art -- ${game.id} <image> --row <Carreras|Mesa|Fiesta|Aventura>
-     (until then the hub tile is its color, or public/card.js if the game has one).`);
+     (until then the hub tile is its color, or public/card.js if the game has one).
+  6. English for every new phrase: npm run i18n -- sync --game ${game.id}, fill the "" in
+     public/locales/en.json, then npm run i18n -- check (docs/knowledge/pana-i18n.md).`);
   } catch (error) {
     console.error(error.message);
     process.exit(1);

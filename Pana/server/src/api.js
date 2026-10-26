@@ -12,7 +12,9 @@ function sendJson(res, status, data) {
 // A directory under games/ counts as a game when it has public/index.html.
 // Optional games/<id>/game.json provides display metadata (name, description,
 // players, color, and tileName: a short name for the hub's small card).
-export function listGames() {
+// With a language other than Spanish the description comes from the game's
+// public/locales/<lang>.json when it is translated there (docs/knowledge/pana-i18n.md).
+export function listGames(lang = 'es') {
   const games = [];
   let entries = [];
   try {
@@ -28,11 +30,15 @@ export function listGames() {
     try {
       meta = JSON.parse(fs.readFileSync(path.join(dir, 'game.json'), 'utf8'));
     } catch { /* metadata optional */ }
+    let description = meta.description || '';
+    if (lang !== 'es' && description) {
+      try { description = JSON.parse(fs.readFileSync(path.join(dir, 'public', 'locales', `${lang}.json`), 'utf8'))[description] || description; } catch { /* untranslated: Spanish */ }
+    }
     games.push({
       id: entry.name,
       name: meta.name || entry.name,
       tileName: typeof meta.tileName === 'string' && meta.tileName ? meta.tileName : null,
-      description: meta.description || '',
+      description,
       players: meta.players || config.maxPlayersPerRoom,
       color: meta.color || null,
       // optional public/card.js draws live art on the hub's game tile
@@ -50,8 +56,10 @@ export async function handleApi(req, res, pathname, startedAt, colyseus) {
   switch (pathname) {
     case '/api/health':
       return sendJson(res, 200, { ok: true, uptime: Math.round((Date.now() - startedAt) / 1000) });
-    case '/api/games':
-      return sendJson(res, 200, { games: listGames() });
+    case '/api/games': {
+      const lang = new URL(req.url, 'http://pana').searchParams.get('lang');
+      return sendJson(res, 200, { games: listGames(/^[a-z]{2}$/.test(lang || '') ? lang : 'es') });
+    }
     case '/api/rooms':
       return sendJson(res, 200, { rooms: await colyseus.snapshot().catch(() => []) });
     default:

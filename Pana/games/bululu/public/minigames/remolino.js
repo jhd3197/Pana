@@ -12,6 +12,7 @@ import { instancePlacements } from '/engine/models/core/static-batch.js';
 import { sunnyStage, pick, rand } from './stage.js';
 import { canoeActors, drawCanoe } from './river-stage.js';
 import { remolinoSim, REMOLINO } from './river-sims.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 // The eye: spiral arms of foam around a dark centre, scaled with the sim.
 function whirlpool() {
@@ -30,10 +31,10 @@ function whirlpool() {
 
 export default {
   id: 'remolino',
-  title: '¡Remolino!',
-  howto: 'Un remolino crece en la laguna y te jala. Rema alternando A y D para alejarte del centro y empuja a los demás con Espacio. ¡Gana el último que quede fuera!',
-  keys: [['A D / ← →', 'remar alternando'], ['Espacio', '¡salpicón! empuja al de al lado']],
-  touch: { action: 'Salpicón' },
+  title: locKey('¡Remolino!'),
+  howto: locKey('Un remolino crece en la laguna y te jala. Rema alternando A y D para alejarte del centro y empuja a los demás con Espacio. ¡Gana el último que quede fuera!'),
+  keys: [['A D / ← →', locKey('remar alternando')], [locKey('Espacio'), locKey('¡salpicón! empuja al de al lado')]],
+  touch: { action: locKey('Salpicón') },
   icon: 'whirl',
   time: REMOLINO.time,
 
@@ -46,8 +47,8 @@ export default {
     const palms = [], rushes = [];
     for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2 + rand(-.05, .05); palms.push({ x: Math.cos(a) * rand(20, 30), y: 0, z: Math.sin(a) * rand(20, 30), rot: rand(0, 6), scale: rand(.8, 1.2) }); }
     for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2; rushes.push({ x: Math.cos(a) * (REMOLINO.lagoon + rand(2.5, 4)), y: 0, z: Math.sin(a) * (REMOLINO.lagoon + rand(2.5, 4)), rot: rand(0, 6), scale: rand(.7, 1.1) }); }
-    instancePlacements(scene, moriche({ seed: 31, h: 11 }), palms, { name: 'Morichal de la laguna', castShadow: false });
-    instancePlacements(scene, reeds({ seed: 32 }), rushes, { name: 'Juncos de la laguna', castShadow: false });
+    instancePlacements(scene, moriche({ seed: 31, h: 11 }), palms, { name: 'Morichal de la laguna', castShadow: false });   // i18n-ignore: object names
+    instancePlacements(scene, reeds({ seed: 32 }), rushes, { name: 'Juncos de la laguna', castShadow: false });   // i18n-ignore: object names
     const camera = new THREE.PerspectiveCamera(50, (ctx.aspect || innerWidth / innerHeight), .1, 400);
     camera.position.set(0, 23, 19); camera.lookAt(0, 0, 1.5);
     const humans = new Set(ctx.players.filter(p => p.human && !ctx.auto).map(p => p.i));
@@ -75,9 +76,9 @@ export default {
       sim.update(dt, inputs);
       for (const a of actors) {
         const c = sim.canoes[a.i], was = seen[a.i], me = humans.has(a.i), at = new THREE.Vector3(Math.cos(c.a) * c.r, .4, Math.sin(c.a) * c.r);
-        if (c.shoves > was.shoves) { c.shoveAt = time; a.bubble.say(pick(['¡Salpicón!', '¡Pa\' dentro!', '¡Toma!']), .7); puffs.spawn(at, { color: 0xffffff, count: 8, spread: 1.4, size: .7 }); if (me) sound.splat(); }
-        if (c.shoved > was.shoved) { a.bubble.say(pick(['¡Epa!', '¡Oye!']), .6); if (me) sound.boing(); }
-        if (c.out != null && was.out == null) { a.bubble.say(pick(['¡Ayyyy!', '¡Me jala!', '¡Glu glu!']), 1.1); puffs.spawn(at, { color: 0xffffff, count: 12, spread: 1.8, size: .9 }); sound.sweep(500, 90, .5, 'sine', .1); }
+        if (c.shoves > was.shoves) { c.shoveAt = time; a.bubble.say(loc(pick([locKey('¡Salpicón!'), locKey('¡Pa\' dentro!'), locKey('¡Toma!')])), .7); puffs.spawn(at, { color: 0xffffff, count: 8, spread: 1.4, size: .7 }); if (me) sound.splat(); }
+        if (c.shoved > was.shoved) { a.bubble.say(loc(pick([locKey('¡Epa!'), locKey('¡Oye!')])), .6); if (me) sound.boing(); }
+        if (c.out != null && was.out == null) { a.bubble.say(loc(pick([locKey('¡Ayyyy!'), locKey('¡Me jala!'), locKey('¡Glu glu!')])), 1.1); puffs.spawn(at, { color: 0xffffff, count: 12, spread: 1.8, size: .9 }); sound.sweep(500, 90, .5, 'sine', .1); }
         if (me && c.paddle.count > was.strokes && c.paddle.quality === 'remazo') { sound.tone(1180, 0, .045, 'triangle', .07); sound.tone(590, .01, .07, 'sine', .08); }
         Object.assign(was, { shoves: c.shoves, shoved: c.shoved, out: c.out, strokes: c.paddle.count });
       }
@@ -92,12 +93,12 @@ export default {
     const me = actors[ctx.localIndex ?? ctx.players.findIndex(p => p.human && !ctx.auto)];
     function hint() {
       if (!me) return null;
-      const c = sim.canoes[me.i], left = `Quedan ${sim.canoes.filter(o => o.out == null).length}`;
-      if (c.out != null) return { text: `Te tragó el remolino · ${left}`, tone: 'bad' };
-      if (c.cd > 0) return { text: `Rema A D alternando para alejarte · salpicón en ${Math.ceil(c.cd)} s · ${left}`, tone: '' };
+      const c = sim.canoes[me.i], left = loc('Quedan {n}', { n: sim.canoes.filter(o => o.out == null).length });
+      if (c.out != null) return { text: loc('Te tragó el remolino · {left}', { left }), tone: 'bad' };
+      if (c.cd > 0) return { text: loc('Rema A D alternando para alejarte · salpicón en {s} s · {left}', { s: Math.ceil(c.cd), left }), tone: '' };
       const [x, z] = [Math.cos(c.a) * c.r, Math.sin(c.a) * c.r];
       const near = sim.canoes.some(o => o !== c && o.out == null && Math.hypot(Math.cos(o.a) * o.r - x, Math.sin(o.a) * o.r - z) < REMOLINO.reach + 2 * REMOLINO.radius);
-      return near ? { text: `¡Salpicón listo! Espacio empuja al de al lado · ${left}`, tone: 'go' } : { text: `Salpicón listo: acércate a otra curiara · ${left}`, tone: 'ok' };
+      return near ? { text: loc('¡Salpicón listo! Espacio empuja al de al lado · {left}', { left }), tone: 'go' } : { text: loc('Salpicón listo: acércate a otra curiara · {left}', { left }), tone: 'ok' };
     }
     return { scene, camera, update, outro, actors, hint, over: sim.over, scores: sim.scores, winners: sim.winners, sim,
       stats: () => ({ out: sim.canoes.map(c => c.out == null ? null : +c.out.toFixed(1)), shoves: sim.canoes.map(c => c.shoves) }) };

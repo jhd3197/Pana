@@ -64,7 +64,7 @@ try {
   }
   await host.evaluate(() => { tamborDebug.room.held = false; });
   await quiet(false);
-  await waitFor(guest, () => tamborDebug.room.state.events.some(e => e.kind === 'kick' && e.text.includes('Bruno')));
+  await waitFor(guest, () => tamborDebug.room.state.events.some(e => e.kind === 'kick' && JSON.stringify(e.vars).includes('Bruno')));
   await waitFor(host, () => tamborDebug.room.state.players.find(p => p.name === 'Bruno').role === 'crowd');
   await waitFor(host, () => tamborDebug.room.state.events.some(e => e.kind === 'enter'), undefined, 30_000);
   assert.equal(await guest.locator('#crowd').isVisible(), true, 'the guest now sees the crowd buttons');

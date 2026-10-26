@@ -3,7 +3,8 @@
 // picks who starts; play then goes clockwise.
 export const HOME = 56;
 export const COLORS = ['#ff4b4b', '#2ad1b2', '#ffc629', '#3d7bf2'];
-export const COLOR_NAMES = ['Rojo', 'Verde', 'Amarillo', 'Azul'];
+// Source text: each client shows it with loc().
+export const COLOR_NAMES = [locKey('Rojo'), locKey('Verde'), locKey('Amarillo'), locKey('Azul')];
 export const SAFE = [0, 8, 13, 21, 26, 34, 39, 47];
 export const RING = [
   [6,13],[6,12],[6,11],[6,10],[6,9],
@@ -53,7 +54,7 @@ export class LudoGame {
     this.starter = null; this.lastPlace = null; this.toss = { seat: 0, power: .5 };
     this.entryMisses = [0, 0, 0, 0]; this.entryLimits = [0, 0, 0, 0]; this.autoMove = null; this.captures = [0, 0, 0, 0];
     this.turnPause = null;
-    this.ledger = {}; this.event = 'Invita a tus panas o juega con bots.';
+    this.ledger = {}; this.event = [line(locKey('Invita a tus panas o juega con bots.'))];
   }
   snapshot() { return JSON.parse(JSON.stringify(this)); }
   static restore(state, members) {
@@ -81,7 +82,7 @@ export class LudoGame {
     this.sixes = 0; this.winner = null; this.round++; this.revision++;
     // Its own seed, so the match's dice stream is the same with or without the cachos.
     this.starter = createStarter({ seats: [0, 1, 2, 3], need: 'first', seed: (this.rng ^ Math.imul(this.round, 0x9e3779b1)) >>> 0, option: this.options.starter, last: this.lastPlace });
-    this.event = '¿Quién empieza? Sacude el cacho: el dado más alto sale primero.';
+    this.event = [line(locKey('¿Quién empieza? Sacude el cacho: el dado más alto sale primero.'))];
     if (starterDone(this.starter)) this.begin();
     return true;
   }
@@ -96,8 +97,9 @@ export class LudoGame {
   begin() {
     const { order, rolls } = starterResult(this.starter), first = order[0], p = this.players[first];
     this.phase = 'playing'; this.turn = first; this.sixes = 0;
-    const how = this.starter.note ? `${this.starter.note}: ` : '';
-    this.event = `${how}¡Empieza ${p.name}${rolls[first] ? ` con ${rolls[first]}` : ''}! ${this.options.entry === 'six' ? 'Saca un seis para salir.' : 'Con uno o seis puedes salir.'}`;
+    const how = this.starter.note, roll = rolls[first], vars = { how, name: p.name, roll };
+    const opening = how ? roll ? locKey('{how}: ¡Empieza {name} con {roll}!') : locKey('{how}: ¡Empieza {name}!') : roll ? locKey('¡Empieza {name} con {roll}!') : locKey('¡Empieza {name}!');
+    this.event = [line(opening, vars), line(this.options.entry === 'six' ? locKey('Saca un seis para salir.') : locKey('Con uno o seis puedes salir.'))];
   }
   nextTurn() { this.turn = (this.turn + 1) % 4; this.die = 0; this.sixes = 0; }
   // power only changes how the die flies on screen; bots throw with a varied arm.
@@ -117,10 +119,11 @@ export class LudoGame {
     this.toss = { seat: this.turn, power: cleanPower(power, .35 + (this.rng & 255) / 255 * .6) };
     this.die = value; this.lastDie = this.die;
     this.sixes = this.die === 6 ? this.sixes + 1 : 0;
-    this.event = `${this.players[this.turn].name} sacó ${this.die}.${assisted ? ' Salida asistida tras varios intentos sin salir.' : ''}`;
-    if (this.sixes === 3 && this.options.threeSixes) { this.event += ' Tres seis seguidos: pierde el turno.'; this.nextTurn(); }
+    this.event = [line(locKey('{name} sacó {n}.'), { name: this.players[this.turn].name, n: this.die })];
+    if (assisted) this.event.push(line(locKey('Salida asistida tras varios intentos sin salir.')));
+    if (this.sixes === 3 && this.options.threeSixes) { this.event.push(line(locKey('Tres seis seguidos: pierde el turno.'))); this.nextTurn(); }
     else if (!legalMoves(this).length) {
-      this.event += ' Sin movimientos.';
+      this.event.push(line(locKey('Sin movimientos.')));
       if (this.die === 6) this.die = 0; else this.nextTurn();
     }
     if (!this.die) this.turnPause = {seat:this.toss.seat, kind:'roll', remaining:automaticMoveDelay(this.toss.power)};
@@ -128,7 +131,7 @@ export class LudoGame {
     // Choosing between identical yard pieces does not change the outcome.
     if (moves.length === 1 || moves.length && moves.every(i => pieces[i] < 0)) {
       this.autoMove = { seat: this.turn, piece: moves[0], remaining: automaticMoveDelay(this.toss.power) };
-      this.event += ' Movimiento automático después de ver el dado.';
+      this.event.push(line(locKey('Movimiento automático después de ver el dado.')));
     }
     this.revision++; return true;
   }
@@ -159,9 +162,10 @@ export class LudoGame {
     }
     this.turnPause = {seat:p.seat, kind:'move', remaining:movePause(from < 0 ? 1 : next-from, captured)};
     this.captures[this.turn] += captured;
-    this.event = `${p.name} ${next === HOME ? 'llevó una ficha a casa' : from < 0 ? 'sacó una ficha' : `movió la ficha ${piece + 1}`}.${captured ? ` Capturó ${captured}.` : ''}`;
+    this.event = [line(next === HOME ? locKey('{name} llevó una ficha a casa.') : from < 0 ? locKey('{name} sacó una ficha.') : locKey('{name} movió la ficha {n}.'), { name: p.name, n: piece + 1 })];
+    if (captured) this.event.push(line(locKey('Capturó {n}.'), { n: captured }));
     if (p.pieces.every(v => v === HOME)) { this.phase = 'finished'; this.winner = this.turn; this.die = 0; this.lastPlace = ranking(this.players).at(-1).seat; }
-    else if (this.die === 6 || captured && this.options.captureBonus) { this.die = 0; this.event += ' Vuelve a tirar.'; }
+    else if (this.die === 6 || captured && this.options.captureBonus) { this.die = 0; this.event.push(line(locKey('Vuelve a tirar.'))); }
     else this.nextTurn();
     this.revision++; return true;
   }
@@ -190,6 +194,15 @@ export class LudoGame {
   }
 }
 import { defaultLudoOptions, ludoOptions } from './options.js';
+import { loc, locKey } from '../../../engine/i18n.js';
+
+// The event line travels as Spanish source sentences plus their values; each
+// client joins them in its own language. `how` is the cachos' own source note.
+const line = (text, vars) => vars ? { text, vars } : { text };
+export function eventText(event) {
+  const parts = Array.isArray(event) ? event : event ? [{ text: event }] : [];
+  return parts.map(({ text, vars }) => loc(text, vars?.how ? { ...vars, how: loc(vars.how) } : vars)).join(' ');
+}
 import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 import { cleanPower } from '../../../engine/play/dice-throw.js';
 

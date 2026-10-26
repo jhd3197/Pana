@@ -17,6 +17,7 @@ import { createChapita, createPalo, createTuyuyo, createApodo, createPelota, cre
 import { createJugadaFx } from './jugada-fx.js';
 import { createJugadas } from './jugada-motion.js';
 import { playSfx } from './sounds.js';
+import { loc, locKey, formatNumber } from '/engine/i18n.js';
 
 export const TEAM_COLORS = ['#e8453c', '#2f7fe0'];
 const BOT_PALOS = ['escoba', 'coleto', 'teipe', 'tricolor', 'escoba', 'teipe', 'coleto', 'escoba'];
@@ -75,17 +76,17 @@ export function createChapitaScene(canvas) {
     approach.scale.setScalar(Math.max(1, 1 + 3 * (T - elapsed) / T)); aim.scale.setScalar(inside ? 1.15 + Math.sin(time * 40) * .05 : 1);
     approach.material.opacity = Math.min(1, u * 3); aim.material.opacity = .9;
     for (const ring of [aim, approach]) { ring.position.copy(aimAt); ring.quaternion.copy(camera.quaternion); }
-    if (out) fxPitch.text('Déjala pasar', '#ff8f7a', aimAt.clone().add(new THREE.Vector3(0, .5, 0)), elapsed - .6 * T, { life: 2, size: .6, tilt: 0 });
+    if (out) fxPitch.text(loc('Déjala pasar'), '#ff8f7a', aimAt.clone().add(new THREE.Vector3(0, .5, 0)), elapsed - .6 * T, { life: 2, size: .6, tilt: 0 });
   }
   // After your swing: early, late or right on it, and by how much.
   function drawFeedback() {
     if (!feedback) return;
     const age = time - feedback.at, { dt, w, height } = feedback, off = Math.abs(dt);
-    const [word, color] = off <= w * .35 ? ['¡Perfecto!', '#8dff8a'] : off <= w ? ['¡Bien!', '#7cd8ff'] : dt < 0 ? ['¡Temprano!', '#ffb02e'] : ['¡Tarde!', '#ff5a3c'];
+    const [word, color] = off <= w * .35 ? [locKey('¡Perfecto!'), '#8dff8a'] : off <= w ? [locKey('¡Bien!'), '#7cd8ff'] : dt < 0 ? [locKey('¡Temprano!'), '#ffb02e'] : [locKey('¡Tarde!'), '#ff5a3c'];
     const at = new THREE.Vector3(0, 2.1, -.2);
-    fxPitch.text(word, color, at, age, { life: 1.4, size: .9, tilt: 0 });
-    if (off > w * .35) fxPitch.text(`${off.toFixed(2).replace('.', ',')} s ${dt < 0 ? 'antes' : 'después'}`, '#ffffff', at.clone().add(new THREE.Vector3(0, -.42, 0)), age - .1, { life: 1.3, size: .45, tilt: 0 });
-    if (!height && age < 1.4) fxPitch.text('Otra altura', '#ffb02e', at.clone().add(new THREE.Vector3(0, -.8, 0)), age - .15, { life: 1.2, size: .45, tilt: 0 });
+    fxPitch.text(loc(word), color, at, age, { life: 1.4, size: .9, tilt: 0 });
+    if (off > w * .35) fxPitch.text(loc(dt < 0 ? locKey('{s} s antes') : locKey('{s} s después'), { s: formatNumber(off, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }), '#ffffff', at.clone().add(new THREE.Vector3(0, -.42, 0)), age - .1, { life: 1.3, size: .45, tilt: 0 });
+    if (!height && age < 1.4) fxPitch.text(loc('Otra altura'), '#ffb02e', at.clone().add(new THREE.Vector3(0, -.8, 0)), age - .15, { life: 1.2, size: .45, tilt: 0 });
     if (age > 1.6) feedback = null;
   }
 

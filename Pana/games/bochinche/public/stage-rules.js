@@ -2,7 +2,7 @@
 export const ARTIFACT_UNIT = 30;
 const platform = (id, x, top, width, kind = 'platform') => ({id, x:x*30, y:top*30-12, width:width*30, height:24, kind});
 export const PANA_STAGES = ['salto-angel','catatumbo'].map(id => ({
-  id, displayName:id==='salto-angel'?'Salto Ángel':'Catatumbo',
+  id, displayName:id==='salto-angel'?'Salto Ángel':'Catatumbo', // i18n-ignore: place name
   platforms:[platform('main',0,0,id==='salto-angel'?42:46,'ground'),
     platform('left',id==='salto-angel'?-11:-13,7.5,10),
     platform('right',id==='salto-angel'?11:13,7.5,10),
@@ -11,7 +11,7 @@ export const PANA_STAGES = ['salto-angel','catatumbo'].map(id => ({
   spawns:[{x:-360,y:0},{x:360,y:0}],
   blastZone:{left:-1800,right:1800,bottom:id==='salto-angel'?-1200:-780,top:1620},
 }));
-PANA_STAGES.push({id:'los-roques',displayName:'Los Roques',
+PANA_STAGES.push({id:'los-roques',displayName:'Los Roques', // i18n-ignore: place name
   platforms:[platform('main',-15,0,38,'ground'),platform('muelle',24,0,24,'ground'),
     platform('faro-balcon',-28,10,10),platform('faro-tope',-28,19,6),
     platform('terraza',-11,7.5,10),platform('enramada',23,7,10),

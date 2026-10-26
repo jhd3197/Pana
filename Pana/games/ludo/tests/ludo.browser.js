@@ -73,7 +73,7 @@ try{
   await a.screenshot({path:'art/ludo/desktop-starter-lift.png'});
   await a.waitForFunction(()=>ludoDebug.room.state.phase==='playing',null,{timeout:60000});await sync(a,b);
   const opened=await a.evaluate(()=>ludoDebug.room.state);
-  assert.equal(opened.turn,opened.starter.order[0]);assert.match(opened.event,/Empieza/);
+  assert.equal(opened.turn,opened.starter.order[0]);assert.match(JSON.stringify(opened.event),/Empieza/);
   assert.equal(await b.evaluate(()=>ludoDebug.world.starter.active),false,'the cachos leave the table');
   // A guest's forced move is performed by the host, without a second click.
   await a.evaluate(()=>{

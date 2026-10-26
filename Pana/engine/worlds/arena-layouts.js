@@ -1,31 +1,34 @@
 // Shared, renderer-free map definitions. Server and browser read the same cover.
+// i18n-ignore-file: map names are place names; descriptions are locKey() text,
+// translated where they are shown.
 import { propDefinition } from '../models/props/plaza-definitions.js';
+import { locKey } from '../i18n.js';
 
 export const ARENAS = [
-  { id: 'plaza', name: 'Plaza Pana', description: 'La plaza de siempre, entre puestos y panas.' },
-  { id: 'puerto', name: 'Puerto Coco', description: 'Carga del muelle, callejones y brisa del mar.' },
-  { id: 'hato', name: 'Hato del Sol', description: 'Pacas de heno, corrales y un molino llanero.' },
-  { id: 'ruinas', name: 'Ruinas del Mango', description: 'Muros de piedra y caminos entre la selva.' },
+  { id: 'plaza', name: 'Plaza Pana', description: locKey('La plaza de siempre, entre puestos y panas.') },
+  { id: 'puerto', name: 'Puerto Coco', description: locKey('Carga del muelle, callejones y brisa del mar.') },
+  { id: 'hato', name: 'Hato del Sol', description: locKey('Pacas de heno, corrales y un molino llanero.') },
+  { id: 'ruinas', name: 'Ruinas del Mango', description: locKey('Muros de piedra y caminos entre la selva.') },
 ];
 export const validArena = id => ARENAS.some(map => map.id === id);
 export const arenaInfo = id => ARENAS.find(map => map.id === id) || ARENAS[0];
 // Landmark patios are table settings, not collision arenas for action games.
 export const TABLE_ARENAS = [...ARENAS,
-  {id:'guipuzcoana',name:'Casa Guipuzcoana',description:'La mesa en el patio, entre galerías de madera y brisa del puerto.'},
-  {id:'san-carlos',name:'Fuerte San Carlos',description:'Una partida en el castillo, con el Caribe al pie de la montaña.'},
+  {id:'guipuzcoana',name:'Casa Guipuzcoana',description:locKey('La mesa en el patio, entre galerías de madera y brisa del puerto.')},
+  {id:'san-carlos',name:'Fuerte San Carlos',description:locKey('Una partida en el castillo, con el Caribe al pie de la montaña.')},
 ];
 export const validTableArena = id => TABLE_ARENAS.some(map=>map.id===id);
 // Pepazo's own maps: the shared arenas plus the container yard and the night
 // field, which have no hunt or table layout, so they never join `ARENAS`.
 export const PAINT_ARENAS = [...ARENAS,
-  { id: 'muelle', name: 'Muelle de La Guaira', description: 'Contenedores apilados, la grúa del puerto y la calle colonial frente al mar.' },
-  { id: 'noche', name: 'Cancha de Noche', description: 'Reflectores rojos, luz morada y pintura que brilla en la oscuridad.' },
+  { id: 'muelle', name: 'Muelle de La Guaira', description: locKey('Contenedores apilados, la grúa del puerto y la calle colonial frente al mar.') },
+  { id: 'noche', name: 'Cancha de Noche', description: locKey('Reflectores rojos, luz morada y pintura que brilla en la oscuridad.') },
 ];
 export const validPaintArena = id => PAINT_ARENAS.some(map => map.id === id);
 export const paintArenaInfo = id => PAINT_ARENAS.find(map => map.id === id) || PAINT_ARENAS[0];
 // Court games (Bolas Criollas) also play beside the stadium straight.
 export const COURT_ARENAS = [...ARENAS,
-  { id: 'estadio', name: 'Estadio Pana', description: 'Frente a la tribuna, donde pasa la carrera de Carreritas.' },
+  { id: 'estadio', name: 'Estadio Pana', description: locKey('Frente a la tribuna, donde pasa la carrera de Carreritas.') },
 ];
 export const validCourtArena = id => COURT_ARENAS.some(map => map.id === id);
 export const courtArenaInfo = id => COURT_ARENAS.find(map => map.id === id) || COURT_ARENAS[0];

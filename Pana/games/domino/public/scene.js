@@ -8,6 +8,9 @@ import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { createDominoTable, createDominoChair, createDominoTile } from './table-model.js';
 import { chainLayout } from './tiles.js';
 import { deck, legalEnds } from './rules.js';
+import { loc } from '/engine/i18n.js';
+
+const seatNote = (label, bot) => bot ? loc('{label} · bot', { label }) : label;
 
 const Y = 1.46, UP = new THREE.Vector3(0, 1, 0);
 const BOT_LOOKS = [
@@ -18,7 +21,7 @@ const BOT_LOOKS = [
 ];
 const nextFrame = () => new Promise(requestAnimationFrame);
 export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLoading = () => {} } = {}) {
-  onLoading('Abriendo la plaza…');
+  onLoading(loc('Abriendo la plaza…'));
   const stage = createTableWorld(canvas, { fit: 'window', exposure: 1.12, background: '#e5cd9f', fog: [28, 65], sky: false, fov: 38, plazaScale: .72,
     hemi: ['#e4f1ff', '#a4815a', 2.2], sun: { color: '#ffe4b1', intensity: 3.5, position: [-8, 16, 9], box: 12, far: 50, bias: -.00015 } });
   const { renderer, scene, camera, plaza } = stage; stage.sun.shadow.radius = 3;
@@ -91,7 +94,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
       renderer.render(scene, camera); await nextFrame();
     }
   }
-  onLoading('Sentando a tus panas…');
+  onLoading(loc('Sentando a tus panas…'));
   await syncCharacters(BOT_LOOKS.map((_, seat) => ({ seat, id: null })));
   function update(stateValue, seat, chosen = null) {
     if (disposed) return;
@@ -140,8 +143,8 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
       const label = labels[p.seat]; label.hidden = p.seat === seat && state.phase === 'playing'; label.replaceChildren();
       label.classList.toggle('active', state.phase === 'playing' && state.turn === p.seat); label.classList.toggle('partner', groupOf(state,p.seat) === groupOf(state,ownSeat));
       const title = document.createElement('strong'), note = document.createElement('span');
-      title.textContent = p.seat === seat ? `${p.name} · tú` : p.name;
-      note.textContent = state.phase === 'playing' && state.turn === p.seat ? p.seat === seat ? '¡Te toca!' : 'Pensando…' : `${p.seat === seat ? 'Tus fichas' : groupOf(state,p.seat) === groupOf(state,ownSeat) ? (seatCount===6?'Tu equipo':'Tu pareja') : 'Rival'}${p.id === null ? ' · bot' : ''}`;
+      title.translate = false; title.textContent = p.seat === seat ? loc('{name} · tú', { name: p.name }) : p.name;
+      note.textContent = state.phase === 'playing' && state.turn === p.seat ? p.seat === seat ? loc('¡Te toca!') : loc('Pensando…') : seatNote(p.seat === seat ? loc('Tus fichas') : groupOf(state,p.seat) === groupOf(state,ownSeat) ? (seatCount===6?loc('Tu equipo'):loc('Tu pareja')) : loc('Rival'), p.id === null);
       label.append(title, note);
     }
     for (const tip of tips) {
@@ -149,7 +152,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
       if (!state.chain.length) continue;
       const piece = state.chain[tip.index ? state.chain.length - 1 : 0];
       tip.element.textContent = `${tip.index ? 'B' : 'A'} · ${tip.index ? piece.b : piece.a}`;
-      tip.element.setAttribute('aria-label', `Colocar en la punta ${tip.index ? 'B' : 'A'}`);
+      tip.element.setAttribute('aria-label', loc('Colocar en la punta {end}', { end: tip.index ? 'B' : 'A' }));
       const tile = state.players[ownSeat].hand.find(t => t.id === selected);
       tip.element.disabled = !selected || !legalEnds(state, tile).includes(tip.index ? 'right' : 'left');
       tip.position.copy(tiles.get(piece.id).target); tip.position.y += .18;

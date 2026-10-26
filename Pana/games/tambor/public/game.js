@@ -10,12 +10,13 @@ import { roomCode, bootGame } from '/engine/game-shell.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { TamborRoom } from './network.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
-import { rankPlayers } from './rules.js';
+import { rankPlayers, eventShown, eventSpoken } from './rules.js';
 import { songFor, secondsPerBeat } from './songs.js';
 import { Judge } from './judge.js';
 import { createTambor, SPOKEN } from './beat.js';
 import { createHud } from './hud.js';
 import { createCalibration, loadLatency } from './calibrate.js';
+import { loc } from '/engine/i18n.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
@@ -27,19 +28,21 @@ const room = new TamborRoom({ code, name: loadName(), avatar: loadAvatar(), onSt
   onNotice: (text) => { $('event').textContent = text; },
   onStatus(text, failed = false) { $('connection').textContent = text; $('practice').hidden = !failed; render(room.state); },
 });
-const roomOptions = createRoomOptions($('room-options'), { title: 'La Rueda de Tambor', fields: ROOM_OPTIONS,
+const roomOptions = createRoomOptions($('room-options'), { title: 'La Rueda de Tambor', fields: ROOM_OPTIONS, // i18n-ignore: game name
+ 
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ pad: { keys: { left: ['ArrowLeft', 'Mano izquierda'], x: ['ArrowLeft', 'Mano izquierda'], right: ['ArrowRight', 'Mano derecha'], b: ['ArrowRight', 'Mano derecha'], up: ['ArrowUp', 'Bailar ↑'], y: ['ArrowUp', 'Bailar ↑'], down: ['ArrowDown', 'Bailar ↓'], a: ['Space', 'Palo, charrasca y caracol; aplaudir'], rb: ['Space', 'Palo, charrasca y caracol; aplaudir'], lb: ['KeyQ', '¡Quiero entrar!'], rt: ['KeyE', 'Relevo'] } }, title: 'La Rueda de Tambor · Pana', sound, orientation: 'libre',
-  note: () => room.members.size > 1 ? 'La rueda sigue sonando mientras estás en el menú.' : 'La rueda está en pausa.',
-  controls: [['← → (o F J)', 'Mano: un cuero con cada mano'], ['Espacio', 'Palo, charrasca y caracol (mantén en las notas largas)'],
-    ['← → ↑ ↓ y Espacio', 'Bailar lo que canta el MCP'], ['Espacio', 'En la gente: aplaudir en el golpe'], ['1 – 4', 'Echar un dicho'],
-    ['Q', '¡Quiero entrar! (una vez por canción)'], ['E', 'Relevo: entrar al centro en el ¡Golpe!'], ['M', 'Activar o silenciar el sonido']],
+const menu = createGameMenu({ pad: { keys: { left: ['ArrowLeft', loc('Mano izquierda')], x: ['ArrowLeft', loc('Mano izquierda')], right: ['ArrowRight', loc('Mano derecha')], b: ['ArrowRight', loc('Mano derecha')], up: ['ArrowUp', loc('Bailar ↑')], y: ['ArrowUp', loc('Bailar ↑')], down: ['ArrowDown', loc('Bailar ↓')], a: ['Space', loc('Palo, charrasca y caracol; aplaudir')], rb: ['Space', loc('Palo, charrasca y caracol; aplaudir')], lb: ['KeyQ', loc('¡Quiero entrar!')], rt: ['KeyE', loc('Relevo')] } }, title: 'La Rueda de Tambor · Pana', sound, orientation: 'libre', // i18n-ignore: game name
+ 
+  note: () => room.members.size > 1 ? loc('La rueda sigue sonando mientras estás en el menú.') : loc('La rueda está en pausa.'),
+  controls: [[loc('← → (o F J)'), loc('Mano: un cuero con cada mano')], [loc('Espacio'), loc('Palo, charrasca y caracol (mantén en las notas largas)')],
+    [loc('← → ↑ ↓ y Espacio'), loc('Bailar lo que canta el MCP')], [loc('Espacio'), loc('En la gente: aplaudir en el golpe')], ['1 – 4', loc('Echar un dicho')],
+    ['Q', loc('¡Quiero entrar! (una vez por canción)')], ['E', loc('Relevo: entrar al centro en el ¡Golpe!')], ['M', loc('Activar o silenciar el sonido')]],
   tips: [
-    'Cada quien oye la música en su compu y se juzga contra ella: el retraso de Discord no importa. Ajusta el golpe una vez en la sala.',
-    'Los tamboreros llenan el Sabor. Con mucho Sabor el MCP canta con calma; si el tambor se cae, los llamados vienen más rápido y más apretados.',
-    'Los bailadores siguen al MCP: ¡Cadera!, ¡Vuelta!, ¡Pañuelo!, ¡Pégate!, ¡Abajo! y ¡Golpe!. Tres fallas y te saca de la rueda.',
-    'En la gente aplaude en el golpe: la Bulla le da más tiempo a los que bailan.',
-    'Al final de cada canción los tamboreros y la gente cambian de lugar. Todos bailan.',
+    loc('Cada quien oye la música en su compu y se juzga contra ella: el retraso de Discord no importa. Ajusta el golpe una vez en la sala.'),
+    loc('Los tamboreros llenan el Sabor. Con mucho Sabor el MCP canta con calma; si el tambor se cae, los llamados vienen más rápido y más apretados.'),
+    loc('Los bailadores siguen al MCP: ¡Cadera!, ¡Vuelta!, ¡Pañuelo!, ¡Pégate!, ¡Abajo! y ¡Golpe!. Tres fallas y te saca de la rueda.'),
+    loc('En la gente aplaude en el golpe: la Bulla le da más tiempo a los que bailan.'),
+    loc('Al final de cada canción los tamboreros y la gente cambian de lugar. Todos bailan.'),
   ],
   invite: () => room.offline ? null : inviteUrl(code),
 });
@@ -50,7 +53,7 @@ $('practice').onclick = () => room.practice();
 const hud = createHud($, { onDicho: (i) => room.action('dicho', { i }) });
 const calibration = createCalibration($, { sound, voices: tambor.voices, onDone: (ms) => { latency = ms; showLatency(); } });
 $('calibrate').onclick = () => calibration.open();
-function showLatency() { $('latency').textContent = latency ? `Ajuste: ${latency > 0 ? '+' : ''}${latency} ms` : 'Sin ajustar'; }
+function showLatency() { $('latency').textContent = latency ? loc('Ajuste: {n} ms', { n: `${latency > 0 ? '+' : ''}${latency}` }) : loc('Sin ajustar'); }
 showLatency();
 
 // My song time in seconds; `raw` keeps the latency in (for visuals in step with the sound).
@@ -121,8 +124,8 @@ function react(state) {
   for (const e of events.filter(e => e.n > seenEvent)) {
     seenEvent = e.n;
     world?.event(e);
-    if (SHOUTED.has(e.kind) || (e.kind === 'miss' && e.id === room.id)) hud.shout(e.text);
-    if (SPOKEN_EVENTS.has(e.kind)) tambor.say(e.text, { urgent: e.kind === 'kick' || e.kind === 'enter' });
+    if (SHOUTED.has(e.kind) || (e.kind === 'miss' && e.id === room.id)) hud.shout(eventShown(e));
+    if (SPOKEN_EVENTS.has(e.kind)) tambor.say(eventSpoken(e), { urgent: e.kind === 'kick' || e.kind === 'enter' });
     if (e.kind === 'kick') sound.bonk?.(.8);
     if (e.kind === 'final') sound.pickup?.(6);
   }
@@ -141,22 +144,22 @@ function render(state) {
   if (!lobby && roomOptions.isOpen) roomOptions.close();
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby || ended;
   $('start').disabled = !world || !room.connected || !room.isHost;
-  $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Que suene el tambor!' : 'Espera al anfitrión';
+  $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? loc('¡Que suene el tambor!') : loc('Espera al anfitrión');
   judge.sync(state, room.id);
   tambor.follow(state, room.id, () => room.clock());
   react(state);
   const ranked = rankPlayers(state.players, state.options.mode), relevo = state.options.mode === 'relevo';
-  const rows = ranked.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? `${p.name} · tú` : p.name, detail: p.bot ? 'Bot' : 'Pana',
-    end: relevo && !lobby ? `${Math.round(p.stats.danceBeats)} tiempos` : Math.round(p.score), score: !relevo || lobby, me: p.id === room.id }));
+  const rows = ranked.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? loc('{name} · tú', { name: p.name }) : p.name, detail: p.bot ? loc('Bot') : loc('Pana'),
+    end: relevo && !lobby ? loc('{n} tiempos', { n: Math.round(p.stats.danceBeats) }) : Math.round(p.score), score: !relevo || lobby, me: p.id === room.id }));
   fillRoster($('roster'), rows);
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
   if (ended) {
     const final = [...(state.events || [])].reverse().find(e => e.kind === 'final');
-    $('result-title').textContent = final?.text ?? '¡Se acabó la rueda!';
+    $('result-title').textContent = final ? eventShown(final) : loc('¡Se acabó la rueda!');
     $('titles').replaceChildren(...(state.titles || []).map(t => {
       const li = document.createElement('li'), b = document.createElement('b'), span = document.createElement('span');
       const who = state.players.find(p => p.id === t.id);
-      b.textContent = `${t.title}: ${who?.name ?? '—'}`; span.textContent = t.detail; li.append(b, span); return li;
+      b.textContent = loc('{title}: {name}', { title: loc(t.title), name: who?.name ?? '—' }); span.textContent = loc(t.detail); li.append(b, span); return li;
     }));
     fillRoster($('result-roster'), rows);
   }

@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 // The river world (Curiara, Lancha): terrain and water built from river.js,
 // plus lights and sky.
 // Scenery dressing lives in landscape.js; this file owns only the ground truth

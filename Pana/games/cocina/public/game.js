@@ -13,11 +13,12 @@ import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
-import { Kitchen, RECIPES, STATIONS, recipe, nearestStation } from './rules.js';
+import { Kitchen, RECIPES, STATIONS, recipe, nearestStation, say } from './rules.js';
 import { KitchenRoom } from './network.js';
 import { elapsedClock } from '/engine/live-room.js';
 import { createKitchenScene, mealModel } from './scene.js';
 import { createToast } from '/engine/hud.js';
+import { loc, locn } from '/engine/i18n.js';
 
 const $ = id => document.getElementById(id), show = (id, v) => $(id).classList.toggle('hidden', !v);
 const notify = createToast($('toast'), { ms: 3100 });
@@ -58,14 +59,14 @@ for (const r of RECIPES) for (const stage of ['raw', 'prepared', 'cooked']) {
 artRenderer.dispose();
 for (const r of RECIPES) { const img = document.createElement('img'); img.src = previews.get(`${r.id}:cooked`); img.alt = r.name; $('tasting').append(img); }
 const menu = createGameMenu({
-  pad: { move: 'wasd', keys: { a: ['KeyE', 'Recoger, dejar o apagar'], x: ['KeyE', 'Recoger, dejar o apagar'], b: ['ShiftLeft', 'Un empujoncito'], rb: ['ShiftLeft', 'Un empujoncito'] } },
+  pad: { move: 'wasd', keys: { a: ['KeyE', loc('Recoger, dejar o apagar')], x: ['KeyE', loc('Recoger, dejar o apagar')], b: ['ShiftLeft', loc('Un empujoncito')], rb: ['ShiftLeft', loc('Un empujoncito')] } },
   orientation: 'vertical',
-  title: 'Pana Cocina', heading: '¿Y la sazón?', resumeLabel: 'Volver a cocinar', sound, notify,
-  note: () => room.offline || room.members.size === 1 ? 'Tu turno está pausado.' : 'La cocina sigue para los demás panas.',
-  controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['E / Espacio', 'Recoger, dejar o apagar un fuego'], ['Shift', 'Un empujoncito'], ['M', 'Sonido']],
-  tips: ['Busca un cajón de ingredientes, déjalos en una tabla y recoge la preparación. Llévala al fogón; cuando esté verde, recoge el plato y sírvelo en el mostrador.',
-    'La mesa «Para tu pana» permite pasar platos.'],
-  actions: [{ id: 'offline', label: 'Abrir cocina local', kind: 'link', visible: () => canGoOffline, run: () => room.practice() }],
+  title: 'Pana Cocina', heading: loc('¿Y la sazón?'), resumeLabel: loc('Volver a cocinar'), // i18n-ignore: game name sound, notify,
+  note: () => room.offline || room.members.size === 1 ? loc('Tu turno está pausado.') : loc('La cocina sigue para los demás panas.'),
+  controls: [['W A S D / ↑ ← ↓ →', loc('Moverte')], [loc('E / Espacio'), loc('Recoger, dejar o apagar un fuego')], ['Shift', loc('Un empujoncito')], ['M', loc('Sonido')]],
+  tips: [loc('Busca un cajón de ingredientes, déjalos en una tabla y recoge la preparación. Llévala al fogón; cuando esté verde, recoge el plato y sírvelo en el mostrador.'),
+    loc('La mesa «Para tu pana» permite pasar platos.')],
+  actions: [{ id: 'offline', label: loc('Abrir cocina local'), kind: 'link', visible: () => canGoOffline, run: () => room.practice() }],
   invite: () => inviteUrl(code),
   onOpen() { paused = true; keys.clear(); touch.clear(); },
   onClose() { paused = false; },
@@ -73,10 +74,11 @@ const menu = createGameMenu({
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
 $('menu').querySelector('kbd')?.classList.add('pk-kbd');
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
-const room = new KitchenRoom({ code, name, avatar, onState: receive, onNotice: notify, onStatus(text, failed = false) {
+const room = new KitchenRoom({ code, name, avatar, onState: receive, onNotice: text => notify(say(text)), onStatus(text, failed = false) {
   $('connection').textContent = text; show('practice', failed); canGoOffline = failed; menu.update(); if (failed) notify(text); updateUI();
 } });
-const optionsUI = createRoomOptions($('room-options'), { title: 'Pana Cocina', fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
+const optionsUI = createRoomOptions($('room-options'), { title: 'Pana Cocina', fields: FIELDS, // i18n-ignore: game name
+  change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
 // A guest draws its own cook where it predicts it (KitchenRoom's predict), not a round trip behind.
 const me = () => room.predicted ?? state.players.find(p => p.id === room.id);
 const colors = ['#eb574b', '#4789e3', '#3aae77', '#e4b52c', '#a974d5', '#e584a9', '#57bcc0', '#e68a3c'];
@@ -84,7 +86,7 @@ function actorLabel(p, color) {
   const mat = canvasMat(256, 96, ctx => {
     ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(5, 5, 246, 74, 18); ctx.fill();
     ctx.beginPath(); ctx.moveTo(113, 78); ctx.lineTo(128, 94); ctx.lineTo(143, 78); ctx.fill();
-    ctx.fillStyle = '#fff9e7'; ctx.font = '900 35px Nunito'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.id === room.id ? `${p.name} · tú` : p.name, 128, 43, 228);
+    ctx.fillStyle = '#fff9e7'; ctx.font = '900 35px Nunito'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.id === room.id ? loc('{name} · tú', { name: p.name }) : p.name, 128, 43, 228);
   });
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: mat.map, depthTest: false })); mat.dispose(); sprite.scale.set(2, 0.75, 1); sprite.position.y = 3.55; return sprite;
 }
@@ -114,15 +116,15 @@ function receive(next) {
   const event = state.events.at(-1);
   if (event && event.id !== lastEvent) {
     lastEvent = event.id;
-    if (event.kind === 'serve') { shout(event.text, { tone: 'teal', ms: 1500 }); sound.tone(660, 0, 0.1, 'sine', 0.1); sound.tone(880, 0.11, 0.18, 'sine', 0.1); }
-    else notify(event.text);
-    if (event.kind === 'start') shout('¡A cocinar!', { tone: 'yellow', ms: 1500 });
+    if (event.kind === 'serve') { shout(say(event), { tone: 'teal', ms: 1500 }); sound.tone(660, 0, 0.1, 'sine', 0.1); sound.tone(880, 0.11, 0.18, 'sine', 0.1); }
+    else notify(say(event));
+    if (event.kind === 'start') shout(loc('¡A cocinar!'), { tone: 'yellow', ms: 1500 });
     if (event.kind === 'fire') { shout(burnShout(state.stations.find(s => s.fire && s.item)?.item.recipe)); sound.tone(220, 0, 0.3, 'sawtooth', 0.06); }
   }
   updateUI();
 }
-const burnShout = id => id === 'tequenos' ? '¡Se queman los tequeños!' : id ? `¡Se quema la ${recipe(id).name.toLowerCase()}!` : '¡Fuego en el fogón!';
-const carrying = { raw: r => `Ingredientes de ${r.toLowerCase()}`, prepared: r => `${r} al fogón`, cooked: r => `${r} al mostrador`, burnt: r => `${r} a la basura` };
+const burnShout = id => id === 'tequenos' ? loc('¡Se queman los tequeños!') : id ? loc('¡Se quema la {dish}!', { dish: recipe(id).name.toLowerCase() }) : loc('¡Fuego en el fogón!');
+const carrying = { raw: r => loc('Ingredientes de {dish}', { dish: r.toLowerCase() }), prepared: r => loc('{dish} al fogón', { dish: r }), cooked: r => loc('{dish} al mostrador', { dish: r }), burnt: r => loc('{dish} a la basura', { dish: r }) };
 const tone = { raw: 'yellow', prepared: 'yellow', cooked: 'teal', burnt: 'coral' };
 function chip(i, p) {
   const el = document.createElement('span'); el.className = 'chef-chip'; el.setAttribute('aria-hidden', 'true');
@@ -135,17 +137,17 @@ function updateUI() {
   const playing = state.phase === 'playing', player = me();
   document.body.classList.toggle('is-playing', playing);
   show('lobby', state.phase === 'lobby'); show('welcome-label', state.phase === 'lobby'); show('hud', playing); show('results', state.phase === 'results');
-  $('start').disabled = !room.connected || !room.isHost; $('start').textContent = !room.connected ? 'Entrando a la cocina…' : room.isHost ? '¡A cocinar! →' : 'El anfitrión abre la cocina';
+  $('start').disabled = !room.connected || !room.isHost; $('start').textContent = !room.connected ? loc('Entrando a la cocina…') : room.isHost ? loc('¡A cocinar! →') : loc('El anfitrión abre la cocina');
   show('lobby-status', !room.connected);
-  $('room-code').textContent = room.offline ? '● Cocina local' : `● Sala ${code}`;
+  $('room-code').textContent = room.offline ? `● ${loc('Cocina local')}` : `● ${loc('Sala {code}', { code })}`;
   const lk = state.players.map(p => `${p.id}:${p.name}`).join('|');
   if ($('lobby-names').dataset.key !== lk) {
     $('lobby-names').dataset.key = lk; const people = state.players.filter(p => !p.bot);
     $('lobby-avatars').replaceChildren(...people.slice(0, 4).map(p => chip(state.players.indexOf(p), p)));
-    $('lobby-names').textContent = people.map(p => p.id === room.id ? `${p.name} (tú)` : p.name).join(', ');
+    $('lobby-names').textContent = people.map(p => p.id === room.id ? loc('{name} (tú)', { name: p.name }) : p.name).join(', ');
   }
-  $('again').disabled = !room.connected || !room.isHost; $('again').textContent = room.isHost ? 'Otro turno →' : 'Esperando al anfitrión…';
-  $('shift-minutes').textContent = `${(state.options?.duration || 180) / 60} min`;
+  $('again').disabled = !room.connected || !room.isHost; $('again').textContent = room.isHost ? loc('Otro turno →') : loc('Esperando al anfitrión…');
+  $('shift-minutes').textContent = loc('{n} min', { n: (state.options?.duration || 180) / 60 });
   $('timer').textContent = `${String(Math.floor(Math.ceil(state.remaining) / 60)).padStart(2, '0')}:${String(Math.ceil(state.remaining) % 60).padStart(2, '0')}`;
   $('timer').parentElement.classList.toggle('urgent', state.remaining < 30);
   $('score').textContent = state.score; $('stars').textContent = '★ '.repeat(stars(state.score)) + '☆ '.repeat(3 - stars(state.score));
@@ -158,12 +160,12 @@ function updateUI() {
       const h = document.createElement('h2'); h.textContent = r.name;
       const n = document.createElement('span'); n.className = 'order-n'; n.textContent = `#${order.id}`;
       const img = document.createElement('img'); img.src = previews.get(`${r.id}:cooked`); img.alt = '';
-      const desc = document.createElement('small'); desc.textContent = r.ingredients.toLowerCase().replace(' + ', ' · ');
+      const desc = document.createElement('small'); desc.textContent = loc(r.ingredients).toLowerCase().replace(' + ', ' · ');
       const bar = document.createElement('div'); bar.className = 'meter'; bar.innerHTML = '<i></i>'; el.append(h, n, img, desc, bar); $('orders').append(el);
     }
   }
   for (const order of state.orders) {
-    const el = $('orders').querySelector(`[data-order="${order.id}"]`); const left = Math.max(0, order.remaining / order.total); el.querySelector('i').style.width = `${left * 100}%`; el.classList.toggle('urgent', state.options.impatient && order.remaining < 18); el.classList.toggle('half', state.options.impatient && left < 0.5); el.setAttribute('aria-label', `${recipe(order.recipe).name}, ${state.options.impatient ? `${Math.ceil(order.remaining)} segundos` : 'sin prisa'}`);
+    const el = $('orders').querySelector(`[data-order="${order.id}"]`); const left = Math.max(0, order.remaining / order.total); el.querySelector('i').style.width = `${left * 100}%`; el.classList.toggle('urgent', state.options.impatient && order.remaining < 18); el.classList.toggle('half', state.options.impatient && left < 0.5); el.setAttribute('aria-label', state.options.impatient ? loc('{dish}, {n} segundos', { dish: recipe(order.recipe).name, n: Math.ceil(order.remaining) }) : loc('{dish}, sin prisa', { dish: recipe(order.recipe).name }));
   }
   const tk = state.players.map(p => `${p.id}:${p.name}:${p.held ? `${p.held.recipe}:${p.held.stage}` : ''}`).join('|');
   if (tk !== teamKey) {
@@ -171,26 +173,26 @@ function updateUI() {
     state.players.forEach((p, i) => {
       const el = document.createElement('li'); el.className = `pk-row${p.id === room.id ? ' is-me' : ''}`;
       const who = document.createElement('div'), b = document.createElement('b'), doing = document.createElement('span');
-      b.textContent = `${p.name}${p.id === room.id ? ' · tú' : p.bot ? ' · ayudante' : ''}`;
-      doing.textContent = p.held ? carrying[p.held.stage](recipe(p.held.recipe).name) : 'Manos libres'; doing.className = `doing ${p.held ? tone[p.held.stage] : ''}`;
+      b.translate = false; b.textContent = p.id === room.id ? loc('{name} · tú', { name: p.name }) : p.bot ? loc('{name} · ayudante', { name: p.name }) : p.name;
+      doing.textContent = p.held ? carrying[p.held.stage](recipe(p.held.recipe).name) : loc('Manos libres'); doing.className = `doing ${p.held ? tone[p.held.stage] : ''}`;
       who.append(b, doing); el.append(chip(i, p), who); $('team').append(el);
     });
   }
   const hk = player?.held ? `${player.held.recipe}:${player.held.stage}` : 'empty';
   if (hk !== heldKey) {
     heldKey = hk; $('held-image').src = previews.get(hk) || ''; $('held-image').style.display = player?.held ? '' : 'none';
-    $('held-name').textContent = player?.held ? recipe(player.held.recipe).name : 'Manos libres';
-    $('held-next').textContent = !player?.held ? 'Busca ingredientes para un pedido.' : ({ raw: 'Llévalos a una tabla de preparar.', prepared: 'Al fogón. ¡Que agarre color!', cooked: '¡Al mostrador para servir!', burnt: 'Llévalo al cubo de basura.' })[player.held.stage];
+    $('held-name').textContent = player?.held ? recipe(player.held.recipe).name : loc('Manos libres');
+    $('held-next').textContent = !player?.held ? loc('Busca ingredientes para un pedido.') : ({ raw: loc('Llévalos a una tabla de preparar.'), prepared: loc('Al fogón. ¡Que agarre color!'), cooked: loc('¡Al mostrador para servir!'), burnt: loc('Llévalo al cubo de basura.') })[player.held.stage];
   }
   const near = player && nearestStation(player), station = near && state.stations.find(s => s.id === near.id);
-  $('action-label').textContent = station?.fire ? 'Apagar fuego' : near ? station?.item ? station.item.stage === 'cooked' || near.type === 'prep' && station.item.stage === 'prepared' ? 'Recoger plato' : 'Revisar preparación' : near.label : 'Acércate a una estación';
+  $('action-label').textContent = station?.fire ? loc('Apagar fuego') : near ? station?.item ? station.item.stage === 'cooked' || near.type === 'prep' && station.item.stage === 'prepared' ? loc('Recoger plato') : loc('Revisar preparación') : loc(near.label) : loc('Acércate a una estación');
   $('action').disabled = !near || !room.connected;
   if (state.phase === 'results') {
     $('result-stars').textContent = '★'.repeat(stars(state.score)) + '☆'.repeat(3 - stars(state.score));
-    $('result-copy').textContent = state.served ? `La plaza se fue contenta. ${state.burnt ? `Se quemaron ${state.burnt} platos; en el próximo turno salen mejor.` : '¡Y ningún plato quemado!'} Estrellas: 350 / 850 / 1500 puntos.` : 'El secreto es recoger, preparar, cocinar y servir. ¡Vamos otra vez!';
+    $('result-copy').textContent = state.served ? [loc('La plaza se fue contenta.'), state.burnt ? locn(state.burnt, 'Se quemó {n} plato; en el próximo turno sale mejor.', 'Se quemaron {n} platos; en el próximo turno salen mejor.') : loc('¡Y ningún plato quemado!'), loc('Estrellas: 350 / 850 / 1500 puntos.')].join(' ') : loc('El secreto es recoger, preparar, cocinar y servir. ¡Vamos otra vez!');
     $('result-score').textContent = state.score; $('result-served').textContent = state.served; $('result-missed').textContent = state.missed;
     fillRoster($('result-team'), state.players.map((p, i) => ({
-      lead: chip(i, p), name: `${p.name}${p.bot ? ' (ayudante)' : ''}`, end: `${p.deliveries} platos servidos`, me: p.id === room.id })));
+      lead: chip(i, p), name: p.bot ? loc('{name} (ayudante)', { name: p.name }) : p.name, end: locn(p.deliveries, '{n} plato servido', '{n} platos servidos'), me: p.id === room.id })));
   }
 }
 function interact() { if (!paused && state.phase === 'playing') room.action('interact'); }

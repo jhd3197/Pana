@@ -21,7 +21,11 @@ import { HuntRoom } from './network.js';
 import { elapsedClock } from '/engine/live-room.js';
 import { createLookControls } from '/engine/play/first-person.js';
 import { createToast } from '/engine/hud.js';
+import { loc, locn } from '/engine/i18n.js';
 
+// Disguise names come from the shared prop catalog in Spanish; shown translated.
+const PROP_NAMES = { barrel: loc('Barril'), crate: loc('Caja'), cooler: loc('Cava'), planter: loc('Mata'), bench: loc('Banco') };
+const propName = type => PROP_NAMES[type] ?? propDefinition(type)?.label;
 const $ = id => document.getElementById(id), show = (id, visible) => $(id).classList.toggle('hidden', !visible);
 const notify = createToast($('toast'), { ms: 3300 });
 const qs = new URLSearchParams(location.search), DEBUG = qs.has('debug');
@@ -59,9 +63,9 @@ const seekerFace = preview(buildCharacter({ ...avatar, hatColor: '#3d7bf2' }).gr
 $('seeker-face').src = seekerFace;
 for (const [i, def] of PLAZA_PROPS.entries()) {
   const button = document.createElement('button'); button.type = 'button'; button.className = 'pk-slot'; button.dataset.prop = def.id;
-  button.setAttribute('aria-label', `${def.label}, tecla ${i + 1}`); button.setAttribute('aria-pressed', 'false');
+  button.setAttribute('aria-label', loc('{object}, tecla {n}', { object: propName(def.id), n: i + 1 })); button.setAttribute('aria-pressed', 'false');
   const img = document.createElement('img'); img.src = previews.get(def.id); img.alt = '';
-  const label = document.createElement('b'); label.textContent = def.label;
+  const label = document.createElement('b'); label.textContent = propName(def.id);
   const key = document.createElement('kbd'); key.className = 'pk-slot-n'; key.textContent = i + 1;
   button.append(img, label, key); button.onclick = () => transform(def.id); $('prop-list').append(button);
 }
@@ -75,22 +79,22 @@ let portraitKey = '', hintId = 0;
 const keys = new Set(), touch = new Set(), actorRing = new THREE.Mesh(new THREE.RingGeometry(0.82, 0.88, 40), new THREE.MeshBasicMaterial({ color: 0x54e2ca, transparent: true, opacity: 0.8, depthWrite: false }));
 actorRing.rotation.x = -Math.PI / 2; actorRing.position.y = 0.07; scene.add(actorRing);
 const room = new HuntRoom({ code, name, avatar, onState: receive,
-  onStatus(text, failed = false) { $('connection').textContent = text; show('practice', failed); if (failed) notify(text); updateHUD(); }, onNotice: notify });
+  onStatus(text, failed = false) { $('connection').textContent = text; show('practice', failed); if (failed) notify(text); updateHUD(); }, onNotice: text => notify(loc(text)) });
 const optionsUI = createRoomOptions($('room-options'), { title: 'Escondidas', fields: FIELDS, change: options => room.action('configure', { options }), reset() {
   room.action('configure', { options: DEFAULT_OPTIONS }); room.action('map', { mapId: 'plaza' }); $('role-hide').click();
 } });
 const isSeeker = id => state.seekers?.includes(id) ?? id === state.seeker;
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }));
 const menu = createGameMenu({
-  pad: { move: 'wasd', look: 'Mirar', keys: { a: ['KeyE', 'Revisar o copiar un objeto'], rt: ['KeyE', 'Revisar o copiar un objeto'], b: ['KeyQ', 'Volver a pana'], y: ['KeyV', 'Ver tu disfraz'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver la tabla'] } },
+  pad: { move: 'wasd', look: loc('Mirar'), keys: { a: ['KeyE', loc('Revisar o copiar un objeto')], rt: ['KeyE', loc('Revisar o copiar un objeto')], b: ['KeyQ', loc('Volver a pana')], y: ['KeyV', loc('Ver tu disfraz')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } },
   orientation: 'vertical',
-  title: 'Escondidas', heading: 'Un momentico.', resumeLabel: 'Volver al juego', sound, notify,
-  note: () => room.members.size === 1 ? 'La práctica queda en pausa mientras descansas.' : 'La ronda continúa para los demás panas.',
-  controls: [['W A S D / ↑ ← ↓ →', 'Caminar hacia donde miras'], ['Ratón', 'Mirar (haz clic para capturarlo)'], ['Clic / E', 'Buscador: revisar lo que tienes en la mira'], ['Shift', 'Correr'], ['1 2 3 4 5', 'Transformarte'],
-    ['Q', 'Volver a pana'], ['E', 'Escondido: copiar el objeto cercano'], ['V', 'Ver tu disfraz desde atrás'], ['Tab', 'Ver la tabla'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
-  tips: ['Buscador: apunta al objeto sospechoso y haz clic. Si es un pana, lo pillaste a la primera. Si fallas, esperas 1,6 segundos.',
-    'Escondido: pulsa V para ver tu disfraz desde atrás y comprobar que pasas desapercibido.'],
-  options: [{ id: 'view', label: 'Cámara', choices: [['primera', 'Primera persona'], ['tercera', 'Detrás de tu pana']], get: () => view, set: value => { view = value; } }],
+  title: 'Escondidas', heading: loc('Un momentico.'), resumeLabel: loc('Volver al juego'), sound, notify,
+  note: () => room.members.size === 1 ? loc('La práctica queda en pausa mientras descansas.') : loc('La ronda continúa para los demás panas.'),
+  controls: [['W A S D / ↑ ← ↓ →', loc('Caminar hacia donde miras')], [loc('Ratón'), loc('Mirar (haz clic para capturarlo)')], [loc('Clic / E'), loc('Buscador: revisar lo que tienes en la mira')], ['Shift', loc('Correr')], ['1 2 3 4 5', loc('Transformarte')],
+    ['Q', loc('Volver a pana')], ['E', loc('Escondido: copiar el objeto cercano')], ['V', loc('Ver tu disfraz desde atrás')], ['Tab', loc('Ver la tabla')], ['M', loc('Sonido')], ['Esc', loc('Soltar el ratón y abrir el menú')]],
+  tips: [loc('Buscador: apunta al objeto sospechoso y haz clic. Si es un pana, lo pillaste a la primera. Si fallas, esperas 1,6 segundos.'),
+    loc('Escondido: pulsa V para ver tu disfraz desde atrás y comprobar que pasas desapercibido.')],
+  options: [{ id: 'view', label: loc('Cámara'), choices: [['primera', loc('Primera persona')], ['tercera', loc('Detrás de tu pana')]], get: () => view, set: value => { view = value; } }],
   invite: () => inviteUrl(code),
   onOpen() { paused = true; keys.clear(); touch.clear(); drag = null; looking.release(); },
   onClose() { paused = false; },
@@ -132,10 +136,10 @@ function receive(next) {
     previousPhase = state.phase;
   }
   const latest = state.events.at(-1);
-  if (state.hint && isSeeker(room.id) && state.hint.id !== hintId) { hintId = state.hint.id; sound.tone(state.hint.kind === 'whistle' ? 1100 : 300, 0, .3, 'sine', .12); notify(`Pista: se oyen pasos ${state.hint.z < (getMe()?.z || 0) ? 'al norte' : 'al sur'}.`); }
+  if (state.hint && isSeeker(room.id) && state.hint.id !== hintId) { hintId = state.hint.id; sound.tone(state.hint.kind === 'whistle' ? 1100 : 300, 0, .3, 'sine', .12); notify(state.hint.z < (getMe()?.z || 0) ? loc('Pista: se oyen pasos al norte.') : loc('Pista: se oyen pasos al sur.')); }
   if (latest && latest.id !== eventId) {
     for (const e of state.events) if (e.id > eventId && e.found && ['hide', 'hunt', 'results', 'finished'].includes(state.phase)) found(e.found);
-    eventId = latest.id; notify(latest.text);
+    eventId = latest.id; notify(loc(latest.text, latest.vars));
   }
   if (['results', 'finished'].includes(state.phase)) { looking.release(); showBoard(false); }
   updateHUD();
@@ -146,22 +150,24 @@ function updateHUD() {
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   $('hunt-seconds-stat').textContent = `${(state.options?.huntSeconds || RULES.huntSeconds) / 60}:00`;
   $('hide-seconds-stat').textContent = `${state.hideSeconds || RULES.hideSeconds}s`;
-  $('world').setAttribute('aria-label', `${arenaInfo(state.mapId).name}, escenario de Escondidas`);
+  $('world').setAttribute('aria-label', loc('{map}, escenario de Escondidas', { map: arenaInfo(state.mapId).name }));
   $('scene-label').querySelector('b').textContent = arenaInfo(state.mapId).name;
   $('minimap').closest('aside').querySelector('span').textContent = arenaInfo(state.mapId).name;
   const me = getMe(), active = room.connected && ['hide', 'hunt'].includes(state.phase), lobby = state.phase === 'lobby' || !room.connected;
   show('lobby', lobby); show('scene-label', lobby); show('hud', active); document.body.classList.toggle('in-lobby', lobby);
   show('results', room.connected && ['results', 'finished'].includes(state.phase));
   $('start').disabled = !room.connected || !room.isHost;
-  $('start').textContent = !room.connected ? 'Entrando a la sala…' : room.isHost ? '¡A jugar! →' : 'Esperando al anfitrión…';
+  $('start').textContent = !room.connected ? loc('Entrando a la sala…') : room.isHost ? loc('¡A jugar! →') : loc('Esperando al anfitrión…');
   $('role-hide').disabled = $('role-seek').disabled = !room.isHost;
-  $('room-code').textContent = room.offline ? '● Práctica' : `● Sala ${code}`;
-  if (room.connected) $('connection').textContent = room.offline ? 'Práctica con 3 panas de la máquina.'
-    : `Sala ${code} · ${room.members.size} pana${room.members.size === 1 ? '' : 's'} conectado${room.members.size === 1 ? '' : 's'}${room.members.size < 4 ? ' · completamos con bots' : ''}`;
+  $('room-code').textContent = room.offline ? loc('● Práctica') : loc('● Sala {code}', { code });
+  const n = room.members.size;
+  if (room.connected) $('connection').textContent = room.offline ? loc('Práctica con 3 panas de la máquina.')
+    : n < 4 ? locn(n, 'Sala {code} · {n} pana conectado · completamos con bots', 'Sala {code} · {n} panas conectados · completamos con bots', { code })
+    : locn(n, 'Sala {code} · {n} pana conectado', 'Sala {code} · {n} panas conectados', { code });
   const rosterKey = [...room.members.values()].map(p => p.name).join('|');
   if ($('roster').dataset.key !== rosterKey) {
     $('roster').dataset.key = rosterKey; $('roster').replaceChildren();
-    for (const p of room.members.values()) { const el = document.createElement('span'); el.textContent = p.name + (p.id === room.id ? ' (tú)' : ''); $('roster').append(el); }
+    for (const p of room.members.values()) { const el = document.createElement('span'); el.translate = false; el.textContent = p.name + (p.id === room.id ? loc(' (tú)') : ''); $('roster').append(el); }
     $('roster').prepend(Object.assign(document.createElement('i'), { className: 'pk-dot' }));
   }
   if (lobby) { $('world').style.filter = ''; eventId = 0; return; }
@@ -169,29 +175,29 @@ function updateHUD() {
   const nextPortraitKey = JSON.stringify(seeker?.avatar || {});
   if (nextPortraitKey !== portraitKey) { portraitKey = nextPortraitKey; $('seeker-face').src = preview(buildCharacter(seeker?.avatar || {}).group, true); }
   $('timer').textContent = `${String(Math.floor(Math.ceil(Math.max(0, state.remaining)) / 60)).padStart(2, '0')}:${String(Math.ceil(Math.max(0, state.remaining)) % 60).padStart(2, '0')}`;
-  $('phase').textContent = state.phase === 'hide' ? seeking ? 'ESPERA TU TURNO' : '¡A ESCONDERSE!' : seeking ? '¡A BUSCAR!' : '¡QUE NO TE PILLEN!';
-  $('round').textContent = `RONDA ${state.round} / ${state.totalRounds}`;
-  $('seeker-name').textContent = seeking ? '¡Eres tú!' : state.players.filter(p => isSeeker(p.id)).map(p => p.name).join(' + ') || 'Buscador';
-  $('seeker-caption').textContent = seeker?.bot ? 'BUSCADOR · MÁQUINA' : 'BUSCADOR';
+  $('phase').textContent = state.phase === 'hide' ? seeking ? loc('ESPERA TU TURNO') : loc('¡A ESCONDERSE!') : seeking ? loc('¡A BUSCAR!') : loc('¡QUE NO TE PILLEN!');
+  $('round').textContent = loc('RONDA {round} / {total}', { round: state.round, total: state.totalRounds });
+  $('seeker-name').textContent = seeking ? loc('¡Eres tú!') : state.players.filter(p => isSeeker(p.id)).map(p => p.name).join(' + ') || loc('Buscador');
+  $('seeker-caption').textContent = seeker?.bot ? loc('BUSCADOR · MÁQUINA') : loc('BUSCADOR');
   const left = state.players.filter(p => !isSeeker(p.id) && !p.caught && !p.spectator).length;
-  $('remaining-players').textContent = `${left} pana${left !== 1 ? 's' : ''} escondido${left !== 1 ? 's' : ''}`;
+  $('remaining-players').textContent = locn(left, '{n} pana escondido', '{n} panas escondidos');
   const spectating = me?.spectator || me?.caught;
   show('center-message', active && (spectating || seeking && state.phase === 'hide'));
   if (spectating) {
-    $('center-message').querySelector('b').textContent = me?.caught ? '¡Te pillaron, pana!' : 'Llegaste con la ronda empezada.';
-    $('center-message').querySelector('span').textContent = 'Mira el mapa. Vuelves a jugar en la siguiente ronda.';
+    $('center-message').querySelector('b').textContent = me?.caught ? loc('¡Te pillaron, pana!') : loc('Llegaste con la ronda empezada.');
+    $('center-message').querySelector('span').textContent = loc('Mira el mapa. Vuelves a jugar en la siguiente ronda.');
   } else {
-    $('center-message').querySelector('b').textContent = 'Prepárate para buscar…';
-    $('center-message').querySelector('span').textContent = 'Los panas se están escondiendo.';
+    $('center-message').querySelector('b').textContent = loc('Prepárate para buscar…');
+    $('center-message').querySelector('span').textContent = loc('Los panas se están escondiendo.');
   }
   // A seeker cannot peek at preparations using the scene or the minimap.
   $('world').style.filter = seeking && state.phase === 'hide' ? 'blur(30px) brightness(.45)' : '';
   $('minimap').closest('aside').hidden = seeking && (!state.options?.seekerMap || state.phase === 'hide');
   show('disguise-panel', !seeking && !spectating);
-  $('prop-name').textContent = propDefinition(me?.prop)?.label || 'Tu pana';
+  $('prop-name').textContent = (me?.prop && propName(me.prop)) || loc('Tu pana');
   $('charges').replaceChildren(...Array.from({ length: RULES.changes }, (_, i) => Object.assign(document.createElement('i'), { className: i < (me?.changes || 0) ? 'on' : '' })));
-  $('charges').setAttribute('aria-label', `${me?.changes || 0} cambios restantes`);
-  $('disguise-tip').textContent = me?.prop ? 'Quédate quieto para camuflarte.' : 'Elige un objeto para camuflarte.';
+  $('charges').setAttribute('aria-label', locn(me?.changes || 0, '{n} cambios restantes', '{n} cambios restantes'));
+  $('disguise-tip').textContent = me?.prop ? loc('Quédate quieto para camuflarte.') : loc('Elige un objeto para camuflarte.');
   $('revert').disabled = !me?.prop || seeking || spectating;
   for (const button of $('prop-list').children) {
     const selected = button.dataset.prop === me?.prop;
@@ -199,31 +205,31 @@ function updateHUD() {
     button.disabled = state.options?.disguises === 'barrels' && button.dataset.prop !== 'barrel' || !active || seeking || spectating || (me?.changes ?? 0) <= 0 || selected;
   }
   const near = nearestProp();
-  $('action-label').textContent = spectating ? 'Observando la ronda' : seeking
-    ? state.phase === 'hide' ? 'Espera a que termine la cuenta' : me?.cooldown > 0 ? `Revisando… ${me.cooldown.toFixed(1)} s` : 'Revisar lo que está en la mira'
-    : near ? `Copiar ${propDefinition(near.type).label.toLowerCase()}` : state.options?.disguises === 'barrels' ? 'Acércate a un barril para copiar' : 'Acércate a un objeto para copiar';
+  $('action-label').textContent = spectating ? loc('Observando la ronda') : seeking
+    ? state.phase === 'hide' ? loc('Espera a que termine la cuenta') : me?.cooldown > 0 ? loc('Revisando… {s} s', { s: me.cooldown.toFixed(1) }) : loc('Revisar lo que está en la mira')
+    : near ? loc('Copiar {object}', { object: propName(near.type).toLowerCase() }) : state.options?.disguises === 'barrels' ? loc('Acércate a un barril para copiar') : loc('Acércate a un objeto para copiar');
   $('action').disabled = spectating || seeking && (state.phase !== 'hunt' || me?.cooldown > 0) || !seeking && (!near || me?.changes <= 0);
   const suspicion = me?.suspicion || 0; show('suspicion', suspicion > 3 && !spectating && !seeking);
   $('suspicion-fill').style.width = `${suspicion}%`;
   const resultKey = state.phase + state.round + state.players.map(p => `${p.id}:${p.score}:${p.caught}`).join(',') + room.isHost;
   if (['results', 'finished'].includes(state.phase) && uiKey !== resultKey) {
     uiKey = resultKey;
-    $('result-round').textContent = state.phase === 'finished' ? 'PARTIDA TERMINADA' : `RONDA ${state.round} DE ${state.totalRounds}`;
-    $('result-title').textContent = state.winner === 'hiders' ? '¡Bien escondidos!' : '¡Los pillaron a todos!';
-    $('result-copy').textContent = 'Cada captura suma 1 punto. Sobrevivir a la ronda suma 3. El buscador cambia en cada ronda.';
+    $('result-round').textContent = state.phase === 'finished' ? loc('PARTIDA TERMINADA') : loc('RONDA {round} DE {total}', { round: state.round, total: state.totalRounds });
+    $('result-title').textContent = state.winner === 'hiders' ? loc('¡Bien escondidos!') : loc('¡Los pillaron a todos!');
+    $('result-copy').textContent = loc('Cada captura suma 1 punto. Sobrevivir a la ronda suma 3. El buscador cambia en cada ronda.');
     fillRoster($('scores'), [...state.players].sort((a, b) => b.score - a.score).map(p => ({
-      className: 'score-row', name: p.name + (p.id === room.id ? ' (tú)' : ''), me: p.id === room.id, end: p.score, score: true,
-      detail: p.spectator ? 'Espectador' : isSeeker(p.id) ? 'Buscador' : p.caught ? 'Encontrado' : 'A salvo' })));
+      className: 'score-row', name: p.name + (p.id === room.id ? loc(' (tú)') : ''), me: p.id === room.id, end: p.score, score: true,
+      detail: p.spectator ? loc('Espectador') : isSeeker(p.id) ? loc('Buscador') : p.caught ? loc('Encontrado') : loc('A salvo') })));
     $('next').disabled = !room.isHost;
-    $('next').textContent = !room.isHost ? 'Esperando al anfitrión…' : state.phase === 'finished' ? 'Otra partida →' : 'Siguiente ronda →';
+    $('next').textContent = !room.isHost ? loc('Esperando al anfitrión…') : state.phase === 'finished' ? loc('Otra partida →') : loc('Siguiente ronda →');
   }
 }
 
 // One hit and done: the seeker gets a callout with the distance.
 function found({ seeker, hider, distance }) {
-  const who = state.players.find(p => p.id === hider)?.name || 'un pana';
+  const who = state.players.find(p => p.id === hider)?.name || loc('un pana');
   if (seeker === room.id) {
-    $('callout-title').textContent = state.players.filter(p => !isSeeker(p.id) && !p.caught && !p.spectator).length ? '¡Te encontré!' : '¡Los pillé a todos!';
+    $('callout-title').textContent = state.players.filter(p => !isSeeker(p.id) && !p.caught && !p.spectator).length ? loc('¡Te encontré!') : loc('¡Los pillé a todos!');
     $('callout-detail').textContent = `${who} · ${distance} m`; document.body.classList.remove('called'); void document.body.offsetWidth; document.body.classList.add('called');
     [660, 880, 1320].forEach((f, i) => sound.tone(f, i * .07, .11, 'triangle', .08));
   } else if (hider === room.id) { sound.sweep(520, 110, .6, 'triangle', .12); }
@@ -232,9 +238,9 @@ function found({ seeker, hider, distance }) {
 // Hold Tab for the match table.
 function showBoard(open) {
   $('scoreboard').hidden = !open; if (!open) return;
-  $('board-title').textContent = `Ronda ${state.round} de ${state.totalRounds}`;
-  fillRoster($('board-list'), [...state.players].sort((a, b) => b.score - a.score).map((p, i) => ({ rank: i + 1, name: p.name + (p.id === room.id ? ' (tú)' : ''), me: p.id === room.id, end: p.score, score: true,
-    detail: p.spectator ? 'Espectador' : isSeeker(p.id) ? 'Buscador' : p.caught ? 'Encontrado' : 'Escondido' })));
+  $('board-title').textContent = loc('Ronda {round} de {total}', { round: state.round, total: state.totalRounds });
+  fillRoster($('board-list'), [...state.players].sort((a, b) => b.score - a.score).map((p, i) => ({ rank: i + 1, name: p.name + (p.id === room.id ? loc(' (tú)') : ''), me: p.id === room.id, end: p.score, score: true,
+    detail: p.spectator ? loc('Espectador') : isSeeker(p.id) ? loc('Buscador') : p.caught ? loc('Encontrado') : loc('Escondido') })));
 }
 function firstPerson() { const me = getMe(); return view === 'primera' && ['hide', 'hunt'].includes(state.phase) && !!me && !me.spectator && !me.caught; }
 // The rules' heading (forward = sin h, cos h) for the camera's yaw.
@@ -248,7 +254,7 @@ function transform(id) { room.action('transform', { prop: id }); }
 function act() {
   if (paused) return;
   if (isSeeker(room.id)) { room.action('check', { aim: heading() }); sound.sweep(900, 500, .12, 'square', .05); }
-  else { const near = nearestProp(); if (near) transform(near.type); else notify(state.options?.disguises === 'barrels' ? 'Acércate a un barril.' : 'Acércate a un barril, caja, cava, mata o banco.'); }
+  else { const near = nearestProp(); if (near) transform(near.type); else notify(state.options?.disguises === 'barrels' ? loc('Acércate a un barril.') : loc('Acércate a un barril, caja, cava, mata o banco.')); }
 }
 for (const mode of ['hide', 'seek']) $(`role-${mode}`).onclick = () => {
   preference = mode;

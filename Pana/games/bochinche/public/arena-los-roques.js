@@ -12,7 +12,7 @@ const placeAsset=createAssetPlacement();
 const scene = new THREE.Group(); scene.scale.setScalar(.42);parent.add(scene);scene.fog=parent.fog;
 const small=true;
 const STAGE = {
-  name: 'Los Roques',
+  name: 'Los Roques', // i18n-ignore: place name
   seed: 20261031,
   solid: [
     { id: 'isla', x: [-34, 4], y: 0, ledges: true },

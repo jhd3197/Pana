@@ -1,3 +1,4 @@
+import { locKey } from '/engine/i18n.js';
 // The rueda's songs and their charts: pure data and functions (no DOM), so the
 // host, every client's local music and the Node tests read the same notes.
 // Times are in beats from the song's first beat (4/4 bars); a song plays two
@@ -10,20 +11,22 @@ export const COUNT_IN = 4; // beats of sticks before beat 0
 // Station order is also the order a new drummer is offered: Palo is the
 // easiest, so a pana's first turn on the drums starts there.
 export const STATIONS = ['palo', 'mano', 'charrasca', 'caracol'];
+// Station names show through stationName() (hud.js); `what`, `hint` and the
+// tempo are locKey() and shown with loc(). Song titles stay Spanish.
 export const STATION_INFO = {
-  palo: { name: 'Palo', what: 'el tambor largo con palos', lanes: 1, hint: 'Espacio en el contratiempo' },
-  mano: { name: 'Mano', what: 'el culo e\' puya', lanes: 2, hint: '← y → (o F y J), cada mano su cuero' },
-  charrasca: { name: 'Charrasca', what: 'la charrasca de metal', lanes: 1, hint: 'Mantén Espacio y suelta en el golpe' },
-  caracol: { name: 'Caracol', what: 'el caracol', lanes: 1, hint: 'Mantén Espacio en los momentos grandes' },
+  palo: { name: 'Palo', what: locKey('el tambor largo con palos'), lanes: 1, hint: locKey('Espacio en el contratiempo') },
+  mano: { name: 'Mano', what: locKey('el culo e\' puya'), lanes: 2, hint: locKey('← y → (o F y J), cada mano su cuero') },
+  charrasca: { name: 'Charrasca', what: locKey('la charrasca de metal'), lanes: 1, hint: locKey('Mantén Espacio y suelta en el golpe') },
+  caracol: { name: 'Caracol', what: locKey('el caracol'), lanes: 1, hint: locKey('Mantén Espacio en los momentos grandes') },
 };
 
 export const SONGS = [
-  { id: 'brisa', name: 'Brisa de Choroní', tempo: 'Lento', bpm: 96, bars: 26, level: 0 },
-  { id: 'casita', name: 'Tambor de la casita rosada', tempo: 'Medio', bpm: 112, bars: 34, level: 1 },
-  { id: 'candela', name: 'Candela en la arena', tempo: 'Rápido', bpm: 128, bars: 42, level: 2 },
+  { id: 'brisa', name: 'Brisa de Choroní', tempo: locKey('Lento'), bpm: 96, bars: 26, level: 0 }, // i18n-ignore: song title
+  { id: 'casita', name: 'Tambor de la casita rosada', tempo: locKey('Medio'), bpm: 112, bars: 34, level: 1 }, // i18n-ignore: song title
+  { id: 'candela', name: 'Candela en la arena', tempo: locKey('Rápido'), bpm: 128, bars: 42, level: 2 }, // i18n-ignore: song title
 ];
 // The ¡Golpe! mode has no chart: a steady groove under the MCP's patterns.
-export const GOLPE_SONG = { id: 'golpe', name: '¡Golpe!', tempo: 'Medio', bpm: 100, bars: 1024, level: 1 };
+export const GOLPE_SONG = { id: 'golpe', name: '¡Golpe!', tempo: locKey('Medio'), bpm: 100, bars: 1024, level: 1 }; // i18n-ignore: the call
 
 export const songFor = (track) => track === 'golpe' ? GOLPE_SONG : SONGS[((track % SONGS.length) + SONGS.length) % SONGS.length];
 export const secondsPerBeat = (song) => 60 / song.bpm;

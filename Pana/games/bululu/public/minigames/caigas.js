@@ -9,6 +9,7 @@ import { flagPole } from '/engine/models/props/flags.js';
 import { watchtower } from '/engine/models/props/watchtower.js';
 import { woodSign } from '/engine/models/props/wood-sign.js';
 import { localIndexOf, sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 const DECK = 0.25;          // plank top height
 const RING = 3.7;           // where the panas stand
@@ -24,9 +25,9 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 export default {
   id: 'caigas',
-  title: '¡No te caigas!',
-  howto: 'Salta el tronco cuando pase por debajo. Se pone cada vez más rápido… ¡y a veces cambia de dirección!',
-  keys: [['Espacio / W', 'saltar']],
+  title: locKey('¡No te caigas!'),
+  howto: locKey('Salta el tronco cuando pase por debajo. Se pone cada vez más rápido… ¡y a veces cambia de dirección!'),
+  keys: [[locKey('Espacio / W'), locKey('saltar')]],
   touch: { pad: 'none', action: 'jump' },
   icon: 'jump',
   time: 30,
@@ -83,7 +84,7 @@ export default {
     const flag = flagPole({ h: 10 });
     flag.position.set(12.6, 0, -10);
     scene.add(flag);
-    const sign = woodSign(['PANAS', 'SIEMPRE', '¡JUEGAN!'], { w: 4.4, h: 3.4 });
+    const sign = woodSign(['PANAS', 'SIEMPRE', '¡JUEGAN!'], { w: 4.4, h: 3.4 });   // i18n-ignore: signage painted in the world
     sign.position.set(-12, 0, -8);
     sign.rotation.y = 0.5;
     scene.add(sign);
@@ -134,7 +135,7 @@ export default {
       if (flipT <= 0) {
         dir = -dir;
         flipT = rand(6, 11);
-        shout.say('¡AL REVÉS!', 1.2);
+        shout.say(loc('¡AL REVÉS!'), 1.2);
         sound.whoosh();
       }
       const prevTheta = theta;
@@ -182,7 +183,7 @@ export default {
               a.vx = Math.cos(a.phi) * 7;
               a.vz = -Math.sin(a.phi) * 7;
               a.vy = 7;
-              a.bubble.say(pick(['¡AAAH!', '¡Me caí!', '¡Ñooo!', '¡Al agua!']), 1);
+              a.bubble.say(loc(pick([locKey('¡AAAH!'), locKey('¡Me caí!'), locKey('¡Ñooo!'), locKey('¡Al agua!')])), 1);
               sound.bonk(1);
               puffs.spawn(new THREE.Vector3(a.x, 1, a.z), { color: 0xc8a070, count: 5, spread: 0.6, size: 0.5 });
             } else {
@@ -229,10 +230,10 @@ export default {
     const me = actors[localIndexOf(ctx)];
     function hint() {
       if (!me) return null;
-      const left = `Quedan ${dry().length}`;
-      if (me.out || me.falling) return { text: `¡Te caíste! Mira quién aguanta · ${left}`, tone: 'bad' };
-      if (flipT < 1.3) return { text: `¡Ojo! El tronco va a cambiar de lado · ${left}`, tone: 'bad' };
-      return { text: `Salta justo antes de que pase el tronco · ${left}`, tone: '' };
+      const left = loc('Quedan {n}', { n: dry().length });
+      if (me.out || me.falling) return { text: loc('¡Te caíste! Mira quién aguanta · {left}', { left }), tone: 'bad' };
+      if (flipT < 1.3) return { text: loc('¡Ojo! El tronco va a cambiar de lado · {left}', { left }), tone: 'bad' };
+      return { text: loc('Salta justo antes de que pase el tronco · {left}', { left }), tone: '' };
     }
     return { scene, camera, update, outro, over, winners, hint, scores: () => actors.map((a) => a.score), actors };
   },

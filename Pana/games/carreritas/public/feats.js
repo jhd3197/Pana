@@ -4,6 +4,7 @@
 // this module with the first race, so the garage's first load stays small.
 import { createFeats } from '/engine/feats.js';
 import { statCount } from '/engine/stats.js';
+import { loc, locn } from '/engine/i18n.js';
 
 export const LONG_DRIFT_M = 100;   // one drift this long, without releasing
 
@@ -11,8 +12,8 @@ export function createDriftFeats(el, opts) {
   const feat = createFeats(el, opts);
   // Per-race drift distance: 500 m, then a shout per full kilometre.
   const distance = feat.meter(
-    [{ at: 500, text: '¡500 metros derrapados!' }],
-    { every: 1000, text: (m) => m === 1000 ? '¡1 kilómetro derrapado!' : `¡${m / 1000} kilómetros derrapados!` });
+    [{ at: 500, text: loc('¡500 metros derrapados!') }],
+    { every: 1000, text: (m) => locn(m / 1000, '¡{n} kilómetro derrapado!', '¡{n} kilómetros derrapados!') });
   let current = 0;    // metres in the drift happening right now
   let level = 0;      // spark level of that drift, as of its last step
   let boost = 0;      // c.boost on that last step: a paid turbo marks a clean release
@@ -29,12 +30,12 @@ export function createDriftFeats(el, opts) {
         level = c.driftLvl || 0;
         boost = c.boost;
         if (current >= nextLong) {
-          feat('derrapon', `¡Derrapón! ¡${nextLong} m sin soltar!`);
+          feat('derrapon', loc('¡Derrapón! ¡{m} m sin soltar!', { m: nextLong }));
           nextLong += LONG_DRIFT_M;
         }
       } else {
         // A purple drift that ends paying its turbo was released, not crashed.
-        if (current > 0 && level >= 3 && c.boost > boost) feat('purpura', '¡Suelta púrpura! ¡Tremendo derrape!');
+        if (current > 0 && level >= 3 && c.boost > boost) feat('purpura', loc('¡Suelta púrpura! ¡Tremendo derrape!'));
         current = 0; level = 0; nextLong = LONG_DRIFT_M;
       }
     },

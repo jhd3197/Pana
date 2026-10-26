@@ -1,3 +1,4 @@
+import { loc } from '../../../engine/i18n.js';
 export const CURRENT_CUP_EDITION = 2;
 export const GP_STAGE_CAP_SECONDS = 240;
 // New standalone circuits do not silently change a saved cup edition's route.
@@ -9,7 +10,7 @@ const stage = (track, laps = 2, estimatedSeconds = 150) => ({
 
 export const CUP_DEFINITIONS = [
   {
-    id: 'pana', name: 'Copa Pana', edition: CURRENT_CUP_EDITION, available: true,
+    id: 'pana', name: loc('Copa Pana'), edition: CURRENT_CUP_EDITION, available: true,
     stages: [
       stage('estadio', 2, 155),
       stage('plaza', 2, 175),
@@ -18,7 +19,7 @@ export const CUP_DEFINITIONS = [
     ],
   },
   {
-    id: 'aventura', name: 'Copa Aventura', edition: CURRENT_CUP_EDITION, available: true,
+    id: 'aventura', name: loc('Copa Aventura'), edition: CURRENT_CUP_EDITION, available: true,
     stages: [
       stage('desierto', 2, 145),
       stage('chichi', 1, 175),
@@ -27,7 +28,7 @@ export const CUP_DEFINITIONS = [
     ],
   },
   {
-    id: 'agua', name: 'Copa del Agua', edition: CURRENT_CUP_EDITION, available: true,
+    id: 'agua', name: loc('Copa del Agua'), edition: CURRENT_CUP_EDITION, available: true,
     stages: [
       stage('salinas', 2, 205),
       stage('delta', 3, 165),
@@ -77,6 +78,6 @@ export function validateCups(trackIds, { includeUnavailable = false } = {}) {
     if (!known.has(id)) errors.push(`unknown standalone track ${id}`);
     if (covered.includes(id)) errors.push(`${id}: both a cup and standalone track`);
   }
-  for (const id of known) if (!covered.includes(id) && !STANDALONE_TRACKS.includes(id)) errors.push(`${id}: no cup or standalone registration`);
+  for (const id of known) if (!covered.includes(id) && !STANDALONE_TRACKS.includes(id)) errors.push(`${id}: no cup or standalone registration`); // i18n-ignore: developer error
   return { errors, covered, standalone: [...STANDALONE_TRACKS] };
 }

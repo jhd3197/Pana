@@ -1,5 +1,6 @@
 import { TableRoom } from '/engine/table-room.js';
 import { createGame, acceptAction, step, STEP, snapshot, botShot, botPlacement, BOT_ID, advanceShotClock, stepPoolStarter } from './rules.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 // The table setting (map, difficulty) survives new rooms and practice.
 const keepMap = (prev) => ({ ...(prev?.mapId ? { mapId: prev.mapId } : {}), ...(prev?.difficulty ? { difficulty: prev.difficulty } : {}), ...(prev?.options ? { options: { ...prev.options } } : {}) });
@@ -7,7 +8,7 @@ const keepMap = (prev) => ({ ...(prev?.mapId ? { mapId: prev.mapId } : {}), ...(
 export class PoolRoom extends TableRoom {
   constructor(options) {
     super({ ...options, game: 'billar', protocol: 'billar-v3', texts: {
-      handoff: 'Cambió el anfitrión. La mesa continúa.', practice: 'Mesa de práctica · juega a tu ritmo', ...options.texts } }, {
+      handoff: loc('Cambió el anfitrión. La mesa continúa.'), practice: loc('Mesa de práctica · juega a tu ritmo'), ...options.texts } }, {
       fresh: (prev) => ({ ...createGame(), ...keepMap(prev) }),
       // Solo practice clears the rack alone; versusBot() puts Pana Bot across the table.
       practice: (prev) => ({ ...createGame(true, { bot: this.opponent === 'bot' }), ...keepMap(prev) }),
@@ -19,7 +20,7 @@ export class PoolRoom extends TableRoom {
     this.accumulator = 0; this.broadcastElapsed = 0;
   }
   seatMembers() {
-    for (const p of this.game.players) if (!p.bot && !this.members.has(p.id)) { p.id = null; p.name = 'Esperando pana'; }
+    for (const p of this.game.players) if (!p.bot && !this.members.has(p.id)) { p.id = null; p.name = locKey('Esperando pana'); }
     for (const m of this.members.values()) {
       const p = this.game.players.find(p => p.id === m.id)
         || this.game.activeSeats.map(i => this.game.players[i]).find(p => p.id === null)
@@ -50,5 +51,5 @@ export class PoolRoom extends TableRoom {
   }
   rest() { this.accumulator = 0; }
   practice() { this.opponent = null; super.practice(); this.action('start'); }
-  versusBot() { this.opponent = 'bot'; super.practice('Contra Pana Bot · cambia la dificultad en el menú.'); this.action('start'); }
+  versusBot() { this.opponent = 'bot'; super.practice(loc('Contra Pana Bot · cambia la dificultad en el menú.')); this.action('start'); }
 }

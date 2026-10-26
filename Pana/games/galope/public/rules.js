@@ -3,7 +3,7 @@ import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { FIELDS, cleanOptions, direction, routeAt, raceJumps, distanceAhead } from './options.js';
 import { rng } from '../../../engine/random.js';
 export const COATS = ['bay','palomino','grey'];
-const BOT_NAMES=['Marisela','El Catire','Florentino','Luz','Cimarrón','Rosalía','Simón'];
+const BOT_NAMES=['Marisela','El Catire','Florentino','Luz','Cimarrón','Rosalía','Simón']; // i18n-ignore: bot names
 export function cleanInput(input={}) {
   return {throttle:clamp(Number(input.throttle)||0,-1,1),steer:clamp(Number(input.steer)||0,-1,1),sprint:!!input.sprint,jump:!!input.jump,reset:!!input.reset};
 }

@@ -21,6 +21,7 @@
 // padLook (engine/play/first-person.js uses it).
 
 import { getSettings, onSettings, inputAxis } from './settings.js';
+import { loc } from './i18n.js';
 export const NAMES = ['a', 'b', 'x', 'y', 'lb', 'rb', 'lt', 'rt', 'view', 'start', 'ls', 'rs', 'up', 'down', 'left', 'right'];
 const DIRS = ['up', 'down', 'left', 'right'];
 export const MOVES = {
@@ -62,8 +63,10 @@ function publishInput(force=false){
   }
 }
 function activate(device){if(detected!==device){detected=device;publishInput();}}
-const FAMILIES={playstation:{A:'Cruz',B:'Círculo',X:'Cuadrado',Y:'Triángulo',LB:'L1',RB:'R1',LT:'L2',RT:'R2',Start:'Options',View:'Share'},nintendo:{A:'B',B:'A',X:'Y',Y:'X',LB:'L',RB:'R',LT:'ZL',RT:'ZR',Start:'Más',View:'Menos'}};
-export function formatPadLabel(text,family=inputState().family){return text.replace(/\b(LB|RB|LT|RT|Start|View|A|B|X|Y)\b/g,key=>FAMILIES[family]?.[key]??key);}
+const FAMILIES={playstation:{A:loc('Cruz'),B:loc('Círculo'),X:loc('Cuadrado'),Y:loc('Triángulo'),LB:'L1',RB:'R1',LT:'L2',RT:'R2',Start:'Options',View:'Share'},nintendo:{A:'B',B:'A',X:'Y',Y:'X',LB:'L',RB:'R',LT:'ZL',RT:'ZR',Start:loc('Más'),View:loc('Menos')}};
+// Spanish names of the pad's parts, as games write them in their controls.
+const PARTS={'Stick izq.':loc('Stick izq.'),'Stick der.':loc('Stick der.'),Cruceta:loc('Cruceta')};
+export function formatPadLabel(text,family=inputState().family){return text.replace(/\b(LB|RB|LT|RT|Start|View|A|B|X|Y)\b/g,key=>FAMILIES[family]?.[key]??key).replace(/Stick izq\.|Stick der\.|Cruceta/g,part=>PARTS[part]);}
 // Actuators can outlive a page. Cancel explicitly when focus or navigation leaves it.
 export function stopVibration(){
   for(const pad of globalThis.navigator?.getGamepads?.() || []){
@@ -258,7 +261,7 @@ export function padLook(fn) { lookers.add(fn); return () => lookers.delete(fn); 
 
 let before = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false,promptNode=null;
 function showPrompts(scope){
-  if(!promptNode){promptNode=document.createElement('div');promptNode.className='pana-pad-prompts';promptNode.setAttribute('aria-label','Controles del mando');document.body.append(promptNode);}
+  if(!promptNode){promptNode=document.createElement('div');promptNode.className='pana-pad-prompts';promptNode.setAttribute('aria-label',loc('Controles del mando'));document.body.append(promptNode);}
   const state=inputState();promptNode.hidden=!!scope||state.device!=='gamepad'||!getSettings().hints;
   const signature=JSON.stringify([padHelp(),state.family]);if(promptNode.dataset.signature===signature)return;promptNode.dataset.signature=signature;
   promptNode.replaceChildren(...padHelp().map(([key,label])=>{const row=document.createElement('span'),cap=document.createElement('kbd');cap.dataset.padKey='';cap.textContent=formatPadLabel(key);row.append(cap,document.createTextNode(label));return row;}));
@@ -374,11 +377,11 @@ if (globalThis.document) {
     // itself only takes over when nothing is in use yet.
     const added=e.gamepad;if(usable(added)&&(added.mapping==='standard'||activeIndex<0))activeIndex=added.index;
     const pad=activePad(); connected=!!pad;padId=pad?.id||'';
-    toast('Mando conectado');activate('gamepad');publishInput(true);start();
+    toast(loc('Mando conectado'));activate('gamepad');publishInput(true);start();
   });
   addEventListener('gamepaddisconnected', e => {
     seen.delete(e.gamepad?.index);if(e.gamepad?.index===activeIndex)activeIndex=-1;
-    if (!activePad()) toast('Mando desconectado');
+    if (!activePad()) toast(loc('Mando desconectado'));
   });
   addEventListener('blur', ()=>{suspended=true;release();stopVibration();});
   addEventListener('pagehide', stopVibration);
@@ -397,10 +400,10 @@ if (globalThis.document) {
 const LABELS = { a: 'A', b: 'B', x: 'X', y: 'Y', lb: 'LB', rb: 'RB', lt: 'LT', rt: 'RT', view: 'View', start: 'Start', ls: 'L3', rs: 'R3', up: 'Cruceta ↑', down: 'Cruceta ↓', left: 'Cruceta ←', right: 'Cruceta →' };
 export function padHelp(options = setup) {
   if (!options) return [];
-  if (options.help || options.native) return [...(options.help || []), ['Start', 'Menú']];
+  if (options.help || options.native) return [...(options.help || []), ['Start', loc('Menú')]];
   const lines = [];
-  if (options.move) lines.push(['Stick izq. / Cruceta', options.moveLabel || 'Moverte']);
-  if (options.buttons) lines.push(['Cruceta + A', 'Elegir los botones de la pantalla']);
+  if (options.move) lines.push(['Stick izq. / Cruceta', options.moveLabel || loc('Moverte')]);
+  if (options.buttons) lines.push(['Cruceta + A', loc('Elegir los botones de la pantalla')]);
   const byLabel = new Map();
   for (const [name, entry] of Object.entries(options.keys || {})) {
     if (!Array.isArray(entry) || !entry[1] || (options.buttons && name === 'a')) continue;
@@ -408,7 +411,7 @@ export function padHelp(options = setup) {
   }
   for (const [label, names] of byLabel) lines.push([names.join(' / '), label]);
   if (options.look) lines.push(['Stick der.', options.look]);
-  if (options.cursor) lines.push(['Stick der. + RT', typeof options.cursor === 'string' ? options.cursor : 'Apuntar y tocar']);
-  lines.push(['Start', 'Menú']);
+  if (options.cursor) lines.push(['Stick der. + RT', typeof options.cursor === 'string' ? options.cursor : loc('Apuntar y tocar')]);
+  lines.push(['Start', loc('Menú')]);
   return lines;
 }

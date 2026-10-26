@@ -7,6 +7,7 @@ import { draw, seedOf, clamp } from '/engine/random.js';
 import { pickLine } from '/engine/play/frases.js';
 import { defaultOptions, roomOptions } from './options.js';
 import { CATEGORIES, QUESTIONS, PACKS } from './questions.js';
+import { loc, locKey, formatNumber } from '../../../engine/i18n.js';
 
 export const SEATS = 6;
 export const LETTERS = ['A', 'B', 'C', 'D'];
@@ -15,9 +16,10 @@ export const LADDER = [0, 100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 320
 export const TOP = LADDER.length - 1;
 export const SAFE = [4, 8];
 export const BETS = [0, .25, .5, 1];
-export const BET_LABELS = ['Nada', 'Un cuarto', 'La mitad', '¡Todo!'];
+export const BET_LABELS = [locKey('Nada'), locKey('Un cuarto'), locKey('La mitad'), locKey('¡Todo!')];
 export const TIMES = { pause: 2.4, revealStep: .85, result: 8, bet: 14, intro: 1.4 };
 export const SPEED_BONUS = 100;
+const COCO = locKey('Échale coco…'), MOCHO = locKey('Más aburrido que mocho en piñata…');
 
 // A question is a prompt plus exactly four distinct answers, the right one
 // first. Anything else (three, five, an ordering list) never reaches the board.
@@ -25,7 +27,7 @@ export function playable(q) {
   if (!Array.isArray(q) || q.length !== 1 + LETTERS.length || !q.every(s => typeof s === 'string' && s.trim())) return false;
   return new Set(q.slice(1).map(s => s.trim().toLowerCase())).size === LETTERS.length;
 }
-export const BOT_NAMES = ['Lola', 'Tito', 'Cheo', 'Nina', 'Toño', 'Mari'];
+export const BOT_NAMES = ['Lola', 'Tito', 'Cheo', 'Nina', 'Toño', 'Mari']; // i18n-ignore: names
 const SKILL = { normal: .62, genios: .86, gafos: .36 };
 
 const fresh = () => ({ step: 0, bonus: 0, finalDelta: 0, answer: null, copy: null, locked: false, lockedLeft: 0, half: null, doble: false,
@@ -39,7 +41,18 @@ export const score = (p) => LADDER[p.step] + p.bonus + p.finalDelta;
 export const participants = (state) => state.players.filter(p => state.options?.mode !== 'panas' || p.id !== null);
 export const ranking = (state) => participants(state).sort((a, b) =>
   (b.seat === state.gold) - (a.seat === state.gold) || score(b) - score(a) || b.step - a.step || a.seat - b.seat);
-export const mangos = (n) => n.toLocaleString('es-VE');
+export const mangos = (n) => formatNumber(n);
+
+// What the host says travels as Spanish source text plus its variables
+// ({ text, vars }); every client shows it in its own language. A category name
+// in the variables is translated too; names, answers and dichos are content.
+const line = (text, vars) => vars ? { text, vars } : { text };
+export function lineText(said) {
+  if (!said) return '';
+  if (typeof said === 'string') return loc(said);
+  const vars = said.vars && { ...said.vars, ...(said.vars.category ? { category: loc(said.vars.category) } : {}) };
+  return loc(said.text, vars);
+}
 
 // The answer a seat ends up with: their own, or the one they copied (a copy of
 // a copy follows the chain; a loop or an empty lock is no answer at all).
@@ -62,10 +75,10 @@ export function revealOrder(players, active = players) {
 
 // What the host says as the k-th name is revealed.
 export function revealLine(state, k) {
-  const p = state.players[state.reveal.order[k]]; if (!p) return '';
-  if (p.copy !== null) return `${p.name} se copió de ${state.players[p.copy].name}…`;
-  if (p.answer === null) return `${p.name} no marcó nada…`;
-  return `${p.name} puso la ${LETTERS[p.answer]}…`;
+  const p = state.players[state.reveal.order[k]]; if (!p) return line('');
+  if (p.copy !== null) return line(locKey('{name} se copió de {target}…'), { name: p.name, target: state.players[p.copy].name });
+  if (p.answer === null) return line(locKey('{name} no marcó nada…'), { name: p.name });
+  return line(locKey('{name} puso la {letter}…'), { name: p.name, letter: LETTERS[p.answer] });
 }
 
 export class QuizGame {
@@ -75,7 +88,7 @@ export class QuizGame {
     this.players = Array.from({ length: SEATS }, (_, seat) => bot(seat));
     this.phase = 'lobby'; this.index = 0; this.total = this.options.questions; this.final = false;
     this.deck = []; this.question = null; this.phaseTime = 0; this.timeLeft = 0;
-    this.reveal = null; this.hostLine = '¡Bienvenidos a ¿Quién quiere ser mi pana?!'; this.callouts = [];
+    this.reveal = null; this.hostLine = line(locKey('¡Bienvenidos a ¿Quién quiere ser mi pana?!')); this.callouts = [];
     this.gold = null; this.winner = null; this.halfLast = null; this.titles = null; this.round = 0;
     this.revision = 0; this.ledger = {};
     this.plans = [];
@@ -185,7 +198,8 @@ export class QuizGame {
     this.question = { cat, category: CATEGORIES[cat], text, answers: order.map(i => answers[i]), correct: order.indexOf(0) };
     for (const p of this.players) Object.assign(p, { answer: null, copy: null, locked: false, lockedLeft: 0, half: null, doble: false, outcome: null });
     this.phase = 'question'; this.phaseTime = 0; this.timeLeft = this.options.seconds; this.reveal = null; this.callouts = [];
-    this.hostLine = this.final ? '¡La pregunta del Mango de oro! Vale todo lo que apostaron.' : `Pregunta ${this.index + 1} de ${this.total} · ${CATEGORIES[cat]}`;
+    this.hostLine = this.final ? line(locKey('¡La pregunta del Mango de oro! Vale todo lo que apostaron.'))
+      : line(locKey('Pregunta {n} de {total} · {category}'), { n: this.index + 1, total: this.total, category: CATEGORIES[cat] });
     this.plan(); this.revision++;
   }
 
@@ -259,7 +273,7 @@ export class QuizGame {
     if (!active.length || this.phase !== 'question' || !active.every(p => p.locked)) return;
     this.startReveal(); this.settle();
   }
-  pause() { this.phase = 'pause'; this.phaseTime = 0; this.hostLine = '¿Esa es su respuesta final?'; this.revision++; }
+  pause() { this.phase = 'pause'; this.phaseTime = 0; this.hostLine = line(locKey('¿Esa es su respuesta final?')); this.revision++; }
 
   startReveal() {
     this.reveal = { order: revealOrder(this.players, participants(this)), shown: 1, done: false };
@@ -269,7 +283,7 @@ export class QuizGame {
   // The right answer lights up: every ladder moves and the host calls people out.
   settle() {
     const { correct } = this.question, seconds = this.options.seconds, said = [], L = LETTERS[correct];
-    const lines = (seat, text) => said.push({ seat, text });
+    const lines = (seat, text, vars) => said.push({ seat, ...line(text, vars) });
     const before = this.players.map(score);
     for (const p of participants(this)) {
       const got = resolveAnswer(this.players, p.seat), right = got === correct, from = p.step;
@@ -289,10 +303,10 @@ export class QuizGame {
         }
         p.outcome.to = p.step;
       }
-      if (right && p.stats.streak >= 3) lines(p.seat, `¡${p.name}, no te hagas el Willy Mays!`);
+      if (right && p.stats.streak >= 3) lines(p.seat, locKey('¡{name}, no te hagas el Willy Mays!'), { name: p.name });
       p.stats.streak = right ? 0 : p.stats.streak + 1;
-      if (from - p.step >= 3) lines(p.seat, `${p.name}, te quedaste sin el chivo y sin el mecate.`);
-      if (p.step === TOP && this.gold === null) { this.gold = p.seat; p.crowned = true; lines(p.seat, `¡${p.name} se lleva el Mango de oro!`); }
+      if (from - p.step >= 3) lines(p.seat, locKey('{name}, te quedaste sin el chivo y sin el mecate.'), { name: p.name });
+      if (p.step === TOP && this.gold === null) { this.gold = p.seat; p.crowned = true; lines(p.seat, locKey('¡{name} se lleva el Mango de oro!'), { name: p.name }); }
       else if (p.step === TOP) p.crowned = true;
     }
     for (const p of participants(this)) {
@@ -300,18 +314,21 @@ export class QuizGame {
       const target = this.players[p.copy], theirs = resolveAnswer(this.players, p.copy);
       if (theirs !== correct) {
         if (participants(this).includes(target)) target.stats.betrayed++;
-        lines(p.seat, `${p.name} se copió de ${target.name}… ¡y ${target.name} ${theirs === null ? 'no marcó nada' : `puso la ${LETTERS[theirs]}`}!`);
-      } else lines(p.seat, `${p.name} se copió de ${target.name} y le salió bien. ¡Sapo!`);
+        const vars = { name: p.name, target: target.name, letter: LETTERS[theirs] };
+        lines(p.seat, theirs === null ? locKey('{name} se copió de {target}… ¡y {target} no marcó nada!') : locKey('{name} se copió de {target}… ¡y {target} puso la {letter}!'), vars);
+      } else lines(p.seat, locKey('{name} se copió de {target} y le salió bien. ¡Sapo!'), { name: p.name, target: target.name });
     }
     const rights = participants(this).filter(p => p.outcome.right);
-    const headline = rights.length === 1 ? `¡Solo ${rights[0].name} se la sabía!`
-      : rights.length === 0 ? '¡Me agarró fuera de base! Nadie se la sabía.'
-      : rights.length === participants(this).length ? '¡Palo! Todos se la sabían.'
-      : `La correcta era la ${L}. ${pickLine('aplauso', `${this.round}:${this.index}`)}`;
+    // One sentence per outcome; the dicho stays Spanish (content, not interface).
+    const vars = { letter: L, answer: this.question.answers[correct] };
+    const headline = rights.length === 1 ? line(locKey('La respuesta correcta es {letter}: {answer}. ¡Solo {name} se la sabía!'), { ...vars, name: rights[0].name })
+      : rights.length === 0 ? line(locKey('La respuesta correcta es {letter}: {answer}. ¡Me agarró fuera de base! Nadie se la sabía.'), vars)
+      : rights.length === participants(this).length ? line(locKey('La respuesta correcta es {letter}: {answer}. ¡Palo! Todos se la sabían.'), vars)
+      : line(locKey('La respuesta correcta es {letter}: {answer}. La correcta era la {letter}. {dicho}'), { ...vars, dicho: pickLine('aplauso', `${this.round}:${this.index}`) });
     // The leader doesn't get comfortable: now and then the host roasts them.
     const top = ranking(this)[0];
-    if (!this.final && this.index > 1 && top.outcome.right && seedOf(`${this.round}:${this.index}:roast`) % 4 === 0) lines(top.seat, `${top.name} va de cuarto bate… ¡pero cuidado que se cae!`);
-    this.callouts = said; this.hostLine = `La respuesta correcta es ${L}: ${this.question.answers[correct]}. ${headline}`;
+    if (!this.final && this.index > 1 && top.outcome.right && seedOf(`${this.round}:${this.index}:roast`) % 4 === 0) lines(top.seat, locKey('{name} va de cuarto bate… ¡pero cuidado que se cae!'), { name: top.name });
+    this.callouts = said; this.hostLine = headline;
     this.reveal.shown = this.reveal.order.length; this.reveal.done = true; this.phaseTime = 0;
     if (!this.final && this.index === Math.floor(this.total / 2) - 1) this.halfLast = [...ranking(this)].pop().seat;
     this.revision++;
@@ -325,7 +342,7 @@ export class QuizGame {
     this.final = true; this.phase = 'bet'; this.phaseTime = 0; this.timeLeft = TIMES.bet; this.callouts = []; this.reveal = null;
     for (const p of this.players) Object.assign(p, { bet: null, betLocked: false, outcome: null, answer: null, copy: null, locked: false });
     for (const p of this.players) if (p.planted || score(p) <= 0) Object.assign(p, { bet: 0, betLocked: true });
-    this.hostLine = 'Pregunta final: ¿cuántos mangos te juegas?';
+    this.hostLine = line(locKey('Pregunta final: ¿cuántos mangos te juegas?'));
     this.question = { ...this.question, cat: this.deck[this.index][0], category: CATEGORIES[this.deck[this.index][0]] };
     this.revision++; this.plan();
     if (participants(this).every(p => p.betLocked)) this.ask();
@@ -334,7 +351,7 @@ export class QuizGame {
   finish() {
     const order = ranking(this);
     this.winner = order[0].seat; this.phase = 'finished'; this.titles = titles(this);
-    this.hostLine = `¡${order[0].name} es el cuarto bate! Calabaza, calabaza, cada quien para su casa.`;
+    this.hostLine = line(locKey('¡{name} es el cuarto bate! Calabaza, calabaza, cada quien para su casa.'), { name: order[0].name });
     this.callouts = []; this.revision++;
   }
 
@@ -348,8 +365,8 @@ export class QuizGame {
       this.timeLeft = Math.max(0, limit - this.phaseTime);
       for (const p of participants(this)) if (p.id === null) this.bot(p);
       if (this.phase === 'question') {
-        if (this.timeLeft <= 4 && this.timeLeft > 0 && !this.hostLine.startsWith('Échale')) this.hostLine = 'Échale coco…';
-        else if (this.phaseTime > limit * .55 && participants(this).filter(p => p.locked).length < participants(this).length / 2 && !/coco|mocho/.test(this.hostLine)) this.hostLine = 'Más aburrido que mocho en piñata…';
+        if (this.timeLeft <= 4 && this.timeLeft > 0 && this.hostLine.text !== COCO) this.hostLine = line(COCO);
+        else if (this.phaseTime > limit * .55 && participants(this).filter(p => p.locked).length < participants(this).length / 2 && ![COCO, MOCHO].includes(this.hostLine.text)) this.hostLine = line(MOCHO);
         if (this.timeLeft <= 0) this.pause();
       } else if (this.phase === 'bet' && this.timeLeft <= 0) {
         for (const p of this.players) if (!p.betLocked) Object.assign(p, { bet: 0, betLocked: true });
@@ -406,20 +423,21 @@ export function titles(state) {
     return best && best.stats[key] >= min ? best.seat : null;
   };
   const order = ranking(state), give = (seat, title) => { if (seat !== null && seat !== undefined) out[seat].push(title); };
-  give(order[0].seat, 'Cuarto bate');
-  give(most('wrong'), 'Gafo');
-  give(most('fallFrom'), 'Pavoso');
-  give(most('copied'), 'Sapo');
-  if (state.halfLast !== null && order.slice(0, 2).some(p => p.seat === state.halfLast)) give(state.halfLast, 'Willy Mays');
-  give(most('betrayed'), 'Embustero');
+  give(order[0].seat, locKey('Cuarto bate'));
+  give(most('wrong'), locKey('Gafo'));
+  give(most('fallFrom'), locKey('Pavoso'));
+  give(most('copied'), locKey('Sapo'));
+  if (state.halfLast !== null && order.slice(0, 2).some(p => p.seat === state.halfLast)) give(state.halfLast, locKey('Willy Mays'));
+  give(most('betrayed'), locKey('Embustero'));
   return out;
 }
 
+// Titles travel in state as these Spanish names; the screen passes both through loc().
 export const TITLE_TEXT = {
-  'Cuarto bate': 'El ganador',
-  Gafo: 'Más respuestas malas',
-  Pavoso: 'Se cayó desde más alto',
-  Sapo: 'Se copió',
-  'Willy Mays': 'Último a mitad de juego y terminó arriba',
-  Embustero: 'Lo copiaron y estaba mal',
+  'Cuarto bate': locKey('El ganador'),
+  Gafo: locKey('Más respuestas malas'),
+  Pavoso: locKey('Se cayó desde más alto'),
+  Sapo: locKey('Se copió'),
+  'Willy Mays': locKey('Último a mitad de juego y terminó arriba'),
+  Embustero: locKey('Lo copiaron y estaba mal'),
 };

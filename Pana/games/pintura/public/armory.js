@@ -7,13 +7,14 @@ import { MARKERS, ATTACHMENTS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, clea
 import { Arena } from './rules.js';
 import { ICONS } from '/engine/icons.js';
 import { pixelRatio } from '/engine/settings.js';
+import { loc, locn, locKey } from '/engine/i18n.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
 export function createArmory({room,onPick}) {
  let kit=cleanKit();try{kit=cleanKit(JSON.parse(localStorage.getItem('pintura:kit')));}catch{}
  room.kit=kit;onPick(kit.weapon);
  const dialog=document.getElementById('armory'),choices=document.getElementById('armory-choices');
  const rating=document.createElement('span');rating.id='armory-rating';document.getElementById('armory-name').after(rating);
- const back=document.createElement('button');back.id='armory-parts-back';back.type='button';back.className='pk-btn';back.textContent='‹ Atrás';choices.before(back);back.onclick=()=>dialog.classList.remove('choosing');
+ const back=document.createElement('button');back.id='armory-parts-back';back.type='button';back.className='pk-btn';back.textContent=loc('‹ Atrás');choices.before(back);back.onclick=()=>dialog.classList.remove('choosing');
  const icons={weapon:'kitBarrel',attachments:'plus',armor:'kitVest',grenade:'kitGrenade',finish:'kitPaint',charm:'wardrobe-cuello',pattern:'kitPaint'};
  for(const b of document.querySelectorAll('#armory-slots button')){const icon=document.createElement('i');icon.innerHTML=ICONS[icons[b.dataset.slot]];b.insertBefore(icon,b.querySelector('b'));}
  let ratedOptions='',category='weapon',renderer=null,scene,camera,model,avatar,vest,target,range=null,acc=0; const balls=new Map();
@@ -22,21 +23,22 @@ export function createArmory({room,onPick}) {
   ratedOptions=JSON.stringify(room.state.options);
   rating.innerHTML=ratingBadge(kitRating(value,room.state.options));
   const current=kitStats(kit,room.state.options),next=kitStats(value,room.state.options);
-  const rows=[['Alcance',s=>s.speed*s.life,s=>`${Math.round(s.speed*s.life)} m`,60,false],['Precisión',s=>Math.max(0,1-s.spread/.3),s=>`${(s.spread*180/Math.PI).toFixed(1)}°`,1,false],['Cadencia',s=>1/s.cadence,s=>`${(1/s.cadence).toFixed(1)}/s`,8,false],['Capacidad',s=>s.magazine,s=>`${s.magazine}${s.reserve!=null?' + '+s.reserve:''}`,26,false],['Recarga',s=>s.reload,s=>`${s.reload.toFixed(1)} s`,4,true],['Movilidad',s=>s.mobility,s=>`${Math.round(s.mobility*100)}%`,1.15,false],['Aguante',s=>s.toughness,s=>`${s.toughness} pepazos`,6,false]];
+  const rows=[[loc('Alcance'),s=>s.speed*s.life,s=>`${Math.round(s.speed*s.life)} m`,60,false],[loc('Precisión'),s=>Math.max(0,1-s.spread/.3),s=>`${(s.spread*180/Math.PI).toFixed(1)}°`,1,false],[loc('Cadencia'),s=>1/s.cadence,s=>`${(1/s.cadence).toFixed(1)}/s`,8,false],[loc('Capacidad'),s=>s.magazine,s=>`${s.magazine}${s.reserve!=null?' + '+s.reserve:''}`,26,false],[loc('Recarga'),s=>s.reload,s=>`${s.reload.toFixed(1)} s`,4,true],[loc('Movilidad'),s=>s.mobility,s=>`${Math.round(s.mobility*100)}%`,1.15,false],[loc('Aguante'),s=>s.toughness,s=>locn(s.toughness,'{n} pepazo','{n} pepazos'),6,false]];
   document.getElementById('armory-stats').innerHTML=rows.map(([name,get,text,max,inverse])=>{const a=Math.round(Math.min(1,get(current)/max)*10),b=Math.round(Math.min(1,get(next)/max)*10),gain=inverse?b<a:b>a;return `<div><dt>${name}</dt><dd><span class="armory-bars">${Array.from({length:10},(_,i)=>`<i class="${i<Math.min(a,b)?'on':i<Math.max(a,b)?gain?'gain':'loss':''}"></i>`).join('')}</span><b>${text(next)}</b></dd></div>`;}).join('');
  }
  function paint() {
-  document.getElementById('armory-name').textContent=MARKERS.find(m=>m.id===kit.weapon).name;paintStats();
+  document.getElementById('armory-name').textContent=loc(MARKERS.find(m=>m.id===kit.weapon).name);paintStats();
   for(const b of document.querySelectorAll('#armory-slots button')) {
    const field=b.dataset.slot;b.setAttribute('aria-pressed',String(category===field));
-   const value=field==='attachments' ? ATTACHMENTS.find(a=>a.id===kit.attachments[Number(b.dataset.index)])?.name || 'Sin accesorio' : catalog[field].find(x=>x.id===kit[field]).name;
-   b.querySelector('b').textContent=value;
+   const value=field==='attachments' ? ATTACHMENTS.find(a=>a.id===kit.attachments[Number(b.dataset.index)])?.name || locKey('Sin accesorio') : catalog[field].find(x=>x.id===kit[field]).name;
+   // Generic part names are locKey() in armory-data.js; proper names pass through unchanged.
+   b.querySelector('b').textContent=loc(value);
   }
   choices.replaceChildren(...catalog[category].map(item=>{
    const b=document.createElement('button');b.type='button';b.className='armory-choice';b.dataset.id=item.id;
    const selected=category==='attachments'?kit.attachments.includes(item.id):kit[category]===item.id;
    b.setAttribute('aria-pressed',String(selected));b.disabled=category==='attachments' && kit.attachments.length===2 && !selected;
-   b.innerHTML=`<b>${esc(item.name)}</b><span>${esc(item.blurb||'Solo cambia el estilo.')}</span>`;
+   b.innerHTML=`<b>${esc(loc(item.name))}</b><span>${esc(item.blurb?loc(item.blurb):loc('Solo cambia el estilo.'))}</span>`;
    const preview=()=>cleanKit({...kit,[category]:category==='attachments'?(selected?kit.attachments.filter(id=>id!==item.id):[...kit.attachments,item.id]):item.id});
    for(const event of ['pointerenter','focus'])b.addEventListener(event,()=>{paintStats(preview());rebuild(preview());});
    for(const event of ['pointerleave','blur'])b.addEventListener(event,()=>{paintStats();rebuild();});
@@ -61,9 +63,9 @@ export function createArmory({room,onPick}) {
  document.getElementById('armory-go').onclick=()=>{save();dialog.close();if(room.isHost)room.start();};
  document.getElementById('armory-range').onclick=()=>{
   target.group.visible=true;
-  range=new Arena();range.add(1,{name:'Tú'});range.add(2,{name:'Blanco'});range.selectKit(1,kit);range.start();
+  range=new Arena();range.add(1,{name:loc('Tú')});range.add(2,{name:loc('Blanco')});range.selectKit(1,kit);range.start();
   Object.assign(range.players[0],{x:-22,z:-22,shield:0});Object.assign(range.players[1],{x:-22,z:-15,shield:0});
-  document.getElementById('range-controls').hidden=false;document.getElementById('range-status').textContent='Apunta al blanco: el kit usa sus reglas reales.';
+  document.getElementById('range-controls').hidden=false;document.getElementById('range-status').textContent=loc('Apunta al blanco: el kit usa sus reglas reales.');
  };
  let fire=false,grenade=false;
  document.getElementById('range-fire').onclick=()=>{fire=true;};document.getElementById('range-grenade').onclick=()=>{grenade=true;};

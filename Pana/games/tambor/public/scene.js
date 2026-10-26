@@ -16,7 +16,8 @@ import { rng } from '/engine/random.js';
 import { buildPlace, LIGHTS, RING } from './place.js';
 import { createCuloEPuyaSet, createMina, createCharrasca, createCaracol, createMaraca, createPanuelo, createViolinCloud, createNameTag } from './rueda-set.js';
 import { chart, songFor, STATIONS } from './songs.js';
-import { MOVES, DICHOS } from './rules.js';
+import { MOVES, DICHOS, eventSpoken } from './rules.js';
+import { loc } from '/engine/i18n.js';
 
 const BOT_LOOKS = [
   { outfit: 'hawaiana', outfitColor: '#ffc629', hat: 'llanero', face: 'feliz' }, { outfit: 'franela', outfitColor: '#2ad1b2', hat: 'none', face: 'wow' },
@@ -147,7 +148,7 @@ export function createTamborScene(canvas) {
       let entry = panas.get(p.id);
       if (entry?.key !== keyText) {
         const old = entry;
-        entry = makeEntry(look, p.id === myId ? `${p.name} · tú` : p.name, p.bot ? '#9aa3b5' : p.id === myId ? '#ffc83d' : '#ff5a3d');
+        entry = makeEntry(look, p.id === myId ? loc('{name} · tú', { name: p.name }) : p.name, p.bot ? '#9aa3b5' : p.id === myId ? '#ffc83d' : '#ff5a3d');
         entry.key = keyText;
         entry.dichoN = p.dicho?.n ?? null;
         if (old) { Object.assign(entry, { x: old.x, z: old.z, yaw: old.yaw }); dropEntry(old); }
@@ -185,18 +186,19 @@ export function createTamborScene(canvas) {
   // Something happened: the MCP reacts and the panas involved too.
   function event(e) {
     const who = panas.get(e.id);
-    if (e.kind === 'kick') { mcp.bubble.say('¡Sal de la rueda!', 2); mcp.point = { id: e.id, until: time + 1.6 }; if (who) { who.dizzy = 1.6; who.hop = 1; } shake = .35; }
+    if (e.kind === 'kick') { mcp.bubble.say('¡Sal de la rueda!', 2); mcp.point = { id: e.id, until: time + 1.6 }; if (who) { who.dizzy = 1.6; who.hop = 1; } shake = .35; } // i18n-ignore: the MCP's voice
     if (e.kind === 'enter' || e.kind === 'relevo') {
-      mcp.bubble.say(e.text.replace(/!.*$/, '!'), 1.8);
+      mcp.bubble.say(eventSpoken(e).replace(/!.*$/, '!'), 1.8);
       if (who) who.hop = 1;
       const crowd = [...panas.values()].filter(x => x.p?.role === 'crowd' && x !== who);
-      crowd.slice(0, 2).forEach((x, i) => setTimeout(() => x.bubble.say('¡Palo!', 1.3), 180 * i));
+      crowd.slice(0, 2).forEach((x, i) => setTimeout(() => x.bubble.say('¡Palo!', 1.3), 180 * i)); // i18n-ignore: a cheer
     }
     if (e.kind === 'mcp') mcp.bubble.say(e.text, 1.4);
     if (e.kind === 'miss' && who) { who.dizzy = .9; if (Math.random() < .5) mcp.bubble.say(e.text, 1.6); }
-    if (e.kind === 'duelo') mcp.bubble.say('¡Duelo!', 1.6);
-    if (e.kind === 'golpe') mcp.bubble.say('¡Escucha!', 1.5);
-    if (e.kind === 'song') mcp.bubble.say('¡Golpe!', 1.5);
+    // The MCP's speech bubbles are its voice: Spanish like the spoken calls.
+    if (e.kind === 'duelo') mcp.bubble.say('¡Duelo!', 1.6); // i18n-ignore
+    if (e.kind === 'golpe') mcp.bubble.say('¡Escucha!', 1.5); // i18n-ignore
+    if (e.kind === 'song') mcp.bubble.say('¡Golpe!', 1.5); // i18n-ignore
     if (e.kind === 'final' && who) who.hop = 1;
   }
   // A call was announced: the MCP shouts it and points at the dancer.

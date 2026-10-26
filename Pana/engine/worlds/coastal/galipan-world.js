@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import { extendTerrain } from './world-horizon.js';
 import * as THREE from 'three';

@@ -18,6 +18,7 @@ import { pixelRatio, bindRenderer, shadowSize, rendererOptions } from '/engine/s
 import { createExpeditionWorld, itemModel } from './scene.js';
 import { floorOf, HEIGHT } from './deck.js';
 import { ITEMS } from './items.js';
+import { formatNumber } from '/engine/i18n.js';
 import { holds, alive, cartValue, liftView } from './rules.js';
 
 export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
@@ -53,7 +54,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const handLight = new THREE.PointLight(0xffa850, 0, 12, 1.6); handLight.position.set(.3, -.2, -.4); camera.add(handLight);
   const pool = Array.from({ length: POOL }, () => { const l = new THREE.PointLight(0xffa04a, 0, 11, 1.7); scene.add(l); return l; });
   let world = createExpeditionWorld({ seed, depth }); scene.add(world.group);
-  const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign);
+  const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign); // i18n-ignore: signage painted in the world
   const puffs = new Puffs(scene), waves = new Shockwaves(scene);
   // Your paws: fur-coloured, holding the two hand items in view.
   const hands = [new THREE.Group(), new THREE.Group()]; hands[0].position.set(.32, -.36, -.7); hands[1].position.set(-.32, -.36, -.7);
@@ -204,7 +205,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         if (c.big) { const m = itemModel(c.big.kind); m.scale.multiplyScalar(.42); m.position.y = .2; a.bed.add(m); }
         a.tag && disposeSprite(a.tag); a.tag = null;
         const value = cartValue(c);
-        if (value) { a.tag = label(`Bs. ${Math.round(value).toLocaleString('es-VE')}`, '#ffd36a'); a.tag.position.y = 1.7; a.tag.scale.set(2, .38, 1); a.root.add(a.tag); }
+        if (value) { a.tag = label(`Bs. ${formatNumber(Math.round(value))}`, '#ffd36a'); a.tag.position.y = 1.7; a.tag.scale.set(2, .38, 1); a.root.add(a.tag); }
       }
     }
     for (const [id, a] of carts) if (!state.carts?.some(c => c.id === id)) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); carts.delete(id); }

@@ -10,19 +10,18 @@ import { holdButton } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { OnlineNight, PracticeNight } from './network.js';
-import { createCampWorld, groundAt } from './scene.js';
+import { createCampWorld, groundAt, guardianModel } from './scene.js';
 import { SEATS, zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, BELL, VENTS, HIDES, FIXES, stationById, ventById, hideById, distance } from './layout.js';
-import { mummyCount, MIN_PLAYERS, taskById, WRAP_RANGE, REPORT_RANGE, BELL_RANGE, VENT_RANGE, HIDE_RANGE, DISGUISES, SABOTAGES } from './rules.js';
-import { vineSnare } from '/engine/models/props/embuste.js';
-import { guardianModel } from './scene.js';
-import { createPlazaProp, propDefinition } from '/engine/models/props/plaza.js';
+import { mummyCount, MIN_PLAYERS, taskById, WRAP_RANGE, REPORT_RANGE, BELL_RANGE, VENT_RANGE, HIDE_RANGE, DISGUISES, DISGUISE_NAMES, SABOTAGES } from './rules.js';
+import { vineSnare, bandageWrap } from '/engine/models/props/embuste.js';
+import { createPlazaProp } from '/engine/models/props/plaza.js';
 import { createMeeting } from './ui.js';
-import { bandageWrap } from '/engine/models/props/embuste.js';
 import { openTask, HINTS } from './tasks.js';
 import { setBar } from '/engine/kit.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { EMBUSTE_OPTIONS, defaultEmbusteOptions } from './options.js';
 import { createToast } from '/engine/hud.js';
+import { loc, formatList } from '/engine/i18n.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
 const notify = createToast($('toast'), { ms: 3400 });
@@ -49,23 +48,23 @@ const cameraTarget = new THREE.Vector3(0, 0, 0), temp = new THREE.Vector3();
 
 // ---------- state ----------
 let net = null, view = null, lobby = { phase: 'lobby', players: [], isHost: false }, paused = false, dead = false, phase = '';
-const roomOptions = createRoomOptions($('lobby-options'), { title: '¡Embuste!', fields: EMBUSTE_OPTIONS,
+const roomOptions = createRoomOptions($('lobby-options'), { title: '¡Embuste!', fields: EMBUSTE_OPTIONS, // i18n-ignore: the game's name
   change: patch => net?.options(patch), reset: () => net?.options(defaultEmbusteOptions()) });
 let last = performance.now(), elapsed = 0, rosterKey = '', uiClock = 0, endedAt = 0;
 const actors = new Map(), keys = new Set(), touch = new Set();
 const me = () => view?.me;
 const rosterOf = seat => view?.roster.find(r => r.seat === seat);
-const nameOf = seat => rosterOf(seat)?.name || 'Alguien';
+const nameOf = seat => rosterOf(seat)?.name || loc('Alguien');
 const colorOf = seat => { const i = view?.roster.findIndex(r => r.seat === seat) ?? 0; return colors[Math.max(0, i) % colors.length]; };
 
 function clearInput() { keys.clear(); touch.clear(); }
 
-const menu = createGameMenu({ pad: { move: 'wasd', cursor: 'Tareas: apuntar y tocar', keys: { a: ['KeyE', 'Usar; mantén para reparar'], b: ['Space', 'Pulsar en las tareas'], x: ['KeyR', 'Reportar'], lb: ['KeyQ', 'Envolver (momia)'], y: ['KeyF', 'Sabotaje (momia)'], rb: ['KeyC', 'Disfraz (momia)'] } },
-  title: '¡Embuste!', heading: 'Un respiro', resumeLabel: 'Volver a la noche', sound, notify,
-  note: () => net && !net.online ? 'La práctica está en pausa.' : 'La noche sigue: no te quedes solo.',
-  controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['E', 'Usar: tareas, escondites, la campana; mantén para reparar'], ['R', 'Reportar una estatua de vendas'], ['Q', 'Envolver (momia)'], ['F', 'Sabotaje (momia)'], ['C', 'Disfraz (momia)'], ['M', 'Sonido']],
-  tips: ['Las tareas tapan la pantalla: mira a tu alrededor antes de empezar.', 'Si encuentras a un pana envuelto, repórtalo y discutan en la fogata.', 'Las momias pueden meterse en los troncos huecos y aparecer al otro lado del mapa.'],
-  actions: [{ id: 'menu-practice', label: 'Practicar con bots', kind: 'link', visible: () => !!net?.online, run: () => practice() }],
+const menu = createGameMenu({ pad: { move: 'wasd', cursor: loc('Tareas: apuntar y tocar'), keys: { a: ['KeyE', loc('Usar; mantén para reparar')], b: ['Space', loc('Pulsar en las tareas')], x: ['KeyR', loc('Reportar')], lb: ['KeyQ', loc('Envolver (momia)')], y: ['KeyF', loc('Sabotaje (momia)')], rb: ['KeyC', loc('Disfraz (momia)')] } },
+  title: '¡Embuste!', heading: loc('Un respiro'), resumeLabel: loc('Volver a la noche'), sound, notify, // i18n-ignore: the game's name
+  note: () => net && !net.online ? loc('La práctica está en pausa.') : loc('La noche sigue: no te quedes solo.'),
+  controls: [['W A S D / ↑ ← ↓ →', loc('Moverte')], ['E', loc('Usar: tareas, escondites, la campana; mantén para reparar')], ['R', loc('Reportar una estatua de vendas')], ['Q', loc('Envolver (momia)')], ['F', loc('Sabotaje (momia)')], ['C', loc('Disfraz (momia)')], ['M', loc('Sonido')]],
+  tips: [loc('Las tareas tapan la pantalla: mira a tu alrededor antes de empezar.'), loc('Si encuentras a un pana envuelto, repórtalo y discutan en la fogata.'), loc('Las momias pueden meterse en los troncos huecos y aparecer al otro lado del mapa.')],
+  actions: [{ id: 'menu-practice', label: loc('Practicar con bots'), kind: 'link', visible: () => !!net?.online, run: () => practice() }],
   invite: () => inviteUrl(code),
   onOpen() { paused = true; clearInput(); if (net && !net.online) net.paused = true; },
   onClose() { paused = false; if (net && !net.online) net.paused = false; },
@@ -116,7 +115,7 @@ function actorFor(seat) {
   if (a) removeActor(a);
   const root = new THREE.Group(), character = buildCharacter(r.avatar);
   const partner = view.partners.includes(seat);
-  const tag = label(seat === me().seat ? `${r.name} · tú` : r.name, partner ? '#9fe0c8' : colorOf(seat));
+  const tag = label(seat === me().seat ? loc('{name} · tú', { name: r.name }) : r.name, partner ? '#9fe0c8' : colorOf(seat));
   root.add(character.group, tag); scene.add(root);
   a = { seat, root, character, tag, skin, seen: false }; actors.set(seat, a);
   return a;
@@ -205,7 +204,7 @@ function startEnding() {
     a.root.add(wrap); endingWraps.push({ wrap, falling: panas });
     if (!panas) wrap.scale.y = 0.01;
   }
-  shout(panas ? '¡Amaneció!' : 'La noche no termina', { tone: panas ? 'yellow' : 'coral' });
+  shout(panas ? loc('¡Amaneció!') : loc('La noche no termina'), { tone: panas ? 'yellow' : 'coral' });
   sound.tone(panas ? 523 : 110, 0, 0.5, 'triangle', 0.08); sound.tone(panas ? 784 : 82, 0.4, 0.9, 'triangle', 0.07);
 }
 function clearEnding() { while (endingWraps.length) endingWraps.pop().wrap.removeFromParent(); }
@@ -260,48 +259,48 @@ function enterPhase(next) {
 function handleEvent(e) {
   if (e.kind === 'task') {
     if (openPanel) closeTask(false);
-    if (e.complete) { sound.tone(660, 0, 0.12, 'sine', 0.07); sound.tone(990, 0.1, 0.16, 'sine', 0.06); notify(e.fake ? 'Fingiste la tarea. Nadie lo notó… ¿o sí?' : '¡Tarea lista!'); }
-    else if (e.fake) notify('Fingiste la tarea. Nadie lo notó… ¿o sí?');
-    else notify('Primera parte lista. Sigue con la segunda.');
+    if (e.complete) { sound.tone(660, 0, 0.12, 'sine', 0.07); sound.tone(990, 0.1, 0.16, 'sine', 0.06); notify(e.fake ? loc('Fingiste la tarea. Nadie lo notó… ¿o sí?') : loc('¡Tarea lista!')); }
+    else if (e.fake) notify(loc('Fingiste la tarea. Nadie lo notó… ¿o sí?'));
+    else notify(loc('Primera parte lista. Sigue con la segunda.'));
   }
   if (e.kind === 'visual') sound.tone(520, 0, 0.3, 'triangle', 0.05);
-  if (e.kind === 'alarm') { horn(); shout(SABOTAGES[e.sabotage].name, { tone: 'coral' }); }
+  if (e.kind === 'alarm') { horn(); shout(loc(SABOTAGES[e.sabotage].name), { tone: 'coral' }); }
   if (e.kind === 'fixed') {
-    notify(`${SABOTAGES[e.sabotage].name}: ¡arreglado!`);
+    notify(loc('{name}: ¡arreglado!', { name: loc(SABOTAGES[e.sabotage].name) }));
     sound.tone(660, 0, 0.15, 'sine', 0.07); sound.tone(880, 0.12, 0.2, 'sine', 0.06);
     const mine = myPose();
     if (mine) shockwaves.ring(mine.x, groundAt(mine.x, mine.z) + 0.08, mine.z, { color: 0x2ad1b2, maxRadius: 4.5, duration: 0.45 });
   }
-  if (e.kind === 'sabotaged' && e.sabotage === 'bejuco') notify('Trampa puesta. Solo las momias la ven.');
-  if (e.kind === 'look') { shout('¡Momia!', { tone: 'coral' }); sound.tone(98, 0, 0.5, 'square', 0.06); }
-  if (e.kind === 'frozen') notify('¡Te moviste! El guardián te congeló un momento.');
-  if (e.kind === 'snared') { sound.tone(140, 0, 0.3, 'triangle', 0.06); notify(e.seat === me().seat ? '¡Un bejuco te agarró el pie!' : `Un bejuco agarró a ${nameOf(e.seat)}.`); }
+  if (e.kind === 'sabotaged' && e.sabotage === 'bejuco') notify(loc('Trampa puesta. Solo las momias la ven.'));
+  if (e.kind === 'look') { shout(loc('¡Momia!'), { tone: 'coral' }); sound.tone(98, 0, 0.5, 'square', 0.06); }
+  if (e.kind === 'frozen') notify(loc('¡Te moviste! El guardián te congeló un momento.'));
+  if (e.kind === 'snared') { sound.tone(140, 0, 0.3, 'triangle', 0.06); notify(e.seat === me().seat ? loc('¡Un bejuco te agarró el pie!') : loc('Un bejuco agarró a {name}.', { name: nameOf(e.seat) })); }
   if (e.kind === 'shake') { world.shake(e.spot); sound.tone(90, 0, 0.18, 'triangle', 0.04); }
-  if (e.kind === 'kicked') notify(`Ya no cabes en ${hideById(e.spot)?.name.toLowerCase() || 'el escondite'}. ¡A moverse!`);
+  if (e.kind === 'kicked') notify(loc('Ya no cabes en {spot}. ¡A moverse!', { spot: hideById(e.spot) ? loc(hideById(e.spot).name).toLowerCase() : loc('el escondite') }));
   if (e.kind === 'wrap') {
     const mine = me().seat, by = nameOf(e.by), who = nameOf(e.seat);
-    if (e.seat === mine) { shout('¡Te envolvieron!', { tone: 'coral' }); notify(`${by} te envolvió. Ahora eres una momiita: sigue haciendo tareas.`); }
-    else if (e.by === mine) notify(`Envolviste a ${who}. Aléjate antes de que alguien llegue.`);
-    else if (view.partners.includes(e.by)) notify(`Tu compinche envolvió a ${who}.`);
-    else { shout('¡Lo viste todo!', { tone: 'coral' }); notify(`¡${by} envolvió a ${who}! Repórtalo.`); }
+    if (e.seat === mine) { shout(loc('¡Te envolvieron!'), { tone: 'coral' }); notify(loc('{by} te envolvió. Ahora eres una momiita: sigue haciendo tareas.', { by })); }
+    else if (e.by === mine) notify(loc('Envolviste a {who}. Aléjate antes de que alguien llegue.', { who }));
+    else if (view.partners.includes(e.by)) notify(loc('Tu compinche envolvió a {who}.', { who }));
+    else { shout(loc('¡Lo viste todo!'), { tone: 'coral' }); notify(loc('¡{by} envolvió a {who}! Repórtalo.', { by, who })); }
     sound.tone(110, 0, 0.5, 'sawtooth', 0.05);
   }
-  if (e.kind === 'meeting') { horn(); shout(e.body != null ? '¡Estatua de vendas!' : '¡Reunión!', { tone: 'coral' }); }
-  if (e.kind === 'vote') { shout('¡A votar!', { tone: 'yellow' }); sound.tone(440, 0, 0.15, 'square', 0.05); }
+  if (e.kind === 'meeting') { horn(); shout(e.body != null ? loc('¡Estatua de vendas!') : loc('¡Reunión!'), { tone: 'coral' }); }
+  if (e.kind === 'vote') { shout(loc('¡A votar!'), { tone: 'yellow' }); sound.tone(440, 0, 0.15, 'square', 0.05); }
   if (e.kind === 'eject') sound.tone(196, 0, 0.9, 'triangle', 0.06);
-  if (e.kind === 'morning') notify('La noche sigue. Cuidado con quedarte solo.');
-  if (e.kind === 'night') shout('¡Cayó la noche!', { tone: 'yellow' });
-  if (e.kind === 'left') notify(`${e.name} se fue del campamento${e.role === 'momia' ? ': era una momia.' : '.'}`);
+  if (e.kind === 'morning') notify(loc('La noche sigue. Cuidado con quedarte solo.'));
+  if (e.kind === 'night') shout(loc('¡Cayó la noche!'), { tone: 'yellow' });
+  if (e.kind === 'left') notify(e.role === 'momia' ? loc('{name} se fue del campamento: era una momia.', { name: e.name }) : loc('{name} se fue del campamento.', { name: e.name }));
   if (e.kind === 'end') sound.tone(e.winner === 'panas' ? 660 : 160, 0, 0.6, 'triangle', 0.08);
 }
 function showReveal() {
   const role = me()?.role, mummy = role === 'momia';
   $('reveal').classList.toggle('is-mummy', mummy);
-  $('reveal-title').textContent = mummy ? 'Una momia' : 'Un pana';
+  $('reveal-title').textContent = mummy ? loc('Una momia') : loc('Un pana');
   const partners = view.partners.map(s => rosterOf(s)?.name).filter(Boolean);
   $('reveal-copy').textContent = mummy
-    ? `Tienes vendas debajo de la camisa. Finge las tareas, envuelve a los panas cuando estén solos y que nadie lo sepa.${partners.length ? ` Tu compinche: ${partners.join(', ')}.` : ''}`
-    : 'Mantén el campamento funcionando hasta que amanezca. Si ves algo raro, llama a una reunión en la fogata.';
+    ? partners.length ? loc('Tienes vendas debajo de la camisa. Finge las tareas, envuelve a los panas cuando estén solos y que nadie lo sepa. Tu compinche: {names}.', { names: formatList(partners) }) : loc('Tienes vendas debajo de la camisa. Finge las tareas, envuelve a los panas cuando estén solos y que nadie lo sepa.')
+    : loc('Mantén el campamento funcionando hasta que amanezca. Si ves algo raro, llama a una reunión en la fogata.');
   sound.tone(mummy ? 140 : 520, 0, 0.5, 'triangle', 0.08);
 }
 
@@ -314,21 +313,21 @@ function updateLobby() {
   const connected = !!net?.connected, host = lobby.isHost;
   const count = lobby.players.length, filled = lobby.bots ? Math.max(6, count) : count;
   $('start').disabled = !connected || !host || (!lobby.bots && count < MIN_PLAYERS && !quick);
-  $('start').textContent = !connected ? 'Conectando…' : !host ? 'El anfitrión prende la fogata' : !lobby.bots && count < MIN_PLAYERS ? `Faltan panas (mínimo ${MIN_PLAYERS})` : '¡Que caiga la noche!';
+  $('start').textContent = !connected ? loc('Conectando…') : !host ? loc('El anfitrión prende la fogata') : !lobby.bots && count < MIN_PLAYERS ? loc('Faltan panas (mínimo {n})', { n: MIN_PLAYERS }) : loc('¡Que caiga la noche!');
   $('stat-mummies').textContent = mummyCount(Math.min(8, filled));
   roomOptions.update({ ...defaultEmbusteOptions(), ...lobby }, !!host && inLobby);
   if (!inLobby && roomOptions.isOpen) roomOptions.close();
-  $('practice').textContent = net && !net.online ? 'Volver a la sala online' : 'Practicar con bots en este navegador';
+  $('practice').textContent = net && !net.online ? loc('Volver a la sala online') : loc('Practicar con bots en este navegador');
   const key = lobby.players.map(p => `${p.seat}:${p.name}:${p.host}`).join('|');
   if (key !== rosterKey) {
     rosterKey = key;
     $('lobby-team').replaceChildren(...lobby.players.map((p, i) => {
-      const chip = document.createElement('span'), dot = document.createElement('i'); chip.className = 'pk-chip'; dot.className = 'pk-dot'; dot.style.background = colors[i % colors.length];
-      chip.append(dot, document.createTextNode(`${p.name}${p.me ? ' · tú' : ''}${p.host ? ' · anfitrión' : ''}`)); return chip;
+      const chip = document.createElement('span'), dot = document.createElement('i'); chip.className = 'pk-chip'; chip.translate = false; dot.className = 'pk-dot'; dot.style.background = colors[i % colors.length];
+      chip.append(dot, document.createTextNode(p.me && p.host ? loc('{name} · tú · anfitrión', p) : p.me ? loc('{name} · tú', p) : p.host ? loc('{name} · anfitrión', p) : p.name)); return chip;
     }));
   }
   $('again').disabled = $('to-lobby').disabled = !host;
-  $('again').textContent = host ? 'Otra noche' : 'Esperando al anfitrión…';
+  $('again').textContent = host ? loc('Otra noche') : loc('Esperando al anfitrión…');
 }
 
 // The meeting card while they talk and vote; the verdict over the river after.
@@ -342,19 +341,19 @@ let tasksKey = '';
 function updateHud() {
   const p = me(); if (!p) return;
   const mine = myPose();
-  if (mine) $('zone').textContent = zoneAt(mine).name;
+  if (mine) $('zone').textContent = loc(zoneAt(mine).name);
   if (view.phase === 'ended') showResults();
   if (view.phase !== 'playing') { closeTask(false); return; }
   const mummy = p.role === 'momia';
-  $('objective').textContent = p.ghost ? 'Sigue ayudando, momiita' : mummy ? 'Finge que trabajas' : 'Mantén la reliquia encendida';
+  $('objective').textContent = p.ghost ? loc('Sigue ayudando, momiita') : mummy ? loc('Finge que trabajas') : loc('Mantén la reliquia encendida');
   const key = p.tasks.map(t => `${t.id}:${t.step}:${mine && !t.done && distance(mine, stationById(t.station)) < REACH + 1 ? 1 : 0}`).join('|');
   if (key !== tasksKey) {
     tasksKey = key;
     $('task-list').replaceChildren(...p.tasks.map(t => {
       const li = document.createElement('li'), s = stationById(t.station), near = mine && !t.done && distance(mine, s) < REACH + 1;
       li.className = t.done ? 'is-done' : near ? 'is-near' : '';
-      li.append(document.createTextNode(t.steps > 1 && !t.done ? `${t.name} (${t.step + 1}/${t.steps})` : t.name));
-      const where = document.createElement('small'); where.textContent = zoneById(s.zone).name.replace(/^(La|El|Los|Las) /, ''); li.append(where);
+      li.append(document.createTextNode(t.steps > 1 && !t.done ? `${loc(t.name)} (${t.step + 1}/${t.steps})` : loc(t.name)));
+      const where = document.createElement('small'); where.textContent = loc(zoneById(s.zone).name).replace(/^(La|El|Los|Las|The) /, ''); li.append(where);
       return li;
     }));
     mapStations = new Set(p.tasks.filter(t => !t.done).map(t => t.station));
@@ -364,7 +363,7 @@ function updateHud() {
   alarm(p);
   $('task-list').parentElement.classList.toggle('is-jammed', !!view.world.jammed);
   const use = useTarget();
-  $('use').disabled = !use || use.wait; $('use-label').textContent = use?.label || 'Usar';
+  $('use').disabled = !use || use.wait; $('use-label').textContent = use?.label || loc('Usar');
   document.body.classList.toggle('ghost', !!p.ghost); document.body.classList.toggle('mummy', mummy && !p.ghost);
   show('ghost-note', !!p.ghost);
   for (const id of ['wrap', 'sabotage', 'disguise']) show(id, mummy && !p.ghost);
@@ -375,12 +374,12 @@ function updateHud() {
   $('wrap').disabled = !wrapInReach();
   show('vent', mummy && p.hidden?.kind === 'vent');
   $('disguise').disabled = !p.disguise && (!p.disguises || !!p.hidden);
-  $('disguise-label').textContent = p.disguise ? 'Quitar disfraz' : `Disfraz ×${p.disguises ?? 0}`;
+  $('disguise-label').textContent = p.disguise ? loc('Quitar disfraz') : loc('Disfraz ×{n}', { n: p.disguises ?? 0 });
   if (p.disguise || !mummy) show('disguise-menu', false);
   const hidden = p.hidden && (p.hidden.kind === 'vent' ? ventById(p.hidden.id) : hideById(p.hidden.id));
   show('hidden-note', !!hidden || !!p.disguise);
-  if (hidden) { $('hidden-title').textContent = p.hidden.kind === 'vent' ? 'Dentro del tronco' : 'Escondido'; $('hidden-copy').textContent = p.hidden.kind === 'vent' ? `${hidden.name}. Cruza al otro lado o sal con E.` : `${hidden.name} · te sacan en ${Math.ceil(p.hidden.t)} s`; }
-  else if (p.disguise) { $('hidden-title').textContent = `Eres ${propDefinition(p.disguise.prop)?.label.toLowerCase()}`; $('hidden-copy').textContent = `No te muevas: ${Math.ceil(p.disguise.t)} s de disfraz.`; }
+  if (hidden) { $('hidden-title').textContent = p.hidden.kind === 'vent' ? loc('Dentro del tronco') : loc('Escondido'); $('hidden-copy').textContent = p.hidden.kind === 'vent' ? loc('{spot}. Cruza al otro lado o sal con E.', { spot: loc(hidden.name) }) : loc('{spot} · te sacan en {n} s', { spot: loc(hidden.name), n: Math.ceil(p.hidden.t) }); }
+  else if (p.disguise) { $('hidden-title').textContent = loc('Eres {prop}', { prop: loc(DISGUISE_NAMES[p.disguise.prop] || '').toLowerCase() }); $('hidden-copy').textContent = loc('No te muevas: {n} s de disfraz.', { n: Math.ceil(p.disguise.t) }); }
   $('wrap').style.setProperty('--cool', String(mummy ? Math.min(1, (p.cooldown || 0) / 25) : 0));
   if (openPanel && !p.task && performance.now() - openPanel.opened > 1500) closeTask(false);
 }
@@ -388,19 +387,19 @@ function updateHud() {
 // What E does here, nearest first: your task, (later) hiding, vents, the bell.
 function useTarget() {
   const p = me(), mine = myPose(); if (!p || !mine || openPanel) return null;
-  if (p.hidden?.kind === 'hide') return { label: 'Salir del escondite', run: () => net.act('hide') };
-  if (view.sabotage && !p.ghost && !p.hidden && (FIXES[view.sabotage.kind] || []).some(f => distance(mine, f) <= f.r)) return { label: 'Mantén E: arreglar', hold: true };
-  if (p.hidden?.kind === 'vent') return { label: 'Salir del tronco', run: () => net.act('vent') };
+  if (p.hidden?.kind === 'hide') return { label: loc('Salir del escondite'), run: () => net.act('hide') };
+  if (view.sabotage && !p.ghost && !p.hidden && (FIXES[view.sabotage.kind] || []).some(f => distance(mine, f) <= f.r)) return { label: loc('Mantén E: arreglar'), hold: true };
+  if (p.hidden?.kind === 'vent') return { label: loc('Salir del tronco'), run: () => net.act('vent') };
   if (p.disguise) return null;
   const t = p.tasks.filter(t => !t.done).map(t => ({ t, s: stationById(t.station) })).filter(({ s }) => distance(mine, s) <= REACH)
     .sort((a, b) => distance(mine, a.s) - distance(mine, b.s))[0];
-  if (t) return { label: t.t.name, run: () => startTask(t.t) };
+  if (t) return { label: loc(t.t.name), run: () => startTask(t.t) };
   const log = p.role === 'momia' && !p.ghost && VENTS.find(v => distance(mine, v) <= VENT_RANGE);
-  if (log) return { label: `Meterse: ${log.name.toLowerCase()}`, run: () => net.act('vent') };
+  if (log) return { label: loc('Meterse: {spot}', { spot: loc(log.name).toLowerCase() }), run: () => net.act('vent') };
   const spot = !p.ghost && HIDES.find(h => distance(mine, h) <= HIDE_RANGE);
-  if (spot) return p.hideCooldown > 0 ? { label: `Esconderse en ${Math.ceil(p.hideCooldown)} s`, wait: true } : { label: `Esconderse: ${spot.name.toLowerCase()}`, run: () => net.act('hide') };
+  if (spot) return p.hideCooldown > 0 ? { label: loc('Esconderse en {n} s', { n: Math.ceil(p.hideCooldown) }), wait: true } : { label: loc('Esconderse: {spot}', { spot: loc(spot.name).toLowerCase() }), run: () => net.act('hide') };
   if (!p.ghost && p.emergencies > 0 && distance(mine, BELL) <= BELL_RANGE) {
-    return p.bellIn > 0 ? { label: `Campana en ${Math.ceil(p.bellIn)} s`, wait: true } : { label: 'Tocar la campana', run: () => net.act('bell') };
+    return p.bellIn > 0 ? { label: loc('Campana en {n} s', { n: Math.ceil(p.bellIn) }), wait: true } : { label: loc('Tocar la campana'), run: () => net.act('bell') };
   }
   return null;
 }
@@ -418,9 +417,9 @@ function alarm(p) {
   show('alarm', !!def); document.body.classList.toggle('alarmed', !!def);
   if (!def) return;
   const looking = view.world.guardian === 'look';
-  $('alarm-title').textContent = def.name;
-  $('alarm-copy').textContent = sab.kind === 'momia' ? (looking ? '¡El guardián está mirando! No te muevas.' : p.role === 'momia' && sab.next != null ? `Gira en ${Math.ceil(sab.next)} s. Tú sí puedes moverte.` : 'Un, dos, tres… ¡atento!')
-    : def.critical ? `${def.hint} Quedan ${Math.ceil(sab.t)} s.` : def.hint;
+  $('alarm-title').textContent = loc(def.name);
+  $('alarm-copy').textContent = sab.kind === 'momia' ? (looking ? loc('¡El guardián está mirando! No te muevas.') : p.role === 'momia' && sab.next != null ? loc('Gira en {n} s. Tú sí puedes moverte.', { n: Math.ceil(sab.next) }) : loc('Un, dos, tres… ¡atento!'))
+    : def.critical ? loc('{hint} Quedan {n} s.', { hint: loc(def.hint), n: Math.ceil(sab.t) }) : loc(def.hint);
   setBar($('alarm-bar'), sab.kind === 'momia' ? (looking ? 1 : 0) : sab.progress);
 }
 // Built once; each view only refreshes what can be picked (a rebuilt button can't be clicked).
@@ -428,13 +427,13 @@ function sabotageMenu() {
   const p = me(), busy = !!view.sabotage, menuNode = $('sabotage-menu');
   if (!menuNode.children.length) menuNode.replaceChildren(...Object.entries(SABOTAGES).map(([kind, def]) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'pk-btn pk-btn--sm'; b.dataset.kind = kind;
-    b.append(document.createTextNode(def.name), document.createElement('small'));
+    b.append(document.createTextNode(loc(def.name)), document.createElement('small'));
     b.onclick = () => { net.act('sabotage', { kind }); show('sabotage-menu', false); }; return b;
   }));
   for (const b of menuNode.children) {
     const kind = b.dataset.kind, def = SABOTAGES[kind];
     b.disabled = p.sabCooldown > 0 || (kind !== 'bejuco' && busy) || (kind === 'bejuco' && p.ghost);
-    const note = p.sabCooldown > 0 ? `${Math.ceil(p.sabCooldown)} s` : def.critical ? 'crítico' : '';
+    const note = p.sabCooldown > 0 ? `${Math.ceil(p.sabCooldown)} s` : def.critical ? loc('crítico') : '';
     if (b.lastChild.textContent !== note) b.lastChild.textContent = note;
   }
 }
@@ -452,7 +451,7 @@ function doDisguise() {
 }
 $('disguise-menu').replaceChildren(...DISGUISES.map((prop, i) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'pk-btn pk-btn--sm';
-  b.append(document.createTextNode(propDefinition(prop).label)); const k = document.createElement('small'); k.textContent = String(i + 1); b.append(k);
+  b.append(document.createTextNode(loc(DISGUISE_NAMES[prop]))); const k = document.createElement('small'); k.textContent = String(i + 1); b.append(k);
   b.onclick = () => { net.act('disguise', { prop }); show('disguise-menu', false); }; return b;
 }));
 const doReport = () => { if (statueInReach()) net.act('report'); };
@@ -464,7 +463,7 @@ function startTask(t) {
   if (openPanel) return;
   net.act('task', { station: t.station });
   const s = stationById(t.station), def = taskById(t.id);
-  $('task-title').textContent = def.name; $('task-where').textContent = zoneById(s.zone).name;
+  $('task-title').textContent = loc(def.name); $('task-where').textContent = loc(zoneById(s.zone).name);
   $('task-hint').textContent = HINTS[t.id] || '';
   show('task', true); clearInput();
   const panel = { station: t.station, opened: performance.now(), sent: 0 };
@@ -488,18 +487,18 @@ $('task-close').onclick = () => closeTask(true);
 function showResults() {
   const e = view.ending; if (!e) return;
   const panas = e.winner === 'panas', mine = me()?.role === (panas ? 'pana' : 'momia');
-  $('result-eyebrow').textContent = panas ? 'Amaneció' : 'La noche no termina';
-  $('result-title').textContent = mine ? '¡Ganaste!' : panas ? 'Ganaron los panas' : 'Ganaron las momias';
+  $('result-eyebrow').textContent = panas ? loc('Amaneció') : loc('La noche no termina');
+  $('result-title').textContent = mine ? loc('¡Ganaste!') : panas ? loc('Ganaron los panas') : loc('Ganaron las momias');
   $('result-copy').textContent = {
-    tasks: 'La reliquia brilló, salió el sol y las momias volvieron a ser panas (un poco avergonzados).',
-    votes: 'Mandaron a todas las momias río abajo en la curiara. El bote llega al amanecer.',
-    numbers: 'Ya no quedan suficientes panas para mantener la reliquia encendida.',
-    flood: 'Nadie cerró la represa a tiempo y el río se llevó el campamento.',
+    tasks: loc('La reliquia brilló, salió el sol y las momias volvieron a ser panas (un poco avergonzados).'),
+    votes: loc('Mandaron a todas las momias río abajo en la curiara. El bote llega al amanecer.'),
+    numbers: loc('Ya no quedan suficientes panas para mantener la reliquia encendida.'),
+    flood: loc('Nadie cerró la represa a tiempo y el río se llevó el campamento.'),
   }[e.reason] || '';
   $('result-roster').replaceChildren(...view.roster.filter(r => !r.spectator).map(r => {
     const li = document.createElement('li'); li.className = `pk-row${r.seat === me().seat ? ' is-me' : ''}${r.role === 'momia' ? ' is-mummy' : ''}`;
-    const nameNode = document.createElement('span'); nameNode.className = 'pk-row-name'; nameNode.textContent = r.name;
-    const end = document.createElement('b'); end.className = 'pk-row-end'; end.textContent = r.role === 'momia' ? 'Momia' : 'Pana';
+    const nameNode = document.createElement('span'); nameNode.className = 'pk-row-name'; nameNode.textContent = r.name; nameNode.translate = false;
+    const end = document.createElement('b'); end.className = 'pk-row-end'; end.textContent = r.role === 'momia' ? loc('Momia') : loc('Pana');
     li.append(nameNode, end); return li;
   }));
 }

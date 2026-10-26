@@ -245,3 +245,15 @@ bundled Three.js copy is served. Unit tests cover timing, recovery, guard,
 dodge, range, stamina, mirroring and restored state. The two-client suite
 sends I/U/O from the guest and observes the matching hit and score on both
 clients.
+
+## Languages
+
+The announcer's random colour lines (`LINES` in `narrator.js`) stay Spanish
+in every language; the other narrator lines are interface. `lineFor` returns
+Spanish source (`locKey`) plus `vars`, with name lists as arrays: the HUD's
+`call()` shows `loc(text)` with lists joined in the player's language, and the
+voice always speaks the Spanish, since it uses a Spanish speech voice. Room
+notices and night titles also travel as source. `deviceText` in `hud.js`
+swaps key names on already translated text, so an English translation keeps
+"Space", "or left click", "or right click" and "D or the right arrow" word for
+word and never uses I, O, T, L, K, J or U as ordinary words.

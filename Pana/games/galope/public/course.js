@@ -1,3 +1,4 @@
+// i18n-ignore-file: course sections and wetlands are place names.
 // A horse-sized circuit. Pure geometry shared by simulation, scenery and minimap.
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const wrap = (v, n) => (v % n + n) % n;

@@ -13,21 +13,22 @@ import { STYLE_NAMES } from './rules.js';
 import { createFightHud } from './fight-hud.js';
 import { createControls } from './controls.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
+import { loc, locn } from '/engine/i18n.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
 let world = null;
 const room = new BochincheRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render,
-  onNotice: (text) => { $('event').textContent = text; },
+  onNotice: (text) => { $('event').textContent = loc(text); },
   onStatus(text, failed = false) { $('connection').textContent = text; $('practice').hidden = !failed; render(room.state); },
 });
 const roomOptions = createRoomOptions($('room-options'), { title: 'Bochinche', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ title: 'Bochinche · Pana', sound, orientation: 'horizontal',
-  pad: { move: 'wasd', keys: { a: ['Space', 'Saltar'], x: ['KeyJ', 'Golpe'], b: ['KeyK', 'Especial'], y: ['KeyL', 'Agarre'], lb: ['ShiftLeft', 'Escudo'] } },
-  note: () => room.members.size > 1 ? 'La ronda sigue mientras estás en el menú.' : 'La ronda está en pausa.',
-  controls: [['A D / flechas', 'Moverse'], ['Espacio', 'Saltar · dos saltos'], ['J + dirección', 'Golpe / ataque aéreo'], ['K', 'Rayo'], ['K + lado', 'Candela'], ['K + abajo', 'Hielo'], ['K + arriba', 'Volver al escenario'], ['J + toque lateral', 'Jonrón'], ['Shift + dirección', 'Escudo / esquivar'], ['L', 'Agarrar · dirección para lanzar'], ['I', 'Agarrar objetos']],
-  tips: ['Cuanto más daño acumulas, más lejos te mandan los golpes.', 'Gana quien conserve vidas. Si empatan al sonar la campana, hay muerte súbita.', 'Escoge tu estilo en la sala; tu pana conserva su aspecto.'],
+const menu = createGameMenu({ title: 'Bochinche · Pana', sound, orientation: 'horizontal', // i18n-ignore: the game's name
+  pad: { move: 'wasd', keys: { a: ['Space', loc('Saltar')], x: ['KeyJ', loc('Golpe')], b: ['KeyK', loc('Especial')], y: ['KeyL', loc('Agarre')], lb: ['ShiftLeft', loc('Escudo')] } },
+  note: () => room.members.size > 1 ? loc('La ronda sigue mientras estás en el menú.') : loc('La ronda está en pausa.'),
+  controls: [[loc('A D / flechas'), loc('Moverse')], [loc('Espacio'), loc('Saltar · dos saltos')], [loc('J + dirección'), loc('Golpe / ataque aéreo')], ['K', loc('Rayo')], ['K + lado', loc('Candela')], ['K + abajo', loc('Hielo')], ['K + arriba', loc('Volver al escenario')], ['J + toque lateral', loc('Jonrón')], [loc('Shift + dirección'), loc('Escudo / esquivar')], ['L', loc('Agarrar · dirección para lanzar')], ['I', loc('Agarrar objetos')]],
+  tips: [loc('Cuanto más daño acumulas, más lejos te mandan los golpes.'), loc('Gana quien conserve vidas. Si empatan al sonar la campana, hay muerte súbita.'), loc('Escoge tu estilo en la sala; tu pana conserva su aspecto.')],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
@@ -60,21 +61,22 @@ function render(state) {
   if (!lobby && roomOptions.isOpen) roomOptions.close();
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby;
   $('start').disabled = !world || !room.connected || !room.isHost;
-  $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A pelear!' : 'Espera al anfitrión';
+  $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? loc('¡A pelear!') : loc('Espera al anfitrión');
   const fighters = state.fight?.fighters ?? [];
   const ranked = state.players.map((p, i) => ({ ...p, stocks: fighters[i]?.stocks ?? state.options.stocks, percent: fighters[i]?.percent ?? 0 })).sort((a,b) => Number(b.id === state.winner) - Number(a.id === state.winner) || b.stocks - a.stocks || a.percent - b.percent);
-  const rows = ranked.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? `${p.name} · tú` : p.name, detail: p.bot ? 'Bot' : STYLE_NAMES[p.style], end: `${p.stocks} vidas · ${Math.round(p.percent)}%`, score: false, me: p.id === room.id }));
+  const rows = ranked.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? loc('{name} · tú', { name: p.name }) : p.name, detail: p.bot ? loc('Bot') : loc(STYLE_NAMES[p.style]), end: locn(p.stocks, '{n} vidas · {percent}%', '{n} vidas · {percent}%', { percent: Math.round(p.percent) }), score: false, me: p.id === room.id }));
   fillRoster($('roster'), rows);
   const me = state.players.find(p => p.id === room.id);
   const seconds = Math.ceil((state.fight?.remainingTimeMs ?? state.options.seconds*1000)/1000);
-  $('timer').textContent = state.fight?.suddenDeath ? 'MUERTE SÚBITA' : `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;
+  $('timer').textContent = state.fight?.suddenDeath ? loc('MUERTE SÚBITA') : `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;
   updateFightHud(state);
   for (const b of document.querySelectorAll('[data-style]')) { b.disabled = !lobby; b.setAttribute('aria-pressed', String(Number(b.dataset.style) === me?.style)); }
-  $('score').textContent = me ? STYLE_NAMES[me.style] : 'Entras en la próxima ronda';
+  $('score').textContent = me ? loc(STYLE_NAMES[me.style]) : loc('Entras en la próxima ronda');
   $('back-lobby').disabled = !room.isHost;
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
   if (ended) {
-    $('result-title').textContent = `¡Ganó ${state.players.find(p => p.id === state.winner)?.name ?? 'nadie'}!`;
+    const winner = state.players.find(p => p.id === state.winner)?.name;
+    $('result-title').textContent = winner == null ? loc('¡Ganó nadie!') : loc('¡Ganó {name}!', { name: winner });
     fillRoster($('result-roster'), rows);
     const winnerSlot=state.players.findIndex(p=>p.id===state.winner), portrait=document.querySelector('#fighter-'+winnerSlot+' .fighter-portrait');
     $('winner-portrait').hidden=!portrait?.getAttribute('src');

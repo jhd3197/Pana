@@ -1,21 +1,22 @@
+import { locKey } from '/engine/i18n.js';
 // The minigame list without the minigames: each one's scene, models and sim
 // load the first time it is dealt (or during idle time after the board is up),
 // so opening Bululú doesn't download all twelve. Titles are repeated here for
 // the practice menu; tests/minigames.test.js keeps them equal to the modules'.
 
 const ENTRIES = [
-  ['atrapa', '¡Atrapa los mangos!', () => import('./atrapa.js')],
-  ['caigas', '¡No te caigas!', () => import('./caigas.js')],
-  ['caida', '¡Caída!', () => import('./caida.js')],
-  ['momia', '¡Un, dos, tres, momia!', () => import('./momia.js')],
-  ['coleo', '¡Coleo!', () => import('./coleo.js')],
-  ['choque', '¡Choque de carritos!', () => import('./choque.js')],
-  ['embuste', '¡Embuste!', () => import('./embuste.js')],
-  ['remada', '¡Remada!', () => import('./remada.js')],
-  ['raudal', '¡Raudal!', () => import('./raudal.js')],
-  ['remolino', '¡Remolino!', () => import('./remolino.js')],
-  ['chinazo', '¡Chinazo!', () => import('./chinazo.js')],
-  ['criollas', '¡Bolas Criollas!', () => import('./criollas.js')],
+  ['atrapa', locKey('¡Atrapa los mangos!'), () => import('./atrapa.js')],
+  ['caigas', locKey('¡No te caigas!'), () => import('./caigas.js')],
+  ['caida', locKey('¡Caída!'), () => import('./caida.js')],
+  ['momia', locKey('¡Un, dos, tres, momia!'), () => import('./momia.js')],
+  ['coleo', locKey('¡Coleo!'), () => import('./coleo.js')],
+  ['choque', locKey('¡Choque de carritos!'), () => import('./choque.js')],
+  ['embuste', locKey('¡Embuste!'), () => import('./embuste.js')],
+  ['remada', locKey('¡Remada!'), () => import('./remada.js')],
+  ['raudal', locKey('¡Raudal!'), () => import('./raudal.js')],
+  ['remolino', locKey('¡Remolino!'), () => import('./remolino.js')],
+  ['chinazo', locKey('¡Chinazo!'), () => import('./chinazo.js')],
+  ['criollas', locKey('¡Bolas Criollas!'), () => import('./criollas.js')],
 ];
 
 const loaded = new Map(), pending = new Map();

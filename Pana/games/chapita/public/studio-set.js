@@ -1,3 +1,4 @@
+// i18n-ignore-file: Studio model names and invented brand signage painted on props
 // The street set for Chapita: the bottle cap itself (flat or bent, with
 // invented soda and malta brands, tricolor and gold), the sticks you bat with,
 // the señora's window, the street and the block court floors, a chain-link

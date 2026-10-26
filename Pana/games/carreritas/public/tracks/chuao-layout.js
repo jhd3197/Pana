@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import { fairRoute, fairHeights } from '/engine/worlds/coastal/coastal-road.js';
 import * as THREE from 'three';

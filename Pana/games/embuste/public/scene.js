@@ -36,7 +36,7 @@ function wallDirection(p) {
 const STONE_ZONES = new Set(['templo', 'tunel', 'mina', 'rieles', 'escalinata']);
 
 export function createCampWorld() {
-  const group = new THREE.Group(); group.name = '¡Embuste! · El campamento y el templo';
+  const group = new THREE.Group(); group.name = '¡Embuste! · El campamento y el templo'; // i18n-ignore: scene graph name
   const owned = new Set();
   const mat = (color, extra = {}) => { const m = new THREE.MeshStandardMaterial({ color, roughness: 0.95, ...extra }); owned.add(m); return m; };
   const staticRoot = new THREE.Group(), dynamic = new THREE.Group(); group.add(dynamic);

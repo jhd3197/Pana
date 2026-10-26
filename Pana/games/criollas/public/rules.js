@@ -1,11 +1,13 @@
 import { createPitch, throwBall, stepPitch, moving, measure, botShot, distance, copy, STEP } from '/engine/play/bolas-criollas.js';
+import { locKey } from '../../../engine/i18n.js';
 import { validCourtArena } from '/engine/worlds/arena-layouts.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '/engine/play/difficulty.js';
 import { canMoveSeats, swapSeats } from '../../../engine/play/seat-rules.js';
 import { criollasOptions } from './options.js';
 import { createStarter, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 export { STEP, copy };
-export const TEAM_NAMES = ['Rojos', 'Verdes'];
+// Source text: shown with loc() on each client.
+export const TEAM_NAMES = [locKey('Rojos'), locKey('Verdes')];
 const BOT_NAMES = ['Cheo', 'Yuli', 'Nico', 'Lola', 'Tito', 'Nina'];
 export function botPlayer(slot) {
   return { id: null, name: BOT_NAMES[slot], avatar: { outfit: 'deportivo', outfitColor: slot % 2 ? '#299e72' : '#ed5949' } };

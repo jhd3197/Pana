@@ -2,7 +2,7 @@
 // The answers live only here until pencils-down; game.js sends them with
 // ¡STOP! or when the host asks for the sheets. Enter jumps to the next box.
 import { letterOf } from '/engine/play/saber-match.js';
-import { label as categoryLabel, short as categoryShort } from './categories.js';
+import { labelText as categoryLabel, shortText as categoryShort } from './categories.js';
 import { MAX_ANSWER, tooShort } from './rules.js';
 
 export function createSheet(root, { onProgress, onStop }) {
@@ -32,7 +32,7 @@ export function createSheet(root, { onProgress, onStop }) {
       const li = document.createElement('li'); li.className = 'sheet-row';
       const margin = Object.assign(document.createElement('span'), { className: 'row-letter', textContent: letter });
       margin.setAttribute('aria-hidden', 'true');
-      const label = Object.assign(document.createElement('label'), { className: 'row-cat', htmlFor: `box-${i}` });
+      const label = Object.assign(document.createElement('label'), { className: 'row-cat', htmlFor: `box-${i}`, translate: false });
       label.append(Object.assign(document.createElement('span'), { className: 'row-cat-long', textContent: categoryLabel(cat) }),
         Object.assign(document.createElement('span'), { className: 'row-cat-short', textContent: categoryShort(cat) }));
       // Chrome ignores autocomplete="off" on boxes labelled Nombre, País or

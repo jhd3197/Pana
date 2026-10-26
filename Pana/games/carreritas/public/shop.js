@@ -8,35 +8,36 @@ import { canonicalCupId } from './cup-definitions.js';
 import { PARTS, cleanParts } from './parts.js';
 import { WHEEL_DEFINITIONS } from './wheel-definitions.js';
 import { BOAT_DEFINITIONS, AIR_DEFINITIONS, BOAT_PARTS, AIR_PARTS, cleanVesselParts } from './parts.js';
+import { loc } from '../../../engine/i18n.js';
 
 export const PAINTS = [
-  { id: 'fabrica', name: 'De fábrica', color: null, cost: 0 },
-  { id: 'araguaney', name: 'Amarillo araguaney', color: '#ffc629', cost: 25 },
-  { id: 'caribe', name: 'Azul Caribe', color: '#1f6fe0', cost: 25 },
-  { id: 'pasion', name: 'Rojo pasión', color: '#d62c2c', cost: 25 },
-  { id: 'selva', name: 'Verde selva', color: '#2f9e4a', cost: 25 },
-  { id: 'orquidea', name: 'Morado orquídea', color: '#8e44c9', cost: 35 },
-  { id: 'mango', name: 'Naranja mango', color: '#ff8a1c', cost: 35 },
-  { id: 'flamenco', name: 'Rosado flamenco', color: '#ff6fa8', cost: 35 },
-  { id: 'azabache', name: 'Negro azabache', color: '#2a2a33', cost: 50 },
-  { id: 'nube', name: 'Blanco nube', color: '#ecebe6', cost: 50 },
-  { id: 'oro', name: 'Dorado campeón', color: '#e3ae39', cost: 0, unlock: 'oro' },
+  { id: 'fabrica', name: loc('De fábrica'), color: null, cost: 0 },
+  { id: 'araguaney', name: loc('Amarillo araguaney'), color: '#ffc629', cost: 25 },
+  { id: 'caribe', name: loc('Azul Caribe'), color: '#1f6fe0', cost: 25 },
+  { id: 'pasion', name: loc('Rojo pasión'), color: '#d62c2c', cost: 25 },
+  { id: 'selva', name: loc('Verde selva'), color: '#2f9e4a', cost: 25 },
+  { id: 'orquidea', name: loc('Morado orquídea'), color: '#8e44c9', cost: 35 },
+  { id: 'mango', name: loc('Naranja mango'), color: '#ff8a1c', cost: 35 },
+  { id: 'flamenco', name: loc('Rosado flamenco'), color: '#ff6fa8', cost: 35 },
+  { id: 'azabache', name: loc('Negro azabache'), color: '#2a2a33', cost: 50 },
+  { id: 'nube', name: loc('Blanco nube'), color: '#ecebe6', cost: 50 },
+  { id: 'oro', name: loc('Dorado campeón'), color: '#e3ae39', cost: 0, unlock: 'oro' },
 ];
 
 export const HORNS = [
-  { id: 'propio', name: 'El de fábrica', cost: 0 },
-  { id: 'meep', name: 'Meep meep', cost: 15 },
-  { id: 'cucaracha', name: 'La cucaracha', cost: 15 },
-  { id: 'grave', name: 'Corneta de gandola', cost: 15 },
-  { id: 'fiesta', name: 'Rumba', cost: 15 },
+  { id: 'propio', name: loc('El de fábrica'), cost: 0 },
+  { id: 'meep', name: loc('Meep meep'), cost: 15 },
+  { id: 'cucaracha', name: loc('La cucaracha'), cost: 15 },
+  { id: 'grave', name: loc('Corneta de gandola'), cost: 15 },
+  { id: 'fiesta', name: loc('Rumba'), cost: 15 },
 ];
 
 export const FLAMES = [
-  { id: 'fuego', name: 'Fuego', colors: [0xff7b1c, 0xffd23f], cost: 0 },
-  { id: 'hielo', name: 'Hielo', colors: [0x4fb6ff, 0xd8f3ff], cost: 30 },
-  { id: 'monte', name: 'Monte', colors: [0x2f9e4a, 0xb8f15a], cost: 30 },
-  { id: 'tricolor', name: 'Tricolor', colors: [0xffc629, 0x1f6fe0, 0xd62c2c], cost: 45 },
-  { id: 'arcoiris', name: 'Arcoíris', colors: [0xff4b4b, 0xff9a1f, 0xffe14d, 0x4caf50, 0x4fb6ff, 0xc45bff], cost: 0, unlock: 'two-cups' },
+  { id: 'fuego', name: loc('Fuego'), colors: [0xff7b1c, 0xffd23f], cost: 0 },
+  { id: 'hielo', name: loc('Hielo'), colors: [0x4fb6ff, 0xd8f3ff], cost: 30 },
+  { id: 'monte', name: loc('Monte'), colors: [0x2f9e4a, 0xb8f15a], cost: 30 },
+  { id: 'tricolor', name: loc('Tricolor'), colors: [0xffc629, 0x1f6fe0, 0xd62c2c], cost: 45 },
+  { id: 'arcoiris', name: loc('Arcoíris'), colors: [0xff4b4b, 0xff9a1f, 0xffe14d, 0x4caf50, 0x4fb6ff, 0xc45bff], cost: 0, unlock: 'two-cups' },
 ];
 
 export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES, wheel: WHEEL_DEFINITIONS.map(w => ({ ...w, cost: w.cost ?? 0 })), ...PARTS,
@@ -95,7 +96,7 @@ export function unlocked(item, trophies = {}) {
   if (item.unlock === 'two-cups') return new Set(entries.map(([id]) => id)).size >= 2;
   return false;
 }
-export const unlockText = (item) => item.unlock === 'oro' ? 'Gana una copa con oro' : item.unlock === 'two-cups' ? 'Gana un trofeo en dos copas diferentes' : '';
+export const unlockText = (item) => item.unlock === 'oro' ? loc('Gana una copa con oro') : item.unlock === 'two-cups' ? loc('Gana un trofeo en dos copas diferentes') : '';
 
 // Buying: spends coins once; owned items are free to equip forever.
 export function buy(wallet, kind, id, trophies) {

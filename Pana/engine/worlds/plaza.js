@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 import * as THREE from 'three';
 import { createSky } from '/engine/worlds/sky.js';
 import { M, mesh, box, rng } from '/engine/models/core/primitives.js';

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Poker, evaluate, compare, settle, shuffle, tablePlayers } from '../public/rules.js';
+import { Poker, evaluate, compare, settle, shuffle, tablePlayers, messageText } from '../public/rules.js';
 import { starterResult } from '../../../engine/play/quien-empieza-rules.js';
 const c = (rank, suit = 0) => suit * 13 + rank - 2;
 const cards = (ranks, suits) => ranks.map((r, i) => c(r, suits?.[i] ?? i % 4));
@@ -100,13 +100,13 @@ test('a match opens with the cachos: the highest takes the dealer button, later 
   assert.equal(g.phase, 'preflop'); assert.equal(g.view(1).starter, null);
   const { order } = starterResult(g.starter), first = [1, 2, 3][order[0]];
   if (first !== 3) assert.equal(g.players[g.dealer].id, first, 'the cacho winner deals');
-  assert.match(g.message, /reparte con un [1-6]/);
+  assert.match(messageText(g.message), /reparte con un [1-6]/);
   while (g.phase !== 'finished') g.act(g.turn, 'fold');
   assert.ok(g.start()); assert.equal(g.phase, 'preflop', 'the next hand deals straight away');
 });
 test('room options: al azar deals at once; revancha gives the button to whoever busted first', () => {
   const g = new Poker(); g.configure({ starter: 'azar' }); g.add(1, { name: 'A' }); g.add(2, { name: 'B' });
-  g.start(); assert.equal(g.phase, 'preflop'); assert.match(g.message, /^Orden al azar: /);
+  g.start(); assert.equal(g.phase, 'preflop'); assert.match(messageText(g.message), /^Orden al azar: /);
   g.act(g.turn, 'raise', 1000); g.act(g.turn, 'call');
   assert.equal(g.phase, 'finished'); const loser = g.players.find(p => p.chips === 0)?.id;
   if (loser === undefined) return; // a split pot busts nobody

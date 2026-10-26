@@ -16,10 +16,10 @@
 <body class="in-lobby">
   <canvas id="world" aria-label="Carrera de caballos en los Llanos"></canvas>
   <header class="topbar"><nav id="game-nav" aria-label="Opciones del juego"></nav></header>
-  <div id="loading" class="pk-loading" role="status"><span class="pk-ribbon">Los Llanos</span><b class="pk-title">Galope</b><p class="pk-copy">Ensillando los caballos…</p></div>
+  <div id="loading" class="pk-loading" role="status"><span class="pk-ribbon">Los Llanos</span><b class="pk-title" translate="no">Galope</b><p class="pk-copy">Ensillando los caballos…</p></div>
   <section id="lobby" class="pk-lobby hidden" aria-labelledby="title">
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a></div>
-    <span class="pk-ribbon">Galope · La vuelta del estero</span>
+    <span class="pk-ribbon" translate="no">Galope · La vuelta del estero</span>
     <h1 id="title" class="pk-title">¡A caballo por los Llanos!</h1>
     <p class="pk-copy" data-room-description>Hato, sabana y morichal. Patas en el agua y tus panas pisándote los talones.</p>
     <div class="pk-stats" data-room-description><div class="pk-stat"><b>2</b><span>vueltas</span></div><div class="pk-stat"><b>3</b><span>saltos por vuelta</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div></div>
@@ -37,15 +37,15 @@
     <div class="race-top">
       <div class="pk-place position"><b id="place">1</b><sup>º</sup><span id="field-size" class="pk-eyebrow">de 6</span></div>
       <div class="race-cards">
-        <div class="pk-panel pk-readout"><span class="pk-eyebrow">Tramo</span><b id="sector" class="pk-num">Hato Pana</b></div>
+        <div class="pk-panel pk-readout"><span class="pk-eyebrow">Tramo</span><b id="sector" class="pk-num" translate="no">Hato Pana</b></div>
         <div class="race-pair"><div class="pk-panel pk-readout"><span class="pk-eyebrow">Vuelta</span><b id="lap" class="pk-num">1 / 2</b></div><div class="pk-panel pk-readout"><span class="pk-eyebrow">Tiempo</span><b id="timer" class="pk-num">0:00.00</b></div></div>
       </div>
     </div>
     <ol id="leaderboard" class="pk-roster" aria-label="Posiciones"></ol>
-    <div class="minimap pk-panel"><div class="map-head"><b>La vuelta del estero</b><small id="map-length"></small></div><canvas id="map" width="220" height="190" aria-label="Mapa del circuito"></canvas></div>
+    <div class="minimap pk-panel"><div class="map-head"><b translate="no">La vuelta del estero</b><small id="map-length"></small></div><canvas id="map" width="220" height="190" aria-label="Mapa del circuito"></canvas></div>
     <div id="jump-cue" class="jump-cue hidden" aria-hidden="true"><span class="pk-banner pk-banner--yellow">¡Tronco!</span><span class="pk-chip" id="jump-key">Espacio para saltar</span></div>
     <div class="riding-status pk-panel">
-      <div class="stamina-head"><span class="pk-eyebrow">Fuerza de <span id="horse-name">Castaño</span></span><span><span id="gait">AL PASO</span> · <span id="stamina-label">100%</span></span></div>
+      <div class="stamina-head"><span class="pk-eyebrow" id="horse-name">Fuerza de Castaño</span><span><span id="gait">AL PASO</span> · <span id="stamina-label">100%</span></span></div>
       <div id="stamina-pips" class="pk-pips stamina-pips" aria-hidden="true"></div>
       <div class="stamina-foot"><p id="riding-tip">Guarda fuerzas para el remate.</p><span class="speed"><b id="speed">0</b> km/h</span></div>
     </div>
@@ -54,7 +54,7 @@
   </main>
   <div id="countdown" class="countdown hidden" role="status" aria-live="polite"></div>
   <div id="notice" class="notice pk-chip hidden" role="status"></div>
-  <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="result-paper pk-modal pk-results-card"><span class="pk-ribbon">La vuelta del estero</span><h2 id="result-title" class="pk-title">¡Llegaste, pana!</h2><p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra carrera</button><a class="pk-back" href="/">← Volver a Pana</a></div></section>
+  <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="result-paper pk-modal pk-results-card"><span class="pk-ribbon" translate="no">La vuelta del estero</span><h2 id="result-title" class="pk-title">¡Llegaste, pana!</h2><p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra carrera</button><a class="pk-back" href="/">← Volver a Pana</a></div></section>
   <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
 </body>
 </html>

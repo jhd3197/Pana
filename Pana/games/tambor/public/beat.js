@@ -1,3 +1,4 @@
+// i18n-ignore-file: the MCP's calls are text-to-speech narration and stay Spanish.
 // The rueda's sound, made live with WebAudio on each pana's own computer:
 // culo e' puya slaps, the long drum's sticks, the charrasca, the caracol, the
 // MCP's maracas and the low pujao groove, all scheduled against the song clock

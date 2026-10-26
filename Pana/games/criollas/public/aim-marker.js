@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { guideRibbon } from '/engine/play/aim-guide.js';
 import { aimFeedback } from './aim-feedback.js';
+import { loc } from '/engine/i18n.js';
 
 export function createAimMarker(scene) {
   const root = new THREE.Group(); root.name = 'Throw preview'; scene.add(root);
@@ -31,7 +32,7 @@ export function createAimMarker(scene) {
   dropRing.rotation.x = -Math.PI / 2; dropRing.position.y = .09; drop.add(dropRing);
   const dropCanvas = document.createElement('canvas'); dropCanvas.width = 256; dropCanvas.height = 80;
   const dc = dropCanvas.getContext('2d'); dc.fillStyle = '#171329'; dc.fillRect(0, 0, 256, 80);
-  dc.fillStyle = '#87e7ff'; dc.font = 'bold 32px sans-serif'; dc.textAlign = 'center'; dc.fillText('CAÍDA', 128, 52);
+  dc.fillStyle = '#87e7ff'; dc.font = 'bold 32px sans-serif'; dc.textAlign = 'center'; dc.fillText(loc('CAÍDA', { $ctx: 'criollas' }), 128, 52);
   const dropTexture = new THREE.CanvasTexture(dropCanvas); dropTexture.colorSpace = THREE.SRGBColorSpace;
   const dropLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: dropTexture, depthTest: false, depthWrite: false }));
   dropLabel.position.set(0, .75, 0); dropLabel.scale.set(1.8, .56, 1); dropLabel.renderOrder = 5; drop.add(dropLabel);
@@ -57,7 +58,7 @@ export function createAimMarker(scene) {
       if (lastLabel !== status.label) {
         lastLabel = status.label; ctx.clearRect(0, 0, 512, 96); ctx.fillStyle = '#171329'; ctx.fillRect(0, 0, 512, 96);
         ctx.fillStyle = color; ctx.font = 'bold 34px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(lastLabel, 256, 48); texture.needsUpdate = true;
+        ctx.fillText(loc(lastLabel), 256, 48); texture.needsUpdate = true;
       }
     },
     get status() { return status; },

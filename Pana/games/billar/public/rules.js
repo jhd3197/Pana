@@ -4,18 +4,28 @@ import { rng, seedOf } from '../../../engine/random.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 import { defaultPoolOptions, poolOptions, teamOf, occupiedSeats, canStartPool, poolConnected, nextShooter, passPoolTurn, winPoolRack } from './match-rules.js';
+import { loc, locKey } from '../../../engine/i18n.js';
 
 // Casual eight-ball house rules. All physics uses fixed steps in table units.
 export const WIDTH = 1000, HEIGHT = 500, RADIUS = 11, POCKET_RADIUS = 25, STEP = 1 / 240;
 export const POCKETS = [[0, 0], [500, -6], [1000, 0], [0, 500], [500, 506], [1000, 500]];
+// state.message is synced Spanish: a key, { text, vars } (a var may itself be
+// one, like the ¿Quién empieza? note) or a list of sentences shown in a row.
+export function messageText(message) {
+  if (!message) return '';
+  if (typeof message === 'string') return loc(message);
+  if (Array.isArray(message)) return message.map(messageText).filter(Boolean).join(' ');
+  const vars = message.vars && Object.fromEntries(Object.entries(message.vars).map(([k, v]) => [k, v && typeof v === 'object' ? messageText(v) : v]));
+  return loc(message.text, vars);
+}
 export const groupOf = id => id > 0 && id < 8 ? 'solids' : id > 8 && id < 16 ? 'stripes' : null;
-export const groupName = group => group === 'solids' ? 'Lisas' : group === 'stripes' ? 'Rayadas' : 'Mesa abierta';
+export const groupName = group => group === 'solids' ? loc('Lisas') : group === 'stripes' ? loc('Rayadas') : loc('Mesa abierta');
 const clone = value => structuredClone(value);
 const ball = (id, x, y) => ({ id, x, y, vx: 0, vy: 0, pocketed: false });
 // Rolling friction and the cushions, shared by the physics and the predictions.
 const FRICTION = 205, CUSHION = .84, CONTACT = .98, FOLLOW = .62, ENGLISH = .22;
 export const BOT_ID = 'bot';
-export const botPlayer = () => ({ id: BOT_ID, name: 'Pana Bot', avatar: { outfit: 'deportivo', outfitColor: '#3b8bff' }, bot: true });
+export const botPlayer = () => ({ id: BOT_ID, name: 'Pana Bot', avatar: { outfit: 'deportivo', outfitColor: '#3b8bff' }, bot: true }); // i18n-ignore: a name
 
 export function rack(variant = 'eight') {
   const balls = [ball(0, 250, 250)], order = [1, 9, 2, 10, 8, 3, 4, 11, 5, 12, 6, 13, 7, 14, 15];
@@ -36,12 +46,12 @@ export function rack(variant = 'eight') {
 
 // practice: one pana clears the whole rack. bot: a full match against Pana Bot.
 export function createGame(practice = false, { bot = false } = {}) {
-  const players = Array.from({ length: 6 }, () => ({ id: null, name: 'Esperando pana', avatar: {} }));
+  const players = Array.from({ length: 6 }, () => ({ id: null, name: locKey('Esperando pana'), avatar: {} }));
   if (bot) players[1] = botPlayer();
   return { phase: 'lobby', mapId: 'plaza', difficulty: DEFAULT_DIFFICULTY, practice: practice && !bot, bot, players,
     balls: rack(), groups: [null, null], turn: 0, revision: 0, round: 0, shots: 0, ballInHand: false,
     options: defaultPoolOptions(), activeSeats: [], teamTurns: [-1, -1], scores: [0, 0], breaker: 0, turnElapsed: 0, starter: null, breakMessage: '',
-    shot: null, result: null, message: 'La mesa está lista.' };
+    shot: null, result: null, message: locKey('La mesa está lista.') };
 }
 
 export function remaining(state, seat) {
@@ -75,9 +85,13 @@ function respot(state, id, preferredX = 690) {
 // A match's first break: ¿Quién empieza? (engine/play/quien-empieza-rules.js)
 // on the table, the highest die breaks. Later racks follow the break policy.
 function beginBreak(state) {
-  const { order, rolls } = starterResult(state.starter), seat = order[0], how = state.starter.note ? `${state.starter.note}: ` : '';
+  const { order, rolls } = starterResult(state.starter), seat = order[0], note = state.starter.note, roll = rolls[seat];
   state.turn = seat; state.breaker = teamOf(seat); state.phase = 'aiming'; state.turnElapsed = 0;
-  state.message = state.starter.seats.length < 2 ? state.breakMessage : `${how}¡Rompe ${state.players[seat].name}${rolls[seat] ? ` con ${rolls[seat]}` : ''}! ${state.breakMessage}`;
+  // Synced: Spanish keys plus their variables; each client shows it with messageText().
+  const vars = { name: state.players[seat].name, roll, note: note ? { text: note } : undefined };
+  const text = note ? roll ? locKey('{note}: ¡Rompe {name} con {roll}!') : locKey('{note}: ¡Rompe {name}!')
+    : roll ? locKey('¡Rompe {name} con {roll}!') : locKey('¡Rompe {name}!');
+  state.message = state.starter.seats.length < 2 ? state.breakMessage : [{ text, vars }, state.breakMessage];
 }
 // Host only, on its timer: empty seats and Pana Bot shake on their own.
 export function stepPoolStarter(state, dt) {
@@ -144,22 +158,22 @@ export function acceptAction(state, id, action, hostId) {
     const breaker = continuing ? state.options.breakPolicy === 'alternate' ? 1 - state.breaker : state.options.breakPolicy === 'winner' ? state.result.team : 1 - state.result.team : 0;
     Object.assign(state, fresh, { players: state.players, mapId: state.mapId, difficulty: state.difficulty, revision: state.revision + 1, round: state.round + 1,
       options: state.options, balls: rack(state.options.variant), activeSeats: occupiedSeats(state), scores: continuing ? state.scores : [0, 0], breaker,
-      phase: 'aiming', message: state.options.variant === 'nine' ? '¡A romper! Toca primero la bola de menor número y busca la nueve.' : state.practice ? 'Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
+      phase: 'aiming', message: state.options.variant === 'nine' ? locKey('¡A romper! Toca primero la bola de menor número y busca la nueve.') : state.practice ? locKey('Deja la ocho para el final.') : locKey('¡A romper! La primera bola legal elige tu grupo.') });
     state.turn = nextShooter(state, breaker);
-    if (state.options.variant === 'nine') state.message = 'Bola 9: toca primero la bola de menor número. La nueve gana la mesa.';
+    if (state.options.variant === 'nine') state.message = locKey('Bola 9: toca primero la bola de menor número. La nueve gana la mesa.');
     if (continuing) return true;
     // Seeded by the panas' connection ids, so a replayed snapshot rolls the same dice.
     state.breakMessage = state.message;
     state.starter = createStarter({ seats: state.activeSeats, need: 'first', seed: seedOf(`${state.round}:${state.revision}:${state.activeSeats.map(i => state.players[i].id).join()}`), option: state.options.starter, last });
     if (starterDone(state.starter)) beginBreak(state);
-    else { state.phase = 'starter'; state.message = '¿Quién rompe? Sacude el cacho: el dado más alto rompe.'; }
+    else { state.phase = 'starter'; state.message = locKey('¿Quién rompe? Sacude el cacho: el dado más alto rompe.'); }
     return true;
   }
   if (state.phase !== 'aiming' || state.players[state.turn].id !== id || !poolConnected(state)) return false;
   if (action.action === 'place') {
     if (!state.ballInHand || !canPlace(state, action.x, action.y)) return false;
     Object.assign(state.balls[0], { x: action.x, y: action.y, pocketed: false });
-    state.ballInHand = false; state.kitchenShot = state.options.foulPlacement === 'kitchen'; state.revision++; state.message = 'Blanca colocada. Apunta y tira.'; return true;
+    state.ballInHand = false; state.kitchenShot = state.options.foulPlacement === 'kitchen'; state.revision++; state.message = locKey('Blanca colocada. Apunta y tira.'); return true;
   }
   if (action.action !== 'shoot' || state.ballInHand || !Number.isFinite(action.angle) || !Number.isFinite(action.power) || action.power < .05 || action.power > 1) return false;
   if (state.options.calledPocket && (!Number.isInteger(action.pocket) || action.pocket < 0 || action.pocket >= POCKETS.length)) return false;
@@ -171,7 +185,7 @@ export function acceptAction(state, id, action, hostId) {
   state.kitchenShot = false;
   const speed = 180 + action.power * 1600;
   state.balls[0].vx = Math.cos(action.angle) * speed; state.balls[0].vy = Math.sin(action.angle) * speed;
-  state.phase = 'rolling'; state.shots++; state.revision++; state.message = 'Bolas en movimiento…';
+  state.phase = 'rolling'; state.shots++; state.revision++; state.message = locKey('Bolas en movimiento…');
   return true;
 }
 
@@ -181,25 +195,25 @@ export function finishShot(state) {
   const called = id => !state.options.calledPocket || shot.pockets?.[id] === shot.called;
   if (state.options.variant === 'nine') {
     const foul = scratch || shot.kitchenFoul || shot.first !== shot.lowest || (!shot.rail && !shot.pocketed.length);
-    if (shot.pocketed.includes(9) && !foul && called(9)) { winPoolRack(state, team, '¡La nueve entró limpia!'); return; }
+    if (shot.pocketed.includes(9) && !foul && called(9)) { winPoolRack(state, team, locKey('¡La nueve entró limpia!')); return; }
     if (shot.pocketed.includes(9)) respot(state, 9);
     const keep = !foul && shot.pocketed.some(id => id > 0 && id !== 9 && called(id));
     passPoolTurn(state, keep); state.ballInHand = foul;
     if (scratch) respot(state, 0, 200);
     state.phase = 'aiming'; state.shot = null; state.revision++;
-    state.message = foul ? 'Falta. Coloca la blanca.' : keep ? 'Buena bola. Sigue tu equipo.' : 'Cambio de turno.';
+    state.message = foul ? locKey('Falta. Coloca la blanca.') : keep ? locKey('Buena bola. Sigue tu equipo.') : locKey('Cambio de turno.');
     return;
   }
-  let foul = scratch ? 'La blanca cayó.' : shot.kitchenFoul ? 'La blanca debe salir de la cocina antes de tocar una bola.' : shot.first === null ? 'La blanca no tocó ninguna bola.'
-    : shot.first === 8 ? !shot.eligible ? 'Tocaste la ocho antes de tiempo.' : ''
-      : !state.practice && state.groups[team] && groupOf(shot.first) !== state.groups[team] ? 'Tocaste primero una bola rival.' : '';
-  if (!foul && !shot.rail && !shot.pocketed.length) foul = 'Ninguna bola llegó a una banda después del contacto.';
+  let foul = scratch ? locKey('La blanca cayó.') : shot.kitchenFoul ? locKey('La blanca debe salir de la cocina antes de tocar una bola.') : shot.first === null ? locKey('La blanca no tocó ninguna bola.')
+    : shot.first === 8 ? !shot.eligible ? locKey('Tocaste la ocho antes de tiempo.') : ''
+      : !state.practice && state.groups[team] && groupOf(shot.first) !== state.groups[team] ? locKey('Tocaste primero una bola rival.') : '';
+  if (!foul && !shot.rail && !shot.pocketed.length) foul = locKey('Ninguna bola llegó a una banda después del contacto.');
   const eight = shot.pocketed.includes(8);
   if (eight && shot.breaking) respot(state, 8);
   else if (eight) {
     const won = shot.eligible && !foul && called(8);
     winPoolRack(state, won ? team : state.practice ? null : 1 - team,
-      won ? '¡La ocho entró limpia!' : scratch ? 'La ocho entró con la blanca.' : !called(8) ? 'La ocho entró en otra tronera.' : 'La ocho entró antes de tiempo.'); return;
+      won ? locKey('¡La ocho entró limpia!') : scratch ? locKey('La ocho entró con la blanca.') : !called(8) ? locKey('La ocho entró en otra tronera.') : locKey('La ocho entró antes de tiempo.')); return;
   }
   if (!state.practice && !state.groups[team] && !foul) {
     const first = shot.pocketed.find(id => groupOf(id) && called(id));
@@ -210,8 +224,8 @@ export function finishShot(state) {
   state.ballInHand = !!foul;
   if (scratch) respot(state, 0, 250);
   state.phase = 'aiming'; state.shot = null; state.revision++;
-  state.message = foul ? `${foul} ${state.practice ? 'Coloca la blanca y sigue.' : 'Bola en mano para tu rival.'}`
-    : eight && shot.breaking ? 'La ocho vuelve a la mesa después del saque.' : keep ? '¡Buena bola! Sigue tu equipo.' : 'Cambio de turno.';
+  state.message = foul ? [foul, state.practice ? locKey('Coloca la blanca y sigue.') : locKey('Bola en mano para tu rival.')]
+    : eight && shot.breaking ? locKey('La ocho vuelve a la mesa después del saque.') : keep ? locKey('¡Buena bola! Sigue tu equipo.') : locKey('Cambio de turno.');
 }
 
 export function step(state) {
@@ -270,7 +284,7 @@ export function advanceShotClock(state, dt) {
   state.turnElapsed += Math.max(0, dt);
   if (state.turnElapsed < state.options.shotSeconds) return false;
   passPoolTurn(state); state.ballInHand = true; state.revision++;
-  state.message = 'Se acabó el tiempo. Bola en mano para el otro equipo.';
+  state.message = locKey('Se acabó el tiempo. Bola en mano para el otro equipo.');
   return true;
 }
 

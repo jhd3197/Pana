@@ -15,7 +15,7 @@ import { bindDiceThrow } from '/engine/play/dice-throw.js';
 import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
 import { starterBarks, SHAKE_LIMIT, FLIP } from '/engine/play/quien-empieza-rules.js';
 import { sound, Puffs, Shockwaves } from '/engine/fx.js';
-
+import { loc, formatList } from '../i18n.js';
 if (!document.querySelector('link[href*="/engine/play/quien-empieza.css"]')) {
   const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = new URL('quien-empieza.css', import.meta.url).pathname;
   document.head.append(link);
@@ -39,12 +39,12 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
   // DOM: the heading, a hold-to-shake button, the clock and the order strip.
   const layer = place('div', 'pk-qe', document.body); layer.hidden = true;
   const head = place('div', 'pk-qe-head', layer);
-  const ribbon = place('span', 'pk-ribbon', head, '¿Quién empieza?'), say = place('p', 'pk-qe-say', head);
+  const ribbon = place('span', 'pk-ribbon', head, loc('¿Quién empieza?')), say = place('p', 'pk-qe-say', head);
   const clock = place('div', 'pk-bar pk-qe-clock', head); place('i', '', clock);
   const button = place('button', 'pk-btn pk-btn--primary pk-btn--lg pk-qe-shake', layer); button.type = 'button'; button.id = 'pana-starter-shake';
-  const label = place('span', '', button, 'Sacude el cacho'); place('kbd', 'pk-kbd', button, 'Espacio').dataset.panaHint = '';
-  const hint = place('p', 'pk-qe-hint', layer, 'Mantén para sacudir · suelta para tapar'); hint.dataset.panaHint = '';
-  const strip = place('ol', 'pk-qe-order', layer); strip.setAttribute('aria-label', 'Orden de salida');
+  const label = place('span', '', button, loc('Sacude el cacho')); place('kbd', 'pk-kbd', button, loc('Espacio')).dataset.panaHint = '';
+  const hint = place('p', 'pk-qe-hint', layer, loc('Mantén para sacudir · suelta para tapar')); hint.dataset.panaHint = '';
+  const strip = place('ol', 'pk-qe-order', layer); strip.setAttribute('aria-label', loc('Orden de salida'));
   say.setAttribute('aria-live', 'polite');
   let bubbles = null, bubbleCount = 0;
 
@@ -97,7 +97,7 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
     e.die.quaternion.setFromEuler(new THREE.Euler(...DIE_FACE_UP[value])).premultiply(new THREE.Quaternion().setFromAxisAngle(UP, e.yaw));
   }
   const name = seat => names[seat] ?? `Pana ${seat + 1}`;
-  const list = seats => seats.length < 2 ? seats.map(name).join('') : `${seats.slice(0, -1).map(name).join(', ')} y ${name(seats.at(-1))}`;
+  const list = seats => formatList(seats.map(name));
   const top = s => { const r = s.history.at(-1)?.rolls || {}, v = Math.max(...Object.values(r)); return Object.keys(r).map(Number).filter(k => r[k] === v); };
 
   function spotlight(seat) {
@@ -144,16 +144,16 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
   function texts() {
     const s = state, mine = s.contenders.includes(ownSeat);
     let line = '';
-    if (s.phase === 'shake') line = s.round === 1 ? '¡A sacudir!' : `¡Empate! Otra vez: ${list(s.contenders)}`;
-    else if (s.phase === 'lift' && s.flavour === 'moneda') line = revealed ? coinLine() : `Cara: ${name(s.contenders[0])} · Sello: ${name(s.contenders[1])}`;
-    else if (s.phase === 'lift') line = revealed ? '¡Arriba!' : 'Redoble…';
-    else if (s.phase === 'order') line = `¡Empieza ${name(s.order[0])}!`;
+    if (s.phase === 'shake') line = s.round === 1 ? loc('¡A sacudir!') : loc('¡Empate! Otra vez: {names}', { names: list(s.contenders) });
+    else if (s.phase === 'lift' && s.flavour === 'moneda') line = revealed ? coinLine() : loc('Cara: {heads} · Sello: {tails}', { heads: name(s.contenders[0]), tails: name(s.contenders[1]) });
+    else if (s.phase === 'lift') line = revealed ? loc('¡Arriba!') : loc('Redoble…');
+    else if (s.phase === 'order') line = loc('¡Empieza {name}!', { name: name(s.order[0]) });
     if (say.textContent !== line) say.textContent = line;
-    ribbon.textContent = s.flavour === 'moneda' ? '¿Cara o sello?' : '¿Quién empieza?';
+    ribbon.textContent = s.flavour === 'moneda' ? loc('¿Cara o sello?') : loc('¿Quién empieza?');
     const canShake = s.phase === 'shake' && mine && mayThrow();
     button.hidden = hint.hidden = !canShake; clock.hidden = s.phase !== 'shake';
     if (!canShake) thrower.cancel();
-    label.textContent = thrower.shaking ? '¡Suelta para tapar!' : 'Sacude el cacho';
+    label.textContent = thrower.shaking ? loc('¡Suelta para tapar!') : loc('Sacude el cacho');
     strip.hidden = s.phase !== 'order';
     if (s.phase === 'order' && strip.dataset.key !== phaseKey) {
       strip.dataset.key = phaseKey;
@@ -177,7 +177,7 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
     texts();
   }
 
-  const coinLine = () => state.coin === 'cara' ? `¡Cara! Empieza ${name(state.contenders[0])}` : `¡Sello! Empieza ${name(state.contenders[1])}`;
+  const coinLine = () => state.coin === 'cara' ? loc('¡Cara! Empieza {name}', { name: name(state.contenders[0]) }) : loc('¡Sello! Empieza {name}', { name: name(state.contenders[1]) });
   // The coin: thrown up from the middle of the table, spinning, lands on its face.
   function updateCoin() {
     if (!coin) {
@@ -243,7 +243,7 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
       }
     }
     if (state.phase === 'shake') clock.firstChild.style.width = `${Math.max(0, 1 - (lt) / SHAKE_LIMIT) * 100}%`;
-    if (state.phase === 'shake') label.textContent = thrower.shaking ? '¡Suelta para tapar!' : 'Sacude el cacho';
+    if (state.phase === 'shake') label.textContent = thrower.shaking ? loc('¡Suelta para tapar!') : loc('Sacude el cacho');
   }
 
   function dispose() {

@@ -20,7 +20,7 @@ function plantInstances(parent,source,placements,name,id){
   if(id)parent.userData.assetCounts[id]=(parent.userData.assetCounts[id]||0)+placements.length;
 }
 export function createCourse(){
-  const group=new THREE.Group();group.name='Hato Pana · Galope';
+  const group=new THREE.Group();group.name='Hato Pana · Galope'; // i18n-ignore: scene object name
   const moving=[],reserved=[],assetCounts={};
   group.userData.assetCounts=assetCounts;group.userData.placements=[];
   const positions=[],colors=[],indices=[],depths=[],distances=[],N=144,extent=180;
@@ -55,7 +55,7 @@ export function createCourse(){
   for(let i=1;i<wp.length;i+=3)wp[i]=WATER_Y;
   for(let i=0;i<indices.length;i+=3){const tri=indices.slice(i,i+3);if(tri.some(k=>depths[k]>0))wi.push(...tri);}
   waterGeo.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));waterGeo.setAttribute('waterDepth',new THREE.Float32BufferAttribute(depths,1));waterGeo.setIndex(wi);waterGeo.computeVertexNormals();
-  const water=waterSurface(waterGeo,{kind:'pond',color:0x289c9b,amplitude:.018,opacity:.96});water.material.uniforms.foamStrength.value=.025;water.material.uniforms.sky.value.set(0x9fdcec);water.name='Laguna and winding caño';group.add(water);
+  const water=waterSurface(waterGeo,{kind:'pond',color:0x289c9b,amplitude:.018,opacity:.96});water.material.uniforms.foamStrength.value=.025;water.material.uniforms.sky.value.set(0x9fdcec);water.name='Laguna and winding caño';group.add(water); // i18n-ignore: scene object name
   const add=(id,model,x,z,rotation=0,scale=1,radius=4,animate=false)=>{
     if(nearest(x,z).distance<9+radius)throw Error(`Scenery in horse corridor: ${id}`);
     model.position.set(x,groundAt(x,z),z);model.rotation.y=rotation;model.scale.setScalar(scale);group.add(model);

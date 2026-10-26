@@ -22,15 +22,15 @@
 // Subclass hooks: seatMembers() (required), unseat(id), step(dt), accepted(),
 // rest(). texts.handoff is the notice shown when the host changes.
 import { HostRoom } from './net.js';
-
+import { loc } from './i18n.js';
 const TABLE_TEXTS = {
-  connecting: 'Conectando con la mesa…',
-  full: 'Sala llena. Puedes jugar una partida local.',
-  lost: 'Sin conexión. Reconectando…',
-  offline: 'No pudimos conectar. Puedes jugar en local.',
-  handoff: 'Cambió el anfitrión. La partida continúa.',
-  practice: 'Mesa local · tú y tres bots',
-  waiting: 'Espera a reconectar o abre una mesa local.',
+  connecting: loc('Conectando con la mesa…'),
+  full: loc('Sala llena. Puedes jugar una partida local.'),
+  lost: loc('Sin conexión. Reconectando…'),
+  offline: loc('No pudimos conectar. Puedes jugar en local.'),
+  handoff: loc('Cambió el anfitrión. La partida continúa.'),
+  practice: loc('Mesa local · tú y tres bots'),
+  waiting: loc('Espera a reconectar o abre una mesa local.'),
 };
 
 export class TableRoom extends HostRoom {

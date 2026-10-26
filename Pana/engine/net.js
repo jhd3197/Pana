@@ -9,7 +9,7 @@
 //   a game's room extends it with its own rules. See docs/knowledge/pana-net.md.
 
 import { normalizeAvatar } from './avatar.js';
-
+import { loc, locn } from './i18n.js';
 const SDK = 'https://cdn.jsdelivr.net/npm/@colyseus/sdk@0.18.5/dist/colyseus.js';
 export const ROOM_FULL = 409;
 
@@ -78,7 +78,7 @@ export class RoomLink {
     });
     room.onMessage('pong', (m) => this.pong(m));
     room.onMessage('*', (type, message) => { if (type !== 'pong') this.emit(type, message); });
-    room.onDrop?.(() => this.emit('status', 'Se perdió la conexión. Reconectando…', true));
+    room.onDrop?.(() => this.emit('status', loc('Se perdió la conexión. Reconectando…'), true));
     room.onReconnect?.(() => { this.saveToken(); this.emit('status', '', false); this.sync(); });
     room.onLeave((code) => {
       this.left = true;
@@ -180,10 +180,10 @@ export class RoomLink {
 // ---------------------------------------------------------------------------
 const HELLO_RESERVED = new Set(['game', 'kind', 'avatar', 'id', 'name', '__proto__', 'constructor', 'prototype']);
 const TEXTS = {
-  connecting: 'Conectando con tus panas…',
-  full: 'Sala llena. Puedes jugar en local.',
-  lost: 'Se cortó la conexión. Reconectando…',
-  offline: 'Sin conexión. Puedes jugar en local.',
+  connecting: loc('Conectando con tus panas…'),
+  full: loc('Sala llena. Puedes jugar en local.'),
+  lost: loc('Se cortó la conexión. Reconectando…'),
+  offline: loc('Sin conexión. Puedes jugar en local.'),
 };
 
 export class HostRoom {
@@ -296,7 +296,7 @@ export class HostRoom {
   status() {
     if (this.offline) return;
     const n = this.members.size;
-    this.onStatus(this.statusText?.() ?? `Sala ${this.code} · ${n} pana${n === 1 ? '' : 's'} conectado${n === 1 ? '' : 's'}`);
+    this.onStatus(this.statusText?.() ?? locn(n, 'Sala {code} · {n} pana conectado', 'Sala {code} · {n} panas conectados', { code: this.code }));
   }
 
   // dest: 'host' for what only the host reads (inputs, actions), a seat for one

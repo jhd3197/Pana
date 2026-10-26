@@ -89,7 +89,7 @@ try {
   await wait(b, () => billarDebug.world.starter.revealed || billarDebug.room.state.phase === 'aiming');
   await wait(b, () => billarDebug.room.state.phase === 'aiming');
   const opened = await a.evaluate(() => billarDebug.room.state);
-  assert.equal(opened.turn, opened.starter.order[0]); assert.match(opened.message, /Rompe/);
+  assert.equal(opened.turn, opened.starter.order[0]); assert.match(JSON.stringify(opened.message), /Rompe/);
   assert.equal(await b.evaluate(() => billarDebug.world.starter.active), false, 'the cachos leave the table');
   check('¿Quién rompe? decides the break with both panas shaking at once');
   // The rest of the suite breaks from Juan's seat.

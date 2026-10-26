@@ -11,6 +11,7 @@ import { DRIFT_MIN_SPEED, DRIFT_BOOST, DRIFT_LEVELS, HOP_SPEED, DRIFT_EXIT_TIME,
 import { wrapAngle } from './rules.js';
 import { advanceLap, isOpenEdge, offCourse, stuckStep, OPEN_MARGIN } from './course-rules.js';
 import { isGhost, recordImpact } from './recovery-rules.js';
+import { loc } from '/engine/i18n.js';
 
 export const G = 30;   // cartoon gravity: snappy jumps
 
@@ -151,7 +152,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
           // Held purple too long: the tyres burn, the charge is gone and the car scrubs speed.
           vf *= BURN_SCRUB; vr *= BURN_SCRUB;
           c.drift = 0; c.driftT = 0; c.driftLvl = 0; c.burnT = 0.9; c.burnLock = true;
-          if (c.isPlayer) { sound.skid(1); shout('¡Se quemaron los cauchos!'); }
+          if (c.isPlayer) { sound.skid(1); shout(loc('¡Se quemaron los cauchos!')); }
         }
       }
       c.h += turn * dt;

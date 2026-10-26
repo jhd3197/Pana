@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 // Authored driver-view sites, in lap fractions. These are short compositions,
 // not a scatter rule applied to every road or every biome.
 export const SIGHTLINE_SITES = [

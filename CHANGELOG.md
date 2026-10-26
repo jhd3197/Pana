@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pana habla inglés: elige el idioma en Ajustes > Idioma.**
+  El hub, las salas, los menús y todos los juegos salen en inglés si tu
+  navegador está en inglés o si lo eliges; cada pana de una sala ve su propio
+  idioma. Los nombres de los juegos, los dichos y las preguntas siguen en
+  español. Para quien desarrolla: el texto pasa por `loc()` y
+  `npm run i18n -- check` avisa de lo que falta traducir.
 - **Stop trae paquetes de categorías, preguntas pa' reírse y categorías propias.**
   Elige entre once paquetes con flechas (Pa' los chamos, Geografía, Pa' reírse,
   Confiesa, Inventa…), escribe hasta tres categorías tuyas, junta Ciudad,

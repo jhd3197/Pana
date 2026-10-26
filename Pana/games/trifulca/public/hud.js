@@ -8,60 +8,74 @@ import { fillRoster } from '/engine/results.js';
 import { lineFor, say } from './narrator.js';
 import { PAY, STAKE, INTRO, TUTORIAL } from './rules.js';
 import { MAREO_CALMA, KO_CAIDAS, dodgeCue } from './fight-rules.js';
+import { loc, locn, locKey, formatList, language } from '/engine/i18n.js';
 
 const $ = (id) => document.getElementById(id);
-const HOW = { ko: 'K.O.', cuenta: 'Cuenta de diez', puntos: 'Por puntos', publico: 'Decidió el público', calma: '¡Cálmate!', abandono: 'Abandono' };
-export const CORNER_NAMES = { red: 'rojo', blue: 'azul', yellow: 'amarillo', green: 'verde' };
+const HOW = { ko: 'K.O.', cuenta: loc('Cuenta de diez'), puntos: loc('Por puntos'), publico: loc('Decidió el público'), calma: loc('¡Cálmate!'), abandono: loc('Abandono') };
+export const CORNER_NAMES = { red: loc('rojo'), blue: loc('azul'), yellow: loc('amarillo'), green: loc('verde') };
 const LEFT = ['red', 'yellow'];
-const STAGES = { cuartos: 'Cuartos de final', semifinal: 'Semifinal', final: '¡La final!' };
-const MODES = { queda: 'Ganador se queda', libre: 'Trifulca libre', parejas: 'Parejas', torneo: 'Torneo' };
+const STAGES = { cuartos: loc('Cuartos de final'), semifinal: loc('Semifinal'), final: loc('¡La final!') };
+const MODES = { queda: loc('Ganador se queda'), libre: loc('Trifulca libre'), parejas: loc('Parejas'), torneo: loc('Torneo') };
 // The tutorial, one card per step: what to do and which key does it.
 export const LESSONS = {
-  mover: ['Acércate al Profe', 'Camina hacia él con D o la flecha derecha. Tú siempre estás a la izquierda de la pantalla: derecha es hacia tu rival.', ['D', '→']],
-  jab: ['El jab', 'Toca J (o clic izquierdo) para un jab rápido. Pégale tres.', ['J']],
-  trompon: ['El trompón', 'Mantén J un momento: el guante se va pa\' atrás temblando y sale el trompón. Lento pero pega duro.', ['J mantener']],
-  cubrir: ['Cubrirse', 'El Profe te va a tirar jabs. Mantén K (o clic derecho) para cubrirte.', ['K']],
-  esquivar: ['Esquivar', 'Cuando el Profe cargue el trompón verás ¡ESQUIVA! Pulsa Espacio justo ahí.', ['Espacio']],
-  contra: ['El contragolpe', 'Esquiva el trompón y pega J: atraviesa la guardia y pega más. Aquí tienes dos segundos para practicar; en la pelea responde enseguida.', ['Espacio', 'J']],
-  agarrar: ['Agarrar', 'El Profe se cubre. Pégate y pulsa L: el agarre rompe la guardia y lo manda pa\'l público.', ['L']],
-  pararse: ['¡Párate!', 'Te tumbaron. Machaca J (o cualquier botón) para pararte antes del diez.', ['J', 'J', 'J']],
+  mover: [loc('Acércate al Profe'), loc('Camina hacia él con D o la flecha derecha. Tú siempre estás a la izquierda de la pantalla: derecha es hacia tu rival.'), ['D', '→']],
+  jab: [loc('El jab'), loc('Toca J (o clic izquierdo) para un jab rápido. Pégale tres.'), ['J']],
+  trompon: [loc('El trompón'), loc('Mantén J un momento: el guante se va pa\' atrás temblando y sale el trompón. Lento pero pega duro.'), ['J mantener']],
+  cubrir: [loc('Cubrirse'), loc('El Profe te va a tirar jabs. Mantén K (o clic derecho) para cubrirte.'), ['K']],
+  esquivar: [loc('Esquivar'), loc('Cuando el Profe cargue el trompón verás ¡ESQUIVA! Pulsa Espacio justo ahí.'), ['Espacio']],
+  contra: [loc('El contragolpe'), loc('Esquiva el trompón y pega J: atraviesa la guardia y pega más. Aquí tienes dos segundos para practicar; en la pelea responde enseguida.'), ['Espacio', 'J']],
+  agarrar: [loc('Agarrar'), loc('El Profe se cubre. Pégate y pulsa L: el agarre rompe la guardia y lo manda pa\'l público.'), ['L']],
+  pararse: [loc('¡Párate!'), loc('Te tumbaron. Machaca J (o cualquier botón) para pararte antes del diez.'), ['J', 'J', 'J']],
 };
+// It runs on translated text, so the fragments it swaps are phrases too, and
+// a translation keeps them word for word (and never uses I, O, T… as words).
+const SPACE = loc('Espacio'), escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const CLICKS = new RegExp(` \\((?:${escape(loc('o clic izquierdo'))}|${escape(loc('o clic derecho'))})\\)`, 'g');
+const KEY_WORDS = new RegExp(`(?<![\\p{L}])(?:${escape(SPACE)}|J|K|L|T|I|U|O)(?![\\p{L}])`, 'gu');
 const deviceText = text => {
   const device = inputState().device;
   if (device === 'keyboard') return text;
-  const touch = device === 'touch', keys = touch ? { Espacio: 'Esquivar', J: 'Golpe', K: 'Cubrir', L: 'Agarrar', T: '¡Dale!', I: 'Patada', U: 'Barrida', O: 'Volteo' } : { Espacio: 'B', J: 'A', K: 'LB', L: 'X', T: 'Y', I: 'RT', U: 'LT', O: 'RB' };
-  return text.replace(/ \(o clic (?:izquierdo|derecho)\)/g, '').replace(/D o la flecha derecha/g, touch ? 'el botón Derecha' : 'el stick izquierdo hacia la derecha')
-    .replace(/\b(?:Espacio|J|K|L|T|I|U|O)\b/g, key => touch ? keys[key] : formatPadLabel(keys[key]));
+  const touch = device === 'touch', keys = touch ? { [SPACE]: loc('Esquivar'), J: loc('Golpe'), K: loc('Cubrir'), L: loc('Agarrar'), T: loc('¡Dale!'), I: loc('Patada'), U: loc('Barrida'), O: loc('Volteo') } : { [SPACE]: 'B', J: 'A', K: 'LB', L: 'X', T: 'Y', I: 'RT', U: 'LT', O: 'RB' };
+  return text.replace(CLICKS, '').replaceAll(loc('D o la flecha derecha'), touch ? loc('el botón Derecha') : loc('el stick izquierdo hacia la derecha'))
+    .replace(KEY_WORDS, key => touch ? keys[key] : formatPadLabel(keys[key]));
 };
+// Lists of names: Spanish keeps its "A y B y C"; other languages their own list.
+const list = (names) => language === 'es' ? names.join(' y ') : formatList(names);
+const spanish = (names) => names.join(' y ');
+const fill = (text, vars, join) => text.replace(/\{(\w+)\}/g, (m, k) => vars?.[k] == null ? m : Array.isArray(vars[k]) ? join(vars[k]) : vars[k]);
 const el = (tag, className = '', text = '') => Object.assign(document.createElement(tag), { className, textContent: text });
+// Names and nicknames are shown as they are.
+const raw = (tag, className = '', text = '') => Object.assign(el(tag, className, text), { translate: false });
 
 export function createHud({ me, voice = () => true }) {
   let state = null, callTimer = 0, feedItems = [], barsKey = '', betsKey = '';
   const blocks = new Map(), feedback = createFightFeedback();
   let verdictKey = '';
 
-  const name = (id) => state?.players.find(p => p.id === id)?.name ?? 'Alguien';
+  const name = (id) => state?.players.find(p => p.id === id)?.name ?? loc('Alguien');
   const player = (id) => state?.players.find(p => p.id === id);
-  const names = (ids = []) => ids.map(name).join(' y ');
+  const names = (ids = []) => list(ids.map(name));
 
-  function call(text, { big = false, ref = false, speak = false } = {}) {
-    const node = $('call'); node.textContent = text;
+  // `text` is Spanish source (locKey) with vars: the banner shows it in the
+  // player's language, the voice always speaks the Spanish.
+  function call(text, { vars, big = false, ref = false, speak = false } = {}) {
+    const node = $('call'); node.textContent = fill(loc(text), vars, list);
     node.classList.remove('is-on'); void node.offsetWidth; node.classList.add('is-on');
     node.classList.toggle('is-big', big); node.classList.toggle('is-ref', ref);
     callTimer = big ? 2.4 : 1.6;
-    if (speak) say(text, { enabled: voice(), ref });
+    if (speak) say(fill(text, vars, spanish), { enabled: voice(), ref });
   }
   function drawFeed() { $('feed').replaceChildren(...feedItems.map(f => el('li', '', f.text))); }
   function feed(text) { feedItems.push({ text, t: 4 }); if (feedItems.length > 4) feedItems.shift(); drawFeed(); }
 
   // Práctica: alone with the bots, the narrator coaches the rock-paper-scissors.
   const TIPS = {
-    wind: 'Tip: ¡pégale un jab mientras carga el trompón, o esquiva con Espacio!',
-    block: 'Tip: si se cubre, agárralo con L: el agarre le gana a la guardia.',
-    dizzy: 'Tip: está mareado: un golpe limpio ahora lo tumba.',
-    caidaMe: 'Tip: ¡machaca J para pararte antes del diez!',
-    out: 'Tip: el público te devuelve al ring; no te quedes en la orilla.',
-    dodged: 'Tip: después de un trompón fallado quedas abierto. ¡Cuidado!',
+    wind: loc('Tip: ¡pégale un jab mientras carga el trompón, o esquiva con Espacio!'),
+    block: loc('Tip: si se cubre, agárralo con L: el agarre le gana a la guardia.'),
+    dizzy: loc('Tip: está mareado: un golpe limpio ahora lo tumba.'),
+    caidaMe: loc('Tip: ¡machaca J para pararte antes del diez!'),
+    out: loc('Tip: el público te devuelve al ring; no te quedes en la orilla.'),
+    dodged: loc('Tip: después de un trompón fallado quedas abierto. ¡Cuidado!'),
   };
   const tipped = new Set();
   function coach(e) {
@@ -79,23 +93,23 @@ export function createHud({ me, voice = () => true }) {
     coach(e);
     if (state) feedback.react(e, state);
     const line = lineFor(e, name, names);
-    if (line) call(line.text, { big: line.big, ref: line.ref, speak: line.say });
+    if (line) call(line.text, { vars: line.vars, big: line.big, ref: line.ref, speak: line.say });
     if (e.type === 'count') {
       const node = $('count'); node.textContent = e.n; node.hidden = false;
       node.classList.remove('is-on'); void node.offsetWidth; node.classList.add('is-on');
-      if (e.n === 5 || e.n === 8) call('¡Párate!', { ref: true, speak: true });
+      if (e.n === 5 || e.n === 8) call(locKey('¡Párate!'), { ref: true, speak: true });
     }
     if (['rise', 'fin', 'intro', 'fuera'].includes(e.type)) $('count').hidden = true;
-    if (e.type === 'bet') feed(`${name(e.id)}: ¡Por ${e.amount} dolitas al ${CORNER_NAMES[e.corner]}!`);
-    if (e.type === 'empujon' && e.back) feed(`${name(e.by)} empujó pa' dentro (+${PAY.shove})`);
-    if (e.type === 'agua') feed(`${name(e.by)} dio agua en la esquina`);
-    if (e.type === 'cheer') feed(`${name(e.by)}: ¡Dale, dale!`);
+    if (e.type === 'bet') feed(loc('{name}: ¡Por {amount} dolitas al {corner}!', { name: name(e.id), amount: e.amount, corner: CORNER_NAMES[e.corner] }));
+    if (e.type === 'empujon' && e.back) feed(loc("{name} empujó pa' dentro (+{pay})", { name: name(e.by), pay: PAY.shove }));
+    if (e.type === 'agua') feed(loc('{name} dio agua en la esquina', { name: name(e.by) }));
+    if (e.type === 'cheer') feed(loc('{name}: ¡Dale, dale!', { name: name(e.by) }));
     if (e.type === 'intro') introCard(e);
-    if (e.type === 'tutorial-bien') feed(['¡Eso!', '¡Bien!', '¡Así mismo!'][e.count % 3]);
-    if (e.type === 'tutorial') call(e.step ? '¡Bien hecho!' : '¡Bienvenido al tutorial!', { big: true });
-    if (e.type === 'tutorial-fin') call('¡Listo, ya sabes pelear!', { big: true, speak: true });
-    if (e.type === 'fin' && e.belt) setTimeout(() => call(e.final ? `¡${name(e.winner)} gana el torneo y el cinturón!` : `¡${name(e.winner)} es el campeón del barrio!`, { big: true, speak: true }), 2600);
-    if (e.type === 'fin' && e.streak >= 2 && !e.belt) feed(`${name(e.winner)} lleva ${e.streak} seguidas`);
+    if (e.type === 'tutorial-bien') feed([loc('¡Eso!'), loc('¡Bien!'), loc('¡Así mismo!')][e.count % 3]);
+    if (e.type === 'tutorial') call(e.step ? locKey('¡Bien hecho!') : locKey('¡Bienvenido al tutorial!'), { big: true });
+    if (e.type === 'tutorial-fin') call(locKey('¡Listo, ya sabes pelear!'), { big: true, speak: true });
+    if (e.type === 'fin' && e.belt) setTimeout(() => call(e.final ? locKey('¡{name} gana el torneo y el cinturón!') : locKey('¡{name} es el campeón del barrio!'), { vars: { name: name(e.winner) }, big: true, speak: true }), 2600);
+    if (e.type === 'fin' && e.streak >= 2 && !e.belt) feed(loc('{name} lleva {n} seguidas', { name: name(e.winner), n: e.streak }));
   }
 
   function introCard(e) {
@@ -105,13 +119,15 @@ export function createHud({ me, voice = () => true }) {
       $(`intro-${side}`).replaceChildren(...list.map(b => {
         const p = player(b.id), card = el('div', `intro-side intro-side--${b.corner}${b.bench ? ' is-bench' : ''}`);
         if (!p) return card;
-        card.append(fighterPortrait(p, state.players.indexOf(p)), el('span', 'pk-display', p.nick), el('b', '', p.id === me() ? `${p.name} (tú)` : p.name), el('span', '', p.from), el('small', '', `${p.stats.wins} ganadas · ${p.dolitas} dolitas`));
+        card.append(fighterPortrait(p, state.players.indexOf(p)), raw('span', 'pk-display', p.nick), el('b', '', p.id === me() ? loc('{name} (tú)', { name: p.name }) : p.name), raw('span', '', p.from),
+          el('small', '', loc('{wins} ganadas · {dolitas} dolitas', { wins: p.stats.wins, dolitas: p.dolitas })));
         return card;
       }));
     }
-    $('intro-streak').textContent = e.stage ? STAGES[e.stage] : e.streak >= 2 ? `${name(e.red)} viene con ${e.streak} seguidas` : MODES[e.mode] || 'Ganador se queda';
+    $('intro-streak').textContent = e.stage ? STAGES[e.stage] : e.streak >= 2 ? loc('{name} viene con {n} seguidas', { name: name(e.red), n: e.streak }) : MODES[e.mode] || MODES.queda;
     const intro = bodies.filter(b => !b.bench).map(b => { const p = player(b.id); return p ? `${p.nick}, ${p.name}, ${p.from}` : ''; });
-    say(`${e.stage === 'final' ? '¡La gran final! ' : ''}${intro.length > 2 ? 'Todos contra todos: ' : 'En la esquina roja, '}${intro.join(intro.length > 2 ? '. ' : '. En la esquina azul, ')}.`, { enabled: voice() });
+    // The announcer's voice reads the lineup in Spanish.
+    say(`${e.stage === 'final' ? '¡La gran final! ' : ''}${intro.length > 2 ? 'Todos contra todos: ' : 'En la esquina roja, '}${intro.join(intro.length > 2 ? '. ' : '. En la esquina azul, ')}.`, { enabled: voice() }); // i18n-ignore
   }
 
   // One block per fighter, rebuilt when the lineup changes.
@@ -121,7 +137,7 @@ export function createHud({ me, voice = () => true }) {
       const list = bodies.filter(b => LEFT.includes(b.team) === (side === 'left'));
       $(`bars-${side}`).replaceChildren(...list.map(b => {
         const block = el('div', `fighter fighter--${b.corner}`), top = el('div', 'fighter-name');
-        const title = el('b'), nick = el('span'), mareo = el('div', 'meter meter--mareo'), low = el('div', 'fighter-low');
+        const title = raw('b'), nick = raw('span'), mareo = el('div', 'meter meter--mareo'), low = el('div', 'fighter-low');
         const aguante = el('div', 'meter meter--aguante'), caidas = el('span', 'caidas');
         const lag = el('em'); mareo.append(lag, el('i')); aguante.append(el('i')); low.append(aguante);
         const identity = el('div', 'fighter-identity'); identity.append(title, nick);
@@ -137,19 +153,19 @@ export function createHud({ me, voice = () => true }) {
   function bar(body) {
     const b = blocks.get(body.id), p = player(body.id);
     if (!b) return;
-    b.title.textContent = p ? (p.id === me() ? `${p.name} · tú` : p.name) : '';
-    b.nick.textContent = body.bench ? 'en la esquina' : p?.nick ?? '';
+    b.title.textContent = p ? (p.id === me() ? loc('{name} · tú', { name: p.name }) : p.name) : '';
+    b.nick.textContent = body.bench ? loc('en la esquina') : p?.nick ?? '';
     b.block.classList.toggle('is-bench', !!body.bench); b.block.classList.toggle('is-out', !!body.out);
     b.mareo.style.setProperty('--fill', `${Math.min(100, body.mareo)}%`);
     b.lag.style.width = `${Math.min(100, body.mareo)}%`;
     b.aguante.classList.toggle('is-empty', body.aguante <= 0);
     b.mareo.classList.toggle('is-danger', body.mareo >= MAREO_CALMA || body.act === 'dizzy');
     b.aguante.style.setProperty('--fill', `${body.aguante}%`);
-    b.status.textContent = body.act === 'down' ? '¡En el suelo!' : body.act === 'dizzy' ? '¡Mareado! Otro golpe te tumba' : `Mareo ${Math.round(body.mareo)}/100`;
-    b.energy.textContent = `Aguante ${Math.round(body.aguante)}%`;
-    b.mareo.title = 'Los golpes suben el mareo. A 100, otro golpe limpio te tumba.';
-    b.caidas.setAttribute('aria-label', `${body.caidas} de ${KO_CAIDAS} caídas; tres es K.O.`);
-    b.caidas.dataset.label = `Caídas ${body.caidas}/${KO_CAIDAS}`;
+    b.status.textContent = body.act === 'down' ? loc('¡En el suelo!') : body.act === 'dizzy' ? loc('¡Mareado! Otro golpe te tumba') : loc('Mareo {n}/100', { n: Math.round(body.mareo) });
+    b.energy.textContent = loc('Aguante {n}%', { n: Math.round(body.aguante) });
+    b.mareo.title = loc('Los golpes suben el mareo. A 100, otro golpe limpio te tumba.');
+    b.caidas.setAttribute('aria-label', loc('{n} de {max} caídas; tres es K.O.', { n: body.caidas, max: KO_CAIDAS }));
+    b.caidas.dataset.label = loc('Caídas {n}/{max}', { n: body.caidas, max: KO_CAIDAS });
     [...b.caidas.children].forEach((pip, i) => pip.classList.toggle('is-down', i < body.caidas));
   }
 
@@ -158,22 +174,23 @@ export function createHud({ me, voice = () => true }) {
     if (key !== betsKey) {
       betsKey = key;
       $('bet-row').replaceChildren(...corners.map((c, i) => {
-        const team = state.bodies.filter(b => b.team === c).map(b => name(b.id)).join(' y ');
-        const button = el('button', `pk-btn bet bet--${c}`, `${i + 1} · ${team} · paga ×${odds[c]}`);
+        const team = list(state.bodies.filter(b => b.team === c).map(b => name(b.id)));
+        const button = el('button', `pk-btn bet bet--${c}`, loc('{n} · {team} · paga ×{odds}', { n: i + 1, team, odds: odds[c] }));
         button.dataset.corner = c; button.onclick = () => document.dispatchEvent(new CustomEvent('trifulca:bet', { detail: c }));
         return button;
       }));
     }
     for (const button of $('bet-row').children) button.classList.toggle('is-picked', mine.bet?.on === button.dataset.corner);
-    $('bet-note').textContent = mine.bet ? `Apostaste ${mine.bet.amount} dolitas al ${CORNER_NAMES[mine.bet.on]}` : `Apuesta ${STAKE} dolitas (teclas 1 a ${corners.length})`;
+    $('bet-note').textContent = mine.bet ? loc('Apostaste {amount} dolitas al {corner}', { amount: mine.bet.amount, corner: CORNER_NAMES[mine.bet.on] })
+      : loc('Apuesta {stake} dolitas (teclas 1 a {n})', { stake: STAKE, n: corners.length });
   }
 
   function tutorialCard(t) {
     $('tutorial').hidden = !t;
     if (!t) return;
-    const lesson = t.done ? ['¡Listo, pana!', 'Ya sabes pelear: jab, trompón, cubrirse, esquivar, contragolpe y agarre. Ahora sube la escalera: cinco rivales del barrio, cada uno más bravo.', []] : LESSONS[TUTORIAL[t.step].id];
+    const lesson = t.done ? [loc('¡Listo, pana!'), loc('Ya sabes pelear: jab, trompón, cubrirse, esquivar, contragolpe y agarre. Ahora sube la escalera: cinco rivales del barrio, cada uno más bravo.'), []] : LESSONS[TUTORIAL[t.step].id];
     const key = `${t.step}:${t.done}:${inputState().device}:${inputState().family}`;
-    $('tutorial-step').textContent = t.done ? 'TUTORIAL COMPLETO' : `PASO ${t.step + 1} DE ${TUTORIAL.length}`;
+    $('tutorial-step').textContent = t.done ? loc('TUTORIAL COMPLETO') : loc('PASO {n} DE {total}', { n: t.step + 1, total: TUTORIAL.length });
     $('tutorial-go').hidden = !t.done; $('tutorial-skip').hidden = t.done;
     // Once it is done, the card is a menu for a controller: A on ¡A pelear!
     $('tutorial').toggleAttribute('data-pad-menu', !!t.done);
@@ -182,10 +199,12 @@ export function createHud({ me, voice = () => true }) {
     }
     $('tutorial').dataset.key = key;
     $('tutorial-title').textContent = lesson[0]; $('tutorial-text').textContent = deviceText(lesson[1]);
-    const touch = matchMedia('(pointer: coarse)').matches, words = { J: 'Golpe', 'J mantener': 'Golpe mantener', K: 'Cubrir', Espacio: 'Esquivar', L: 'Agarrar', D: 'Derecha', '→': 'hacia él' };
+    const touch = matchMedia('(pointer: coarse)').matches, words = { J: loc('Golpe'), 'J mantener': loc('Golpe mantener'), K: loc('Cubrir'), Espacio: loc('Esquivar'), L: loc('Agarrar'), D: loc('Derecha'), '→': loc('hacia él') };
+    const keyNames = { Espacio: SPACE, 'J mantener': loc('J mantener') };
     const pad = inputState().device === 'gamepad';
     $('tutorial-keys').replaceChildren(...lesson[2].map(k => {
-      const cap = el('kbd', 'pk-kbd', pad ? k === 'D' ? 'Stick izq.' : k === '→' ? 'Derecha' : deviceText(k) : touch ? words[k] || k : k);
+      const label = keyNames[k] ?? k;
+      const cap = el('kbd', 'pk-kbd', pad ? k === 'D' ? loc('Stick izq.') : k === '→' ? loc('Derecha') : deviceText(label) : touch ? words[k] || label : label);
       if (pad) cap.dataset.padKey = '';
       return cap;
     }));
@@ -199,12 +218,12 @@ export function createHud({ me, voice = () => true }) {
     let text = '';
     if (myBody && state.phase === 'fight' && !myBody.bench && !myBody.out) {
       const foe = bodies.find(b => b.id === myBody.foe);
-      if (myBody.act === 'down') text = '¡Machaca J pa\' pararte!';
-      else if (myBody.contra > 0) text = '¡CONTRA! J';
-      else if (dodgeCue(foe) && Math.hypot(foe.x - myBody.x, foe.z - myBody.z) < 2.6) text = '¡ESQUIVA! Espacio';
-      else if (foe?.act === 'wind') text = '¡Ojo! Está cargando…';
-      else if (foe?.act === 'dizzy') text = '¡Está mareado! ¡Dale!';
-      else if (foe?.act === 'open') text = '¡Quedó abierto! J';
+      if (myBody.act === 'down') text = loc('¡Machaca J pa\' pararte!');
+      else if (myBody.contra > 0) text = loc('¡CONTRA! J');
+      else if (dodgeCue(foe) && Math.hypot(foe.x - myBody.x, foe.z - myBody.z) < 2.6) text = loc('¡ESQUIVA! Espacio');
+      else if (foe?.act === 'wind') text = loc('¡Ojo! Está cargando…');
+      else if (foe?.act === 'dizzy') text = loc('¡Está mareado! ¡Dale!');
+      else if (foe?.act === 'open') text = loc('¡Quedó abierto! J');
     }
     text = deviceText(text);
     node.hidden = !text;
@@ -224,15 +243,16 @@ export function createHud({ me, voice = () => true }) {
   let lastKeys = {};
 
   function roleText(phase, mode, myBody, mine) {
-    if (phase === 'intro') return myBody ? (myBody.bench ? 'Esperas en la esquina: tu pareja te da el relevo con L' : '¡Prepárate! Golpe J · Cubrirse K · Esquivar Espacio · Agarrar L') : 'Apuesta y dale agua a tu esquina: acércate y pulsa J';
+    if (phase === 'intro') return myBody ? (myBody.bench ? loc('Esperas en la esquina: tu pareja te da el relevo con L') : loc('¡Prepárate! Golpe J · Cubrirse K · Esquivar Espacio · Agarrar L')) : loc('Apuesta y dale agua a tu esquina: acércate y pulsa J');
     if (phase === 'fight') {
-      if (!myBody) return 'Eres el ring: J empuja pa\' dentro · L ¡cálmate! (mareo alto) · T ¡dale!';
-      if (myBody.out) return 'Quedaste fuera: mira cómo termina';
-      if (myBody.bench) return 'En la esquina: recuperas el aire. Tu pareja te toca con L';
-      const extra = mode === 'libre' ? ' · L junto a una silla o caja: agarrarla, L otra vez: lanzarla' : mode === 'parejas' ? ' · L junto a tu pareja: relevo' : ' · L agarrar';
-      return `J golpe (mantén: trompón) · K cubrirse · Espacio esquivar${extra} · I patada · U barrida · O volteo`;
+      if (!myBody) return loc('Eres el ring: J empuja pa\' dentro · L ¡cálmate! (mareo alto) · T ¡dale!');
+      if (myBody.out) return loc('Quedaste fuera: mira cómo termina');
+      if (myBody.bench) return loc('En la esquina: recuperas el aire. Tu pareja te toca con L');
+      if (mode === 'libre') return loc('J golpe (mantén: trompón) · K cubrirse · Espacio esquivar · L junto a una silla o caja: agarrarla, L otra vez: lanzarla · I patada · U barrida · O volteo');
+      if (mode === 'parejas') return loc('J golpe (mantén: trompón) · K cubrirse · Espacio esquivar · L junto a tu pareja: relevo · I patada · U barrida · O volteo');
+      return loc('J golpe (mantén: trompón) · K cubrirse · Espacio esquivar · L agarrar · I patada · U barrida · O volteo');
     }
-    return phase === 'after' && myBody && !mine?.mano ? 'L: mano de caballero' : '';
+    return phase === 'after' && myBody && !mine?.mano ? loc('L: mano de caballero') : '';
   }
 
   function update(next, { replaying = false } = {}) {
@@ -246,15 +266,17 @@ export function createHud({ me, voice = () => true }) {
     $('clock').classList.toggle('is-low', phase === 'fight' && !state.tutorial && state.time <= 10);
     $('clock').textContent = phase === 'fight' ? Math.max(0, Math.ceil(state.time)) : phase === 'intro' ? 'VS' : '';
     const ladder = state.ladder;
-    $('fight-no').textContent = !fighting ? '' : state.tutorial ? 'Tutorial' : state.fight?.stage ? STAGES[state.fight.stage]
-      : ladder ? `Rival ${Math.min(ladder.step + 1, ladder.rivals.length)} de ${ladder.rivals.length} · vidas ${ladder.lives}` : `Pelea ${state.fightNo} de ${state.options.peleas}`;
+    $('fight-no').textContent = !fighting ? '' : state.tutorial ? loc('Tutorial') : state.fight?.stage ? STAGES[state.fight.stage]
+      : ladder ? loc('Rival {n} de {total} · vidas {lives}', { n: Math.min(ladder.step + 1, ladder.rivals.length), total: ladder.rivals.length, lives: ladder.lives })
+      : loc('Pelea {n} de {total}', { n: state.fightNo, total: state.options.peleas });
     if (state.tutorial) $('clock').textContent = 'VS';
     $('intro-card').hidden = phase !== 'intro' || INTRO - state.time > 5.2;
     $('replay').hidden = !replaying;
     const mine = player(id), myBody = bodies.find(b => b.id === id), inFight = fighting && !!myBody;
-    $('me-dolitas').textContent = mine ? `${mine.dolitas} dolitas` : '';
+    $('me-dolitas').textContent = mine ? locn(mine.dolitas, '{n} dolitas', '{n} dolitas') : '';
     const place = state.queue?.indexOf(id) ?? -1;
-    $('me-queue').textContent = inFight ? `Esquina ${CORNER_NAMES[myBody.corner]}` : place >= 0 && fighting && state.options.modo !== 'torneo' ? (place === 0 ? 'Te toca después' : `Te toca en ${place + 1}`) : '';
+    $('me-queue').textContent = inFight ? loc('Esquina {corner}', { corner: CORNER_NAMES[myBody.corner] })
+      : place >= 0 && fighting && state.options.modo !== 'torneo' ? (place === 0 ? loc('Te toca después') : loc('Te toca en {n}', { n: place + 1 })) : '';
     const betting = phase === 'intro' && mine && !inFight;
     $('bets').hidden = !betting;
     if (betting) bets(mine, state.fight?.odds || {});
@@ -262,7 +284,7 @@ export function createHud({ me, voice = () => true }) {
     tutorialCard(state.tutorial);
     const lessonAction = state.tutorial && !state.tutorial.done ? { mover: 'mover', jab: 'golpe', trompon: 'golpe', cubrir: 'cubrir', esquivar: 'esquivar', contra: 'golpe', agarrar: 'agarrar', pararse: 'golpe' }[TUTORIAL[state.tutorial.step].id] : '';
     for (const cap of $('keys').children) cap.classList.toggle('is-lesson', cap.dataset.key === lessonAction);
-    const helpLabels = { mover: 'Moverte', golpe: 'Golpe', cubrir: 'Cubrirte', esquivar: 'Esquivar', agarrar: 'Agarrar' };
+    const helpLabels = { mover: loc('Moverte'), golpe: loc('Golpe'), cubrir: loc('Cubrirte'), esquivar: loc('Esquivar'), agarrar: loc('Agarrar') };
     for (const cap of document.querySelectorAll('.pana-pad-prompts > span')) cap.classList.toggle('is-lesson', !!lessonAction && cap.textContent.includes(helpLabels[lessonAction]));
     prompt(myBody);
     $('keys').hidden = !(phase === 'fight' && myBody && !myBody.bench && !myBody.out);
@@ -277,21 +299,24 @@ export function createHud({ me, voice = () => true }) {
     if (verdict) {
       const r = state.result;
       $('verdict-how').textContent = HOW[r.how] || '';
-      $('verdict-title').textContent = `Gana${(r.winners?.length || 1) > 1 ? 'n' : ''} ${names(r.winners || [r.winner])}`;
+      $('verdict-title').textContent = locn(r.winners?.length || 1, 'Gana {names}', 'Ganan {names}', { names: names(r.winners || [r.winner]) });
       const cards = r.cards && r.how !== 'calma' ? Object.entries(r.cards).map(([c, v]) => `${CORNER_NAMES[c]} ${v}`).join(' · ') : '';
-      $('verdict-cards').textContent = cards ? `Tarjeta: ${cards}` : '';
+      $('verdict-cards').textContent = cards ? loc('Tarjeta: {cards}', { cards }) : '';
       const mineOut = r.payouts?.filter(p => p.id === id).reduce((n, p) => n + p.amount, 0) || 0;
-      $('verdict-pay').textContent = mineOut > 0 ? `+${mineOut} dolitas pa' ti` : mineOut < 0 ? `Perdiste ${-mineOut} dolitas` : '';
-      $('verdict-mano').textContent = r.mano ? 'Mano de caballero' : '';
+      $('verdict-pay').textContent = mineOut > 0 ? loc("+{n} dolitas pa' ti", { n: mineOut }) : mineOut < 0 ? loc('Perdiste {n} dolitas', { n: -mineOut }) : '';
+      $('verdict-mano').textContent = r.mano ? loc('Mano de caballero') : '';
     }
     // End of the night: the richest pana and the titles.
     const ended = phase === 'finished';
     $('results').hidden = !ended;
     if (ended) {
       const ranked = [...state.players].sort((a, b) => b.dolitas - a.dolitas);
-      $('result-title').textContent = ladder ? (ladder.won ? '¡Eres el campeón del barrio!' : `Te sacaron en el rival ${ladder.step + 1} de ${ladder.rivals.length}`) : `¡${ranked[0]?.name ?? 'Nadie'} se lleva la noche!`;
-      fillRoster($('result-roster'), ranked.map((p, i) => ({ rank: i + 1, name: p.id === id ? `${p.name} · tú` : p.name, detail: `${p.stats.wins} ganadas · ${p.stats.kos} K.O.`, end: `${p.dolitas}`, score: true, me: p.id === id })));
-      $('titles').replaceChildren(...state.titles.map(t => { const li = el('li'); li.append(el('b', '', t.title), el('span', '', name(t.id))); return li; }));
+      $('result-title').textContent = ladder ? (ladder.won ? loc('¡Eres el campeón del barrio!') : loc('Te sacaron en el rival {n} de {total}', { n: ladder.step + 1, total: ladder.rivals.length }))
+        : loc('¡{name} se lleva la noche!', { name: ranked[0]?.name ?? loc('Nadie') });
+      fillRoster($('result-roster'), ranked.map((p, i) => ({ rank: i + 1, name: p.id === id ? loc('{name} · tú', { name: p.name }) : p.name,
+        detail: loc('{wins} ganadas · {kos} K.O.', { wins: p.stats.wins, kos: p.stats.kos }), end: `${p.dolitas}`, score: true, me: p.id === id })));
+      // Titles arrive as Spanish source from the rules (locKey).
+      $('titles').replaceChildren(...state.titles.map(t => { const li = el('li'); li.append(el('b', '', loc(t.title)), raw('span', '', name(t.id))); return li; }));
     }
   }
 

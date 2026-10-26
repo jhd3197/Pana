@@ -11,7 +11,7 @@ import { getSettings, setSettings, onSettings, bindSound, QUALITY } from './sett
 import { ORIENTATIONS, guardOrientation, isTouch } from './touch.js';
 import { icon } from './icons.js';
 import './navigation.js';
-
+import { loc } from './i18n.js';
 // From next to this module, so a versioned copy (pana.sh's /_v/<version>/engine/) loads its own kit.
 for (const name of ['kit.css', 'ui.css']) {
   if (document.querySelector(`link[href*="/engine/${name}"]`)) continue;
@@ -51,7 +51,7 @@ let menuCount = 0;
 
 export function createGameMenu({
   title = 'Pana',             // game name, shown above the heading
-  heading = 'Un momentico',   // headline while paused
+  heading = loc('Un momentico'),   // headline while paused
   note,                       // () => string: what pausing means right now
   controls = [],              // [['W A S D', 'Moverte'], …] for keyboard instructions
   tips = [],                  // extra lines under the controls
@@ -60,9 +60,9 @@ export function createGameMenu({
   sound,                      // the fx.js sound object; follows the saved settings
   invite,                     // () => link to share; adds the invite buttons
   notify = defaultNotify,     // in-game toast for "link copied"
-  resumeLabel = 'Seguir jugando',
+  resumeLabel = loc('Seguir jugando'),
   exitHref = '/',
-  exitLabel = 'Salir a Pana',
+  exitLabel = loc('Salir a Pana'),
   hotkey = true,              // Esc opens and closes the menu
   canOpen = () => true,
   onOpen, onClose,
@@ -77,7 +77,7 @@ export function createGameMenu({
     if (pad && pause) padControls(pad);
     onInputDevice(state => {
       const rows = padHelp(pad).map(([key, label]) => [formatPadLabel(key, state.family), label]);
-      padRows.replaceChildren(h('h3', { class: 'pana-keys-title', text: 'Con mando' }), keyList(rows, true));
+      padRows.replaceChildren(h('h3', { class: 'pana-keys-title', text: loc('Con mando') }), keyList(rows, true));
       padRows.hidden = state.device !== 'gamepad';
       keyboardRows.hidden = state.device !== 'keyboard';
       touchHelp.hidden = state.device !== 'touch';
@@ -109,10 +109,13 @@ export function createGameMenu({
     }
   }
   let isOpen = false, returnFocus = null;
+  // Set by settings-workspace.js before a language reload (same key as its REOPEN).
+  let reopen = null;
+  if (!pause) try { reopen = sessionStorage.getItem('pana:settings-reopen'); sessionStorage.removeItem('pana:settings-reopen'); } catch { /* Storage off. */ }
 
   // ---------- Juego ----------
   const shareInput = h('input', { readonly: true, id: id('share-url') });
-  const shareLabel = h('label', { class: 'pana-share', hidden: true }, 'Enlace de la sala', shareInput);
+  const shareLabel = h('label', { class: 'pana-share', hidden: true }, loc('Enlace de la sala'), shareInput);
   const status = h('p', { class: 'pana-menu-status', role: 'status', 'aria-live': 'polite' });
   const actionButtons = actions.map(a => {
     const button = h('button', { type: 'button', id: a.id, class: a.kind === 'primary' ? 'pana-primary' : a.kind === 'link' ? 'pana-link' : 'pana-secondary', text: a.label });
@@ -122,21 +125,21 @@ export function createGameMenu({
   const resume = h('button', { type: 'button', id: id('resume'), class: 'pana-primary', text: resumeLabel, onclick: () => close() });
   const gamePanel = h('section', { class: 'pana-panel', role: 'tabpanel', id: id('panel-game'), 'aria-labelledby': id('tab-game') },
     resume, actionButtons.map(a => a.button),
-    invite && h('button', { type: 'button', id: id('copy-room'), class: 'pana-secondary', text: 'Copiar invitación', onclick: () => share() }),
+    invite && h('button', { type: 'button', id: id('copy-room'), class: 'pana-secondary', text: loc('Copiar invitación'), onclick: () => share() }),
     shareLabel, status,
     h('a', { class: 'pana-exit', href: exitHref, text: exitLabel }));
 
   // ---------- Ajustes ----------
   const soundSwitch = h('button', { type: 'button', role: 'switch', id: id('set-sound'), class: 'pana-switch', 'aria-labelledby': id('set-sound-label') });
-  const volume = h('input', { type: 'range', id: id('set-volume'), min: 0, max: 100, step: 5, 'aria-label': 'Volumen' });
-  const music = h('input', { type: 'range', id: id('set-music'), min: 0, max: 100, step: 5, 'aria-label': 'Música' });
+  const volume = h('input', { type: 'range', id: id('set-volume'), min: 0, max: 100, step: 5, 'aria-label': loc('Volumen') });
+  const music = h('input', { type: 'range', id: id('set-music'), min: 0, max: 100, step: 5, 'aria-label': loc('Música') });
   const hintsSwitch = h('button', { type: 'button', role: 'switch', id: id('set-hints'), class: 'pana-switch', 'aria-labelledby': id('set-hints-label') });
-  const qualityGroup = choiceGroup(id('set-quality'), 'Calidad', Object.entries(QUALITY).map(([v, q]) => [v, q.label]),
+  const qualityGroup = choiceGroup(id('set-quality'), loc('Calidad'), Object.entries(QUALITY).map(([v, q]) => [v, q.label]),
     () => getSettings().quality, value => setSettings({ quality: value }));
   const gameOptions = options.map(o => choiceGroup(id(`opt-${o.id}`), o.label, o.choices, o.get, o.set));
   // Phones only: how to hold it. "Según el juego" names this game's own default.
-  const ownWay = ORIENTATIONS[orientation] ? `Según el juego (${ORIENTATIONS[orientation].toLowerCase()})` : 'Como prefieras';
-  const orientationGroup = isTouch() && choiceGroup(id('set-orientation'), 'Orientación',
+  const ownWay = ORIENTATIONS[orientation] ? loc('Según el juego ({way})', { way: ORIENTATIONS[orientation].toLowerCase() }) : loc('Como prefieras');
+  const orientationGroup = isTouch() && choiceGroup(id('set-orientation'), loc('Orientación'),
     [['juego', ownWay], ...Object.entries(ORIENTATIONS)], () => getSettings().orientation, value => setSettings({ orientation: value }));
   if (pause) guardOrientation(orientation);
   soundSwitch.onclick = () => {
@@ -148,15 +151,15 @@ export function createGameMenu({
   music.oninput = () => setSettings({ music: Number(music.value) / 100 });
   hintsSwitch.onclick = () => setSettings({ hints: !getSettings().hints });
   const settingsPanel = h('section', { class: 'pana-panel', role: 'tabpanel', id: id('panel-settings'), 'aria-labelledby': id('tab-settings') },
-    h('div', { class: 'pana-row' }, h('span', { id: id('set-sound-label'), text: 'Sonido' }), soundSwitch),
-    h('label', { class: 'pana-row pana-volume', for: id('set-volume') }, h('span', { text: 'Volumen' }), volume),
-    h('label', { class: 'pana-row pana-volume', for: id('set-music') }, h('span', { text: 'Música' }), music),
+    h('div', { class: 'pana-row' }, h('span', { id: id('set-sound-label'), text: loc('Sonido') }), soundSwitch),
+    h('label', { class: 'pana-row pana-volume', for: id('set-volume') }, h('span', { text: loc('Volumen') }), volume),
+    h('label', { class: 'pana-row pana-volume', for: id('set-music') }, h('span', { text: loc('Música') }), music),
     qualityGroup.node,
     orientationGroup && orientationGroup.node,
-    h('div', { class: 'pana-row' }, h('span', { id: id('set-hints-label'), text: 'Ayudas de controles en pantalla' }), hintsSwitch),
+    h('div', { class: 'pana-row' }, h('span', { id: id('set-hints-label'), text: loc('Ayudas de controles en pantalla') }), hintsSwitch),
     gameOptions.map(o => o.node),
-    h('p', { class: 'pana-fine', text: 'Audio, imagen y controles se guardan en este navegador para todos tus juegos. Las opciones del juego solo afectan tu vista.' }),
-    !pause && h('button', { type: 'button', id: id('done'), class: 'pana-primary', text: 'Listo', onclick: () => close() }));
+    h('p', { class: 'pana-fine', text: loc('Audio, imagen y controles se guardan en este navegador para todos tus juegos. Las opciones del juego solo afectan tu vista.') }),
+    !pause && h('button', { type: 'button', id: id('done'), class: 'pana-primary', text: loc('Listo'), onclick: () => close() }));
 
   function choiceGroup(groupId, label, choices, get, set) {
     const buttons = choices.map(([value, text]) => h('button', { type: 'button', role: 'radio', 'data-value': value, text,
@@ -182,17 +185,17 @@ export function createGameMenu({
       h('span', { class: 'pana-key-caps' }, keycaps(keys, whole)), h('span', { class: 'pana-key-text', text }))));
   }
   const keyboardRows = keyList(controls);
-  const touchHelp = h('p', { class: 'pana-tip', hidden: true, text: 'Usa los controles táctiles del juego. Puedes ajustar la cámara y la orientación en Ajustes.' });
+  const touchHelp = h('p', { class: 'pana-tip', hidden: true, text: loc('Usa los controles táctiles del juego. Puedes ajustar la cámara y la orientación en Ajustes.') });
   // ---------- dialog ----------
-  const tabs = [pause && ['game', 'Juego', gamePanel], ['settings', 'Mis ajustes', settingsPanel]].filter(Boolean);
+  const tabs = [pause && ['game', loc('Juego'), gamePanel], ['settings', loc('Mis ajustes'), settingsPanel]].filter(Boolean);
   const tabButtons = tabs.map(([key, label]) => h('button', { type: 'button', role: 'tab', id: id(`tab-${key}`), 'aria-controls': id(`panel-${key}`), 'data-tab': key, text: label, onclick: () => showTab(key) }));
   const noteNode = h('p', { class: 'pana-menu-note', id: id('menu-note') });
   const dialog = h('dialog', { class: 'pana-menu', id: id('menu-dialog'), 'aria-labelledby': id('menu-title') },
     h('div', { class: 'pana-menu-head' },
-      h('small', { text: title }), h('h2', { id: id('menu-title'), text: pause ? heading : 'Mis ajustes' }), noteNode, padHint,
-      h('button', { type: 'button', class: 'pana-close', 'aria-label': 'Cerrar menú', text: 'Volver', onclick: () => close() })),
-    tabs.length > 1 && h('div', { class: 'pana-tabs', role: 'tablist', 'aria-label': 'Secciones del menú' }, tabButtons,
-      h('span', { class: 'pana-tabs-hint', 'data-pana-hint': true }, keycaps('Esc'), ' cerrar')),
+      h('small', { text: title, translate: 'no' }), h('h2', { id: id('menu-title'), text: pause ? heading : loc('Mis ajustes') }), noteNode, padHint,
+      h('button', { type: 'button', class: 'pana-close', 'aria-label': loc('Cerrar menú'), text: loc('Volver'), onclick: () => close() })),
+    tabs.length > 1 && h('div', { class: 'pana-tabs', role: 'tablist', 'aria-label': loc('Secciones del menú') }, tabButtons,
+      h('span', { class: 'pana-tabs-hint', 'data-pana-hint': true }, keycaps('Esc'), ' ', loc('cerrar'))),
     tabs.map(([, , panel]) => panel));
   document.body.append(dialog);
   let tab = tabs[0][0];
@@ -201,13 +204,13 @@ export function createGameMenu({
     if (workspace) { workspace.refresh(); return; }
     workspaceLoading ??= import('./settings-workspace.js').then(({ createSettingsWorkspace }) => {
       workspace = createSettingsWorkspace(settingsPanel, {
-        sound, options, title, tips,
+        sound, options, title, tips, game: pause, category: reopen,
         orientation: orientationGroup ? [['juego', ownWay], ...Object.entries(ORIENTATIONS)] : null,
         // The hub has no game to explain: no Cómo se juega tabs there.
         help: pause ? { keyboard: controls.length ? keyboardRows : null, gamepad: padRows, touch: touchHelp } : {},
       });
       workspace.refresh();
-    }).catch(() => { workspaceLoading = null; defaultNotify('No se pudieron cargar los controles. Vuelve a abrir Ajustes.'); });
+    }).catch(() => { workspaceLoading = null; defaultNotify(loc('No se pudieron cargar los controles. Vuelve a abrir Ajustes.')); });
   }
 
   function showTab(key) {
@@ -215,7 +218,7 @@ export function createGameMenu({
     tab = key; dialog.dataset.tab = key;
     for (const [k, , panel] of tabs) panel.hidden = k !== key;
     for (const b of tabButtons) { const on = b.dataset.tab === key; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; }
-    dialog.querySelector('h2').textContent = key === 'settings' ? 'A tu manera' : heading;
+    dialog.querySelector('h2').textContent = key === 'settings' ? loc('A tu manera') : heading;
     if (key === 'settings') prepareSettings();
   }
   dialog.querySelector('.pana-tabs')?.addEventListener('keydown', e => {
@@ -233,8 +236,8 @@ export function createGameMenu({
     }
   }
   onSettings(s => {
-    soundSwitch.setAttribute('aria-checked', String(s.sound)); soundSwitch.dataset.state = s.sound ? 'Sí' : 'No';
-    hintsSwitch.setAttribute('aria-checked', String(s.hints)); hintsSwitch.dataset.state = s.hints ? 'Sí' : 'No';
+    soundSwitch.setAttribute('aria-checked', String(s.sound)); soundSwitch.dataset.state = s.sound ? loc('Sí') : loc('No');
+    hintsSwitch.setAttribute('aria-checked', String(s.hints)); hintsSwitch.dataset.state = s.hints ? loc('Sí') : loc('No');
     volume.value = String(Math.round(s.volume * 100)); volume.disabled = !s.sound;
     music.value = String(Math.round(s.music * 100)); music.disabled = !s.sound;
     qualityGroup.refresh();
@@ -294,14 +297,14 @@ export function createGameMenu({
     const href = invite();
     try {
       await navigator.clipboard.writeText(href);
-      if (isOpen) status.textContent = '¡Enlace copiado! Pásaselo a tus panas.'; else notify('¡Enlace copiado! Pásaselo a tus panas.');
+      if (isOpen) status.textContent = loc('¡Enlace copiado! Pásaselo a tus panas.'); else notify(loc('¡Enlace copiado! Pásaselo a tus panas.'));
     } catch {
       open('game'); shareLabel.hidden = false; shareInput.value = href; shareInput.focus(); shareInput.select();
     }
   }
 
   // ---------- buttons a game places in its own HUD ----------
-  function createButton({ id: buttonId = id('open'), label = 'Menú', kbd = 'Esc', className = '' } = {}) {
+  function createButton({ id: buttonId = id('open'), label = loc('Menú'), kbd = 'Esc', className = '' } = {}) {
     const button = h('button', { type: 'button', id: buttonId, class: `pana-hud-button ${className}`, 'aria-haspopup': 'dialog', 'aria-controls': dialog.id },
       label, kbd && h('kbd', { text: kbd, 'data-pana-hint': true }));
     button.addEventListener('click', () => (pause ? toggle() : open()));
@@ -311,16 +314,19 @@ export function createGameMenu({
     const button = h('button', { type: 'button', id: buttonId, class: `pana-hud-button ${className}` });
     button.addEventListener('click', () => soundSwitch.click());
     onSettings(s => {
-      button.textContent = `Sonido: ${s.sound ? 'sí' : 'no'}`;
+      button.textContent = s.sound ? loc('Sonido: sí') : loc('Sonido: no');
       button.setAttribute('aria-pressed', String(s.sound));
-      button.setAttribute('aria-label', s.sound ? 'Silenciar sonido' : 'Activar sonido');
+      button.setAttribute('aria-label', s.sound ? loc('Silenciar sonido') : loc('Activar sonido'));
     });
     return button;
   }
-  function createInviteButton({ id: buttonId = id('invite'), label = 'Invitar panas', className = '' } = {}) {
-    return h('button', { type: 'button', id: buttonId, class: `pana-hud-button ${className}`, title: 'Copiar enlace de la sala', onclick: () => share() },
+  function createInviteButton({ id: buttonId = id('invite'), label = loc('Invitar panas'), className = '' } = {}) {
+    return h('button', { type: 'button', id: buttonId, class: `pana-hud-button ${className}`, title: loc('Copiar enlace de la sala'), onclick: () => share() },
       label, ' ', icon('share'));
   }
+
+  // A language change reloads the hub; Ajustes opens again where it was.
+  if (reopen) queueMicrotask(() => open('settings'));
 
   return {
     open, close, toggle, update, share, dialog,

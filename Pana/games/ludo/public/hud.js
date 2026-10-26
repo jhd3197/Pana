@@ -1,6 +1,7 @@
 import { HOME, COLORS, COLOR_NAMES } from './rules.js';
 import { moveHint } from './hud-model.js';
 import { icon } from '/engine/icons.js';
+import { loc } from '/engine/i18n.js';
 
 const $=id=>document.getElementById(id);
 const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
@@ -9,7 +10,7 @@ export function createLudoHud({buttons,canInspect=()=>true}) {
   let state=null,seat=-1,ownId=null,eventText='',shownDie=-1,rolling=false,held=false,latched=false;
   const cards=Array.from({length:4},(_,i)=>{
     const card=document.createElement('li');card.className='score';card.style.setProperty('--seat-color',COLORS[i]);
-    card.innerHTML='<div class="score-head"><i></i><b></b><small></small></div><ol class="race-tracks"></ol><div class="score-foot"><span>En meta <b></b></span><span>Se comió <b></b></span></div>';
+    card.innerHTML=`<div class="score-head"><i></i><b translate="no"></b><small></small></div><ol class="race-tracks"></ol><div class="score-foot"><span>${loc('En meta')} <b></b></span><span>${loc('Se comió')} <b></b></span></div>`;
     const tracks=Array.from({length:4},(_,piece)=>{
       const track=document.createElement('li');track.className='race-track';
       const number=document.createElement('span');number.textContent=piece+1;
@@ -34,14 +35,14 @@ export function createLudoHud({buttons,canInspect=()=>true}) {
     if(shownDie===value)return;shownDie=value;$('die').replaceChildren();
     for(let i=0;i<9;i++){const pip=document.createElement('i');pip.className=PIPS[value]?.includes(i)?'pip on':'pip';$('die').append(pip);}
     if(!value){const unknown=document.createElement('span');unknown.className='die-unknown';unknown.textContent=rolling?'…':'—';$('die').append(unknown);}
-    $('die').classList.toggle('six',value===6);$('die').setAttribute('aria-label',value?`Último dado: ${value}`:rolling?'Dado en el aire':'Todavía no se ha tirado');
+    $('die').classList.toggle('six',value===6);$('die').setAttribute('aria-label',value?loc('Último dado: {n}',{n:value}):rolling?loc('Dado en el aire'):loc('Todavía no se ha tirado'));
   }
   function paint(){
     if(!state)return;
     const mine=state.phase==='playing'&&state.turn===seat&&!state.turnPause,player=state.players[state.turn];
-    $('turn').textContent=state.phase==='finished'?'¡Partida terminada!':state.phase==='starter'?'¿Quién empieza?':rolling?'¡Ahí va el dado!':state.turnPause?state.turnPause.kind==='move'?`${player.name} mueve su ficha`:`${player.name}: ${state.lastDie}`:mine?state.die?state.autoMove?state.die===6?'¡Seis!':`Salió ${state.die}`:'Elige una ficha':'¡Te toca tirar!':`Turno de ${player.name}`;
-    $('event').textContent=rolling?'Espera a que caiga…':eventText;
-    $('roll-label').textContent=rolling?'Rodando…':mine?'Agita y suelta':`Juega ${player.name}`;
+    $('turn').textContent=state.phase==='finished'?loc('¡Partida terminada!'):state.phase==='starter'?loc('¿Quién empieza?'):rolling?loc('¡Ahí va el dado!'):state.turnPause?state.turnPause.kind==='move'?loc('{name} mueve su ficha',{name:player.name}):`${player.name}: ${state.lastDie}`:mine?state.die?state.autoMove?state.die===6?loc('¡Seis!'):loc('Salió {n}',{n:state.die}):loc('Elige una ficha'):loc('¡Te toca tirar!'):loc('Turno de {name}',{name:player.name});
+    $('event').textContent=rolling?loc('Espera a que caiga…'):eventText;
+    $('roll-label').textContent=rolling?loc('Rodando…'):mine?loc('Agita y suelta'):loc('Juega {name}',{name:player.name});
     $('die').classList.toggle('rolling',rolling);die(rolling?0:state.lastDie);
     buttons.forEach((button,i)=>{
       const hint=moveHint(state,seat,i),value=state.players[seat]?.pieces[i];
@@ -49,10 +50,10 @@ export function createLudoHud({buttons,canInspect=()=>true}) {
       button.style.setProperty('--seat-color',COLORS[seat]||COLORS[0]);button.dataset.kind=hint.kind;
       button.classList.toggle('recommended',!rolling&&hint.recommended);
       const head=document.createElement('span');head.className='piece-title';
-      const dot=document.createElement('i'),name=document.createElement('b');name.textContent=`Ficha ${i+1}`;head.append(dot,name);
+      const dot=document.createElement('i'),name=document.createElement('b');name.textContent=loc('Ficha {n}',{n:i+1});head.append(dot,name);
       const key=document.createElement('kbd');key.textContent=i+1;head.append(key);
-      const label=document.createElement('small');label.textContent=rolling?(value<0?'En el patio':value===HOME?'En casa':'Espera el dado'):hint.label;
-      button.replaceChildren(head,label);button.setAttribute('aria-label',`Ficha ${i+1}: ${label.textContent}${hint.recommended&&!rolling?' · recomendada':''}`);
+      const label=document.createElement('small');label.textContent=rolling?(value<0?loc('En el patio'):value===HOME?loc('En casa'):loc('Espera el dado')):hint.label;
+      button.replaceChildren(head,label);button.setAttribute('aria-label',hint.recommended&&!rolling?loc('Ficha {n}: {state} · recomendada',{n:i+1,state:label.textContent}):loc('Ficha {n}: {state}',{n:i+1,state:label.textContent}));
     });
   }
   function update(next,ownSeat,id,text){
@@ -60,11 +61,11 @@ export function createLudoHud({buttons,canInspect=()=>true}) {
     cards.forEach(({card,tracks},i)=>{
       const p=state.players[i];card.classList.toggle('active',state.phase==='playing'&&state.turn===i);
       card.querySelector('.score-head b').textContent=p.name;
-      card.querySelector('.score-head small').textContent=`${COLOR_NAMES[i]} · ${p.id===ownId?'tú':p.id===null?'bot':'pana'}`;
+      card.querySelector('.score-head small').textContent=(p.id===ownId?loc('{color} · tú',{color:loc(COLOR_NAMES[i])}):p.id===null?loc('{color} · bot',{color:loc(COLOR_NAMES[i])}):loc('{color} · pana',{color:loc(COLOR_NAMES[i])}));
       tracks.forEach((track,j)=>{
         const progress=p.pieces[j];track.style.setProperty('--progress',`${Math.max(0,progress+1)/57*100}%`);
         track.classList.toggle('yard',progress<0);track.classList.toggle('home',progress===HOME);
-        track.setAttribute('aria-label',`Ficha ${j+1}: ${progress<0?'en el patio':progress===HOME?'en casa':`${HOME-progress} para llegar`}`);
+        track.setAttribute('aria-label',progress<0?loc('Ficha {n}: en el patio',{n:j+1}):progress===HOME?loc('Ficha {n}: en casa',{n:j+1}):loc('Ficha {n}: {left} para llegar',{n:j+1,left:HOME-progress}));
       });
       const totals=card.querySelectorAll('.score-foot b');totals[0].textContent=`${p.pieces.filter(v=>v===HOME).length}/4`;totals[1].textContent=state.captures?.[i]||0;
     });

@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pana — juega con tus panas</title>
   <meta name="description" content="Elige un juego, invita a tus panas y juega desde el navegador. Carreras, cartas y aventuras sin instalar nada.">
+  <!-- A visitor who will get another language sees the page once it is translated (engine/i18n.js). -->
+  <script>try{var s=(JSON.parse(localStorage.getItem('pana:settings')||'{}')||{}).language,u=new URLSearchParams(location.search).get('pana-language'),l=String(u||(s&&s!=='auto'?s:navigator.webdriver?'es':(navigator.languages||[navigator.language])[0])||'es').slice(0,2).toLowerCase();if(l==='en'){document.documentElement.classList.add('pana-i18n-wait');setTimeout(function(){document.documentElement.classList.remove('pana-i18n-wait')},1500)}}catch(e){}</script>
+  <style>.pana-i18n-wait body{visibility:hidden}</style>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
@@ -28,7 +31,7 @@
     <span class="pk-chip live" id="live"><i class="pk-dot"></i><b id="live-count">0</b> jugando</span>
     <a class="me" href="/personaje" title="Editar tu pana">
       <img id="pana-face" class="pk-avatar" alt="">
-      <b data-name>pana</b>
+      <b data-name translate="no">pana</b>
     </a>
     <span id="hub-actions" class="hub-actions"></span>
   </header>
@@ -40,7 +43,7 @@
         <div class="feature-art" id="feature-art"></div>
         <div class="feature-body">
           <span class="feature-tag" id="feature-tag">Destacado</span>
-          <h1 class="feature-name" id="feature-name">Pana</h1>
+          <h1 class="feature-name" id="feature-name" translate="no">Pana</h1>
           <p class="feature-copy" id="feature-copy">Cargando juegos…</p>
           <div class="feature-stats"><span id="feature-players"></span><span id="feature-mode"></span></div>
           <div class="feature-cta">
@@ -55,7 +58,7 @@
 
       <section class="pk-panel pk-panel--solid tu-pana" aria-labelledby="tu-pana-hello">
         <span class="pk-eyebrow">Tu pana</span>
-        <h2 class="hello" id="tu-pana-hello">¡Epa, <span id="hello-name" data-name>pana</span>!</h2>
+        <h2 class="hello" id="tu-pana-hello">¡Epa, <span id="hello-name" data-name translate="no">pana</span>!</h2>
         <ul class="pana-summary" id="pana-summary"></ul>
         <a class="pk-btn pk-btn--sm edit-pana" href="/personaje">Editar pana</a>
         <div class="tu-pana-stage" id="tu-pana-slot"></div>
@@ -94,7 +97,7 @@
 
       <div class="creator-side">
         <span class="pk-eyebrow">Mi pana</span>
-        <h1 class="hello hello--lg" id="creator-hello">¡Epa, <span data-name>pana</span>!</h1>
+        <h1 class="hello hello--lg" id="creator-hello">¡Epa, <span data-name translate="no">pana</span>!</h1>
         <p class="pk-copy">Arma tu capibara y llévalo a todos los juegos. Nada que instalar: comparte el link y listo.</p>
 
         <div class="name-row">

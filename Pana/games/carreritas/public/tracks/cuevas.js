@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import { WATER_TRACKS } from './water-track-definitions.js';
 import { ROUTE, roadHeight, CAVE } from './cuevas-layout.js';
 import { cuevasWorld } from './cuevas-world.js';

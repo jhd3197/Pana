@@ -1,5 +1,6 @@
 export const CAMINO = ['highfive','slip','rollbarrel','moonwalk','spring','dodge','piggy','umbrella','tunnel','gum'];
-export const MOTION_NAMES = ['Chócala','Resbalón','Rodar','Moonwalk','Resorte','Esquivar','Caballito','Paraguas','Túnel','Chicle'];
+// Names of the camino tricks for tools; the game never shows them.
+export const MOTION_NAMES = ['Chócala','Resbalón','Rodar','Moonwalk','Resorte','Esquivar','Caballito','Paraguas','Túnel','Chicle']; // i18n-ignore
 
 // Cosmetic selection consumes no game RNG and is identical on every client.
 // Partner tricks require a real stationary pawn along the awarded path.

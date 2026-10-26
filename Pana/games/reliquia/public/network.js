@@ -1,5 +1,6 @@
 import { Expedition, stepExplorer, alive } from './rules.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
+import { loc, locn } from '/engine/i18n.js';
 
 const ACTIONS = new Set(['use', 'throw', 'drop', 'drag', 'bark', 'interact']);
 const angle = v => Number.isFinite(v) ? Math.atan2(Math.sin(v), Math.cos(v)) : undefined;
@@ -8,9 +9,9 @@ const angle = v => Number.isFinite(v) ? Math.atan2(Math.sin(v), Math.cos(v)) : u
 export class ExpeditionRoom extends LiveRoom {
   constructor(options) {
     super({ ...options, game: 'reliquia', protocol: 'reliquia-v3', texts: {
-      connecting: 'Conectando con la expedición…', full: 'Sala llena. Abre otra expedición desde Pana.',
-      lost: 'Se cortó la conexión. Reconectando…', offline: 'Sin conexión. Puedes abrir una expedición local.',
-      waiting: 'Espera a reconectar o abre una expedición local.' } }, {
+      connecting: loc('Conectando con la expedición…'), full: loc('Sala llena. Abre otra expedición desde Pana.'),
+      lost: loc('Se cortó la conexión. Reconectando…'), offline: loc('Sin conexión. Puedes abrir una expedición local.'),
+      waiting: loc('Espera a reconectar o abre una expedición local.') } }, {
       valid: (state) => !!state?.players,
       // Your own explorer moves the moment you press a key; the host corrects it.
       // Carrying a big treasure or being dragged is the host's call alone.
@@ -21,7 +22,7 @@ export class ExpeditionRoom extends LiveRoom {
     });
     this.state = new Expedition().snapshot();
   }
-  statusText() { return `Sala ${this.code} · ${this.members.size} pana${this.members.size === 1 ? '' : 's'}`; }
+  statusText() { return locn(this.members.size, 'Sala {code} · {n} pana', 'Sala {code} · {n} panas', { code: this.code }); }
   cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), h: angle(raw?.h), pitch: Number.isFinite(raw?.pitch) ? Math.max(-1.2, Math.min(1.2, raw.pitch)) : 0, jump: Number.isInteger(raw?.jump) ? raw.jump & 255 : 0, hold: !!raw?.hold, sprint: !!raw?.sprint }; }
   ownInput(input) { return { ...this.cleanInput(input), jumpDelay: this.jumpDelay || 0 }; }
   tick(dt, input, paused = false) {
@@ -40,7 +41,7 @@ export class ExpeditionRoom extends LiveRoom {
     this.game = new Expedition(this.state.seed || 1, this.state.options);
     if (this.state.phase !== 'lobby') this.game.restore(this.state, this.members);
     for (const p of this.members.values()) this.game.addPlayer(p.id, p.name, p.id === this.id ? this.avatar : p.avatar || this.state.players.find(q => q.id === p.id)?.avatar || {});
-    this.publish(); if (previous != null) this.onNotice('Cambió el anfitrión. La expedición continúa.');
+    this.publish(); if (previous != null) this.onNotice(loc('Cambió el anfitrión. La expedición continúa.'));
   }
   memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar); this.publish(); } }
   memberLeft(id) { super.memberLeft(id); if (this.isHost) { this.game.removePlayer(id); this.publish(); } }
@@ -59,6 +60,6 @@ export class ExpeditionRoom extends LiveRoom {
   }
   practice() {
     this.state = new Expedition(1, this.state.options).snapshot(); this.game = null;
-    super.practice('Expedición local · el botín cuenta cuando llega al camión');
+    super.practice(loc('Expedición local · el botín cuenta cuando llega al camión'));
   }
 }

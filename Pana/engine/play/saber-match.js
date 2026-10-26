@@ -3,6 +3,7 @@
 // two typos) and pick words for bots. Pure: no DOM, shared by rules files and
 // Node tests (engine/tests/saber.test.js).
 import { SABER, SABER_CATEGORIES, CRUDE_WORDS } from './saber.js';
+import { locKey } from '../i18n.js';
 
 const MARKS = /[̀-ͯ]/g;
 
@@ -63,7 +64,7 @@ export function findEntry(category, text, { extra = [], base = true } = {}) {
   const norm = normalize(text), key = soundKey(text);
   if (!key) return null;
   const local = extra.filter(e => e.category === category).map(e => ({
-    entry: { category, word: e.word, variants: [], explain: e.explain || 'La aceptó esta mesa', source: 'mesa', crude: false, doubtful: false, joke: null },
+    entry: { category, word: e.word, variants: [], explain: e.explain || locKey('La aceptó esta mesa'), source: 'mesa', crude: false, doubtful: false, joke: null },
     forms: formsOf({ word: e.word }) }));
   const list = base ? [...indexOf(category), ...local] : local;
   for (const pass of ['exact', 'sound']) for (const { entry, forms } of list) for (const f of forms) {

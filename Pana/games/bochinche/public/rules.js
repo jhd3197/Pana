@@ -3,10 +3,12 @@ import { CombatGame, createEmptyInput } from './combat/engine.js';
 import { CpuController } from './combat/ai.js';
 import { defaultOptions, roomOptions } from './options.js';
 import { clamp } from '../../../engine/random.js';
+import { locKey } from '../../../engine/i18n.js';
 
 export const ACTIONS = ['left', 'right', 'up', 'down', 'jump', 'attack', 'special', 'shield', 'grab'];
 export const STYLES = ['kaykit-knight', 'platformer', 'yeti'];
-export const STYLE_NAMES = ['Equilibrado', 'Veloz', 'Pesado'];
+// Shown through loc() where they are drawn.
+export const STYLE_NAMES = [locKey('Equilibrado'), locKey('Veloz'), locKey('Pesado')];
 export function cleanInput(raw) {
   const axis = v => Number.isFinite(v) ? clamp(v, -1, 1) : 0;
   return { x: axis(raw?.x), y: axis(raw?.y),

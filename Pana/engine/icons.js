@@ -2,6 +2,7 @@
 // characters (👑 ⚙ ♥ ↗) into colour emoji, so the interface draws these
 // instead (tests/conventions.test.js keeps emoji out). Each icon is 1em
 // square and sits on the text baseline; use as innerHTML or via icon(name).
+import { loc } from './i18n.js';
 
 const svg = (body, label = '') =>
   `<svg class="pk-ico" viewBox="0 0 40 40" width="1em" height="1em"${label ? ` role="img" aria-label="${label}"` : ' aria-hidden="true"'}>${body}</svg>`;
@@ -37,6 +38,7 @@ export const ICONS = {
   touch: svg('<rect x="11" y="3" width="18" height="34" rx="3.5" fill="none" stroke="currentColor" stroke-width="3.5"/><circle cx="20" cy="31" r="2" fill="currentColor"/>'),
   picture: svg('<rect x="4" y="7" width="32" height="22" rx="1.5" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M9 25l8-8 6 6 3-3 5 5" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M13 35h14" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>'),
   speaker: svg('<path d="M5 15h7l8-7v24l-8-7H5z" fill="currentColor"/><path d="M26 14a8 8 0 0 1 0 12M30 9a14 14 0 0 1 0 22" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>'),
+  globe: svg('<circle cx="20" cy="20" r="15" fill="none" stroke="currentColor" stroke-width="3.2"/><path d="M5 20h30M20 5c-5 4-7 9-7 15s2 11 7 15c5-4 7-9 7-15s-2-11-7-15z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
   controller: svg('<rect x="5" y="5" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2"/><rect x="22" y="5" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2"/><rect x="5" y="22" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2"/><rect x="22" y="22" width="13" height="13" fill="currentColor"/>'),
   chevronRight: svg('<path d="m16 10 8 10-8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
   mango: svg(`<path d="M8 24c0-10 9-17 18-15 6 1 8 7 7 13-2 9-11 13-18 11-4-1-7-4-7-9z" fill="#ffc629" stroke="#9a6400" stroke-width="3"/><path d="M27 9c1-3 4-5 7-5-1 3-3 5-7 5z" fill="#3a9d3a"/><path d="M14 17c2-3 5-4 8-4" stroke="#fff3b0" stroke-width="3" fill="none" stroke-linecap="round"/>`),
@@ -57,8 +59,8 @@ export const ICONS = {
   share: svg(`<path d="M14 8h18v18" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M31 9L9 31" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>`),
   heart: svg(`<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 11-15 20-15 20z" fill="#ff4b4b" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>`),
   camera: svg('<circle cx="12" cy="11" r="5.5" fill="currentColor"/><circle cx="24" cy="11" r="5.5" fill="currentColor"/><rect x="5" y="17" width="23" height="15" rx="3.5" fill="currentColor"/><path d="M28 22l8-4.5v14L28 27z" fill="currentColor"/>'),
-  thumbUp: svg('<path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/>', 'A favor'),
-  thumbDown: svg('<g transform="rotate(180 20 20)"><path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/></g>', 'En contra'),
+  thumbUp: svg('<path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/>', loc('A favor')),
+  thumbDown: svg('<g transform="rotate(180 20 20)"><path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/></g>', loc('En contra')),
   heartEmpty:svg(`<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 11-15 20-15 20z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" opacity=".5"/>`),
 };
 

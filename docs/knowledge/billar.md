@@ -194,3 +194,10 @@ The explicit Individual · 1 contra 1 format seats two occupied slots opposite
 one another, hides team panels and restricts joining/seating to two players.
 Switching into it with more than two seated players is rejected. Both Bola 8
 and Bola 9 retain the same shot rules; Por equipos keeps the six-seat layout.
+
+## Languages
+
+`state.message` is synced Spanish: a locKey string, `{ text, vars }` or a list
+of sentences, and a var may itself be `{ text }` (the ¿Quién empieza? note).
+Every client shows it with `messageText()` from `rules.js`; tests read it the
+same way.

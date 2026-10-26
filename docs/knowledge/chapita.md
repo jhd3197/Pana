@@ -139,3 +139,10 @@ scoring objects at these numbers; only the dressing differs.
   otherwise a viewport resize crops the previous frame instead of reframing it.
   The browser suite projects home plate on both maps at desktop and portrait
   sizes and verifies that the pitching panel does not cover it.
+
+## Languages
+
+`result` and `event` carry `text` as a Spanish source (`locKey`) plus
+`vars` and `runs`; `hud.js` `eventText` words them on each screen, so the
+host never syncs its own language. Titles, house rules and bot styles in
+`rules.js` are sources too, shown through `loc()` in `hud.js`.

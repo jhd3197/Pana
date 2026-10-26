@@ -1,3 +1,4 @@
+// i18n-ignore-file: the Spanish narration lines (recorded clips are keyed by this text).
 // Content-addressed recordings: editing a prompt cannot play an old recording.
 export function voiceKey(text) {
   let hash = 2166136261;

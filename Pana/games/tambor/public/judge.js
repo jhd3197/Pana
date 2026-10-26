@@ -3,6 +3,7 @@
 // timing. It keeps the running counters the host reads from the input
 // (rules.js cleanInput). Pure: times in, grades out, no DOM.
 import { chart, secondsPerBeat, songFor, isGolpeBeat, STATION_INFO } from './songs.js';
+import { loc } from '/engine/i18n.js';
 
 export const PERFECT = .05, GOOD = .13, HOLD_SLACK = .16, CLAP = .12, JUMP = .16, ECHO = .15;
 // The key each move listens for (vuelta also needs its arrow first).
@@ -56,13 +57,13 @@ export class Judge {
       const { note, grade } = this.holding, end = (note.beat + note.len) * this.spb;
       this.holding = null;
       if (t >= end - HOLD_SLACK) return this.count(grade);
-      return this.count('miss', 'Soltaste antes');
+      return this.count('miss', loc('Soltaste antes'));
     }
     if (this.role !== 'dancer') return null;
     for (const cs of this.mine.values()) {
       const { move, beat, len } = cs.call;
       if (cs.done || cs.press == null || (move !== 'panuelo' || key !== 'space') && (move !== 'abajo' || key !== 'down')) continue;
-      if (t < (beat + len) * this.spb - HOLD_SLACK) return this.finish(cs, 'miss', 'Soltaste antes', t);
+      if (t < (beat + len) * this.spb - HOLD_SLACK) return this.finish(cs, 'miss', loc('Soltaste antes'), t);
     }
     return null;
   }
@@ -82,7 +83,7 @@ export class Judge {
     if (!best) { this.drum.s++; this.combo = 0; this.show('drum', 'stray', '', t); return { kind: 'drum', lane, grade: 'stray' }; }
     this.done.add(best.i);
     const grade = Math.abs(best.beat * this.spb - t) <= PERFECT ? 'perfect' : 'good';
-    if (best.len > 0) { this.holding = { note: best, grade }; this.show('drum', 'hold', '¡Mantén!', t); return { kind: 'drum', lane, grade: 'hold', note: best }; }
+    if (best.len > 0) { this.holding = { note: best, grade }; this.show('drum', 'hold', loc('¡Mantén!'), t); return { kind: 'drum', lane, grade: 'hold', note: best }; }
     this.count(grade);
     return { kind: 'drum', lane, grade, note: best };
   }
@@ -90,7 +91,7 @@ export class Judge {
   count(grade, text) {
     this.drum[grade === 'perfect' ? 'p' : grade === 'good' ? 'g' : 'm']++;
     this.combo = grade === 'miss' ? 0 : this.combo + 1;
-    this.show('drum', grade, text ?? (grade === 'perfect' ? '¡Perfecto!' : grade === 'good' ? '¡Bien!' : 'Fallaste'), this.lastT);
+    this.show('drum', grade, text ?? (grade === 'perfect' ? loc('¡Perfecto!') : grade === 'good' ? loc('¡Bien!') : loc('Fallaste')), this.lastT);
     return { kind: 'drum', grade };
   }
 
@@ -101,14 +102,14 @@ export class Judge {
     for (const cs of this.mine.values()) {
       if (cs.done || cs.press == null) continue;
       const hit = cs.call.beat * spb;
-      if (cs.call.move === 'golpe' && t > cs.press && t <= hit + spb) return this.finish(cs, 'miss', '¡Quieto en el golpe!', t);
-      if (cs.call.move === 'pegate' && key === 'up' && t <= hit + spb) return this.finish(cs, 'miss', '¡Choque!', t);
+      if (cs.call.move === 'golpe' && t > cs.press && t <= hit + spb) return this.finish(cs, 'miss', loc('¡Quieto en el golpe!'), t);
+      if (cs.call.move === 'pegate' && key === 'up' && t <= hit + spb) return this.finish(cs, 'miss', loc('¡Choque!'), t);
     }
     for (const cs of this.mine.values()) {
       const { move, beat, w, dir } = cs.call, hit = beat * spb;
       if (cs.done || cs.press != null || Math.abs(t - hit) > w || !MOVE_KEY[move].includes(key)) continue;
       if (move === 'vuelta' && (this.lastArrow?.key !== dir || t - this.lastArrow.t > spb * 1.5 + w)) {
-        return this.finish(cs, 'miss', dir === 'left' ? 'Era a la izquierda' : 'Era a la derecha', t);
+        return this.finish(cs, 'miss', dir === 'left' ? loc('Era a la izquierda') : loc('Era a la derecha'), t);
       }
       const grade = Math.abs(t - hit) <= Math.max(PERFECT, w * .35) ? 'perfect' : 'good';
       if (move === 'cadera' || move === 'vuelta') return this.finish(cs, grade, null, t);
@@ -122,7 +123,7 @@ export class Judge {
     cs.done = true; cs.grade = grade;
     this.sent.push([cs.call.id, grade]);
     if (this.sent.length > 16) this.sent.shift();
-    this.show('dance', grade, text ?? (grade === 'perfect' ? '¡Perfecto!' : grade === 'good' ? '¡Eso!' : 'Fallaste'), t);
+    this.show('dance', grade, text ?? (grade === 'perfect' ? loc('¡Perfecto!') : grade === 'good' ? loc('¡Eso!') : loc('Fallaste')), t);
     return { kind: 'dance', grade, move: cs.call.move, id: cs.call.id };
   }
 
@@ -138,7 +139,7 @@ export class Judge {
     if (t < 0) return null;
     const beat = t / this.spb, off = Math.abs(beat - Math.round(beat)) * this.spb, on = off <= CLAP;
     this.clap[on ? 'on' : 'off']++;
-    this.show('clap', on ? 'good' : 'miss', on ? '¡Bulla!' : 'Fuera de tiempo', t);
+    this.show('clap', on ? 'good' : 'miss', on ? loc('¡Bulla!') : loc('Fuera de tiempo'), t);
     return { kind: 'clap', grade: on ? 'good' : 'miss' };
   }
 
@@ -194,7 +195,7 @@ export class Judge {
     if (this.golpeMode && g?.notes && this.role === 'drum' && this.echo?.round !== g.round && t > (g.start + g.len * 2) * spb + .2) {
       const ok = this.echoResult(g);
       this.echo = { round: g.round, ok };
-      this.show('golpe', ok ? 'perfect' : 'miss', ok ? '¡Lo sacaste!' : 'No era así', t);
+      this.show('golpe', ok ? 'perfect' : 'miss', ok ? loc('¡Lo sacaste!') : loc('No era así'), t);
     }
   }
 }

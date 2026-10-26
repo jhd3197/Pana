@@ -1,5 +1,6 @@
 import { cardCanvas } from '/engine/models/props/spanish-cards.js';
 import { fillRoster } from '/engine/results.js';
+import { loc } from '/engine/i18n.js';
 
 // Only the dealer sends actions; all clients see the same committed cut and call.
 export function createDealerUI(room, unlock) {
@@ -11,7 +12,7 @@ export function createDealerUI(room, unlock) {
   }
   function previewCut() {
     const at = Number($('cut-position').value);
-    $('cut-value').textContent = `${at} y ${40 - at} cartas`;
+    $('cut-value').textContent = loc('{a} y {b} cartas', { a: at, b: 40 - at });
     $('cut-top').style.transform = `translate(${16 + at}px, -8px) rotate(8deg)`;
   }
   function act(action, values) {
@@ -33,25 +34,25 @@ export function createDealerUI(room, unlock) {
       const entered = activeKey !== key; activeKey = key;
       if (entered) { $('cut-position').value = state.cutAt ?? 20; previewCut(); }
       const dealer = state.players[state.dealer];
-      $('dealer-kicker').textContent = `REPARTO ${state.round}`;
-      $('dealer-title').textContent = mine ? 'Te toca repartir.' : `${dealer.name} reparte.`;
-      $('dealer-description').textContent = mine ? 'Corta si quieres. Elige con cuál número tentar la suerte.' : 'El repartidor corta y elige su número. Ya vienen las cartas.';
+      $('dealer-kicker').textContent = loc('REPARTO {n}', { n: state.round });
+      $('dealer-title').textContent = mine ? loc('Te toca repartir.') : loc('{name} reparte.', { name: dealer.name });
+      $('dealer-description').textContent = mine ? loc('Corta si quieres. Elige con cuál número tentar la suerte.') : loc('El repartidor corta y elige su número. Ya vienen las cartas.');
       $('dealer-controls').disabled = !mine || !ready || !room.connected;
       $('cut-position').disabled = $('cut-deck').disabled = state.cutAt !== null;
-      $('cut-deck').textContent = state.cutAt !== null ? 'Baraja cortada' : 'Cortar aquí';
-      $('cut-status').textContent = state.cutAt !== null ? `Corte listo · ${state.cutAt} y ${40 - state.cutAt} cartas` : 'Baraja mezclada · corte opcional';
+      $('cut-deck').textContent = state.cutAt !== null ? loc('Baraja cortada') : loc('Cortar aquí');
+      $('cut-status').textContent = state.cutAt !== null ? loc('Corte listo · {a} y {b} cartas', { a: state.cutAt, b: 40 - state.cutAt }) : loc('Baraja mezclada · corte opcional');
       $('deal-deck').classList.toggle('is-cut', state.cutAt !== null);
       if (state.cutAt !== null) { $('cut-position').value = state.cutAt; previewCut(); }
       for (const button of document.querySelectorAll('[data-deal-call]')) button.setAttribute('aria-pressed', String(state.dealCall === button.dataset.dealCall));
       $('deal-cards').disabled = !state.dealCall;
-      $('deal-cards').textContent = mine ? state.dealCall ? `Repartir desde el ${state.dealCall === 'up' ? 1 : 4}` : 'Elige 1 o 4 para repartir' : `Esperando a ${dealer.name}…`;
+      $('deal-cards').textContent = mine ? state.dealCall ? loc('Repartir desde el {n}', { n: state.dealCall === 'up' ? 1 : 4 }) : loc('Elige 1 o 4 para repartir') : loc('Esperando a {name}…', { name: dealer.name });
       const previous = state.previousRound;
       $('previous-round').hidden = !previous;
       if (previous) {
-        $('previous-round-title').textContent = `Reparto anterior · ${previous.scores.join(' a ')} puntos`;
+        $('previous-round-title').textContent = loc('Reparto anterior · {scores} puntos', { scores: previous.scores.reduce((a, b) => loc('{a} a {b}', { a, b })) });
         fillRoster($('previous-round-scores'), previous.scores.map((score, team) => ({
           name: previous.names[team], end: `${score} / 24`,
-          detail: `${previous.result.counts[team] || 0} cartas${previous.result.bonuses.length ? ` · +${previous.result.bonuses[team]} al contar` : ''}`,
+          detail: previous.result.bonuses.length ? loc('{n} cartas · +{bonus} al contar', { n: previous.result.counts[team] || 0, bonus: previous.result.bonuses[team] }) : loc('{n} cartas', { n: previous.result.counts[team] || 0 }),
         })));
       }
       if (entered && mine && ready && room.connected && !document.querySelector('dialog[open]')) $('call-one').focus({ preventScroll: true });

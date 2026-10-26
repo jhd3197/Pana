@@ -11,7 +11,8 @@ import { ROOM_OPTIONS, defaultOptions } from './options.js';
 import { createNarration } from './narration.js';
 import { createQuizSounds } from './sounds.js';
 import { onSettings } from '/engine/settings.js';
-import { LADDER, TOP, SAFE, LETTERS, BETS, BET_LABELS, participants, score, mangos, ranking, resolveAnswer, TITLE_TEXT } from './rules.js';
+import { LADDER, TOP, SAFE, LETTERS, BETS, BET_LABELS, participants, score, mangos, ranking, resolveAnswer, TITLE_TEXT, lineText } from './rules.js';
+import { loc } from '/engine/i18n.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
@@ -30,21 +31,23 @@ const room = new QqsmpRoom({ code, name: loadName(), avatar: loadAvatar(), onSta
   onNotice: (text) => { $('event').textContent = text; },
   onStatus(text, failed = false) { $('connection').textContent = text; $('practice').hidden = !failed; render(room.state); },
 });
-const roomOptions = createRoomOptions($('room-options'), { title: '¿Quién quiere ser mi pana?', fields: ROOM_OPTIONS,
+const roomOptions = createRoomOptions($('room-options'), { title: '¿Quién quiere ser mi pana?', fields: ROOM_OPTIONS, // i18n-ignore: game name
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ pad: { buttons: true }, title: '¿Quién quiere ser mi pana? · Pana', sound, orientation: 'libre',
-  note: () => room.members.size > 1 ? 'El concurso sigue mientras estás en el menú.' : 'El concurso está en pausa. Los bots te esperan.',
-  controls: [['1 – 4 o A – D', 'Marcar una respuesta'], ['Ratón / toque', 'Respuestas y comodines'], ['M', 'Activar o silenciar el sonido']],
+const menu = createGameMenu({ pad: { buttons: true }, title: '¿Quién quiere ser mi pana? · Pana', sound, orientation: 'libre', // i18n-ignore: game name
+  note: () => room.members.size > 1 ? loc('El concurso sigue mientras estás en el menú.') : loc('El concurso está en pausa. Los bots te esperan.'),
+  controls: [[loc('1 – 4 o A – D'), loc('Marcar una respuesta')], [loc('Ratón / toque'), loc('Respuestas y comodines')], ['M', loc('Activar o silenciar el sonido')]],
   tips: [
-    'Todos responden a la vez. Nadie ve lo que marcaste hasta la revelación: decir «puse la B» en la llamada puede ser verdad o un farol.',
-    'Responder rápido da mangos extra. Esperar a ver qué dicen los demás te cuesta.',
-    'Acierta y subes un escalón. Falla y bajas al último escalón seguro (4 y 8).',
-    'Comodines, uno de cada uno: Copiarse (marca lo mismo que otro pana sin ver qué puso), Mitad y mitad, Doble o nada y Plantarse.',
-    'En la final cada quien apuesta en secreto parte de sus mangos. El total más alto se lleva el Mango de oro.',
+    loc('Todos responden a la vez. Nadie ve lo que marcaste hasta la revelación: decir «puse la B» en la llamada puede ser verdad o un farol.'),
+    loc('Responder rápido da mangos extra. Esperar a ver qué dicen los demás te cuesta.'),
+    loc('Acierta y subes un escalón. Falla y bajas al último escalón seguro (4 y 8).'),
+    loc('Comodines, uno de cada uno: Copiarse (marca lo mismo que otro pana sin ver qué puso), Mitad y mitad, Doble o nada y Plantarse.'),
+    loc('En la final cada quien apuesta en secreto parte de sus mangos. El total más alto se lleva el Mango de oro.'),
   ],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
+// These hold player names next to text already passed through loc().
+for (const id of ['result-roster', 'result-title', 'host-line']) $(id).translate = false;
 $('rules').onclick = () => menu.open('controls');
 $('start').onclick = $('again').onclick = () => { sound.unlock(); room.action('start'); };
 $('practice').onclick = () => room.practice();
@@ -94,7 +97,7 @@ function renderLadder(p) {
   const steps = LADDER.slice(1).map((value, i) => {
     const step = i + 1, li = document.createElement('li');
     li.className = [SAFE.includes(step) && 'safe', p?.step === step && 'here', step === TOP && 'top'].filter(Boolean).join(' ');
-    li.append(Object.assign(document.createElement('span'), { textContent: step }), Object.assign(document.createElement('span'), { textContent: step === TOP ? 'Mango de oro' : mangos(value) }));
+    li.append(Object.assign(document.createElement('span'), { textContent: step }), Object.assign(document.createElement('span'), { textContent: step === TOP ? loc('Mango de oro') : mangos(value) }));
     return li;
   });
   $('ladder-steps').replaceChildren(...steps);
@@ -103,8 +106,8 @@ function renderLadder(p) {
 function renderQuestion(state, p) {
   const q = state.question, phase = state.phase, own = mine(), reveal = phase === 'reveal' ? state.reveal : null;
   const betting = phase === 'bet', settled = reveal?.done;
-  $('category').textContent = betting ? 'Pregunta final · la apuesta' : state.final ? `Pregunta final · ${q.category}` : `${q.category} · ${state.index + 1} de ${state.total}`;
-  $('question').textContent = betting ? `¿Cuántos de tus ${mangos(score(p || { step: 0, bonus: 0, finalDelta: 0 }))} mangos te juegas?` : q.text;
+  $('category').textContent = betting ? loc('Pregunta final · la apuesta') : state.final ? loc('Pregunta final · {category}', { category: loc(q.category) }) : loc('{category} · {n} de {total}', { category: loc(q.category), n: state.index + 1, total: state.total });
+  $('question').textContent = betting ? loc('¿Cuántos de tus {mangos} mangos te juegas?', { mangos: mangos(score(p || { step: 0, bonus: 0, finalDelta: 0 })) }) : q.text;
   $('clock').textContent = ['question', 'bet'].includes(phase) ? Math.ceil(state.timeLeft) : '';
   $('clock').classList.toggle('hurry', phase === 'question' && state.timeLeft <= 4);
   const limit = betting ? 14 : state.options.seconds;
@@ -124,7 +127,7 @@ function renderQuestion(state, p) {
   $('cancel-answer').disabled = !canAnswer();
   betButtons.forEach((button, i) => {
     const stake = Math.round(score(p || { step: 0, bonus: 0, finalDelta: 0 }) * BETS[i]);
-    button.firstChild.textContent = BET_LABELS[i]; button.lastChild.textContent = `${mangos(stake)} mangos`;
+    button.firstChild.textContent = loc(BET_LABELS[i]); button.lastChild.textContent = loc('{mangos} mangos', { mangos: mangos(stake) });
     button.disabled = !p || p.betLocked; button.classList.toggle('picked', picked.key === `bet:${state.round}` && picked.choice === i);
   });
   // Comodines: one use each; the copy list names every other podium.
@@ -136,20 +139,22 @@ function renderQuestion(state, p) {
   });
   $('copy-list').hidden = !copying || !canAnswer();
   if (copying) $('copy-list').replaceChildren(...participants(state).filter(o => o.seat !== room.seat).map(o => {
-    const button = Object.assign(document.createElement('button'), { className: 'pk-btn pk-btn--sm', textContent: `Lo mismo que ${o.name}` });
+    const button = Object.assign(document.createElement('button'), { className: 'pk-btn pk-btn--sm', textContent: loc('Lo mismo que {name}', { name: o.name }) });
     button.onclick = () => copyFrom(o.seat); return button;
   }));
-  let line = state.hostLine;
-  if (p && phase === 'question' && p.locked) line = own.copy !== null ? `Te copiaste de ${state.players[own.copy].name}. ¡Ojalá no sea embuste!` : own.choice !== null ? `Marcaste la ${LETTERS[own.choice]}. Nadie más lo sabe… todavía.` : 'Respuesta marcada.';
-  if (p?.locked && phase === 'question') line += ' Puedes cambiarla o cancelarla mientras falte alguien por responder.';
+  let line = lineText(state.hostLine);
+  if (p && phase === 'question' && p.locked) line = own.copy !== null ? loc('Te copiaste de {name}. ¡Ojalá no sea embuste! Puedes cambiarla o cancelarla mientras falte alguien por responder.', { name: state.players[own.copy].name })
+    : own.choice !== null ? loc('Marcaste la {letter}. Nadie más lo sabe… todavía. Puedes cambiarla o cancelarla mientras falte alguien por responder.', { letter: LETTERS[own.choice] })
+    : loc('Respuesta marcada. Puedes cambiarla o cancelarla mientras falte alguien por responder.');
   $('host-line').textContent = line;
   if (settled && p?.outcome) {
     const o = p.outcome;
-    $('event').textContent = state.final ? `${o.right ? '¡Le pegaste!' : 'Fallaste.'} ${o.delta >= 0 ? '+' : ''}${mangos(o.delta)} mangos.`
-      : p.planted ? `Estás plantado con ${mangos(score(p))} mangos.`
-      : o.right ? `¡Subiste al escalón ${o.to}!${o.bonus ? ` +${o.bonus} mangos por rapidez.` : ''}` : o.to < o.from ? `Bajaste al escalón ${o.to}.` : 'Fallaste, pero no bajas.';
-  } else if (betting) $('event').textContent = p?.betLocked ? 'Apuesta trancada. Nadie sabe cuánto te jugaste.' : 'Apuesta en secreto: si aciertas la final la sumas, si fallas la pierdes.';
-  else if (phase === 'question') $('event').textContent = p?.doble ? 'Doble o nada: esta vale dos escalones.' : p?.half ? 'Mitad y mitad: solo tú ves las dos que quedan.' : '';
+    $('event').textContent = state.final ? (o.right ? loc('¡Le pegaste! {delta} mangos.', { delta: `${o.delta >= 0 ? '+' : ''}${mangos(o.delta)}` }) : loc('Fallaste. {delta} mangos.', { delta: `${o.delta >= 0 ? '+' : ''}${mangos(o.delta)}` }))
+      : p.planted ? loc('Estás plantado con {mangos} mangos.', { mangos: mangos(score(p)) })
+      : o.right ? (o.bonus ? loc('¡Subiste al escalón {step}! +{bonus} mangos por rapidez.', { step: o.to, bonus: o.bonus }) : loc('¡Subiste al escalón {step}!', { step: o.to }))
+      : o.to < o.from ? loc('Bajaste al escalón {step}.', { step: o.to }) : loc('Fallaste, pero no bajas.');
+  } else if (betting) $('event').textContent = p?.betLocked ? loc('Apuesta trancada. Nadie sabe cuánto te jugaste.') : loc('Apuesta en secreto: si aciertas la final la sumas, si fallas la pierdes.');
+  else if (phase === 'question') $('event').textContent = p?.doble ? loc('Doble o nada: esta vale dos escalones.') : p?.half ? loc('Mitad y mitad: solo tú ves las dos que quedan.') : '';
 }
 
 function render(state) {
@@ -160,20 +165,20 @@ function render(state) {
   if (!lobby && roomOptions.isOpen) roomOptions.close();
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby || ended;
   $('start').disabled = !world || !room.connected || !room.isHost;
-  $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Que empiece el show!' : 'Espera al anfitrión';
-  fillRoster($('roster'), participants(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name, detail: o.id === null ? 'Bot' : 'Pana', me: o.id === room.id })));
+  $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? loc('¡Que empiece el show!') : loc('Espera al anfitrión');
+  fillRoster($('roster'), participants(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? loc('{name} · tú', { name: o.name }) : o.name, detail: o.id === null ? loc('Bot') : loc('Pana'), me: o.id === room.id })));
   if (!lobby && state.question) { renderQuestion(state, p); renderLadder(p); }
   if (state.phase !== 'question') copying = false;
   // The host's call-outs pop over the podiums once the answer lights up.
   const done = state.phase === 'reveal' && state.reveal?.done ? `${state.round}:${state.index}:${state.final}` : '';
-  if (done && done !== lastDone && world) state.callouts.forEach((c, i) => setTimeout(() => world?.say(c.seat, c.text, 3), 500 + i * 700));
+  if (done && done !== lastDone && world) state.callouts.forEach((c, i) => setTimeout(() => world?.say(c.seat, lineText(c), 3), 500 + i * 700));
   lastDone = done || lastDone;
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
   if (ended) {
     const winner = state.players[state.winner];
-    $('result-title').textContent = state.gold !== null ? `¡${winner.name} se lleva el Mango de oro!` : `¡${winner.name} es el cuarto bate!`;
-    fillRoster($('result-roster'), ranking(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name,
-      detail: (state.titles?.[o.seat] || []).map(t => `${t}: ${TITLE_TEXT[t]}`).join(' · ') || `${o.stats.right} buenas, ${o.stats.wrong} malas`,
+    $('result-title').textContent = state.gold !== null ? loc('¡{name} se lleva el Mango de oro!', { name: winner.name }) : loc('¡{name} es el cuarto bate!', { name: winner.name });
+    fillRoster($('result-roster'), ranking(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? loc('{name} · tú', { name: o.name }) : o.name,
+      detail: (state.titles?.[o.seat] || []).map(t => loc('{title}: {meaning}', { title: loc(t), meaning: loc(TITLE_TEXT[t]) })).join(' · ') || loc('{right} buenas, {wrong} malas', { right: o.stats.right, wrong: o.stats.wrong }),
       end: mangos(score(o)), score: true, me: o.id === room.id })));
   }
   world?.update(state);

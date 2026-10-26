@@ -2,14 +2,30 @@ import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
 import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, changeOptions } from './options.js';
 import { createStarter, starterInput, stepStarter, starterDone, starterResult, joinStarter } from '../../../engine/play/quien-empieza-rules.js';
+import { loc, locKey } from '../../../engine/i18n.js';
 // Pure Texas Hold'em and Omaha with selectable betting limits. Cards are integers: suit * 13 + rank (deuce = 0).
 export const SMALL = 10, BIG = 20, STACK = 1000;
 const nameKey = (name) => String(name || '').trim().toLowerCase();
-export const HANDS = ['Carta alta', 'Pareja', 'Doble pareja', 'Trío', 'Escalera', 'Color', 'Full', 'Póquer', 'Escalera de color'];
+// Hand names (context 'mano': Póquer is also the game), suits, seat actions and the table message travel as Spanish
+// source (plus values); each client shows them with loc() / messageText().
+export const HANDS = [locKey('Carta alta', { $ctx: 'mano' }), locKey('Pareja', { $ctx: 'mano' }), locKey('Doble pareja', { $ctx: 'mano' }), locKey('Trío', { $ctx: 'mano' }), locKey('Escalera', { $ctx: 'mano' }), locKey('Color', { $ctx: 'mano' }), locKey('Full', { $ctx: 'mano' }), locKey('Póquer', { $ctx: 'mano' }), locKey('Escalera de color', { $ctx: 'mano' })];
 export const rank = card => card % 13 + 2;
 export const suit = card => Math.floor(card / 13);
 export const face = card => ({ 11: 'J', 12: 'Q', 13: 'K', 14: 'A' }[rank(card)] || String(rank(card)));
-export const suitName = card => ['Tréboles', 'Diamantes', 'Corazones', 'Picas'][suit(card)];
+export const suitName = card => [locKey('Tréboles'), locKey('Diamantes'), locKey('Corazones'), locKey('Picas')][suit(card)];
+// The message is a list of sentences: { text, vars, keys } where `keys` names
+// the vars that are source text themselves (the cachos' note, 'La mesa').
+const part = (text, vars, keys) => ({ text, ...(vars && { vars }), ...(keys?.length && { keys }) });
+export function messageText(message) {
+  const parts = Array.isArray(message) ? message : message ? [{ text: message }] : [];
+  return parts.map(({ text, vars, keys }) => {
+    const values = vars && { ...vars };
+    for (const key of keys || []) values[key] = loc(values[key]);
+    return loc(text, values);
+  }).join(' ');
+}
+// What the table says when a pana acts, by the seat's action.
+const SAID = { 'Se retiró': locKey('{name}: se retiró.'), 'Igualó {n}': locKey('{name}: igualó {n}.'), 'Pasó': locKey('{name}: pasó.'), 'Va con todo': locKey('{name}: va con todo.'), 'Subió a {n}': locKey('{name}: subió a {n}.') };
 // A mid-hand arrival watches until the next deal. Disconnected all-ins keep
 // their chair, but a departed folded player cannot occupy a replacement seat.
 export function tablePlayers(state) {
@@ -78,7 +94,7 @@ export function settle(players, board, dealer, variant = 'texas') {
 }
 
 export class Poker {
-  constructor() { this.options = { ...DEFAULT_OPTIONS }; this.blindStartedAt = null; this.smallBlind = SMALL; this.bigBlind = BIG; this.streetBets = 0; this.mapId = 'plaza'; this.players = []; this.phase = 'lobby'; this.hand = 0; this.revision = 0; this.dealer = -1; this.board = []; this.turn = null; this.message = 'Invita a tus panas o juega con bots.'; this.result = null; this.starter = null; this.busted = []; this.lastPlace = null; this.banked = {}; }
+  constructor() { this.options = { ...DEFAULT_OPTIONS }; this.blindStartedAt = null; this.smallBlind = SMALL; this.bigBlind = BIG; this.streetBets = 0; this.mapId = 'plaza'; this.players = []; this.phase = 'lobby'; this.hand = 0; this.revision = 0; this.dealer = -1; this.board = []; this.turn = null; this.message = [part(locKey('Invita a tus panas o juega con bots.'))]; this.result = null; this.starter = null; this.busted = []; this.lastPlace = null; this.banked = {}; }
   configure(patch, mapId) {
     if (this.phase !== 'lobby' || (mapId !== undefined && !validTableArena(mapId))) return false;
     const next = changeOptions(this.options, patch); if (!next) return false;
@@ -104,8 +120,8 @@ export class Poker {
     // Revancha: whoever busted first, else the shortest stack, opens the next match.
     this.lastPlace = this.busted[0] ?? [...this.players].filter(p => p.connected).sort((a, b) => a.chips - b.chips)[0]?.id ?? null;
     this.phase = 'lobby'; this.board = []; this.deck = []; this.result = null; this.turn = null;
-    this.pending = new Set(); this.currentBet = 0; this.message = 'Organiza los puestos antes de repartir. Cada pana conserva sus fichas.';
-    for (const p of this.players) Object.assign(p, { hole: [], bet: 0, total: 0, folded: true, allin: false, actedAt: null, action: '' });
+    this.pending = new Set(); this.currentBet = 0; this.message = [part(locKey('Organiza los puestos antes de repartir. Cada pana conserva sus fichas.'))];
+    for (const p of this.players) Object.assign(p, { hole: [], bet: 0, total: 0, folded: true, allin: false, actedAt: null, action: '', actionN: 0 });
     this.revision++; return true;
   }
   // A pana who leaves and comes back (a new seat in the room) gets their own
@@ -142,7 +158,7 @@ export class Poker {
     this.prune(p => p.connected); this.busted = [];
     const last = this.players.findIndex(p => p.id === this.lastPlace);
     this.starter = createStarter({ seats: this.players.map((p, i) => i), need: 'first', seed: Math.floor(random() * 2 ** 32), option: this.options.starter, last: last < 0 ? null : last });
-    this.phase = 'starter'; this.revision++; this.message = '¿Quién empieza? El dado más alto reparte primero.';
+    this.phase = 'starter'; this.revision++; this.message = [part(locKey('¿Quién empieza? El dado más alto reparte primero.'))];
     if (starterDone(this.starter)) this.openHand(random, now);
     return true;
   }
@@ -163,7 +179,9 @@ export class Poker {
   openHand(random, now) {
     const { order, rolls } = starterResult(this.starter), first = this.players[order[0]], how = this.starter.note;
     this.deal(random, now, first?.id);
-    this.message = `${how ? `${how}: ` : ''}${first?.name || 'La mesa'} reparte${rolls[order[0]] ? ` con un ${rolls[order[0]]}` : ''}. ${this.message}`;
+    const roll = rolls[order[0]], keys = [...(how ? ['how'] : []), ...(first?.name ? [] : ['name'])];
+    const text = how ? roll ? locKey('{how}: {name} reparte con un {roll}.') : locKey('{how}: {name} reparte.') : roll ? locKey('{name} reparte con un {roll}.') : locKey('{name} reparte.');
+    this.message = [part(text, { how, name: first?.name || locKey('La mesa'), roll }, keys), ...this.message];
   }
   deal(random = Math.random, now = Date.now(), dealerId = null) {
     const firstDealer = this.players.find(p => p.id === dealerId && p.connected && (p.chips > 0 || this.options.rebuy));
@@ -176,12 +194,12 @@ export class Poker {
     this.deck = shuffle(random); this.board = []; this.hand++; this.revision++; this.result = null; this.phase = 'preflop'; this.currentBet = this.bigBlind; this.minRaise = this.bigBlind; this.streetBets = 1;
     this.players.forEach(p => {
       if (p.chips === 0 && this.options.rebuy) p.chips = this.options.stack;
-      Object.assign(p, { hole: p.chips > 0 ? Array.from({ length: this.options.variant === 'omaha' ? 4 : 2 }, () => this.deck.pop()) : [], folded: p.chips === 0, bet: 0, total: 0, allin: false, actedAt: null, action: p.chips === 0 ? 'Sin fichas' : '' });
+      Object.assign(p, { hole: p.chips > 0 ? Array.from({ length: this.options.variant === 'omaha' ? 4 : 2 }, () => this.deck.pop()) : [], folded: p.chips === 0, bet: 0, total: 0, allin: false, actedAt: null, action: p.chips === 0 ? locKey('Sin fichas') : '', actionN: 0 });
     });
     const sb = this.live.length === 2 ? this.dealer : this.next(this.dealer, p => !p.folded), bb = this.next(sb, p => !p.folded);
     this.pay(this.players[sb], this.smallBlind); this.pay(this.players[bb], this.bigBlind);
     this.pending = new Set(this.active.map(p => p.id)); this.turn = this.players[this.next(bb, p => this.pending.has(p.id))]?.id ?? null;
-    this.message = `Ciegas ${this.smallBlind} / ${this.bigBlind}. ${this.options.variant === 'omaha' ? 'Usa dos cartas de tu mano y tres de la mesa.' : 'Arma la mejor mano de cinco cartas.'}`; this.advance(bb); return true;
+    this.message = [part(locKey('Ciegas {small} / {big}.'), { small: this.smallBlind, big: this.bigBlind }), part(this.options.variant === 'omaha' ? locKey('Usa dos cartas de tu mano y tres de la mesa.') : locKey('Arma la mejor mano de cinco cartas.'))]; this.advance(bb); return true;
   }
   legal(id) {
     const p = this.players.find(p => p.id === id);
@@ -197,23 +215,23 @@ export class Poker {
   act(id, action, amount, revision = this.revision) {
     const legal = this.legal(id); if (!legal || revision !== this.revision) return false;
     const p = this.players.find(p => p.id === id), index = this.players.indexOf(p);
-    if (action === 'fold') { p.folded = true; p.action = 'Se retiró'; }
-    else if (action === 'call') { this.pay(p, legal.call); p.action = legal.call ? `Igualó ${legal.call}` : 'Pasó'; }
+    if (action === 'fold') { p.folded = true; p.action = locKey('Se retiró'); p.actionN = 0; }
+    else if (action === 'call') { this.pay(p, legal.call); p.action = legal.call ? locKey('Igualó {n}') : locKey('Pasó'); p.actionN = legal.call; }
     else if (action === 'raise') {
       if (!legal.raise || !Number.isInteger(amount) || amount <= this.currentBet || amount > legal.max || (amount < legal.min && amount !== p.bet + p.chips)) return false;
       const increase = amount - this.currentBet;
       this.pay(p, amount - p.bet); if (increase >= this.minRaise) { this.minRaise = increase; this.streetBets++; } this.currentBet = amount;
       for (const other of this.active) if (other.id !== id && other.bet < amount) this.pending.add(other.id);
-      p.action = p.allin ? 'Va con todo' : `Subió a ${amount}`;
+      p.action = p.allin ? locKey('Va con todo') : locKey('Subió a {n}'); p.actionN = amount;
     } else return false;
-    p.actedAt = this.currentBet; this.pending.delete(id); this.message = `${p.name}: ${p.action.toLowerCase()}.`; this.revision++; this.advance(index); return true;
+    p.actedAt = this.currentBet; this.pending.delete(id); this.message = [part(SAID[p.action], { name: p.name, n: p.actionN })]; this.revision++; this.advance(index); return true;
   }
   drop(id) {
     const p = this.players.find(p => p.id === id); if (!p) return;
     p.connected = false;
     // An all-in hand remains eligible; a reconnect cannot resurrect a folded hand.
     if (!p.folded && !p.allin && !['lobby', 'finished'].includes(this.phase)) {
-      p.folded = true; p.action = 'Sin conexión'; this.pending.delete(id); this.revision++;
+      p.folded = true; p.action = locKey('Sin conexión'); this.pending.delete(id); this.revision++;
       this.advance(this.players.findIndex(p => p.id === this.turn) - (this.turn === id ? 0 : 1));
     }
   }
@@ -228,7 +246,7 @@ export class Poker {
     for (let n = 0; n < count; n++) this.board.push(this.deck.pop());
     this.phase = { preflop: 'flop', flop: 'turn', turn: 'river' }[this.phase];
     this.currentBet = 0; this.minRaise = this.options.limit === 'fixed' ? this.fixedBet : this.bigBlind; this.streetBets = 0;
-    this.players.forEach(p => { p.bet = 0; p.actedAt = null; p.action = p.folded ? p.action : p.allin ? 'Va con todo' : ''; });
+    this.players.forEach(p => { p.bet = 0; p.actedAt = null; p.action = p.folded ? p.action : p.allin ? locKey('Va con todo') : ''; });
     this.pending = new Set(this.active.map(p => p.id)); this.advance(this.dealer);
   }
   finish(showdown) {
@@ -236,7 +254,7 @@ export class Poker {
     const result = showdown ? settle(this.players, this.board, this.dealer, this.options.variant) : { payouts: Object.fromEntries(this.players.map(p => [p.id, p.id === this.live[0]?.id ? total : 0])), pots: [{ amount: total, winners: this.live.map(p => p.id) }] };
     for (const p of this.players) { p.chips += result.payouts[p.id] || 0; if (!p.chips && !this.busted.includes(p.id)) this.busted.push(p.id); }
     this.result = { ...result, showdown, total }; this.phase = 'finished'; this.turn = null;
-    this.message = showdown ? 'Cartas sobre la mesa.' : `${this.live[0]?.name || 'La mesa'} se lleva el pozo.`;
+    this.message = [showdown ? part(locKey('Cartas sobre la mesa.')) : this.live[0] ? part(locKey('{name} se lleva el pozo.'), { name: this.live[0].name }) : part(locKey('La mesa se lleva el pozo.'))];
   }
   botAction() {
     const p = this.players.find(p => p.id === this.turn), legal = this.legal(this.turn); if (!p || !legal) return;

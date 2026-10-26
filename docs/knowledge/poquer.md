@@ -83,6 +83,12 @@ Never send a complete game snapshot to a client, even the host. Keep the deck
 inside the rules instance on the server. Only reveal live showdown hands.
 Do not replace side-pot accounting with an equal split of the entire pot.
 
+`message` is a list of `{ text, vars, keys }` Spanish source sentences, a
+seat's `action` a source key with its amount in `actionN`, and `handName` a
+`HANDS` key; clients show them with `messageText`, `loc(action, { n })` and
+`loc(handName, { $ctx: 'mano' })`. Hand names use the `mano` context because
+"Póquer" is also the game's name.
+
 ## Prototype room options
 
 `public/options.js` describes the shared main settings and Más ajustes panel.

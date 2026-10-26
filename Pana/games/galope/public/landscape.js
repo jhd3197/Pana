@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 import * as THREE from 'three';
 import {M,rng} from '/engine/models/core/primitives.js';
 import {ranchCaney,chinchorro,saddleStand,hitchingRail,campfire,coffeeTable,riverCanoe,wetlandLanding,floodedFence,trailSign,termiteMound} from '/engine/models/props/llano-life.js';

@@ -23,6 +23,7 @@ import { RIVER as DEFAULT_RIVER, courseRiver } from './course.js';
 import { standings, COLORS, TURBO, SLOTS } from './rules.js';
 import { LanchaRoom } from './network.js';
 import { createToast } from '/engine/hud.js';
+import { loc, locn } from '/engine/i18n.js';
 
 let RIVER = DEFAULT_RIVER;
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search), avatar = loadAvatar(), name = loadName();
@@ -36,14 +37,14 @@ const room = new LanchaRoom({ code, name, avatar, onState: s => { state = s; sna
 state = room.state;
 const roomOptions = createRoomOptions($('room-options'), { title: 'Lancha', fields: FIELDS, change: patch => room.action('options', { options: patch }), reset: () => room.action('options', { options: cleanOptions() }) });
 function clearInput() { keys.clear(); for (const b of touchButtons) b.release(); touch.clear(); }
-const menu = createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', 'Acelerar'], a: ['KeyW', 'Acelerar'], lt: ['KeyS', 'Frenar o retroceder'], b: ['KeyS', 'Frenar o retroceder'], x: ['Space', 'Turbo'], rb: ['Space', 'Turbo'] } }, title: 'Lancha', sound, orientation: 'libre', note: () => room.members.size > 1 ? 'La carrera sigue mientras abres el menú.' : 'La carrera está en pausa.',
-  controls: [['W / ↑ sostenido', 'Acelerar'], ['A D / ← →', 'Girar el motor'], ['S / ↓', 'Frenar; sostenido, retroceder'], ['Espacio', 'Turbo (gasta media barra)'], ['M', 'Sonido'], ['Esc', 'Menú']],
-  tips: ['Sostén W todo el tiempo: machacarlo hace que la lancha vaya más lenta.', 'Sigue las flechas doradas en el agua: marcan el chorro, el carril rápido del raudal y esquivan los caimanes.', 'En el Orinoco las boyas marcan el canal: coral a la izquierda, verde a la derecha.', 'El chorro, los saltos derechos y la estela de las toninas llenan el turbo.', 'Cae derecho de los raudales o se te ahoga el motor.'],
-  invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: 'Abrir carrera local', run: () => goLocal() }],
+const menu = createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', loc('Acelerar')], a: ['KeyW', loc('Acelerar')], lt: ['KeyS', loc('Frenar o retroceder')], b: ['KeyS', loc('Frenar o retroceder')], x: ['Space', loc('Turbo')], rb: ['Space', loc('Turbo')] } }, title: 'Lancha', sound, orientation: 'libre', note: () => room.members.size > 1 ? loc('La carrera sigue mientras abres el menú.') : loc('La carrera está en pausa.'),
+  controls: [['W / ↑ sostenido', loc('Acelerar')], ['A D / ← →', loc('Girar el motor')], ['S / ↓', loc('Frenar; sostenido, retroceder')], ['Espacio', loc('Turbo (gasta media barra)')], ['M', loc('Sonido')], ['Esc', loc('Menú')]],
+  tips: [loc('Sostén W todo el tiempo: machacarlo hace que la lancha vaya más lenta.'), loc('Sigue las flechas doradas en el agua: marcan el chorro, el carril rápido del raudal y esquivan los caimanes.'), loc('En el Orinoco las boyas marcan el canal: coral a la izquierda, verde a la derecha.'), loc('El chorro, los saltos derechos y la estela de las toninas llenan el turbo.'), loc('Cae derecho de los raudales o se te ahoga el motor.')],
+  invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: loc('Abrir carrera local'), run: () => goLocal() }],
   onOpen() { paused = true; clearInput(); if (room.members.size <= 1) music.pause(); }, onClose() { paused = false; music.resume(); } });
 const navButton = 'pk-btn pk-btn--sm game-menu-button';
-$('game-nav').append(menu.createInviteButton({ id: 'invite', label: 'Invitar', className: navButton }), menu.createSoundButton({ id: 'sound', className: navButton }), menu.createButton({ id: 'menu', className: navButton }));
-$('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', label: 'Invitar panas', className: 'pk-btn' }));
+$('game-nav').append(menu.createInviteButton({ id: 'invite', label: loc('Invitar'), className: navButton }), menu.createSoundButton({ id: 'sound', className: navButton }), menu.createButton({ id: 'menu', className: navButton }));
+$('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', label: loc('Invitar panas'), className: 'pk-btn' }));
 $('room-code').textContent = code.toUpperCase();
 const music = createMusic(sound);
 function unlock() { try { sound.unlock(); } catch { /* audio blocked */ } }
@@ -59,7 +60,7 @@ window.addEventListener('keydown', e => {
   e.preventDefault(); unlock();
   if (e.code === 'Space' && !e.repeat) local.turbo++;
   // Pressing W again and again: one reminder that holding is faster.
-  if ((e.code === 'KeyW' || e.code === 'ArrowUp') && !e.repeat) { const now = performance.now(); local.taps = (local.taps || []).filter(t => now - t < 1200); local.taps.push(now); if (local.taps.length >= 4 && state.options.throttle !== 'auto') { call('¡Sostenlo!', 'is-soft'); local.taps = []; } }
+  if ((e.code === 'KeyW' || e.code === 'ArrowUp') && !e.repeat) { const now = performance.now(); local.taps = (local.taps || []).filter(t => now - t < 1200); local.taps.push(now); if (local.taps.length >= 4 && state.options.throttle !== 'auto') { call(loc('¡Sostenlo!'), 'is-soft'); local.taps = []; } }
   keys.add(e.code);
 });
 window.addEventListener('keyup', e => keys.delete(e.code)); window.addEventListener('blur', clearInput);
@@ -108,20 +109,20 @@ function ensureBoats() {
 let callTimer = 0;
 function call(text, kind = '') { const e = $('call'); e.textContent = text; e.className = `call ${kind}`; e.classList.remove('hidden'); void e.offsetWidth; callTimer = .9; }
 function driveTip(b) {
-  if (!b) return 'Corres en la próxima.';
-  if (b.finish !== null) return '¡En Puerto Ayacucho! Esperando a tus panas.';
-  if (b.stalled > 0) return '¡Se ahogó el motor! Ya arranca otra vez…';
+  if (!b) return loc('Corres en la próxima.');
+  if (b.finish !== null) return loc('¡En Puerto Ayacucho! Esperando a tus panas.');
+  if (b.stalled > 0) return loc('¡Se ahogó el motor! Ya arranca otra vez…');
   const caiman = state.options.items && RIVER.caimanesAt(state.time).find(c => c.s > b.s && c.s < b.s + 45 && Math.abs(c.offset - (b.offset || 0)) < 9);
-  if (caiman) return '¡Caimán cruzando adelante! Sigue las flechas doradas para esquivarlo.';
-  if (b.whirl > .15) return '¡Remolino! Acelera hacia afuera; por el borde te lleva la corriente.';
-  if (b.boost > 0) return '¡La estela de las toninas te empuja!';
+  if (caiman) return loc('¡Caimán cruzando adelante! Sigue las flechas doradas para esquivarlo.');
+  if (b.whirl > .15) return loc('¡Remolino! Acelera hacia afuera; por el borde te lleva la corriente.');
+  if (b.boost > 0) return loc('¡La estela de las toninas te empuja!');
   const drop = RIVER.drops.find(d => b.s > d.s - d.span - 70 && b.s < d.s - d.span + 2);
-  if (drop) return 'Raudal adelante: el carril rápido salta más alto. ¡Cae derecho!';
-  if (b.channel === 'branch') return 'Atajo del igapó: corto, angosto y lleno de troncos.';
-  if (state.options.throttle !== 'auto' && b.throttle === 0 && !b.back && state.phase === 'racing') return 'Sostén W para acelerar. No lo machaques: sostenido vas más rápido.';
-  if (b.meter >= TURBO.cost && b.turbo <= 0) return '¡Turbo listo! Espacio en una recta.';
-  if (RIVER.buoys.some(x => Math.abs(x.s - b.s) < 70)) return 'Río abierto: pasa entre las boyas y sigue las flechas doradas.';
-  return 'Busca el chorro: el agua rápida llena el turbo.';
+  if (drop) return loc('Raudal adelante: el carril rápido salta más alto. ¡Cae derecho!');
+  if (b.channel === 'branch') return loc('Atajo del igapó: corto, angosto y lleno de troncos.');
+  if (state.options.throttle !== 'auto' && b.throttle === 0 && !b.back && state.phase === 'racing') return loc('Sostén W para acelerar. No lo machaques: sostenido vas más rápido.');
+  if (b.meter >= TURBO.cost && b.turbo <= 0) return loc('¡Turbo listo! Espacio en una recta.');
+  if (RIVER.buoys.some(x => Math.abs(x.s - b.s) < 70)) return loc('Río abierto: pasa entre las boyas y sigue las flechas doradas.');
+  return loc('Busca el chorro: el agua rápida llena el turbo.');
 }
 // What just happened to this pana's lancha, from the snapshot's counters.
 let seen = null, lastPhoto = null, shake = 0, shakePower = 0;
@@ -130,12 +131,12 @@ function events(own) {
   if (!own) return;
   const now = { bitten: own.bitten, jumps: own.jumps, crashes: own.crashes || 0, hits: own.hits, toninas: own.toninas, turbos: own.turbos, bumps: own.bumps };
   if (seen) {
-    if (now.bitten > seen.bitten) { call('¡Un babo!'); sound.bonk(1); shake = .4; shakePower = .45; }
-    else if (now.crashes > seen.crashes) { call('¡Caíste de lado!', 'is-soft'); sound.splat(); shake = .5; shakePower = .5; }
-    else if (now.hits > seen.hits) { call('¡Pegaste!', 'is-soft'); sound.bonk(.8); shake = .35; shakePower = .4; }
-    else if (now.jumps > seen.jumps) { call('¡Volaste!', 'is-teal'); sound.plop(); shake = .3; shakePower = .3; }
-    else if (now.turbos > seen.turbos) { call('¡Turbo!'); sound.turbo(); pulseSpeedLines(500, .9); }
-    else if (now.toninas > seen.toninas) { call('¡Toninas!', 'is-teal'); sound.sweep(600, 1100, .3, 'sine', .07); }
+    if (now.bitten > seen.bitten) { call(loc('¡Un babo!')); sound.bonk(1); shake = .4; shakePower = .45; }
+    else if (now.crashes > seen.crashes) { call(loc('¡Caíste de lado!'), 'is-soft'); sound.splat(); shake = .5; shakePower = .5; }
+    else if (now.hits > seen.hits) { call(loc('¡Pegaste!'), 'is-soft'); sound.bonk(.8); shake = .35; shakePower = .4; }
+    else if (now.jumps > seen.jumps) { call(loc('¡Volaste!'), 'is-teal'); sound.plop(); shake = .3; shakePower = .3; }
+    else if (now.turbos > seen.turbos) { call(loc('¡Turbo!')); sound.turbo(); pulseSpeedLines(500, .9); }
+    else if (now.toninas > seen.toninas) { call(loc('¡Toninas!'), 'is-teal'); sound.sweep(600, 1100, .3, 'sine', .07); }
     if (now.bumps > seen.bumps) { shake = Math.max(shake, .2); shakePower = Math.max(shakePower, .2); sound.bonk(.5); }
   }
   seen = now;
@@ -146,45 +147,45 @@ function updateUI() {
   const lobby = state.phase === 'lobby', done = state.phase === 'finished', playing = !lobby && !done;
   document.body.classList.toggle('in-lobby', lobby); $('lobby').classList.toggle('hidden', !lobby); $('hud').classList.toggle('hidden', !playing); $('results').classList.toggle('hidden', !done);
   const full = state.players.length > SLOTS;
-  $('start').disabled = !room.connected || !room.isHost || !ready || full; $('start').firstChild.textContent = !room.connected ? 'Conectando… ' : full ? 'Máximo 8 lanchas ' : room.isHost ? '¡Al agua! ' : 'Esperando al anfitrión… ';
-  $('again').disabled = !room.connected || !room.isHost; $('again').firstChild.textContent = room.isHost ? 'Otra carrera ' : 'Esperando al anfitrión… ';
-  if (lobby) fillRoster($('roster'), state.players.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? `${p.name} · tú` : p.name, detail: p.id === room.hostId ? 'Anfitrión' : 'Pana', end: '', me: p.id === room.id })));
+  $('start').disabled = !room.connected || !room.isHost || !ready || full; $('start').firstChild.textContent = (!room.connected ? loc('Conectando…') : full ? loc('Máximo 8 lanchas') : room.isHost ? loc('¡Al agua!') : loc('Esperando al anfitrión…')) + ' ';
+  $('again').disabled = !room.connected || !room.isHost; $('again').firstChild.textContent = (room.isHost ? loc('Otra carrera') : loc('Esperando al anfitrión…')) + ' ';
+  if (lobby) fillRoster($('roster'), state.players.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? loc('{name} · tú', { name: p.name }) : p.name, detail: p.id === room.hostId ? loc('Anfitrión') : 'Pana', end: '', me: p.id === room.id })));
   const own = myBoat(), ordered = standings(state), place = own ? ordered.indexOf(own) + 1 : 0;
-  $('place').textContent = place || '—'; $('field-size').textContent = `de ${ordered.length}`;
+  $('place').textContent = place || '—'; $('field-size').textContent = loc('de {n}', { n: ordered.length });
   $('timer').textContent = formatTime(own?.finish ?? state.time);
   $('left').textContent = `${Math.max(0, Math.round(RIVER.LENGTH - (own?.progress || 0)))} m`;
-  $('sector').textContent = own ? RIVER.sector(own.s) : 'Mirando';
+  $('sector').textContent = own ? RIVER.sector(own.s) : loc('Mirando');
   $('speed').textContent = own ? Math.round(Math.hypot(own.gx || 0, own.gz || 0) * 3.6) : 0;
   const meter = own?.meter || 0, readyTurbo = meter >= TURBO.cost;
   $('turbo-fill').style.width = `${meter}%`; $('turbo-fill').parentElement.classList.toggle('is-ready', readyTurbo);
-  $('turbo-label').textContent = own?.turbo > 0 ? '¡a fondo!' : readyTurbo ? 'listo · Espacio' : 'cargando';
+  $('turbo-label').textContent = own?.turbo > 0 ? loc('¡a fondo!') : readyTurbo ? loc('listo · Espacio') : loc('cargando');
   $('drive-tip').textContent = driveTip(own);
-  $('motor').textContent = own?.stalled > 0 ? 'Motor ahogado' : 'Motor en marcha'; $('motor').classList.toggle('is-dead', own?.stalled > 0);
-  $('throttle-state').textContent = state.options.throttle === 'auto' ? 'Acelerador automático' : own?.throttle > 0 ? 'Acelerando' : own?.back ? 'Frenando' : 'Sin gas';
+  $('motor').textContent = own?.stalled > 0 ? loc('Motor ahogado') : loc('Motor en marcha'); $('motor').classList.toggle('is-dead', own?.stalled > 0);
+  $('throttle-state').textContent = state.options.throttle === 'auto' ? loc('Acelerador automático') : own?.throttle > 0 ? loc('Acelerando') : own?.back ? loc('Frenando') : loc('Sin gas');
   $('leaderboard').replaceChildren(...ordered.slice(0, 8).map((b, i) => {
     const li = document.createElement('li'); li.className = b === own ? 'pk-row is-me' : 'pk-row';
     const n = document.createElement('b'); n.className = 'pk-row-n'; n.textContent = i + 1;
     const dot = document.createElement('i'); dot.className = 'boat-dot'; dot.style.setProperty('--boat', b.color);
-    const span = document.createElement('span'); span.className = 'row-name'; span.textContent = b.driver.name + (b === own ? ' · tú' : '');
-    const end = document.createElement('span'); end.className = 'pk-row-end'; end.textContent = b.finish !== null ? formatTime(b.finish) : b.stalled > 0 ? 'ahogado' : '';
+    const span = document.createElement('span'); span.className = 'row-name'; span.textContent = b === own ? loc('{name} · tú', { name: b.driver.name }) : b.driver.name; span.translate = false;
+    const end = document.createElement('span'); end.className = 'pk-row-end'; end.textContent = b.finish !== null ? formatTime(b.finish) : b.stalled > 0 ? loc('ahogado') : '';
     li.append(n, dot, span, end); return li;
   }));
-  const count = state.phase === 'countdown' ? String(Math.max(1, Math.ceil(state.countdown))) : state.phase === 'racing' && state.time < .75 ? '¡DALE!' : '';
+  const count = state.phase === 'countdown' ? String(Math.max(1, Math.ceil(state.countdown))) : state.phase === 'racing' && state.time < .75 ? loc('¡DALE!') : '';
   $('countdown').classList.toggle('hidden', !count); $('countdown').textContent = count;
-  if (count && count !== lastCountdown) { sound.tone(count === '¡DALE!' ? 740 : 370, 0, .12, 'triangle', .06); lastCountdown = count; }
+  if (count && count !== lastCountdown) { sound.tone(count === loc('¡DALE!') ? 740 : 370, 0, .12, 'triangle', .06); lastCountdown = count; }
   if (state.raceId !== lastRace) { lastRace = state.raceId; cameraReady = false; clearInput(); fx.reset(); seen = null; }
   if (playing) events(own);
   if (done && (lastPhase !== state.phase || $('result-board').childElementCount !== ordered.length)) {
-    $('result-title').textContent = place === 1 ? '¡Ganaste, pana!' : own?.finish != null ? '¡Llegaste, pana!' : '¡Se cerró la carrera!';
-    $('result-copy').textContent = own?.finish != null ? `${place}.º lugar · ${formatTime(own.finish)} · ${own.jumps} ${own.jumps === 1 ? 'salto' : 'saltos'} · ${own.turbos} turbos` : 'La próxima es tuya. Sostén el acelerador y sigue las flechas.';
-    fillRoster($('result-board'), ordered.map((b, i) => ({ rank: i + 1, name: b.driver.name + (b.driver.bot ? ' · del río' : ''), detail: `${b.jumps} saltos · ${b.turbos} turbos${b.bitten ? ` · ${b.bitten} babo${b.bitten > 1 ? 's' : ''}` : ''}`, end: b.finish === null ? 'Sin llegar' : formatTime(b.finish), me: b === own })));
+    $('result-title').textContent = place === 1 ? loc('¡Ganaste, pana!') : own?.finish != null ? loc('¡Llegaste, pana!') : loc('¡Se cerró la carrera!');
+    $('result-copy').textContent = own?.finish != null ? loc('{place}.º lugar · {time} · {jumps} · {turbos} turbos', { place, time: formatTime(own.finish), jumps: locn(own.jumps, '{n} salto', '{n} saltos'), turbos: own.turbos }) : loc('La próxima es tuya. Sostén el acelerador y sigue las flechas.');
+    fillRoster($('result-board'), ordered.map((b, i) => ({ rank: i + 1, name: b.driver.bot ? loc('{name} · del río', { name: b.driver.name }) : b.driver.name, detail: b.bitten ? loc('{jumps} saltos · {turbos} turbos · {bites}', { jumps: b.jumps, turbos: b.turbos, bites: locn(b.bitten, '{n} babo', '{n} babos') }) : loc('{jumps} saltos · {turbos} turbos', { jumps: b.jumps, turbos: b.turbos }), end: b.finish === null ? loc('Sin llegar') : formatTime(b.finish), me: b === own })));
     if (lastPhase !== state.phase) sound.tone(660, 0, .25, 'triangle', .08);
   }
   if (state.phase === 'racing' && !music.playing && !paused) music.play('lancha-orinoco', { fallback: 'amazonas' });
   if (state.phase !== 'racing' && state.phase !== 'countdown' && music.playing) music.stop();
   const lead = ordered[0];
   music.setTempo(state.slowmo > 0 ? .6 : lead && RIVER.LENGTH - lead.progress < 200 ? 1.14 : 1);
-  if (state.photo && state.photo.at !== lastPhoto) { lastPhoto = state.photo.at; call('¡Foto finish!', 'is-teal'); flash(); }
+  if (state.photo && state.photo.at !== lastPhoto) { lastPhoto = state.photo.at; call(loc('¡Foto finish!'), 'is-teal'); flash(); }
   // The motor drone follows your own lancha.
   if (playing && own && !paused) { sound.startEngine(); sound.setEngine(own.stalled > 0 ? 0 : Math.abs(own.v) * 1.6 + (own.turbo > 0 ? 8 : 0)); } else sound.stopEngine();
   lastPhase = state.phase; minimap.draw(state.boats, own);

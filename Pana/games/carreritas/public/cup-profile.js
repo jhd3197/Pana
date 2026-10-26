@@ -1,5 +1,6 @@
 import { CUP_DEFINITIONS, LEGACY_CUP_ALIASES, canonicalCupId } from './cup-definitions.js';
 import { cleanWallet, newWallet } from './shop.js';
+import { locKey } from '/engine/i18n.js';
 
 export const PROFILE_VERSION = 3;
 export const PROFILE_KEY = 'carreritas:profile';
@@ -48,7 +49,7 @@ function putLegacy(target, cupId, trophy, source) {
     trophy: previous ? betterTrophy(previous.trophy, trophy) : trophy,
     source: previous?.source ?? source ?? cupId,
     edition: 1,
-    label: 'Edición anterior',
+    label: locKey('Edición anterior'),
   };
 }
 

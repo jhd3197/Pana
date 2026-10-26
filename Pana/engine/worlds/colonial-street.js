@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 // Studio demonstration and reusable scenery assembly; games own placement/collision.
 import * as THREE from 'three';
 import { M, box } from '../models/core/primitives.js';

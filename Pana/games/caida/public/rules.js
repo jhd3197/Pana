@@ -2,6 +2,7 @@ import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
 import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
+import { loc, locKey } from '../../../engine/i18n.js';
 // Pure deterministic rules. Table variants and sources are documented in caida.md.
 // A match opens with ¿Quién empieza? (engine/play/quien-empieza-rules.js): the
 // highest cacho deals the first reparto; later repartos pass the deal along.
@@ -9,24 +10,38 @@ export const TARGET = 24;
 export const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 export const SUITS = ['oros', 'copas', 'espadas', 'bastos'];
 export const BOT_NAMES = ['Coco', 'Lola', 'Tito', 'Nina', 'Cheo', 'Luz'];
-export const MODES = { duel: { count: 2, teams: false, label: 'Dos panas' }, three: { count: 3, teams: false, label: 'Tres panas' }, teams: { count: 4, teams: true, label: 'Dos parejas' }, four: { count: 4, teams: false, label: 'Cuatro individuales' }, six: { count: 6, teams: false, label: 'Seis individuales' }, sixTeams: { count: 6, teams: true, label: 'Dos equipos de tres' } };
+export const MODES = { duel: { count: 2, teams: false, label: locKey('Dos panas') }, three: { count: 3, teams: false, label: locKey('Tres panas') }, teams: { count: 4, teams: true, label: locKey('Dos parejas') }, four: { count: 4, teams: false, label: locKey('Cuatro individuales') }, six: { count: 6, teams: false, label: locKey('Seis individuales') }, sixTeams: { count: 6, teams: true, label: locKey('Dos equipos de tres') } };
 export const deck = () => SUITS.flatMap(suit => RANKS.map(rank => ({ id: `${suit}-${rank}`, suit, rank })));
-export const cardName = c => `${({ 1: 'As', 10: 'Sota', 11: 'Caballo', 12: 'Rey' })[c.rank] || c.rank} de ${c.suit}`;
+// History text travels as Spanish source plus values (card, reason parts);
+// each client renders it in its own language: cardName, reasonText, eventText.
+const RANK_NAMES = { 1: locKey('As'), 10: locKey('Sota'), 11: locKey('Caballo'), 12: locKey('Rey') };
+const SUIT_NAMES = { oros: locKey('oros'), copas: locKey('copas'), espadas: locKey('espadas'), bastos: locKey('bastos') };
+export const cardName = c => loc('{rank} de {suit}', { rank: RANK_NAMES[c.rank] ? loc(RANK_NAMES[c.rank]) : c.rank, suit: loc(SUIT_NAMES[c.suit] || c.suit) });
+// The Spanish text of source parts, for logic and barks that read `reason`.
+const source = (text, vars) => vars ? text.replace(/\{(\w+)\}/g, (match, key) => vars[key] ?? match) : text;
+export const reasonText = r => (r.label || [{ text: r.reason }]).map(p => loc(p.text, p.vars)).join(' + ');
+export function eventText(e) {
+  const vars = { ...e.vars };
+  if (e.card) vars.card = cardName(e.card);
+  if (e.kind === 'score') Object.assign(vars, { reason: reasonText(e), points: e.points });
+  return loc(e.text, vars);
+}
+const fallPart = rank => rank === 10 ? { text: locKey('Caída de sota') } : rank === 11 ? { text: locKey('Caída de caballo') } : rank === 12 ? { text: locKey('Caída de rey') } : { text: locKey('Caída de {n}'), vars: { n: rank } };
 export const fallPoints = rank => rank <= 7 ? 1 : rank - 8;
 export const teamOf = (state, seat) => MODES[state.options.mode].teams ? seat % 2 : seat;
 export const nextDealer = state => state.phase === 'round-over' ? (state.dealer + 1) % state.players.length : 0;
-export const cantoDescription = name => ({ Ronda: 'Dos cartas iguales', Rondín: 'Tres cartas iguales', Patrulla: 'Tres cartas seguidas', Patria: 'Tres cartas seguidas', Vigía: 'Dos iguales y una vecina', Registro: 'As, caballo y rey' })[name] || name;
+export const cantoDescription = name => ({ Ronda: loc('Dos cartas iguales'), Rondín: loc('Tres cartas iguales'), Patrulla: loc('Tres cartas seguidas'), Patria: loc('Tres cartas seguidas'), Vigía: loc('Dos iguales y una vecina'), Registro: loc('As, caballo y rey') })[name] || loc(name);
 const copy = value => JSON.parse(JSON.stringify(value));
 
 export function canto(hand) {
   if (hand.length !== 3) return null;
   const ranks = hand.map(c => c.rank).sort((a, b) => a - b), [a, b, c] = ranks;
-  if (a === 1 && b === 11 && c === 12) return { name: 'Registro', points: 8, ranks };
+  if (a === 1 && b === 11 && c === 12) return { name: locKey('Registro'), points: 8, ranks };
   const pair = a === b ? a : b === c ? b : null, other = a === b ? c : a;
-  if (a === c) return { name: 'Rondín', points: 5, ranks };
-  if (pair && Math.abs(RANKS.indexOf(pair) - RANKS.indexOf(other)) === 1) return { name: 'Vigía', points: 7, ranks };
-  if (RANKS.indexOf(b) === RANKS.indexOf(a) + 1 && RANKS.indexOf(c) === RANKS.indexOf(b) + 1) return { name: 'Patrulla', points: 6, ranks };
-  return pair ? { name: 'Ronda', points: fallPoints(pair), ranks } : null;
+  if (a === c) return { name: locKey('Rondín'), points: 5, ranks };
+  if (pair && Math.abs(RANKS.indexOf(pair) - RANKS.indexOf(other)) === 1) return { name: locKey('Vigía'), points: 7, ranks };
+  if (RANKS.indexOf(b) === RANKS.indexOf(a) + 1 && RANKS.indexOf(c) === RANKS.indexOf(b) + 1) return { name: locKey('Patrulla'), points: 6, ranks };
+  return pair ? { name: locKey('Ronda'), points: fallPoints(pair), ranks } : null;
 }
 
 export function previewPlay(state, card, seat = state.turn) {
@@ -136,13 +151,15 @@ export class CaidaGame {
     return true;
   }
   removePlayer(id) { const p = this.players.find(p => p.id === id); if (p) { Object.assign(p, { id: null, name: BOT_NAMES[p.seat], avatar: {} }); this.revision++; } }
-  log(kind, seat, text, extra = {}) { this.history.push({ id: ++this.eventId, kind, seat, name: this.players[seat]?.name || 'La mesa', text, ...extra }); this.history = this.history.slice(-60); }
-  award(seat, points, reason) {
+  // A missing name is 'La mesa' on screen.
+  log(kind, seat, text, extra = {}) { this.history.push({ id: ++this.eventId, kind, seat, name: this.players[seat]?.name || null, text, ...extra }); this.history = this.history.slice(-60); }
+  // `label`: the reason as source parts ({ text, vars }), joined with ' + '.
+  award(seat, points, label) {
     if (!points || this.phase === 'finished') return;
-    const team = teamOf(this, seat); this.scores[team] += points;
-    this.log('score', seat, `${reason} · +${points}`, { points, reason });
+    const team = teamOf(this, seat), reason = label.map(p => source(p.text, p.vars)).join(' + '); this.scores[team] += points;
+    this.log('score', seat, locKey('{reason} · +{points}'), { points, reason, label });
     if (this.scores[team] >= TARGET) {
-      this.phase = 'finished'; this.result = { winner: team, reason, counts: this.counts(), bonuses: [], points };
+      this.phase = 'finished'; this.result = { winner: team, reason, label, counts: this.counts(), bonuses: [], points };
       // For a rematch with the "Revancha" option: the lowest score deals first.
       const low = Math.min(...this.scores); this.lastPlace = this.players.find(p => this.scores[teamOf(this, p.seat)] === low)?.seat ?? null;
     }
@@ -180,7 +197,7 @@ export class CaidaGame {
     this.stock = deck();
     for (let i = this.stock.length - 1; i > 0; i--) { const j = Math.floor(this.random() * (i + 1)); [this.stock[i], this.stock[j]] = [this.stock[j], this.stock[i]]; }
     this.players.forEach(p => { p.hand = []; p.captured = []; p.announced = null; }); this.phase = 'dealing';
-    this.log('dealer', this.dealer, 'Prepara el reparto');
+    this.log('dealer', this.dealer, locKey('Prepara el reparto'));
     this.revision++; return true;
   }
   setCall(seat, call) {
@@ -190,7 +207,7 @@ export class CaidaGame {
   cutDeck(seat, at) {
     if (this.phase !== 'dealing' || seat !== this.dealer || this.cutAt !== null || !Number.isInteger(at) || at < 1 || at >= this.stock.length) return false;
     this.stock.push(...this.stock.splice(0, at)); this.cutAt = at;
-    this.log('cut', seat, 'Cortó la baraja'); this.revision++; return true;
+    this.log('cut', seat, locKey('Cortó la baraja')); this.revision++; return true;
   }
   dealOpening(seat) {
     if (this.phase !== 'dealing' || seat !== this.dealer || !['up', 'down'].includes(this.dealCall)) return false;
@@ -201,21 +218,21 @@ export class CaidaGame {
       while (this.table.some(c => c.rank === card.rank)) { this.stock.push(card); card = this.stock.shift(); }
       this.table.push(card); if (card.rank === call) points += call;
     }
-    this.log('opening', this.dealer, `${calls.join(' · ')}${points ? ` · ${points} puntos al repartir` : ' · mal echada'}`, { cards: copy(this.table) });
-    this.award(points ? this.dealer : this.turn, points || 1, points ? 'Buena echada' : 'Mal echada');
+    this.log('opening', this.dealer, points ? locKey('{calls} · {points} puntos al repartir') : locKey('{calls} · mal echada'), { cards: copy(this.table), vars: { calls: calls.join(' · '), points } });
+    this.award(points ? this.dealer : this.turn, points || 1, [{ text: points ? locKey('Buena echada') : locKey('Mal echada') }]);
     this.revision++; return true;
   }
   deal() {
     this.handNumber++; this.turn = (this.dealer + 1) % this.players.length;
     this.players.forEach(p => { p.announced = null; });
     for (let n = 0; n < 3; n++) for (let i = 0; i < this.players.length; i++) this.players[(this.turn + i) % this.players.length].hand.push(this.stock.shift());
-    this.log('deal', this.turn, this.stock.length === 0 ? '¡Últimas! Sin cuatro de mesa.' : `Mano ${this.handNumber} · tres cartas por pana`);
+    this.log('deal', this.turn, this.stock.length === 0 ? locKey('¡Últimas! Sin cuatro de mesa.') : locKey('Mano {n} · tres cartas por pana'), { vars: { n: this.handNumber } });
   }
   chant(seat) {
     const p = this.players[seat];
     if (this.phase !== 'playing' || seat !== this.turn || !this.options.cantos || !p || p.announced || p.hand.length !== 3) return false;
     const value = canto(p.hand); if (!value) return false;
-    p.announced = value; this.award(seat, value.points, value.name); this.revision++; return true;
+    p.announced = value; this.award(seat, value.points, [{ text: value.name }]); this.revision++; return true;
   }
   play(seat, id) {
     if (this.phase !== 'playing' || seat !== this.turn) return false;
@@ -229,8 +246,8 @@ export class CaidaGame {
       player.captured.push(card, ...this.table.filter(c => move.capture.includes(c.id)));
       this.table = this.table.filter(c => !move.capture.includes(c.id)); this.lastCapture = seat; this.last = null;
     } else { this.table.push(card); this.last = { id, seat }; }
-    this.log('play', seat, `${cardName(card)}${move.capture.length ? ` · recoge ${move.capture.length + 1}` : ' · a la mesa'}`, { card, captured: move.capture, fall: move.fall, clean: move.clean, victim });
-    if (move.points) this.award(seat, move.points, [move.fall ? `Caída de ${card.rank === 10 ? 'sota' : card.rank === 11 ? 'caballo' : card.rank === 12 ? 'rey' : card.rank}` : '', move.clean ? 'Mesa limpia' : ''].filter(Boolean).join(' + '));
+    this.log('play', seat, move.capture.length ? locKey('{card} · recoge {n}') : locKey('{card} · a la mesa'), { card, captured: move.capture, fall: move.fall, clean: move.clean, victim, vars: { n: move.capture.length + 1 } });
+    if (move.points) this.award(seat, move.points, [move.fall && fallPart(card.rank), move.clean && { text: locKey('Mesa limpia') }].filter(Boolean));
     if (this.phase !== 'finished') {
       this.turn = (seat + 1) % this.players.length;
       if (this.players.every(p => p.hand.length === 0)) { if (this.stock.length) this.deal(); else this.finishRound(); }
@@ -240,18 +257,18 @@ export class CaidaGame {
   counts() { return this.scores.map((_, team) => this.players.filter(p => teamOf(this, p.seat) === team).reduce((n, p) => n + p.captured.length, 0)); }
   finishRound() {
     const recipient = this.lastCapture ?? this.dealer;
-    if (this.table.length) { this.players[recipient].captured.push(...this.table); this.log('leftovers', recipient, `Recoge las ${this.table.length} cartas restantes`); }
+    if (this.table.length) { this.players[recipient].captured.push(...this.table); this.log('leftovers', recipient, locKey('Recoge las {n} cartas restantes'), { vars: { n: this.table.length } }); }
     this.table = []; this.last = null;
     const counts = this.counts(), baseline = Math.floor(40 / this.scores.length), bonuses = counts.map(n => Math.max(0, n - baseline));
     // Award in play order so a tied crossing of 24 has a documented precedence.
     for (let i = 0; i < this.players.length; i++) {
       const seat = (this.dealer + 1 + i) % this.players.length, team = teamOf(this, seat);
       if (MODES[this.options.mode].teams && i >= 2) continue;
-      this.award(seat, bonuses[team], `${counts[team]} cartas · ${baseline} de base`);
+      this.award(seat, bonuses[team], [{ text: locKey('{n} cartas · {base} de base'), vars: { n: counts[team], base: baseline } }]);
     }
     const winner = this.phase === 'finished' ? this.result.winner : null;
     if (this.phase !== 'finished') this.phase = 'round-over';
-    this.result = { winner, reason: 'Conteo de cartas', counts, bonuses, baseline };
+    this.result = { winner, reason: locKey('Conteo de cartas'), counts, bonuses, baseline };
   }
   accept(id, data, hostId) {
     if (!Number.isSafeInteger(data.seq) || data.seq <= (this.ledger[id] || 0)) return false;

@@ -1,114 +1,115 @@
+import { loc } from '../../../engine/i18n.js';
 // Lightweight garage metadata, also used by Studio without loading geometry.
 export const CAR_DEFINITIONS = [
   {
-    id: 'chamo', num: 1, name: 'El Chamo', color: '#e0262f',
-    blurb: 'Arranca rápido y dobla en una moneda. Su turbo de derrape carga un 10% más rápido y dura un 10% más.',
+    id: 'chamo', num: 1, name: 'El Chamo', color: '#e0262f', // i18n-ignore: car names are proper names
+    blurb: loc('Arranca rápido y dobla en una moneda. Su turbo de derrape carga un 10% más rápido y dura un 10% más.'),
     stats: { Velocidad: 0.62, 'Aceleración': 0.92, Manejo: 0.88, Peso: 0.35 },
     tune: { top: 35, accel: 26, turn: 2.6, mass: 0.8, grip: 7, driftCharge: 1.1, driftBoost: 1.1 },
     horn: 'meep',
   },
   {
-    id: 'lancha', num: 2, name: 'La Lancha', color: '#1f9e8e',
-    blurb: 'Larga y pesada, veloz en rectas. Pégate detrás de un rival: carga el rebufo un 20% más rápido y dura un 25% más.',
+    id: 'lancha', num: 2, name: 'La Lancha', color: '#1f9e8e', // i18n-ignore: car names are proper names
+    blurb: loc('Larga y pesada, veloz en rectas. Pégate detrás de un rival: carga el rebufo un 20% más rápido y dura un 25% más.'),
     stats: { Velocidad: 0.9, 'Aceleración': 0.55, Manejo: 0.58, Peso: 0.9 },
     tune: { top: 38, accel: 18, turn: 2.0, mass: 1.35, grip: 5, draftCharge: 1.2, draftBoost: 1.25 },
     horn: 'cucaracha',
   },
   {
-    id: 'machito', num: 3, name: 'El Machito', color: '#ffc629',
-    blurb: 'Hecho pa’ la trocha: reduce un 20% el castigo del barro. Combínalo con cauchos de barro para salir con fuerza.',
+    id: 'machito', num: 3, name: 'El Machito', color: '#ffc629', // i18n-ignore: car names are proper names
+    blurb: loc('Hecho pa’ la trocha: reduce un 20% el castigo del barro. Combínalo con cauchos de barro para salir con fuerza.'),
     stats: { Velocidad: 0.7, 'Aceleración': 0.75, Manejo: 0.7, Peso: 0.75 },
     tune: { top: 35.5, accel: 22, turn: 2.3, mass: 1.15, grip: 6, offroadResist: 0.2 },
     horn: 'grave',
   },
   {
-    id: 'bala', num: 4, name: 'La Bala', color: '#3d7bf2',
-    blurb: 'La más rápida en rectas. Sus turbos de derrape cargan más lento y duran menos: frena bien y aprovecha la salida.',
+    id: 'bala', num: 4, name: 'La Bala', color: '#3d7bf2', // i18n-ignore: car names are proper names
+    blurb: loc('La más rápida en rectas. Sus turbos de derrape cargan más lento y duran menos: frena bien y aprovecha la salida.'),
     stats: { Velocidad: 0.95, 'Aceleración': 0.8, Manejo: 0.62, Peso: 0.4 },
     tune: { top: 39, accel: 20, turn: 2.2, mass: 0.85, grip: 5.5, driftCharge: 0.9, driftBoost: 0.9 },
     horn: 'meep',
   },
   {
-    id: 'toro', num: 5, name: 'El Toro', color: '#ff7a2b',
-    blurb: 'Pesada y firme en los roces. Su rebufo carga un 15% más rápido y dura un 35% más: busca rueda y adelanta.',
+    id: 'toro', num: 5, name: 'El Toro', color: '#ff7a2b', // i18n-ignore: car names are proper names
+    blurb: loc('Pesada y firme en los roces. Su rebufo carga un 15% más rápido y dura un 35% más: busca rueda y adelanta.'),
     stats: { Velocidad: 0.72, 'Aceleración': 0.55, Manejo: 0.55, Peso: 1.0 },
     tune: { top: 36, accel: 20, turn: 2.0, mass: 1.5, grip: 5.5, offroadResist: 0.15, draftCharge: 1.15, draftBoost: 1.35 },
     horn: 'grave',
   },
   {
-    id: 'familiar', num: 6, name: 'La Familiar', color: '#8ac926',
-    blurb: 'Con maletas, olla y agarre en mojado. Conserva al menos un 65% de agarre; su turbo de rebufo dura un 20% más.',
+    id: 'familiar', num: 6, name: 'La Familiar', color: '#8ac926', // i18n-ignore: car names are proper names
+    blurb: loc('Con maletas, olla y agarre en mojado. Conserva al menos un 65% de agarre; su turbo de rebufo dura un 20% más.'),
     stats: { Velocidad: 0.66, 'Aceleración': 0.6, Manejo: 0.7, Peso: 0.8 },
     tune: { top: 35.5, accel: 22, turn: 2.3, mass: 1.2, grip: 6, wetFloor: 0.65, draftBoost: 1.2 },
     horn: 'cucaracha',
   },
   {
-    id: 'rumbera', num: 7, name: 'La Rumbera', color: '#f15bb5',
-    blurb: '¡Baila las curvas! Su turbo de derrape carga un 30% más rápido y dura un 35% más. Prueba las llantas de palo.',
+    id: 'rumbera', num: 7, name: 'La Rumbera', color: '#f15bb5', // i18n-ignore: car names are proper names
+    blurb: loc('¡Baila las curvas! Su turbo de derrape carga un 30% más rápido y dura un 35% más. Prueba las llantas de palo.'),
     stats: { Velocidad: 0.6, 'Aceleración': 0.85, Manejo: 0.92, Peso: 0.3 },
     tune: { top: 35, accel: 25, turn: 2.7, mass: 0.75, grip: 7, driftCharge: 1.3, driftBoost: 1.35 },
     horn: 'fiesta',
   },
   {
-    id: 'montanero', num: 8, name: 'El Montañero', color: '#b8d000',
-    blurb: 'Busca las rampas y haz una pirueta: el turbo al aterrizar dura un 65% más. También se defiende en la trocha.',
+    id: 'montanero', num: 8, name: 'El Montañero', color: '#b8d000', // i18n-ignore: car names are proper names
+    blurb: loc('Busca las rampas y haz una pirueta: el turbo al aterrizar dura un 65% más. También se defiende en la trocha.'),
     stats: { Velocidad: 0.78, 'Aceleración': 0.8, Manejo: 0.74, Peso: 0.7 },
     tune: { top: 36.5, accel: 22, turn: 2.4, mass: 1.05, grip: 6.5, offroadResist: 0.12, trickBoost: 1.65 },
     horn: 'grave',
   },
   // The Taller bodies, numbers 9–16 (same smooth builder as the classics).
   {
-    id: 'escarabajo', num: 9, name: 'La Pulga', color: '#f5b82e',
-    blurb: 'Chiquita, liviana y saltarina: dobla en una moneda. Su turbo de derrape carga un 15% más rápido.',
+    id: 'escarabajo', num: 9, name: 'La Pulga', color: '#f5b82e', // i18n-ignore: car names are proper names
+    blurb: loc('Chiquita, liviana y saltarina: dobla en una moneda. Su turbo de derrape carga un 15% más rápido.'),
     stats: { Velocidad: 0.55, 'Aceleración': 0.85, Manejo: 0.9, Peso: 0.25 },
     tune: { top: 35, accel: 24.5, turn: 2.7, mass: 0.75, grip: 6.4, driftCharge: 1.15, driftBoost: 1.05 },
     horn: 'meep',
   },
   {
-    id: 'sedan', num: 10, name: 'El Caprichoso', color: '#e8323c',
-    blurb: 'Un sedán del 70, cómodo y parejo: bueno pa’ empezar. Pegado a un rival, su rebufo dura un 15% más.',
+    id: 'sedan', num: 10, name: 'El Caprichoso', color: '#e8323c', // i18n-ignore: car names are proper names
+    blurb: loc('Un sedán del 70, cómodo y parejo: bueno pa’ empezar. Pegado a un rival, su rebufo dura un 15% más.'),
     stats: { Velocidad: 0.75, 'Aceleración': 0.65, Manejo: 0.65, Peso: 0.6 },
     tune: { top: 37, accel: 21.5, turn: 2.35, mass: 1.1, grip: 6.2, draftCharge: 1.1, draftBoost: 1.15 },
     horn: 'cucaracha',
   },
   {
-    id: 'buseta', num: 11, name: 'El Por Puesto', color: '#2bb3a3',
-    blurb: 'Lenta pero nadie la mueve: pesa como una gandola. Conserva un 60% de agarre en mojado.',
+    id: 'buseta', num: 11, name: 'El Por Puesto', color: '#2bb3a3', // i18n-ignore: car names are proper names
+    blurb: loc('Lenta pero nadie la mueve: pesa como una gandola. Conserva un 60% de agarre en mojado.'),
     stats: { Velocidad: 0.55, 'Aceleración': 0.5, Manejo: 0.5, Peso: 1.0 },
     tune: { top: 35.5, accel: 19.5, turn: 2.05, mass: 1.5, grip: 6.2, wetFloor: 0.6, draftBoost: 1.15 },
     horn: 'grave',
   },
   {
-    id: 'pickup', num: 12, name: 'El Burro', color: '#ff7a1a',
-    blurb: 'Carga de todo y empuja a todos. Quita un 15% del castigo del barro y su rebufo dura un 20% más.',
+    id: 'pickup', num: 12, name: 'El Burro', color: '#ff7a1a', // i18n-ignore: car names are proper names
+    blurb: loc('Carga de todo y empuja a todos. Quita un 15% del castigo del barro y su rebufo dura un 20% más.'),
     stats: { Velocidad: 0.68, 'Aceleración': 0.5, Manejo: 0.55, Peso: 0.9 },
     tune: { top: 36, accel: 20, turn: 2.15, mass: 1.4, grip: 7, offroadResist: 0.15, draftBoost: 1.2 },
     horn: 'grave',
   },
   {
-    id: 'jeep', num: 13, name: 'El Chigüire', color: '#3fa856',
-    blurb: 'Abierto y trepador, feliz en el barro como un chigüire: le quita un 25% del castigo a la trocha.',
+    id: 'jeep', num: 13, name: 'El Chigüire', color: '#3fa856', // i18n-ignore: car names are proper names
+    blurb: loc('Abierto y trepador, feliz en el barro como un chigüire: le quita un 25% del castigo a la trocha.'),
     stats: { Velocidad: 0.68, 'Aceleración': 0.75, Manejo: 0.72, Peso: 0.6 },
     tune: { top: 36, accel: 23, turn: 2.45, mass: 1.1, grip: 7.4, offroadResist: 0.25 },
     horn: 'meep',
   },
   {
-    id: 'hatch', num: 14, name: 'La Chispa', color: '#7b4dff',
-    blurb: 'Pequeña y brava, arranca como ninguna. Después de una pirueta su turbo dura un 30% más.',
+    id: 'hatch', num: 14, name: 'La Chispa', color: '#7b4dff', // i18n-ignore: car names are proper names
+    blurb: loc('Pequeña y brava, arranca como ninguna. Después de una pirueta su turbo dura un 30% más.'),
     stats: { Velocidad: 0.75, 'Aceleración': 0.95, Manejo: 0.8, Peso: 0.35 },
     tune: { top: 37, accel: 26, turn: 2.55, mass: 0.9, grip: 6.6, trickBoost: 1.3, driftCharge: 1.05 },
     horn: 'fiesta',
   },
   {
-    id: 'rustico', num: 15, name: 'El Tepuy', color: '#f2efe6',
-    blurb: 'Pesado como una montaña y no lo para nadie. Agarra en mojado (50%) y resiste un 20% el barro.',
+    id: 'rustico', num: 15, name: 'El Tepuy', color: '#f2efe6', // i18n-ignore: car names are proper names
+    blurb: loc('Pesado como una montaña y no lo para nadie. Agarra en mojado (50%) y resiste un 20% el barro.'),
     stats: { Velocidad: 0.68, 'Aceleración': 0.6, Manejo: 0.5, Peso: 0.8 },
     tune: { top: 36, accel: 21.5, turn: 2.2, mass: 1.3, grip: 7.8, offroadResist: 0.2, wetFloor: 0.5 },
     horn: 'grave',
   },
   {
-    id: 'malibu', num: 16, name: 'La Reina', color: '#2f6bff',
-    blurb: 'Motorzote V8: corre mucho y cuesta frenarla. Su rebufo carga un 15% más rápido y dura un 25% más.',
+    id: 'malibu', num: 16, name: 'La Reina', color: '#2f6bff', // i18n-ignore: car names are proper names
+    blurb: loc('Motorzote V8: corre mucho y cuesta frenarla. Su rebufo carga un 15% más rápido y dura un 25% más.'),
     stats: { Velocidad: 0.92, 'Aceleración': 0.6, Manejo: 0.5, Peso: 0.75 },
     tune: { top: 38.8, accel: 20.5, turn: 2.2, mass: 1.2, grip: 5.8, draftCharge: 1.15, draftBoost: 1.25 },
     horn: 'cucaracha',

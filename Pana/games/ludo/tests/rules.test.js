@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LudoGame, HOME, RING, SAFE, cellFor, rotateCell, ringIndex, legalMoves, chooseMove } from '../public/rules.js';
+import { LudoGame, HOME, RING, SAFE, cellFor, rotateCell, ringIndex, legalMoves, chooseMove, eventText } from '../public/rules.js';
 import { starterResult } from '../../../engine/play/quien-empieza-rules.js';
 // Skips ¿Quién empieza?: seat 0 starts.
 const game = () => { const g=new LudoGame(123);g.addPlayer(1,'Juan',{hat:'gorra'});g.addPlayer(2,'Ana',{});g.start();g.phase='playing';g.starter=null;return g; };
@@ -21,12 +21,12 @@ test('a match opens with the cachos; the highest starts and nobody moves yet',()
   cachos(g);
   const { order, rolls }=starterResult(g.starter);
   assert.equal(g.phase,'playing');assert.equal(g.turn,order[0]);assert.equal(g.starter.slammed[0]??.8,.8);
-  assert.match(g.event,new RegExp(`Empieza ${g.players[order[0]].name} con ${rolls[order[0]]}`));
+  assert.match(eventText(g.event),new RegExp(`Empieza ${g.players[order[0]].name} con ${rolls[order[0]]}`));
   assert.ok(g.players.every(p=>p.pieces.every(v=>v===-1)));
 });
 test('room option: al azar starts at once, revancha puts the last place first',()=>{
   const g=new LudoGame(4);g.options.starter='azar';g.start();
-  assert.equal(g.phase,'playing');assert.match(g.event,/^Orden al azar: ¡Empieza/);
+  assert.equal(g.phase,'playing');assert.match(eventText(g.event),/^Orden al azar: ¡Empieza/);
   g.options.starter='revancha';g.players[0].pieces=[56,56,56,55];g.players[2].pieces=[40,-1,-1,-1];g.die=1;g.turn=0;g.move(3);
   assert.equal(g.phase,'finished');assert.equal(g.lastPlace,3,'Beto never left the yard');
   g.start();cachos(g);assert.equal(g.turn,3);
@@ -136,7 +136,7 @@ test('assisted entry bounds droughts equally for every seat, including late-game
       assert.equal(g.entryMisses[seat],attempt+1);
     }
     const restored=LudoGame.restore(g.snapshot(),new Map());restored.turn=seat;restored.rng=seedFor([2]);restored.roll();
-    assert.equal(restored.lastDie,6);assert.match(restored.event,/Salida asistida/);
+    assert.equal(restored.lastDie,6);assert.match(eventText(restored.event),/Salida asistida/);
     restored.stepAutomatic(restored.autoMove.remaining+.01);assert.equal(restored.players[seat].pieces[2],0);
     assert.equal(restored.entryMisses[seat],0);
     restored.phase='finished';restored.start();assert.deepEqual(restored.entryMisses,[0,0,0,0]);

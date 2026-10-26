@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, acceptAction, finishShot, step, rack, legalTarget, canPlace, advanceShotClock, botShot } from '../public/rules.js';
+import { createGame, acceptAction, finishShot, step, rack, legalTarget, canPlace, advanceShotClock, botShot, messageText } from '../public/rules.js';
 import { poolConnected, defaultPoolOptions, poolOptions } from '../public/match-rules.js';
 
 function table(count = 6, options = {}) {
@@ -91,7 +91,7 @@ test('kitchen placement restricts the cue ball and prohibits contact before leav
   Object.assign(s.balls[1], { x: 160, y: 100 });
   assert.ok(act(s, 'shoot', { angle: 0, power: .05 }));
   for (let i = 0; i < 4000 && s.phase === 'rolling'; i++) step(s);
-  assert.equal(s.ballInHand, true); assert.match(s.message, /cocina/);
+  assert.equal(s.ballInHand, true); assert.match(messageText(s.message), /cocina/);
 });
 test('shot clock passes to the next team and survives snapshot restore without reset', () => {
   const s = table(6, { shotSeconds: 30 }); advanceShotClock(s, 29);

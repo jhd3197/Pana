@@ -17,7 +17,7 @@ export const CAIMAN = Object.freeze({ reach: 3, tip: 40, jolt: 2.2 });
 export const AUTO = Object.freeze({ gap: .42, power: 1.05 });
 export const BOAT = Object.freeze({ drag: .6, grip: 5, yawDamp: 2.6, brake: 2.6, reverse: -1.1, half: .62, length: 2.9, rudderSpeed: 3 });
 export const COLORS = ['#e2683c', '#2f9e8f', '#e6b33a', '#7a5bc4', '#d64f7a', '#4d8fd6', '#8fb84a', '#c9824a'];
-const BOT_NAMES = ['Yanomami', 'Tuki', 'Arekuna', 'Wayuu', 'Chamán', 'Kerepakupai', 'Piaroa', 'Maipure', 'Yekuana', 'Sanema', 'Baré', 'Curripaco'];
+const BOT_NAMES = ['Yanomami', 'Tuki', 'Arekuna', 'Wayuu', 'Chamán', 'Kerepakupai', 'Piaroa', 'Maipure', 'Yekuana', 'Sanema', 'Baré', 'Curripaco']; // i18n-ignore: bot names
 const BOT_OUTFITS = ['#d6553d', '#3f8f7a', '#e1a83a', '#6c58b8', '#c94f74', '#4a86c8', '#7fa848', '#b97a46'];
 const START = { rows: [26, 18.5, 11, 3.5], offsets: [-2.1, 2.1] };
 
@@ -355,7 +355,7 @@ export class Race {
     if (this.time - (this.snaps[c.id] ?? -99) < 4 || !this.hull(b).some(p => Math.hypot(p.x - c.x, p.z - c.z) < CAIMAN.reach)) return;
     this.snaps[c.id] = this.time;
     b.lat += away * CAIMAN.jolt; b.v *= .6; b.jolt = .6; b.lastHitSide = -away; b.bitten = (b.bitten || 0) + 1; b.caimanAt = this.time;
-    this.tip(b, CAIMAN.tip, 'caimán');
+    this.tip(b, CAIMAN.tip, 'caimán'); // i18n-ignore: tip cause id
   }
   // Canoe against canoe: circles with mass. Bumping someone is fair play.
   collide() {
@@ -400,7 +400,7 @@ export class Race {
     const tx = Math.sin(target.h), tz = Math.cos(target.h), px = dx / d * SALPICON.shove, pz = dz / d * SALPICON.shove;
     target.lat += -px * tz + pz * tx; target.v += px * tx + pz * tz;
     target.sprayed = SALPICON.spray; target.lastHitSide = -side; target.splashedBy = b.id; target.splashedAt = this.time;
-    this.tip(target, SALPICON.tip, 'salpicón');
+    this.tip(target, SALPICON.tip, 'salpicón'); // i18n-ignore: tip cause id
   }
   advance(b) {
     const river = this.river, w = river.locate(b.x, b.z, b), delta = w.s - b.s;

@@ -196,6 +196,16 @@ walking with `stepExplorer` unless they grip a treasure or are dragged.
 Late arrivals start at the camp; joiners during results wait as
 spectators. A departing pana drops both hands.
 
+## Languages
+
+The host's events and `interaction()` prompts carry a Spanish key
+(`locKey`) in `text` plus `vars`; every client shows them with `say()` from
+`items.js`. An item kind travels as `vars.item`/`vars.other` and becomes its
+name in the viewer's language (`{item}` lower case, `{Item}` as written),
+numbers are formatted there and `vars.place` is a floor name. Never put an
+item name or a formatted amount into an event: the host's language would
+reach every client.
+
 ## Verification
 
 ```powershell

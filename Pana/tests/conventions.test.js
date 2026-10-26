@@ -457,3 +457,36 @@ test('the shared side-menu sala is the default for every game', () => {
   const sala = read(path.join(app, 'engine/sala.js'));
   assert.ok(sala.includes('if (!config)'), 'games without workshop metadata still receive the common layout');
 });
+
+// Languages (docs/knowledge/pana-i18n.md). Spanish is the source and the key;
+// every phrase a player sees has its English, and player text in code goes
+// through loc(), so a new string can never ship untranslated.
+test('every phrase players see has its English (npm run i18n -- check)', async () => {
+  const { problems } = await import('../scripts/i18n.js');
+  assert.deepEqual(problems(), []);
+});
+
+// Spanish literals outside loc() per file, as counted by `npm run i18n --
+// literals`. A file may only lose them; one not listed has none. When a count
+// drops, lower it here in the same change so it cannot creep back.
+test('player text goes through loc(): Spanish literals never grow', async () => {
+  const { literals, sources, SHARED, games: localized } = await import('../scripts/i18n.js');
+  const allowed = JSON.parse(read(path.join(app, 'tests', 'i18n-literals.json')));
+  const problems = [], seen = new Set();
+  for (const file of [...sources(SHARED), ...localized.flatMap(sources)].filter(f => /\.m?js$/.test(f))) {
+    const name = rel(file), count = literals(read(file)).sure.length, cap = allowed[name] ?? 0;
+    seen.add(name);
+    if (count > cap) problems.push(`${name}: ${count} Spanish literals outside loc() (allowed ${cap}); npm run i18n -- literals --show`);
+    else if (count < cap) problems.push(`${name}: down to ${count}; lower its count in tests/i18n-literals.json`);
+  }
+  for (const name of Object.keys(allowed)) if (!seen.has(name)) problems.push(`${name}: listed in tests/i18n-literals.json but gone`);
+  assert.deepEqual(problems, []);
+});
+
+test('scaffolds start translated: loc() in code and an English locale file', () => {
+  for (const kind of ['table', 'live']) {
+    const root = path.join(app, 'scripts', 'templates', kind, 'public');
+    assert.ok(read(path.join(root, 'game.js.tmpl')).includes("from '/engine/i18n.js'"), `${kind}: scaffold game.js must use loc()`);
+    assert.ok(fs.existsSync(path.join(root, 'locales', 'en.json.tmpl')), `${kind}: scaffold misses public/locales/en.json`);
+  }
+});

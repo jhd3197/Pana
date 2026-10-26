@@ -63,6 +63,13 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
 
 ## Notes for agents
 
+- `hostLine` and each callout are `{ text, vars }`: Spanish source marked
+  `locKey()` plus its variables, so every client reads them in its own
+  language through `lineText()` (rules.js). A `category` variable is
+  translated too; names, trivia answers and the dicho stay as they are.
+  Questions, answers and narration (`questions.js`, `voice-key.js`) stay
+  Spanish: the recordings are keyed by that text.
+
 - In the headless browser suites the game view renders at 2–4 fps (software
   WebGL, plaza included; Dominó is the same). Playwright's stability check
   then never passes on HUD buttons: the suite clicks them with

@@ -1,7 +1,8 @@
 import { optionDefaults, applyRoomOptions } from '/engine/room-options-rules.js';
+import { loc } from '/engine/i18n.js';
 export const ROOM_OPTIONS = [
-  { id: 'target', label: 'Meta', default: {{target}}, choices: [[{{target}}, '{{target}} puntos'], [{{target}} * 2, 'Partida larga']] },
-  { id: 'cpuSeconds', label: 'Velocidad de bots', default: .85, advanced: true, choices: [[.85, 'Normal'], [.35, 'Rápida']] },
+  { id: 'target', label: loc('Meta'), default: {{target}}, choices: [[{{target}}, loc('{n} puntos', { n: {{target}} })], [{{target}} * 2, loc('Partida larga')]] },
+  { id: 'cpuSeconds', label: loc('Velocidad de bots'), default: .85, advanced: true, choices: [[.85, loc('Normal')], [.35, loc('Rápida')]] },
 ];
 export const defaultOptions = () => optionDefaults(ROOM_OPTIONS);
 export const roomOptions = (current, patch) => applyRoomOptions(ROOM_OPTIONS, current, patch);

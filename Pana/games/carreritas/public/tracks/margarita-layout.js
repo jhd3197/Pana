@@ -1,3 +1,4 @@
+// i18n-ignore-file: track signage and place names stay Spanish.
 import { clamp, lerp } from '/engine/random.js';
 import { fairRoute, fairHeights } from '/engine/worlds/coastal/coastal-road.js';
 import * as THREE from 'three';

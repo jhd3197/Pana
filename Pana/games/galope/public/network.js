@@ -1,12 +1,13 @@
 import {Race,cleanInput,stepRider} from './rules.js';
 import {LiveRoom} from '/engine/live-room.js';
+import { loc } from '/engine/i18n.js';
 
 // Host simulation on the shared live room (engine/live-room.js), with snapshot migration.
 export class RaceRoom extends LiveRoom {
   constructor({coat,...options}){
     super({...options,game:'galope',protocol:'galope-v2',texts:{
-      connecting:'Conectando con el hato…',full:'Sala llena. Abre una carrera local.',
-      lost:'Se perdió la conexión. Reconectando…',offline:'Sin conexión. Puedes correr en local.'}},{valid:state=>Array.isArray(state?.players),
+      connecting:loc('Conectando con el hato…'),full:loc('Sala llena. Abre una carrera local.'),
+      lost:loc('Se perdió la conexión. Reconectando…'),offline:loc('Sin conexión. Puedes correr en local.')}},{valid:state=>Array.isArray(state?.players),
       // Your own horse answers at once; the host corrects it.
       predict:{
         body:(state,id)=>state.phase==='racing'?state.players.find(p=>p.id===id&&!p.spectator&&p.finish===null):null,
@@ -16,7 +17,7 @@ export class RaceRoom extends LiveRoom {
   }
   cleanInput(raw){return cleanInput(raw);}
   hello(){return {coat:this.coat};}
-  statusText(){return `${this.members.size}/8 panas · ${this.isHost?'tú das la salida':'el anfitrión da la salida'}`;}
+  statusText() { const n = this.members.size; return this.isHost ? loc('{n}/8 panas · tú das la salida', { n }) : loc('{n}/8 panas · el anfitrión da la salida', { n }); }
   takeOver(previous){
     super.takeOver(previous);
     this.game=Race.restore(this.state,this.members);
@@ -29,5 +30,5 @@ export class RaceRoom extends LiveRoom {
   choose(coat){this.coat=coat;const m=this.members.get(this.id);if(m)m.coat=coat;if(this.isHost){this.game.addPlayer(this.id,this.name,this.avatar,coat);this.publish();}else this.send({kind:'hello',avatar:this.avatar,coat});}
   configure(patch){if(this.isHost&&this.game?.configure(patch))this.publish();}
   start(bots=this.state.options.bots){if(this.isHost&&this.connected&&['lobby','finished'].includes(this.game.phase)){this.game.start(bots);this.publish();}}
-  practice(){const local=new Race();local.configure(this.state.options);this.state=local.snapshot();super.practice('Carrera local · tú y los jinetes');}
+  practice(){const local=new Race();local.configure(this.state.options);this.state=local.snapshot();super.practice(loc('Carrera local · tú y los jinetes'));}
 }

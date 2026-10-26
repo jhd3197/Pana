@@ -10,6 +10,7 @@ import { roomCode, bootGame } from '/engine/game-shell.js';
 import { {{Class}}Room } from './network.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
+import { loc, locn } from '/engine/i18n.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
@@ -20,11 +21,11 @@ const room = new {{Class}}Room({ code, name: loadName(), avatar: loadAvatar(), o
 });
 const roomOptions = createRoomOptions($('room-options'), { title: '{{name}}', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ title: '{{name}} · Pana', sound, orientation: 'libre',
+const menu = createGameMenu({ title: '{{name}} · Pana', sound, orientation: 'libre', // i18n-ignore: the game's name
   pad: { move: 'wasd' },
-  note: () => room.members.size > 1 ? 'La ronda sigue mientras estás en el menú.' : 'La ronda está en pausa.',
-  controls: [['W A S D / flechas', 'Correr'], ['Toque', 'Flechas en pantalla'], ['M', 'Activar o silenciar el sonido']],
-  tips: ['Recoge todos los mangos que puedas antes de que termine la ronda.', 'Si estás solo, unos bots corren contigo.'],
+  note: () => room.members.size > 1 ? loc('La ronda sigue mientras estás en el menú.') : loc('La ronda está en pausa.'),
+  controls: [[loc('W A S D / flechas'), loc('Correr')], [loc('Toque'), loc('Flechas en pantalla')], ['M', loc('Activar o silenciar el sonido')]],
+  tips: [loc('Recoge todos los mangos que puedas antes de que termine la ronda.'), loc('Si estás solo, unos bots corren contigo.')],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
@@ -58,16 +59,16 @@ function render(state) {
   if (!lobby && roomOptions.isOpen) roomOptions.close();
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby;
   $('start').disabled = !world || !room.connected || !room.isHost;
-  $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A correr!' : 'Espera al anfitrión';
+  $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? loc('¡A correr!') : loc('Espera al anfitrión');
   const ranked = [...state.players].sort((a, b) => b.score - a.score);
-  const rows = ranked.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? `${p.name} · tú` : p.name, detail: p.bot ? 'Bot' : 'Pana', end: p.score, score: true, me: p.id === room.id }));
+  const rows = ranked.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? loc('{name} · tú', { name: p.name }) : p.name, detail: p.bot ? loc('Bot') : loc('Pana'), end: p.score, score: true, me: p.id === room.id }));
   fillRoster($('roster'), rows);
   const me = state.players.find(p => p.id === room.id);
   $('timer').textContent = `${Math.ceil(state.time)} s`;
-  $('score').textContent = `${me?.score ?? 0} mangos`;
+  $('score').textContent = locn(me?.score ?? 0, '{n} mango', '{n} mangos');
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
   if (ended) {
-    $('result-title').textContent = `¡Ganó ${ranked[0]?.name ?? 'nadie'}!`;
+    $('result-title').textContent = ranked[0] ? loc('¡Ganó {name}!', { name: ranked[0].name }) : loc('¡Ganó nadie!');
     fillRoster($('result-roster'), rows);
   }
   world?.update(state);

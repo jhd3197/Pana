@@ -1,26 +1,27 @@
 // Player settings shared by the hub and every game, saved as `pana:settings`.
 // Games read them through the menu in /engine/ui.js; the hub edits the same
 // values. Storage can be disabled, so every value has a working default.
+import { loc, LANGUAGES } from './i18n.js';
 
 const KEY = 'pana:settings';
 
 // A quality is a preset: it sets the three picture knobs below. Changing one
 // knob by hand turns the preset into 'custom' (Personalizada).
 export const QUALITY = {
-  alta: { label: 'Nítida', resolution: 2, shadows: 'alta', detail: 'alta' },
-  media: { label: 'Equilibrada', resolution: 1.5, shadows: 'media', detail: 'media' },
-  baja: { label: 'Rápida', resolution: 1, shadows: 'baja', detail: 'baja' },
+  alta: { label: loc('Nítida'), resolution: 2, shadows: 'alta', detail: 'alta' },
+  media: { label: loc('Equilibrada'), resolution: 1.5, shadows: 'media', detail: 'media' },
+  baja: { label: loc('Rápida'), resolution: 1, shadows: 'baja', detail: 'baja' },
 };
 const PRESET_KEYS = ['resolution', 'shadows', 'detail'];
 // Pixel-ratio cap: rendered pixels per CSS pixel, never above the screen's own.
 export const RESOLUTIONS = [[0.75, '75 %'], [1, '100 %'], [1.5, '150 %'], [2, '200 %']];
 // Shadow-map edge relative to what a scene was designed with. 'off' disables
 // shadows on every bound renderer at once.
-export const SHADOWS = { alta: { label: 'Altas', scale: 1 }, media: { label: 'Medias', scale: 0.5 }, baja: { label: 'Bajas', scale: 0.25 }, off: { label: 'Sin sombras', scale: 0.25 } };
+export const SHADOWS = { alta: { label: loc('Altas'), scale: 1 }, media: { label: loc('Medias'), scale: 0.5 }, baja: { label: loc('Bajas'), scale: 0.25 }, off: { label: loc('Sin sombras'), scale: 0.25 } };
 // World density in games that have optional detail (grass, far trees, rain).
-export const DETAIL = { alta: 'Alto', media: 'Medio', baja: 'Bajo' };
+export const DETAIL = { alta: loc('Alto'), media: loc('Medio'), baja: loc('Bajo') };
 // Frames drawn per second; 0 draws every frame the screen shows.
-export const FPS_CAPS = [[0, 'Sin límite'], [60, '60'], [30, '30']];
+export const FPS_CAPS = [[0, loc('Sin límite')], [60, '60'], [30, '30']];
 
 // A phone (touch only) starts on Equilibrada: at Nítida it draws four pixels
 // per CSS pixel. Desktops start sharp. A saved choice always wins.
@@ -46,7 +47,9 @@ export const DEFAULTS = Object.freeze({
   padDeadzone: .18, padMoveSensitivity: 1, padLookSensitivity: 1,
   padVertical: 1, padInvertY: false, padCurve: 'lineal',
   padCursorSpeed: 1, padVibration: true,
+  language: 'auto', // 'auto' follows the browser; see engine/i18n.js
 });
+export const LANGUAGE_CHOICES = ['auto', ...LANGUAGES.map(l => l.code)];
 const ORIENTATION_CHOICES = ['juego', 'horizontal', 'vertical'];
 export const INPUT_RANGES = Object.freeze({mouseSensitivity:[.25,3],mouseVertical:[.25,2],touchSensitivity:[.25,3],padDeadzone:[0,.4],padMoveSensitivity:[.5,2],padLookSensitivity:[.25,3],padVertical:[.25,2],padCursorSpeed:[.25,3]});
 const INPUT_CHOICES={inputHints:['auto','keyboard','gamepad','touch'],padFamily:['auto','xbox','playstation','nintendo','generic'],padCurve:['lineal','suave','rapida']};
@@ -71,6 +74,7 @@ export function normalizeSettings(raw = {}) {
   out.quality = presetOf(out);
   for (const key of SWITCHES) if (typeof raw[key] === 'boolean') out[key] = raw[key];
   if (ORIENTATION_CHOICES.includes(raw.orientation)) out.orientation = raw.orientation;
+  if (LANGUAGE_CHOICES.includes(raw.language)) out.language = raw.language;
   for(const [key,[min,max]] of Object.entries(INPUT_RANGES))if(Number.isFinite(raw[key]))out[key]=Math.max(min,Math.min(max,raw[key]));
   for(const [key,choices] of Object.entries(INPUT_CHOICES))if(choices.includes(raw[key]))out[key]=raw[key];
   return out;
@@ -80,7 +84,7 @@ export function normalizeSettings(raw = {}) {
 // to this page only and are never saved, so a benchmark, a suite or a friend
 // with a link sees exactly those settings without touching anyone's choices.
 const URL_KEYS = { quality: String, resolution: Number, shadows: String, detail: String, fps: ['fpsCap', Number],
-  autoscale: ['autoScale', Boolean], antialias: Boolean, stats: ['perfOverlay', Boolean], sound: Boolean };
+  autoscale: ['autoScale', Boolean], antialias: Boolean, stats: ['perfOverlay', Boolean], sound: Boolean, language: String };
 export function parseUrlSettings(search = '') {
   const out = {}, params = new URLSearchParams(search);
   for (const [name, spec] of Object.entries(URL_KEYS)) {

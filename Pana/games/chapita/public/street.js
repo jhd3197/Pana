@@ -50,7 +50,7 @@ function parkedCar(id, seed) {
 
 // One field; the scene adds the panas, the señora included, at field.senora.
 export function createField(map = 'calle') {
-  const group = new THREE.Group(); group.name = map === 'cancha' ? 'La cancha del bloque' : 'La calle del barrio';
+  const group = new THREE.Group(); group.name = map === 'cancha' ? 'La cancha del bloque' : 'La calle del barrio';   // i18n-ignore: object name
   const animated = [], random = rng(map === 'cancha' ? 77 : 41);
   const window = FIELD.window, windowX = (window.x0 + window.x1) / 2;
   if (map === 'cancha') buildCourt(group, animated, random); else buildStreet(group, animated, random);
@@ -70,7 +70,7 @@ export function createField(map = 'calle') {
   // A chalk diamond on the street: home → 1st → 2nd → 3rd → home, the bases
   // as square bags turned on their corner, each with its number beside it.
   const chalk = new THREE.MeshBasicMaterial({ color: '#fffaf0', transparent: true, opacity: .8, depthWrite: false });
-  const diamond = new THREE.Group(); diamond.name = 'Diamante de tiza'; group.add(diamond);
+  const diamond = new THREE.Group(); diamond.name = 'Diamante de tiza'; group.add(diamond);   // i18n-ignore: object name
   const corners = [{ x: 0, z: 0 }, ...BASES, { x: 0, z: 0 }];
   for (let i = 0; i < 4; i++) {
     const a = corners[i], b = corners[i + 1], length = Math.hypot(b.x - a.x, b.z - a.z);

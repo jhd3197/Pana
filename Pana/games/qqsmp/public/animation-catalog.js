@@ -1,3 +1,4 @@
+// i18n-ignore-file: workbench take names, used as ids and never shown to players.
 // Alternate takes supplied in the quiz animation workbench.
 export const VARIANTS={think:[['classic','Mano en la barbilla'],['count','Contando con los dedos'],['bulb','Se le prende el bombillo'],['scratch','Rascándose la cabeza'],['tinmarin','De tin marín']],
  lock:[['classic','Golpe al botón'],['finger','Pistolitas'],['shy','Con miedito'],['drama','Dramático'],['drum','Tamborero'],['chill','Relajado']],

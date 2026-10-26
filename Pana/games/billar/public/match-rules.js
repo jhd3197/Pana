@@ -1,16 +1,17 @@
 import { optionDefaults, applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { STARTER_FIELD } from '../../../engine/play/quien-empieza-rules.js';
+import { loc } from '../../../engine/i18n.js';
 
 export const POOL_OPTIONS = [
-  { id: 'variant', label: 'Modo', default: 'eight', choices: [['eight', 'Bola 8'], ['nine', 'Bola 9']] },
-  { id: 'format', label: 'Jugadores', default: 'teams', choices: [['duel', 'Individual · 1 contra 1'], ['teams', 'Por equipos']] },
-  { id: 'venue', label: 'Mesa', default: 'plaza', choices: [['plaza', 'Plaza'], ['cafe', 'Café']] },
-  { id: 'guide', label: 'Ayuda de tiro', default: 'difficulty', choices: [['difficulty', 'Según dificultad'], ['long', 'Larga'], ['short', 'Corta'], ['none', 'Sin ayuda']] },
-  { id: 'breakPolicy', label: 'Saque', default: 'alternate', advanced: true, choices: [['alternate', 'Alterno'], ['winner', 'Ganador'], ['loser', 'Perdedor']] },
-  { id: 'foulPlacement', label: 'Falta', default: 'anywhere', advanced: true, choices: [['anywhere', 'Bola en mano'], ['kitchen', 'Cocina']] },
-  { id: 'calledPocket', label: 'Cantar tronera', default: false, advanced: true, choices: [[true, 'Sí'], [false, 'No']] },
-  { id: 'bestOf', label: 'Mejor de', default: 1, advanced: true, choices: [[1, '1'], [3, '3'], [5, '5']] },
-  { id: 'shotSeconds', label: 'Tiempo por tiro', default: 0, advanced: true, choices: [[30, '30 s'], [60, '60 s'], [0, 'Sin límite']] },
+  { id: 'variant', label: loc('Modo'), default: 'eight', choices: [['eight', loc('Bola 8')], ['nine', loc('Bola 9')]] },
+  { id: 'format', label: loc('Jugadores'), default: 'teams', choices: [['duel', loc('Individual · 1 contra 1')], ['teams', loc('Por equipos')]] },
+  { id: 'venue', label: loc('Mesa'), default: 'plaza', choices: [['plaza', loc('Plaza')], ['cafe', loc('Café')]] },
+  { id: 'guide', label: loc('Ayuda de tiro'), default: 'difficulty', choices: [['difficulty', loc('Según dificultad')], ['long', loc('Larga')], ['short', loc('Corta')], ['none', loc('Sin ayuda')]] },
+  { id: 'breakPolicy', label: loc('Saque'), default: 'alternate', advanced: true, choices: [['alternate', loc('Alterno')], ['winner', loc('Ganador')], ['loser', loc('Perdedor')]] },
+  { id: 'foulPlacement', label: loc('Falta'), default: 'anywhere', advanced: true, choices: [['anywhere', loc('Bola en mano')], ['kitchen', loc('Cocina')]] },
+  { id: 'calledPocket', label: loc('Cantar tronera'), default: false, advanced: true, choices: [[true, loc('Sí')], [false, loc('No')]] },
+  { id: 'bestOf', label: loc('Mejor de'), default: 1, advanced: true, choices: [[1, '1'], [3, '3'], [5, '5']] },
+  { id: 'shotSeconds', label: loc('Tiempo por tiro'), default: 0, advanced: true, choices: [[30, '30 s'], [60, '60 s'], [0, loc('Sin límite')]] },
   STARTER_FIELD,
 ];
 export const defaultPoolOptions = () => optionDefaults(POOL_OPTIONS);

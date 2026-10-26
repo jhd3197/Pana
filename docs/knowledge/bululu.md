@@ -31,6 +31,13 @@ The host runs the board's async turn flow and publishes typed presentation and
 game snapshots at 10 Hz. A choice carries a prompt ID and is accepted only from
 its owner; stale and duplicate clicks cannot advance another player's turn.
 `online-view.js` reconstructs presentation with text nodes, never network HTML.
+The plank, sign, count, toasts, winner card, minigame intro and prompts
+travel as Spanish sources (a string or `[source, vars]`), never as the
+host's screen text: `setLine`/`setLines`/`setKeys` remember the source on
+the element and `readPresentation` sends that, so each guest shows it in
+its own language with `line()`. A minigame's `title`, `howto`, `keys` and
+`touch.action` are `locKey()` sources for the same reason; bubbles and
+`hint()` are drawn by each client's own replay and use `loc()` directly.
 Opening the menu blocks that player's controls but does not pause an online room.
 
 Minigames receive an array of per-seat controls through `inputFor()`; the old

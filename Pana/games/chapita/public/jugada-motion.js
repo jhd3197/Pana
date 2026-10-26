@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { createChapita, createPalo, createTuyuyo, createPaloPartido, createPerro, createBolaDePaja, PALO_BREAK } from './studio-set.js';
 import { hsh } from './jugada-fx.js';
 import { JUGADAS } from './jugadas.js';
+import { loc } from '/engine/i18n.js';
 
 const V3 = THREE.Vector3;
 const clamp01 = x => Math.min(1, Math.max(0, x));
@@ -34,7 +35,7 @@ export const DURATION = { hit: .9, swing: .4, miss: 2.2, helicopter: 2.4, pitch:
 
 // root: where temporary props go. fx: createJugadaFx. sfx(name): a sound.
 export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
-  const props = new THREE.Group(); props.name = 'Jugadas · utilería'; root.add(props);
+  const props = new THREE.Group(); props.name = 'Jugadas · utilería'; root.add(props);   // i18n-ignore: object name
   const touched = new Map();   // character → what to restore
   let id = null, c = null, last = -1, shake = 0, cap = null, hideCap = false, shot = null;
   const temp = [];             // props built for this jugada, freed on stop
@@ -105,7 +106,7 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       const big = c.big; c.cue('hit', 0);
       fx.flash(c.contact, a, big ? 2.4 : 1.7); fx.burst(c.contact, a, { count: big ? 16 : 11, radius: big ? 2 : 1.4, multi: big });
       fx.dust(feet(c.batter), a, { count: 10, size: .5, spread: 1.1, seed: 3 }); shakeBy(big ? .16 : .09, a);
-      fx.text('¡PRAAA!', '#ffd23f', up(c.contact, 1.3 * k), a, { life: 1.3, size: 1.3 });
+      fx.text(loc('¡PRAAA!'), '#ffd23f', up(c.contact, 1.3 * k), a, { life: 1.3, size: 1.3 });
       face(c.batter, { open: a < .25 ? .4 : 1, mouth: a > .3 ? 'smile' : 'natural' });
       const now = c.capNow(); if (c.pitcher && now) { keep(c.pitcher); look(c.pitcher, now); face(c.pitcher, { open: 1.3, size: 1.15, mouth: 'talk' }); }
     },
@@ -122,7 +123,7 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       b.body.rotation.y = Math.PI * 1.7 * sp; sitDown(b, sit);
       if (a > .38) { dizzy(b, a); face(b, { open: .9, spin: a * 8, mouth: 'talk' }); fx.dust(feet(b), a - .38, { count: 10, size: .5, spread: 1.1, seed: 5 }); }
       if (p) { p.armR.rotation.set(-2.9 + Math.max(0, Math.sin(a * 12)) * .4, 0, -.2); p.group.position.y += Math.abs(Math.sin(a * 6)) * .12 * k * Math.max(0, 1 - a / 1.5); face(p, { open: .4, mouth: 'laugh' }); }
-      fx.text('¡PONCHAO!', '#ff5a3c', up(headTop(b), .5 * k), a - .3, { hold: true, size: 1.5 });
+      fx.text(loc('¡PONCHAO!'), '#ff5a3c', up(headTop(b), .5 * k), a - .3, { hold: true, size: 1.5 });
     },
     // Strikeout swinging, the other way: the swing lifts the pana off the floor.
     helicopter(a) {
@@ -130,13 +131,13 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       const lift = a < .58 ? smooth((a - .13) / .3) : 1 - easeIn((a - .58) / .16), home = feet(b);
       b.body.rotation.y = a < .74 ? a * a * 6 + a * 4 : 0; b.group.position.y += 1.5 * k * lift;
       if (a < .74) { face(b, { open: .4, mouth: 'smile' }); for (let j = 0; j < 8; j++) { const an = a * 9 + j * Math.PI / 4; fx.puff(home.clone().add(new V3(Math.cos(an) * 1.4 * k, .12, Math.sin(an) * 1.4 * k)), .5, .35 * lift + .1, '#efe4d0'); } }
-      fx.text('¡HELICÓPTERO!', '#7cd8ff', up(home, 3.9 * k), a - .2, { life: 1.6, size: 1.1 });
+      fx.text(loc('¡HELICÓPTERO!'), '#7cd8ff', up(home, 3.9 * k), a - .2, { life: 1.6, size: 1.1 });
       if (p) { p.head.rotation.x = -.35 * lift; face(p, { open: 1.5, size: 1.25, mouth: 'smile' }); }
       if (a > .74) { sitDown(b, smooth((a - .74) / .1)); dizzy(b, a); face(b, { open: .9, spin: a * 8, mouth: 'talk' }); fx.dust(home, a - .74, { count: 12, size: .5, spread: 1.2, seed: 12 }); shakeBy(.06, a - .74, 9); }
     },
     // Strike looking.
     pitch(a) {
-      c.cue('strike', 0); fx.text('¡STRIKE!', '#ffffff', up(headTop(c.batter), .7 * k), a, { life: 1.3, size: 1.1 });
+      c.cue('strike', 0); fx.text(loc('¡STRIKE!'), '#ffffff', up(headTop(c.batter), .7 * k), a, { life: 1.3, size: 1.1 });
       if (c.pitcher) face(keep(c.pitcher), { open: .5, mouth: 'smile' });
     },
     // ¡Strike! ¡Bola! Both shouting, waving the palo.
@@ -145,7 +146,7 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       const lean = .15 * smooth(a / .3);
       if (p) { p.body.rotation.x += lean; p.armR.rotation.set(-1.6 + Math.sin(a * 10) * .35, 0, -.25); p.armL.rotation.set(-.4, 0, 1 + Math.sin(a * 7) * .3); face(p, { open: .6, mouth: talk(p, 18, a) }); }
       b.body.rotation.x += lean; b.armR.rotation.x += Math.sin(a * 9) * .25; face(b, { open: .6, mouth: talk(b, 17, a) }); b.group.position.y += Math.abs(Math.sin(a * 9)) * .05 * k;
-      [[0, '¡STRIKE!', '#7cd8ff', p || b], [.42, '¡BOLA!', '#ff6b5a', b], [.84, '¡STRIKE!', '#7cd8ff', p || b], [1.2, '¡QUE FUE BOLA!', '#ff6b5a', b]].forEach(([o, s, color, ch], j) => {
+      [[0, loc('¡STRIKE!'), '#7cd8ff', p || b], [.42, loc('¡BOLA!'), '#ff6b5a', b], [.84, loc('¡STRIKE!'), '#7cd8ff', p || b], [1.2, loc('¡QUE FUE BOLA!'), '#ff6b5a', b]].forEach(([o, s, color, ch], j) => {
         fx.text(s, color, up(headTop(ch), (.25 + j * .05) * k), a - o, { life: .6, size: .9 + j * .12, tilt: j % 2 ? .12 : -.12 }); c.cue('pop', o);
       });
     },
@@ -158,11 +159,11 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       if (a < .83) { const pos = arc(start, end, q, 2.6); loose.position.copy(pos); loose.rotation.set(Math.PI / 2, 0, 0); loose.rotateOnWorldAxis(new V3(0, 1, 0), q * 40); }
       else { loose.position.copy(end); loose.position.y += Math.abs(Math.sin((a - .83) * 14)) * .1 * Math.exp(-(a - .83) * 5); loose.rotation.set(0, 1.2, Math.PI / 2); }
       b.arms.forEach((arm, i) => arm.rotation.set(-1.25, 0, i ? -.55 : .55)); b.head.rotation.x = .3; face(b, { open: 1.5, size: 1.2, mouth: 'smile' });
-      fx.text('¡Ups!', '#ffffff', up(headTop(b), .3 * k), a - .05, { life: 1.2, size: 1 });
+      fx.text(loc('¡Ups!'), '#ffffff', up(headTop(b), .3 * k), a - .05, { life: 1.2, size: 1 });
       if (p) {
         const duck = pulse(a, .3, .55, .83); p.body.rotation.x += -1.05 * duck; if (duck > 0) p.arms.forEach((arm, i) => arm.rotation.set(-.3, 0, (i ? -1 : 1) * 1.3 * duck));
-        face(p, { open: 1 + .5 * duck, size: 1 + .2 * duck, mouth: 'smile' }); fx.text('¡Ahhh!', '#ffd23f', up(headTop(p), .3 * k), a - .35, { life: .8, size: .9 });
-        if (a > .9) { p.armR.rotation.set(-2.6 + Math.sin(a * 18) * .35, 0, -.3); face(p, { open: .5, mouth: talk(p, 20, a) }); fx.text('¡EPA!', '#ff5a3c', up(headTop(p), .4 * k), a - .9, { hold: true, size: 1.2 }); }
+        face(p, { open: 1 + .5 * duck, size: 1 + .2 * duck, mouth: 'smile' }); fx.text(loc('¡Ahhh!'), '#ffd23f', up(headTop(p), .3 * k), a - .35, { life: .8, size: .9 });
+        if (a > .9) { p.armR.rotation.set(-2.6 + Math.sin(a * 18) * .35, 0, -.3); face(p, { open: .5, mouth: talk(p, 20, a) }); fx.text(loc('¡EPA!'), '#ff5a3c', up(headTop(p), .4 * k), a - .9, { hold: true, size: 1.2 }); }
       }
     },
     // A bent cap that comes back to the pitcher's hand.
@@ -173,39 +174,39 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       const q = clamp01(a / 1.4); cap = a < 1.4 ? c.curve.getPoint(q) : hand;
       for (let j = 1; j <= 5 && a < 1.4; j++) fx.star(c.curve.getPoint(clamp01(q - j * .02)), .3 - j * .04, a * 6 + j, .9 - j * .15, ['#7cd8ff', '#ffd23f', '#ff8fd0'][j % 3]);
       if (a < 1.4) { b.body.rotation.y = q * Math.PI * 2; look(b, cap, 1); face(b, { open: 1.4, size: 1.2, mouth: 'smile' }); }
-      else { dizzy(b, a); face(b, { open: .9, spin: a * 8, mouth: 'talk' }); if (p) { p.armR.rotation.set(-1.45, 0, -.15); face(p, { open: .35, mouth: 'smile' }); } fx.text('¡Bumerán!', '#7cd8ff', up(hand, .8 * k), a - 1.45, { hold: true, size: 1.2 }); }
+      else { dizzy(b, a); face(b, { open: .9, spin: a * 8, mouth: 'talk' }); if (p) { p.armR.rotation.set(-1.45, 0, -.15); face(p, { open: .35, mouth: 'smile' }); } fx.text(loc('¡Bumerán!'), '#7cd8ff', up(hand, .8 * k), a - 1.45, { hold: true, size: 1.2 }); }
     },
     // ¡TOING! A chapazo: to the batter's head (hit by pitch) or a fielder's face.
     bean(a) {
       const v = keep(c.victim || c.batter), culprit = keep(v === c.batter ? c.pitcher : c.batter), head = headTop(v, .5);
       c.cue('toing', 0); fx.flash(head, a, 1.3); fx.burst(head, a, { count: 10, radius: 1.1 }); shakeBy(.08, a);
-      fx.text('¡TOING!', '#ff8fd0', up(head, .9 * k), a, { life: 1.2, size: 1.2 }); bump(v, a);
+      fx.text(loc('¡TOING!'), '#ff8fd0', up(head, .9 * k), a, { life: 1.2, size: 1.2 }); bump(v, a);
       const st = Math.exp(-a * 2.2); v.body.rotation.x += -.3 * st; v.body.rotation.z += Math.sin(a * 6) * .18 * st; v.body.position.x = -.35 * easeOut(a / .4);
       dizzy(v, a, 4); face(v, { open: .9, spin: a * 7, mouth: 'talk' });
-      fx.text('¡Ay, mi madre!', '#ffffff', up(headTop(v), .4 * k), a - .7, { life: 1.6, size: .9 });
+      fx.text(loc('¡Ay, mi madre!'), '#ffffff', up(headTop(v), .4 * k), a - .7, { life: 1.6, size: .9 });
       if (v === c.batter && c.hbp) cap = ballistic(head, new V3(1.2, 3.2, 1.6).multiplyScalar(k), a, { g: 9.8 * k });
       if (culprit && a > .1) {
-        if (culprit === c.pitcher) { culprit.arms.forEach((arm, i) => arm.rotation.set(-2.25, 0, i ? .38 : -.38)); face(culprit, { open: 1.4, size: 1.2 }); fx.text('¡Perdón!', '#7cd8ff', up(headTop(culprit), .4 * k), a - .55, { life: 1.4, size: .9 }); }
+        if (culprit === c.pitcher) { culprit.arms.forEach((arm, i) => arm.rotation.set(-2.25, 0, i ? .38 : -.38)); face(culprit, { open: 1.4, size: 1.2 }); fx.text(loc('¡Perdón!'), '#7cd8ff', up(headTop(culprit), .4 * k), a - .55, { life: 1.4, size: .9 }); }
         else { culprit.body.rotation.x += .2 + Math.sin(a * 20) * .05; face(culprit, { open: .3, mouth: 'laugh' }); fx.text('jajaja', '#ffffff', up(headTop(culprit), .3 * k), a - .4, { life: 1.6, size: .9 }); }
       }
     },
     // The señora's window: glass everywhere, ¡MUCHACHOS!, ¡CORRAN!
     window(a) {
       const b = keep(c.batter), p = keep(c.pitcher); c.cue('crash', 0); c.cue('yell', .2); c.cue('boing', .4);
-      fx.text('¡CRASH!', '#7cd8ff', c.window.clone().add(new V3(1.2 * k, 1.4 * k, 1)), a, { life: .5, size: 1.4 });
+      fx.text(loc('¡CRASH!'), '#7cd8ff', c.window.clone().add(new V3(1.2 * k, 1.4 * k, 1)), a, { life: .5, size: 1.4 });
       fx.burst(c.window, a, { count: 12, radius: 1.2, color: '#d6f2ff' }); shakeBy(.08, a);
       shards().forEach((s, i) => {
         const pos = ballistic(c.window.clone().add(new V3((hsh(i * 7) - .5) * 1.2 * k, (hsh(i) - .5) * .9 * k, .1)), new V3((hsh(i * 11) - .5) * 3 * k, hsh(i * 5) * 2.5 * k, (1 + hsh(i * 3) * 2.2) * k), a, { ground: .03, rest: .2, g: 9.8 * k });
         s.visible = true; s.position.copy(pos); if (pos.y > .04) s.rotation.set(a * (5 + i), a * (3 + i * .5), 0); else s.rotation.set(-Math.PI / 2, 0, i);
       });
-      fx.text('¡MUCHACHOS!', '#ff6fa8', c.window.clone().add(new V3(0, 1.8 * k, .6)), a - .3, { hold: true, size: 1.4 });
+      fx.text(loc('¡MUCHACHOS!'), '#ff6fa8', c.window.clone().add(new V3(0, 1.8 * k, .6)), a - .3, { hold: true, size: 1.4 });
       if (a < .9) { face(b, { open: 1.5, size: 1.25, mouth: 'smile' }); if (p) { face(p, { open: 1.5, size: 1.25, mouth: 'smile' }); handsOnHead(p); } }
       else {
         // ¡Corran! The batter off down the side street, the pitcher the other way.
         const r = a - .9, bh = c.batterHome, ph = c.pitcherHome;
         b.group.position.copy(bh).add(new V3(r * 2.4, 0, r * 2.4)); b.group.rotation.y = Math.PI / 4; runCycle(b, a * 14); if (c.palo) c.palo.visible = false;
         if (p) { p.group.position.copy(ph).add(new V3(0, 0, -r * 2.8)); p.group.rotation.y = Math.PI; runCycle(p, a * 14 + 1); fx.puff(feet(p), .45, .5); }
-        fx.puff(feet(b), .45, .5); fx.text('¡CORRAN!', '#ffd23f', up(bh.clone().lerp(ph, .5), 2.6 * k), r, { life: 1.4, size: 1.3 });
+        fx.puff(feet(b), .45, .5); fx.text(loc('¡CORRAN!'), '#ffd23f', up(bh.clone().lerp(ph, .5), 2.6 * k), r, { life: 1.4, size: 1.3 });
       }
     },
     // A diving catch: ¡OUT!
@@ -217,8 +218,8 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       cap = tip(f);
       const at = cap.clone();
       fx.burst(at, a - .3, { count: 10, radius: 1.1 }); fx.dust(feet(f), a - .3, { count: 12, size: .6, spread: 1.3, seed: 8 });
-      fx.text('¡OUT!', '#8dff8a', up(headTop(f), .6 * k), a - .35, { hold: true, size: 1.5 }); face(f, a > .3 ? { open: .35, mouth: 'laugh' } : { open: 1.3, size: 1.15, mouth: 'talk' });
-      if (a > .4) { b.body.rotation.x += .22 * smooth((a - .4) / .4); b.head.rotation.x = .35 * smooth((a - .4) / .4); face(b, { open: .4 }); fx.text('¡Nooo!', '#ffffff', up(headTop(b), .3 * k), a - .7, { life: 1.3, size: .8 }); }
+      fx.text(loc('¡OUT!'), '#8dff8a', up(headTop(f), .6 * k), a - .35, { hold: true, size: 1.5 }); face(f, a > .3 ? { open: .35, mouth: 'laugh' } : { open: 1.3, size: 1.15, mouth: 'talk' });
+      if (a > .4) { b.body.rotation.x += .22 * smooth((a - .4) / .4); b.head.rotation.x = .35 * smooth((a - .4) / .4); face(b, { open: .4 }); fx.text(loc('¡Nooo!'), '#ffffff', up(headTop(b), .3 * k), a - .7, { life: 1.3, size: .8 }); }
     },
     // ¡CRACK! The palo breaks at contact.
     broken(a) {
@@ -232,14 +233,14 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       if (top.parent !== props) { props.add(top); top.scale.setScalar(1.35 * k); }
       const v = c.breakDir.clone().multiplyScalar(2.5 * k).add(new V3(.4, 2.2, -.6).multiplyScalar(k)), pos = ballistic(c.breakAt, v, a, { g: 9.8 * k, ground: .04, rest: .3 });
       top.position.copy(pos); if (pos.y > .05) top.rotation.set(a * 9, a * 4, a * 6); else top.rotation.set(Math.PI / 2, 0, 1.2);
-      fx.text('¡CRACK!', '#d9a46b', up(c.contact, 1.8 * k), a, { life: 1.2, size: 1.3 }); fx.burst(c.breakAt, a, { count: 12, radius: .9, color: '#c9955a', size: .18 });
+      fx.text(loc('¡CRACK!'), '#d9a46b', up(c.contact, 1.8 * k), a, { life: 1.2, size: 1.3 }); fx.burst(c.breakAt, a, { count: 12, radius: .9, color: '#c9955a', size: .18 });
       b.head.rotation.x = .45 * smooth(a / .3); face(b, { open: 1.5, size: 1.2, mouth: a > 1.2 ? 'laugh' : 'natural' });
       if (p && a > .35) { p.body.rotation.x += .25 + Math.sin(a * 20) * .05; face(p, { open: .3, mouth: 'laugh' }); fx.text('jajaja', '#ffffff', up(headTop(p), .3 * k), a - .35, { life: 1.6, size: .8 }); }
     },
     // ¡JONRÓN! A bat flip, confetti, the pitcher with both hands on the head.
     home(a) {
       const b = keep(c.batter), p = keep(c.pitcher); c.cue('tada', .2);
-      const at = up(feet(b), 2.4 * k); fx.text('¡JONRÓN!', '#ff5a3c', up(at, .6 * k), a, { hold: true, size: 1.7 });
+      const at = up(feet(b), 2.4 * k); fx.text(loc('¡JONRÓN!'), '#ff5a3c', up(at, .6 * k), a, { hold: true, size: 1.7 });
       if (c.palo && a > .2) {
         const loose = prop('flip', () => createPalo({ kind: c.paloKind }), 1.35 * k), q = clamp01((a - .2) / .7);
         c.palo.visible = false; c.flipFrom ||= c.palo.getWorldPosition(new V3());
@@ -260,11 +261,11 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       else if (a < .48) { dog.position.copy(stop); d.pose(0, false, a); d.head.rotation.x = .5 * Math.sin(clamp01((a - .35) / .13) * Math.PI); }
       else { const q = easeIn((a - .48) / .9), d2 = exit.clone().sub(stop).normalize(); dog.position.copy(stop).lerp(exit, q); dog.rotation.y = Math.atan2(d2.x, d2.z); d.pose(a * 19, true, a); fx.puff(dog.position.clone().setY(.1), .35, .4); }
       if (a >= .42) { dog.updateMatrixWorld(true); cap = d.mouth.getWorldPosition(new V3()); }
-      fx.text('¡GUAU!', '#ffd23f', up(dog.position, 1.1), a - .26, { life: .8, size: .9 });
+      fx.text(loc('¡GUAU!'), '#ffd23f', up(dog.position, 1.1), a - .26, { life: .8, size: .9 });
       const chaser = keep(c.fielder || c.pitcher);
       if (a > .5) {
-        fx.text('¡EL PERRO!', '#ff5a3c', up(headTop(c.batter), .3 * k), a - .5, { life: 1.2, size: 1.1 });
-        if (chaser) { const from = chaser.group.position.clone(); travel(chaser, c.startOf(chaser) || from, land.clone().add(new V3(3, 0, -2)), .6, 2.2, a); face(chaser, { open: 1.2, mouth: talk(chaser, 20, a) }); fx.text('¡Suelta eso!', '#ffffff', up(headTop(chaser), .3 * k), a - .7, { life: 1.2, size: .9 }); }
+        fx.text(loc('¡EL PERRO!'), '#ff5a3c', up(headTop(c.batter), .3 * k), a - .5, { life: 1.2, size: 1.1 });
+        if (chaser) { const from = chaser.group.position.clone(); travel(chaser, c.startOf(chaser) || from, land.clone().add(new V3(3, 0, -2)), .6, 2.2, a); face(chaser, { open: 1.2, mouth: talk(chaser, 20, a) }); fx.text(loc('¡Suelta eso!'), '#ffffff', up(headTop(chaser), .3 * k), a - .7, { life: 1.2, size: .9 }); }
       }
     },
     // Pa'l techo: the chapita rolls off the azotea onto a pana's head.
@@ -273,13 +274,13 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       const x = clampTo(c.land.x, -4, 4), top = new V3(x, c.wallTop + .15, c.wall - .8), edge = new V3(x, c.wallTop + .15, c.wall + .05), under = new V3(x, 0, c.wall + 1.1);
       travel(who, c.startOf(who), under, 0, .45, a);
       const head = a > .45 ? headTop(who, .6) : up(under, 1.7);
-      fx.text("¡Pa'l techo!", '#ffd23f', up(top, 1.2), a, { life: 1.2, size: 1.1 });
+      fx.text(loc("¡Pa'l techo!"), '#ffd23f', up(top, 1.2), a, { life: 1.2, size: 1.1 });
       if (a < .3) cap = top.clone().lerp(edge, a / .3); else if (a < .62) cap = edge.clone().lerp(head, easeIn((a - .3) / .32)); else cap = ballistic(head, new V3(1.2, 2.2, 1).multiplyScalar(k), a - .62, { g: 9.8 * k });
       if (a > .45 && a < .62) { who.group.rotation.y = Math.PI; who.head.rotation.x = -.55; who.armR.rotation.set(-2.3, 0, .75); face(who, { open: 1.2 }); }
       const ba = a - .62;
       if (ba >= 0) {
         bump(who, ba); dizzy(who, a, 4); face(who, { open: .9, spin: a * 7, mouth: 'talk' }); who.armR.rotation.set(-2.6, 0, .4);
-        fx.flash(head, ba, 1.2); fx.burst(head, ba, { count: 10, radius: 1 }); fx.text('¡TOING!', '#ff8fd0', up(head, .8 * k), ba, { life: 1.2, size: 1.2 }); shakeBy(.06, ba, 9);
+        fx.flash(head, ba, 1.2); fx.burst(head, ba, { count: 10, radius: 1 }); fx.text(loc('¡TOING!'), '#ff8fd0', up(head, .8 * k), ba, { life: 1.2, size: 1.2 }); shakeBy(.06, ba, 9);
         b.body.rotation.x += .2 + Math.sin(a * 20) * .05; face(b, { open: .3, mouth: 'laugh' }); fx.text('jajaja', '#ffffff', up(headTop(b), .3 * k), ba - .2, { life: 1.6, size: .9 });
       }
     },
@@ -296,12 +297,12 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       };
       peek(p, D.clone().add(new V3(-.9, -D.y, -.7))); peek(b, D.clone().add(new V3(-.9, -D.y, .8)));
       if (a > .7 && a < 1) { face(p, { open: 1.5, size: 1.25, mouth: 'smile' }); face(b, { open: 1.5, size: 1.25, mouth: 'smile' }); }
-      fx.text('¡Nooo!', '#ffffff', D.clone().add(new V3(0, 2.2 * k, 0)), a - .7, { life: 1, size: 1.1 });
+      fx.text(loc('¡Nooo!'), '#ffffff', D.clone().add(new V3(0, 2.2 * k, 0)), a - .7, { life: 1, size: 1.1 });
       if (a > 1 && p) {
         const spare = prop('spare', () => createChapita({ brand: 'oro' }), 1.8); p.armR.rotation.set(-2.9, 0, -.2); face(p, { open: .4, mouth: 'laugh' }); face(b, { open: .4, mouth: 'laugh' });
         p.updateMatrixWorld?.(); spare.position.copy(tip(p)).add(new V3(0, .1, 0)); spare.rotation.set(Math.PI / 2, a * 3, 0);
         for (let j = 0; j < 4; j++) { const an = a * 3 + j * Math.PI / 2; fx.star(spare.position.clone().add(new V3(Math.cos(an) * .35 * k, Math.sin(an) * .35 * k, 0)), .18, an, 1, '#ffe08a'); }
-        fx.text('¡Tengo otra!', '#ffe08a', up(spare.position, .9 * k), a - 1, { hold: true, size: 1 });
+        fx.text(loc('¡Tengo otra!'), '#ffe08a', up(spare.position, .9 * k), a - 1, { hold: true, size: 1 });
       }
     },
     // Pinball: the post, the wall, the car, the pitcher's head. ¡JACKPOT!
@@ -310,14 +311,14 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       const head = p ? headTop(p, .4) : up(c.pitcherHome, 1.6), pts = [c.land, c.bounceWall, c.carTop, head, (c.pitcherHome || head).clone().add(new V3(.7, .05, 1.2))], T = [0, .3, .62, 1.05, 1.3];
       c.cue('ping', .02); c.cue('ping', .3); c.cue('ping', .62); c.cue('toing', 1.05); c.cue('tada', 1.15);
       if (a < T[4]) { const i = T.findIndex((t, j) => a < T[j + 1]), q = clamp01((a - T[i]) / (T[i + 1] - T[i])); cap = arc(pts[i], pts[i + 1], q, .6); } else cap = pts[4];
-      [[0, '¡PING!', '#7cd8ff', '+100'], [.3, '¡PONG!', '#ff8fd0', '+250'], [.62, '¡PING!', '#8dff8a', '+500']].forEach(([ts, s, color, score], j) => {
+      [[0, loc('¡PING!'), '#7cd8ff', '+100'], [.3, loc('¡PONG!'), '#ff8fd0', '+250'], [.62, loc('¡PING!'), '#8dff8a', '+500']].forEach(([ts, s, color, score], j) => {
         const at = pts[j]; fx.flash(at, a - ts, 1.1); fx.burst(at, a - ts, { count: 10, radius: 1, color, seed: j * 7 }); fx.text(s, color, up(at, 1.1), a - ts, { life: .9, size: 1.1 }); fx.text(score, '#ffd23f', up(at, .5), a - ts - .1, { life: .8, size: .7, tilt: 0 });
       });
       if (p && a < 1.05) { look(p, cap, 1.3); face(p, { open: 1.3, size: 1.1, mouth: 'talk' }); }
       const pa = a - 1.05;
       if (pa >= 0) {
-        if (p) { p.group.position.y += Math.sin(clamp01(pa / .35) * Math.PI) * .6 * k; p.arms.forEach((arm, i) => arm.rotation.set(.9, 0, i ? -.35 : .35)); face(p, { open: 1.5, size: 1.25, mouth: 'smile' }); fx.text('¡AUCH!', '#ff5a3c', up(headTop(p), .4 * k), pa, { life: 1.3, size: 1.2 }); }
-        shakeBy(.05, pa, 9); fx.text('¡JACKPOT!', '#ffd23f', up(head, 2.4), pa - .15, { hold: true, size: 1.4 });
+        if (p) { p.group.position.y += Math.sin(clamp01(pa / .35) * Math.PI) * .6 * k; p.arms.forEach((arm, i) => arm.rotation.set(.9, 0, i ? -.35 : .35)); face(p, { open: 1.5, size: 1.25, mouth: 'smile' }); fx.text(loc('¡AUCH!'), '#ff5a3c', up(headTop(p), .4 * k), pa, { life: 1.3, size: 1.2 }); }
+        shakeBy(.05, pa, 9); fx.text(loc('¡JACKPOT!'), '#ffd23f', up(head, 2.4), pa - .15, { hold: true, size: 1.4 });
         face(b, { open: .35, mouth: 'laugh' }); b.group.position.y += Math.abs(Math.sin(a * 8)) * .12 * k;
       }
     },
@@ -328,7 +329,7 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       if (a < .35) { cap = arc(c.land, catchAt, a / .35, .4); g.armR.rotation.set(lerp(-1.3, -1.9, smooth(a / .1)), 0, lerp(.28, -1.2, smooth(a / .1))); }
       else if (a < .75) { cap = catchAt; }
       else { const to = p ? tip(p) : up(c.pitcherHome, 1.3), q = clamp01((a - .75) / .4); g.armR.rotation.set(-1.3 - 1.1 * Math.sin(q * Math.PI), 0, -.5 * (1 - q)); cap = q < 1 ? arc(catchAt, to, q, 1.4) : to; }
-      fx.burst(catchAt, a - .35, { count: 8, radius: .8 }); fx.text('¡Atrapada del abuelo!', '#ffd23f', up(catchAt, 1), a - .35, { life: 1.9, size: 1.1 });
+      fx.burst(catchAt, a - .35, { count: 8, radius: .8 }); fx.text(loc('¡Atrapada del abuelo!'), '#ffd23f', up(catchAt, 1), a - .35, { life: 1.9, size: 1.1 });
       fx.text('mmm…', '#ffffff', up(catchAt, .45), a - .95, { life: 1.2, size: .7, tilt: .1 });
       if (a > .35) for (const ch of [c.batter, p]) if (ch) face(keep(ch), { open: 1.5, size: 1.25, mouth: 'smile' });
       if (p && a > .35 && a < .9) p.arms.forEach((arm, i) => arm.rotation.set(-2.6, 0, i ? -1 : 1));
@@ -337,7 +338,7 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
     // ¡Carro! Everyone to the sidewalk, the car goes by, back to the game.
     car(a) {
       c.cue('yell', 0); c.cue('honk', 1.3);
-      fx.text('¡CARRO!', '#ffd23f', up(headTop(c.pitcher || c.batter), .4 * k), a, { life: 1.3, size: 1.3 });
+      fx.text(loc('¡CARRO!'), '#ffd23f', up(headTop(c.pitcher || c.batter), .4 * k), a, { life: 1.3, size: 1.3 });
       for (const [ch, side] of c.crew) {
         const home = c.startOf(ch), aside = home.clone(); aside.x = side * c.curb;
         if (a < 2.6) { if (travel(ch, home, aside, .05, .55, a, { arms: ch !== c.batter }) >= 1) { ch.group.rotation.y = -side * Math.PI / 2; if (c.passing) look(ch, c.passing.position.clone().setY(1), 1.3); face(ch, { open: 1.3, mouth: a > 1 && a < 1.8 ? 'smile' : 'natural' }); if (ch === c.pitcher) ch.armR.rotation.set(-2.5 + Math.sin(a * 12) * .3, 0, -.3); } }
@@ -347,24 +348,24 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
       if (c.passing) {
         c.passing.visible = q > 0 && q < 1; c.passing.position.copy(c.carFrom).lerp(c.carTo, q); c.passing.rotation.y = Math.atan2(c.carTo.x - c.carFrom.x, c.carTo.z - c.carFrom.z);
         if (c.passing.visible) for (let j = 0; j < 4; j++) fx.puff(c.passing.position.clone().add(new V3(j % 2 ? .6 : -.6, .2 + j * .05, 0)).addScaledVector(c.carTo.clone().sub(c.carFrom).normalize(), -2 - j * .5), .6 + j * .1, .4 - j * .08, '#e6d9c3');
-        fx.text('¡PI PI!', '#ffffff', up(c.passing.position, 2.2), a - 1.3, { life: .9, size: 1.1 });
+        fx.text(loc('¡PI PI!'), '#ffffff', up(c.passing.position, 2.2), a - 1.3, { life: .9, size: 1.1 });
       }
-      fx.text('¡Sigue el juego!', '#8dff8a', up(c.contact, 2.6), a - 2.7, { hold: true, size: 1.1 });
+      fx.text(loc('¡Sigue el juego!'), '#8dff8a', up(c.contact, 2.6), a - 2.7, { hold: true, size: 1.1 });
     },
     // ¡A COMEEER! The señora calls, the batter drops the palo and runs home.
     dinner(a) {
       const b = keep(c.batter), p = keep(c.pitcher); c.cue('yell', 0); c.cue('boing', .25); c.cue('land', .4); c.cue('cricket', 1.6);
-      fx.text('¡A COMEEER!', '#ff6fa8', c.window.clone().add(new V3(0, 1.8 * k, .6)), a, { hold: a < 2.4, life: 2.6, size: 1.4 });
+      fx.text(loc('¡A COMEEER!'), '#ff6fa8', c.window.clone().add(new V3(0, 1.8 * k, .6)), a, { hold: a < 2.4, life: 2.6, size: 1.4 });
       if (a > .15 && a < .38) { b.group.position.y += Math.sin((a - .15) / .23 * Math.PI) * .4 * k; face(b, { open: 1.5, size: 1.25, mouth: 'smile' }); }
       if (a > .3 && c.palo) {
         const loose = prop('dropped', () => createPalo({ kind: c.paloKind }), 1.35 * k), q = clamp01((a - .3) / .2);
         c.palo.visible = false; c.dropFrom ||= c.palo.getWorldPosition(new V3());
         loose.position.copy(c.dropFrom).setY(lerp(c.dropFrom.y, .04, easeIn(q))); loose.rotation.set(0, .4, lerp(.3, Math.PI / 2, q));
       }
-      if (a >= .38) { const q = travel(b, c.batterHome, c.door, .38, 1.3, a); b.group.visible = q < 1; if (q < 1) face(b, { open: 1.2, mouth: 'smile' }); fx.text('¡VOY!', '#ffd23f', up(headTop(b), .3 * k), a - .38, { life: 1, size: 1 }); if (q >= 1) fx.dust(c.door, a - 1.3, { count: 10, size: .5, spread: .8, seed: 6 }); }
+      if (a >= .38) { const q = travel(b, c.batterHome, c.door, .38, 1.3, a); b.group.visible = q < 1; if (q < 1) face(b, { open: 1.2, mouth: 'smile' }); fx.text(loc('¡VOY!'), '#ffd23f', up(headTop(b), .3 * k), a - .38, { life: 1, size: 1 }); if (q >= 1) fx.dust(c.door, a - 1.3, { count: 10, size: .5, spread: .8, seed: 6 }); }
       if (p) {
         if (a > .38 && a < 1.4) { look(p, b.group.position.clone().setY(1)); face(p, { open: 1.3, size: 1.1 }); }
-        if (a > 1.4) { face(p, { open: .5 }); fx.text('...', '#ffffff', up(headTop(p), .4 * k), a - 1.5, { life: 1.2, size: .9 }); fx.text('¿Y entonces?', '#ffffff', up(headTop(p), .5 * k), a - 2.4, { hold: true, size: .9 }); }
+        if (a > 1.4) { face(p, { open: .5 }); fx.text('...', '#ffffff', up(headTop(p), .4 * k), a - 1.5, { life: 1.2, size: .9 }); fx.text(loc('¿Y entonces?'), '#ffffff', up(headTop(p), .5 * k), a - 2.4, { hold: true, size: .9 }); }
       }
       const weed = prop('weed', () => createBolaDePaja()), tq = clamp01((a - 1.6) / 2.4), mid = (c.pitcherHome || c.contact).clone().lerp(c.batterHome, .5);
       weed.visible = tq > 0 && tq < 1; weed.position.set(lerp(7, -7, tq), .25 + Math.abs(Math.sin(tq * Math.PI * 5)) * .3, mid.z); weed.rotation.set(0, 0, -tq * 30);

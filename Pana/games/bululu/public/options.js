@@ -1,18 +1,19 @@
 // Room options are validated against the same values shown in the lobby.
 import { optionDefaults, normalizeRoomOptions, applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { STARTER_FIELD } from '../../../engine/play/quien-empieza-rules.js';
+import { loc } from '../../../engine/i18n.js';
 export const OPTION_FIELDS = [
   // Solo minijuegos skips the board: `rounds` minigames back to back, +10 a win.
-  { id: 'mode', label: 'Modo', default: 'board', choices: [['board', 'Con tablero'], ['minis', 'Solo minijuegos']] },
-  { id: 'board', label: 'Tablero', default: 'isla', choices: [['isla', 'Isla del Mango'], ['muelle', 'Muelle']] },
-  { id: 'rounds', label: 'Rondas', default: 10, choices: [[5, '5'], [10, '10'], [15, '15'], [20, '20']] },
-  { id: 'minigames', label: 'Minijuegos', default: 'all', choices: [['all', 'Todos'], ['calm', 'Tranquilos']] },
-  { id: 'startCoins', label: 'Monedas al inicio', default: 10, choices: [[10, '10'], [5, '5'], [20, '20']], advanced: true },
-  { id: 'surprises', label: 'Casillas sorpresa', default: 'normal', choices: [['normal', 'Normal'], ['few', 'Pocas'], ['many', 'Muchas']], advanced: true },
-  { id: 'stealing', label: 'Robar mangos', default: true, choices: [[true, 'Sí'], [false, 'No']], advanced: true },
-  { id: 'finalBonus', label: 'Bonus final', default: true, choices: [[true, 'Sí'], [false, 'No']], advanced: true },
-  { id: 'dice', label: 'Dados', default: 2, choices: [[1, '1'], [2, '2']], advanced: true },
-  { id: 'cpu', label: 'Velocidad de bots', default: 'normal', choices: [['normal', 'Normal'], ['fast', 'Rápida']], advanced: true },
+  { id: 'mode', label: loc('Modo'), default: 'board', choices: [['board', loc('Con tablero')], ['minis', loc('Solo minijuegos')]] },
+  { id: 'board', label: loc('Tablero'), default: 'isla', choices: [['isla', 'Isla del Mango'], ['muelle', 'Muelle']] },   // i18n-ignore: board names
+  { id: 'rounds', label: loc('Rondas'), default: 10, choices: [[5, '5'], [10, '10'], [15, '15'], [20, '20']] },
+  { id: 'minigames', label: loc('Minijuegos'), default: 'all', choices: [['all', loc('Todos')], ['calm', loc('Tranquilos')]] },
+  { id: 'startCoins', label: loc('Monedas al inicio'), default: 10, choices: [[10, '10'], [5, '5'], [20, '20']], advanced: true },
+  { id: 'surprises', label: loc('Casillas sorpresa'), default: 'normal', choices: [['normal', loc('Normal')], ['few', loc('Pocas')], ['many', loc('Muchas')]], advanced: true },
+  { id: 'stealing', label: loc('Robar mangos'), default: true, choices: [[true, loc('Sí')], [false, loc('No')]], advanced: true },
+  { id: 'finalBonus', label: loc('Bonus final'), default: true, choices: [[true, loc('Sí')], [false, loc('No')]], advanced: true },
+  { id: 'dice', label: loc('Dados'), default: 2, choices: [[1, '1'], [2, '2']], advanced: true },
+  { id: 'cpu', label: loc('Velocidad de bots'), default: 'normal', choices: [['normal', loc('Normal')], ['fast', loc('Rápida')]], advanced: true },
   STARTER_FIELD,
 ];
 export const DEFAULT_OPTIONS = Object.freeze(optionDefaults(OPTION_FIELDS));
@@ -52,7 +53,7 @@ export function awardFinalBonus(players, enabled) {
 
 // The lobby's plain-language summary of what the chosen options mean.
 export function rulesSummary(options, rounds) {
-  const bonus = options.finalBonus ? ['Al final, quien haya ganado más minijuegos se lleva un Mango de oro extra.'] : [];
-  if (options.mode === 'minis') return [`${rounds} minijuegos seguidos, sin tablero. Cada victoria vale 10 monedas.`, ...bonus];
-  return [...(rounds <= 5 ? [`${rounds} rondas: una fiesta corta.`] : []), ...bonus, ...(options.stealing ? ['Ojo: una casilla sorpresa puede robarle un Mango de oro al pana que más tiene.'] : [])];
+  const bonus = options.finalBonus ? [loc('Al final, quien haya ganado más minijuegos se lleva un Mango de oro extra.')] : [];
+  if (options.mode === 'minis') return [loc('{n} minijuegos seguidos, sin tablero. Cada victoria vale 10 monedas.', { n: rounds }), ...bonus];
+  return [...(rounds <= 5 ? [loc('{n} rondas: una fiesta corta.', { n: rounds })] : []), ...bonus, ...(options.stealing ? [loc('Ojo: una casilla sorpresa puede robarle un Mango de oro al pana que más tiene.')] : [])];
 }

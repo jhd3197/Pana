@@ -80,3 +80,18 @@ or malecón thing.
   (`judge.press(key, exactTime)`) instead of real key timing.
 - `place.js` disposes owners collected before disposing: `disposeModel`
   removes a group from its parent, which breaks a live `traverse`.
+
+## Languages
+
+- The MCP's calls (`MOVES` names, `¡Vuelta a la izquierda!`), dichos, barks
+  (`MISS_LINES`, `¡Eso es!`) and its speech bubbles stay Spanish on every
+  screen: they are what the voice sings. Hints, roles, stations and results
+  are translated.
+- Events carry Spanish `text` (locKey) plus `vars`. `eventSpoken(e)` fills the
+  Spanish for text-to-speech; `eventShown(e)` translates for the HUD. A var is
+  a value, a list of names (` y ` when spoken, `formatList` when shown) or
+  `{ key }` (the song tempo).
+- `¡Golpe!` and `¡Sal de la rueda!` are also markup/option keys, so their
+  English is the same Spanish: the page observer would otherwise translate the
+  call text wherever it shows alone.
+- Station labels go through `stationName()` with `{ $ctx: 'tambor' }`.

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { StopGame, SEATS, TIMES, POINTS, EASY, MEDIUM, HARD, ALPHABET, CLASICAS, CRIOLLAS, VARIADAS, MAX_ANSWER, PERSONALITY, cleanAnswer, cleanSheet, judge, lettersFor,
-  pickCategories, ranking, rememberWords, MESA_LIMIT, seated, titles, verdictText, tooShort } from '../public/rules.js';
+  pickCategories, ranking, rememberWords, MESA_LIMIT, seated, titles, verdictText, tooShort, lineText } from '../public/rules.js';
 import { letterOf, isCrude } from '/engine/play/saber-match.js';
 import { PACKS, FREE_PROMPTS, CEP, SABER_IDS, freePrompt, kindOf, label } from '../public/categories.js';
 
@@ -118,7 +118,7 @@ test('¡STOP! needs a full sheet, gives the rest 5 seconds, and only then pencil
   assert.equal(act(game, 1, 'stop', { sheet: ['C', 'C.', 'Ccc'] }), false, 'lone letters are not answers');
   assert.equal(act(game, 1, 'stop', { sheet: ['Caracas', 'Caimán', 'Café'], round: 99 }), false, 'another round');
   assert.ok(act(game, 1, 'stop', { sheet: ['Caracas', 'Caimán', 'Café'] }));
-  assert.equal(game.phase, 'basta'); assert.equal(game.hostLine, '¡Basta! 5 segundos…');
+  assert.equal(game.phase, 'basta'); assert.equal(lineText(game.hostLine), '¡Basta! 5 segundos…');
   assert.equal(act(game, 2, 'stop', { sheet: ['Coro', 'Cabra', 'Crema'] }), false, 'one STOP per round');
   assert.ok(act(game, 2, 'progress', { filled: 3 }), 'the others keep writing');
   run(game, g => g.phase !== 'basta');
@@ -133,7 +133,7 @@ test('the time limit puts the pencils down when nobody stops, and a silent pana 
   const game = writing(humans(SEATS), { options: { seconds: 60 } });
   run(game, g => g.phase !== 'write');
   assert.equal(game.phase, 'collect'); assert.equal(game.stopper, null);
-  assert.match(game.hostLine, /Se acabó el tiempo/);
+  assert.match(lineText(game.hostLine), /Se acabó el tiempo/);
   assert.ok(game.writeTime >= 60 - .1);
   for (let id = 1; id < SEATS; id++) sheetFor(game, id, ['Caracas', 'Caimán', 'Café']);
   assert.equal(game.phase, 'collect', 'waits for the last pana');
@@ -203,7 +203,7 @@ test('votes: authors cannot vote, a tie favors the author, two thirds earn Creat
   assert.equal(game.review.items[seatOf(game, 1)].points, 50 + POINTS.creative, 'shared, plus Creatividad');
   assert.equal(game.players[seatOf(game, 3)].stats.thumbsDown, 1);
   assert.ok(game.dictionary.some(d => d.category === 'color' && d.word === 'Hormiga'));
-  assert.match(game.hostLine, /Pedazo de loco/);
+  assert.match(lineText(game.hostLine), /Pedazo de loco/);
   run(game, g => g.review.index === 1);
   // Hulk as an animal: tie 3 to 3 (author 7 can't vote, 8 abstains) counts for the author, no bonus.
   assert.equal(game.review.stage, 'vote');
@@ -218,7 +218,7 @@ test('votes: authors cannot vote, a tie favors the author, two thirds earn Creat
 test('a rejected word scores nothing and counts toward El abusador', () => {
   const game = writing(humans(SEATS), { letter: 'N', categories: ['animal'] });
   handIn(game, { 1: ['Nemo'], 2: ['Nutria'], 3: ['Narval'], 4: ['Nutria'], 5: ['Ñu'], 6: [''], 7: ['Nutria'], 8: ['Narval'] });
-  assert.match(game.hostLine, /abusando/);
+  assert.match(lineText(game.hostLine), /abusando/);
   voteAll(game, 0, false);
   const g = game.review.groups[0], nemo = game.review.items[seatOf(game, 1)];
   assert.equal(g.accepted, false); assert.equal(nemo.points, 0);
@@ -230,9 +230,9 @@ test('a rejected word scores nothing and counts toward El abusador', () => {
 test('Oreo shows 200 puntos, then ¡Ni lo sueñes!, and counts like any doubtful color', () => {
   const game = writing(humans(SEATS), { letter: 'O', categories: ['color'] });
   handIn(game, { 1: ['Oreo'], 2: ['Ocre'], 3: ['Oliva'], 4: ['Oro'], 5: ['Ocre'], 6: ['Oro'], 7: ['Oliva'], 8: ['Ocre'] });
-  assert.match(game.hostLine, /200 puntos/);
+  assert.match(lineText(game.hostLine), /200 puntos/);
   run(game, g => g.phaseTime > 1.5);
-  assert.match(game.hostLine, /Ni lo sueñes/);
+  assert.match(lineText(game.hostLine), /Ni lo sueñes/);
   voteAll(game, 0, p => p.id % 2 === 0);
   assert.ok(game.review.items[seatOf(game, 1)].points <= 100 + POINTS.creative, 'never 200');
 });
@@ -337,7 +337,7 @@ test('a full game: rounds, totals, a winner and the end titles', () => {
   assert.equal(game.winner, order[0].seat);
   assert.ok(game.titles[game.winner].includes('Cuarto bate'));
   assert.ok(game.players[seatOf(game, 1)].stats.empty >= 3, 'blank sheets earn Monte y culebra points');
-  assert.match(game.hostLine, /Calabaza, calabaza/);
+  assert.match(lineText(game.hostLine), /Calabaza, calabaza/);
   const t = titles(game);
   assert.ok(Object.values(t).flat().includes('Monte y culebra'));
   assert.equal(game.players.reduce((n, p) => n + p.total, 0) > 0, true);

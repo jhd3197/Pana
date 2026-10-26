@@ -1,5 +1,6 @@
 import { LiveRoom } from '/engine/live-room.js';
 import { Bash, cleanInput } from './rules.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 // Host simulation on the shared live room (engine/live-room.js): the host
 // steps the round with everyone's latest input and publishes each tick; a new
@@ -15,7 +16,7 @@ export class BochincheRoom extends LiveRoom {
     this.game = Bash.restore(this.state, this.members);
     for (const m of this.members.values()) this.game.addPlayer(m.id, m.name, m.id === this.id ? this.avatar : m.avatar || {});
     this.publish();
-    if (previous != null) this.onNotice('Cambió el anfitrión. La ronda sigue.');
+    if (previous != null) this.onNotice(locKey('Cambió el anfitrión. La ronda sigue.'));
   }
   memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar || {}); this.publish(); } }
   memberHello(id, m) { this.memberJoined(m); }
@@ -31,6 +32,6 @@ export class BochincheRoom extends LiveRoom {
     this.game.players = this.game.players.filter(p => !p.bot);
     for (const m of this.members.values()) this.game.addPlayer(m.id, m.name, m.avatar || {});
   }
-  practice() { this.state = { ...new Bash().snapshot(), options: { ...this.state.options } }; super.practice('Ronda local · tú y los bots'); }
+  practice() { this.state = { ...new Bash().snapshot(), options: { ...this.state.options } }; super.practice(loc('Ronda local · tú y los bots')); }
 }
 

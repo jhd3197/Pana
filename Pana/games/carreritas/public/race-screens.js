@@ -2,16 +2,17 @@
 import { badge, nivelOf, kitNivel, trackPieces, vesselById } from './parts.js';
 import { paintOf } from './shop.js';
 import { ICONS } from '/engine/icons.js';
+import { loc } from '/engine/i18n.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const pi = (c, use) => kitNivel({ car: nivelOf(c.tunes?.car ?? c.tune ?? c.def.tune), boat: nivelOf(c.tunes?.boat ?? c.def.tune), air: nivelOf(c.tunes?.plane ?? c.def.tune) }, use);
 export function createRaceScreens({sound,taller}={}) {
   const grid = document.createElement('section'); grid.id = 'parrilla'; grid.className = 'race-grid'; grid.hidden = true;
-  grid.setAttribute('aria-label', 'La parrilla'); grid.setAttribute('data-pad-menu',''); document.body.append(grid);
+  grid.setAttribute('aria-label', loc('La parrilla')); grid.setAttribute('data-pad-menu',''); document.body.append(grid);
   const banner = document.createElement('div'); banner.className = 'finish-banner'; banner.hidden = true; document.body.append(banner);
   const result = document.getElementById('result'); result.classList.add('finish-screen', 'pk-results');
   const personal = document.createElement('section'); personal.className = 'race-personal fin-me'; result.querySelector('.res-side').prepend(personal);
-  const collect = document.createElement('button'); collect.id = 'collect-rewards'; collect.className = 'pk-btn pk-btn--primary'; collect.textContent = '¡A cobrar!'; result.querySelector('.res-coins').append(collect);
-  const cash = document.createElement('section'); cash.id = 'cash-in'; cash.className = 'cash-in'; cash.hidden = true; cash.setAttribute('aria-label', '¡A cobrar!'); result.append(cash);
+  const collect = document.createElement('button'); collect.id = 'collect-rewards'; collect.className = 'pk-btn pk-btn--primary'; collect.textContent = loc('¡A cobrar!'); result.querySelector('.res-coins').append(collect);
+  const cash = document.createElement('section'); cash.id = 'cash-in'; cash.className = 'cash-in'; cash.hidden = true; cash.setAttribute('aria-label', loc('¡A cobrar!')); result.append(cash);
   let vehiclePopup = null, inspectPanel = null, inspectGeneration = 0, previewGeneration = 0;
   const closeInspection = () => { inspectGeneration++; vehiclePopup?.close(); vehiclePopup = null; inspectPanel?.close(); };
   let receipt = null, lastPlayer = null, animation = null, stats = new WeakMap(), cashScene=null, cashGeneration=0,currentTrack=null,readyDone=null,readyFrame=0,cashedPlayer=null,pendingAction=null;
@@ -21,10 +22,10 @@ export function createRaceScreens({sound,taller}={}) {
     if (!receipt) return;
     const generation=++cashGeneration;cashScene?.dispose();cashScene=null;
     const {earned,balance,player,detail}=receipt;
-    const rows=[['Monedas recogidas',detail?.collected??player.coinsCollected??0],['Premio de carrera',detail?.podium??detail?.prizes??0],...(detail?.cup?[['Premio de copa',detail.cup]]:[]),...(detail?.giant?[['¡Matagigantes!',detail.giant]]:[]),...(detail?.record?[['Récord de vuelta',detail.record]]:[]),['Total',earned]];
+    const rows=[[loc('Monedas recogidas'),detail?.collected??player.coinsCollected??0],[loc('Premio de carrera'),detail?.podium??detail?.prizes??0],...(detail?.cup?[[loc('Premio de copa'),detail.cup]]:[]),...(detail?.giant?[[loc('¡Matagigantes!'),detail.giant]]:[]),...(detail?.record?[[loc('Récord de vuelta'),detail.record]]:[]),[loc('Total'),earned]];
     cash.innerHTML=`<header class="fin-title"><h2 class="fin-t">¡A cobrar!</h2><p class="fin-sub">Lo que ganaste, pa’l taller.</p></header><div class="cash-wallet">${ICONS.mango}<b>${balance-earned}</b></div><div class="cb-led">${rows.map(([label,n],i)=>`<div class="cb-row ${i===rows.length-1?'tot':''}" data-line="${i}"><span>${label}</span><b class="v">+${n}</b></div>`).join('')}</div><canvas id="cash-world" aria-label="Las monedas de la carrera se convierten en mangos y caen en la caja en 3D"></canvas><div class="cash-pile-count"><b>0</b><small>MONEDAS</small></div><div class="cb-rate">1 moneda = 1 mango</div><strong class="cb-plus">+${earned}</strong><p class="cash-saved">Tus mangos ya están guardados.</p><button type="button" class="pk-btn pk-btn--primary" id="cash-done">Saltar <kbd>Enter</kbd></button>`;
     cash.hidden=false;delete cash.dataset.complete;delete cash.dataset.sceneReady;
-    const done=()=>{cash.dataset.complete='true';cash.querySelector('.cash-wallet b').textContent=balance;cash.querySelector('#cash-done').textContent='Listo';cash.querySelectorAll('.cb-row').forEach(r=>r.classList.add('in'));};
+    const done=()=>{cash.dataset.complete='true';cash.querySelector('.cash-wallet b').textContent=balance;cash.querySelector('#cash-done').textContent=loc('Listo');cash.querySelectorAll('.cb-row').forEach(r=>r.classList.add('in'));};
     const skip=()=>{if(!cash.dataset.complete){cashScene?.finish();done();}else{++cashGeneration;cashScene?.dispose();cashScene=null;cash.hidden=true;cashedPlayer=receipt.player;collect.focus();const next=pendingAction;pendingAction=null;next?.click();}};
     cash.querySelector('button').onclick=skip;cash.querySelector('button').focus();
     cash.onclick=e=>{if(e.target.closest('button'))return;if(!cash.dataset.complete){cashScene?.finish();done();}};
@@ -45,10 +46,10 @@ export function createRaceScreens({sound,taller}={}) {
       if(grid.hidden)return;
       if(auto)return Promise.resolve();
       grid.classList.add('preparing');
-      const footer=grid.querySelector('footer'),button=document.createElement('button');button.type='button';button.className='grid-ready pk-btn--primary';button.textContent='¡Listo!';button.autofocus=true;footer.querySelector('.grid-status').innerHTML='Salida automática en <b id="grid-count">10</b> s · se pausa al inspeccionar';footer.append(button);
+      const footer=grid.querySelector('footer'),button=document.createElement('button');button.type='button';button.className='grid-ready pk-btn--primary';button.textContent=loc('¡Listo!');button.autofocus=true;footer.querySelector('.grid-status').innerHTML='Salida automática en <b id="grid-count">10</b> s · se pausa al inspeccionar';footer.append(button);
       return new Promise(resolve=>{
         let previous=performance.now(),remaining=10000;
-        readyDone=()=>{cancelAnimationFrame(readyFrame);readyDone=null;footer.querySelector('.grid-status').textContent='Esperando a los panas…';button.disabled=true;button.textContent='Listo';resolve();};
+        readyDone=()=>{cancelAnimationFrame(readyFrame);readyDone=null;footer.querySelector('.grid-status').textContent=loc('Esperando a los panas…');button.disabled=true;button.textContent=loc('Listo');resolve();};
         button.onclick=()=>readyDone?.();button.focus();
         const tick=now=>{if(!readyDone)return;if(!inspectPanel?.matches(':modal'))remaining-=now-previous;previous=now;grid.querySelector('#grid-count').textContent=Math.max(0,Math.ceil(remaining/1000));if(remaining<=0)readyDone();else readyFrame=requestAnimationFrame(tick);};readyFrame=requestAnimationFrame(tick);
       });
@@ -64,18 +65,18 @@ export function createRaceScreens({sound,taller}={}) {
       const previewRun = ++previewGeneration, images = new Map(); delete grid.dataset.previewsReady;
       closeInspection(); grid.classList.remove('preparing');
       cash.hidden = true; banner.hidden = true; stats=new WeakMap(); currentTrack=track; const use = trackPieces(track);for(const c of cars)c.kitLevel=pi(c,use);
-      grid.innerHTML = `<header><div><h1>La parrilla</h1><p>${esc(track.name)} · ${use.map(k => ({car:'carro',boat:'lancha',air:'avioneta'})[k]).join(' + ')}</p></div><p class="grid-guide">Mira los carros de tus panas.<br><strong>Elige uno para ver sus piezas y guardar su kit.</strong></p></header><ol>${cars.map((c,i) => `<li class="${c === player ? 'is-me' : ''}"><details><summary aria-label="Ver kit de ${esc(c.name)}"><span class="grid-driver"><b>${esc(c.name)}${c === player ? ' · Tú' : ''}</b>${badge(pi(c,use))}</span><span class="grid-car-preview"><span class="grid-preview-status">Preparando carro…</span></span><span class="grid-car-name">${esc(c.def.name)}</span><span class="grid-inspect-action">Ver carro y kit</span></summary></details></li>`).join('')}</ol><footer><span>Tu kit ${badge(pi(player,use))}</span><span class="grid-status">Preparando los carros… <b id="grid-count">10</b></span></footer>`;
-      const inspect=document.createElement('dialog');inspect.className='grid-inspect fin-me';inspect.setAttribute('aria-label','Kit del corredor');grid.append(inspect);inspectPanel=inspect;
+      grid.innerHTML = `<header><div><h1>La parrilla</h1><p>${esc(track.name)} · ${use.map(k => ({car:loc('carro'),boat:loc('lancha'),air:loc('avioneta')})[k]).join(' + ')}</p></div><p class="grid-guide">Mira los carros de tus panas.<br><strong>Elige uno para ver sus piezas y guardar su kit.</strong></p></header><ol>${cars.map((c,i) => `<li class="${c === player ? 'is-me' : ''}"><details><summary aria-label="${esc(loc('Ver kit de {name}', { name: c.name }))}"><span class="grid-driver"><b translate="no">${esc(c.name)}${c === player ? ' · ' + loc('Tú') : ''}</b>${badge(pi(c,use))}</span><span class="grid-car-preview"><span class="grid-preview-status">Preparando carro…</span></span><span class="grid-car-name">${esc(c.def.name)}</span><span class="grid-inspect-action">Ver carro y kit</span></summary></details></li>`).join('')}</ol><footer><span>${loc('Tu kit')} ${badge(pi(player,use))}</span><span class="grid-status">Preparando los carros… <b id="grid-count">10</b></span></footer>`;
+      const inspect=document.createElement('dialog');inspect.className='grid-inspect fin-me';inspect.setAttribute('aria-label',loc('Kit del corredor'));grid.append(inspect);inspectPanel=inspect;
       inspect.addEventListener('close',()=>{inspectGeneration++;vehiclePopup?.close();vehiclePopup=null;});
       inspect.addEventListener('click',e=>{const r=inspect.getBoundingClientRect();if(e.target===inspect&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom))inspect.close();});
       const show=(c,modal=false)=>{
         if(modal){inspect.close();inspect.showModal();}
-        const own=pi(player,use),other=pi(c,use);
-        const pieces=[['Carro',c.def.name,c.tunes?.car??c.tune??c.def.tune,ICONS.kitWheel],['Lancha',vesselById('boat',c.cosmetics?.boat).name,c.tunes?.boat??vesselById('boat',c.cosmetics?.boat).tune,ICONS.kitHull],['Avioneta',vesselById('air',c.cosmetics?.air).name,c.tunes?.plane??vesselById('air',c.cosmetics?.air).tune,ICONS.kitWing]];
-        inspect.innerHTML=`<div class="grid-inspect-head"><div><small>Kit de ${esc(c.name)}</small><b>${esc(c.def.name)}</b></div>${badge(other)}<button type="button" data-close aria-label="Cerrar kit">Volver a los carros</button></div><button type="button" class="grid-selected-preview" data-preview-car aria-label="Ver carro en 3D">${images.has(c)?`<img src="${images.get(c)}" alt="Carro de ${esc(c.name)} con sus piezas y pintura">`:''}<span>Ver carro en 3D · girar y acercar</span></button><div class="grid-kit">${pieces.map(([kind,name,tune,icon],i)=>`<button type="button" data-vehicle="${['car','boat','air'][i]}"><small>${kind}${use.includes(['car','boat','air'][i])?' · en esta pista':''}</small><b>${esc(name)}</b>${badge(nivelOf(tune))}</button>`).join('')}</div><p class="grid-inspect-hint">Elige un vehículo para ver sus piezas. Tu kit actual: ${badge(own)}</p><div class="grid-copy">${c===player?'':`<button type="button" data-copy="kit">Guardar kit para el taller<small>Piezas que te faltan: ${taller?.quoteKit(c)??0} mangos</small></button>`}</div><p class="grid-save-help">${c===player?'Este es el kit con el que vas a correr.':'Guarda una referencia para equiparla o comprar las piezas en el taller. No cambia tu carro en esta carrera.'}</p><p class="grid-copy-note" role="status"></p>`;
+        const own=pi(player,use),other=pi(c,use),shotAlt=loc('Carro de {name} con sus piezas y pintura', { name: c.name });
+        const pieces=[[loc('Carro'),c.def.name,c.tunes?.car??c.tune??c.def.tune,ICONS.kitWheel],[loc('Lancha'),vesselById('boat',c.cosmetics?.boat).name,c.tunes?.boat??vesselById('boat',c.cosmetics?.boat).tune,ICONS.kitHull],[loc('Avioneta'),vesselById('air',c.cosmetics?.air).name,c.tunes?.plane??vesselById('air',c.cosmetics?.air).tune,ICONS.kitWing]];
+        inspect.innerHTML=`<div class="grid-inspect-head"><div><small>${esc(loc('Kit de {name}', { name: c.name }))}</small><b>${esc(c.def.name)}</b></div>${badge(other)}<button type="button" data-close aria-label="Cerrar kit">Volver a los carros</button></div><button type="button" class="grid-selected-preview" data-preview-car aria-label="Ver carro en 3D">${images.has(c)?`<img src="${images.get(c)}" alt="${esc(shotAlt)}">`:''}<span>Ver carro en 3D · girar y acercar</span></button><div class="grid-kit">${pieces.map(([kind,name,tune,icon],i)=>`<button type="button" data-vehicle="${['car','boat','air'][i]}"><small>${kind}${use.includes(['car','boat','air'][i])?' · '+loc('en esta pista'):''}</small><b>${esc(name)}</b>${badge(nivelOf(tune))}</button>`).join('')}</div><p class="grid-inspect-hint">${loc('Elige un vehículo para ver sus piezas. Tu kit actual:')} ${badge(own)}</p><div class="grid-copy">${c===player?'':`<button type="button" data-copy="kit">Guardar kit para el taller<small>${loc('Piezas que te faltan: {n} mangos', { n: taller?.quoteKit(c)??0 })}</small></button>`}</div><p class="grid-save-help">${c===player?loc('Este es el kit con el que vas a correr.'):loc('Guarda una referencia para equiparla o comprar las piezas en el taller. No cambia tu carro en esta carrera.')}</p><p class="grid-copy-note" role="status"></p>`;
         inspect.querySelector('[data-preview-car]').onclick=()=>inspect.querySelector('[data-vehicle=car]').click();
         inspect.querySelector('[data-close]').onclick=()=>inspect.close();
-        const copy=inspect.querySelector('[data-copy=kit]');if(copy)copy.onclick=()=>{const price=taller?.recommend(c)??0,short=Math.max(0,price-(taller?.balance??0));inspect.querySelector('.grid-copy-note').textContent=`Kit de ${c.name} marcado en tu taller.${short?` Te faltan ${short} mangos para las piezas.`:' Listo para equipar o comprar.'}`;};
+        const copy=inspect.querySelector('[data-copy=kit]');if(copy)copy.onclick=()=>{const price=taller?.recommend(c)??0,short=Math.max(0,price-(taller?.balance??0));inspect.querySelector('.grid-copy-note').textContent=short?loc('Kit de {name} marcado en tu taller. Te faltan {n} mangos para las piezas.', { name: c.name, n: short }):loc('Kit de {name} marcado en tu taller. Listo para equipar o comprar.', { name: c.name });};
         for(const tile of inspect.querySelectorAll('[data-vehicle]'))tile.onclick=async()=>{
           const generation=++inspectGeneration;vehiclePopup?.close();
           const {openVehicleDialog}=await import('./vehicle-inspect.js');if(generation!==inspectGeneration||grid.hidden||!inspect.open)return;
@@ -91,12 +92,12 @@ export function createRaceScreens({sound,taller}={}) {
           await gridPreviews(cars,async(c,src)=>{
             images.set(c,src);
             const target=grid.querySelectorAll('.grid-car-preview')[cars.indexOf(c)];
-            const img=new Image();img.src=src;img.alt=`${c.def.name} de ${c.name}: pintura y piezas reales`;await img.decode();if(previewRun===previewGeneration&&!grid.hidden)target.replaceChildren(img);
+            const img=new Image();img.src=src;img.alt=loc('{car} de {name}: pintura y piezas reales', { car: c.def.name, name: c.name });await img.decode();if(previewRun===previewGeneration&&!grid.hidden)target.replaceChildren(img);
           },()=>previewRun===previewGeneration&&!grid.hidden);
           if(previewRun===previewGeneration)grid.dataset.previewsReady='true';
         } catch(error) {
           console.error('Grid previews failed',error);
-          for(const label of grid.querySelectorAll('.grid-preview-status'))label.textContent='Ver carro en 3D';
+          for(const label of grid.querySelectorAll('.grid-preview-status'))label.textContent=loc('Ver carro en 3D');
         }
       }
     },
@@ -106,9 +107,9 @@ export function createRaceScreens({sound,taller}={}) {
       receipt = data;
       const { player, place, best } = data;
       const measured=stat(player);
-      personal.innerHTML = `<div class="top"><div class="pl">${place}<sup>º</sup></div><div class="who"><b>Tu carrera</b><small>${esc(player.name)}</small></div></div><dl><div><dt>Mejor vuelta</dt><dd>${best == null?'—':best.toFixed(2)+' s'}${data.detail?.record?'<small class="record">RÉCORD</small>':''}</dd></div><div><dt>Vel. máx</dt><dd>${Math.round(measured.peak)}<small>km/h</small></dd></div><div><dt>Derrape</dt><dd>${Math.round(measured.drift)}<small>m</small></dd></div><div><dt>Monedas</dt><dd>${player.coinsCollected||0}</dd></div><div><dt>Adelantamientos</dt><dd>${measured.passes}</dd></div><div><dt>Choques</dt><dd>${player.hits||0}</dd></div>${data.detail?.giant?`<div class="mg"><dt>¡Matagigantes!</dt><dd>+${data.detail.giant}<small>${(data.detail.giants??[]).map(g=>esc(g.name)+' '+badge(g.pi)).join(', ')}</small></dd></div>`:''}</dl>`;
+      personal.innerHTML = `<div class="top"><div class="pl">${place}<sup>º</sup></div><div class="who"><b>Tu carrera</b><small translate="no">${esc(player.name)}</small></div></div><dl><div><dt>Mejor vuelta</dt><dd>${best == null?'—':best.toFixed(2)+' s'}${data.detail?.record?'<small class="record">RÉCORD</small>':''}</dd></div><div><dt>Vel. máx</dt><dd>${Math.round(measured.peak)}<small>km/h</small></dd></div><div><dt>Derrape</dt><dd>${Math.round(measured.drift)}<small>m</small></dd></div><div><dt>Monedas</dt><dd>${player.coinsCollected||0}</dd></div><div><dt>Adelantamientos</dt><dd>${measured.passes}</dd></div><div><dt>Choques</dt><dd>${player.hits||0}</dd></div>${data.detail?.giant?`<div class="mg"><dt>¡Matagigantes!</dt><dd>+${data.detail.giant}<small>${(data.detail.giants??[]).map(g=>esc(g.name)+' '+badge(g.pi)).join(', ')}</small></dd></div>`:''}</dl>`;
       if (lastPlayer !== player) {
-        lastPlayer = player; banner.textContent = player.done ? '¡META!' : 'Fin de carrera'; banner.hidden = false;
+        lastPlayer = player; banner.textContent = player.done ? loc('¡META!') : loc('Fin de carrera'); banner.hidden = false;
         animation?.cancel();
         animation = banner.animate([{opacity:0,transform:'scale(1.4) rotate(-5deg)'},{opacity:1,transform:'scale(1) rotate(-5deg)',offset:.2},{opacity:1,offset:.7},{opacity:0}], {duration:matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 1500,fill:'forwards'});
         animation.onfinish = () => { banner.hidden = true; };

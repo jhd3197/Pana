@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // Hato, pastures and connected esteros: a broad countryside race with two river bridges.
 import {ROUTE,roadHeight,riverDistance,wetlandDistance,WATER_Y} from './llanos-layout.js';

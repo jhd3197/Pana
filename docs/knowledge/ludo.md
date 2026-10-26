@@ -44,6 +44,10 @@ must change ownership only, preserving their pieces and pending move. A fresh
 empty room or local fallback starts a new lobby. Local play disables invites.
 This uses the existing trusted-friends host model, not server anti-cheat.
 
+The `event` line is a list of `{ text, vars }` Spanish source sentences;
+`eventText` in `rules.js` joins them in the viewer's language (the cachos'
+note travels as `vars.how`). The protocol is `ludo-v5` since this change.
+
 ## Visuals and controls
 
 The shared illustrated entry loads the table behind the lobby and waits for

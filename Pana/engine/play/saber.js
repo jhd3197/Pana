@@ -15,31 +15,34 @@
 // The lists below use one compact line format so they stay easy to grow:
 //   Word/Variant/Variant #crude #duda #oreo @REELID = explanation
 // Entries are separated by newlines or ';'. Tags and explanation are optional.
+// i18n-ignore-file: the words are Spanish content; category labels are locKey()
+// text that games translate where they show them.
+import { locKey } from '../i18n.js';
 
 export const SABER_CATEGORIES = {
-  nombre: { label: 'Nombre', short: 'Nombre' },
-  apellido: { label: 'Apellido', short: 'Apellido' },
-  pais: { label: 'País', short: 'País' },
-  ciudad: { label: 'Ciudad', short: 'Ciudad' },
-  animal: { label: 'Animal', short: 'Animal' },
-  fruta: { label: 'Fruta', short: 'Fruta' },
-  color: { label: 'Color', short: 'Color' },
-  cosa: { label: 'Cosa', short: 'Cosa' },
-  estado: { label: 'Estado de Venezuela', short: 'Estado' },
-  comida: { label: 'Comida criolla', short: 'Comida' },
-  palabra: { label: 'Palabra venezolana', short: 'Palabra' },
-  dicho: { label: 'Dicho', short: 'Dicho' },
-  pelotero: { label: 'Pelotero venezolano', short: 'Pelotero' },
-  musica: { label: 'Cantante o canción venezolana', short: 'Música' },
-  lugar: { label: 'Lugar de Venezuela', short: 'Lugar' },
-  marca: { label: 'Marca', short: 'Marca' },
-  carinoso: { label: 'Insulto cariñoso', short: 'Cariñoso' },
-  profesion: { label: 'Profesión u oficio', short: 'Profesión' },
-  deporte: { label: 'Deporte', short: 'Deporte' },
-  cuerpo: { label: 'Parte del cuerpo', short: 'Cuerpo' },
-  casa: { label: 'Cosa de la casa', short: 'Casa' },
-  planta: { label: 'Flor o planta', short: 'Planta' },
-  pelicula: { label: 'Película o serie', short: 'Película' },
+  nombre: { label: locKey('Nombre'), short: locKey('Nombre') },
+  apellido: { label: locKey('Apellido'), short: locKey('Apellido') },
+  pais: { label: locKey('País'), short: locKey('País') },
+  ciudad: { label: locKey('Ciudad'), short: locKey('Ciudad') },
+  animal: { label: locKey('Animal'), short: locKey('Animal') },
+  fruta: { label: locKey('Fruta'), short: locKey('Fruta') },
+  color: { label: locKey('Color'), short: locKey('Color') },
+  cosa: { label: locKey('Cosa'), short: locKey('Cosa') },
+  estado: { label: locKey('Estado de Venezuela'), short: locKey('Estado') },
+  comida: { label: locKey('Comida criolla'), short: locKey('Comida') },
+  palabra: { label: locKey('Palabra venezolana'), short: locKey('Palabra') },
+  dicho: { label: locKey('Dicho'), short: locKey('Dicho') },
+  pelotero: { label: locKey('Pelotero venezolano'), short: locKey('Pelotero') },
+  musica: { label: locKey('Cantante o canción venezolana'), short: locKey('Música') },
+  lugar: { label: locKey('Lugar de Venezuela'), short: locKey('Lugar') },
+  marca: { label: locKey('Marca'), short: locKey('Marca') },
+  carinoso: { label: locKey('Insulto cariñoso'), short: locKey('Cariñoso') },
+  profesion: { label: locKey('Profesión u oficio'), short: locKey('Profesión') },
+  deporte: { label: locKey('Deporte'), short: locKey('Deporte') },
+  cuerpo: { label: locKey('Parte del cuerpo'), short: locKey('Cuerpo') },
+  casa: { label: locKey('Cosa de la casa'), short: locKey('Casa') },
+  planta: { label: locKey('Flor o planta'), short: locKey('Planta') },
+  pelicula: { label: locKey('Película o serie'), short: locKey('Película') },
 };
 
 const REEL = 'C4B9Vk6L9kK';

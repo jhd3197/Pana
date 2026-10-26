@@ -12,6 +12,7 @@ import { disposeModel } from '/engine/models/props/game-table.js';
 import { createStopTable, createLetterWheel, createNotebook, createPencil, createPlasticChair, createSlangWall } from './studio-set.js';
 import { SEATS, lettersFor } from './rules.js';
 import { SEAT_COLORS, BOT_LOOKS } from './seats.js';
+import { loc } from '/engine/i18n.js';
 
 export { SEAT_COLORS };
 
@@ -38,7 +39,7 @@ export function createStopScene(canvas) {
     return { seat, a, out, forward, right, chair, notebook, pencil, rest, restQuat, character: null, key: '', mood: 'idle', moodTime: 0, expression: '' };
   });
   const labels = document.getElementById('world-labels');
-  const tags = seats.map(() => { const el = document.createElement('div'); el.className = 'world-label'; labels?.append(el); return el; });
+  const tags = seats.map(() => { const el = document.createElement('div'); el.className = 'world-label'; el.translate = false; labels?.append(el); return el; });
   const bubbles = createSeatBubbles(labels || document.body, SEATS);
   const wide = new THREE.Box3(new THREE.Vector3(-4.4, 0, -4.4), new THREE.Vector3(4.4, 2.6, 4.4));
   const table = new THREE.Box3(new THREE.Vector3(-3.6, .9, -3.6), new THREE.Vector3(3.6, 2.7, 3.6));
@@ -102,8 +103,8 @@ export function createStopScene(canvas) {
       spin.to = base + Math.ceil((spin.angle - base) / turn) * turn + turn * (state.phase === 'letter' ? 3 : 0);
       spin.t = state.phase === 'letter' ? 0 : 1; spin.start = performance.now();
     }
-    wheel.userData.setHub(state.phase === 'spin' || !state.letter || state.phase === 'lobby' ? '¡PARA!' : state.letter, state.phase === 'spin' || !state.letter || state.phase === 'lobby' ? 'para' : 'letter');
-    for (const b of state.barks || []) if (b.id > lastBark) { lastBark = b.id; if (previous) bubbles.say(b.seat, b.text, 2.4); }
+    wheel.userData.setHub(state.phase === 'spin' || !state.letter || state.phase === 'lobby' ? loc('¡PARA!') : state.letter, state.phase === 'spin' || !state.letter || state.phase === 'lobby' ? 'para' : 'letter');
+    for (const b of state.barks || []) if (b.id > lastBark) { lastBark = b.id; if (previous) bubbles.say(b.seat, loc(b.text), 2.4); }
   }
 
   function poseArms(slot, dt) {

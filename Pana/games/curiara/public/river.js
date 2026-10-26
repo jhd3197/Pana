@@ -1,3 +1,4 @@
+// i18n-ignore-file: river sections and landmarks are place names.
 // Curiara's courses. The river machinery (splines, levels, currents, the
 // guide line) is shared with Lancha in /engine/river/river.js.
 import { buildRiver, clamp, smooth } from '../../../engine/river/river.js';

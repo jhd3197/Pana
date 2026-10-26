@@ -16,7 +16,7 @@ export const DOWN = Object.freeze({ seconds: 2.5, above: 55, contact: .4 });
 export const LANDING = Object.freeze({ near: 150, perMetre: .2, cap: 25 });
 export const COUNTDOWN = 3, LIMIT = 360, GRACE = 5, SLOTS = 8, BOT_SEAT = 1000;
 export const COLORS = ['#2fa3e0', '#ff8a1f', '#ffc629', '#e8443a', '#8e4de8', '#2ad1b2', '#f15bb5', '#5fc93a'];
-const BOT_NAMES = ['La Zamura', 'El Cóndor', 'Doña Brisa', 'El Turpial', 'La Térmica', 'Cheo Alas', 'La Guacamaya', 'El Gavilán', 'Tía Nube', 'El Colibrí'];
+const BOT_NAMES = ['La Zamura', 'El Cóndor', 'Doña Brisa', 'El Turpial', 'La Térmica', 'Cheo Alas', 'La Guacamaya', 'El Gavilán', 'Tía Nube', 'El Colibrí']; // i18n-ignore: bot names
 const BOT_FUR = ['#cf7d22', '#d4914f', '#e0a463', '#c47f42', '#e8b97f', '#b06d3b', '#9a6038'];
 const RIVALS = { easy: { skill: [.45, .65] }, normal: { skill: [.65, .85] }, hard: { skill: [.85, 1] } };
 

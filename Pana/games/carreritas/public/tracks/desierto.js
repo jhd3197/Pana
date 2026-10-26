@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // An authored desert journey: dunes, elevated canyon gates and a living oasis.
 import {ROUTE,roadHeight,OASIS} from './desierto-layout.js';

@@ -10,14 +10,15 @@ import { sunnyStage, pick } from './stage.js';
 import { riverWater, riverBanks, canoeActors, drawCanoe } from './river-stage.js';
 import { remadaSim, REMADA } from './river-sims.js';
 import { PADDLE } from '/engine/play/paddle.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 
 
 export default {
   id: 'remada',
-  title: '¡Remada!',
-  howto: 'Rema alternando A y D para llegar primero a la meta, a 120 metros. Con ritmo vas más rápido que machacando: rema cuando el canalete termina su jalón.',
-  keys: [['A D / ← →', 'remar alternando']],
+  title: locKey('¡Remada!'),
+  howto: locKey('Rema alternando A y D para llegar primero a la meta, a 120 metros. Con ritmo vas más rápido que machacando: rema cuando el canalete termina su jalón.'),
+  keys: [['A D / ← →', locKey('remar alternando')]],
   touch: { action: null },
   icon: 'canoe',
   time: REMADA.time,
@@ -29,7 +30,7 @@ export default {
     const puffs = new Puffs(scene);
     const animateWater = riverWater(scene, { w: 24, z0: 30, z1: -REMADA.length - 60 });
     riverBanks(scene, { half: 9, z0: 30, z1: -REMADA.length - 50, seed: 11 });
-    const arch = finishArch({ span: 18, label: 'META', secondary: '¡REMADA!' }); arch.position.set(0, -.1, -REMADA.length); scene.add(arch);
+    const arch = finishArch({ span: 18, label: 'META', secondary: '¡REMADA!' }); arch.position.set(0, -.1, -REMADA.length); scene.add(arch);   // i18n-ignore: signage painted in the world
     // Distance buoys every 20 m.
     for (let s = 20; s < REMADA.length; s += 20) for (const x of [-8.2, 8.2]) {
       const buoy = new THREE.Mesh(new THREE.SphereGeometry(.28, 10, 8), new THREE.MeshStandardMaterial({ color: s % 40 ? 0xffc629 : 0xff6b4a, roughness: .5 }));
@@ -91,9 +92,9 @@ export default {
           else if (r.paddle.quality === 'chapoteo') sound.sweep(900, 300, .12, 'triangle', .05);
           else sound.tone(420, 0, .05, 'triangle', .04);
         }
-        if (r.paddle.quality === 'remazo' && r.paddle.streak === 4 && !said.has(`${a.i}-${r.paddle.count}`)) { said.add(`${a.i}-${r.paddle.count}`); a.bubble.say('¡Remazo!', .8); }
-        if (r.paddle.quality === 'chapoteo' && random() < .02) { a.bubble.say(pick(['¡Chapoteo!', '¡Splash!']), .6); puffs.spawn(new THREE.Vector3(LANES[a.i], .3, -r.s), { color: 0xeaf6f2, count: 4, spread: .8, size: .5 }); }
-        if (r.finish != null && !said.has(`fin-${a.i}`)) { said.add(`fin-${a.i}`); a.bubble.say(sim.order[0] === a.i ? '¡Primero!' : '¡Llegué!', 1.2); if (humans.has(a.i)) sound.pickup(); }
+        if (r.paddle.quality === 'remazo' && r.paddle.streak === 4 && !said.has(`${a.i}-${r.paddle.count}`)) { said.add(`${a.i}-${r.paddle.count}`); a.bubble.say(loc('¡Remazo!'), .8); }
+        if (r.paddle.quality === 'chapoteo' && random() < .02) { a.bubble.say(loc(pick([locKey('¡Chapoteo!'), locKey('¡Splash!')])), .6); puffs.spawn(new THREE.Vector3(LANES[a.i], .3, -r.s), { color: 0xeaf6f2, count: 4, spread: .8, size: .5 }); }
+        if (r.finish != null && !said.has(`fin-${a.i}`)) { said.add(`fin-${a.i}`); a.bubble.say(sim.order[0] === a.i ? loc('¡Primero!') : loc('¡Llegué!'), 1.2); if (humans.has(a.i)) sound.pickup(); }
       }
       draw(dt);
     }

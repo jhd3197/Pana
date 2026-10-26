@@ -5,23 +5,24 @@ import { CATALOG, PAINTS, kitEntries, quoteBuild, paintOf, owns, unlocked, unloc
 import { PART_SLOTS, STATS, partsProfile, renderConfig, statPoints, statPills, badge, nivelOf, bandOf, VESSEL_STAT_LABELS, VESSEL_DEFS, VESSEL_SLOTS, vesselTune, vesselById, trackPieces, kitNivel, carNivel, vesselNivel } from './parts.js';
 import { composeTune, wheelById } from './wheel-definitions.js';
 import { ICONS } from '/engine/icons.js';
+import { loc, locn } from '/engine/i18n.js';
 
 const TABS = [
-  { id: 'carro', label: 'Carro', kinds: ['car'] },
-  { id: 'ruedas', label: 'Ruedas', kinds: ['wheel'] },
-  { id: 'motor', label: 'Motor', kinds: ['motor'] },
-  { id: 'aleron', label: 'Alerón', kinds: ['aleron'] },
-  { id: 'extras', label: 'Extras', kinds: ['frente', 'techo', 'jaula'] },
-  { id: 'pintura', label: 'Pintura y estilo', kinds: ['paint', 'acento', 'rin', 'acabado', 'calcomania', 'franjas', 'flame'] },
-  { id: 'sonido', label: 'Corneta', kinds: ['horn'] },
+  { id: 'carro', label: loc('Carro'), kinds: ['car'] },
+  { id: 'ruedas', label: loc('Ruedas'), kinds: ['wheel'] },
+  { id: 'motor', label: loc('Motor'), kinds: ['motor'] },
+  { id: 'aleron', label: loc('Alerón'), kinds: ['aleron'] },
+  { id: 'extras', label: loc('Extras'), kinds: ['frente', 'techo', 'jaula'] },
+  { id: 'pintura', label: loc('Pintura y estilo'), kinds: ['paint', 'acento', 'rin', 'acabado', 'calcomania', 'franjas', 'flame'] },
+  { id: 'sonido', label: loc('Corneta'), kinds: ['horn'] },
 ];
-const TITLES = { car: 'Carrocería', wheel: 'Ruedas', paint: 'Pintura', horn: 'Corneta', flame: 'Llama del turbo', ...Object.fromEntries(PART_SLOTS.map(s => [s.id, s.name])) };
+const TITLES = { car: loc('Carrocería'), wheel: loc('Ruedas'), paint: loc('Pintura'), horn: loc('Corneta'), flame: loc('Llama del turbo'), ...Object.fromEntries(PART_SLOTS.map(s => [s.id, s.name])) };
 const PART_KINDS = new Set(PART_SLOTS.map(s => s.id));
 const SWATCHES = new Set(['paint', 'acento', 'rin', 'flame']);
 const VISUAL = new Set(['paint', 'wheel', ...PART_KINDS]);
 const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const MANGO = `<span class="mango-symbol" aria-hidden="true">${ICONS.mango}</span>`;
-export const mangos = (n) => `${n} ${n === 1 ? 'mango' : 'mangos'}`;
+export const mangos = (n) => locn(n, '{n} mango', '{n} mangos');
 
 // The full-screen Taller follows the menu page, without hidden open/close buttons.
 export function dockTaller({ $, taller, sound, resize, onClosed }) {
@@ -54,7 +55,7 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
   const optionPages = createOptionPages($('loadout-drawer'));
   const vesselSlot = kind => (VESSEL_SLOTS[vehicle] ?? []).some(s => s.id === kind);
   const vesselParts = () => ({ ...(wallet[vehicle + 'Parts']?.[current(vehicle)] ?? {}) });
-  const tabs = () => vehicle === 'car' ? TABS : [{ id: 'carro', label: 'Garaje', kinds: [vehicle] }, ...VESSEL_SLOTS[vehicle].map(s => ({ id: s.id, label: s.name, kinds: [s.id] })), ...TABS.slice(-2)];
+  const tabs = () => vehicle === 'car' ? TABS : [{ id: 'carro', label: loc('Garaje'), kinds: [vehicle] }, ...VESSEL_SLOTS[vehicle].map(s => ({ id: s.id, label: s.name, kinds: [s.id] })), ...TABS.slice(-2)];
   const def = () => cars[getIndex()];
   const equippedParts = (car = def()) => ({ ...(wallet.parts[car.id] ?? {}) });
   const equipped = (kind, car = def()) => vesselSlot(kind) ? wallet[vehicle + 'Parts']?.[wallet[vehicle]]?.[kind] ?? 'fabrica' : kind === 'paint' ? wallet.paint[car.id] ?? 'fabrica'
@@ -86,7 +87,7 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
   function renderStats() {
     const preview = hover ? tuneWith(...hover) : null;
     renderStatBars($('shop-stats'), baseTune(), preview, VESSEL_STAT_LABELS[vehicle]);
-    $('shop-title').textContent = {car:'Tu carro',boat:'Tu lancha',air:'Tu avioneta'}[vehicle];
+    $('shop-title').textContent = {car:loc('Tu carro'),boat:loc('Tu lancha'),air:loc('Tu avioneta')}[vehicle];
     $('loadout-name').textContent = vehicle === 'car' ? def().name : vesselById(vehicle,current(vehicle)).name;
     $('loadout-count').textContent = vehicle === 'car' ? cars.length : VESSEL_DEFS[vehicle].length;
     $('shop-level').innerHTML = badge(nivelOf(baseTune())) + (preview ? ' → ' + badge(nivelOf(preview)) : '');
@@ -120,7 +121,7 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
   function pick(kind, item) {
     hover = null;
     if (kind === 'car') { selectBody(cars.indexOf(item)); render(); return; }
-    if (!buy(wallet,kind,item.id,trophies())) { $('loadout-message').textContent = `Te faltan ${mangos(Math.max(0,item.cost-wallet.coins))}`; return; }
+    if (!buy(wallet,kind,item.id,trophies())) { $('loadout-message').textContent = loc('Te faltan {mangos}', { mangos: mangos(Math.max(0,item.cost-wallet.coins)) }); return; }
     equip(kind,item.id); save(); sound.pickup(); $('loadout-message').textContent='';
     render();
     if (VISUAL.has(kind) || vehicle !== 'car') { refreshCar(); showVessel(); }
@@ -138,13 +139,13 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     b.setAttribute('aria-pressed', String(on));
     b.disabled = !open;
     const tag = !open ? `<small>${esc(unlockText(item))}</small>`
-      : isEquipped ? `<em class="tag">${isCar ? 'Tu carro' : 'Equipado'}</em>` : have ? (isCar ? '' : '<em class="tag">Tuyo</em>')
+      : isEquipped ? `<em class="tag">${isCar ? loc('Tu carro') : loc('Equipado')}</em>` : have ? (isCar ? '' : '<em class="tag">Tuyo</em>')
         : `<em class="price" aria-label="${mangos(item.cost)}">${MANGO}${item.cost}</em>`;
     const color = kind === 'paint' ? item.color ?? def().color : kind === 'flame' ? `linear-gradient(90deg,${item.colors.map(c=>'#'+c.toString(16).padStart(6,'0')).join(',')})`
       : kind === 'acento' || kind === 'rin' ? item.color ?? '#8a8496' : isCar ? item.color : null;
     const after = tuneWith(kind, item.id);
     // pills compare against what this slot holds now, so a downgrade reads as one
-    const pills = !isCar && after && !isEquipped ? statPills(tuneWith(kind, equipped(kind)), after).map(p => `<span class="pill ${p.label === 'Peso' ? 'peso' : p.delta > 0 ? 'up' : 'down'}">${p.delta > 0 ? '+' : ''}${p.delta} ${p.label}</span>`).join('') : '';
+    const pills = !isCar && after && !isEquipped ? statPills(tuneWith(kind, equipped(kind)), after).map(p => `<span class="pill ${p.label === loc('Peso') ? 'peso' : p.delta > 0 ? 'up' : 'down'}">${p.delta > 0 ? '+' : ''}${p.delta} ${p.label}</span>`).join('') : '';
     const blurb = isCar || SWATCHES.has(kind) ? '' : item.blurb;
     b.innerHTML = `${color ? `<span class="swatch" style="--swatch:${color}"></span>` : ''}<span class="shop-text"><b>${isCar ? `${item.num} · ` : ''}${esc(item.name)}</b>${blurb ? `<small>${esc(blurb)}</small>` : ''}${pills ? `<span class="pills">${pills}</span>` : ''}${tag}</span>`;
     if(isCar) { const thumb=carThumbnail(cars.indexOf(item)); if(thumb) b.prepend(thumb); const chip=document.createElement('span');chip.innerHTML=badge(carNivel(item,current('wheel'),equippedParts())); b.append(chip); }
@@ -159,19 +160,19 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
 
   function render() {
     $('shop-coins').textContent = wallet.coins;
-    $('shop').classList.toggle('has-wishlist',!!wishlist);$('loadout-message').textContent=wishlist?`Kit de ${wishlist.name}: las piezas marcadas te faltan en el taller.`:'';
+    $('shop').classList.toggle('has-wishlist',!!wishlist);$('loadout-message').textContent=wishlist?loc('Kit de {name}: las piezas marcadas te faltan en el taller.', { name: wishlist.name }):'';
     renderSlots();
     const use=trackPieces(getTrack());
-    for(const b of $('loadout-vehicles').querySelectorAll('button')) { b.classList.toggle('unused',!use.includes(b.dataset.vehicle)); b.title=use.includes(b.dataset.vehicle)?'Se usa en esta pista':'No se usa en esta pista'; }
+    for(const b of $('loadout-vehicles').querySelectorAll('button')) { b.classList.toggle('unused',!use.includes(b.dataset.vehicle)); b.title=use.includes(b.dataset.vehicle)?loc('Se usa en esta pista'):loc('No se usa en esta pista'); }
     $('shop').classList.toggle('focus',drawer); document.body.classList.toggle('loadout-focus',drawer);
-    $('loadout-drawer-title').textContent = tabs().find(t=>t.id===tab)?.label || 'Garaje';
+    $('loadout-drawer-title').textContent = tabs().find(t=>t.id===tab)?.label || loc('Garaje');
     $('shop').classList.toggle('drawer-open', drawer);
     for (const b of $('shop-tabs').querySelectorAll('button')) b.setAttribute('aria-selected', String(drawer && b.dataset.tab === tab));
     const body = $('shop-body');
     body.replaceChildren(...tabs().find(t => t.id === tab).kinds.map(kind => {
       const group = document.createElement('section');
       group.className = 'shop-group'; group.dataset.kind = kind;
-      const h = document.createElement('h3'); h.textContent = TITLES[kind] ?? VESSEL_SLOTS[vehicle]?.find(s => s.id === kind)?.name ?? (vehicle === 'boat' ? 'Lanchas' : 'Avionetas');
+      const h = document.createElement('h3'); h.textContent = TITLES[kind] ?? VESSEL_SLOTS[vehicle]?.find(s => s.id === kind)?.name ?? (vehicle === 'boat' ? loc('Lanchas') : loc('Avionetas'));
       const grid = document.createElement('div');
       grid.className = SWATCHES.has(kind) ? 'shop-grid shop-swatches' : 'shop-grid'; grid.id = `shop-${kind}`;
       grid.append(...items(kind).map(item => card(kind, item)));
@@ -190,8 +191,8 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     const make=t=>{
       const b=document.createElement('button');b.type='button';b.className='tl-slot sk';b.setAttribute('role','tab');b.dataset.tab=t.id;
       b.setAttribute('aria-expanded',String(drawer && t.id===tab));
-      const names=[...new Set(t.kinds.map(k=>(items(k)??[]).find(i=>i.id===current(k))?.name).filter(Boolean))].filter(n=>n!=='De fábrica');
-      const empty=!names.length && ['aleron','extras'].includes(t.id),label=t.id==='ruedas'&&current('wheel')==='calle'?'De fábrica':t.id==='sonido'&&current('horn')==='propio'?'Pito normal':empty?(t.id==='aleron'?'Sin alerón':'Ninguno'):names.join(' · ')||'De fábrica';
+      const names=[...new Set(t.kinds.map(k=>(items(k)??[]).find(i=>i.id===current(k))?.name).filter(Boolean))].filter(n=>n!==loc('De fábrica'));
+      const empty=!names.length && ['aleron','extras'].includes(t.id),label=t.id==='ruedas'&&current('wheel')==='calle'?loc('De fábrica'):t.id==='sonido'&&current('horn')==='propio'?loc('Pito normal'):empty?(t.id==='aleron'?loc('Sin alerón'):loc('Ninguno')):names.join(' · ')||loc('De fábrica');
       b.classList.toggle('empty',empty);b.innerHTML=`<small>${esc(t.label)}</small><span class="ic">${ICONS[empty?'plus':iconFor[t.id]]||ICONS.plus}</span><b>${esc(label)}</b>`;
       b.onclick=()=>setTab(t.id);return b;
     };
@@ -200,7 +201,7 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     const footer=document.querySelector('.menu-footer');
     if(footer) { let summary=$('loadout-kit');if(!summary){summary=document.createElement('div');summary.id='loadout-kit';footer.insertBefore(summary,$('play'));}
       const pieces={car:carNivel(def(),getWheel(),equippedParts()),boat:vesselNivel('boat',wallet.boat,wallet.boatParts?.[wallet.boat]),air:vesselNivel('air',wallet.air,wallet.airParts?.[wallet.air])};
-      summary.innerHTML='Tu kit para esta carrera '+badge(kitNivel(pieces,trackPieces(getTrack())));
+      summary.innerHTML=loc('Tu kit para esta carrera')+' '+badge(kitNivel(pieces,trackPieces(getTrack())));
     }
   }
   const closeDrawer=()=>{drawer=false;hover=null;document.body.classList.remove('loadout-focus');$('shop').classList.remove('focus');if($('shop').hidden)return;render();refreshCar();showVessel();onTab('carro');};
@@ -237,14 +238,14 @@ function createOptionPages(dialog) {
   const body = dialog.querySelector('.shop-body');
   const categories = document.createElement('nav');
   categories.className = 'option-categories';
-  categories.setAttribute('aria-label', 'Categorías de piezas');
+  categories.setAttribute('aria-label', loc('Categorías de piezas'));
   body.before(categories);
   const pager = document.createElement('nav');
   pager.className = 'option-pages';
-  pager.setAttribute('aria-label', 'Páginas de opciones');
+  pager.setAttribute('aria-label', loc('Páginas de opciones'));
   const previous = document.createElement('button'), next = document.createElement('button'), status = document.createElement('span');
   previous.type = next.type = 'button';
-  previous.textContent = 'Anterior'; next.textContent = 'Siguiente';
+  previous.textContent = loc('Anterior'); next.textContent = loc('Siguiente');
   previous.dataset.page = 'previous'; next.dataset.page = 'next';
   status.setAttribute('aria-live', 'polite');
   pager.append(previous, status, next); body.after(pager);

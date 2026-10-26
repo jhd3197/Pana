@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import { rng, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
 import { MAP } from './arrecife-layout.js';

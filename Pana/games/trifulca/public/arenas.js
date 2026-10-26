@@ -74,7 +74,7 @@ function chalkRing(parent, r) {
 export function createArena(id, arena) {
   const group = new THREE.Group(), animated = [], random = rng({ calle: 41, toldo: 12, mercado: 77, motos: 5 }[id] || 1);
   const ctx = { group, animated, random, npcSpots: [], dominoes: [], crates: [], moto: null, bull: null, bus: null, ropes: null, floor: 0, lamps: [], camBox: null, hats: false };
-  group.name = { calle: 'La calle del barrio', toldo: 'El toldo', mercado: 'El mercado mayorista', motos: 'La plaza de las motos', manga: 'La manga de coleo', cebra: 'El paso de cebra', colonial: 'La calle colonial' }[id];
+  group.name = { calle: 'La calle del barrio', toldo: 'El toldo', mercado: 'El mercado mayorista', motos: 'La plaza de las motos', manga: 'La manga de coleo', cebra: 'El paso de cebra', colonial: 'La calle colonial' }[id]; // i18n-ignore: place names
   ({ calle: buildCalle, toldo: buildToldo, mercado: buildMercado, motos: buildMotos, manga: buildManga, cebra: buildCebra, colonial: buildColonial }[id] || buildCalle)(ctx, arena);
   const splash = new Puffs(group);
   let wobble = 0, motoRun = null, bullRun = null, busRun = null;
@@ -178,7 +178,7 @@ function buildCalle(ctx, arena) {
   for (const s of [-1, 1]) {
     let i = 0;
     for (let z = -38; z <= 38; z += 7.6, i++) {
-      const h = house({ w: 7.2, h: i % 3 === 1 ? 8.2 : 6.2, seed: 11 + i * 3 + (s > 0 ? 40 : 0), color: COLORS[(i + (s > 0 ? 3 : 0)) % COLORS.length], style: STYLES[(i + (s > 0 ? 2 : 0)) % STYLES.length], label: i === 4 && s < 0 ? 'ABASTO EL TROMPÓN' : '' });
+      const h = house({ w: 7.2, h: i % 3 === 1 ? 8.2 : 6.2, seed: 11 + i * 3 + (s > 0 ? 40 : 0), color: COLORS[(i + (s > 0 ? 3 : 0)) % COLORS.length], style: STYLES[(i + (s > 0 ? 2 : 0)) % STYLES.length], label: i === 4 && s < 0 ? 'ABASTO EL TROMPÓN' : '' }); // i18n-ignore: signage painted in the world
       frontAt(group, h, s * 10.5, z, s < 0 ? Math.PI / 2 : -Math.PI / 2);
     }
   }

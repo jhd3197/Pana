@@ -7,17 +7,18 @@ import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
 import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
 import { deck, previewPlay, teamOf, MODES } from './rules.js';
+import { loc } from '/engine/i18n.js';
 
 const UP = new THREE.Vector3(0, 1, 0), Y = 1.48;
 const LOOKS = [{ hat: 'llanero', outfitColor: '#dc7854' }, { hat: 'pesca', hatColor: '#ddad58', outfitColor: '#4c9385', glasses: 'redondos', face: 'feliz' }, { hat: 'gorra', outfitColor: '#b8c279' }, { hat: 'band', outfitColor: '#c96c59' }];
 
 export async function createCaidaScene(canvas, { onCard, onStarter, onLoading = () => {} } = {}) {
-  onLoading('Preparando el patio…');
+  onLoading(loc('Preparando el patio…'));
   const stage = createTableWorld(canvas, { fit: 'window', exposure: 1.04, background: '#d8c69e', fog: [24, 60], sky: false, fov: 36, plazaScale: .72,
     hemi: ['#e8f2ed', '#997a57', 2.4], sun: { color: '#ffe3ad', intensity: 3.1, position: [-6, 14, 8], box: 10, far: 40 } });
   const { renderer, scene, camera, plaza } = stage;
   await new Promise(requestAnimationFrame);
-  const table = createGameTable({ feltColor: '#245e50', caption: 'CAÍDA · ENTRE PANAS' }); scene.add(table);
+  const table = createGameTable({ feltColor: '#245e50', caption: 'CAÍDA · ENTRE PANAS' }); scene.add(table); // i18n-ignore: the game's name painted on the table
   const cards = new Map(), chairs = [], characters = [], characterKeys = [], labels = [], tokens = [];
   let state, ownSeat = 0, selected = null, cameraMode = 'patio', disposed = false, time = 0, hover = null, geometryVersion = '', animationId = 0;
   const desiredCamera = new THREE.Vector3(), target = new THREE.Vector3(), projected = new THREE.Vector3();
@@ -72,7 +73,7 @@ export async function createCaidaScene(canvas, { onCard, onStarter, onLoading = 
     }
     for (let i = players.length; i < 6; i++) { if (characters[i]) characters[i].group.visible = false; }
   }
-  onLoading('Barajando las cartas…');
+  onLoading(loc('Barajando las cartas…'));
   await syncCharacters(LOOKS.slice(0, 2).map((_, seat) => ({ seat, id: null })));
 
   function update(value, seat, chosen = null) {
@@ -120,8 +121,8 @@ export async function createCaidaScene(canvas, { onCard, onStarter, onLoading = 
       });
       if (!p) continue;
       const label = labels[i]; label.replaceChildren(); label.classList.toggle('active', state.phase === 'playing' && state.turn === i);
-      const title = document.createElement('strong'), note = document.createElement('span'); title.textContent = p.id === null ? `${p.name} · bot` : p.name;
-      note.textContent = state.phase === 'dealing' && state.dealer === i ? 'Reparte' : p.announced ? `${p.announced.name} · +${p.announced.points}` : state.phase === 'playing' && state.turn === i ? 'Su turno' : i === seat ? 'Tu puesto' : MODES[state.options.mode].teams && i % 2 === ownSeat % 2 ? state.players.length > 4 ? 'Tu equipo' : 'Tu pareja' : 'En la mesa'; label.append(title, note);
+      const title = document.createElement('strong'), note = document.createElement('span'); title.translate = false; title.textContent = p.id === null ? loc('{name} · bot', { name: p.name }) : p.name;
+      note.textContent = state.phase === 'dealing' && state.dealer === i ? loc('Reparte') : p.announced ? `${loc(p.announced.name)} · +${p.announced.points}` : state.phase === 'playing' && state.turn === i ? loc('Su turno') : i === seat ? loc('Tu puesto') : MODES[state.options.mode].teams && i % 2 === ownSeat % 2 ? state.players.length > 4 ? loc('Tu equipo') : loc('Tu pareja') : loc('En la mesa'); label.append(title, note);
     }
   }
   const cursor = new THREE.Vector2(), ray = new THREE.Raycaster(); let down;

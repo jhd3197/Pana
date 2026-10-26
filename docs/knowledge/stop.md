@@ -176,6 +176,13 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 
 ## Notes for agents
 
+- `hostLine` is `{ text, vars }` (Spanish `locKey()` source plus variables)
+  and barks carry `locKey()` text; clients show them with `lineText()` /
+  `loc()`. A `cat` variable is a category id, shown with `labelText()` so
+  an own category ("+Texto") stays as the host typed it. Category ids,
+  answers and the bots' word pools stay Spanish (they are checked against
+  El Saber); `oreoShown(state)` tells whether the host is still on "200 puntos" (never search the line for "200").
+
 - The kit allows only Luckiest Guy and Nunito, so "handwriting" is Nunito
   italic 800 in graphite (`--stop-pencil`) on the paper colour.
 - Software WebGL in the headless suites draws 2–4 fps: click HUD buttons with

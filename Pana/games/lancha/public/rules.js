@@ -18,7 +18,7 @@ export const PHOTO = Object.freeze({ within: 12, gap: 3.5, real: 1.6, speed: .3 
 export const COLORS = ['#e2683c', '#2f9e8f', '#e6b33a', '#7a5bc4', '#d64f7a', '#4d8fd6', '#8fb84a', '#c9824a'];
 export const SLOTS = 8;
 const RIVALS = { easy: { cap: .8, wobble: 1.5 }, normal: { cap: .93, wobble: 1 }, hard: { cap: 1, wobble: .5 } };
-const BOT_NAMES = ['El Motorista', 'La Curva', 'Don Chalupa', 'La Garza', 'El Bagre', 'Tía Lancha', 'El Rayao', 'La Sardina', 'Cheo Motor', 'La Payara', 'El Morocoto', 'Yoli Fuera de Borda'];
+const BOT_NAMES = ['El Motorista', 'La Curva', 'Don Chalupa', 'La Garza', 'El Bagre', 'Tía Lancha', 'El Rayao', 'La Sardina', 'Cheo Motor', 'La Payara', 'El Morocoto', 'Yoli Fuera de Borda']; // i18n-ignore: bot names
 const BOT_OUTFITS = ['#d6553d', '#3f8f7a', '#e1a83a', '#6c58b8', '#c94f74', '#4a86c8', '#7fa848', '#b97a46'];
 const START = { rows: [34, 24], offsets: [-7.2, -2.4, 2.4, 7.2] };
 

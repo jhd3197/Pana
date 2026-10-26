@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 // River effects (Curiara, Lancha): two pooled draws for the whole field
 // (surface rings and airborne spray) plus three static, animated sheets (the
 // chorro's streaks, the raudales' whitewater and the remolino's spiral). Same

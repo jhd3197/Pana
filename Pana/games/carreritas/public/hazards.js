@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { hatoCow } from '/engine/models/fauna/farm/hato-cow.js';
 import { rock } from '/engine/models/props/rock.js';
+import { locKey } from '/engine/i18n.js';
 
 const mat = (color) => new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.8 });
 
@@ -28,11 +29,11 @@ function makeBus() {
 
 const KINDS = {
   // Cows amble from shoulder to shoulder and stop for a while in between.
-  cow: { reach: -1.6, cross: 9, period: 16, radius: 1.9, power: 12, make: (i) => { const m = hatoCow({ seed: 11 + i }); m.scale.setScalar(1.15); return m; }, line: ['¡Muuu!', '¡Cuidado con la vaca!'] },
+  cow: { reach: -1.6, cross: 9, period: 16, radius: 1.9, power: 12, make: (i) => { const m = hatoCow({ seed: 11 + i }); m.scale.setScalar(1.15); return m; }, line: [locKey('¡Muuu!'), locKey('¡Cuidado con la vaca!')] },
   // The bus barrels across a cross street and is gone again.
-  bus: { reach: 9, cross: 3.2, period: 12, radius: 3.2, power: 16, make: () => makeBus(), line: ['¡La camionetica!', '¡Pare, chofer!'] },
+  bus: { reach: 9, cross: 3.2, period: 12, radius: 3.2, power: 16, make: () => makeBus(), line: [locKey('¡La camionetica!'), locKey('¡Pare, chofer!')] },
   // Boulders bounce down the dunes and across the road.
-  rock: { reach: 5, cross: 2.6, period: 9, radius: 1.8, power: 14, make: (i) => rock(1.5, 0x9a6b4a, 5 + i), line: ['¡Una piedra!', '¡Esquiva!'] },
+  rock: { reach: 5, cross: 2.6, period: 9, radius: 1.8, power: 14, make: (i) => rock(1.5, 0x9a6b4a, 5 + i), line: [locKey('¡Una piedra!'), locKey('¡Esquiva!')] },
 };
 
 // Pure: position of a hazard across the road at race time t, from -1 (one

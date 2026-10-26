@@ -1,3 +1,4 @@
+import { loc } from '/engine/i18n.js';
 // The one-time "toca cuando suene el golpe" screen: eight sticks at 100 bpm,
 // the pana taps along, and the median delay becomes their latency. The judge
 // subtracts it from every hit, so speakers, Bluetooth and slow hands all play
@@ -39,10 +40,11 @@ export function createCalibration($, { sound, voices, onDone }) {
 
   function finish() {
     clearInterval(timer);
-    if (taps.length < 4) { $('calibration-result').textContent = 'Muy pocos golpes. Prueba otra vez.'; clicks = []; return; }
+    if (taps.length < 4) { $('calibration-result').textContent = loc('Muy pocos golpes. Prueba otra vez.'); clicks = []; return; }
     const sorted = [...taps].sort((a, b) => a - b), median = sorted[Math.floor(sorted.length / 2)];
     latency = clampMs(median * 1000); saveLatency(latency); clicks = [];
-    $('calibration-result').textContent = `Listo: tu golpe llega ${Math.abs(latency)} ms ${latency >= 0 ? 'tarde' : 'antes'}. La rueda lo tomará en cuenta.`;
+    $('calibration-result').textContent = latency >= 0 ? loc('Listo: tu golpe llega {n} ms tarde. La rueda lo tomará en cuenta.', { n: Math.abs(latency) })
+      : loc('Listo: tu golpe llega {n} ms antes. La rueda lo tomará en cuenta.', { n: Math.abs(latency) });
     onDone(latency);
   }
 

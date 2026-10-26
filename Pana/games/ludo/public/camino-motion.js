@@ -3,6 +3,7 @@ import { disposeModel } from '/engine/models/props/game-table.js';
 import { createMotionProps } from './motion-props.js';
 import { poseFace } from './studio-finish.js';
 import { CAMINO } from './motion-choice.js';
+import { loc } from '/engine/i18n.js';
 
 const clamp = v => Math.max(0,Math.min(1,v));
 const smooth = v => {v=clamp(v);return v*v*(3-2*v);};
@@ -13,10 +14,11 @@ const arc = v => Math.sin(clamp(v)*Math.PI);
 export function createCaminoMotion(root, pawn, path, style, color, partner=null) {
   const props=createMotionProps(style,color);root.add(props);
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
-  const ctx=canvas.getContext('2d'),words=['¡Chócala!','¡Cambur!','¡A rodar!','¡Estilo!','¡BOING!','¡Matrix!','¡Arre!','¡Wiii!','¡Atajo!','¡Chicle!'];
+  const ctx=canvas.getContext('2d'),words=[loc('¡Chócala!'),loc('¡Cambur!'),loc('¡A rodar!'),loc('¡Estilo!'),loc('¡BOING!'),loc('¡Matrix!'),loc('¡Arre!'),loc('¡Wiii!'),loc('¡Atajo!'),loc('¡Chicle!')];
+  const caption=words[CAMINO.indexOf(style)]||(style==='sprint'?loc('¡Recta final!'):loc('¡Hop!'));
   ctx.font='900 66px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
-  ctx.lineWidth=12;ctx.strokeStyle='#2b2030';ctx.strokeText(words[CAMINO.indexOf(style)]||(style==='sprint'?'¡Recta final!':'¡Hop!'),256,64);
-  ctx.fillStyle=style==='gum'?'#ff8fc8':'#fff1ae';ctx.fillText(words[CAMINO.indexOf(style)]||(style==='sprint'?'¡Recta final!':'¡Hop!'),256,64);
+  ctx.lineWidth=12;ctx.strokeStyle='#2b2030';ctx.strokeText(caption,256,64);
+  ctx.fillStyle=style==='gum'?'#ff8fc8':'#fff1ae';ctx.fillText(caption,256,64);
   const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;
   const label=new THREE.Sprite(new THREE.SpriteMaterial({map,transparent:true,depthWrite:false}));label.scale.set(1.3,.325,1);root.add(label);
   const end=path.length-1,base=path[0].y,at=new THREE.Vector3(),tangent=new THREE.Vector3();

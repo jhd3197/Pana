@@ -2,6 +2,7 @@ import { journalGame, verifyPacket, plainState } from './replay.js';
 import { botDelay } from './bot-personas.js';
 import { DominoGame, chooseMove } from './rules.js';
 import { TableRoom } from '/engine/table-room.js';
+import { loc } from '/engine/i18n.js';
 
 const keepMap = (prev) => prev?.mapId ? { mapId: prev.mapId } : {};
 
@@ -41,7 +42,7 @@ export class DominoRoom extends TableRoom {
       if (!verified) {
         this.auditFailures = (this.auditFailures || 0) + 1;
         if (!data.recovery && !this.recovering) { this.recovering = true; this.send({kind:'replay-request'},'host'); }
-        if (data.recovery) { this.recovering = false; this.onNotice('No pudimos verificar la jugada. Reconecta para recuperar la mesa.'); }
+        if (data.recovery) { this.recovering = false; this.onNotice(loc('No pudimos verificar la jugada. Reconecta para recuperar la mesa.')); }
         return;
       }
       this.recovering = false;

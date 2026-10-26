@@ -3,12 +3,13 @@ import { loadAvatar } from '/engine/avatar.js';
 import { createGameMenu } from '/engine/ui.js';
 import { sound } from '/engine/fx.js';
 import { LightningTrial } from './lightning-trial.js';
+import { loc } from '/engine/i18n.js';
 const $=id=>document.getElementById(id), trial=new LightningTrial(loadAvatar());
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-const menu=createGameMenu({title:'Prueba de rayos · Bochinche',sound,controls:[['K','Lanzar rayo'],['R','Reiniciar prueba']],note:'Práctica local. La prueba se pausa al abrir el menú.'});
+const menu=createGameMenu({title:loc('Prueba de rayos · Bochinche'),sound,controls:[['K',loc('Lanzar rayo')],['R',loc('Reiniciar prueba')]],note:loc('Práctica local. La prueba se pausa al abrir el menú.')});
 $('menu-slot').append(menu.createButton({className:'pk-btn'}));
 let world=null, effects=null;
-const phases={ready:'Listo para probar',charge:'Cargando…',impact:'¡Contacto!',done:'Prueba terminada'};
+const phases={ready:loc('Listo para probar'),charge:loc('Cargando…'),impact:loc('¡Contacto!'),done:loc('Prueba terminada')};
 function settings(){
   for(const id of ['lightning','flash','stop','shake','slow'])trial.settings[id]=$(id).checked;
   trial.settings.stopFrames=Number($('stopFrames').value);
@@ -21,7 +22,7 @@ settings();
 function sync(){
   const busy=trial.phase==='charge'||trial.phase==='impact';
   $('cast').disabled=$('baseline').disabled=!world||busy;
-  $('phase').textContent=trial.frozen?'Pausa de impacto':phases[trial.phase];
+  $('phase').textContent=trial.frozen?loc('Pausa de impacto'):phases[trial.phase];
   $('damage').textContent=`${Math.round(trial.combat.fighters[1].percent)}%`;
   $('motion-note').hidden=!reduced.matches;
 }

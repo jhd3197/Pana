@@ -1,5 +1,7 @@
 // Supplied launcher illustrations. IDs and rules still come from game.json.
-export const categories = ['Todos', 'Carreras', 'Mesa', 'Fiesta', 'Aventura'];
+// Category names are also their ids; the hub shows them through loc().
+import { locKey } from '/engine/i18n.js';
+export const categories = [locKey('Todos'), locKey('Carreras'), locKey('Mesa'), locKey('Fiesta'), locKey('Aventura')];
 export const artwork = {
   carreritas: ['Carreras', 'carreritas.jpg'], galope: ['Carreras', 'galope.jpg'], curiara: ['Carreras', 'curiara.jpg'],
   lancha: ['Carreras', 'lancha.jpg', 'lancha-card.jpg'], parapente: ['Carreras', 'parapente.jpg', 'parapente-card.jpg'],

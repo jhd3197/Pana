@@ -1,3 +1,4 @@
+// i18n-ignore-file: beacon and landing names are place names; thermal names are ids.
 // The Galipán course, pure: no Three.js, so rules, bots and Node tests share it.
 // Points are authored in the Galipán layout's own units (the map Carreritas
 // races on) and scaled to the world like Carreritas does (GALIPAN_SCALE on x

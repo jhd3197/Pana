@@ -1,3 +1,4 @@
+// i18n-ignore-file: track signage and place names stay Spanish.
 import { THREE,M,mesh,put,box,finish,sign } from './world-kit.js';
 import { sanCarlosFortress } from '/engine/models/props/san-carlos-fortress.js';
 import { FORT,isFort } from './puerto-layout.js';

@@ -2,6 +2,7 @@ import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { propDefinition } from '/engine/models/props/plaza-definitions.js';
 import { huntLayout, nextLayoutSeed } from './layout.js';
 import { validArena, arenaInfo } from '../../../engine/worlds/arena-layouts.js';
+import { locKey } from '../../../engine/i18n.js';
 
 export const HIDE_TIMES = Object.freeze([15, 20, 30, 45, 60]);
 export const RULES = Object.freeze({ changes: 3, hideSeconds: 30, huntSeconds: 180, rounds: 4, checkRange: 3.5, aimRange: 7, checkCooldown: 1.6 });
@@ -70,11 +71,12 @@ export class HuntRound {
     const wasSeeker = this.isSeeker(id);
     this.players = this.players.filter(p => p.id !== id);
     this.seekers = this.seekers.filter(seeker => seeker !== id); this.seeker = this.seekers[0] ?? null;
-    if (wasSeeker && !this.seekers.length && ['hide', 'hunt'].includes(this.phase)) this.finish('hiders', 'El buscador salió de la sala.');
+    if (wasSeeker && !this.seekers.length && ['hide', 'hunt'].includes(this.phase)) this.finish('hiders', locKey('El buscador salió de la sala.'));
     else this.checkEnd();
   }
-  event(text, found = null) {
-    this.events.push({ id: ++this.revision, text, ...(found ? { found } : {}) });
+  // `text` is locKey() source; each client shows loc(text, vars) in its language.
+  event(text, found = null, vars = null) {
+    this.events.push({ id: ++this.revision, text, ...(vars ? { vars } : {}), ...(found ? { found } : {}) });
     this.events = this.events.slice(-4);
   }
   start(hostId, preference = 'hide') {
@@ -111,18 +113,18 @@ export class HuntRound {
         this.transform(p.id, this.options.disguises === 'barrels' ? 'barrel' : prop.type);
       }
     }
-    this.event(`¡A esconderse! El buscador sale en ${this.hideSeconds} segundos.`);
+    this.event(locKey('¡A esconderse! El buscador sale en {n} segundos.'), null, { n: this.hideSeconds });
     return true;
   }
   transform(id, type) {
     const p = this.players.find(p => p.id === id), def = propDefinition(type);
-    if (!p || this.isSeeker(p.id) || p.caught || p.spectator || !['hide', 'hunt'].includes(this.phase)) return 'Ahora no puedes cambiar.';
-    if (type === p.prop) return 'Ya tienes esa forma.';
+    if (!p || this.isSeeker(p.id) || p.caught || p.spectator || !['hide', 'hunt'].includes(this.phase)) return locKey('Ahora no puedes cambiar.');
+    if (type === p.prop) return locKey('Ya tienes esa forma.');
     if (type === null) { p.prop = null; return null; }
-    if (this.options.disguises === 'barrels' && type !== 'barrel') return 'Solo barriles en esta partida.';
-    if (!def) return 'Ese objeto no existe.';
-    if (p.changes <= 0) return 'No te quedan cambios en esta ronda.';
-    if (this.layout.blocked(p.x, p.z, def.radius)) return 'Busca un poco más de espacio para ese objeto.';
+    if (this.options.disguises === 'barrels' && type !== 'barrel') return locKey('Solo barriles en esta partida.');
+    if (!def) return locKey('Ese objeto no existe.');
+    if (p.changes <= 0) return locKey('No te quedan cambios en esta ronda.');
+    if (this.layout.blocked(p.x, p.z, def.radius)) return locKey('Busca un poco más de espacio para ese objeto.');
     p.prop = type; p.changes--;
     return null;
   }
@@ -149,11 +151,11 @@ export class HuntRound {
     p.caught = true; p.moving = false; p.suspicion = 0;
     const seeker = this.players.find(s => s.id === seekerId);
     if (seeker) seeker.score += 1;
-    this.event(`¡Encontraron a ${p.name}!`, { seeker: seekerId, hider: p.id, distance: seeker ? Math.round(distance(seeker, p) * 10) / 10 : 0 });
+    this.event(locKey('¡Encontraron a {name}!'), { seeker: seekerId, hider: p.id, distance: seeker ? Math.round(distance(seeker, p) * 10) / 10 : 0 }, { name: p.name });
     this.checkEnd();
   }
   checkEnd() {
-    if (['hide', 'hunt'].includes(this.phase) && !this.players.some(p => !p.spectator && !p.caught && !this.isSeeker(p.id))) this.finish('seeker', '¡El buscador encontró a todos!');
+    if (['hide', 'hunt'].includes(this.phase) && !this.players.some(p => !p.spectator && !p.caught && !this.isSeeker(p.id))) this.finish('seeker', locKey('¡El buscador encontró a todos!'));
   }
   finish(team, message) {
     if (!['hide', 'hunt'].includes(this.phase)) return;
@@ -170,8 +172,8 @@ export class HuntRound {
     if (!['hide', 'hunt'].includes(this.phase)) return;
     this.remaining -= dt;
     if (this.remaining <= 0) {
-      if (this.phase === 'hide') { this.phase = 'hunt'; this.remaining = this.options.huntSeconds; this.event('¡Salió el buscador! Quédate quieto para camuflarte.'); }
-      else { this.finish('hiders', '¡Se acabó el tiempo! Ganaron los escondidos.'); return; }
+      if (this.phase === 'hide') { this.phase = 'hunt'; this.remaining = this.options.huntSeconds; this.event(locKey('¡Salió el buscador! Quédate quieto para camuflarte.')); }
+      else { this.finish('hiders', locKey('¡Se acabó el tiempo! Ganaron los escondidos.')); return; }
     }
     for (const p of this.players) {
       p.cooldown = Math.max(0, p.cooldown - dt);

@@ -6,7 +6,7 @@
 import { STATIONS, VENTS, FIXES, distance, findPath, lineClear, near, REACH, stationById } from './layout.js';
 import { taskById, WRAP_RANGE, VENT_RANGE, PHRASES, DISGUISES, SABOTAGES } from './rules.js';
 
-export const BOT_NAMES = ['Chiguire', 'Lapa', 'Báquiro', 'Danta', 'Araguato', 'Cachicamo', 'Morrocoy', 'Perico'];
+export const BOT_NAMES = ['Chiguire', 'Lapa', 'Báquiro', 'Danta', 'Araguato', 'Cachicamo', 'Morrocoy', 'Perico']; // i18n-ignore: bot names are Venezuelan animals
 const STILL = { x: 0, z: 0 };
 const toward = (p, q) => { const d = distance(p, q) || 1; return { x: (q.x - p.x) / d, z: (q.z - p.z) / d }; };
 

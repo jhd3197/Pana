@@ -8,11 +8,12 @@
 import { draw } from '/engine/random.js';
 import { findEntry, wordsFor, letterOf, soundKey, isCrude } from '/engine/play/saber-match.js';
 import { defaultOptions, roomOptions } from './options.js';
-import { CLASICAS, CRIOLLAS, VARIADAS, CEP, REMEMBERED, CUSTOM_MAX, CUSTOM_LENGTH, packOf, kindOf, freePrompt, customId, label, arrange } from './categories.js';
+import { CLASICAS, CRIOLLAS, VARIADAS, CEP, REMEMBERED, CUSTOM_MAX, CUSTOM_LENGTH, packOf, kindOf, freePrompt, customId, labelText, arrange } from './categories.js';
+import { loc, locKey } from '../../../engine/i18n.js';
 export { CLASICAS, CRIOLLAS, VARIADAS };
 
 export const SEATS = 8;
-export const ALPHABET = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
+export const ALPHABET = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split(''); // i18n-ignore: letters
 // Letter levels by how many words the categories have for them: easy letters
 // fill every box, medium ones leave a few blank, hard ones leave most empty.
 export const EASY = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
@@ -24,10 +25,24 @@ export const MEDIUM = ALPHABET.filter(l => !EASY.includes(l) && !HARD.includes(l
 export const TIMES = { letter: 2.8, basta: 5, collect: 6, show: 3.4, vote: 10, voteEach: 1.5, voteMax: 18, result: 3, tally: 5.5, spinAuto: 9, rapido: 30 };
 export const POINTS = { unique: 100, shared: 50, creative: 50 };
 export const MAX_ANSWER = 32;
-export const BOT_NAMES = ['Coco', 'Lola', 'Cheo', 'Nena', 'Toño', 'Mari', 'Pepe', 'Cuqui'];
+export const BOT_NAMES = ['Coco', 'Lola', 'Cheo', 'Nena', 'Toño', 'Mari', 'Pepe', 'Cuqui']; // i18n-ignore: names
 // Two bots from the reel: the rules guy and the troll.
 export const PERSONALITY = ['normal', 'normal', 'estricto', 'normal', 'normal', 'creativo', 'normal', 'normal'];
-export const PERSONALITY_TEXT = { estricto: 'El estricto', creativo: 'El pana creativo', normal: '' };
+export const PERSONALITY_TEXT = { estricto: locKey('El estricto'), creativo: locKey('El pana creativo'), normal: '' };
+
+// What the host says travels as Spanish source text plus its variables
+// ({ text, vars }); every client shows it in its own language. `cat` is a
+// category id, shown as its name (an own category as typed).
+const line = (text, vars) => vars ? { text, vars } : { text };
+const OREO = locKey('¡{word}: 200 puntos!');
+export function lineText(said) {
+  if (!said) return '';
+  if (typeof said === 'string') return loc(said);
+  const vars = said.vars && (said.vars.cat !== undefined ? { ...said.vars, category: labelText(said.vars.cat) } : said.vars);
+  return loc(said.text, vars);
+}
+// The host is still saying "200 puntos" about an Oreo.
+export const oreoShown = (state) => state.hostLine?.text === OREO;
 const LEVEL = { faciles: { fill: .55, finish: [.85, 1.25] }, normales: { fill: .8, finish: [.5, .9] }, dificiles: { fill: .95, finish: [.28, .55] } };
 const SECRET = ['spin', 'letter', 'write', 'basta', 'collect'];
 
@@ -143,7 +158,7 @@ export class StopGame {
     this.phase = 'lobby'; this.round = 0; this.rounds = this.options.rounds; this.categories = [];
     this.letter = null; this.used = []; this.spinner = 0; this.spinFrom = 0; this.limit = this.options.seconds;
     this.phaseTime = 0; this.timeLeft = 0; this.writeTime = 0; this.stopper = null; this.review = null;
-    this.dictionary = []; this.hostLine = '¡Bienvenidos a la mesa de ¡Stop!!'; this.barks = []; this.barkId = 0;
+    this.dictionary = []; this.hostLine = line(locKey('¡Bienvenidos a la mesa de ¡Stop!!')); this.barks = []; this.barkId = 0;
     this.winner = null; this.titles = null; this.games = 0;
     this.custom = []; this.history = []; this.notes = { best: null, debate: null };
     this.revision = 0; this.ledger = {};
@@ -224,7 +239,7 @@ export class StopGame {
     for (const p of this.players) Object.assign(p, { round: 0, filled: 0, submitted: false, sheet: null });
     Object.assign(this, { phase: 'spin', phaseTime: 0, timeLeft: 0, letter: null, stopper: null, review: null, notes: { best: null, debate: null } });
     this.plans = []; this.plans[this.spinner] = { spinAt: between(this, [1.2, 2.6]) };
-    this.hostLine = `Ronda ${this.round} de ${this.rounds}: ${this.players[this.spinner].name} gira la rueda. ¡Grítale «¡Para!»!`;
+    this.hostLine = line(locKey('Ronda {round} de {rounds}: {name} gira la rueda. ¡Grítale «¡Para!»!'), { round: this.round, rounds: this.rounds, name: this.players[this.spinner].name });
     this.revision++;
   }
 
@@ -236,13 +251,13 @@ export class StopGame {
     if (!pool.length) { this.used = []; pool = all; }
     this.letter = pick(this, pool); this.used.push(this.letter);
     this.phase = 'letter'; this.phaseTime = 0;
-    this.hostLine = `¡Para! Salió la ${this.letter}.`;
-    this.bark(this.spinner, '¡Para!'); this.revision++; return true;
+    this.hostLine = line(locKey('¡Para! Salió la {letter}.'), { letter: this.letter });
+    this.bark(this.spinner, locKey('¡Para!')); this.revision++; return true;
   }
 
   startWrite() {
     Object.assign(this, { phase: 'write', phaseTime: 0, writeTime: 0, timeLeft: this.limit, stopper: null });
-    this.hostLine = `Todo con ${this.letter}. ¡A escribir!`;
+    this.hostLine = line(locKey('Todo con {letter}. ¡A escribir!'), { letter: this.letter });
     this.plans = []; this.planWriting(false); this.revision++;
   }
 
@@ -286,17 +301,17 @@ export class StopGame {
     if (clean.some(a => !a || tooShort(a))) return false;
     Object.assign(p, { sheet: clean, submitted: true, filled: this.count }); p.stats.stops++;
     this.stopper = p.seat; this.phase = 'basta'; this.phaseTime = 0; this.timeLeft = TIMES.basta;
-    this.hostLine = '¡Basta! 5 segundos…';
-    this.bark(p.seat, '¡STOP!');
+    this.hostLine = line(locKey('¡Basta! 5 segundos…'));
+    this.bark(p.seat, locKey('¡STOP!'));
     const caught = seated(this).filter(o => o.seat !== p.seat && o.filled < this.count).slice(0, 2);
-    caught.forEach(o => this.bark(o.seat, '¡Me agarró fuera de base!'));
+    caught.forEach(o => this.bark(o.seat, locKey('¡Me agarró fuera de base!')));
     this.revision++; return true;
   }
 
   pencilsDown() {
     this.phase = 'collect'; this.phaseTime = 0; this.timeLeft = 0;
-    if (this.stopper === null) this.hostLine = '¡Se acabó el tiempo! Lápices abajo.';
-    else this.hostLine = `¡Lápices abajo! ${this.players[this.stopper].name} gritó ¡STOP!`;
+    if (this.stopper === null) this.hostLine = line(locKey('¡Se acabó el tiempo! Lápices abajo.'));
+    else this.hostLine = line(locKey('¡Lápices abajo! {name} gritó ¡STOP!'), { name: this.players[this.stopper].name });
     this.collectBots(); this.revision++; this.maybeReview();
   }
   collectBots() { for (const p of seated(this)) if (p.id === null && !p.submitted) this.collectBot(p); }
@@ -337,11 +352,13 @@ export class StopGame {
     if (groups.length) {
       const oreo = groups.find(g => g.joke === 'oreo'), movie = groups.find(g => /pel[ií]cula|Disney|Pok/.test(g.explain));
       const open = ['libre', 'propia'].includes(kindOf(cat));
-      this.hostLine = oreo ? `¡${oreo.word}: 200 puntos!` : movie ? '¡Ya te estás abusando! ¿Eso cuenta?' : open ? `${label(cat)}: ¿cuáles cuentan?` : '¿Eso cuenta?';
+      this.hostLine = oreo ? line(OREO, { word: oreo.word }) : movie ? line(locKey('¡Ya te estás abusando! ¿Eso cuenta?'))
+        : open ? line(locKey('{category}: ¿cuáles cuentan?'), { cat }) : line(locKey('¿Eso cuenta?'));
       this.planVotes();
     } else {
       this.score();
-      this.hostLine = wrong ? `¡${wrong.answer} se escribe con ${wrong.first}!` : crude ? 'Eso no se dice en esta mesa.' : `${label(cat)} con ${this.letter}.`;
+      this.hostLine = wrong ? line(locKey('¡{answer} se escribe con {letter}!'), { answer: wrong.answer, letter: wrong.first })
+        : crude ? line(locKey('Eso no se dice en esta mesa.')) : line(locKey('{category} con {letter}.'), { cat, letter: this.letter });
     }
     this.revision++;
   }
@@ -378,11 +395,13 @@ export class StopGame {
       if (g.accepted && !this.dictionary.some(d => d.category === r.category && soundKey(d.word) === soundKey(g.word))) this.dictionary.push({ category: r.category, word: g.word });
       if (!g.accepted) for (const seat of g.authors) this.players[seat].stats.rejected++;
       const voter = Object.keys(g.votes).map(Number).find(seat => g.votes[seat] === g.accepted);
-      if (voter !== undefined) this.bark(voter, g.creative ? '¡Pedazo de loco!' : g.accepted ? 'Bueno, pasa…' : g.joke === 'oreo' ? '¡Ni lo sueñes!' : '¡Ya te estás abusando!');
+      if (voter !== undefined) this.bark(voter, g.creative ? locKey('¡Pedazo de loco!') : g.accepted ? locKey('Bueno, pasa…') : g.joke === 'oreo' ? locKey('¡Ni lo sueñes!') : locKey('¡Ya te estás abusando!'));
     }
     this.score(); this.note(r);
     const best = r.groups.find(g => g.creative), out = r.groups.find(g => !g.accepted);
-    this.hostLine = r.groups.some(g => g.joke === 'oreo' && !g.creative) ? '¡Ni lo sueñes!' : best ? `¡Pedazo de loco! «${best.word}» cuenta y suma Creatividad.` : out ? `«${out.word}» no cuenta.` : 'La mesa lo aceptó.';
+    this.hostLine = r.groups.some(g => g.joke === 'oreo' && !g.creative) ? line(locKey('¡Ni lo sueñes!'))
+      : best ? line(locKey('¡Pedazo de loco! «{word}» cuenta y suma Creatividad.'), { word: best.word })
+      : out ? line(locKey('«{word}» no cuenta.'), { word: out.word }) : line(locKey('La mesa lo aceptó.'));
     r.stage = 'result'; this.phaseTime = 0; this.timeLeft = 0; this.plans = []; this.revision++;
   }
 
@@ -415,14 +434,14 @@ export class StopGame {
     const best = seated(this).sort((a, b) => b.round - a.round || a.seat - b.seat)[0];
     this.phase = 'tally'; this.phaseTime = 0; this.review = { ...this.review, stage: 'done' };
     (this.history ||= []).push({ round: this.round, letter: this.letter, top: { seat: best.seat, points: best.round }, best: this.notes?.best || null, debate: this.notes?.debate || null });
-    this.hostLine = `Ronda ${this.round}: ${best.name} sacó ${best.round} puntos.`;
+    this.hostLine = line(locKey('Ronda {round}: {name} sacó {points} puntos.'), { round: this.round, name: best.name, points: best.round });
     this.revision++;
   }
 
   finish() {
     const order = ranking(this);
     this.winner = order[0].seat; this.phase = 'finished'; this.titles = titles(this);
-    this.hostLine = `¡${order[0].name} es el cuarto bate! Calabaza, calabaza, cada quien para su casa.`;
+    this.hostLine = line(locKey('¡{name} es el cuarto bate! Calabaza, calabaza, cada quien para su casa.'), { name: order[0].name });
     this.revision++;
   }
 
@@ -447,7 +466,7 @@ export class StopGame {
         if (filled !== p.filled) { p.filled = filled; this.revision++; }
         if (this.phase === 'write' && this.writeTime >= plan.stopAt) this.stop(p, plan.answers);
       }
-      if (this.phase === 'write' && this.timeLeft <= 10 && shown > 10) this.hostLine = '¡Quedan diez segundos!';
+      if (this.phase === 'write' && this.timeLeft <= 10 && shown > 10) this.hostLine = line(locKey('¡Quedan diez segundos!'));
       if (this.timeLeft <= 0) this.pencilsDown();
     } else if (this.phase === 'collect') {
       if (this.phaseTime >= TIMES.collect) {
@@ -459,7 +478,7 @@ export class StopGame {
       if (r.stage === 'vote') {
         this.timeLeft = Math.max(0, (r.voteTime || TIMES.vote) - this.phaseTime);
         for (const p of this.players) for (const v of (p.id === null && this.plans[p.seat]) || []) if (!v.done && this.phaseTime >= v.at) { v.done = true; this.vote(p, v.group, v.yes); if (this.review.stage !== 'vote') break; }
-        if (r.stage === 'vote' && r.groups.some(g => g.joke === 'oreo') && this.phaseTime >= 1.4 && this.hostLine.includes('200')) { this.hostLine = '¡Ni lo sueñes! Cuenta como cualquier otra. ¿Eso cuenta?'; this.revision++; }
+        if (r.stage === 'vote' && r.groups.some(g => g.joke === 'oreo') && this.phaseTime >= 1.4 && oreoShown(this)) { this.hostLine = line(locKey('¡Ni lo sueñes! Cuenta como cualquier otra. ¿Eso cuenta?')); this.revision++; }
         if (r.stage === 'vote' && this.timeLeft <= 0) this.resolveVotes();
       } else if (this.phaseTime >= (r.stage === 'show' ? TIMES.show : TIMES.result)) this.nextCategory();
     } else if (this.phase === 'tally') {
@@ -506,36 +525,38 @@ export function titles(state) {
     return best && best.stats[key] > 0 ? best.seat : null;
   };
   const give = (seat, title) => { if (seat !== null) out[seat].push(title); };
-  give(ranking(state)[0].seat, 'Cuarto bate');
-  give(most('stops'), 'El más rápido');
-  give(most('creative'), 'Pana creativo');
-  give(most('rejected'), 'El abusador');
-  give(most('thumbsDown'), 'El estricto');
-  give(most('empty'), 'Monte y culebra');
+  give(ranking(state)[0].seat, locKey('Cuarto bate'));
+  give(most('stops'), locKey('El más rápido'));
+  give(most('creative'), locKey('Pana creativo'));
+  give(most('rejected'), locKey('El abusador'));
+  give(most('thumbsDown'), locKey('El estricto'));
+  give(most('empty'), locKey('Monte y culebra'));
   return out;
 }
 
+// Titles travel in state as these Spanish names; the screen passes both through loc().
 export const TITLE_TEXT = {
-  'Cuarto bate': 'El ganador',
-  'El más rápido': 'Gritó ¡STOP! más veces',
-  'Pana creativo': 'Más bonos de Creatividad',
-  'El abusador': 'Más respuestas rechazadas',
-  'El estricto': 'Votó en contra más veces',
-  'Monte y culebra': 'Más casillas en blanco',
+  'Cuarto bate': locKey('El ganador'),
+  'El más rápido': locKey('Gritó ¡STOP! más veces'),
+  'Pana creativo': locKey('Más bonos de Creatividad'),
+  'El abusador': locKey('Más respuestas rechazadas'),
+  'El estricto': locKey('Votó en contra más veces'),
+  'Monte y culebra': locKey('Más casillas en blanco'),
 };
 
-// What the card says under an answer in the review.
+// What the card says under an answer in the review, in the player's language
+// (each client builds it from the shared review).
 export function verdictText(item, group) {
-  if (item.reason === 'empty') return 'En blanco';
-  if (item.reason === 'short') return 'Eso no es una palabra';
-  if (item.reason === 'letter') return `Se escribe con ${item.first}`;
-  if (item.reason === 'crude') return 'Eso no se dice en esta mesa';
-  if (item.reason === 'mesa') return 'La aceptó esta mesa';
-  if (item.reason === 'typo') return `Se acepta como ${item.word}`;
+  if (item.reason === 'empty') return loc('En blanco');
+  if (item.reason === 'short') return loc('Eso no es una palabra');
+  if (item.reason === 'letter') return loc('Se escribe con {letter}', { letter: item.first });
+  if (item.reason === 'crude') return loc('Eso no se dice en esta mesa');
+  if (item.reason === 'mesa') return loc('La aceptó esta mesa');
+  if (item.reason === 'typo') return loc('Se acepta como {word}', { word: item.word });
   if (item.status === 'yellow') {
-    if (group?.accepted === true) return group.creative ? '¡Pedazo de loco! +50 Creatividad' : 'La mesa la aceptó';
-    if (group?.accepted === false) return group.joke === 'oreo' ? '¡Ni lo sueñes!' : '¡Ya te estás abusando!';
-    return item.reason === 'close' ? `¿${item.word}?` : '¿Eso cuenta?';
+    if (group?.accepted === true) return group.creative ? loc('¡Pedazo de loco! +50 Creatividad') : loc('La mesa la aceptó');
+    if (group?.accepted === false) return group.joke === 'oreo' ? loc('¡Ni lo sueñes!') : loc('¡Ya te estás abusando!');
+    return item.reason === 'close' ? loc('¿{word}?', { word: item.word }) : loc('¿Eso cuenta?');
   }
-  return 'Vale';
+  return loc('Vale');
 }

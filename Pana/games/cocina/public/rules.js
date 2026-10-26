@@ -1,23 +1,33 @@
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
+import { loc, locKey } from '../../../engine/i18n.js';
 // Plain simulation, shared by the host, UI and Node tests. No browser globals.
 export const RECIPES = [
-  { id: 'arepa', name: 'Arepa', ingredients: 'Masa + queso', cook: 6, points: 80, color: '#e7ad4d' },
-  { id: 'cachapa', name: 'Cachapa', ingredients: 'Maíz + queso', cook: 7, points: 100, color: '#f4bf2e' },
-  { id: 'tequenos', name: 'Tequeños', ingredients: 'Masa + queso', cook: 5, points: 70, color: '#dc8a35' },
-  { id: 'empanada', name: 'Empanada', ingredients: 'Masa + carne', cook: 8, points: 110, color: '#e99c3a' },
+  // Dish names stay Spanish in every language; ingredients are locKey() and shown with loc().
+  { id: 'arepa', name: 'Arepa', ingredients: locKey('Masa + queso'), cook: 6, points: 80, color: '#e7ad4d' },
+  { id: 'cachapa', name: 'Cachapa', ingredients: locKey('Maíz + queso'), cook: 7, points: 100, color: '#f4bf2e' },
+  { id: 'tequenos', name: 'Tequeños', ingredients: locKey('Masa + queso'), cook: 5, points: 70, color: '#dc8a35' }, // i18n-ignore: dish name
+  { id: 'empanada', name: 'Empanada', ingredients: locKey('Masa + carne'), cook: 8, points: 110, color: '#e99c3a' },
 ];
+// Text the host sends (events, interact notices): a Spanish key or
+// { text, vars }, where a var may itself be one. Each client translates it.
+export function say(message) {
+  if (!message) return '';
+  if (typeof message === 'string') return loc(message);
+  const vars = message.vars && Object.fromEntries(Object.entries(message.vars).map(([k, v]) => [k, v && typeof v === 'object' ? say(v) : v]));
+  return loc(message.text, vars);
+}
 export const recipe = id => RECIPES.find(r => r.id === id) || RECIPES[0];
 export const DURATION = 180, PREP_TIME = 2.4, BURN_TIME = 12;
 export const STATIONS = [
   ...RECIPES.map((r, i) => ({ id: `supply-${r.id}`, type: 'supply', recipe: r.id, label: r.name, x: -9 + i * 3, z: -3, w: 2.6, d: 2.2 })),
-  { id: 'prep-1', type: 'prep', label: 'Preparar', x: -9, z: 3, w: 3, d: 2.2 },
-  { id: 'prep-2', type: 'prep', label: 'Preparar', x: -3, z: 3, w: 3, d: 2.2 },
-  { id: 'stove-1', type: 'stove', label: 'Cocinar', x: 5, z: -3, w: 2.7, d: 2.2 },
-  { id: 'stove-2', type: 'stove', label: 'Cocinar', x: 8, z: -3, w: 2.7, d: 2.2 },
-  { id: 'stove-3', type: 'stove', label: 'Cocinar', x: 7, z: 3, w: 3, d: 2.2 },
-  { id: 'counter-1', type: 'counter', label: 'Pasar plato', x: -3, z: 8.8, w: 3, d: 2 },
-  { id: 'serve', type: 'serve', label: 'Servir pedido', x: 4, z: 9.5, w: 6, d: 2.2 },
-  { id: 'trash', type: 'trash', label: 'Descartar', x: -10, z: 9, w: 1.6, d: 1.6 },
+  { id: 'prep-1', type: 'prep', label: locKey('Preparar'), x: -9, z: 3, w: 3, d: 2.2 },
+  { id: 'prep-2', type: 'prep', label: locKey('Preparar'), x: -3, z: 3, w: 3, d: 2.2 },
+  { id: 'stove-1', type: 'stove', label: locKey('Cocinar'), x: 5, z: -3, w: 2.7, d: 2.2 },
+  { id: 'stove-2', type: 'stove', label: locKey('Cocinar'), x: 8, z: -3, w: 2.7, d: 2.2 },
+  { id: 'stove-3', type: 'stove', label: locKey('Cocinar'), x: 7, z: 3, w: 3, d: 2.2 },
+  { id: 'counter-1', type: 'counter', label: locKey('Pasar plato'), x: -3, z: 8.8, w: 3, d: 2 },
+  { id: 'serve', type: 'serve', label: locKey('Servir pedido'), x: 4, z: 9.5, w: 6, d: 2.2 },
+  { id: 'trash', type: 'trash', label: locKey('Descartar'), x: -10, z: 9, w: 1.6, d: 1.6 },
 ];
 export const BOUNDS = { minX: -12, maxX: 11, minZ: -5, maxZ: 12 };
 export function blocked(x, z, r = 0.48) {
@@ -90,7 +100,8 @@ export class Kitchen {
   }
   fillBots() {
     if (!this.helpers || this.phase === 'lobby') return;
-    const names = ['Coco', 'Lola', 'Pipo'], colors = ['#3d7bf2', '#2eaa70', '#ffc629'];
+    const names = ['Coco', 'Lola', 'Pipo'], // i18n-ignore: names
+      colors = ['#3d7bf2', '#2eaa70', '#ffc629'];
     for (let i = 0; this.players.length < 3 && i < 3; i++) {
       const id = -i - 1; if (this.players.some(p => p.id === id)) continue;
       this.players.push({ id, name: names[i], avatar: { fur: '#dfa460', outfitColor: colors[i], glasses: 'none', face: i === 1 ? 'lengua' : 'ojazos' }, bot: true, x: -2 + i * 2, z: 6, h: 0, held: null, moving: false, dash: 0, cooldown: 0, deliveries: 0 });
@@ -102,9 +113,10 @@ export class Kitchen {
     for (const p of people) this.addPlayer(p.id, p.name, p.avatar);
     this.phase = 'playing'; this.fillBots();
     for (let i = 0; i < ({ easy: 3, normal: 4, chaos: 5 }[this.options.difficulty]); i++) this.addOrder(i % RECIPES.length);
-    this.event('¡Abierta la cocina! Primero busca los ingredientes.', 'start');
+    this.event(locKey('¡Abierta la cocina! Primero busca los ingredientes.'), 'start');
   }
-  event(text, kind = 'notice') { this.events = [{ id: ++this.eventId, text, kind }]; }
+  // Synced: Spanish keys plus their variables; each client shows them with say().
+  event(text, kind = 'notice', vars) { this.events = [{ id: ++this.eventId, text, kind, ...(vars ? { vars } : {}) }]; }
   addOrder(index) {
     const id = ++this.orderId, r = this.options.orders === 'arepa' ? RECIPES[0] : RECIPES[index ?? ((id * 7 + Math.floor(id / 4)) % 4)];
     const patience = (65 + this.orders.length * 9) * ({ easy: 1.5, normal: 1, chaos: .65 }[this.options.difficulty]);
@@ -114,39 +126,39 @@ export class Kitchen {
     if (this.phase !== 'playing') return '';
     const p = this.players.find(p => p.id === id); if (!p || p.cooldown > 0) return '';
     const def = stationId ? STATIONS.find(s => s.id === stationId) : nearestStation(p);
-    if (!def || distance(p, def) >= 1.15) return 'Acércate a una mesa o a un fogón.';
+    if (!def || distance(p, def) >= 1.15) return locKey('Acércate a una mesa o a un fogón.');
     p.cooldown = 0.2;
     const s = this.stations.find(s => s.id === def.id), held = p.held;
-    if (s.fire > 0) { s.fire = Math.max(0, s.fire - 1); if (!s.fire) { s.item = null; s.progress = 0; s.owner = null; } return s.fire ? '¡Otra vez para apagar el fuego!' : '¡Fuego apagado! Fogón listo.'; }
+    if (s.fire > 0) { s.fire = Math.max(0, s.fire - 1); if (!s.fire) { s.item = null; s.progress = 0; s.owner = null; } return s.fire ? locKey('¡Otra vez para apagar el fuego!') : locKey('¡Fuego apagado! Fogón listo.'); }
     if (def.type === 'supply') {
-      if (held) return 'Tienes las manos ocupadas. Deja el plato en una mesa.';
-      p.held = { recipe: def.recipe, stage: 'raw' }; return `${recipe(def.recipe).ingredients}: llévalos a preparar.`;
+      if (held) return locKey('Tienes las manos ocupadas. Deja el plato en una mesa.');
+      p.held = { recipe: def.recipe, stage: 'raw' }; return { text: locKey('{ingredients}: llévalos a preparar.'), vars: { ingredients: { text: recipe(def.recipe).ingredients } } };
     }
-    if (def.type === 'trash') { p.held = null; return held ? 'Listo, manos libres.' : 'Aquí puedes descartar comida.'; }
+    if (def.type === 'trash') { p.held = null; return held ? locKey('Listo, manos libres.') : locKey('Aquí puedes descartar comida.'); }
     if (def.type === 'serve') {
-      if (!held || held.stage !== 'cooked') return 'Trae un plato cocinado para servir.';
+      if (!held || held.stage !== 'cooked') return locKey('Trae un plato cocinado para servir.');
       const order = this.orders.find(o => o.recipe === held.recipe);
-      if (!order) return 'No hay un pedido de ese plato. Déjalo en la mesa.';
+      if (!order) return locKey('No hay un pedido de ese plato. Déjalo en la mesa.');
       this.combo = Math.min(5, this.combo + 1);
       const points = recipe(held.recipe).points + (this.options.tips ? (this.combo - 1) * 10 : 0);
       this.score += points; this.served++; p.deliveries++; p.held = null;
       this.orders = this.orders.filter(o => o.id !== order.id); this.addOrder();
-      this.event(`¡${recipe(held.recipe).name} servida! +${points}`, 'serve'); return '';
+      this.event(locKey('¡{dish} servida! +{points}'), 'serve', { dish: recipe(held.recipe).name, points }); return '';
     }
     if (def.type === 'counter') {
-      const old = s.item; s.item = held; p.held = old; return p.held ? '¡Plato en mano!' : 'Plato listo para otro pana.';
+      const old = s.item; s.item = held; p.held = old; return p.held ? locKey('¡Plato en mano!') : locKey('Plato listo para otro pana.');
     }
     if (s.item) {
-      if (held) return 'Tienes las manos ocupadas.';
-      if (s.item.stage === 'raw' || s.item.stage === 'prepared' && def.type === 'stove') return def.type === 'prep' ? 'Un momentico, estamos preparando…' : 'Todavía se está cocinando…';
+      if (held) return locKey('Tienes las manos ocupadas.');
+      if (s.item.stage === 'raw' || s.item.stage === 'prepared' && def.type === 'stove') return def.type === 'prep' ? locKey('Un momentico, estamos preparando…') : locKey('Todavía se está cocinando…');
       p.held = s.item; s.item = null; s.progress = 0; s.owner = null;
-      return p.held.stage === 'prepared' ? '¡Al fogón!' : '¡A servir antes de que se enfríe!';
+      return p.held.stage === 'prepared' ? locKey('¡Al fogón!') : locKey('¡A servir antes de que se enfríe!');
     }
-    if (!held) return def.type === 'prep' ? 'Busca ingredientes en los cajones del fondo.' : 'Primero prepara los ingredientes en una tabla.';
-    if (def.type === 'prep' && held.stage !== 'raw') return 'Ese plato ya está preparado.';
-    if (def.type === 'stove' && held.stage !== 'prepared') return 'Primero pasa por una tabla de preparar.';
+    if (!held) return def.type === 'prep' ? locKey('Busca ingredientes en los cajones del fondo.') : locKey('Primero prepara los ingredientes en una tabla.');
+    if (def.type === 'prep' && held.stage !== 'raw') return locKey('Ese plato ya está preparado.');
+    if (def.type === 'stove' && held.stage !== 'prepared') return locKey('Primero pasa por una tabla de preparar.');
     s.item = held; s.progress = 0; s.owner = id; p.held = null;
-    return def.type === 'prep' ? 'Preparando… Recoge cuando esté listo.' : '¡Al fuego! Recoge cuando la barra esté verde.';
+    return def.type === 'prep' ? locKey('Preparando… Recoge cuando esté listo.') : locKey('¡Al fuego! Recoge cuando la barra esté verde.');
   }
   botTarget(p) {
     const owned = this.stations.find(s => s.owner === p.id && s.item);
@@ -167,10 +179,10 @@ export class Kitchen {
     if (this.phase !== 'playing') return;
     dt = Math.max(0, Math.min(dt, 0.1)); this.remaining = Math.max(0, this.remaining - dt);
     if (!this.remaining) { this.phase = 'results'; this.players.forEach(p => { p.moving = false; }); return; }
-    if (this.options.switchKitchen && !this.switched && this.remaining <= this.options.duration / 2) { this.switched = true; this.kitchen = this.kitchen === 'mercado' ? 'playa' : 'mercado'; this.event('¡Mudanza! La cocina sigue en ' + (this.kitchen === 'playa' ? 'la playa.' : 'el mercado.')); }
+    if (this.options.switchKitchen && !this.switched && this.remaining <= this.options.duration / 2) { this.switched = true; this.kitchen = this.kitchen === 'mercado' ? 'playa' : 'mercado'; this.event(this.kitchen === 'playa' ? locKey('¡Mudanza! La cocina sigue en la playa.') : locKey('¡Mudanza! La cocina sigue en el mercado.')); }
     for (const order of [...this.orders]) {
       if (this.options.impatient) order.remaining -= dt;
-      if (order.remaining <= 0) { this.orders = this.orders.filter(o => o.id !== order.id); this.missed++; this.combo = 0; this.event(`Se fue un pedido de ${recipe(order.recipe).name.toLowerCase()}.`, 'miss'); this.addOrder(); }
+      if (order.remaining <= 0) { this.orders = this.orders.filter(o => o.id !== order.id); this.missed++; this.combo = 0; this.event(locKey('Se fue un pedido de {dish}.'), 'miss', { dish: recipe(order.recipe).name.toLowerCase() }); this.addOrder(); }
     }
     for (const s of this.stations) {
       if (!s.item || s.fire) continue;
@@ -181,7 +193,7 @@ export class Kitchen {
       if (def.type === 'stove') {
         const done = recipe(s.item.recipe).cook;
         if (s.progress >= done) s.item.stage = 'cooked';
-        if (s.progress >= done + this.burnTime) { s.item.stage = 'burnt'; s.fire = 2; this.burnt++; this.combo = 0; this.event('¡Se quemó! Acércate al fogón y pulsa E dos veces.', 'fire'); }
+        if (s.progress >= done + this.burnTime) { s.item.stage = 'burnt'; s.fire = 2; this.burnt++; this.combo = 0; this.event(locKey('¡Se quemó! Acércate al fogón y pulsa E dos veces.'), 'fire'); }
       }
     }
     for (const p of this.players) {

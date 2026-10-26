@@ -14,7 +14,7 @@ function add(group, geometry, mat, x = 0, y = 0, z = 0) {
 function finish(group) { group.userData.dispose = () => disposeModel(group); return group; }
 // Origin at the underside; the playing surface is +0.12 m, forward is +Z.
 export function createLudoBoard() {
-  const group = new THREE.Group(); group.name = 'Tablero de Ludo';
+  const group = new THREE.Group(); group.name = 'Tablero de Ludo'; // i18n-ignore: object name for Studio
   const cream = material('#f3e9d7'), ink = material('#65544a');
   add(group, new RoundedBoxGeometry(5.65, .12, 5.65, 3, .07), material('#86522f'), 0, .02);
   add(group, new THREE.BoxGeometry(5.42, .035, 5.42), cream, 0, .095);
@@ -77,7 +77,7 @@ function dieTexture(value) {
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 export function createLudoDie() {
-  const group=new THREE.Group();group.name='Dado de Ludo';
+  const group=new THREE.Group();group.name='Dado de Ludo'; // i18n-ignore: object name for Studio
   add(group,new RoundedBoxGeometry(.43,.43,.43,3,.045),[3,4,1,6,2,5].map(v=>new THREE.MeshPhysicalMaterial({map:dieTexture(v),roughness:.35,clearcoat:1,clearcoatRoughness:.2})),0,.215);
   return finish(group);
 }

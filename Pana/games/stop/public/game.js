@@ -8,11 +8,12 @@ import { roomCode, bootGame } from '/engine/game-shell.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { StopRoom } from './network.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
-import { ranking, seated, rememberWords, TITLE_TEXT } from './rules.js';
+import { ranking, seated, rememberWords, TITLE_TEXT, lineText } from './rules.js';
 import { createSheet } from './sheet.js';
 import { createReview } from './review.js';
 import { createPackPicker, createCategoriesDialog, renderRecap, summaryText } from './libreta.js';
 import { renderBoard, renderWheelPanel, renderTally, shout, botDetail, clockText } from './hud.js';
+import { loc, locn } from '/engine/i18n.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
@@ -22,30 +23,32 @@ const room = new StopRoom({ code, name: loadName(), avatar: loadAvatar(), onStat
   onStatus(text, down = false) { failed = down; $('connection').textContent = text; $('practice').hidden = !down; render(room.state); },
 });
 // The pack has its own picker, so the shared panel leaves it out.
-const roomOptions = createRoomOptions($('room-options'), { title: '¡Stop!', fields: ROOM_OPTIONS.filter(f => f.id !== 'set'),
+const roomOptions = createRoomOptions($('room-options'), { title: '¡Stop!', fields: ROOM_OPTIONS.filter(f => f.id !== 'set'), // i18n-ignore: game name
   change: options => room.action('options', { options }), reset: () => { room.action('options', { options: defaultOptions() }); room.action('custom', { list: [] }); } });
 const packs = createPackPicker($('pack-pick'), { change: set => room.action('options', { options: { set } }) });
 const categories = createCategoriesDialog($('libreta'), { save: list => room.action('custom', { list }) });
 const connection = () => room.offline ? 'local' : room.connected ? 'online' : failed ? 'offline' : 'connecting';
 // The shared sala (engine/sala.js): summary, connection and the Categorías button.
-$('lobby').panaSala = { kitLabel: 'Categorías', openKit: () => categories.open(), image: null, startLabel: '¡Saca la libreta!',
+$('lobby').panaSala = { kitLabel: loc('Categorías'), openKit: () => categories.open(), image: null, startLabel: loc('¡Saca la libreta!'),
   read: () => ({ connection: connection(), players: [], local: null, summary: summaryText(room.state) }) };
-const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', '¡Para! la rueda'] } }, title: '¡Stop! · Pana', sound, orientation: 'libre',
-  note: () => room.members.size > 1 ? 'La ronda sigue mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
-  controls: [['Tab / Enter', 'Pasar a la siguiente casilla'], ['Espacio', '¡Para! cuando te toca la rueda'], ['Ratón / toque', '¡STOP! y los votos'], ['M', 'Activar o silenciar el sonido']],
+const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', loc('¡Para! la rueda')] } }, title: '¡Stop! · Pana', sound, orientation: 'libre', // i18n-ignore: game name
+  note: () => room.members.size > 1 ? loc('La ronda sigue mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
+  controls: [['Tab / Enter', loc('Pasar a la siguiente casilla')], [loc('Espacio'), loc('¡Para! cuando te toca la rueda')], [loc('Ratón / toque'), loc('¡STOP! y los votos')], ['M', loc('Activar o silenciar el sonido')]],
   tips: [
-    'Sale una letra y escribes una palabra por categoría que empiece con ella. Nadie ve tu hoja hasta la revisión.',
-    'El primero que llena todo grita ¡STOP! y los demás tienen 5 segundos. Si nadie termina, se acaba el tiempo.',
-    'Lo que el juego conoce cuenta solo (verde). Lo que no empieza con la letra, no (rojo). Lo dudoso se vota: «¿Eso cuenta?».',
-    '100 puntos si nadie más la puso, 50 si alguien la repitió. Una dudosa que la mesa acepta con dos tercios suma +50 de Creatividad.',
-    'Lo que la mesa acepta se queda: en la próxima partida cuenta solo.',
-    'Con «Más criollo» las groserías van a votación; sin eso, la libreta las tacha sola.',
-    "En «Pa' reírse», «Confiesa» e «Inventa» no hay respuesta correcta: la mesa vota todo y gana el más ocurrido.",
-    'El anfitrión puede poner hasta tres categorías propias en «Categorías». Siempre se votan.',
+    loc('Sale una letra y escribes una palabra por categoría que empiece con ella. Nadie ve tu hoja hasta la revisión.'),
+    loc('El primero que llena todo grita ¡STOP! y los demás tienen 5 segundos. Si nadie termina, se acaba el tiempo.'),
+    loc('Lo que el juego conoce cuenta solo (verde). Lo que no empieza con la letra, no (rojo). Lo dudoso se vota: «¿Eso cuenta?».'),
+    loc('100 puntos si nadie más la puso, 50 si alguien la repitió. Una dudosa que la mesa acepta con dos tercios suma +50 de Creatividad.'),
+    loc('Lo que la mesa acepta se queda: en la próxima partida cuenta solo.'),
+    loc('Con «Más criollo» las groserías van a votación; sin eso, la libreta las tacha sola.'),
+    loc("En «Pa' reírse», «Confiesa» e «Inventa» no hay respuesta correcta: la mesa vota todo y gana el más ocurrido."),
+    loc('El anfitrión puede poner hasta tres categorías propias en «Categorías». Siempre se votan.'),
   ],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
+// These hold player names next to text already passed through loc().
+for (const id of ['result-roster', 'result-title', 'host-line', 'tally-title']) $(id).translate = false;
 $('rules').onclick = () => menu.open('controls');
 $('start').onclick = $('again').onclick = () => { sound.unlock(); room.action('start'); };
 $('practice').onclick = () => room.practice();
@@ -89,26 +92,26 @@ function renderSheet(state, p) {
   const phase = state.phase, stopped = state.stopper === room.seat;
   const canWrite = !!p && room.connected && !p.submitted && !menu.isOpen && (phase === 'write' || (phase === 'basta' && !stopped));
   sheet.sync(state, { roundKey: roundKey(state), canWrite, focus: phase === 'write' && !matchMedia('(pointer: coarse)').matches });
-  $('sheet-meta').textContent = `Ronda ${state.round} de ${state.rounds}`;
+  $('sheet-meta').textContent = loc('Ronda {round} de {rounds}', { round: state.round, rounds: state.rounds });
   const timed = phase === 'write' || phase === 'basta';
   $('sheet-clock').textContent = timed ? (phase === 'basta' ? `${Math.ceil(state.timeLeft)}…` : clockText(state.timeLeft)) : '';
   $('sheet-clock').classList.toggle('hurry', phase === 'basta' || (timed && state.timeLeft <= 10));
   const n = state.categories.length, mine = sheet.filled();
-  $('sheet-note').textContent = !p ? 'Estás mirando: la mesa está llena.'
-    : phase === 'collect' ? 'Lápices abajo. Entregando las hojas…'
-    : phase === 'basta' ? (stopped ? '¡Gritaste STOP! Los demás tienen 5 segundos.' : `¡${state.players[state.stopper].name} gritó STOP! ¡Apúrate!`)
-    : mine === n ? (sheet.full() ? '¡Todo lleno! Grita ¡STOP!' : 'Una sola letra no vale: escribe la palabra.') : `${mine} de ${n} casillas. Nadie ve tu hoja.`;
+  $('sheet-note').textContent = !p ? loc('Estás mirando: la mesa está llena.')
+    : phase === 'collect' ? loc('Lápices abajo. Entregando las hojas…')
+    : phase === 'basta' ? (stopped ? loc('¡Gritaste STOP! Los demás tienen 5 segundos.') : loc('¡{name} gritó STOP! ¡Apúrate!', { name: state.players[state.stopper].name }))
+    : mine === n ? (sheet.full() ? loc('¡Todo lleno! Grita ¡STOP!') : loc('Una sola letra no vale: escribe la palabra.')) : loc('{mine} de {n} casillas. Nadie ve tu hoja.', { mine, n });
 }
 
 function sounds(state, p) {
   const phase = state.phase, clock = Math.ceil(state.timeLeft);
   if (phase !== lastPhase) {
     if (phase === 'spin') sound.whoosh();
-    if (phase === 'letter') { shout(`¡Salió la ${state.letter}!`, 'yellow', 1700); sound.pickup(1); }
-    if (phase === 'write' && lastPhase === 'letter') shout('¡A escribir!', 'teal', 900);
-    if (phase === 'basta') { shout('¡Basta!', 'red', 950); sound.bonk(.9); if (p && state.stopper !== p.seat && sheet.filled() < state.categories.length) $('event').textContent = '¡Me agarró fuera de base!'; }
-    if (phase === 'collect') { shout('¡Lápices abajo!', 'red', 1100); sheet.blur(); }
-    if (phase === 'review') shout('¡A revisar!', 'yellow', 1000);
+    if (phase === 'letter') { shout(loc('¡Salió la {letter}!', { letter: state.letter }), 'yellow', 1700); sound.pickup(1); }
+    if (phase === 'write' && lastPhase === 'letter') shout(loc('¡A escribir!'), 'teal', 900);
+    if (phase === 'basta') { shout(loc('¡Basta!'), 'red', 950); sound.bonk(.9); if (p && state.stopper !== p.seat && sheet.filled() < state.categories.length) $('event').textContent = loc('¡Me agarró fuera de base!'); }
+    if (phase === 'collect') { shout(loc('¡Lápices abajo!'), 'red', 1100); sheet.blur(); }
+    if (phase === 'review') shout(loc('¡A revisar!'), 'yellow', 1000);
     if (phase !== 'basta' && phase !== 'write') $('event').textContent = '';
   } else if (phase === 'basta' && clock !== lastClock && clock > 0) { shout(`${clock}…`, 'red', 900); sound.tick(5 - clock); }
   else if (phase === 'write' && clock !== lastClock && clock <= 5 && clock > 0) sound.tick(5 - clock);
@@ -117,8 +120,9 @@ function sounds(state, p) {
     const item = r.items.find(i => i.seat === p.seat);
     if (item?.creative) sound.pickup(3); else if (item?.points) sound.pickup(0); else if (item?.status === 'yellow') sound.bonk(.5);
   }
-  if (state.hostLine !== lastLine && /Ni lo sueñes/.test(state.hostLine)) sound.boing();
-  lastStage = stage; lastClock = clock; lastLine = state.hostLine;
+  const said = lineText(state.hostLine);
+  if (said !== lastLine && /Ni lo sueñes/.test(state.hostLine?.text)) sound.boing();
+  lastStage = stage; lastClock = clock; lastLine = said;
 }
 
 // Words the table voted in outlive the room: every pana's browser keeps them,
@@ -135,7 +139,7 @@ function keepMesa(state) {
 }
 
 // One title explains itself; several are listed by name.
-const titleLine = (list) => list.length === 1 ? `${list[0]}: ${TITLE_TEXT[list[0]]}` : list.join(' · ');
+const titleLine = (list) => list.length === 1 ? loc('{title}: {meaning}', { title: loc(list[0]), meaning: loc(TITLE_TEXT[list[0]]) }) : list.map(t => loc(t)).join(' · ');
 
 function render(state) {
   const phase = state.phase, lobby = phase === 'lobby', ended = phase === 'finished', p = state.players[room.seat];
@@ -150,11 +154,11 @@ function render(state) {
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby || ended;
   $('start').disabled = !world || !room.connected || !room.isHost;
   // Local and offline labels belong to the sala ("… en local").
-  if (!room.offline && !failed) $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Saca la libreta!' : 'Espera al anfitrión';
-  fillRoster($('roster'), seated(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name, detail: botDetail(o), me: o.id === room.id })));
+  if (!room.offline && !failed) $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? loc('¡Saca la libreta!') : loc('Espera al anfitrión');
+  fillRoster($('roster'), seated(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? loc('{name} · tú', { name: o.name }) : o.name, detail: botDetail(o), me: o.id === room.id })));
   if (!lobby && !ended) {
     renderBoard(state, room.id);
-    $('host-line').textContent = state.hostLine;
+    $('host-line').textContent = lineText(state.hostLine);
     $('wheel-panel').hidden = !['spin', 'letter'].includes(phase);
     $('sheet').hidden = !['write', 'basta', 'collect'].includes(phase);
     $('review').hidden = phase !== 'review';
@@ -170,9 +174,9 @@ function render(state) {
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
   if (ended && state.winner !== null) {
     const winner = state.players[state.winner];
-    $('result-title').textContent = `¡${winner.name} es el cuarto bate!`;
-    fillRoster($('result-roster'), ranking(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name,
-      detail: titleLine(state.titles?.[o.seat] || []) || `${o.stats.stops} ¡STOP! · ${o.stats.creative} ${o.stats.creative === 1 ? "creativa" : "creativas"}`,
+    $('result-title').textContent = loc('¡{name} es el cuarto bate!', { name: winner.name });
+    fillRoster($('result-roster'), ranking(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? loc('{name} · tú', { name: o.name }) : o.name,
+      detail: titleLine(state.titles?.[o.seat] || []) || locn(o.stats.creative, '{stops} ¡STOP! · {n} creativa', '{stops} ¡STOP! · {n} creativas', { stops: o.stats.stops }),
       end: o.total, score: true, me: o.id === room.id })));
     renderRecap($('recap'), state);
   }

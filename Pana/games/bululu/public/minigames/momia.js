@@ -10,6 +10,7 @@ import { mummy, sunRelic, expeditionLantern } from '/engine/models/props/reliqui
 import { templeEntrance, stoneTotem } from '/engine/models/props/jungle.js';
 import { createPlazaProp } from '/engine/models/props/plaza.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 const TIME = 30;
 const START = -11, GOAL = 7.5;      // x where the panas start and where the relic is touched
@@ -25,10 +26,10 @@ const progress = (x) => Math.max(0, Math.min(1, (x - START) / (GOAL - START)));
 
 export default {
   id: 'momia',
-  title: '¡Un, dos, tres, momia!',
-  howto: 'Corre hacia la reliquia mientras la momia cuenta. Cuando se voltee, ¡quieto! Si te ve moviéndote, vuelves al inicio. Disfrazado de barril puedes avanzar despacito (tres veces).',
-  keys: [['D / →', 'correr'], ['Espacio', 'disfrazarte']],
-  touch: { pad: 'r', action: 'Disfraz' },
+  title: locKey('¡Un, dos, tres, momia!'),
+  howto: locKey('Corre hacia la reliquia mientras la momia cuenta. Cuando se voltee, ¡quieto! Si te ve moviéndote, vuelves al inicio. Disfrazado de barril puedes avanzar despacito (tres veces).'),
+  keys: [['D / →', locKey('correr')], [locKey('Espacio'), locKey('disfrazarte')]],
+  touch: { pad: 'r', action: locKey('Disfraz') },
   icon: 'relic',
   time: TIME,
 
@@ -114,7 +115,7 @@ export default {
       } else if (next === 'turn') {
         stateLen = GRACE;
         momFace.from = mom.rotation.y; momFace.to = FACE_PANAS;
-        momBubble.say('¡MOMIA!', 1.2);
+        momBubble.say(loc('¡MOMIA!'), 1.2);
         sound.sweep(220, 520, 0.35, 'sawtooth', 0.08);
       } else if (next === 'watch') {
         stateLen = rand(1.4, 2.4);
@@ -160,8 +161,8 @@ export default {
     const turning = () => state === 'turn' || state === 'watch';
 
     function catchPana(a) {
-      momBubble.say(pick(['¡Te vi!', '¡Para atrás!', '¡Ajá!']), 0.9);
-      a.bubble.say(pick(['¡Nooo!', '¡Ay!', '¡Rayos!']), 0.9);
+      momBubble.say(loc(pick([locKey('¡Te vi!'), locKey('¡Para atrás!'), locKey('¡Ajá!')])), 0.9);
+      a.bubble.say(loc(pick([locKey('¡Nooo!'), locKey('¡Ay!'), locKey('¡Rayos!')])), 0.9);
       sound.bonk(0.8);
       puffs.spawn(new THREE.Vector3(a.x, 1.2, a.z), { color: 0xd9cfae, count: 8, spread: 1, size: 0.7 });
       a.x = START;
@@ -176,7 +177,7 @@ export default {
       a.disguised = DISGUISE;
       sound.plop();
       puffs.spawn(new THREE.Vector3(a.x, 1, a.z), { color: 0xf3ead2, count: 6, spread: 0.8, size: 0.6 });
-      if (human(a)) a.bubble.say(a.disguises ? `Quedan ${a.disguises}` : '¡Último!', 0.8);
+      if (human(a)) a.bubble.say(a.disguises ? loc('Quedan {n}', { n: a.disguises }) : loc('¡Último!'), 0.8);
     }
 
     // what an AI pana does this frame: { dir, disguise }
@@ -224,7 +225,7 @@ export default {
         if (a.x >= GOAL && !winner) {
           winner = a;
           a.score = 100;
-          a.bubble.say('¡La reliquia!', 1.5);
+          a.bubble.say(loc('¡La reliquia!'), 1.5);
           sound.horn('fiesta');
         }
         if (looking() && a.disguised === 0 && a.vx > STILL && a !== winner) catchPana(a);
@@ -260,11 +261,11 @@ export default {
     const me = actors[ctx.localIndex ?? ctx.players.findIndex((p) => p.human && !ctx.auto)];
     function hint() {
       if (!me || winner) return null;
-      const left = `Disfraces: ${me.disguises}`;
-      if (me.stun > 0) return { text: '¡Te pilló! De vuelta al inicio', tone: 'bad' };
-      if (me.disguised > 0) return { text: `Disfrazado: avanza despacito · ${left}`, tone: 'ok' };
-      if (turning() || state === 'fake') return { text: `¡QUIETO! Te está mirando · ${left}`, tone: 'bad' };
-      return { text: `¡CORRE! Está contando · ${left}`, tone: 'go' };
+      const left = loc('Disfraces: {n}', { n: me.disguises });
+      if (me.stun > 0) return { text: loc('¡Te pilló! De vuelta al inicio'), tone: 'bad' };
+      if (me.disguised > 0) return { text: loc('Disfrazado: avanza despacito · {left}', { left }), tone: 'ok' };
+      if (turning() || state === 'fake') return { text: loc('¡QUIETO! Te está mirando · {left}', { left }), tone: 'bad' };
+      return { text: loc('¡CORRE! Está contando · {left}', { left }), tone: 'go' };
     }
 
     return {

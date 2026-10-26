@@ -1,6 +1,8 @@
 import { HOME, SAFE, ringIndex } from './rules.js';
+import { locKey } from '../../../engine/i18n.js';
 export const MOMENTS = ['intro','turn','suspense','safe','block','leap','sprint','nearmiss','nomoves','sleep','podium'];
-export const MOMENT_NAMES = ['Inicio de partida','Tu turno','Dado en suspenso','Casilla segura','Bloqueo','Salto de rana','Recta final','¡Casi!','Sin movimientos','A dormir','Podio'];
+// Source text, drawn with loc() on the moment's caption.
+export const MOMENT_NAMES = [locKey('Inicio de partida'),locKey('Tu turno'),locKey('Dado en suspenso'),locKey('Casilla segura'),locKey('Bloqueo'),locKey('Salto de rana'),locKey('Recta final'),locKey('¡Casi!'),locKey('Sin movimientos'),locKey('A dormir'),locKey('Podio')];
 export function transitionMoments(before, after) {
   if (!before) return [];
   if (after.round !== before.round) return after.phase === 'starter' ? [{kind:'intro',seat:after.turn}] : [];

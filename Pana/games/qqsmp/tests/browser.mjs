@@ -131,7 +131,7 @@ try {
   await host.evaluate(() => { delete qqsmpDebug.room.step; });
 
   // Then both answer every question and bet on the final.
-  const copied = await guest.evaluate(() => qqsmpDebug.room.state.callouts.some(c => /Ana se copió de Bruno/.test(c.text)));
+  const copied = await guest.evaluate(() => qqsmpDebug.room.state.callouts.some(c => c.text.includes('se copió de') && c.vars?.name === 'Ana' && c.vars?.target === 'Bruno'));
   assert.ok(copied, 'the reveal calls out who copied whom');
   for (const page of [host, guest]) {
     await page.evaluate(() => setInterval(() => {

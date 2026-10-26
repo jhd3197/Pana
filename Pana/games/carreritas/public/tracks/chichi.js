@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 import { libraryForest } from './library-forest.js';
 import { groundPaint } from './ground-paint.js';

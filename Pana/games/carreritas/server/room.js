@@ -18,6 +18,7 @@ import {
   abandonCup, acceptFinish, advanceStage, beginStage, createCupSession,
   finalizeStage, markRacing, markStarted, retireEntrant, retryStage, seededOrder,
 } from '../public/cup-rules.js';
+import { locKey } from '../../../engine/i18n.js';
 
 const RACE_CAP_MS = 20 * 60 * 1000;   // a race nobody finishes still ends
 const isAvailableCup = (mode) => CUPS.some(c => c.id === canonicalCupId(mode));
@@ -140,7 +141,7 @@ export default class CarreritasRoom extends PanaRoom {
     this.onMessage('start', (client) => {
       if (!this.isHost(client)) return;
       if (isAvailableCup(this.state.mode) && !this.allHumansSupportGp()) {
-        this.state.notice = 'Un pana tiene una versión anterior y no puede entrar al Gran Premio.';
+        this.state.notice = locKey('Un pana tiene una versión anterior y no puede entrar al Gran Premio.');
         return;
       }
       if (this.state.phase === 'lobby' || (this.state.phase === 'results' && !this.cupSession) || this.state.phase === 'complete') {
@@ -331,7 +332,7 @@ export default class CarreritasRoom extends PanaRoom {
     this.state.notice = '';
     if (isAvailableCup(this.state.mode)) {
       if (!this.allHumansSupportGp()) {
-        this.state.notice = 'Un pana tiene una versión anterior y no puede entrar al Gran Premio.';
+        this.state.notice = locKey('Un pana tiene una versión anterior y no puede entrar al Gran Premio.');
         return;
       }
       return this.startCup(humans);
@@ -526,12 +527,12 @@ export default class CarreritasRoom extends PanaRoom {
     const now = Date.now(), s = this.state;
     const racing = [...s.players.values()].filter(p => p.racing);
     if (s.phase === 'loading') {
-      if (!racing.length) return this.toLobby(this.cupSession ? 'Ningún pana estuvo listo a tiempo. Volvimos a la sala.' : '');
+      if (!racing.length) return this.toLobby(this.cupSession ? locKey('Ningún pana estuvo listo a tiempo. Volvimos a la sala.') : '');
       const allReady = racing.every(p => p.loaded || !p.connected);
       if (allReady || now > this.loadDeadline) {
         const readyHumans = racing.filter(p => p.loaded && p.connected);
         if (!readyHumans.length) {
-          return this.toLobby('Ningún pana cargó la pista a tiempo. Volvimos a la sala.');
+          return this.toLobby(locKey('Ningún pana cargó la pista a tiempo. Volvimos a la sala.'));
         }
         for (const [id, p] of s.players.entries()) {
           if (p.racing && !p.loaded) {

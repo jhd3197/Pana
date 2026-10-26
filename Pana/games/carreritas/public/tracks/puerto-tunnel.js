@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import {THREE,M,box,mesh,finish,sign} from './world-kit.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {reefFishSchool} from '/engine/models/fauna/aquatic/reef-fish-school.js';

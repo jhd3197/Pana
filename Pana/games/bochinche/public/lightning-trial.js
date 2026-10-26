@@ -1,6 +1,7 @@
 // Local-only repeatable strike. Uses combat's hit resolution and 60 Hz hit-stop.
 import { Bash } from './rules.js';
 import { createEmptyInput } from './combat/engine.js';
+import { loc } from '/engine/i18n.js';
 export const LIGHTNING_DEFAULTS = { lightning:true, flash:true, stop:true, shake:true, stopFrames:5, shakeStrength:0.12, slow:false };
 export class LightningTrial {
   constructor(avatar = {}) {
@@ -9,7 +10,7 @@ export class LightningTrial {
   }
   reset() {
     this.bash=new Bash(91); this.bash.configure({seats:2,items:false,seconds:300});
-    this.bash.addPlayer('you','Tu pana',this.avatar); this.bash.start();
+    this.bash.addPlayer('you',loc('Tu pana'),this.avatar); this.bash.start();
     this.combat=this.bash.combat; this.combat.phase='playing'; this.combat.countdownFrames=0;
     this.combat.fighters.forEach((f,i)=>{
       f.position={x:i?125:-125,y:f.definition.size.height/2};

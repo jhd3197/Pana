@@ -103,3 +103,16 @@ are decided by the owning client (`items.js` `remote*`/`emit`). Shared limits
 and pose packing live in `public/online-rules.js`, imported by both sides.
 Prove changes with `tests/online.browser.js` (two real clients). See
 `docs/knowledge/carreritas-online.md`.
+
+## Languages over the wire
+
+Speech bubbles travel: `say()` in game.js sends its text as a `say` fx, so
+the bark tables (`LINES` in game.js and items.js, hazard `line`s) hold
+`locKey()` Spanish and the bubble runs `loc()` where it is drawn, on the
+sender and in `remote-cars.js`. Room notices (`state.notice`, `toLobby()`)
+are `locKey()` text the lobby passes through `loc()`. Every public module
+the room imports (today `car-`, `track-`, `wheel-` and
+`tracks/water-track-definitions.js`, `parts.js`, `shop.js`,
+`cup-definitions.js`) imports `engine/i18n.js` by relative path: a
+`/engine/...` import breaks the server. Car, vessel, rival and track names
+stay Spanish.

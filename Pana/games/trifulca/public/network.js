@@ -1,5 +1,6 @@
 import { LiveRoom } from '/engine/live-room.js';
 import { Trifulca, cleanInput } from './rules.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 // Host simulation on the shared live room (engine/live-room.js): the host
 // runs the night (fights, ring, bets) with everyone's latest input and
@@ -18,7 +19,7 @@ export class TrifulcaRoom extends LiveRoom {
     this.game = Trifulca.restore(this.state, this.members);
     for (const m of this.members.values()) this.game.addPlayer(m.id, m.name, m.id === this.id ? this.avatar : m.avatar || {});
     this.publish();
-    if (previous != null) this.onNotice('Cambió el anfitrión. La trifulca sigue.');
+    if (previous != null) this.onNotice(locKey('Cambió el anfitrión. La trifulca sigue.'));
   }
   memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar || {}); this.publish(); } }
   memberHello(id, m) { this.memberJoined(m); }
@@ -33,5 +34,5 @@ export class TrifulcaRoom extends LiveRoom {
     }
     if (data.action === 'bet' && this.game.bet(id, data.corner)) this.publish();
   }
-  practice() { this.state = { ...new Trifulca().snapshot(), options: { ...this.state.options } }; super.practice('Noche local · tú y los bots'); }
+  practice() { this.state = { ...new Trifulca().snapshot(), options: { ...this.state.options } }; super.practice(loc('Noche local · tú y los bots')); }
 }

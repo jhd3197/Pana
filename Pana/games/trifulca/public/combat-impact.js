@@ -10,7 +10,7 @@ export function createCombatImpacts(scene) {
   }
   const geometry = new THREE.ShapeGeometry(shape);
   const labels = new Map();
-  for (const word of ['¡PAF!', '¡PUM!', '¡TAC!', '¡PAM!', '¡ZAS!', '¡PLAF!']) {
+  for (const word of ['¡PAF!', '¡PUM!', '¡TAC!', '¡PAM!', '¡ZAS!', '¡PLAF!']) { // i18n-ignore: onomatopoeia painted in the ring
     const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 96;
     const ctx = canvas.getContext('2d');
     ctx.font = '900 52px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -36,7 +36,7 @@ export function createCombatImpacts(scene) {
       item.age = 0; item.power = kind === 'trompon' ? 1.25 : .8;
       item.group.position.copy(position); item.group.visible = true;
       item.burst.material.color.set(kind === 'block' ? '#86dceb' : '#ff8a2a');
-      item.label.material.map = labels.get(kind === 'block' ? '¡TAC!' : ({ kick: '¡PAM!', sweep: '¡ZAS!', toss: '¡PLAF!' }[move] || (kind === 'trompon' ? '¡PUM!' : '¡PAF!')));
+      item.label.material.map = labels.get(kind === 'block' ? '¡TAC!' : ({ kick: '¡PAM!', sweep: '¡ZAS!', toss: '¡PLAF!' }[move] || (kind === 'trompon' ? '¡PUM!' : '¡PAF!'))); // i18n-ignore
       item.label.material.needsUpdate = true;
     },
     update(dt, camera) {

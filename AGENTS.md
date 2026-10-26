@@ -64,6 +64,7 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | `docs/knowledge/pana-ui.md` |
 | Main renderer, picture settings, frame stats | `engine/settings.js` (`rendererOptions`, `bindRenderer`, `shadowSize`), `engine/perf.js`, `npm run perf -- <game>` | pana-kit.md, "Picture settings" |
 | Room codes and invite links | `engine/invite.js` (`inviteUrl`, `roomFromUrl`, `newRoomCode`) | |
+| Player text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`), `npm run i18n` | `docs/knowledge/pana-i18n.md` |
 | Turn-based online room | `engine/table-room.js` (`TableRoom`) | `docs/knowledge/pana-net.md` |
 | Real-time online room | `engine/live-room.js` (`LiveRoom`, `elapsedClock`, `axis`; `predict` for your own character) | `docs/knowledge/pana-net.md` |
 | Anything else online | `engine/net.js` (`HostRoom`, `joinRoom`), `server/src/room-kit.js` | `docs/knowledge/pana-net.md` |
@@ -87,8 +88,10 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
   game-specific.
 
 - Default port **8461** (env `PANA_PORT`). URLs: hub `/`, games `/g/<game>/`.
-- Game folders are lowercase Spanish words. Player-facing text is Spanish
-  (Venezuelan flavour welcome); code, comments and commits are English.
+- Game folders are lowercase Spanish words. Player-facing text is written in
+  Spanish (Venezuelan flavour welcome) through `loc()` and gets its English in
+  `locales/en.json` in the same change (`docs/knowledge/pana-i18n.md`); code,
+  comments and commits are English.
 - Every game uses the player's own pana, not a faceless placeholder.
 - A game's colours are named custom properties on its `body { --pk-game … }` rule;
   kit colours are `var(--pk-*)`. `--pk-game` matches `color` in `game.json`.
@@ -118,6 +121,7 @@ npm run test:browser -- all-games  # every game prepares a 3D scene without erro
 npm run shots -- carreritas --track chuao --at gate-60  # screenshots from the real loop, seconds
 npm run shots -- carreritas --track sabana --menu      # menu art: <id>.webp + thumb + sources.json
 npm run budget -- carreritas       # first-load modules and game.js lines vs their caps
+npm run i18n -- check              # every phrase has its English (sync, todo, fill, literals)
 npm run test:browser -- --changed  # only the suites for what changed since dev
 npm run test:browser -- carreritas --baseline  # failures rerun on the merge-base: regression or pre-existing
 npm run new-track -- morrocoy --name "Morrocoy"     # new Carreritas circuit, registered everywhere (--dry-run first)
