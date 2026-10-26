@@ -141,6 +141,18 @@ try {
   await page.waitForFunction(() => window.garage?.car);
   assert.equal(await page.evaluate(() => [garage.wheel, getWallet().wheel].join()), 'barro,barro');
 
+  // Camuflaje reaches the whole body, not only the textured alerón: every
+  // camo panel has UVs to sample.
+  const camo = await page.evaluate(async () => {
+    const { CARS } = await import('./cars.js');
+    return CARS.map(def => {
+      const panels = [];
+      def.build(undefined, undefined, { acabado: 'camuflaje' }).root.traverse(o => { if (o.isMesh && o.material.map && o.material.roughness === 0.82) panels.push(!!o.geometry.attributes.uv); });
+      return { id: def.id, panels: panels.length, bare: panels.filter(uv => !uv).length };
+    });
+  });
+  for (const car of camo) assert.ok(car.panels > 0 && car.bare === 0, `camuflaje covers ${car.id}: ${JSON.stringify(car)}`);
+
   // A trophy unlocks mirror mode.
   await page.evaluate(() => { localStorage.removeItem('carreritas:profile'); localStorage.setItem('carreritas:trophies', JSON.stringify({ mango: 'bronce' })); });
   await page.reload();
