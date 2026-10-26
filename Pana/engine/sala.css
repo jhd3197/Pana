@@ -24,6 +24,9 @@
 .pana-sala .pk-game-lobby-foot #pana-lobby-ready { min-width: 0; }
 @media(max-width:480px) {
   .pana-sala .pk-game-lobby-players[data-capacity="6"] { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  /* Phones: the start button takes its own row under Cambiar pana and the kit. */
+  .pana-sala .pk-game-lobby-foot { flex-wrap: wrap; }
+  .pana-sala .pk-game-lobby-foot #start { flex: 1 0 100%; }
 }
 /* Keep the action row clear when personal controls extend the player roster. */
 @media(min-width:801px) {
