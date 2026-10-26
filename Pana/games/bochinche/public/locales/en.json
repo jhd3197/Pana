@@ -3,17 +3,9 @@
   "¡Contacto!": "Contact!",
   "¡Fuera!": "Out!",
   "¡Ganó nadie!": "Nobody won!",
-  "{n} vidas": {
-    "one": "{n} life",
-    "other": "{n} lives"
-  },
   "{n} vidas · {percent}%": {
     "one": "{n} life · {percent}%",
     "other": "{n} lives · {percent}%"
-  },
-  "{name}: {percent}% de daño, {n} vidas": {
-    "one": "{name}: {percent}% damage, {n} life",
-    "other": "{name}: {percent}% damage, {n} lives"
   },
   "83 ms": "83 ms",
   "A D / flechas": "A D / arrows",
@@ -36,7 +28,6 @@
   "Entras en la próxima ronda": "You join next round",
   "Equilibrado": "Balanced",
   "Escenario": "Stage",
-  "Escoge tu estilo en la sala; tu pana conserva su aspecto.": "Pick your style in the room; your pana keeps its look.",
   "Escudo": "Shield",
   "Escudo / esquivar": "Shield / dodge",
   "Especial": "Special",
@@ -58,7 +49,6 @@
   "Montando las plataformas y preparando los guantes…": "Setting up the platforms and lacing the gloves…",
   "Moverse": "Move",
   "Movimiento reducido: sin sacudida y con destello suave.": "Reduced motion: no shake and a soft flash.",
-  "Muerte súbita": "Sudden death",
   "MUERTE SÚBITA": "SUDDEN DEATH",
   "Objetos": "Items",
   "Pana ganador": "Winning pana",
@@ -133,5 +123,69 @@
   "Daño": "Damage",
   "Rapidez": "Speed",
   "Alcance": "Reach",
-  "Empuje": "Knockback"
+  "Empuje": "Knockback",
+  "Amuleto reflector": "Reflector charm",
+  "Bate de poder": "Power bat",
+  "Bomba de humo": "Smoke bomb",
+  "Bomba": "Bomb",
+  "Botas de viento": "Wind boots",
+  "Cayó en la plataforma": "Dropped onto the stage",
+  "Clásico": "Classic",
+  "Coraza de hierro": "Iron armour",
+  "Disco rebotón": "Bouncing disc",
+  "Diseño del HUD": "HUD layout",
+  "El poder de tu pana": "Your pana's power",
+  "Escoge tu pana y tu estilo en la sala: cada pana tiene su poder en K.": "Pick your pana and style in the room: every pana has their power on K.",
+  "Espada de plasma": "Plasma sword",
+  "Esquinas": "Corners",
+  "Estrella": "Star",
+  "Fruta de vida": "Life fruit",
+  "Gel resbaloso": "Slippery gel",
+  "Lanzallamas": "Flamethrower",
+  "Mina": "Mine",
+  "Mínimo": "Minimal",
+  "Objeto": "Item",
+  "Orbe de fuerza": "Power orb",
+  "Pistola de pulsos": "Pulse blaster",
+  "Reloj lento": "Slow clock",
+  "Semilla eléctrica": "Shock seed",
+  "Trampa": "Trap",
+  "Trampolín": "Bounce pad",
+  "{name}: {percent}% de daño, {n} vida": {
+    "one": "{name}: {percent}% damage, {n} life",
+    "other": "{name}: {percent}% damage, {n} lives"
+  },
+  "{n} vida · {min} min": {
+    "one": "{n} life · {min} min",
+    "other": "{n} lives · {min} min"
+  },
+  "¡Bochinche!": "Bochinche!",
+  "¡Muerte súbita!": "Sudden death!",
+  "¡{item}!": "{item}!",
+  "¡Último minuto!": "Last minute!",
+  "Volver a la sala": "Back to the room",
+  "Elige tu pana": "Pick your pana",
+  "Lo deja": "Leaves them",
+  "Traje": "Outfit",
+  "Panas": "Panas",
+  "{who}, poder {poder}": "{who}, power {poder}",
+  "Traje {n}": "Outfit {n}",
+  "Enter": "Enter",
+  "Bochinche · {n} vida · {time}": {
+    "one": "Bochinche · {n} life · {time}",
+    "other": "Bochinche · {n} lives · {time}"
+  },
+  "KOs": "KOs",
+  "Caídas": "Falls",
+  "Daño hecho": "Damage dealt",
+  "Mayor golpe": "Biggest hit",
+  "Rey del bochinche": "King of the brawl",
+  "Más KOs · {name}": "Most KOs · {name}",
+  "Pegada de oro": "Golden punch",
+  "Golpe de {n}% · {name}": "{n}% hit · {name}",
+  "Saco de boxeo": "Punching bag",
+  "{n} caída · {name}": {
+    "one": "{n} fall · {name}",
+    "other": "{n} falls · {name}"
+  }
 }

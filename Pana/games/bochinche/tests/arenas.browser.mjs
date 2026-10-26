@@ -12,6 +12,9 @@ try {
   await waitFor(host,()=>bochincheDebug.room.isHost&&bochincheDebug.room.state.players.length===2);
   await host.evaluate(stage=>bochincheDebug.room.action('options',{options:{stage,seats:2,items:false}}),stage);
   await waitFor(guest,stage=>bochincheDebug.room.state.options.stage===stage,stage);
+  // The neutral special is each pana's poder; El Trueno's is the 14% Rayo checked below.
+  await guest.evaluate(()=>bochincheDebug.room.action('pana',{pana:'trueno',traje:0}));
+  await waitFor(host,()=>bochincheDebug.room.state.players[1].pana==='trueno');
   await host.locator('#start').click();
   await waitFor(guest,()=>bochincheDebug.room.state.fight?.phase==='playing');
   assert.equal(await guest.evaluate(()=>bochincheDebug.room.state.fight.stage.id),stage);

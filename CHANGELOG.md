@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Bochinche tiene trece panas, cada uno con su poder en K, y un HUD nuevo.**
+  El Trueno, La Medusa, El Silbón y diez más pelean con su disfraz y sus
+  accesorios sobre tu propio pana. Placas con el daño en grande, vidas en
+  bolitas, ¡Fuera! y cuenta regresiva a pantalla completa, y tres diseños
+  del HUD en el menú (Clásico, Esquinas, Mínimo).
 - **Pana habla inglés: elige el idioma en Ajustes > Idioma.**
   El hub, las salas, los menús y todos los juegos salen en inglés si tu
   navegador está en inglés o si lo eliges; cada pana de una sala ve su propio

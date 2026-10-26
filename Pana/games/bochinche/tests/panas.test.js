@@ -28,7 +28,7 @@ test('every pana has a costume, three trajes and a registered poder per style', 
     for (const key of p.paint) assert.equal(look.colors[key], p.trajes[2], `${p.id} ${key}`);
     for (const style of ['kaykit-knight', 'platformer', 'yeti']) {
       const def = getFighterDefinition(fighterId(style, p.id));
-      assert.equal(def.attacks['neutral-special'].damage, p.poder.damage, p.id);
+      assert.equal(def.attacks['neutral-special'].damage, p.move.damage, p.id);
       assert.equal(def.weight, getFighterDefinition(style).weight);
       assert.deepEqual(def.attacks['up-special'], getFighterDefinition(style).attacks['up-special']);
     }
@@ -40,10 +40,10 @@ test('every pana has a costume, three trajes and a registered poder per style', 
 test('each poder lands its damage and status through normal hit resolution', () => {
   for (const p of PANAS) {
     const g = duel(p.id), [a, b] = g.combat.fighters, move = a.definition.attacks['neutral-special'];
-    if (p.poder.requiresFacingTarget) b.facing = -1;
+    if (p.move.requiresFacingTarget) b.facing = -1;
     g.combat.resolveAttackHit(a, b, move, 'neutral-special', createEmptyInput());
-    assert(Math.abs(b.percent - p.poder.damage) < 1e-6, p.id);
-    if (p.poder.statusEffect) assert.equal(b.statusEffect, p.poder.statusEffect, p.id);
+    assert(Math.abs(b.percent - p.move.damage) < 1e-6, p.id);
+    if (p.move.statusEffect) assert.equal(b.statusEffect, p.move.statusEffect, p.id);
   }
 });
 

@@ -166,7 +166,6 @@
   "Bajo": "Low",
   "Barril": "Barrel",
   "Bot": "Bot",
-  "Bot · {style}": "Bot · {style}",
   "Botones": "Buttons",
   "Brava": "Fierce",
   "Buen equilibrio; la de los teléfonos.": "A good balance; the phone default.",
@@ -755,5 +754,10 @@
   "WASD": "WASD",
   "Zona muerta": "Deadzone",
   "Tambor": "Drum",
-  "Alcance": "Reach"
+  "Alcance": "Reach",
+  "{n} vida": {
+    "one": "{n} life",
+    "other": "{n} lives"
+  },
+  "Botiquín": "First-aid kit"
 }

@@ -28,7 +28,7 @@ export function applyArtifactAttacks(roster) {
     if(String(fighter.id).includes(':'))continue;
     const special=fighter.attacks['neutral-special'];
     for(const pana of PANAS) {
-      const id=fighterId(fighter.id,pana.id),{damage,...poder}=pana.poder;
+      const id=fighterId(fighter.id,pana.id),{damage,...poder}=pana.move;
       roster[id]={...fighter,id,attacks:{...fighter.attacks,'neutral-special':{...special,offset:{x:65,y:4},active:4,...poder,
         label:pana.id,damage,shieldDamage:damage*.7}}};
     }
