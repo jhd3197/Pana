@@ -48,3 +48,10 @@ mock background screenshots and invented result rewards are not shipped.
 The authored stage dressing now reuses Pana's canonical vegetation, island
 houses, coastal fishing props, macaws and flamingos. Collision-bearing
 platforms and environmental hazards retain the authored layout.
+
+`bochinche-golpes (9).html` supplies the thirteen panas, their outfits,
+props, poderes, damage targets and effect concepts. Its Mi Pana Editor
+bundle, renderer, bloom and cinematic camera are not imported; props and
+effects are rebuilt as bounded modules. `Bochinche HUD (2).zip` supplies
+the fight HUD, Elige tu pana and results layouts; its SVG faces, mock
+stats and mango rewards are replaced by real portraits and room data.
