@@ -23,6 +23,11 @@ import { createRoomOptions } from '/engine/room-options.js';
 import { STYLE_NAMES } from './rules.js';
 
 import { createFightHud, HUD_LAYOUTS } from './fight-hud.js';
+import { createPanaPicker, savedPana } from './pana-picker.js';
+import { createResultsScreen } from './results-screen.js';
+import { costumeAvatar } from './costume.js';
+import { panaById } from './panas.js';
+import { cachedPortrait } from '/engine/portrait-cache.js';
 
 import { createControls } from './controls.js';
 
@@ -73,6 +78,20 @@ $('practice').onclick = () => room.practice();
 
 $('back-lobby').onclick = () => room.action('lobby');
 
+const picker = createPanaPicker({ avatar: loadAvatar, pick: (pana, traje) => room.action('pana', { pana, traje }) });
+$('pana-change').onclick = () => { const me = room.state.players.find(p => p.id === room.id); picker.open(me && { pana: me.pana, traje: me.traje }); };
+const results = createResultsScreen();
+// The sala card: your costume, who you are and your poder.
+let cardKey = '', savedSent = false;
+function panaCard(me) {
+  if (!me) return;
+  const pana = panaById(me.pana), look = costumeAvatar(loadAvatar(), pana.id, me.traje ?? 0), key = JSON.stringify(look);
+  $('pana-card').style.setProperty('--c', pana.trajes[me.traje ?? 0]);
+  $('pana-card-who').textContent = pana.who; $('pana-card-poder').textContent = loc('Poder: {poder}', { poder: loc(pana.poder) });
+  if (key === cardKey) return;
+  cardKey = key; const img = $('pana-card-img'), hit = cachedPortrait(look);
+  if (hit) img.src = hit; else import('/engine/portrait.js').then(({ portrait }) => portrait(look)).then(src => { if (cardKey === key) img.src = src; }).catch(() => {});
+}
 for (const button of document.querySelectorAll('[data-style]')) button.onclick = () => room.action('style', { style: Number(button.dataset.style) });
 
 
@@ -140,20 +159,18 @@ function render(state) {
 
   for (const b of document.querySelectorAll('[data-style]')) { b.disabled = !lobby; b.setAttribute('aria-pressed', String(Number(b.dataset.style) === me?.style)); }
 
-  $('score').textContent = me ? loc(STYLE_NAMES[me.style]) : loc('Entras en la próxima ronda');
+  $('score').textContent = me ? loc('{poder} · {style}', { poder: loc(panaById(me.pana).poder), style: loc(STYLE_NAMES[me.style]) }) : loc('Entras en la próxima ronda');
+  panaCard(me); $('pana-change').disabled = !lobby; picker.others(state.players, room.id);
+  if (!lobby && picker.isOpen) picker.close();
+  // Your last pick follows you into every new sala.
+  const saved = savedPana();
+  if (lobby && me && saved && !savedSent && room.connected) { savedSent = true; if (saved.pana !== me.pana || saved.traje !== me.traje) room.action('pana', saved); }
   $('back-lobby').disabled = !room.isHost;
 
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
 
-  if (ended) {
+  if (ended) results.update(state, room.id, ranked);
 
-    const winner = state.players.find(p => p.id === state.winner)?.name;
-    $('result-title').textContent = winner == null ? loc('¡Ganó nadie!') : loc('¡Ganó {name}!', { name: winner });
-    fillRoster($('result-roster'), rows);
-    const winnerSlot=state.players.findIndex(p=>p.id===state.winner), portrait=document.querySelector('#fighter-'+winnerSlot+' .fighter-portrait');
-    $('winner-portrait').hidden=!portrait?.getAttribute('src');
-    if(portrait?.getAttribute('src'))$('winner-portrait').src=portrait.src;
-  }
 
   world?.update(state);
 

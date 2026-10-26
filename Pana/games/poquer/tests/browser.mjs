@@ -37,7 +37,8 @@ try {
   await a.screenshot({ path: `${out}/starter.png` });
   await a.keyboard.up(' '); await b.locator('#pana-starter-shake').dispatchEvent('pointerup', { pointerId: 4, button: 0 });
   await wait(b, () => poquerDebug.room.state.phase === 'preflop'); await same(a, b);
-  assert.match(await a.evaluate(() => poquerDebug.room.state.message), /reparte/);
+  // The message travels as Spanish source sentences ({ text, vars }); each client translates it.
+  assert.match(await a.evaluate(() => poquerDebug.room.state.message.map(m => m.text).join(' ')), /reparte/);
   assert.equal(await a.evaluate(() => poquerDebug.world.starter.active), false, 'the cachos leave the table');
   // Heads-up the dealer acts first preflop: whoever won the cacho.
   const [first, second] = await a.evaluate(() => poquerDebug.room.state.turn === poquerDebug.room.id) ? [a, b] : [b, a];

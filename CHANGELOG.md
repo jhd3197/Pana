@@ -12,7 +12,9 @@ becomes the GitHub release's notes.
   El Trueno, La Medusa, El Silbón y diez más pelean con su disfraz y sus
   accesorios sobre tu propio pana. Placas con el daño en grande, vidas en
   bolitas, ¡Fuera! y cuenta regresiva a pantalla completa, y tres diseños
-  del HUD en el menú (Clásico, Esquinas, Mínimo).
+  del HUD en el menú (Clásico, Esquinas, Mínimo). Elige tu pana y su traje
+  desde la sala (se recuerda para la próxima), y al final hay podio, tabla
+  de KOs, caídas y daño, y premios como Pegada de oro.
 - **Pana habla inglés: elige el idioma en Ajustes > Idioma.**
   El hub, las salas, los menús y todos los juegos salen en inglés si tu
   navegador está en inglés o si lo eliges; cada pana de una sala ve su propio

@@ -31,7 +31,6 @@
   "Escudo": "Shield",
   "Escudo / esquivar": "Shield / dodge",
   "Especial": "Special",
-  "FIN DE LA RONDA": "ROUND OVER",
   "Fuerza de la sacudida": "Shake strength",
   "Gana quien conserve vidas. Si empatan al sonar la campana, hay muerte súbita.": "Whoever keeps their lives wins. If it's tied at the bell, it goes to sudden death.",
   "Golpe / ataque aéreo": "Hit / air attack",
@@ -51,7 +50,6 @@
   "Movimiento reducido: sin sacudida y con destello suave.": "Reduced motion: no shake and a soft flash.",
   "MUERTE SÚBITA": "SUDDEN DEATH",
   "Objetos": "Items",
-  "Pana ganador": "Winning pana",
   "Panas en la plaza": "Panas in the plaza",
   "Pausa de impacto": "Hit-stop",
   "Pausa de impacto (hit-stop)": "Impact pause (hit-stop)",
@@ -187,5 +185,8 @@
   "{n} caída · {name}": {
     "one": "{n} fall · {name}",
     "other": "{n} falls · {name}"
-  }
+  },
+  "Poder: {poder}": "Power: {poder}",
+  "{poder} · {style}": "{poder} · {style}",
+  "Elegir pana": "Pick pana"
 }
