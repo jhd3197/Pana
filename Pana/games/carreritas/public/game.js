@@ -2182,6 +2182,7 @@ async function goOnline(code, lead) {
       $('lobby-status').textContent = 'Saliste de la sala. Recarga para volver a entrar.';
       $('lobby-solo').hidden = false;
     });
+    net.pick(garage.index, garage.wheel, raceStyle(garage.index));   // a car picked while connecting
     onNetState(net.state);
     return net;
   })();
@@ -2258,13 +2259,14 @@ let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('carreritas:track') || localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
 // The cauchos from the last visit (fallback calle) dress the turntable car.
 garage.wheel = wheelById(wallet.wheel).id;   // the profile migrated any old 'carreritas:wheels' pick
+garage.index = Math.max(0, CARS.findIndex(c => c.id === wallet.car));   // the room join below sends this car
 if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat inside the reconnection window
 // Suites call buildTrack() and read TRACKS synchronously: every map loads before
 // PANA_PREPARED (showCar below). startRace() loads its own map either way.
 await Promise.all([featsReady, comboReady, ghostReady, gatesReady]);   // milestone toasts, the style score and the ghost are ready before any race can start
 if (DEBUG) await loadTracks();
 selectTrack(QS.get('track') || savedTrack);
-showCar(Math.max(0, CARS.findIndex(c => c.id === wallet.car)));
+showCar(garage.index);
 frame();
 let lastGarageInput = performance.now();
 for (const event of ['pointerdown', 'wheel', 'keydown']) {

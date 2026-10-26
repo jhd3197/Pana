@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas recuerda tu carro también al volver a una sala con tus panas.**
+  Antes, entrar por el enlace de la sala te ponía El Chamo; y el acabado
+  Camuflaje vuelve a pintar toda la carrocería, no solo el alerón.
 - **Ajustes tiene cara nueva: categorías a un lado, una fila por ajuste y la explicación al lado.**
   Las flechas cambian cada opción, un punto verde marca lo que tocaste, y el
   panel muestra la curva del stick, el mando en vivo o lo que cuesta la imagen.
