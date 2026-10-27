@@ -225,8 +225,9 @@ export function createItems(hooks) {
   const byId = (id) => hooks.byId?.(id);
   const previous = new Map();
   const pickupHistory = new Map(), reactions = new Map(), majorUntil = new Map(), majorSeen = new Set();
-  const itemSeed = hooks.itemSeed ?? Math.floor(Math.random() * 0x100000000);
-  let itemRandom = rng(itemSeed), raceTime = 0;
+  // A fresh stream each race, so a rematch on the same track rolls new items.
+  const itemStream = () => rng(Math.floor(Math.random() * 0x100000000));
+  let itemRandom = itemStream(), raceTime = 0;
   let t = 0, seq = 0;
   const gone = new Set();   // projectile ids already burst here, so a late remote hit doesn't splat twice
   const emit = (kind, c, data) => hooks.emit?.(kind, c, data);
@@ -235,7 +236,7 @@ export function createItems(hooks) {
 
   function clear() {
     pickupHistory.clear(); reactions.clear(); majorUntil.clear(); majorSeen.clear();
-    itemRandom = rng(itemSeed); raceTime = 0;
+    itemRandom = itemStream(); raceTime = 0;
     rainQueue = []; rainSeen.clear();
     for (const entry of [...flying, ...peels, ...sparks]) entry.m.removeFromParent();
     for (const m of [...held.values(), ...shields.values()]) m.removeFromParent();

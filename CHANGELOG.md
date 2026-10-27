@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La revancha en la misma pista de Carreritas trae cajas distintas.**
+  Antes cada carrera repetía la misma secuencia de objetos.
 - **Volver a un juego con el botón Atrás ya no lo deja congelado.**
   La página se vuelve a cargar sola; y los menús de Billar, Caída y Dominó
   ya suenan al tocarlos y respetan el volumen de la música.
