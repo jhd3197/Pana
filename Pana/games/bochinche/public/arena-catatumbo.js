@@ -1,8 +1,9 @@
 import { fishingBoat, fishCrates, fishingNetRack } from '/engine/models/props/coastal.js';
 import { mangrove } from '/engine/models/vegetation/mangrove.js';
-import { createAssetPlacement } from './arena-assets.js';
+import { createAssetPlacement, PI, TAU, V3, col, clamp, lerp, sstep, stageRandom } from './arena-assets.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import * as THREE from 'three';
+import { canvasTexture } from '/engine/models/core/primitives.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 export function createArena(parent, renderer, camera) {
 const ownedTextures=[];
@@ -31,12 +32,8 @@ const STAGE = {
 };
 
 /* ---------------- basics ---------------- */
-const PI = Math.PI, TAU = PI * 2, V3 = (x, y, z) => new THREE.Vector3(x, y, z), col = c => new THREE.Color(c);
-const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;
-const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
-let seed = STAGE.seed; const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-const rr = (a, b) => a + rand() * (b - a), pick = a => a[(rand() * a.length) | 0];
-const canvasTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); ownedTextures.push(t); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
+const { rand, rr, pick } = stageRandom(STAGE.seed);
+const canvasTex = (w, h, draw) => canvasTexture(w, h, draw, { owned: ownedTextures });
 const softTex = canvasTex(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,0.5)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
 const ribbonTex = canvasTex(64, 4, (c, w, h) => { const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
 

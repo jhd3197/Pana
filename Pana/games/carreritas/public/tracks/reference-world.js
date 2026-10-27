@@ -1,22 +1,29 @@
 import * as THREE from 'three';
 import { coastalTrack } from './coastal-track.js';
 
-// Reference scenes own their GPU resources, but never a renderer or game loop.
-export function ownReferenceWorld(group, groundAt, update, createdTextures = []) {
-  const materials = new Set(), textures = new Set(createdTextures), lights = [];
+// A track world frees the materials and textures in it now (shader uniforms
+// included) when the game disposes it; anything added later is not its own.
+export function disposeOwned(group, createdTextures = []) {
+  const materials = new Set(), textures = new Set(createdTextures);
   group.traverse(o => {
-    if (o.isLight) lights.push(o);
     for (const m of [].concat(o.material || [])) {
       materials.add(m);
       for (const value of Object.values(m)) if (value?.isTexture) textures.add(value);
       for (const u of Object.values(m.uniforms || {})) if (u.value?.isTexture) textures.add(u.value);
     }
   });
-  lights.forEach(o => { o.shadow?.dispose(); o.removeFromParent(); });
   group.userData.dispose = () => {
     textures.forEach(t => t.dispose());
     materials.forEach(m => m.dispose());
   };
+}
+
+// Reference scenes own their GPU resources, but never a renderer or game loop.
+export function ownReferenceWorld(group, groundAt, update, createdTextures = []) {
+  const lights = [];
+  group.traverse(o => { if (o.isLight) lights.push(o); });
+  lights.forEach(o => { o.shadow?.dispose(); o.removeFromParent(); });
+  disposeOwned(group, createdTextures);
   return { group, groundAt, update };
 }
 

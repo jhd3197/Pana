@@ -1,5 +1,6 @@
 import { rng, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
+import { canvasTexture } from '/engine/models/core/primitives.js';
 import { MAP } from './cosmos-layout.js';
 import { ownReferenceWorld, referenceDetail } from './reference-world.js';
 
@@ -66,13 +67,7 @@ export function createWorld(scene, layout) {
   const fill = new THREE.DirectionalLight(col('#7a6aff'), 0.35); fill.position.set(-400, -120, -500); scene.add(fill);
 
   /* ---------------- canvas textures ---------------- */
-  const canvasTex = (w, h, draw, srgb = true) => {
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    draw(c.getContext('2d'), w, h);
-    const t = new THREE.CanvasTexture(c); createdTextures.push(t); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
-    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  };
+  const canvasTex = (w, h, draw, srgb = true) => canvasTexture(w, h, draw, { srgb, owned: createdTextures });
   // equirectangular planet maps from 3D noise, so they wrap with no seam
   const planetTex = (w, h, fn) => canvasTex(w, h, (c) => {
     const img = c.createImageData(w, h), px = img.data, tmp = new THREE.Color();

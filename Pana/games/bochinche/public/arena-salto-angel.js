@@ -2,9 +2,10 @@ import { scarletMacaw } from '/engine/models/fauna/birds/scarlet-macaw.js';
 import { fern } from '/engine/models/vegetation/fern.js';
 import { heliconia } from '/engine/models/vegetation/heliconia.js';
 import { treeFern } from '/engine/models/vegetation/selva-palms.js';
-import { createAssetPlacement } from './arena-assets.js';
+import { createAssetPlacement, PI, TAU, V3, col, clamp, lerp, sstep, stageRandom, ih, noise2, fbm } from './arena-assets.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import * as THREE from 'three';
+import { canvasTexture } from '/engine/models/core/primitives.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 export function createArena(parent, renderer, camera) {
 const ownedTextures=[];
@@ -32,15 +33,8 @@ const STAGE = {
 };
 
 /* ---------------- basics ---------------- */
-const PI = Math.PI, TAU = PI * 2, V3 = (x, y, z) => new THREE.Vector3(x, y, z), col = c => new THREE.Color(c);
-const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;
-const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
-let seed = STAGE.seed; const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-const rr = (a, b) => a + rand() * (b - a), pick = a => a[(rand() * a.length) | 0];
-const ih = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
-const noise2 = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf); return lerp(lerp(ih(xi, yi), ih(xi + 1, yi), u), lerp(ih(xi, yi + 1), ih(xi + 1, yi + 1), u), v); };
-const fbm = (x, y, o = 4) => { let s = 0, a = 0.5, f = 1; for (let k = 0; k < o; k++) { s += a * noise2(x * f, y * f); f *= 2.03; a *= 0.5; } return s / (1 - Math.pow(0.5, o)); };
-const canvasTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); ownedTextures.push(t); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
+const { rand, rr, pick } = stageRandom(STAGE.seed);
+const canvasTex = (w, h, draw) => canvasTexture(w, h, draw, { owned: ownedTextures });
 const softTex = canvasTex(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.4, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
 
 /* ---------------- light and sky (driven by the time of day) ---------------- */

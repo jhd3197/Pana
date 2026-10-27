@@ -1,6 +1,8 @@
 // i18n-ignore-file: track signage and place names stay Spanish.
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
+import { disposeOwned } from './reference-world.js';
+import { canvasTexture } from '/engine/models/core/primitives.js';
 import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP } from './maracaibo-layout.js';
 export function createWorld(scene, layout, roadDistance) {
@@ -20,13 +22,7 @@ export function createWorld(scene, layout, roadDistance) {
   const CENTER = V3(190, 0, -65);
 
   /* ---------------- textures ---------------- */
-  const canvasTex = (w, h, draw, srgb = true) => {
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    draw(c.getContext('2d'), w, h);
-    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
-    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  };
+  const canvasTex = (w, h, draw, srgb = true) => canvasTexture(w, h, draw, { srgb });
   const glowTex = canvasTex(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.18, 'rgba(255,255,255,0.75)'); g.addColorStop(0.45, 'rgba(255,255,255,0.18)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
   const poolTex = canvasTex(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,0.9)'); g.addColorStop(0.5, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
   const cloudTex = canvasTex(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,0.6)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
@@ -795,15 +791,7 @@ export function createWorld(scene, layout, roadDistance) {
     else { c.x = previous.x; c.z = previous.z; c.vx = 0; c.vz = 0; }
   }
 
-  const ownedMaterials = new Set(), ownedTextures = new Set();
-  scene.traverse(o => {
-    for (const material of [].concat(o.material || [])) {
-      ownedMaterials.add(material);
-      for (const value of Object.values(material)) if (value?.isTexture) ownedTextures.add(value);
-      for (const uniform of Object.values(material.uniforms || {})) if (uniform.value?.isTexture) ownedTextures.add(uniform.value);
-    }
-  });
+  disposeOwned(scene);
   vegetation.flush();
-  scene.userData.dispose = () => { ownedTextures.forEach(t => t.dispose()); ownedMaterials.forEach(m => m.dispose()); };
   return { group: scene, groundAt: groundH, update, constrainMotion };
 }

@@ -1,5 +1,6 @@
 import { rng, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
+import { canvasTexture } from '/engine/models/core/primitives.js';
 import { MAP } from './nubes-layout.js';
 import { ownReferenceWorld, referenceDetail } from './reference-world.js';
 
@@ -36,7 +37,7 @@ export function createWorld(scene, layout) {
   const fill = new THREE.DirectionalLight(col('#a8b8ff'), 0.35); fill.position.set(400, 200, 400); scene.add(fill);
 
   /* ---------------- textures ---------------- */
-  const canvasTex = (w, h, draw, srgb = true) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); createdTextures.push(t); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const canvasTex = (w, h, draw, srgb = true) => canvasTexture(w, h, draw, { srgb, owned: createdTextures });
   const asphaltTex = canvasTex(256, 512, (c, w, h) => {
     c.fillStyle = '#9c9a9a'; c.fillRect(0, 0, w, h);
     for (let i = 0; i < 6000; i++) { c.fillStyle = rand() < 0.5 ? `rgba(40,40,44,${rr(0.05, 0.18).toFixed(2)})` : `rgba(255,255,250,${rr(0.04, 0.14).toFixed(2)})`; c.fillRect(rand() * w, rand() * h, rr(1, 3), rr(1, 3)); }

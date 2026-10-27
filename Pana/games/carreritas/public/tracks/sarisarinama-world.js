@@ -1,5 +1,7 @@
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
+import { disposeOwned } from './reference-world.js';
+import { canvasTexture } from '/engine/models/core/primitives.js';
 import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP } from './sarisarinama-layout.js';
 import { cellInstances, billboardCloud } from './scenery-batch.js';
@@ -28,13 +30,7 @@ export function createWorld(scene, layout, roadDistance) {
   const roadDist = (x, z) => sampleR(RR, x, z).dist;
 
   /* ---------------- textures ---------------- */
-  const canvasTex = (w, h, draw, srgb = true) => {
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    draw(c.getContext('2d'), w, h);
-    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
-    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  };
+  const canvasTex = (w, h, draw, srgb = true) => canvasTexture(w, h, draw, { srgb });
   const asphaltTex = canvasTex(256, 512, (c, w, h) => {
     c.fillStyle = '#9a9a9c'; c.fillRect(0, 0, w, h);
     for (let i = 0; i < 6000; i++) { c.fillStyle = rand() < 0.5 ? `rgba(40,40,44,${rr(0.05, 0.18).toFixed(2)})` : `rgba(255,255,250,${rr(0.04, 0.14).toFixed(2)})`; c.fillRect(rand() * w, rand() * h, rr(1, 3), rr(1, 3)); }
@@ -923,15 +919,7 @@ export function createWorld(scene, layout, roadDistance) {
     { const p = banner.geometry.attributes.position, base0 = banner.userData.base; for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin(t * 3 + base0[i * 3] * 0.6) * 0.18); p.needsUpdate = true; }
   }
 
-  const ownedMaterials = new Set(), ownedTextures = new Set();
-  scene.traverse(o => {
-    for (const material of [].concat(o.material || [])) {
-      ownedMaterials.add(material);
-      for (const value of Object.values(material)) if (value?.isTexture) ownedTextures.add(value);
-      for (const uniform of Object.values(material.uniforms || {})) if (uniform.value?.isTexture) ownedTextures.add(uniform.value);
-    }
-  });
+  disposeOwned(scene);
   vegetation.flush();
-  scene.userData.dispose = () => { ownedTextures.forEach(t => t.dispose()); ownedMaterials.forEach(m => m.dispose()); };
   return { group: scene, groundAt: physicalGround, update, constrainMotion };
 }

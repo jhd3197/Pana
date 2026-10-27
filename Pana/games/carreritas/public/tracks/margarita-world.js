@@ -1,5 +1,7 @@
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
+import { disposeOwned } from './reference-world.js';
+import { canvasTexture } from '/engine/models/core/primitives.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
 import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
@@ -26,13 +28,7 @@ export function createWorld(scene, layout, roadDistance, scale = 1) {
   const SUN_DIR = new THREE.Vector3(0.3, 0.82, 0.38).normalize();
 
   /* ---------------- textures ---------------- */
-  const canvasTex = (w, h, draw, srgb = true) => {
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    draw(c.getContext('2d'), w, h);
-    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
-    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  };
+  const canvasTex = (w, h, draw, srgb = true) => canvasTexture(w, h, draw, { srgb });
   const roadTex = canvasTex(256, 512, (c, w, h) => {
     c.fillStyle = '#5c5c60'; c.fillRect(0, 0, w, h);
     for (let i = 0; i < 7000; i++) { c.fillStyle = rand() < 0.5 ? `rgba(25,25,28,${rr(0.08, 0.22).toFixed(2)})` : `rgba(220,220,225,${rr(0.04, 0.12).toFixed(2)})`; c.fillRect(rand() * w, rand() * h, rr(1, 3), rr(1, 3)); }
@@ -540,16 +536,8 @@ export function createWorld(scene, layout, roadDistance, scale = 1) {
     birds.forEach(b => { const a = b.ph + t * b.sp, p = V3(b.c.x + Math.cos(a) * b.r, b.c.y + Math.sin(t * 0.5 + b.ph) * 3, b.c.z + Math.sin(a) * b.r), ahead = V3(b.c.x + Math.cos(a + 0.05 * Math.sign(b.sp)) * b.r, p.y, b.c.z + Math.sin(a + 0.05 * Math.sign(b.sp)) * b.r); b.g.position.copy(p); b.g.lookAt(ahead); b.g.rotateZ(-0.3 * Math.sign(b.sp)); const flap = Math.max(0, Math.sin(t * b.fl + b.ph)) * 0.5 - 0.1; b.wings.forEach(w => (w.pivot.rotation.z = w.s * flap)); });
   }
 
-  const ownedMaterials = new Set(), ownedTextures = new Set();
-  scene.traverse(o => {
-    for (const material of [].concat(o.material || [])) {
-      ownedMaterials.add(material);
-      for (const value of Object.values(material)) if (value?.isTexture) ownedTextures.add(value);
-      for (const uniform of Object.values(material.uniforms || {})) if (uniform.value?.isTexture) ownedTextures.add(uniform.value);
-    }
-  });
+  disposeOwned(scene);
   vegetation.flush();
-  scene.userData.dispose = () => { ownedTextures.forEach(t => t.dispose()); ownedMaterials.forEach(m => m.dispose()); };
   // The tourist peñeros are solid on the open lagoon, and their wakes kick
   // (transform-gates.js); positions in layout metres, coastal-track scales them.
   const obstacles = () => racers.map(R => ({ x: R.g.position.x, z: R.g.position.z, r: 2.4, h: R.g.rotation.y, v: R.speed }));

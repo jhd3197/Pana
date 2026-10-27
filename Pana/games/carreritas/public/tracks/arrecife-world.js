@@ -1,6 +1,7 @@
 // i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import { rng, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
+import { canvasTexture } from '/engine/models/core/primitives.js';
 import { MAP } from './arrecife-layout.js';
 import { ownReferenceWorld, referenceDetail } from './reference-world.js';
 
@@ -36,7 +37,7 @@ export function createWorld(scene, layout) {
   scene.add(sun, sun.target);
 
   /* ---------------- textures ---------------- */
-  const canvasTex = (w, h, draw, srgb = true) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); createdTextures.push(t); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const canvasTex = (w, h, draw, srgb = true) => canvasTexture(w, h, draw, { srgb, owned: createdTextures });
   const roadTex = canvasTex(256, 512, (c, w, h) => {
     c.fillStyle = '#a4a29c'; c.fillRect(0, 0, w, h);
     for (let i = 0; i < 6000; i++) { c.fillStyle = rand() < 0.5 ? `rgba(40,50,60,${rr(0.05, 0.16).toFixed(2)})` : `rgba(255,255,255,${rr(0.04, 0.12).toFixed(2)})`; c.fillRect(rand() * w, rand() * h, rr(1, 3), rr(1, 3)); }
