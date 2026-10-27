@@ -10,6 +10,7 @@
 import { getSettings, setSettings, onSettings, bindSound, QUALITY } from './settings.js';
 import { ORIENTATIONS, guardOrientation, isTouch } from './touch.js';
 import { icon } from './icons.js';
+import { createToast } from './hud.js';
 import './navigation.js';
 import { loc } from './i18n.js';
 // From next to this module, so a versioned copy (pana.sh's /_v/<version>/engine/) loads its own kit.
@@ -40,11 +41,10 @@ function keycaps(keys, whole = false) {
   return keys.split(' / ').flatMap((group, i) => [i ? ' / ' : null, ...(whole ? [group] : group.split(' ')).map(k => h('kbd', { text: k, 'data-pad-key': whole }))]).filter(Boolean);
 }
 
-let toastNode, toastTimer;
+let toast;
 function defaultNotify(text) {
-  toastNode ??= document.body.appendChild(h('div', { class: 'pana-toast', role: 'status', 'aria-live': 'polite' }));
-  toastNode.textContent = text; toastNode.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => toastNode.classList.remove('show'), 3000);
+  toast ??= createToast(document.body.appendChild(h('div', { class: 'pana-toast', role: 'status', 'aria-live': 'polite' })), { ms: 3000 });
+  toast(text);
 }
 
 let menuCount = 0;
