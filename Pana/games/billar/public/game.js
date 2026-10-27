@@ -11,7 +11,7 @@ import { fillRoster } from '/engine/results.js';
 import { PoolRoom } from './network.js';
 import { groupName, groupOf, canPlace, remaining, messageText } from './rules.js';
 import { createPoolScene, VIEWS } from './scene.js';
-import { shotPower, paintCharge } from '/engine/play/shot-charge.js';
+import { paintCharge, createShotCharge } from '/engine/play/shot-charge.js';
 import { POOL_OPTIONS, teamOf, playingSeats, poolConnected, canStartPool } from './match-rules.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { createTableSeating } from '/engine/play/table-seating.js';
@@ -24,7 +24,7 @@ const params = new URLSearchParams(location.search); params.set('room', code);
 history.replaceState(null, '', `${location.pathname}?${params}`);
 let angle = 0, placement = null, held = 0, stopped = false, lastRevision = -1, previousPhase = 'lobby', drag = null;
 const spin = { x: 0, y: 0 };
-let charge = null, power = .65;
+let power = .65;
 const world = createPoolScene($('table'), { onStarter: (cacho, power) => { if (!menu.isOpen) { audio.unlock(); room.action('starter', { cacho, power }); } } }), portraitKeys = [], portraitCache = new Map();
 // The chosen camera is a personal preference, remembered on this device.
 let cameraView = 'taco';
@@ -103,53 +103,44 @@ $('spin').addEventListener('keydown', event => {
 });
 
 function ownTurn() { return !menu.isOpen && !roomOptions.isOpen && room.connected && room.state.phase === 'aiming' && room.seat === room.state.turn && poolConnected(room.state); }
-function updateCharge(now = performance.now()) {
-  if (!charge) return;
-  power = shotPower(now - charge.started);
-  paintCharge($('power'), power, $('power-value'));
-}
-function chargeValid() { return ownTurn() && !room.state.ballInHand && charge?.revision === room.state.revision; }
-function cancelCharge() {
-  charge = null; power = .65;
+// Ending a charge (released or cancelled) puts the controls back.
+function chargeEnded() {
+  power = .65;
   $('power-bar').hidden = true; $('shoot').classList.remove('is-charging');
   $('shoot').firstChild.textContent = room.state.ballInHand ? `${loc('Colocar')} ` : `${loc('Tirar')} `;
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !ownTurn() || room.state.ballInHand;
   $('pocket').disabled = !ownTurn() || room.state.ballInHand;
 }
+const charge = createShotCharge({ ready: () => ownTurn() && !room.state.ballInHand, revision: () => room.state.revision,
+  change: value => { if (value === null) chargeEnded(); else { power = value; paintCharge($('power'), power, $('power-value')); } },
+  shoot: (value, { pocket }) => room.action('shoot', { angle, power: value, spin: { ...spin }, pocket }) });
 function beginCharge(source) {
-  if (!ownTurn() || charge) return;
+  if (!ownTurn() || charge.active) return;
   if (room.state.ballInHand) { place(placement || room.state.balls[0]); return; }
   if (room.state.options.calledPocket && $('pocket').value === '') { notify(loc('Elige la tronera donde quieres meter la bola.')); return; }
   audio.unlock(); held = 0; drag = null;
-  charge = { source, started: performance.now(), revision: room.state.revision, pocket: $('pocket').value === '' ? null : Number($('pocket').value) };
   $('power-bar').hidden = false; $('shoot').classList.add('is-charging');
   $('shoot').firstChild.textContent = `${loc('Soltar')} `;
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = true;
   $('pocket').disabled = true;
-  updateCharge();
-}
-function releaseCharge(source) {
-  if (charge?.source !== source) return;
-  const valid = chargeValid(); updateCharge();
-  const shot = { angle, power, spin: { ...spin }, pocket: charge.pocket }; cancelCharge();
-  if (valid) room.action('shoot', shot);
+  charge.begin(source, { pocket: $('pocket').value === '' ? null : Number($('pocket').value) });
 }
 function place(point) {
   if (!canPlace(room.state, point.x, point.y)) { notify(loc('Pon la blanca en un lugar libre, lejos de las troneras.')); return; }
   room.action('place', point); placement = null;
 }
 const pads = [-1, 1].map((direction, i) => holdButton($(i ? 'aim-right' : 'aim-left'), {
-  down: () => { if (ownTurn()) { held = direction; angle += direction * .006; } }, up: () => { held = 0; }, paused: () => !ownTurn() || room.state.ballInHand || !!charge,
+  down: () => { if (ownTurn()) { held = direction; angle += direction * .006; } }, up: () => { held = 0; }, paused: () => !ownTurn() || room.state.ballInHand || charge.active,
 }));
 pads.push(holdButton($('shoot'), {
   down: () => beginCharge('pointer'),
-  up: event => { if (event?.type === 'pointerup') releaseCharge('pointer'); else cancelCharge(); },
-  paused: () => !ownTurn() || !!charge,
+  up: event => { if (event?.type === 'pointerup') charge.release('pointer'); else charge.cancel(); },
+  paused: () => !ownTurn() || charge.active,
 }));
-function clearInput() { cancelCharge(); held = 0; drag = null; pads.forEach(p => p.release()); }
+function clearInput() { charge.cancel(); held = 0; drag = null; pads.forEach(p => p.release()); }
 
 function aim(event) {
-  if (!ownTurn() || charge) return;
+  if (!ownTurn() || charge.active) return;
   const point = world.point(event.clientX, event.clientY);
   if (!point) return;
   if (room.state.ballInHand) placement = point;
@@ -159,7 +150,7 @@ function aim(event) {
 // would chase itself: a drag turns the cue, a tap aims at the spot.
 const chasing = () => world.view === 'taco' && !room.state.ballInHand;
 $('table').addEventListener('pointerdown', event => {
-  if (!ownTurn() || charge) return; event.preventDefault(); $('table').focus({ preventScroll: true }); $('table').setPointerCapture(event.pointerId);
+  if (!ownTurn() || charge.active) return; event.preventDefault(); $('table').focus({ preventScroll: true }); $('table').setPointerCapture(event.pointerId);
   if (chasing()) drag = { x: event.clientX, angle, moved: false }; else aim(event);
 });
 $('table').addEventListener('pointermove', event => {
@@ -182,7 +173,7 @@ addEventListener('keydown', event => {
   if (!ownTurn()) return;
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Enter'].includes(event.key)) event.preventDefault();
   if (event.key === ' ' || event.key === 'Enter') { if (!event.repeat) beginCharge(event.key); return; }
-  if (charge) return;
+  if (charge.active) return;
   if (room.state.ballInHand && event.key.startsWith('Arrow')) {
     const point = placement || { x: room.state.balls[0].x, y: room.state.balls[0].y };
     let x = event.key === 'ArrowLeft' ? -8 : event.key === 'ArrowRight' ? 8 : 0;
@@ -192,7 +183,7 @@ addEventListener('keydown', event => {
   } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') angle += (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? .002 : .012);
 });
 addEventListener('keyup', event => {
-  if (charge?.source === event.key) { event.preventDefault(); releaseCharge(event.key); }
+  if (charge.source === event.key) { event.preventDefault(); charge.release(event.key); }
 });
 
 // Empty seats hold the synced Spanish placeholder name.
@@ -224,7 +215,7 @@ function render(state) {
     updatePortrait(player, seat);
   }
   const active = ownTurn();
-  if (charge && !chargeValid()) clearInput();
+  if (charge.active && !charge.valid()) clearInput();
   $('turn-status').textContent = !room.connected ? loc('Reconectando…') : !ready ? loc('Esperando a tu pana') : !lobby && !playingSeats(state).includes(room.seat) ? loc('Entras en la próxima mesa') : state.phase === 'starter' ? loc('¿Quién rompe?') : state.phase === 'rolling' ? loc('Rodando…')
     : active ? state.ballInHand ? loc('Coloca la blanca') : loc('¡Tu turno!') : loc('Turno de {name}', { name: nameOf(state.players[state.turn]) });
   $('message').textContent = state.ballInHand && active ? state.options.foulPlacement === 'kitchen' ? loc('Coloca en la zona amarilla. La blanca debe salir de cocina antes de tocar otra bola.') : loc('Toca un lugar libre de la mesa. Después apunta y tira.') : messageText(state.message);
@@ -232,13 +223,13 @@ function render(state) {
   document.querySelector('.table-caption span').textContent = state.options.variant === 'nine' ? loc('BOLA NUEVE') : loc('BOLA OCHO');
   $('shoot').disabled = !active;
   $('called-pocket').hidden = !state.options.calledPocket || lobby || ended;
-  $('pocket').disabled = !active || !!charge || state.ballInHand;
+  $('pocket').disabled = !active || charge.active || state.ballInHand;
   $('shot-clock').hidden = !state.options.shotSeconds || state.phase !== 'aiming';
   $('shot-clock').textContent = loc('Tiempo: {n} s', { n: Math.max(0, Math.ceil(state.options.shotSeconds - state.turnElapsed)) });
   $('charge-tip').hidden = !active || state.ballInHand;
-  for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !active || state.ballInHand || !!charge;
-  $('side-controls').hidden = lobby || ended; $('power-bar').hidden = !charge;
-  $('shoot').firstChild.textContent = `${state.ballInHand ? loc('Colocar') : charge ? loc('Soltar') : loc('Tirar')} `;
+  for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !active || state.ballInHand || charge.active;
+  $('side-controls').hidden = lobby || ended; $('power-bar').hidden = !charge.active;
+  $('shoot').firstChild.textContent = `${state.ballInHand ? loc('Colocar') : charge.active ? loc('Soltar') : loc('Tirar')} `;
   if (state.revision !== lastRevision) {
     if (state.phase === 'rolling' && previousPhase !== 'rolling') audio.tone(360, 0, .06, 'triangle', .12);
     if (previousPhase === 'rolling' && state.phase !== 'rolling') { placement = null; $('pocket').value = ''; setSpin(0, 0); audio.tone(600, 0, .08, 'sine', .08); }
@@ -279,8 +270,8 @@ let frameTime = performance.now();
 function frame(now) {
   if (stopped) return;
   const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now;
-  if (charge) { if (chargeValid()) updateCharge(now); else clearInput(); }
-  if (ownTurn() && !charge) angle += held * dt * .45;
+  if (charge.active) { if (charge.valid()) charge.update(now); else clearInput(); }
+  if (ownTurn() && !charge.active) angle += held * dt * .45;
   world.draw(room.state, { angle, power, spin, active: ownTurn(), placement, calledPocket: $('pocket').value === '' ? -1 : Number($('pocket').value), dt, seat: room.connected ? room.seat : -1 }); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);

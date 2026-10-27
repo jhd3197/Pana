@@ -12,7 +12,7 @@ import { CRIOLLAS_OPTIONS, criollasOptions } from './options.js';
 import { fillRoster } from '/engine/results.js';
 import { createLobbyRoster } from '/engine/lobby-roster.js';
 import { sound } from '/engine/fx.js';
-import { shotPower, paintCharge } from '/engine/play/shot-charge.js';
+import { paintCharge, createShotCharge } from '/engine/play/shot-charge.js';
 import { aimAt, clamp, measure, distance } from '/engine/play/bolas-criollas.js';
 import { CriollasRoom } from './network.js';
 import { TEAM_NAMES } from './rules.js';
@@ -24,7 +24,7 @@ await Promise.race([document.fonts.load('64px "Luckiest Guy"'), new Promise(reso
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const notify = createToast($('toast'), { ms: 3500 });
 const params = new URLSearchParams(location.search), world = createScene($('court'));
-let shot = { angle: 0, power: .62, mode: 'arrime', loft: 2.5 }, charge = null, held = 0, stopped = false, connecting = false, view = 'calce', lastRevision = -1, previousPhase = 'lobby';
+let shot = { angle: 0, power: .62, mode: 'arrime', loft: 2.5 }, held = 0, stopped = false, connecting = false, view = 'calce', lastRevision = -1, previousPhase = 'lobby';
 // The camera is a personal preference, remembered on this device.
 try { const saved = localStorage.getItem('pana:criollas:view'); if (VIEWS.some(([v]) => v === saved)) view = saved; } catch { /* storage may be blocked */ }
 function setView(value) {
@@ -91,40 +91,29 @@ for (const id of ['practice', 'fallback']) $(id).onclick = () => {
 };
 $('next').onclick = () => room.action(room.state.phase === 'finished' ? 'start' : 'next');
 for (const button of $('shot-options').children) button.onclick = () => {
-  if (!ownTurn() || charge) return; shot.mode = button.dataset.mode; render(room.state);
+  if (!ownTurn() || charge.active) return; shot.mode = button.dataset.mode; render(room.state);
 };
 function ownTurn() { return room.connected && !menu.isOpen && room.state.phase === 'aiming' && room.seat === room.state.turn; }
-$('loft').oninput = () => { if (!ownTurn() || charge) return; shot.loft = Number($('loft').value); $('loft-value').textContent = `${shot.loft.toFixed(1)} m`; };
+$('loft').oninput = () => { if (!ownTurn() || charge.active) return; shot.loft = Number($('loft').value); $('loft-value').textContent = `${shot.loft.toFixed(1)} m`; };
 // Like Billar: hold the button, Space or Enter and the force rises and falls;
 // letting go throws at that force. The rules never accept less than 10%.
-function updateCharge(now = performance.now()) {
-  if (!charge) return;
-  shot.power = Math.max(.1, shotPower(now - charge.started));
-  paintCharge($('power'), shot.power, $('power-value'));
-}
-function chargeValid() { return ownTurn() && charge?.revision === room.state.revision; }
+const charge = createShotCharge({ ready: ownTurn, revision: () => room.state.revision, min: .1,
+  change: power => { if (power === null) render(room.state); else { shot.power = power; paintCharge($('power'), power, $('power-value')); } },
+  shoot: () => room.action('shoot', shot) });
 function beginCharge(source) {
-  if (!ownTurn() || charge) return;
+  if (!charge.begin(source)) return;
   sound.unlock(); held = 0; pads.slice(0, 2).forEach(p => p.release());
-  charge = { source, started: performance.now(), revision: room.state.revision };
-  updateCharge(); render(room.state);
-}
-function cancelCharge() { if (!charge) return; charge = null; render(room.state); }
-function releaseCharge(source) {
-  if (charge?.source !== source) return;
-  const valid = chargeValid(); updateCharge(); charge = null;
-  if (valid) room.action('shoot', shot);
   render(room.state);
 }
-pads = [-1, 1].map((direction, i) => holdButton($(i ? 'aim-right' : 'aim-left'), { down() { if (ownTurn()) held = direction; }, up() { held = 0; }, paused: () => !ownTurn() || !!charge }));
+pads = [-1, 1].map((direction, i) => holdButton($(i ? 'aim-right' : 'aim-left'), { down() { if (ownTurn()) held = direction; }, up() { held = 0; }, paused: () => !ownTurn() || charge.active }));
 pads.push(holdButton($('shoot'), {
   down: () => beginCharge('pointer'),
-  up: event => { if (event?.type === 'pointerup') releaseCharge('pointer'); else cancelCharge(); },
-  paused: () => !ownTurn() || !!charge,
+  up: event => { if (event?.type === 'pointerup') charge.release('pointer'); else charge.cancel(); },
+  paused: () => !ownTurn() || charge.active,
 }));
-function clearInput() { cancelCharge(); held = 0; pads.forEach(p => p.release()); }
+function clearInput() { charge.cancel(); held = 0; pads.forEach(p => p.release()); }
 function point(event) {
-  if (!ownTurn() || charge) return; const p = world.pick(event.clientX, event.clientY); if (!p) return;
+  if (!ownTurn() || charge.active) return; const p = world.pick(event.clientX, event.clientY); if (!p) return;
   // Pointing changes direction only: force remains a deliberate separate choice.
   shot.angle = aimAt(p.x, p.z).angle;
 }
@@ -139,11 +128,11 @@ addEventListener('keydown', event => {
   if (!ownTurn()) return;
   if (['ArrowLeft', 'ArrowRight', ' ', 'Enter'].includes(event.key)) event.preventDefault();
   if (event.key === ' ' || event.key === 'Enter') { if (!event.repeat) beginCharge(event.key); return; }
-  if (charge) return;
+  if (charge.active) return;
   if (event.key === 'ArrowLeft') shot.angle = clamp(shot.angle - .008, -.65, .65);
   if (event.key === 'ArrowRight') shot.angle = clamp(shot.angle + .008, -.65, .65);
 });
-addEventListener('keyup', event => { if (charge?.source === event.key) { event.preventDefault(); releaseCharge(event.key); } });
+addEventListener('keyup', event => { if (charge.source === event.key) { event.preventDefault(); charge.release(event.key); } });
 function render(g) {
   if (room.connected) connecting = false;
   const lobby = g.phase === 'lobby', result = ['hand', 'finished'].includes(g.phase), active = ownTurn(), opening = g.phase === 'opening';
@@ -158,7 +147,7 @@ function render(g) {
   if (g.mapId && world.venue !== g.mapId) world.setVenue(g.mapId);
   mapPicker.update(g.mapId, lobby && (!room.connected || room.isHost));
   $('guide-note').textContent = g.difficulty === 'normal' ? loc('El blanco indica dónde frena sin choques. Mantén y suelta para ajustar la distancia.') : difficultyInfo(g.difficulty).note;
-  $('side-controls').hidden = lobby; $('power-bar').hidden = lobby || !charge;
+  $('side-controls').hidden = lobby; $('power-bar').hidden = lobby || !charge.active;
   $('lobby-roster').hidden = !lobby;
   if (lobby) teamRoster.update(TEAM_NAMES.map((title, team) => ({ id: team, title: loc(title), color: team ? '#299e72' : '#ed5949', seats: g.players.map((player, key) => ({ key, player: { ...player, bot: player.id === null } })).filter(s => s.key % 2 === team) })), { ownId: room.id, hostId: room.hostId, enabled: room.connected, canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
   for (let t = 0; t < 2; t++) { $(`score-${t}`).textContent = g.scores[t]; const left = g.remaining.reduce((sum, n, i) => sum + (i % 2 === t ? n : 0), 0); $(`left-${t}`).textContent = locn(left, '{n} bolas por tirar', '{n} bolas por tirar'); }
@@ -168,11 +157,11 @@ function render(g) {
   const lead = measure(g.pitch), best = g.pitch.balls.find(b => b.id === lead.ids[0]);
   $('measure').textContent = best ? loc('{team} van más cerca · {d} m del mingo', { team: loc(TEAM_NAMES[lead.team]), d: distance(g.pitch, best).toFixed(2) }) : loc('El mingo está en juego');
   $('shoot').disabled = !active;
-  $('loft-control').hidden = shot.mode !== 'aire'; $('loft').disabled = !active || !!charge;
-  for (const id of ['aim-left', 'aim-right']) $(id).disabled = !active || !!charge;
-  $('shoot').classList.toggle('is-charging', !!charge);
-  $('shoot').firstChild.textContent = (charge ? loc('Suelta para lanzar') : loc('Mantén para lanzar')) + ' ';
-  for (const button of $('shot-options').children) { button.setAttribute('aria-pressed', String(button.dataset.mode === shot.mode)); button.disabled = !active || !!charge; }
+  $('loft-control').hidden = shot.mode !== 'aire'; $('loft').disabled = !active || charge.active;
+  for (const id of ['aim-left', 'aim-right']) $(id).disabled = !active || charge.active;
+  $('shoot').classList.toggle('is-charging', charge.active);
+  $('shoot').firstChild.textContent = (charge.active ? loc('Suelta para lanzar') : loc('Mantén para lanzar')) + ' ';
+  for (const button of $('shot-options').children) { button.setAttribute('aria-pressed', String(button.dataset.mode === shot.mode)); button.disabled = !active || charge.active; }
   $('results').hidden = !result;
   if (result) {
     const r = g.result, finished = g.phase === 'finished';
@@ -194,16 +183,16 @@ let tickTime = performance.now(), frameTime = tickTime;
 const timer = setInterval(() => { const now = performance.now(); room.tick((now - tickTime) / 1000, menu.isOpen && room.offline); tickTime = now; }, 1000 / 60);
 function frame(now) {
   if (stopped) return; const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now;
-  if (charge) { if (chargeValid()) updateCharge(now); else cancelCharge(); }
-  if (ownTurn() && !charge) shot.angle = clamp(shot.angle + held * dt * .35, -.65, .65);
+  if (charge.active) { if (charge.valid()) charge.update(now); else charge.cancel(); }
+  if (ownTurn() && !charge.active) shot.angle = clamp(shot.angle + held * dt * .35, -.65, .65);
   world.render(room.state, { dt, shot, active: ownTurn() });
   const target = world.guides.target;
-  if (target?.visible) $('guide-note').textContent = [loc('{n}% de fuerza', { n: Math.round(shot.power * 100) }), target.out ? loc('Se va fuera: reduce la fuerza o cambia la dirección') : room.state.difficulty === 'normal' ? loc('{n} m de recorrido sin choques', { n: target.range.toFixed(1) }) : loc('{n} m de recorrido previsto', { n: target.range.toFixed(1) }), charge ? loc('Suelta para lanzar') : loc('Mantén para ajustar')].join(' · ');
+  if (target?.visible) $('guide-note').textContent = [loc('{n}% de fuerza', { n: Math.round(shot.power * 100) }), target.out ? loc('Se va fuera: reduce la fuerza o cambia la dirección') : room.state.difficulty === 'normal' ? loc('{n} m de recorrido sin choques', { n: target.range.toFixed(1) }) : loc('{n} m de recorrido previsto', { n: target.range.toFixed(1) }), charge.active ? loc('Suelta para lanzar') : loc('Mantén para ajustar')].join(' · ');
   requestAnimationFrame(frame);
 }
 if (roomFromUrl()) connecting = true;
 render(room.state); if (roomFromUrl()) room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); notify.dispose(); teamRoster.dispose(); room.dispose(); world.dispose(); }, { once: true });
-if (params.has('debug')) window.criollasDebug = { room, world, menu, get shot() { return shot; }, get charge() { return charge; } };
+if (params.has('debug')) window.criollasDebug = { room, world, menu, get shot() { return shot; }, get charge() { return charge.active ? charge : null; } };
 
 await prepareScene(world);
