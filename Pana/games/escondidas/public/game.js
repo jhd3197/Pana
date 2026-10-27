@@ -8,7 +8,8 @@ import { createPlazaProp, PLAZA_PROPS, propDefinition } from '/engine/models/pro
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
-import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
+import { inviteUrl } from '/engine/invite.js';
+import { roomCode } from '/engine/game-shell.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { createPlaza } from './plaza.js';
@@ -29,8 +30,7 @@ const propName = type => PROP_NAMES[type] ?? propDefinition(type)?.label;
 const $ = id => document.getElementById(id), show = (id, visible) => $(id).classList.toggle('hidden', !visible);
 const notify = createToast($('toast'), { ms: 3300 });
 const qs = new URLSearchParams(location.search), DEBUG = qs.has('debug');
-const code = roomFromUrl() || newRoomCode();
-const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
+const code = roomCode();
 const avatar = loadAvatar(), name = loadName();
 await Promise.race([document.fonts.load('900 64px Nunito'), new Promise(resolve => setTimeout(resolve, 1600))]);
 

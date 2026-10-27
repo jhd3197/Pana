@@ -7,7 +7,8 @@ import {loadAvatar,loadName} from '/engine/avatar.js';
 import {sound,setSpeedLines} from '/engine/fx.js';
 import {createGameMenu,toggleMute} from '/engine/ui.js';
 import {fillRoster} from '/engine/results.js';
-import {inviteUrl,newRoomCode,roomFromUrl} from '/engine/invite.js';
+import {inviteUrl} from '/engine/invite.js';
+import {roomCode} from '/engine/game-shell.js';
 import {holdButton} from '/engine/touch.js';
 import {bindRenderer,pixelRatio} from '/engine/settings.js';
 import {RaceRoom} from './network.js';
@@ -21,7 +22,7 @@ import { loc } from '/engine/i18n.js';
 
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),avatar=loadAvatar(),name=loadName();
 let coat='bay';try{coat=['bay','palomino','grey'].includes(localStorage.getItem('galope:coat'))?localStorage.getItem('galope:coat'):'bay';}catch{}
-const code=roomFromUrl()||newRoomCode();params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
+const code=roomCode();
 const keys=new Set(),touch=new Set(),riders=new Map();let paused=false,state,world,ready=false,lastPhase='',lastCountdown='',lastRace=0,hoofClock=0,drawClock=0,disposed=false;
 const room=new RaceRoom({code,name,avatar,coat,onState:s=>{state=s;},onStatus:(message,error=false)=>{$('connection').textContent=message;$('practice').classList.toggle('hidden',!error);if(error)showNotice(message);}});state=room.state;
 const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIELDS,change:patch=>room.configure(patch),reset:()=>{room.configure(cleanOptions());}});

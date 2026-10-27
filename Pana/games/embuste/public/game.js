@@ -5,7 +5,8 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound, Shockwaves, createChargeRing } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
-import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
+import { inviteUrl } from '/engine/invite.js';
+import { roomCode } from '/engine/game-shell.js';
 import { holdButton } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
@@ -25,8 +26,7 @@ import { loc, formatList } from '/engine/i18n.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
 const notify = createToast($('toast'), { ms: 3400 });
-const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
-const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
+const qs = new URLSearchParams(location.search), code = roomCode();
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName(), quick = qs.has('quick');
 const noRender = qs.has('norender');   // browser suites: many pages on a software renderer
 const colors = ['#ffb36b', '#81c8c4', '#d2a0a0', '#a3bc74', '#f2d16b', '#b7a8ce', '#6ea6d0', '#e58fb6', '#c1c5a6'];

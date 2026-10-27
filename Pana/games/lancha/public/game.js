@@ -6,7 +6,8 @@ import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound, pulseSpeedLines, setSpeedLines } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
-import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
+import { inviteUrl } from '/engine/invite.js';
+import { roomCode } from '/engine/game-shell.js';
 import { holdButton } from '/engine/touch.js';
 import { bindRenderer, pixelRatio } from '/engine/settings.js';
 import { createMusic } from '/engine/music.js';
@@ -28,7 +29,7 @@ import { loc, locn } from '/engine/i18n.js';
 let RIVER = DEFAULT_RIVER;
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search), avatar = loadAvatar(), name = loadName();
 const showNotice = createToast($('notice'), { ms: 3000 });
-const code = roomFromUrl() || newRoomCode(); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
+const code = roomCode();
 const keys = new Set(), touch = new Set(), boats3d = new Map(), touchButtons = [], local = { turbo: 0 };
 let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastCountdown = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
 const room = new LanchaRoom({ code, name, avatar, onState: s => { state = s; snapshotAt = performance.now(); },

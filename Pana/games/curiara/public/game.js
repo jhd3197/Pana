@@ -7,7 +7,8 @@ import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound, pulseSpeedLines, setSpeedLines } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
-import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
+import { inviteUrl } from '/engine/invite.js';
+import { roomCode } from '/engine/game-shell.js';
 import { holdButton } from '/engine/touch.js';
 import { bindRenderer, pixelRatio } from '/engine/settings.js';
 import { RiverRoom } from './network.js';
@@ -30,7 +31,7 @@ const $ = id => document.getElementById(id), params = new URLSearchParams(locati
 const showNotice = createToast($('notice'), { ms: 3000 });
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 let format = FORMATS[store.get('curiara:format')] ? store.get('curiara:format') : 'todos';
-const code = roomFromUrl() || newRoomCode(); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
+const code = roomCode();
 const keys = new Set(), touch = new Set(), canoes = new Map(), touchButtons = [];
 let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastCountdown = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
 const room = new RiverRoom({ code, name, avatar, onState: s => { state = s; snapshotAt = performance.now(); }, onStatus: (message, error = false) => { $('connection').textContent = message; $('practice').classList.toggle('hidden', !error); if (error) showNotice(message); } });
