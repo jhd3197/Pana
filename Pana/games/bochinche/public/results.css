@@ -34,6 +34,11 @@
 .boch-results .res-confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
 .boch-results .res-confetti i { position: absolute; top: -30px; width: 12px; height: 20px; background: var(--cc); animation: boch-fall var(--t) linear var(--dl) infinite; }
 @keyframes boch-fall { to { transform: translateY(110vh) rotate(540deg); } }
+.boch-results .res-mangos { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; margin-top: 14px; padding: 12px 14px; background: rgba(255, 255, 255, .05); font: 800 15px/1.3 var(--pk-sans); color: var(--pk-muted); }
+.boch-results .res-mangos > span, .boch-results .res-balance { display: grid; text-align: left; }
+.boch-results .res-mangos > b { grid-row: span 2; display: flex; align-items: center; gap: 8px; font: 28px/1 var(--pk-display); color: #ffd23f; }
+.boch-results .res-mangos > b svg { width: 30px; height: 30px; }
+.boch-results .res-balance { color: var(--pk-cream); }
 @media (max-width: 900px) {
   .boch-results .pk-results-card { grid-template-columns: 1fr; grid-template-areas: "win" "pod" "stats" "awards" "acts"; }
   .boch-results .res-podium { min-height: 300px; }

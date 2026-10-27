@@ -188,5 +188,16 @@
   },
   "Poder: {poder}": "Power: {poder}",
   "{poder} · {style}": "{poder} · {style}",
-  "Elegir pana": "Pick pana"
+  "Elegir pana": "Pick pana",
+  "{n}º puesto": "Place {n}",
+  "{n} KO": {
+    "one": "{n} KO",
+    "other": "{n} KOs"
+  },
+  "Tus mangos por esta pelea": "Your mangos from this fight",
+  "Ahora tienes {n} mango": {
+    "one": "You now have {n} mango",
+    "other": "You now have {n} mangos"
+  },
+  "{n} KOs": "{n} KOs"
 }

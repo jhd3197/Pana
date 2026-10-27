@@ -169,7 +169,7 @@ function render(state) {
 
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
 
-  if (ended) results.update(state, room.id, ranked);
+  if (ended) results.update(state, room.id, ranked, `bochinche:${code}:${state.seed}:${state.round}`);
 
 
   world?.update(state);

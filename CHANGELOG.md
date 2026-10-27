@@ -15,6 +15,9 @@ becomes the GitHub release's notes.
   del HUD en el menú (Clásico, Esquinas, Mínimo). Elige tu pana y su traje
   desde la sala (se recuerda para la próxima), y al final hay podio, tabla
   de KOs, caídas y daño, y premios como Pegada de oro.
+- **Las peleas de Bochinche pagan mangos que gastas en el taller de Carreritas.**
+  Ganas por puesto, por cada KO y por cada premio; los mangos ahora son de
+  todo Pana, y tu saldo de Carreritas pasa tal cual.
 - **Pana habla inglés: elige el idioma en Ajustes > Idioma.**
   El hub, las salas, los menús y todos los juegos salen en inglés si tu
   navegador está en inglés o si lo eliges; cada pana de una sala ve su propio

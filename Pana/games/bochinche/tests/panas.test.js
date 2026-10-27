@@ -89,3 +89,12 @@ test('pana choice is personal, validated and locked once the fight starts', () =
   assert.equal(g.combat.fighters[0].fighter, 'kaykit-knight:silbon');
   assert(g.players.slice(1).every(p => p.bot && PANAS.some(q => q.id === p.pana)));
 });
+
+test('a fight pays mangos by place, KOs and awards', async () => {
+  const { fightMangos, PLACE_MANGOS } = await import('../public/fight-mangos.js');
+  // The reference's example: 2nd place, three KOs and Pegada de oro.
+  assert.equal(fightMangos({ rank: 2, kos: 3, awards: ['Pegada de oro'] }).total, 10 + 9 + 5);
+  assert.equal(fightMangos({ rank: 6 }).total, 1);
+  assert.equal(fightMangos({ rank: 1 }).lines.length, 1);
+  assert(PLACE_MANGOS.every((n, i) => i === 0 || n < PLACE_MANGOS[i - 1]));
+});

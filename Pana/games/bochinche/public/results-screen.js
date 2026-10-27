@@ -3,6 +3,9 @@
 import { cachedPortrait } from '/engine/portrait-cache.js';
 import { loc, locn, locKey } from '/engine/i18n.js';
 import { playerCostume, SEAT_COLORS } from './costume.js';
+import { fightMangos } from './fight-mangos.js';
+import { createMangoWallet } from '/engine/mangos.js';
+import { ICONS } from '/engine/icons.js';
 
 const el = (tag, className, parent) => { const n = document.createElement(tag); if (className) n.className = className; parent?.append(n); return n; };
 const CROWN = '<svg class="crown" viewBox="0 0 70 46" aria-hidden="true"><path d="M4 42 L8 10 L24 26 L35 4 L46 26 L62 10 L66 42 Z" fill="#ffd23f" stroke="#16161a" stroke-width="4" stroke-linejoin="round"/></svg>';
@@ -17,14 +20,15 @@ const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(
 // Award winners: highest value, ties to the better place; nobody wins a zero.
 function award(rows, key, title, text) {
   const best = rows.filter(r => r[key] > 0).sort((a, b) => b[key] - a[key] || a.rank - b.rank)[0];
-  return best && { title, text: text(best), color: best.color };
+  return best && { title, text: text(best), color: best.color, who: best };
 }
 
 export function createResultsScreen() {
-  const $ = id => document.getElementById(id), reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const $ = id => document.getElementById(id), reduced = matchMedia('(prefers-reduced-motion: reduce)'), wallet = createMangoWallet();
   let shownKey = '';
   return {
-    update(state, me, ranked) {
+    // receipt names this round in this room, so a reload never pays twice.
+    update(state, me, ranked, receipt) {
       const key = state.phase === 'finished' ? `${state.round}:${state.winner}` : '';
       if (key === shownKey) return;
       shownKey = key; if (!key) return;
@@ -58,7 +62,6 @@ export function createResultsScreen() {
           const td = el('td', r[k] === best[k] && (k !== 'falls' || rows.length > 1) ? 'best' : '', tr); td.textContent = text;
         }
       }
-      $('result-stats').replaceChildren(table);
       const awards = [
         award(rows, 'kos', locKey('Rey del bochinche'), r => loc('Más KOs · {name}', { name: r.name })),
         award(rows, 'best', locKey('Pegada de oro'), r => loc('Golpe de {n}% · {name}', { name: r.name, n: r.best })),
@@ -69,6 +72,19 @@ export function createResultsScreen() {
         const text = el('span', '', card); el('b', '', text).textContent = loc(a.title); el('small', '', text).textContent = a.text;
         return card;
       }));
+      // Your mangos: each client pays only its own player into the shared wallet.
+      const mine = rows.find(r => r.me), panel = [table];
+      if (mine) {
+        const pay = fightMangos({ rank: mine.rank, kos: mine.kos, awards: awards.filter(a => a.who.me).map(a => a.title) });
+        wallet.credit(pay.total, receipt);
+        const box = el('div', 'res-mangos'), left = el('span', '', box);
+        el('span', '', left).textContent = loc('Tus mangos por esta pelea');
+        el('small', '', left).textContent = pay.lines.map(([key, vars, , plural]) => plural ? locn(vars.n, key, plural, vars) : loc(key, vars)).join(' + ');
+        const total = el('b', '', box); total.innerHTML = ICONS.mango; total.append('+' + pay.total);
+        el('small', 'res-balance', box).textContent = locn(wallet.balance(), 'Ahora tienes {n} mango', 'Ahora tienes {n} mangos');
+        panel.push(box);
+      }
+      $('result-stats').replaceChildren(...panel);
       const confetti = $('result-confetti'); confetti.replaceChildren();
       if (!reduced.matches) for (let i = 0; i < 36; i++) {
         const c = el('i', '', confetti);

@@ -193,8 +193,10 @@ geometry and materials for all fighters: remove props before
 
 The room tallies KOs, falls, damage dealt and the biggest hit from combat
 events (`ko.target` is the last attacker) and keeps them in the checkpoint;
-results build the podium, table and awards from them. Mangos are not paid:
-the wallet belongs to Carreritas.
+results build the podium, table and awards from them. Each client pays its
+own player into the shared mango wallet (`fight-mangos.js`: 15/10/6/4/2/1
+by place, 3 per KO, 5 per award). The receipt is room code, room seed and
+round, so a reload or a second results render never pays twice.
 
 ## Fight HUD and screens
 
