@@ -214,7 +214,7 @@ export class Night {
   // ---------- actions ----------
   // Every client action lands here; anything out of place is ignored.
   act(seat, action, data = {}) {
-    const p = this.players.get(seat), [phase, handler] = this.actions[action] || [];
+    const p = this.players.get(seat), [phase, handler] = Object.hasOwn(this.actions, action) ? this.actions[action] : [];
     if (!p || !handler || this.phase !== phase || p.spectator) return false;
     return !!handler.call(this, p, data ?? {});
   }
