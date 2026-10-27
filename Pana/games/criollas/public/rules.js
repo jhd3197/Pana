@@ -14,7 +14,7 @@ export function botPlayer(slot) {
 }
 export function createGame() {
   return { phase: 'lobby', mapId: 'plaza', difficulty: DEFAULT_DIFFICULTY, local: false, players: Array.from({ length: 6 }, (_, i) => botPlayer(i)), pitch: createPitch(),
-    target: 12, ballsPerPlayer: 4, scores: [0, 0], remaining: Array(6).fill(4), turn: 0, lastSlots: [4, 5],
+    target: 12, ballsPerPlayer: 4, turnSeconds: 60, scores: [0, 0], remaining: Array(6).fill(4), turn: 0, lastSlots: [4, 5],
     hand: 0, starter: 0, revision: 0, shots: 0, elapsed: 0, botTime: 0, result: null,
     // ¿Quién empieza? before the first hand: a coin, cara for the Rojos.
     opener: 'cacho', opening: null, lastLoser: null };
@@ -102,9 +102,11 @@ export function step(g) {
     if (changed) g.revision++;
     return changed;
   }
-  if (g.phase === 'aiming' && g.players[g.turn].id === null) {
-    g.botTime += STEP;
-    if (g.botTime >= 1.1) return shoot(g, botThrow(g));
+  // Bots throw after a beat; a pana who idles past turnSeconds gets the bot's
+  // throw, so one idle tab never freezes the match (local play waits).
+  if (g.phase === 'aiming') {
+    const limit = g.players[g.turn].id === null ? 1.1 : !g.local && g.turnSeconds;
+    if (limit) { g.botTime += STEP; if (g.botTime >= limit) return shoot(g, botThrow(g)); }
   }
   if (g.phase !== 'rolling') return false;
   g.elapsed += STEP; stepPitch(g.pitch);

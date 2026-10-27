@@ -173,3 +173,19 @@ test('room option: al azar and the table skip the coin; revancha opens with the 
   assert.equal(g.phase, 'aiming'); assert.equal(g.starter, 1, 'the Verdes lost and throw the mingo');
   const restored = JSON.parse(JSON.stringify(g)); assert.equal(restored.opener, 'revancha');
 });
+
+test('an idle pana gets the bot throw after their turn time; local play waits', () => {
+  const g = createGame();
+  g.players[0] = { id: 7, name: 'Ana', avatar: {} };
+  Object.assign(g, { phase: 'aiming', turn: 0, botTime: 0 });
+  for (let t = 0; t < 59; t += STEP) step(g);
+  assert.equal(g.phase, 'aiming', 'still Ana’s throw');
+  for (let t = 0; t < 2 && g.phase === 'aiming'; t += STEP) step(g);
+  assert.equal(g.phase, 'rolling', 'the bot threw for her');
+  for (const [local, turnSeconds] of [[true, 60], [false, 0]]) {
+    const h = createGame(); h.players[0] = { id: 7, name: 'Ana', avatar: {} };
+    Object.assign(h, { phase: 'aiming', turn: 0, botTime: 0, local, turnSeconds });
+    for (let t = 0; t < 120; t += STEP) step(h);
+    assert.equal(h.phase, 'aiming', `local=${local} limit=${turnSeconds}: the table waits`);
+  }
+});

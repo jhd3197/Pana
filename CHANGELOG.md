@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Un pana que se queda quieto ya no congela Ludo ni Bolas Criollas.**
+  Con «Tiempo por turno» (60 s por defecto) el bot juega por quien se fue;
+  en Billar, si tu rival se va a mitad de mesa, el anfitrión vuelve a la
+  sala desde el menú.
 - **En Póquer nadie se queda con tus fichas usando tu nombre.**
   Si se te cae la conexión, solo tu propio navegador recupera tu pila.
 - **La revancha en la misma pista de Carreritas trae cajas distintas.**

@@ -3,7 +3,7 @@ import { createGame, acceptAction, step, STEP, copy, botPlayer } from './rules.j
 import { loc, locn } from '/engine/i18n.js';
 
 // The table setting (goal, place, difficulty) survives new rooms and practice.
-const keepTarget = (prev) => prev ? { ...createGame(), target: prev.target, ballsPerPlayer: prev.ballsPerPlayer || 4, remaining: Array(6).fill(prev.ballsPerPlayer || 4), mapId: prev.mapId || 'plaza', difficulty: prev.difficulty || 'normal', opener: prev.opener || 'cacho' } : createGame();
+const keepTarget = (prev) => prev ? { ...createGame(), target: prev.target, ballsPerPlayer: prev.ballsPerPlayer || 4, remaining: Array(6).fill(prev.ballsPerPlayer || 4), mapId: prev.mapId || 'plaza', difficulty: prev.difficulty || 'normal', opener: prev.opener || 'cacho', turnSeconds: prev.turnSeconds ?? 60 } : createGame();
 
 export class CriollasRoom extends TableRoom {
   constructor(options) {
