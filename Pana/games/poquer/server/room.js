@@ -1,4 +1,4 @@
-import { PanaRoom, roomState, memberAvatar, fillBots } from '../../../server/src/room-kit.js';
+import { PanaRoom, roomState, memberAvatar, fillBots, cleanKey } from '../../../server/src/room-kit.js';
 import { Poker } from '../public/rules.js';
 
 export default class PokerRoom extends PanaRoom {
@@ -29,12 +29,12 @@ export default class PokerRoom extends PanaRoom {
     this.clock.setInterval(() => this.tick(), 200);
   }
   // A pana arriving at a full table takes a bot's chair while no hand is live.
-  joined(client, member) {
+  joined(client, member, options = {}) {
     if (this.game.players.length >= this.maxClients && ['lobby', 'finished'].includes(this.game.phase)) {
       const bot = this.game.players.findIndex(p => p.bot);
       if (bot >= 0) this.game.players.splice(bot, 1);
     }
-    this.game.add(member.seat, { name: member.name, avatar: memberAvatar(member), bot: false }); this.publish();
+    this.game.add(member.seat, { name: member.name, avatar: memberAvatar(member), bot: false, key: cleanKey(options.rejoin) }); this.publish();
   }
   dropped(client, member) { if (member) this.game.drop(member.seat); this.publish(); }
   returned(client, member) { this.game.add(member.seat, { name: member.name, avatar: memberAvatar(member), bot: false }); this.publish(); }

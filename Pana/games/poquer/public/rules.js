@@ -5,7 +5,9 @@ import { createStarter, starterInput, stepStarter, starterDone, starterResult, j
 import { loc, locKey } from '../../../engine/i18n.js';
 // Pure Texas Hold'em and Omaha with selectable betting limits. Cards are integers: suit * 13 + rank (deuce = 0).
 export const SMALL = 10, BIG = 20, STACK = 1000;
-const nameKey = (name) => String(name || '').trim().toLowerCase();
+// Who a chair belongs to: the device's rejoin key, or (local play, old
+// clients) the name. A name never claims a keyed chair.
+const ownerKey = (p) => p.key ? `k:${p.key}` : `n:${String(p.name || '').trim().toLowerCase()}`;
 // Hand names (context 'mano': Póquer is also the game), suits, seat actions and the table message travel as Spanish
 // source (plus values); each client shows them with loc() / messageText().
 export const HANDS = [locKey('Carta alta', { $ctx: 'mano' }), locKey('Pareja', { $ctx: 'mano' }), locKey('Doble pareja', { $ctx: 'mano' }), locKey('Trío', { $ctx: 'mano' }), locKey('Escalera', { $ctx: 'mano' }), locKey('Color', { $ctx: 'mano' }), locKey('Full', { $ctx: 'mano' }), locKey('Póquer', { $ctx: 'mano' }), locKey('Escalera de color', { $ctx: 'mano' })];
@@ -126,14 +128,14 @@ export class Poker {
   }
   // A pana who leaves and comes back (a new seat in the room) gets their own
   // stack back, not a fresh one: leaving never refills a short or busted stack.
-  // Matched by name, from a chair still listed or one cleared at the next deal.
+  // Matched by ownerKey, from a chair still listed or one cleared at the next deal.
   add(id, info) {
     this.revision++;
     let p = this.players.find(p => p.id === id);
     if (p) { Object.assign(p, info, { connected: true }); return p; }
     let chips = this.options.stack;
-    const key = nameKey(info.name);
-    const before = !info.bot && this.players.find(q => !q.connected && !q.bot && nameKey(q.name) === key);
+    const key = ownerKey(info);
+    const before = !info.bot && this.players.find(q => !q.connected && !q.bot && ownerKey(q) === key);
     if (before) { chips = before.chips; before.chips = 0; }
     else if (!info.bot && key in this.banked) { chips = this.banked[key]; delete this.banked[key]; }
     p = { id, ...info, connected: true, chips, hole: [], bet: 0, total: 0, folded: true, allin: false, actedAt: null };
@@ -142,8 +144,8 @@ export class Poker {
   }
   // Clears chairs from the table, remembering each departed pana's stack.
   prune(keep) {
-    const stays = this.players.filter(keep), seated = new Set(stays.filter(p => !p.bot).map(p => nameKey(p.name)));
-    for (const p of this.players) if (!keep(p) && !p.bot && !seated.has(nameKey(p.name))) this.banked[nameKey(p.name)] = p.chips;
+    const stays = this.players.filter(keep), seated = new Set(stays.filter(p => !p.bot).map(ownerKey));
+    for (const p of this.players) if (!keep(p) && !p.bot && !seated.has(ownerKey(p))) this.banked[ownerKey(p)] = p.chips;
     this.players = stays;
   }
   get live() { return this.players.filter(p => !p.folded); }
@@ -266,7 +268,7 @@ export class Poker {
   view(id) {
     return { mapId: this.mapId, options: { ...this.options }, starter: this.phase === 'starter' ? JSON.parse(JSON.stringify(this.starter)) : null, smallBlind: this.smallBlind, bigBlind: this.bigBlind, canStart: this.funded.length >= 2, phase: this.phase, hand: this.hand, revision: this.revision, dealer: this.players[this.dealer]?.id, board: [...this.board], turn: this.turn,
       currentBet: this.currentBet || 0, pot: this.players.reduce((sum, p) => sum + p.total, 0), message: this.message, result: this.result, legal: this.legal(id),
-      players: this.players.map(({ hole, actedAt, ...p }) => ({ ...p, hole: p.id === id || (this.options.showCards && this.result?.showdown && !p.folded) ? [...hole] : hole.map(() => null),
+      players: this.players.map(({ hole, actedAt, key, ...p }) => ({ ...p, hole: p.id === id || (this.options.showCards && this.result?.showdown && !p.folded) ? [...hole] : hole.map(() => null),
         handName: this.result?.showdown && !p.folded && (p.id === id || this.options.showCards) ? HANDS[evaluateHand(hole, this.board, this.options.variant)[0]] : '' })) };
   }
 }

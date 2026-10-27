@@ -31,6 +31,16 @@ function loadSdk() {
 // ?lead=1: this player is a pana.sh party's Pana Mayor and hosts the room.
 export const leadFromUrl = () => new URLSearchParams(location.search).has('lead');
 
+// This device's private rejoin key: a game that hands back what a pana left
+// behind (Póquer's stack) matches on it, never on a public name.
+function deviceKey() {
+  try {
+    let key = localStorage.getItem('pana:device');
+    if (!/^[a-z0-9-]{8,64}$/.test(key || '')) localStorage.setItem('pana:device', key = crypto.randomUUID());
+    return key;
+  } catch { return deviceKey.memory ??= crypto.randomUUID(); }
+}
+
 const parseAvatar = (json) => { try { return normalizeAvatar(JSON.parse(json || '{}')); } catch { return normalizeAvatar({}); } };
 const isFull = (error) => error?.code === ROOM_FULL || error?.code === 4009 || /full|lleno|locked/i.test(String(error?.message));
 
@@ -49,7 +59,7 @@ export async function joinRoom(game, { resume = true, ...options }) {
     try { room = await client.reconnect(token); } catch { room = null; }
   }
   try {
-    room ??= await client.joinOrCreate(game, { ...options, lead: !!options.lead, lobbyLoading: !!window.PANA_LOBBY_LOADING });
+    room ??= await client.joinOrCreate(game, { ...options, lead: !!options.lead, lobbyLoading: !!window.PANA_LOBBY_LOADING, rejoin: deviceKey() });
   } catch (error) {
     if (isFull(error)) error.full = true;
     throw error;

@@ -114,6 +114,20 @@ test('room options: al azar deals at once; revancha gives the button to whoever 
   g.options.starter = 'revancha'; g.start(); assert.equal(g.phase, 'preflop'); assert.equal(g.players[g.dealer].id, loser);
 });
 
+test("a name never claims a dropped pana's stack; their own device does", () => {
+  const g = new Poker();
+  g.add(1, { name: 'Ana', avatar: {}, bot: false, key: 'device-ana-1' }); g.add(2, { name: 'Beto', avatar: {}, bot: false, key: 'device-beto-1' });
+  g.players[0].chips = 140; g.drop(1);
+  g.add(3, { name: 'Ana', avatar: {}, bot: false, key: 'device-other' });
+  assert.equal(g.players.find(p => p.id === 3).chips, g.options.stack, 'same name, other device: a fresh stack');
+  assert.equal(g.players.find(p => p.id === 1).chips, 140);
+  g.add(4, { name: 'Ana', avatar: {}, bot: false });
+  assert.equal(g.players.find(p => p.id === 4).chips, g.options.stack, 'no key: a name cannot claim a keyed chair');
+  g.add(5, { name: 'Ana', avatar: {}, bot: false, key: 'device-ana-1' });
+  assert.equal(g.players.find(p => p.id === 5).chips, 140, 'her own device gets her stack back');
+  assert.ok(g.view(2).players.every(p => !('key' in p)), 'keys never reach a view');
+});
+
 test('leaving and coming back keeps your stack instead of a fresh one', () => {
   const g = table(3), ana = g.players.find(p => p.id === 1);
   ana.chips = 140;

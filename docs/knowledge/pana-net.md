@@ -107,10 +107,18 @@ Rules the base enforces, so games must not re-implement them:
 - A pana whose connection drops counts as left until the SDK reconnects it, then
   joins again with the same seat. A reloaded page is a new pana with a new seat
   (seats are never reused), so per-seat ledgers can't go stale. Games only see
-  `memberLeft` / `memberJoined`.
+  `memberLeft` / `memberJoined`. In a full room that new pana is refused while
+  the old seat is still held (20 s); a tab that was in the room waits that out
+  and retries (`full()`), a newcomer sees "Sala llena".
 - Avatars come from the room (sanitized server-side); `hello` still runs so
   extras and late avatar changes arrive.
-- Snapshots up to 256 KB per message; keep them event-driven or ~20 Hz.
+- Snapshots up to 256 KB per message; keep them event-driven or ~20 Hz. Only
+  the host may send that much: a guest's relay message stops at 32 KB.
+- To hand back what a pana left behind, match on the device's rejoin key
+  (`options.rejoin` in `joined`, cleaned by `cleanKey`; server-side only),
+  never on the name: names are public in `/api/rooms`. Póquer's stacks do.
+- Matchmaking is limited per visitor address (`PANA_CLIENT_IP_HEADER` behind a
+  proxy); this machine's own requests are free, so suites never hit it.
 
 ## A game with its own room (Carreritas)
 

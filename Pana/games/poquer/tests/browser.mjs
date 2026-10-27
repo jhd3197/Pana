@@ -6,8 +6,9 @@ const base = process.env.PANA_TEST_URL || 'http://localhost:8461', code = `poker
 const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
 const out = 'Pana/games/poquer/qa'; await mkdir(out, { recursive: true });
 const wait = (p, fn, arg) => p.waitForFunction(fn, arg, { timeout: 60000 });
-async function open(name, room = code, mobile = false) {
-  const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1 });
+// context: an earlier page's, to come back from the same device (its localStorage).
+async function open(name, room = code, mobile = false, context = null) {
+  context ??= await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1 });
   await context.addInitScript(name => { localStorage.setItem('pana:name', name); localStorage.setItem('pana:settings', JSON.stringify({ sound: false, quality: 'baja' })); localStorage.setItem('pana:avatar', JSON.stringify({ outfit: 'hoodie', outfitColor: '#3775cc', hat: 'gorra' })); }, name);
   const p = await context.newPage(); p.on('pageerror', e => errors.push(e.message));
   await p.goto(`${base}/g/poquer/?room=${room}&debug`, { waitUntil: 'domcontentloaded' });
@@ -76,12 +77,16 @@ try {
   await act(caller, '#call'); await same(b, c); assert.equal(await b.evaluate(() => poquerDebug.room.state.phase), 'finished'); assert.equal(await c.evaluate(() => poquerDebug.room.state.board.length), 5);
   assert.equal(await b.evaluate(() => poquerDebug.room.state.players.reduce((n, p) => n + p.chips, 0)), bankroll);
   console.log('ok: online all-in and call run out the board and conserve both stacks');
-  // Leaving and coming back keeps your stack (after the all-in: 0, 1000 on a split, or 2000), not a fresh one.
-  const stack = await b.evaluate(() => poquerDebug.room.state.players.find(p => p.name === 'Luis').chips);
+  // Leaving and coming back keeps your stack (after the all-in: 0, 1000 on a split, or 2000), not a fresh one;
+  // someone else using the same name never gets it.
+  const stack = await b.evaluate(() => poquerDebug.room.state.players.find(p => p.name === 'Luis').chips), device = c.context();
   await c.close(); await wait(b, () => !poquerDebug.room.state.players.find(p => p.name === 'Luis')?.connected);
-  const back = await open('Luis'); await wait(b, () => poquerDebug.room.state.players.some(p => p.name === 'Luis' && p.connected));
-  assert.equal(await b.evaluate(() => poquerDebug.room.state.players.find(p => p.name === 'Luis' && p.connected).chips), stack, 'not a fresh stack');
-  console.log('ok: a pana who leaves and rejoins keeps their stack');
+  const impostor = await open('Luis'); await wait(b, () => poquerDebug.room.state.players.some(p => p.name === 'Luis' && p.connected));
+  await wait(impostor, () => poquerDebug.room.state.players.find(p => p.id === poquerDebug.room.id)?.chips === 1000);   // a name alone starts fresh
+  await impostor.close(); await wait(b, () => !poquerDebug.room.state.players.some(p => p.name === 'Luis' && p.connected));
+  const back = await open('Luis', code, false, device);
+  await wait(back, chips => poquerDebug.room.state.players.find(p => p.id === poquerDebug.room.id)?.chips === chips, stack);   // not a fresh stack
+  console.log('ok: a pana who leaves and rejoins keeps their stack; a name alone does not');
   await b.close(); await back.close();
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` });
   // Practice opens with the cachos too: a finger on the table shakes, lifting it slams.

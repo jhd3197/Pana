@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Póquer nadie se queda con tus fichas usando tu nombre.**
+  Si se te cae la conexión, solo tu propio navegador recupera tu pila.
 - **La revancha en la misma pista de Carreritas trae cajas distintas.**
   Antes cada carrera repetía la misma secuencia de objetos.
 - **Volver a un juego con el botón Atrás ya no lo deja congelado.**
