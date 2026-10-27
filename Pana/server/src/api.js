@@ -49,6 +49,15 @@ export function listGames(lang = 'es') {
   return games;
 }
 
+// The list only changes with the files, and a new game needs a restart anyway
+// (its room type is defined at startup); the dev server reads afresh so edits show.
+const listed = new Map();
+const gamesFor = (lang) => {
+  if (config.debugRooms) return listGames(lang);
+  if (!listed.has(lang)) listed.set(lang, listGames(lang));
+  return listed.get(lang);
+};
+
 export async function handleApi(req, res, pathname, startedAt, colyseus) {
   if (req.method !== 'GET') {
     return sendJson(res, 405, { error: 'method not allowed' });
@@ -58,7 +67,7 @@ export async function handleApi(req, res, pathname, startedAt, colyseus) {
       return sendJson(res, 200, { ok: true, uptime: Math.round((Date.now() - startedAt) / 1000) });
     case '/api/games': {
       const lang = new URL(req.url, 'http://pana').searchParams.get('lang');
-      return sendJson(res, 200, { games: listGames(/^[a-z]{2}$/.test(lang || '') ? lang : 'es') });
+      return sendJson(res, 200, { games: gamesFor(/^[a-z]{2}$/.test(lang || '') ? lang : 'es') });
     }
     case '/api/rooms':
       return sendJson(res, 200, { rooms: await colyseus.snapshot().catch(() => []) });
