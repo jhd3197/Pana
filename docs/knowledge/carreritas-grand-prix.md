@@ -210,7 +210,11 @@ first stage (`cup.stages[0]`) determines the initial track and lap count.
   `this.cupSession` via `createCupSession()`. `openCupStage()` sets `state.track`
   and `state.laps` from `cupDef.stages[stageIndex]`, clamps pose laps to
   `state.laps + 1`, and uses `stage.capSeconds` for finish validation and the
-  stage timer.
+  stage timer. A `finish` (cup or quick race) also needs the car's pose lap at
+  `state.laps` or more, and a time no shorter than `(now - state.startAt)` less
+  `FINISH_SLACK_S` (5 s). Net races time from `net.now() - startAt`, so an
+  honest finish always clears it; a test that reports a finish must first send
+  a last-lap pose (`finish()` in `cup-room.test.js`).
 - **Timeouts, host handoff & intermission**: Unready humans after
   `GP_LOAD_TIMEOUT_MS` (60 s) are marked `dns` while ready humans race; if no
   human is ready, `toLobby()` abandons the cup with a Spanish notice. Host
