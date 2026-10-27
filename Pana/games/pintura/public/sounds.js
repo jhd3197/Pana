@@ -2,19 +2,7 @@ import { sound } from '/engine/fx.js';
 
 // Pepazo's sounds, synthesized like the rest of Pana: an air-gun "pfft", a
 // crisp hit tick, a wet splat when you're hit and a chime for a knockout.
-let noiseBuffer = null;
-function noise(duration, frequency, q, volume, start = 0) {
-  if (!sound.ctx || sound.muted || volume < .005) return;
-  const ctx = sound.ctx, t = ctx.currentTime + start;
-  if (!noiseBuffer) {
-    noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * .5, ctx.sampleRate);
-    const data = noiseBuffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-  }
-  const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain();
-  source.buffer = noiseBuffer; filter.type = 'bandpass'; filter.frequency.value = frequency; filter.Q.value = q;
-  gain.gain.setValueAtTime(volume, t); gain.gain.exponentialRampToValueAtTime(.001, t + duration);
-  source.connect(filter).connect(gain).connect(sound.out()); source.start(t); source.stop(t + duration + .02);
-}
+const noise = (duration, freq, q, vol, delay = 0) => sound.noise(duration, { freq, q, vol, delay });
 
 export const sfx = {
   // Your marker, or another pana's quieter with distance (volume 0–1).

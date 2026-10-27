@@ -103,16 +103,7 @@ export function say(text, { enabled = true, ref = false } = {}) {
 export function hush() { try { globalThis.speechSynthesis?.cancel(); } catch { /* nothing to stop */ } }
 
 // ---------- ringside sounds ----------
-function noise(seconds, { freq = 900, q = .7, vol = .2, attack = .05 } = {}) {
-  if (!sound.ctx || sound.muted) return;
-  const ctx = sound.ctx, t = ctx.currentTime, len = Math.floor(ctx.sampleRate * seconds);
-  const buffer = ctx.createBuffer(1, len, ctx.sampleRate), data = buffer.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1);
-  const src = ctx.createBufferSource(); src.buffer = buffer;
-  const filter = ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = freq; filter.Q.value = q;
-  const gain = ctx.createGain(); gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(vol, t + attack); gain.gain.exponentialRampToValueAtTime(.001, t + seconds);
-  src.connect(filter).connect(gain).connect(sound.out()); src.start(t);
-}
+const noise = (seconds, { attack = .05, ...rest } = {}) => sound.noise(seconds, { attack, ...rest });
 function bell(times = 3) {
   for (let i = 0; i < times; i++) {
     sound.tone(1320, i * .28, .5, 'sine', .12); sound.tone(1980, i * .28, .35, 'sine', .05); sound.tone(660, i * .28, .6, 'triangle', .05);

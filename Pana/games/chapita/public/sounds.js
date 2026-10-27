@@ -38,16 +38,7 @@ function tone({ f0 = 400, f1 = 800, dur = .15, type = 'sine', vol = .2, delay = 
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
   o.connect(g).connect(sound.out()); o.start(t); o.stop(t + dur + .03);
 }
-function noise({ dur = .08, vol = .25, freq = 1800, q = 1, delay = 0 }) {
-  const c = sound.ctx; if (!c || sound.muted) return;
-  const t = c.currentTime + delay, slot = sound.admit(1, t, t + dur); if (!slot) return;
-  const length = Math.ceil(c.sampleRate * dur), buffer = c.createBuffer(1, length, c.sampleRate), d = buffer.getChannelData(0);
-  for (let i = 0; i < length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
-  const s = c.createBufferSource(); s.buffer = buffer;
-  const band = c.createBiquadFilter(); band.type = 'bandpass'; band.frequency.value = freq; band.Q.value = q;
-  const g = c.createGain(); g.gain.value = vol; slot.gs.push(g);
-  s.connect(band).connect(g).connect(sound.out()); s.start(t);
-}
+const noise = ({ dur = .08, vol = .25, freq = 1800, q = 1, delay = 0 }) => sound.noise(dur, { vol, freq, q, delay });
 
 export const SFX = {
   throw: () => sample('swish', { vol: .22, rate: 1.25 }) || noise({ dur: .25, vol: .18, freq: 1100, q: .7 }),
