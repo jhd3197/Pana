@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Escribir el código de sala en mayúsculas ya te lleva con tus panas.**
+  La sala muestra el código en mayúsculas; antes, copiarlo así en «Tengo un
+  código» abría una sala vacía aparte.
 - **Carreritas tiene cuatro copas nuevas: Costa, Cumbre, Relámpago y Fantasía.**
   Las dieciséis pistas sueltas ahora también se corren como campeonato de
   cuatro carreras, con su trofeo; la lista de copas baja con scroll.

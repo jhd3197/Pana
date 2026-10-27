@@ -35,7 +35,7 @@ export const ROOM_FULL = 409;
 export const LEAD_WINDOW_MS = 15000;
 
 export const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16) || 'pana';
-export const cleanCode = (s) => String(s ?? '').replace(/[^a-z0-9-]/gi, '').slice(0, 24);
+export const cleanCode = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24);
 export const avatarJson = (a) => {
   try { return JSON.stringify(normalizeAvatar(a && typeof a === 'object' ? a : {})).slice(0, 2048); } catch { return '{}'; }
 };
