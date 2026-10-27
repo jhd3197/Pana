@@ -18,6 +18,11 @@ These instructions run the open-source application on your own server.
 2. Set `PANA_PORT` to the port your environment expects (default: **8461**).
 3. For HTTPS, configure your own reverse proxy to forward HTTP and WebSocket
    connections. The browser uses secure WebSockets when the page uses HTTPS.
+4. Joining a room is limited per visitor address (a burst of 20, then 20 a
+   minute). Behind a reverse proxy every request comes from the proxy, so set
+   `PANA_CLIENT_IP_HEADER` to the header it fills with the visitor's address
+   (`X-Forwarded-For`, `CF-Connecting-IP`). Requests from the machine itself
+   are not limited when no header is set.
 
 ## Requirements
 

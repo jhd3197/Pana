@@ -5,8 +5,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ServerError } from '@colyseus/core';
 import { PanaRoom, roomState, ROOM_FULL, InputBuffer, fillBots, memberAvatar, BOT_SEAT } from '../src/room-kit.js';
-import { cappedRoom } from '../src/colyseus.js';
-import RelayRoom from '../src/relay-room.js';
+import { cappedRoom, createLimiter, clientAddress } from '../src/colyseus.js';
+import RelayRoom, { GUEST_BYTES } from '../src/relay-room.js';
 import { serveStatic, MIME } from '../src/static.js';
 import { createTestRoom } from './harness.js';
 
@@ -160,4 +160,27 @@ test('every file Pana serves has a content type', () => {
   walk(path.join(app, 'engine'), true);
   walk(games, false);
   assert.deepEqual([...missing], []);
+});
+
+test('matchmaking is limited per address; local requests and proxies are handled', () => {
+  const allow = createLimiter({ burst: 3, perMinute: 6 });
+  assert.deepEqual([1, 2, 3, 4].map(() => allow('1.2.3.4', 0)), [true, true, true, false]);
+  assert.equal(allow('5.6.7.8', 0), true, 'another address has its own bucket');
+  assert.equal(allow('1.2.3.4', 10_000), true, 'one more every ten seconds at six a minute');
+  const req = (peer, headers = {}) => ({ socket: { remoteAddress: peer }, headers });
+  assert.equal(clientAddress(req('127.0.0.1'), ''), null, 'this machine is not limited');
+  assert.equal(clientAddress(req('203.0.113.9'), ''), '203.0.113.9');
+  assert.equal(clientAddress(req('127.0.0.1', { 'cf-connecting-ip': '198.51.100.2' }), 'CF-Connecting-IP'), '198.51.100.2');
+  assert.equal(clientAddress(req('127.0.0.1', { 'x-forwarded-for': '10.0.0.1, 198.51.100.3' }), 'X-Forwarded-For'), '198.51.100.3');
+});
+
+test("the relay drops a guest's oversized message but carries the host's", () => {
+  const t = createTestRoom(RelayRoom, { code: 'relay-cap' });
+  const host = t.join('host'), guest = t.join('guest');
+  const big = { kind: 'snapshot', blob: 'x'.repeat(GUEST_BYTES) };
+  t.send(guest.client, 'relay', big);
+  t.send(guest.client, 'relay', { kind: 'hello' });
+  t.send(host.client, 'relay', big);
+  assert.deepEqual(t.broadcasts.map(b => [b.msg.id, b.msg.v.kind]), [[2, 'hello'], [1, 'snapshot']]);
+  t.room.onDispose();
 });
