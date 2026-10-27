@@ -18,6 +18,7 @@ import { addLandscape } from '/engine/river/landscape.js';
 import { createRiverFX } from '/engine/river/water-fx.js';
 import { createRiverGuide } from '/engine/river/guide.js';
 import { createRiverMinimap } from '/engine/river/minimap.js';
+import { createRaceHud } from '/engine/river/hud.js';
 import { angle, formatTime } from '/engine/river/river.js';
 import { FIELDS, cleanOptions } from './options.js';
 import { RIVER as DEFAULT_RIVER, courseRiver } from './course.js';
@@ -31,7 +32,7 @@ const $ = id => document.getElementById(id), params = new URLSearchParams(locati
 const showNotice = createToast($('notice'), { ms: 3000 });
 const code = roomCode();
 const keys = new Set(), touch = new Set(), boats3d = new Map(), touchButtons = [], local = { turbo: 0 };
-let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastCountdown = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
+let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
 const room = new LanchaRoom({ code, name, avatar, onState: s => { state = s; snapshotAt = performance.now(); },
   onNotice: text => showNotice(text),
   onStatus: (message, error = false) => { $('connection').textContent = message; $('practice').classList.toggle('hidden', !error); if (error) showNotice(message); } });
@@ -107,8 +108,7 @@ function ensureBoats() {
   return boats;
 }
 
-let callTimer = 0;
-function call(text, kind = '') { const e = $('call'); e.textContent = text; e.className = `call ${kind}`; e.classList.remove('hidden'); void e.offsetWidth; callTimer = .9; }
+const hud = createRaceHud(sound), { call } = hud;
 function driveTip(b) {
   if (!b) return loc('Corres en la próxima.');
   if (b.finish !== null) return loc('¡En Puerto Ayacucho! Esperando a tus panas.');
@@ -126,19 +126,18 @@ function driveTip(b) {
   return loc('Busca el chorro: el agua rápida llena el turbo.');
 }
 // What just happened to this pana's lancha, from the snapshot's counters.
-let seen = null, lastPhoto = null, shake = 0, shakePower = 0;
-function flash() { const e = $('flash'); e.classList.remove('is-on'); void e.offsetWidth; e.classList.add('is-on'); sound.tone(1600, 0, .05, 'square', .05); }
+let seen = null;
 function events(own) {
   if (!own) return;
   const now = { bitten: own.bitten, jumps: own.jumps, crashes: own.crashes || 0, hits: own.hits, toninas: own.toninas, turbos: own.turbos, bumps: own.bumps };
   if (seen) {
-    if (now.bitten > seen.bitten) { call(loc('¡Un babo!')); sound.bonk(1); shake = .4; shakePower = .45; }
-    else if (now.crashes > seen.crashes) { call(loc('¡Caíste de lado!'), 'is-soft'); sound.splat(); shake = .5; shakePower = .5; }
-    else if (now.hits > seen.hits) { call(loc('¡Pegaste!'), 'is-soft'); sound.bonk(.8); shake = .35; shakePower = .4; }
-    else if (now.jumps > seen.jumps) { call(loc('¡Volaste!'), 'is-teal'); sound.plop(); shake = .3; shakePower = .3; }
+    if (now.bitten > seen.bitten) { call(loc('¡Un babo!')); sound.bonk(1); hud.shake(.4, .45); }
+    else if (now.crashes > seen.crashes) { call(loc('¡Caíste de lado!'), 'is-soft'); sound.splat(); hud.shake(.5); }
+    else if (now.hits > seen.hits) { call(loc('¡Pegaste!'), 'is-soft'); sound.bonk(.8); hud.shake(.35, .4); }
+    else if (now.jumps > seen.jumps) { call(loc('¡Volaste!'), 'is-teal'); sound.plop(); hud.shake(.3); }
     else if (now.turbos > seen.turbos) { call(loc('¡Turbo!')); sound.turbo(); pulseSpeedLines(500, .9); }
     else if (now.toninas > seen.toninas) { call(loc('¡Toninas!'), 'is-teal'); sound.sweep(600, 1100, .3, 'sine', .07); }
-    if (now.bumps > seen.bumps) { shake = Math.max(shake, .2); shakePower = Math.max(shakePower, .2); sound.bonk(.5); }
+    if (now.bumps > seen.bumps) { hud.shake(.2); sound.bonk(.5); }
   }
   seen = now;
 }
@@ -163,17 +162,9 @@ function updateUI() {
   $('drive-tip').textContent = driveTip(own);
   $('motor').textContent = own?.stalled > 0 ? loc('Motor ahogado') : loc('Motor en marcha'); $('motor').classList.toggle('is-dead', own?.stalled > 0);
   $('throttle-state').textContent = state.options.throttle === 'auto' ? loc('Acelerador automático') : own?.throttle > 0 ? loc('Acelerando') : own?.back ? loc('Frenando') : loc('Sin gas');
-  $('leaderboard').replaceChildren(...ordered.slice(0, 8).map((b, i) => {
-    const li = document.createElement('li'); li.className = b === own ? 'pk-row is-me' : 'pk-row';
-    const n = document.createElement('b'); n.className = 'pk-row-n'; n.textContent = i + 1;
-    const dot = document.createElement('i'); dot.className = 'boat-dot'; dot.style.setProperty('--boat', b.color);
-    const span = document.createElement('span'); span.className = 'row-name'; span.textContent = b === own ? loc('{name} · tú', { name: b.driver.name }) : b.driver.name; span.translate = false;
-    const end = document.createElement('span'); end.className = 'pk-row-end'; end.textContent = b.finish !== null ? formatTime(b.finish) : b.stalled > 0 ? loc('ahogado') : '';
-    li.append(n, dot, span, end); return li;
-  }));
-  const count = state.phase === 'countdown' ? String(Math.max(1, Math.ceil(state.countdown))) : state.phase === 'racing' && state.time < .75 ? loc('¡DALE!') : '';
-  $('countdown').classList.toggle('hidden', !count); $('countdown').textContent = count;
-  if (count && count !== lastCountdown) { sound.tone(count === loc('¡DALE!') ? 740 : 370, 0, .12, 'triangle', .06); lastCountdown = count; }
+  hud.leaderboard(ordered.map(b => ({ me: b === own, color: b.color, name: b === own ? loc('{name} · tú', { name: b.driver.name }) : b.driver.name,
+    end: b.finish !== null ? formatTime(b.finish) : b.stalled > 0 ? loc('ahogado') : '' })));
+  hud.countdown(state, loc('¡DALE!'));
   if (state.raceId !== lastRace) { lastRace = state.raceId; cameraReady = false; clearInput(); fx.reset(); seen = null; }
   if (playing) events(own);
   if (done && (lastPhase !== state.phase || $('result-board').childElementCount !== ordered.length)) {
@@ -186,7 +177,7 @@ function updateUI() {
   if (state.phase !== 'racing' && state.phase !== 'countdown' && music.playing) music.stop();
   const lead = ordered[0];
   music.setTempo(state.slowmo > 0 ? .6 : lead && RIVER.LENGTH - lead.progress < 200 ? 1.14 : 1);
-  if (state.photo && state.photo.at !== lastPhoto) { lastPhoto = state.photo.at; call(loc('¡Foto finish!'), 'is-teal'); flash(); }
+  hud.photoFinish(state);
   // The motor drone follows your own lancha.
   if (playing && own && !paused) { sound.startEngine(); sound.setEngine(own.stalled > 0 ? 0 : Math.abs(own.v) * 1.6 + (own.turbo > 0 ? 8 : 0)); } else sound.stopEngine();
   lastPhase = state.phase; minimap.draw(state.boats, own);
@@ -231,14 +222,13 @@ function frame() {
   const wantFov = 54 + Math.min(10, speed * .45) + (focus.turbo > 0 ? 6 : 0);
   if (Math.abs(camera.fov - wantFov) > .05) { camera.fov += (wantFov - camera.fov) * Math.min(1, dt * 5); camera.updateProjectionMatrix(); }
   setSpeedLines(own?.turbo > 0 ? .8 : own && speed > 15 ? .3 : 0);
-  if (shake > 0) { shake = Math.max(0, shake - dt); const k = shake * shakePower; camera.position.x += (Math.random() - .5) * k; camera.position.y += (Math.random() - .5) * k; }
+  hud.step(dt, camera);
   sun.position.set(q.x - 40, q.y + 70, q.z + 30); sun.target.position.copy(q); sun.target.updateMatrixWorld();
   tickWind(elapsed, .9);
   world.world.update(elapsed, dt); world.world.cull(camera, 240); world.world.race(state, t); world.sky.update(elapsed);
   fx.update(elapsed, boats.filter(b => b.id !== 'preview'), boats3d, q, t);
   const mine = own && boats3d.get(own.id);
   guide.update(RIVER, mine ? { ...own, x: mine.group.position.x, z: mine.group.position.z, h: mine.group.rotation.y } : null, t, { on: state.options.guide && state.phase === 'racing', clock: elapsed });
-  if (callTimer > 0) { callTimer -= dt; if (callTimer <= 0) $('call').classList.add('hidden'); }
   drawClock += dt; if (drawClock > .1) { updateUI(); drawClock = 0; }
   if (!quiet) renderer.render(scene, camera); requestAnimationFrame(frame);
 }

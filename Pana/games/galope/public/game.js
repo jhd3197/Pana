@@ -7,6 +7,7 @@ import {loadAvatar,loadName} from '/engine/avatar.js';
 import {sound,setSpeedLines} from '/engine/fx.js';
 import {createGameMenu,toggleMute} from '/engine/ui.js';
 import {fillRoster} from '/engine/results.js';
+import {createRaceHud} from '/engine/river/hud.js';
 import {inviteUrl} from '/engine/invite.js';
 import {roomCode} from '/engine/game-shell.js';
 import {holdButton} from '/engine/touch.js';
@@ -23,7 +24,8 @@ import { loc } from '/engine/i18n.js';
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),avatar=loadAvatar(),name=loadName();
 let coat='bay';try{coat=['bay','palomino','grey'].includes(localStorage.getItem('galope:coat'))?localStorage.getItem('galope:coat'):'bay';}catch{}
 const code=roomCode();
-const keys=new Set(),touch=new Set(),riders=new Map();let paused=false,state,world,ready=false,lastPhase='',lastCountdown='',lastRace=0,hoofClock=0,drawClock=0,disposed=false;
+const hud=createRaceHud(sound);
+const keys=new Set(),touch=new Set(),riders=new Map();let paused=false,state,world,ready=false,lastPhase='',lastRace=0,hoofClock=0,drawClock=0,disposed=false;
 const room=new RaceRoom({code,name,avatar,coat,onState:s=>{state=s;},onStatus:(message,error=false)=>{$('connection').textContent=message;$('practice').classList.toggle('hidden',!error);if(error)showNotice(message);}});state=room.state;
 const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIELDS,change:patch=>room.configure(patch),reset:()=>{room.configure(cleanOptions());}});
 const touchButtons=[];
@@ -117,10 +119,8 @@ function updateUI(){
   $('jump-cue').classList.toggle('hidden',!(ahead>2.5&&ahead<18&&!(own.jumpY>.2)));
   $('gait').textContent=own?.water>.08?loc('CRUZANDO EL ESTERO'):own?.exhausted?loc('RECUPERANDO'):own?.drafting?loc('AL REBUFO'):own?.speed>13?loc('¡AL REMATE!'):own?.speed>4?loc('AL GALOPE'):loc('AL PASO');
   $('riding-tip').textContent=own?.finish!==null&&own?.finish!==undefined?loc('¡En la meta! Esperando a tus panas.'):own?.stun>0?loc('¡El tronco! Salta un poco antes.'):own?.water>.08?loc('El agua frena. Aquí recuperas fuerzas.'):own?.exhausted?loc('Afloja el remate para recuperar fuerzas.'):loc('Guarda fuerzas para el remate.');
-  $('leaderboard').replaceChildren(...ordered.slice(0,8).map((p,i)=>{const li=document.createElement('li');li.className=p.id===room.id?'pk-row is-me me':'pk-row';const b=document.createElement('b');b.className='pk-row-n';b.textContent=i+1;const span=document.createElement('span');span.className='row-name';span.textContent=p.id===room.id?loc('{name} · tú',{name:p.name}):p.name;span.translate=false;const horse=document.createElement('span');horse.className='pk-row-end';horse.textContent=COAT_NAMES[p.coat]||'';li.append(b,span,horse);return li;}));
-  const count=state.phase==='countdown'?String(Math.max(1,Math.ceil(state.countdown))):state.phase==='racing'&&state.time<.75?loc('¡ARRE!'):'';
-  $('countdown').classList.toggle('hidden',!count);$('countdown').textContent=count;
-  if(count&&count!==lastCountdown){sound.tone(count===loc('¡ARRE!')?740:370,0,.12,'triangle',.06);lastCountdown=count;}
+  hud.leaderboard(ordered.map(p=>({me:p.id===room.id,name:p.id===room.id?loc('{name} · tú',{name:p.name}):p.name,end:COAT_NAMES[p.coat]||''})));
+  hud.countdown(state,loc('¡ARRE!'));
   if(state.raceId!==lastRace){lastRace=state.raceId;cameraReady=false;waterFX.reset();clearInput();}
   if(done&&(lastPhase!==state.phase||$('result-board').childElementCount!==ordered.length)){
     $('result-title').textContent=place===1?loc('¡Ganaste, pana!'):own?.finish!==null?loc('¡Llegaste, pana!'):loc('¡Se cerró la carrera!');

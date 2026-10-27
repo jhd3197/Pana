@@ -22,6 +22,7 @@ import { addLandscape } from '/engine/river/landscape.js';
 import { createRiverFX } from '/engine/river/water-fx.js';
 import { createRiverGuide } from '/engine/river/guide.js';
 import { createRiverMinimap } from '/engine/river/minimap.js';
+import { createRaceHud } from '/engine/river/hud.js';
 import { createMusic } from '/engine/music.js';
 import { createToast } from '/engine/hud.js';
 import { loc, locn, formatList } from '/engine/i18n.js';
@@ -33,7 +34,7 @@ const store = { get: k => { try { return localStorage.getItem(k); } catch { retu
 let format = FORMATS[store.get('curiara:format')] ? store.get('curiara:format') : 'todos';
 const code = roomCode();
 const keys = new Set(), touch = new Set(), canoes = new Map(), touchButtons = [];
-let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastCountdown = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
+let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
 const room = new RiverRoom({ code, name, avatar, onState: s => { state = s; snapshotAt = performance.now(); }, onStatus: (message, error = false) => { $('connection').textContent = message; $('practice').classList.toggle('hidden', !error); if (error) showNotice(message); } });
 state = room.state;
 const crewRoster = createLobbyRoster($('seats'), { onMove: (from, to) => room.moveSeat(from, to) });
@@ -61,8 +62,7 @@ function goLocal() { room.practice(); $('practice').classList.add('hidden'); }
 const myBoat = () => state.boats.find(b => b.crew.some(c => c.id === room.id));
 const myRole = () => { const b = myBoat(); if (!b) return 'solo'; return b.crew.length === 1 ? 'solo' : b.crew.find(c => c.id === room.id).seat ? 'popa' : 'proa'; };
 
-let callTimer = 0;
-function call(text, kind = '') { const e = $('call'); e.textContent = text; e.className = `call ${kind}`; e.classList.remove('hidden'); void e.offsetWidth; callTimer = .9; }
+const hud = createRaceHud(sound), { call } = hud;
 function tock(power) { sound.tone(1180, 0, .045, 'triangle', .07 * power); sound.tone(590, .01, .07, 'sine', .08 * power); }
 // `at` is the input event's own timestamp, so a slow frame never bends the rhythm.
 function stroke(side, at) {
@@ -193,20 +193,19 @@ function tipText(b) {
   return loc('Alterna A y D en la zona dorada del anillo, o sostén W y rema solo.');
 }
 // What just happened to this pana's canoe, from the snapshot's counters.
-let seen = null, lastPhoto = null;
-function flash() { const e = $('flash'); e.classList.remove('is-on'); void e.offsetWidth; e.classList.add('is-on'); sound.tone(1600, 0, .05, 'square', .05); }
+let seen = null;
 function events(own) {
   if (!own) return;
   const now = { caps: own.capsizes, bitten: own.bitten || 0, drops: own.drops || 0, toninas: own.toninas || 0, sprayed: own.splashedAt || 0, soaked: own.soaked || 0, bumps: own.bumps || 0, syncs: own.paddle?.syncs || 0 };
   if (seen) {
-    if (now.caps > seen.caps) { call(loc('¡Volcaste!'), 'is-soft'); sound.sweep(500, 90, .5, 'sine', .14); shake = .5; shakePower = .5; }
-    else if (now.bitten > seen.bitten) { call(loc('¡Un babo!')); sound.bonk(1); shake = .35; shakePower = .4; }
-    else if (now.drops > seen.drops) { call(own.tip > 60 ? loc('¡Uy, casi!') : loc('¡Raudal!'), 'is-teal'); sound.plop(); shake = .4; shakePower = .35; }
+    if (now.caps > seen.caps) { call(loc('¡Volcaste!'), 'is-soft'); sound.sweep(500, 90, .5, 'sine', .14); hud.shake(.5); }
+    else if (now.bitten > seen.bitten) { call(loc('¡Un babo!')); sound.bonk(1); hud.shake(.35, .4); }
+    else if (now.drops > seen.drops) { call(own.tip > 60 ? loc('¡Uy, casi!') : loc('¡Raudal!'), 'is-teal'); sound.plop(); hud.shake(.4, .35); }
     else if (now.sprayed > seen.sprayed) { call(loc('¡Salpicón!'), 'is-soft'); sound.splat?.(); }
     else if (now.soaked > seen.soaked) { call(loc('¡Te mojé!'), 'is-teal'); sound.splat?.(); }
     else if (now.toninas > seen.toninas) { call(loc('¡Toninas!'), 'is-teal'); sound.sweep(600, 1100, .3, 'sine', .07); }
     else if (now.syncs > seen.syncs && myRole() !== 'solo') { call(loc('¡Ahora!'), 'is-teal'); tock(.8); }
-    if (now.bumps > seen.bumps) { shake = Math.max(shake, .2); shakePower = Math.max(shakePower, .2); sound.bonk(.5); }
+    if (now.bumps > seen.bumps) { hud.shake(.2); sound.bonk(.5); }
   }
   seen = now;
 }
@@ -235,17 +234,9 @@ function updateUI() {
   document.querySelector('[data-input="splash"]').disabled=!state.options.items;
   $('keys-hint').classList.toggle('hidden', role === 'popa'); $('helm-hint').classList.toggle('hidden', role !== 'popa');
   $('spray').classList.toggle('is-on', (own?.sprayed || 0) > 0);
-  $('leaderboard').replaceChildren(...ordered.slice(0, 8).map((b, i) => {
-    const li = document.createElement('li'); li.className = b === own ? 'pk-row is-me' : 'pk-row';
-    const n = document.createElement('b'); n.className = 'pk-row-n'; n.textContent = i + 1;
-    const dot = document.createElement('i'); dot.className = 'boat-dot'; dot.style.setProperty('--boat', b.color);
-    const span = document.createElement('span'); span.className = 'row-name'; span.textContent = b === own ? loc('{name} · tú', { name: crewName(b) }) : crewName(b); span.translate = false;
-    const end = document.createElement('span'); end.className = 'pk-row-end'; end.textContent = b.finish !== null ? formatTime(b.finish) : b.capsized > 0 ? loc('volcó') : '';
-    li.append(n, dot, span, end); return li;
-  }));
-  const count = state.phase === 'countdown' ? String(Math.max(1, Math.ceil(state.countdown))) : state.phase === 'racing' && state.time < .75 ? loc('¡REMA!') : '';
-  $('countdown').classList.toggle('hidden', !count); $('countdown').textContent = count;
-  if (count && count !== lastCountdown) { sound.tone(count === loc('¡REMA!') ? 740 : 370, 0, .12, 'triangle', .06); lastCountdown = count; }
+  hud.leaderboard(ordered.map(b => ({ me: b === own, color: b.color, name: b === own ? loc('{name} · tú', { name: crewName(b) }) : crewName(b),
+    end: b.finish !== null ? formatTime(b.finish) : b.capsized > 0 ? loc('volcó') : '' })));
+  hud.countdown(state, loc('¡REMA!'));
   if (state.raceId !== lastRace) { lastRace = state.raceId; cameraReady = false; clearInput(); local.last = null; local.side = 0; local.streak = 0; fx.reset(); seen = null; }
   if (playing) events(own);
   if (done && (lastPhase !== state.phase || $('result-board').childElementCount !== ordered.length)) {
@@ -258,11 +249,11 @@ function updateUI() {
   if (state.phase !== 'racing' && state.phase !== 'countdown' && music.playing) music.stop();
   const lead = ordered[0];
   music.setTempo(state.slowmo > 0 ? .6 : lead && RIVER.LENGTH - lead.progress < 120 ? 1.14 : 1);
-  if (state.photo && state.photo.at !== lastPhoto) { lastPhoto = state.photo.at; call(loc('¡Foto finish!'), 'is-teal'); flash(); }
+  hud.photoFinish(state);
   lastPhase = state.phase; minimap.draw(state.boats, own);
 }
 ensureCanoes(); ready = true; $('loading').classList.add('hidden'); room.connect(); updateUI();
-const look = new THREE.Vector3(), cameraGoal = new THREE.Vector3(), target = new THREE.Vector3(); let cameraReady = false, elapsed = 0, camH = 0, shake = 0, shakePower = 0;
+const look = new THREE.Vector3(), cameraGoal = new THREE.Vector3(), target = new THREE.Vector3(); let cameraReady = false, elapsed = 0, camH = 0;
 const frameClock = new THREE.Timer().reset();
 function frame() {
   if (disposed) return;
@@ -304,13 +295,12 @@ function frame() {
   }
   if (own?.boost > 0) setSpeedLines(0.75);
   // Raudal landings and bumps shake the camera a little.
-  if (shake > 0) { shake = Math.max(0, shake - dt); const k = shake * shakePower; camera.position.x += (Math.random() - .5) * k; camera.position.y += (Math.random() - .5) * k; }
+  hud.step(dt, camera);
   sun.position.set(q.x - 40, q.y + 70, q.z + 30); sun.target.position.copy(q); sun.target.updateMatrixWorld();
   tickWind(elapsed, 0.9);
   world.world.update(elapsed, dt); world.world.cull(camera); world.world.race(state, t); world.sky.update(elapsed);
   fx.update(elapsed, boats.filter(b => b.id !== 'preview'), canoes, q, t);
   guide.update(RIVER, own && canoes.get(own.id) ? { ...own, x: canoes.get(own.id).group.position.x, z: canoes.get(own.id).group.position.z, h: canoes.get(own.id).group.rotation.y } : null, t, { on: state.options.guide && state.phase === 'racing', clock: elapsed });
-  if (callTimer > 0) { callTimer -= dt; if (callTimer <= 0) $('call').classList.add('hidden'); }
   const steady = state.options.paddling === 'tap' || (autoHeld() && myRole() !== 'popa');
   $('ring').classList.toggle('hidden', steady);
   if (steady) $('next-key').textContent = autoHeld() ? 'W' : 'A / D';
