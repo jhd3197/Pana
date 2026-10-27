@@ -37,6 +37,11 @@ test('an engine module runs the smoke and the suites that name it', () => {
   assert.ok(!may.includes('Pana/games/domino/tests/browser.mjs'), 'every game loads fx.js: the smoke covers it, not each game');
 });
 
+test("a game's shared test helper runs the suites that import it; Studio's page runs Studio's suites", () => {
+  assert.ok(pick(['Pana/games/carreritas/tests/menu-helpers.js']).may.includes('Pana/games/carreritas/tests/loading.browser.js'));
+  assert.ok(pick(['Pana/web/studio.html']).may.includes('Pana/web/studio/tests/studio.browser.js'));
+});
+
 test('the budget keeps every must and adds the cheapest maybes that fit', () => {
   const cost = s => ({ a: 300, b: 100, c: 200, d: 900 })[s];
   assert.deepEqual(withinBudget({ must: ['a'], may: ['d', 'c', 'b'] }, cost, 650), { run: ['a', 'b', 'c'], skipped: ['d'], spent: 600 });

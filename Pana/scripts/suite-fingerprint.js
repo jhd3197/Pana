@@ -23,6 +23,10 @@ function served(app, url) {
   if (clean.startsWith('/engine/')) return path.join(app, clean);
   const game = clean.match(/^\/g\/([a-z0-9-]+)\/?(.*)$/);
   if (game) return path.join(app, 'games', game[1], 'public', game[2]);
+  if (/^\/studio(?:\/|\/library\/?|\/workspace\/?|\/assets\/[^/]+\/?)?$/.test(clean)) return path.join(app, 'web', 'studio.html');
+  const studioPage = clean.match(/^\/studio\/(settings|guide)\/?$/);
+  if (studioPage) return path.join(app, 'web', 'studio', `${studioPage[1]}.html`);
+  if (/^\/personaje\/?$/.test(clean)) return path.join(app, 'web', 'personaje.html');
   if (clean.startsWith('/')) return path.join(app, 'web', clean);
   return null;
 }
@@ -34,6 +38,7 @@ const OPENED = /openGame\([^,]+,\s*['"]([a-z0-9-]+)['"]/g;
 
 const listDir = (dir, out = []) => {
   if (!fs.existsSync(dir)) return out;
+  if (!fs.statSync(dir).isDirectory()) return [...out, dir];
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     if (['node_modules', 'qa'].includes(e.name)) continue;
     const full = path.join(dir, e.name);
@@ -66,7 +71,8 @@ export function createFingerprinter(repo) {
     const out = [];
     if (/\.(m?js|html|css|json)$/.test(file) && fs.existsSync(file)) {
       const source = fs.readFileSync(file, 'utf8');
-      for (const [, url] of source.matchAll(URLS)) {
+      for (const match of source.matchAll(URLS)) {
+        const url = match[1];
         // A suite that goes to a game's page (/g/x/, /g/x/?debug) loads the whole
         // game; elsewhere a page path is a link, which loads nothing. A file in a
         // game (a song, a module Studio borrows) is that file and what it imports.
@@ -75,6 +81,11 @@ export function createFingerprinter(repo) {
         // A bare '/' is the hub only when a suite asks for it ('/' is a common string in code).
         // The hub loads every game's tile art (card.js) by a computed path.
         else if (url === '/') { if (isSuite) out.push(...listDir(path.join(app, 'web')).filter(outsideTests), ...cards); }
+        // A template path (`/g/bululu/minigames/${id}.js`) names its folder: all of it.
+        else if (source.startsWith('${', match.index + match[0].length)) {
+          const target = !/^\/(?:engine|studio|character|images|g(?:\/[a-z0-9-]+)?)\/$/.test(url) && served(app, url);
+          if (target) out.push(...listDir(target).filter(outsideTests));
+        }
         // A served folder named in code (a prefix such as '/engine/') says nothing about what loads.
         else if (!url.endsWith('/')) { const target = served(app, url); if (target) out.push(target); }
       }
