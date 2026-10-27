@@ -252,6 +252,5 @@ if (params.has('debug')) window.lanchaDebug = { room, get state() { return state
   step(seconds, controls) { for (let t = 0; t < seconds; t += .05) room.tick(.05, controls ? controls() : input()); updateUI(); },
   place(id, s, offset = 0) { const b = room.game.boatOf(id), q = RIVER.at(s, offset); Object.assign(b, { x: q.x, z: q.z, h: q.h, s, progress: s, checkpoint: RIVER.gates.filter(g => g <= s).length, v: 0, lat: 0, w: 0, y: RIVER.levelAt(s, offset), vy: 0, air: 0, stalled: 0, channel: 'main' }); room.publish(); } };
 window.addEventListener('pagehide', () => { disposed = true; clearInterval(simulation); sound.stopEngine(); music.stop(); roomOptions.dispose(); room.dispose(); for (const m of boats3d.values()) m.dispose(); guide.dispose(); world.world.dispose(); fx.dispose(); world.sky.dispose(); unbind?.(); renderer.dispose(); }, { once: true });
-window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 
 await prepareScene(world);

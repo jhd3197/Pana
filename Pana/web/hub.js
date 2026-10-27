@@ -7,6 +7,9 @@ import { cachedPortrait } from '/engine/portrait-cache.js';
 import { categories, category, artUrl } from './launcher-art.js';
 import { padControls } from '/engine/gamepad.js';
 import { loc, locn, language } from '/engine/i18n.js';
+
+// The tiles free their renderers on pagehide; Back to a cached hub reloads it.
+addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 const gamesEl = document.getElementById('games');
 const roomsEl = document.getElementById('rooms');
 const statusEl = document.getElementById('status');

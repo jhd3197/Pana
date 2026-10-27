@@ -328,6 +328,5 @@ if (params.has('debug')) window.curiara = { room, get state() { return state; },
   step(seconds, controls) { for (let t = 0; t < seconds; t += .05) room.tick(.05, controls ? controls() : input()); updateUI(); },
   place(id, s, offset = 0) { const b = room.game.boatOf(id), q = RIVER.at(s, offset); Object.assign(b, { x: q.x, z: q.z, h: q.h, s, progress: s, checkpoint: RIVER.gates.filter(g => g <= s).length, v: 0, lat: 0, w: 0, y: RIVER.levelAt(s, offset), vy: 0, air: 0, tip: 0, capsized: 0, grace: 0, channel: 'main' }); room.publish(); } };
 window.addEventListener('pagehide', () => { disposed = true; clearInterval(simulation); music.stop(); crewRoster.dispose(); roomOptions.dispose();room.dispose(); guide.dispose(); for (const c of canoes.values()) c.dispose(); world.world.dispose();fx.dispose(); world.sky.dispose(); unbind?.(); renderer.dispose(); }, { once: true });
-window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 
 await prepareScene(world);

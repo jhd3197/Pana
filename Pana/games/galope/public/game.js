@@ -175,6 +175,5 @@ if(params.has('debug'))window.galope={room,get state(){return state;},world,ride
   at,LENGTH,JUMPS,groundAt,waterS:nearest(WETLANDS[0].x,WETLANDS[0].z).s,updateUI};
 window.addEventListener('pagehide',()=>{disposed=true;clearInterval(simulation);roomOptions.dispose();room.dispose();for(const r of riders.values())r.dispose();course.dispose();world.sky.dispose();waterFX.dispose();weather.dispose();dustGeometry.dispose();dustMaterial.dispose();unbind?.();renderer.dispose();},{once:true});
 // Back/forward cache restores a disposed WebGL scene; rebuild and rejoin safely.
-window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 
 await prepareScene(world);

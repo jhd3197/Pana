@@ -9,6 +9,9 @@ import { showCover } from './loading-cover.js';
 // Controllers work the lobby from the first paint; play keys come with the game.
 import './gamepad.js';
 import { loc, formatList } from './i18n.js';
+// Games free their scene on pagehide; a page the browser restores from its
+// back/forward cache would come back frozen, so it loads fresh instead.
+addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 const tag = document.querySelector('script[data-pana-entry]');
 const game = location.pathname.match(/\/g\/([^/]+)/)?.[1];
 const original = document.querySelector('.pk-lobby');
