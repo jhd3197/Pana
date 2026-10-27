@@ -26,10 +26,10 @@ try {
  await host.evaluate(patch=>dominoDebug.room.action('options',{patch}),patch);
  await waitFor(guest,()=>dominoDebug.room.state.options.mode==='individual');
  await guest.evaluate(()=>dominoDebug.room.action('options',{patch:{target:100}}));
- await host.evaluate(()=>dominoDebug.room.publish());assert.equal(await host.evaluate(()=>dominoDebug.room.state.options.target),200);
  await waitFor(host,()=>dominoDebug.world.characters.filter(Boolean).length===6&&dominoDebug.world.tiles.size===91);
  await host.locator('#start').click();await waitFor(guest,()=>dominoDebug.room.state.phase==='playing');
  assert.ok(await guest.evaluate(()=>dominoDebug.room.state.players.every(p=>p.hand.length===10)));
+ assert.equal(await guest.evaluate(()=>dominoDebug.room.state.options.target),200,'a guest cannot change the settings');
  assert.equal(await guest.evaluate(()=>dominoDebug.room.state.reserve.length),31);
  const byId=new Map();for(const page of pages)byId.set(await page.evaluate(()=>dominoDebug.room.id),page);
  const turns=new Set();
@@ -44,10 +44,10 @@ try {
  await waitFor(host,()=>dominoDebug.room.state.chat.length>0);
  const before=await guest.evaluate(()=>dominoDebug.room.state.options);
  await host.close();await waitFor(pages[1],()=>dominoDebug.room.isHost);
- assert.deepEqual(await pages[1].evaluate(()=>dominoDebug.room.game.options),before);
+ assert.deepEqual(await pages[1].evaluate(()=>dominoDebug.room.state.options),before);
+ // The 30 s turn clock runs on the server: whoever is up plays (or a bot does) by itself.
  const revision=await pages[1].evaluate(()=>dominoDebug.room.state.revision);
- await pages[1].evaluate(()=>{for(let i=0;i<31;i++)dominoDebug.room.tick(1);});
- await waitFor(guest,revision=>dominoDebug.room.state.revision>revision,revision);
+ await waitFor(guest,revision=>dominoDebug.room.state.revision>revision,revision,45_000);
  for(const page of pages)assert.deepEqual(page.errors,[]);
  console.log('ok: six real Dominó players, double-twelve meshes, settings authority, every human turn, quick chat, timeout and host migration');
 }finally{await browser.close();}

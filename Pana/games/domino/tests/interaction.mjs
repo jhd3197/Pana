@@ -8,7 +8,8 @@ try{
  await page.waitForFunction(()=>dominoDebug.world&&dominoDebug.room.connected,null,{timeout:90000});
  await waitPrepared(page);
  await page.locator('#start').click();
- for(let i=0;i<4;i++){if(await page.evaluate(()=>dominoDebug.room.state.turn===dominoDebug.room.seat))break;await page.evaluate(()=>dominoDebug.room.tick(2));}
+ // The server plays the bots until it is our turn.
+ await page.waitForFunction(()=>dominoDebug.room.state.phase==='playing'&&dominoDebug.room.state.turn===dominoDebug.room.seat,null,{timeout:30000});
  await page.waitForTimeout(700);
  const target=await page.evaluate(()=>{
   const {world,room,legalMoves}=dominoDebug;

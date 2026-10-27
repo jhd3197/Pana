@@ -18,24 +18,27 @@ wins. These house rules are described in the shared menu's Controles tab.
 
 ## Ownership and recovery
 
-The lowest connected relay ID is host. Snapshots are event-driven, not 20 Hz:
-this is a turn-based game. `DominoGame.accept` checks both the current revision
-and a per-player monotonically increasing sequence number. Only the host can
-deal. Out-of-turn moves, impossible passes, duplicates and stale requests have
-no effect. Bots use only their own hand and public ends when choosing a move.
+Dominó runs on its own room, `server/room.js`: the server deals (seeded from
+`crypto`), runs the cachos, the turn clock and the bots (`DominoGame.tick`) and
+sends each member `view(seat)`. A view carries only that seat's tiles; rivals'
+hands arrive as `{ id: null }` placeholders of the right length, and the
+boneyard, the RNG and the ledger never leave the server until the hand ends.
+`DominoGame.accept` checks the revision and a sequence number the room assigns
+itself. The room's host deals, configures and arranges. Out-of-turn moves,
+impossible passes, duplicates and stale requests have no effect. Bots use only
+their own hand and public ends.
 
-The snapshot includes every hand so another client can restore the game after
-host departure. This follows Pana's existing trusted-friends architecture;
-hidden opponent hands are presentation privacy, not server-enforced anti-cheat.
-Do not advertise this as competitive hidden-information security.
+`scene.js` keeps one mesh per real tile id, so a face-down rival slot borrows a
+mesh nobody can see (`holders`) and keeps it while the slot stays. When a rival
+plays a tile lent to another hand, the two face-down meshes trade transforms
+first, so the tile leaves from the hand that played it.
 
 Joining replaces the first available bot, retaining its hand. A fifth lobby arrival expands the table to six seats. During an active hand,
 additional members watch until a vacancy is available or the host returns to
-setup; a hand is never redealt merely because somebody joins.
-Leaving returns a seat to a bot. Reconnect gets a new relay ID and occupies
-the first available seat; it does not guarantee the old seat. A new empty room
-starts fresh rather than restoring stale disconnected state. Local fallback
-creates a fresh solo table and disables the network invite button.
+setup; a hand is never redealt merely because somebody joins. A dropped pana's
+chair plays as a bot and stays theirs for the reconnect window; leaving returns
+it for good. The menu holds the bots when every connected pana has it open
+(`pause`). Local practice runs the same `DominoGame` in the page.
 
 ## Choosing partners
 
@@ -48,7 +51,7 @@ offer `setup` to reopen the same lobby and explicitly start scores from zero;
 it preserves roster, map, RNG and ledger while clearing hands and match state.
 Never reset the revision or ledger on setup: a delayed old action must remain
 invalid. Ordinary next-hand/rematch buttons still work without reopening setup.
-Snapshots and host migration preserve the chosen positions.
+Host changes preserve the chosen positions: the table lives on the server.
 
 The shared `engine/tests/table-seating.browser.js` proves two-client seating,
 results-to-lobby, host migration and mobile controls in all three table games.
@@ -80,11 +83,13 @@ mano shows it at once. Quick chat also appears in the speaker's bubble.
 
 ## Proof
 
+- `npm test -- domino`: rules, options and `room.test.js` (per-seat views, host-only
+  deal, a dropped pana's chair).
 - `node --test Pana/games/domino/tests/rules.test.js`: 10 rule/invariant tests,
   including 500 complete seeded bot hands, tile conservation, both orientations,
   ties, scoring, stale actions, migration, and non-overlapping full chain layout.
 - `node Pana/games/domino/tests/browser.mjs [playwright-package]`: real two-client
-  turns, host migration, pause, scoring and next deal, mobile and local fallback.
+  turns, hidden hands, host leaving, pause, scoring and next deal, mobile and local fallback.
 - `node Pana/games/domino/tests/interaction.mjs [playwright-package]`: physical
   tile raycasting, rules menu, mobile label bounds and actual Studio factories.
 - `npm run check`; model architecture and Studio cache regressions when changing
@@ -95,11 +100,10 @@ mano shows it at once. Quick chat also appears in the speaker's bubble.
 Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
 true when you change this area.
 
-Dominó uses event-driven host snapshots (`domino-v2`), with four or six seats and
+Dominó runs on its own server room with per-seat views, four or six seats and
 alternating teams or individual scores. Its pure `games/domino/public/rules.js` owns deals, legal
-moves, passes, scoring and a revision/sequence ledger. Empty seats are bots;
-late arrivals inherit a bot hand and overflow visitors spectate. Host migration
-preserves all hands, RNG and scores. `scene.js` uses the shared plaza and real
+moves, passes, scoring, the table's tick and a revision/sequence ledger. Empty seats are bots;
+late arrivals inherit a bot hand and overflow visitors spectate. `scene.js` uses the shared plaza and real
 seated Pana characters; physical tiles and the accessible rack share actions.
 The game-local table, chair and tile factories are registered in
 `web/studio/catalog/domino.js`. See `docs/knowledge/domino.md`.
@@ -121,8 +125,8 @@ rack faces support values through twelve; six chairs, avatars, racks, labels and
 the score HUD follow actual seats. Full chains scale together to remain on felt.
 
 The host chooses teams/individual, 100/200 target, and 15/30-second or unlimited
-turns. Expiry makes a deterministic legal move or legal pass; remaining seconds
-are part of snapshots, so migration does not restart a clock. Solo pause stops it.
+turns. Expiry makes a deterministic legal move or legal pass; the clock runs on
+the server, so a host leaving never restarts it. Pause stops it when every pana has paused.
 Opening can force double six every hand, select the previous winner (with double
 six only on the first hand), or pick a seeded random player with free opening.
 
@@ -145,24 +149,7 @@ from every human, then verifies chat, clock expiry and host migration.
 
 Restablecer also returns the table venue to Plaza in the same revisioned options action; it never races a second map action against the first snapshot.
 
-## Verified replay and bot personalities
-
-Protocol `domino-v4` adds a rule-operation journal around the existing TableRoom.
-Guests replay only the unseen tail against `DominoGame`, compare the resulting
-state, and reject unexplained score/deal changes, impossible actions, sequence
-gaps and direct bot moves on human seats. Rejected packets request a retained
-replay through the same relay; ordinary packets keep at most 256 operations, and
-recovery retains 8192. A peer farther behind must reconnect. Host migration starts
-a new epoch at the last verified state and records departed-seat bot takeover.
-
-This is transition validation, not cryptographic anti-cheat. A newcomer trusts
-its first checkpoint, the host can see hands, and the log cannot prove a human
-actually sent a claimed legal action or that reported clock time really elapsed.
-A malicious host can refuse service; repeated invalid recovery stays on the last
-verified state with a Spanish reconnect notice. No P2P stack or host election was
-added. The design follows Parlour's replay/claim-validation approach. New room
-mutations must go through recorded rule methods; directly changing game fields
-and publishing is intentionally rejected by guests, including in debug fixtures.
+## Bot personalities
 
 `bot-personas.js` defines six fixed weights using only own tiles and public ends.
 Thinking takes 0.72–1.40 s, seeded by RNG state, revision and seat, so restore does

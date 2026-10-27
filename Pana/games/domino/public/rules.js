@@ -1,4 +1,4 @@
-import { BOT_PERSONAS } from './bot-personas.js';
+import { BOT_PERSONAS, botDelay } from './bot-personas.js';
 import { FIELDS, cleanOptions, maxPip, groupOf, CHAT } from './options.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
@@ -121,7 +121,19 @@ export class DominoGame {
     }
     return true;
   }
-  // Host only: the cachos on a timer; seats without a pana shake on their own.
+  // The table's own time, run by the server (or the page in local play): the
+  // cachos, the turn clock and the bots' moves. True when something changed.
+  tick(dt){
+    if(this.phase==='starter')return this.stepCachos(dt);
+    const clocked=this.clock(dt);
+    if(this.phase!=='playing'||this.players[this.turn].id!==null){this.botWait=0;return clocked;}
+    this.botWait=(this.botWait||0)+dt;
+    if(this.botWait<botDelay(this))return clocked;
+    this.botWait=0;const move=chooseMove(this);
+    move?this.play(this.turn,move.tile,move.end):this.pass(this.turn);
+    return true;
+  }
+  // The cachos on a timer; seats without a pana shake on their own.
   stepCachos(dt){
     if(this.phase!=='starter')return false;
     const changed=stepStarter(this.cachos,dt,{bots:this.players.filter(p=>p.id===null).map(p=>p.seat)});
@@ -224,6 +236,15 @@ export class DominoGame {
   }
 
   snapshot() { return copy({ ...this }); }
+
+  // What one seat may see: its own hand; rivals' tiles stay face down (same
+  // count, no ids) and the boneyard, the shuffle seed and the action ledger
+  // never leave the server. Ended hands show every tile, as at a real table.
+  view(seat) {
+    const { rng, ledger, reserve, botWait, ...shown } = copy({ ...this }), open = ['round-over', 'finished'].includes(this.phase);
+    for (const p of shown.players) if (!open && p.seat !== seat) p.hand = p.hand.map(() => ({ id: null }));
+    return { ...shown, reserve: open ? reserve : reserve.map(() => ({ id: null })) };
+  }
 
   static restore(snapshot, members) {
     const game = Object.assign(new DominoGame(), copy(snapshot));

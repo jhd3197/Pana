@@ -109,7 +109,6 @@
   "Mesa trancada: se reparte otra mano sin puntuar.": "Blocked table: another hand is dealt without scoring.",
   "Meta": "Target",
   "No pudimos cargar la plaza. Comprueba tu conexión y WebGL.": "We couldn't load the plaza. Check your connection and WebGL.",
-  "No pudimos verificar la jugada. Reconecta para recuperar la mesa.": "We couldn't verify the move. Reconnect to recover the table.",
   "No se anota": "Not scored",
   "No tienes una ficha válida. Te toca pasar.": "You have no valid tile. You have to pass.",
   "Opciones de la mesa": "Table options",

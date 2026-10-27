@@ -1,71 +1,67 @@
-import { journalGame, verifyPacket, plainState } from './replay.js';
-import { botDelay } from './bot-personas.js';
-import { DominoGame, chooseMove } from './rules.js';
-import { TableRoom } from '/engine/table-room.js';
-import { loc } from '/engine/i18n.js';
+import { joinRoom, leadFromUrl } from '/engine/net.js';
+import { DominoGame } from './rules.js';
+import { loc, locn } from '/engine/i18n.js';
 
-const keepMap = (prev) => prev?.mapId ? { mapId: prev.mapId } : {};
+// Dominó online runs on its own room (server/room.js): the server deals,
+// plays the bots and sends each seat its own view, so no browser ever holds
+// another pana's tiles. Local play runs the same DominoGame in the page.
+// Members are their room seat numbers; local play is seat 1.
+export class DominoRoom {
+  constructor({ code, name, avatar, onState = () => {}, onStatus = () => {}, onNotice = () => {} }) {
+    Object.assign(this, { code, name, avatar, onState, onStatus, onNotice });
+    this.state = new DominoGame().view(-1); this.connected = false; this.offline = false; this.link = null;
+  }
+  get id() { return this.offline ? 1 : this.link?.me?.seat ?? null; }
+  get hostId() { return this.offline ? 1 : this.link?.state.players.find(p => p.id === this.link.state.host)?.seat ?? null; }
+  get isHost() { return this.offline || !!this.link?.isHost; }
+  get seat() { return this.state.players.findIndex(p => p.id === this.id); }
+  get members() { return new Map(this.offline ? [[1, { id: 1 }]] : (this.link?.state.players || []).filter(p => p.connected).map(p => [p.seat, p])); }
 
-// Host simulation on the shared table room (engine/table-room.js): empty seats
-// are bots, snapshots are event-driven and migrate with the host.
-export class DominoRoom extends TableRoom {
-  constructor(options) {
-    super({ ...options, game: 'domino', protocol: 'domino-v4' }, {
-      fresh: (prev) => ({ ...new DominoGame(Date.now()).snapshot(), ...keepMap(prev) }),
-      restore: (state) => Object.assign(new DominoGame(), plainState(state)),
-      snapshot: (game) => game.snapshot(),
-      accept: (game, id, data, hostId) => game.accept(id, data, hostId),
-      valid: (state) => [4,6].includes(state?.players?.length),
-    });
-    this.epochCounter = 0;
-  }
-
-  takeOver(previous) {
-    const state = plainState(this.state);
-    this.journal = journalGame(state, `${this.id}:${this.state.revision}:${++this.epochCounter}`);
-    this.game = this.journal.game; this.botElapsed = 0;
-    for (const p of this.game.players) if (p.id !== null && !this.members.has(p.id)) this.game.removePlayer(p.id);
-    this.seatMembers(); this.publish();
-    if (previous !== null) this.onNotice(this.texts.handoff);
-  }
-  publish() {
-    this.state = this.journal.packet(); this.onState(this.state);
-    this.verified = { epoch:this.state.audit.epoch, seq:this.state.audit.base + this.state.audit.events.length, state:plainState(this.state) };
-    this.send({ kind:'snapshot', state:this.state });
-  }
-  receive(id, data) {
-    if (data.kind === 'replay-request' && this.isHost && this.members.has(id)) {
-      this.send({kind:'snapshot', state:this.journal.packet(true), recovery:true},id); return;
+  async connect() {
+    this.onStatus(loc('Conectando con la mesa…'));
+    try {
+      const link = await joinRoom('domino', { code: this.code, name: this.name, avatar: this.avatar, lead: leadFromUrl() });
+      if (this.offline || this.disposed) { link.leave(); return; }
+      this.link = link; this.connected = true;
+      link.on('view', state => { if (!this.offline) { this.state = state; this.onState(state); } });
+      link.on('state', () => { if (!this.offline) { this.status(); this.onState(this.state); } });
+      link.on('status', (text, failed) => { if (this.offline) return; this.connected = !failed; failed ? this.onStatus(loc('Sin conexión. Reconectando…'), true) : this.status(); });
+      link.on('left', () => { if (this.offline) return; this.connected = false; this.onStatus(loc('No pudimos conectar. Puedes jugar en local.'), true); this.onState(this.state); });
+      this.status();
+    } catch (error) {
+      if (!this.offline && !this.disposed) this.onStatus(error.full ? loc('Sala llena. Puedes jugar una partida local.') : loc('No pudimos conectar. Puedes jugar en local.'), true);
     }
-    if (data.kind === 'snapshot' && id === this.hostId && !this.isHost) {
-      const verified = verifyPacket(this.verified, data.state, id, this.members, !this.verified);
-      if (!verified) {
-        this.auditFailures = (this.auditFailures || 0) + 1;
-        if (!data.recovery && !this.recovering) { this.recovering = true; this.send({kind:'replay-request'},'host'); }
-        if (data.recovery) { this.recovering = false; this.onNotice(loc('No pudimos verificar la jugada. Reconecta para recuperar la mesa.')); }
-        return;
-      }
-      this.recovering = false;
-      this.verified = verified;
+  }
+  status() { const n = this.members.size; this.onStatus(locn(n, 'Sala {code} · {n} pana conectado', 'Sala {code} · {n} panas conectados', { code: this.code })); }
+
+  // Online the server answers with a new view; locally the game runs here.
+  action(action, values = {}) {
+    if (!this.connected) { this.onNotice(loc('Espera a reconectar o abre una mesa local.')); return false; }
+    const data = { action, ...values, revision: this.state.revision };
+    if (this.offline) {
+      const ok = this.game.accept(1, { ...data, seq: (this.game.ledger[1] || 0) + 1 }, 1);
+      this.publish(); return ok;
     }
-    super.receive(id,data);
+    // A smaller table can't drop seated panas; say so now rather than after a round trip.
+    if (action === 'options' && values.patch?.seats && this.state.players.slice(values.patch.seats).some(p => p.id !== null)) return false;
+    this.link.send('action', data); return true;
   }
-  entered(alone) { this.verified = null; super.entered(alone); }
-  practice(text) { this.verified = null; super.practice(text); }
+  // paused: the menu is open with nobody else at the table. Online the server
+  // holds the bots while every pana there has paused.
+  tick(dt, paused = false) {
+    if (this.offline) { if (!paused && this.game.tick(dt)) this.publish(); return; }
+    if (this.link && paused !== this.pausedSent) { this.pausedSent = paused; this.link.send('pause', { on: paused }); }
+  }
 
-  seatMembers() {
-    for (const m of this.members.values()) this.game.addPlayer(m.id, m.name,
-      m.avatar || this.game.players.find(p => p.id === m.id)?.avatar || {});
+  practice() {
+    const mapId = this.state.mapId;
+    this.offline = true; this.connected = true; this.link?.leave(); this.link = null;
+    this.game = new DominoGame(Date.now()); this.game.mapId = mapId;
+    this.game.addPlayer(1, this.name, this.avatar);
+    this.onStatus(loc('Mesa local · tú y tres bots')); this.publish();
   }
-  unseat(id) { this.game.removePlayer(id); }
-
-  step(dt) {
-    const game = this.game;
-    if (game.phase === 'starter') return game.stepCachos(dt);
-    const clockChanged=game.clock(dt);
-    if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null, botDelay(game))) return clockChanged;
-    const move = chooseMove(game);
-    move ? game.play(game.turn, move.tile, move.end) : game.pass(game.turn);
-    return true;
-  }
+  publish() { this.state = this.game.view(this.game.players.findIndex(p => p.id === 1)); this.onState(this.state); }
+  // Lose the connection for good (suites reach the local fallback this way).
+  cut() { const room = this.link?.room; if (!room) return; room.reconnection.enabled = false; room.leave(false); }
+  dispose() { this.disposed = true; this.link?.leave(); }
 }

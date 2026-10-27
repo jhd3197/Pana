@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Dominó nadie puede ver tus fichas.**
+  El servidor reparte y juega los bots; a cada pana solo le llegan sus
+  propias fichas, y las de los demás quedan boca abajo hasta que se cierra la mano.
 - **Un pana que se queda quieto ya no congela Ludo ni Bolas Criollas.**
   Con «Tiempo por turno» (60 s por defecto) el bot juega por quien se fue;
   en Billar, si tu rival se va a mitad de mesa, el anfitrión vuelve a la
