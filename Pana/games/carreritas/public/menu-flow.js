@@ -2,14 +2,14 @@ import { paintOf } from './shop.js';
 import { ICONS } from '/engine/icons.js';
 import { setMenuImage, trackArt } from './menu-art.js';
 import { trackPieces, vesselById, carNivel } from './parts.js';
-import { cupById } from './cup-definitions.js';
+import { CUPS, cupById } from './cup-definitions.js';
 import { loc, locn } from '/engine/i18n.js';
 
 // The room gathers in the shared lobby (engine/game-entry.js); the host's
 // start takes everyone to Copa and Taller, and ¡Vámonos! on Taller races.
 const STEPS = ['track', 'car'];
 const LABELS = [loc('Pista'), loc('Taller')];
-const MODES = { race: [loc('Una carrera'), loc('La pista que tú quieras'), 'estadio'], pana: [loc('Copa Pana'), loc('4 pistas · de la ciudad al mar'), 'plaza'], aventura: [loc('Copa Aventura'), loc('4 pistas · descubre lo salvaje'), 'selva'], agua: [loc('Copa del Agua'), loc('4 pistas · salta, cruza, derrapa'), 'salto'], battle: [loc('Globos'), loc('Aguanta hasta el final'), 'bululu'] };
+const MODES = { race: [loc('Una carrera'), loc('La pista que tú quieras'), 'estadio'], pana: [loc('Copa Pana'), loc('4 pistas · de la ciudad al mar'), 'plaza'], aventura: [loc('Copa Aventura'), loc('4 pistas · descubre lo salvaje'), 'selva'], agua: [loc('Copa del Agua'), loc('4 pistas · salta, cruza, derrapa'), 'salto'], costa: [loc('Copa Costa'), loc('4 pistas · de playa en playa'), 'margarita'], cumbre: [loc('Copa Cumbre'), loc('4 pistas · sube a lo más alto'), 'merida'], relampago: [loc('Copa Relámpago'), loc('4 pistas · del lago al tepuy'), 'sabana'], fantasia: [loc('Copa Fantasía'), loc('4 pistas · del mar al espacio'), 'cosmos'], battle: [loc('Globos'), loc('Aguanta hasta el final'), 'bululu'] };
 
 // The flow only arranges existing controls. Race setup and room authority stay in game.js.
 // start(): the lobby's start was pressed; back(): Atrás on Copa, back to the lobby.
@@ -25,7 +25,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
     <section class="menu-page track-page" data-page="track" aria-labelledby="track-heading">
       <div class="page-heading"><div><p class="pk-eyebrow">Elige tu aventura</p><h1 id="track-heading" tabindex="-1">¿Dónde corremos?</h1></div><p id="track-authority" role="status"></p></div>
       <div class="track-layout"><div class="track-feature"><img id="circuit-blur" alt=""><img id="circuit-art" alt="" decoding="async"><div class="cup-preview"></div><div class="circuit-caption"><div class="cup-preview-caption"></div></div></div>
-        <div class="track-options"><div class="track-tabs" role="tablist" aria-label="Tipo de carrera"><button type="button" role="tab" data-format="race">Una carrera <small>${tracks.length}</small></button><button type="button" role="tab" data-format="cups">Copas <small>3</small></button><button type="button" role="tab" data-format="battle">Globos</button></div><div id="format-options"></div><div class="circuit-list"><p id="circuit-list-title" class="pk-eyebrow">${loc('Los {n} circuitos', { n: tracks.length })}</p><div id="circuit-grid" aria-label="Circuitos"></div></div></div>
+        <div class="track-options"><div class="track-tabs" role="tablist" aria-label="Tipo de carrera"><button type="button" role="tab" data-format="race">Una carrera <small>${tracks.length}</small></button><button type="button" role="tab" data-format="cups">Copas <small>${CUPS.length}</small></button><button type="button" role="tab" data-format="battle">Globos</button></div><div id="format-options"></div><div class="circuit-list"><p id="circuit-list-title" class="pk-eyebrow">${loc('Los {n} circuitos', { n: tracks.length })}</p><div id="circuit-grid" aria-label="Circuitos"></div></div></div>
       </div>
     </section>`;
   root.append(sections);
@@ -63,7 +63,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
     // renderSetup has already restored earned and legacy trophies on startup.
     const trophies = [...button.querySelectorAll('.mode-trophy, .mode-legacy')];
     button.replaceChildren(img, label, ...trophies);
-    if (['pana', 'aventura', 'agua'].includes(button.dataset.mode)) {
+    if (CUPS.some(cup => cup.id === button.dataset.mode)) {
       const cup = cupById(button.dataset.mode);
       const collage = document.createElement('div'); collage.className = 'cup-collage';
       const route = document.createElement('span'); route.className = 'cup-route';

@@ -11,13 +11,13 @@ import { LEGACY_PROFILE_FIXTURES } from './cup-profile-fixtures.js';
 const fixture = (id) => LEGACY_PROFILE_FIXTURES.find(item => item.id === id);
 
 test('available cups have four unique stages; every other circuit is explicitly standalone', () => {
-  assert.equal(CUPS.length, 3);
+  assert.equal(CUPS.length, 7);
   const { errors, covered, standalone } = validateCups(TRACK_IDS);
   assert.deepEqual(errors, []);
   assert.deepEqual(standalone, STANDALONE_TRACKS);
   assert.deepEqual([...covered, ...standalone].sort(), [...TRACK_IDS].sort());
   assert.ok(validateCups([...TRACK_IDS, 'unregistered']).errors.some(e=>e.includes('unregistered')));
-  assert.ok(validateCups(TRACK_IDS.filter(id=>id!=='puerto')).errors.some(e=>e.includes('unknown standalone')));
+  assert.ok(validateCups(TRACK_IDS.filter(id=>id!=='puerto')).errors.some(e=>e.includes('unknown track puerto')));
   assert.equal(CUP_DEFINITIONS.find(cup => cup.id === 'agua').available, true);
   assert.equal(cupById('agua').id, 'agua');
   assert.equal(cupById('agua', { includeUnavailable: true }).stages.length, 4);

@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
 import { backToLobby, chooseCar, leaveLobby, menuStep } from './menu-helpers.js';
 import { TRACK_DEFINITIONS } from '../public/track-definitions.js';
+import { CUPS } from '../public/cup-definitions.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const browser = await chromium.launch({ headless: true,
   ...(process.env.PANA_BROWSER_PATH ? { executablePath: process.env.PANA_BROWSER_PATH } : {}) });
@@ -72,11 +73,11 @@ try {
   }
   assert.equal(await page.evaluate(() => !!race.trackGroup), false, 'browsing artwork never constructs scenery');
   await page.locator('[data-format=cups]').click();
-  for (const id of ['pana', 'aventura', 'agua']) {
+  for (const { id } of CUPS) {
     await page.locator(`[data-mode="${id}"]`).click();
     assert.equal(await page.locator('.cup-stage').count(), 4);
     assert.ok(await page.locator('#circuit-grid').isHidden());
-    assert.equal(await page.locator('.cup-choice img').count(), 12);
+    assert.equal(await page.locator('.cup-choice img').count(), CUPS.length * 4);
     // Each championship starts at its actual first circuit.
     assert.match(await page.locator('#menu-summary').textContent(), /^Copa/);
   }

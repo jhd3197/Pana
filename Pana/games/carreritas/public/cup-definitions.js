@@ -2,7 +2,7 @@ import { loc } from '../../../engine/i18n.js';
 export const CURRENT_CUP_EDITION = 2;
 export const GP_STAGE_CAP_SECONDS = 240;
 // New standalone circuits do not silently change a saved cup edition's route.
-export const STANDALONE_TRACKS = ['puerto', 'cata', 'choroni', 'chuao', 'tovar', 'galipan', 'maracaibo', 'margarita', 'sarisarinama', 'sabana', 'cosmos', 'merida', 'arrecife', 'volcan', 'nubes', 'dulce'];
+export const STANDALONE_TRACKS = [];
 
 const stage = (track, laps = 2, estimatedSeconds = 150) => ({
   track, laps, capSeconds: GP_STAGE_CAP_SECONDS, estimatedSeconds,
@@ -34,6 +34,42 @@ export const CUP_DEFINITIONS = [
       stage('delta', 3, 165),
       stage('cuevas', 2, 125),
       stage('salto', 2, 180),
+    ],
+  },
+  {
+    id: 'costa', name: loc('Copa Costa'), edition: CURRENT_CUP_EDITION, available: true,
+    stages: [
+      stage('cata', 2, 180),
+      stage('choroni', 2, 130),
+      stage('chuao', 3, 120),
+      stage('margarita', 2, 160),
+    ],
+  },
+  {
+    id: 'cumbre', name: loc('Copa Cumbre'), edition: CURRENT_CUP_EDITION, available: true,
+    stages: [
+      stage('tovar', 2, 135),
+      stage('galipan', 2, 155),
+      stage('merida', 2, 185),
+      stage('volcan', 1, 135),
+    ],
+  },
+  {
+    id: 'relampago', name: loc('Copa Relámpago'), edition: CURRENT_CUP_EDITION, available: true,
+    stages: [
+      stage('puerto', 1, 185),
+      stage('maracaibo', 2, 120),
+      stage('sabana', 2, 110),
+      stage('sarisarinama', 2, 160),
+    ],
+  },
+  {
+    id: 'fantasia', name: loc('Copa Fantasía'), edition: CURRENT_CUP_EDITION, available: true,
+    stages: [
+      stage('arrecife', 2, 165),
+      stage('dulce', 2, 145),
+      stage('nubes', 2, 185),
+      stage('cosmos', 1, 125),
     ],
   },
 ];

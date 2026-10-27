@@ -11,6 +11,18 @@ known stages and now rejects any circuit missing from both the cup stages and
 the standalone list, or registered in both. Existing cup routes and profile
 migration remain unchanged.
 
+Seven cups now cover all 28 circuits and `STANDALONE_TRACKS` is empty; `npm
+run new-track` still appends new circuits there until they join a cup. The
+four later cups are Costa (Cata, Choroní, Chuao 3 laps, Margarita), Cumbre
+(Tovar, Galipán, Mérida, Volcán 1 lap), Relámpago (Puerto 1 lap, Maracaibo,
+Gran Sabana, Sarisariñama) and Fantasía (Arrecife, Dulce, Nubes, Cosmos 1
+lap); every other stage runs 2 laps. One-seed balance sweeps put every
+eight-car stage under the 240-second cap on all difficulties (slowest: Puerto
+on Easy, 225 s); Chuao takes 3 laps because two laps ended in under 90
+seconds. `estimatedSeconds` are the Normal means, so each cup runs 10–11
+minutes. The cups tab lists them in one scrolling column: two columns at
+1440 px wrapped every title and route name.
+
 ## Phase 00 baseline
 
 Source revision: `3448e6d` plus the pre-existing, unrelated root package edits.
@@ -182,7 +194,7 @@ three championship finishers.
 ## Phase 05 — server-owned online championship lifecycle
 
 `server/room.js` (`CarreritasRoom`) owns the authoritative Grand Prix session when
-`state.mode` is an available cup (`pana`, `aventura` or `agua`). Before starting, the
+`state.mode` is an available cup (any id in `CUPS`). Before starting, the
 host can select `mode` and `difficulty` (`facil`, `normal`, `dificil`); track
 selection messages are ignored while a cup mode is active because the cup's
 first stage (`cup.stages[0]`) determines the initial track and lap count.

@@ -62,7 +62,7 @@ function replaceOnce(text, pattern, replace, what) {
 function appendToList(text, pattern, id, what) {
   return replaceOnce(text, pattern, (all, items) => {
     if (new RegExp(`'${id}'`).test(items)) throw new Error(`${what} already lists '${id}'`);
-    return all.replace(items, `${items}, '${id}'`);
+    return items.trim() ? all.replace(items, `${items}, '${id}'`) : all.replace('[]', `['${id}']`);
   }, what);
 }
 

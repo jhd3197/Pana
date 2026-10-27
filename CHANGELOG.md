@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas tiene cuatro copas nuevas: Costa, Cumbre, Relámpago y Fantasía.**
+  Las dieciséis pistas sueltas ahora también se corren como campeonato de
+  cuatro carreras, con su trofeo; la lista de copas baja con scroll.
 - **Bochinche tiene trece panas, cada uno con su poder en K, y un HUD nuevo.**
   El Trueno, La Medusa, El Silbón y diez más pelean con su disfraz y sus
   accesorios sobre tu propio pana. Placas con el daño en grande, vidas en

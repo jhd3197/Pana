@@ -4,9 +4,9 @@ import { CUPS, POINTS, trophyFor, rubberBand, DIFFICULTY, cleanLaps, battleOrder
 import { TRACK_IDS } from '../public/online-rules.js';
 import { STANDALONE_TRACKS } from '../public/cup-definitions.js';
 
-test('three four-race cups and explicitly standalone tracks cover the circuit list', () => {
+test('four-race cups and explicitly standalone tracks cover the circuit list', () => {
   const all = CUPS.flatMap(c => c.stages.map(stage => stage.track));
-  assert.equal(all.length, 12);
+  assert.equal(all.length, CUPS.length * 4);
   assert.deepEqual([...all, ...STANDALONE_TRACKS].sort(), [...TRACK_IDS].sort());
 });
 
