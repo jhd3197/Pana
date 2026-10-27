@@ -6,6 +6,8 @@ const RECEIPTS = 60;   // recent payouts remembered so a reload cannot pay twice
 const clean = value => ({
   balance: Number.isFinite(value?.balance) && value.balance > 0 ? Math.floor(value.balance) : 0,
   receipts: Array.isArray(value?.receipts) ? value.receipts.filter(r => typeof r === 'string' && r.length <= 180).slice(-RECEIPTS) : [],
+  // false: a payout opened this wallet before Carreritas handed over its coins.
+  ...(value?.seeded === false ? { seeded: false } : {}),
 });
 const defaultStorage = () => { try { return globalThis.localStorage ?? null; } catch { return null; } };
 
@@ -17,18 +19,19 @@ export function createMangoWallet(storage = defaultStorage()) {
   };
   const write = doc => { memory = clean(doc); try { storage?.setItem(MANGO_KEY, JSON.stringify(memory)); } catch { /* memory only */ } return memory.balance; };
   return {
-    // The balance. A device with no wallet yet adopts `seed`: the coins an
-    // older Carreritas save kept in its own profile.
+    // The balance. A device adopts `seed` once: the coins an older
+    // Carreritas save kept in its own profile.
     balance(seed = 0) {
       const doc = read();
-      return doc ? doc.balance : write({ balance: seed, receipts: [] });
+      if (doc && doc.seeded !== false) return doc.balance;
+      return write({ balance: (doc?.balance ?? 0) + Math.max(0, Math.floor(seed) || 0), receipts: doc?.receipts ?? [] });
     },
     set(balance) { return write({ ...(read() ?? clean()), balance }); },
     // Adds mangos once per receipt; returns false when it was already paid.
     credit(amount, receipt) {
-      const doc = read() ?? clean();
+      const doc = read() ?? { ...clean(), seeded: false };
       if (receipt && doc.receipts.includes(receipt)) return false;
-      write({ balance: doc.balance + Math.max(0, Math.floor(amount) || 0), receipts: receipt ? [...doc.receipts, receipt] : doc.receipts });
+      write({ ...doc, balance: doc.balance + Math.max(0, Math.floor(amount) || 0), receipts: receipt ? [...doc.receipts, receipt] : doc.receipts });
       return true;
     },
     paid: receipt => (read()?.receipts ?? []).includes(receipt),

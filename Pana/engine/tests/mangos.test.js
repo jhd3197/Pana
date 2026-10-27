@@ -11,6 +11,13 @@ test('a new wallet adopts the seed once, then keeps its own balance', () => {
   wallet.set(25); assert.equal(createMangoWallet(storage).balance(), 25);
 });
 
+test('a payout before the hand-over keeps the old Carreritas coins', () => {
+  const storage = memoryStorage();
+  createMangoWallet(storage).credit(25, 'bochinche:sala:1:7');
+  assert.equal(createMangoWallet(storage).balance(140), 165);
+  assert.equal(createMangoWallet(storage).balance(165), 165, 'the seed is adopted only once');
+});
+
 test('credits pay once per receipt and survive a reload', () => {
   const storage = memoryStorage(), wallet = createMangoWallet(storage);
   assert.equal(wallet.credit(12, 'bochinche:abc:1:7'), true);
