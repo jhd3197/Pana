@@ -79,3 +79,20 @@ test('practice: seat 1, host, alone', () => {
   assert.deepEqual([...room.members.keys()], [1]);
   assert.deepEqual(room.log, [['takeOver', null]]);
 });
+
+test('full: a newcomer stops, a pana who was in the room waits for its old seat', () => {
+  const statuses = [], newcomer = new Probe();
+  newcomer.onStatus = (text) => statuses.push(text);
+  newcomer.full();
+  assert.equal(newcomer.stopped, true);
+  assert.equal(statuses.at(-1), newcomer.texts.full);
+  const back = linked(new Probe());
+  back.onStatus = (text) => statuses.push(text);
+  back.full();
+  assert.notEqual(back.stopped, true);
+  assert.equal(statuses.at(-1), back.texts.lost);
+  clearTimeout(back.retry);
+  back.full(); clearTimeout(back.retry); back.full(); clearTimeout(back.retry);
+  back.full();
+  assert.equal(back.stopped, true, 'three waits, then the room really is full');
+});

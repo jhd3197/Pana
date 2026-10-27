@@ -12,6 +12,8 @@ import { normalizeAvatar } from './avatar.js';
 import { loc, locn } from './i18n.js';
 const SDK = 'https://cdn.jsdelivr.net/npm/@colyseus/sdk@0.18.5/dist/colyseus.js';
 export const ROOM_FULL = 409;
+// The server keeps a dropped seat this long (room-kit RECONNECT_SECONDS is 20).
+const RESEAT_MS = 22000;
 
 let sdk;
 function loadSdk() {
@@ -209,7 +211,7 @@ export class HostRoom {
       link = await joinRoom(this.roomType, { code: this.code, lead: leadFromUrl(), name: this.name, avatar: this.avatar, resume: false });
     } catch (error) {
       if (this.stopped || this.offline) return;
-      if (error.full) { this.stopped = true; this.onStatus(this.texts.full, true); return; }
+      if (error.full) return this.full();
       return this.retryLater();
     }
     if (this.stopped || this.offline) { link.leave(); return; }
@@ -238,6 +240,19 @@ export class HostRoom {
       if (code !== 4000) this.retryLater();
     });
     if (link.state.players.length) this.sync(link.state);
+  }
+
+  // Full. A tab that was already in the room rejoins as a new member while
+  // the server still holds its dropped seat: wait that out, then try again.
+  full() {
+    if (this.link && ++this.attempts <= 3) {
+      this.connected = false;
+      this.onStatus(this.texts.lost, true);
+      this.retry = setTimeout(() => this.connect(), RESEAT_MS);
+      return;
+    }
+    this.stopped = true;
+    this.onStatus(this.texts.full, true);
   }
 
   retryLater() {
