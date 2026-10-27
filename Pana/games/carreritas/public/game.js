@@ -41,7 +41,7 @@ import { PAINTS, paintOf, FLAMES, earnings, mirrorUnlocked, repaintHex } from '.
 import { createProfileStore, recordCupTrophy, trophyCredits } from './cup-profile.js';
 import { settleRace } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
-import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
+let soaringVulture = null; import('/engine/models/fauna/birds/soaring-vulture.js').then(m => { soaringVulture = m.soaringVulture; });   // only rescues need it
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { DRAFT_TIME, DRAFT_BOOST, DRIFT_LEVELS, driftLevel, startBoost, startCue, inSlipstream, loseCoins, physicsFrame, DrivingSpring as Spring } from './drive-rules.js';
 import { loc, locn, locKey, formatNumber } from '/engine/i18n.js';
@@ -333,7 +333,7 @@ race.purpleRelease = () => { race.slowMo.trigger(); race.shake = Math.min(1.2, r
 // ---------- race setup: mode, difficulty, laps, mirror (local races) ----------
 let profileStorage = null;
 try { profileStorage = localStorage; } catch { /* private mode */ }
-const profileStore = createProfileStore(profileStorage);
+const profileStore = createProfileStore(profileStorage, { onMangos: balance => { $('shop-coins').textContent = balance; } });   // fights elsewhere pay in
 const profile = profileStore.load();
 const setup = profile.setup;
 const isCupMode = (mode) => CUPS.some(c => c.id === mode);
@@ -1383,7 +1383,7 @@ function syncVulture(c, dt) {
   c.awayT = Math.max(0, (c.awayT || 0) - dt);
   let v = vultures.get(c);
   if (!(c.rescueT > 0 || c.awayT > 0)) { if (v) v.visible = false; return; }
-  if (!v) {
+  if (!v) { if (!soaringVulture) return;
     v = soaringVulture({ seed: c.def.num });
     v.scale.setScalar(2.1);
     v.name = 'rescue-zamuro';

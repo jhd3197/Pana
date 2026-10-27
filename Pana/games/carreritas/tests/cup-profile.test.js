@@ -124,3 +124,16 @@ test('selected car survives profile reload and invalid IDs fall back safely', ()
   restored.wallet.car = 'missing-car';store.save(restored);
   assert.equal(createProfileStore(storage).load().wallet.car, 'chamo');
 });
+
+test('the balance moves to the shared mango wallet and other games pay into it', async () => {
+  const { createMangoWallet, MANGO_KEY } = await import('../../../engine/mangos.js');
+  const values = new Map(), storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+  values.set(PROFILE_KEY, JSON.stringify({ ...createProfileStore(null).load(), wallet: { coins: 140 } }));
+  assert.equal(createProfileStore(storage).load().wallet.coins, 140, 'an existing save keeps its mangos');
+  assert.equal(JSON.parse(values.get(MANGO_KEY)).balance, 140);
+  createMangoWallet(storage).credit(25, 'bochinche:sala:1:7');
+  const store = createProfileStore(storage), profile = store.load();
+  assert.equal(profile.wallet.coins, 165, 'a fight in Bochinche shows up in the taller');
+  profile.wallet.coins -= 65; store.save(profile);
+  assert.equal(createMangoWallet(storage).balance(), 100);
+});

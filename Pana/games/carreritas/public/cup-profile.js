@@ -1,6 +1,7 @@
 import { CUP_DEFINITIONS, LEGACY_CUP_ALIASES, canonicalCupId } from './cup-definitions.js';
 import { cleanWallet, newWallet } from './shop.js';
 import { locKey } from '/engine/i18n.js';
+import { createMangoWallet } from '/engine/mangos.js';
 
 export const PROFILE_VERSION = 3;
 export const PROFILE_KEY = 'carreritas:profile';
@@ -187,13 +188,19 @@ function migrateStatIds(storage, get) {
   try { storage?.setItem('pana:stats', JSON.stringify({ counters, events: raw.events || [], records })); } catch { /* keep old ids */ }
 }
 
-export function createProfileStore(storage) {
+// The balance is Pana's shared mango wallet; wallet.coins mirrors it so older
+// saves and the taller keep working. A device's first load adopts its coins.
+export function createProfileStore(storage, { onMangos } = {}) {
   let memory = null;
+  const mangos = createMangoWallet(storage);
+  // Mangos paid by another game while this page is open.
+  if (onMangos) mangos.onChange(balance => { if (memory?.wallet) memory.wallet.coins = balance; onMangos(balance); });
   const get = (key) => {
     try { return storage?.getItem(key) ?? null; } catch { return null; }
   };
   const save = (profile) => {
     memory = profile && typeof profile === 'object' && !Array.isArray(profile) ? profile : cleanProfile(profile);
+    if (memory.wallet) mangos.set(memory.wallet.coins);
     try { storage?.setItem(PROFILE_KEY, JSON.stringify(memory)); } catch { /* in-memory play remains available */ }
     return memory;
   };
@@ -208,6 +215,7 @@ export function createProfileStore(storage) {
       wallet: parse(get('carreritas:wallet')) ?? parse(get('derrape:wallet')),
       wheels: get('carreritas:wheels') ?? get('derrape:wheels'),
     });
+    migrated.wallet.coins = mangos.balance(migrated.wallet.coins);
     memory = migrated;
     if (!rawProfile || JSON.stringify(rawProfile) !== JSON.stringify(migrated)) save(migrated);
     return memory;
