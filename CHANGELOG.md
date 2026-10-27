@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Volver a un juego con el botón Atrás ya no lo deja congelado.**
+  La página se vuelve a cargar sola; y los menús de Billar, Caída y Dominó
+  ya suenan al tocarlos y respetan el volumen de la música.
 - **Las carreras online de Carreritas ya no aceptan tiempos inventados.**
   El servidor solo da por terminada la carrera de un carro que llegó a su
   última vuelta y con un tiempo que cuadra con su propio reloj.
