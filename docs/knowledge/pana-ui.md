@@ -90,6 +90,11 @@ hud.append(menu.createButton({ id: 'menu' }));      // "Menú Esc"
 
 Put the menu button somewhere visible on touch screens: phones have no Esc.
 
+A table game that keeps fx.js off its first load passes `lazySound()` from
+`engine/lazy-sound.js` instead of `sound`: menu clicks, volume and music
+settings reach fx.js once it arrives. A hand-written stub without
+`clickDown`/`clickUp` leaves the menu silent.
+
 Room codes and invite links come from `/engine/invite.js`: `roomFromUrl() ||
 newRoomCode()` for the code, `inviteUrl(code)` for the link to share. An invite carries
 only `?room=`; never the sender's name, `debug`, `manual` or `lead` (an invitee must

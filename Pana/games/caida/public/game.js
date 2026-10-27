@@ -5,6 +5,7 @@ import { createTableSeating } from '/engine/play/table-seating.js';
 import { createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { lazySound } from '/engine/lazy-sound.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { CaidaRoom } from './network.js';
@@ -20,11 +21,7 @@ const notify = createToast($('toast'), { ms: 3600 });
 const code = roomFromUrl() || newRoomCode();
 params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 let world = null, ready = false, stopped = false, selected = null, previousEvent = 0, barksPrimed = false, shownResult = '', resultTimer, announcementTimer;
-const audio = { muted: false, volume: .8, unlocked: false, impl: null,
-  unlock() { this.unlocked = true; this.impl?.unlock(); }, setVolume(v) { this.volume = v; this.impl?.setVolume(v); },
-  tone(...args) { if (this.impl) { this.impl.muted = this.muted; this.impl.tone(...args); } },
-};
-import('/engine/fx.js').then(({ sound }) => { audio.impl = sound; sound.setVolume(audio.volume); if (audio.unlocked) sound.unlock(); }).catch(() => {});
+const audio = lazySound();
 const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
 });

@@ -4,6 +4,7 @@ import { createDifficultyPicker } from '/engine/play/difficulty.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { lazySound } from '/engine/lazy-sound.js';
 import { holdButton } from '/engine/touch.js';
 import { ICONS } from '/engine/icons.js';
 import { fillRoster } from '/engine/results.js';
@@ -33,13 +34,7 @@ function setCamera(value) {
   try { localStorage.setItem('pana:billar:view', value); } catch { /* storage may be blocked */ }
 }
 let portraitsModule;
-const audio = {
-  muted: false, volume: .8, impl: null, unlocked: false,
-  unlock() { this.unlocked = true; this.impl?.unlock(); },
-  setVolume(value) { this.volume = value; this.impl?.setVolume(value); },
-  tone(...args) { if (this.impl) { this.impl.muted = this.muted; this.impl.tone(...args); } },
-};
-import('/engine/fx.js').then(({ sound }) => { audio.impl = sound; sound.setVolume(audio.volume); if (audio.unlocked) sound.unlock(); }).catch(() => {});
+const audio = lazySound();
 const room = new PoolRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed = false) {
     $('connection').textContent = message; $('recovery-copy').textContent = message;

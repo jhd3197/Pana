@@ -5,6 +5,7 @@ import { createTableSeating } from '/engine/play/table-seating.js';
 import { createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { lazySound } from '/engine/lazy-sound.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { DominoRoom } from './network.js';
@@ -27,13 +28,7 @@ let barkRound = -1, barkId = 0, barksPrimed = false, resultTimer;
 let world = null, worldReady = false, view = 'plaza', stopped = false;
 
 // Audio is optional; a delayed audio module never prevents the table from loading.
-const audio = {
-  muted: false, volume: 1, unlocked: false, impl: null,
-  unlock() { this.unlocked = true; this.impl?.unlock(); },
-  setVolume(value) { this.volume = value; this.impl?.setVolume(value); },
-  tone(...args) { if (this.impl) { this.impl.muted = this.muted; this.impl.tone(...args); } },
-};
-import('/engine/fx.js').then(({ sound }) => { audio.impl = sound; sound.setVolume(audio.volume); if (audio.unlocked) sound.unlock(); }).catch(() => {});
+const audio = lazySound(1);
 
 
 const room = new DominoRoom({ code, name, avatar, onState: render,
