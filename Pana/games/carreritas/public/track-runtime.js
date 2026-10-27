@@ -319,7 +319,7 @@ function buildGround(T, pal) {
     const x = gp.getX(i), z = gp.getZ(i);
     gp.setY(i, T.terrainAt(x, z));
   }
-  ground = ground.toNonIndexed();
+  if (ground.index) ground = ground.toNonIndexed();
   const colors = [];
   const base = new THREE.Color(pal.ground);
   for (let i = 0; i < ground.attributes.position.count; i += 3) {
