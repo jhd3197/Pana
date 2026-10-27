@@ -8,7 +8,7 @@
 //
 // A worktree's node_modules is usually a junction to the main checkout's: it
 // is unlinked first, so removing the worktree can never reach the real one. A
-// worktree with uncommitted changes is never removed. Branches not merged,
+// worktree with uncommitted changes, local plans or art is never removed. Branches not merged,
 // main and dev are never touched.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,8 +33,13 @@ const plan = [];
 for (const w of worktrees) {
   const done = w.branch ? merged.has(w.branch) && !keep.has(w.branch) : tryGit('merge-base', '--is-ancestor', w.head, 'dev') !== null;
   if (!done) { console.log(`keep      ${w.dir}  (${w.branch ?? 'detached'}: not in dev)`); continue; }
-  const dirty = fs.existsSync(w.dir) && tryGit('-C', w.dir, 'status', '--porcelain');
-  if (dirty) { console.log(`keep      ${w.dir}  (${w.branch ?? 'detached'}: uncommitted changes)`); continue; }
+  // Local plans and art are ignored, so a plain status never shows them.
+  const status = fs.existsSync(w.dir) ? tryGit('-C', w.dir, 'status', '--porcelain', '--ignored') : '';
+  const lines = status?.split('\n').filter(Boolean) ?? [];
+  const dirty = status === null ? 'status failed'
+    : lines.some(l => !l.startsWith('!! ')) ? 'uncommitted changes'
+    : lines.some(l => /^!! (docs\/plans|art)\//.test(l)) ? 'local plans or art' : '';
+  if (dirty) { console.log(`keep      ${w.dir}  (${w.branch ?? 'detached'}: ${dirty})`); continue; }
   plan.push(w);
   console.log(`${apply ? 'remove' : 'would go'}  ${w.dir}  (${w.branch ?? 'detached'}: already in dev)`);
 }
