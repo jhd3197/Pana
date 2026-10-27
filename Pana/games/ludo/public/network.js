@@ -19,6 +19,7 @@ export class LudoRoom extends TableRoom {
     if (game.phase === 'starter') return game.stepStarter(dt);
     if (game.turnPause) { this.botElapsed = 0; return game.stepPause(dt); }
     if (game.autoMove) return game.stepAutomatic(dt);
+    if (!this.offline && game.stepIdle(dt)) return true;   // local play waits for you
     if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null, game.die ? automaticMoveDelay(game.toss.power) : 1.15)) return false;
     game.die ? game.move(chooseMove(game)) : game.roll();
     return true;

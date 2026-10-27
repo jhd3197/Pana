@@ -135,6 +135,18 @@ export class LudoGame {
     }
     this.revision++; return true;
   }
+  // Host only: a pana who leaves their turn waiting past turnSeconds gets the
+  // bot's roll or move, so one idle tab never freezes the table. Any change
+  // to the game restarts the count.
+  stepIdle(dt) {
+    const limit = this.options.turnSeconds;
+    if (!limit || this.phase !== 'playing' || this.turnPause || this.autoMove || this.players[this.turn].id === null) { this.idle = 0; return false; }
+    if (this.idleRevision !== this.revision) { this.idleRevision = this.revision; this.idle = 0; }
+    this.idle = (this.idle || 0) + Math.max(0, dt);
+    if (this.idle < limit) return false;
+    this.idle = 0;
+    return this.die ? this.move(chooseMove(this)) : this.roll();
+  }
   stepPause(dt) {
     if (!this.turnPause) return false;
     this.turnPause.remaining -= Math.max(0, dt);

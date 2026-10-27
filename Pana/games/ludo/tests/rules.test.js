@@ -174,3 +174,16 @@ test('each yard has a centered symmetric two-by-two set of pieces', async () => 
     }
   }
 });
+
+test('an idle pana gets the bot move once their turn time runs out', () => {
+  const g = new LudoGame(7);
+  g.addPlayer(1, 'Ana');
+  Object.assign(g, { phase: 'playing', turn: 0, die: 0 });
+  assert.equal(g.options.turnSeconds, 60);
+  assert.equal(g.stepIdle(59), false);
+  assert.equal(g.die, 0, 'still waiting on Ana');
+  assert.equal(g.stepIdle(1.5), true);
+  assert.ok(g.lastDie > 0, 'the die was rolled for her');
+  g.options.turnSeconds = 0; Object.assign(g, { turn: 0, die: 0, turnPause: null, autoMove: null });
+  assert.equal(g.stepIdle(999), false, 'no limit: the table waits');
+});

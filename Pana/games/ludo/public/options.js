@@ -6,6 +6,7 @@ export const LUDO_OPTIONS = [
   { id: 'captureBonus', label: loc('Tirar otra vez al capturar'), default: false, advanced: true, choices: [[false, loc('No')], [true, loc('Sí')]] },
   { id: 'threeSixes', label: loc('Tres seis seguidos pierden turno'), default: true, advanced: true, choices: [[true, loc('Sí')], [false, loc('No')]] },
   { id: 'assistedEntry', label: loc('Salida asistida'), default: true, advanced: true, choices: [[true, loc('Ayuda tras 3–5 intentos')], [false, loc('Azar clásico')]] },
+  { id: 'turnSeconds', label: loc('Tiempo por turno'), default: 60, advanced: true, choices: [[30, '30 s'], [60, '60 s'], [0, loc('Sin límite')]] },
   STARTER_FIELD,
 ];
 export const defaultLudoOptions = () => optionDefaults(LUDO_OPTIONS);
