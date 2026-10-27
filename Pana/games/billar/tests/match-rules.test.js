@@ -133,3 +133,12 @@ test('individual tables seat two friends opposite each other and reject team-siz
  const group=createGame();for(let i=0;i<3;i++)group.players[i].id=10+i;
  assert.equal(act(group,'options',{options:{format:'duel'}},10),false);
 });
+test('mid-rack, the host can take a stranded table back to the room; a full table cannot', () => {
+  const s = table(2, { format: 'duel' });
+  s.phase = 'aiming';
+  assert.equal(act(s, 'setup', {}, 10), false, 'both panas are here: the rack goes on');
+  s.players[1].id = null;
+  assert.equal(poolConnected(s), false);
+  assert.equal(act(s, 'setup', {}, 11), false, 'only the host');
+  assert(act(s, 'setup', {}, 10)); assert.equal(s.phase, 'lobby');
+});

@@ -118,7 +118,9 @@ export function acceptAction(state, id, action, hostId) {
     return true;
   }
   if (action.action === 'setup') {
-    if (id !== hostId || state.phase !== 'finished') return false;
+    // After a rack, or mid-rack when a playing seat emptied: nobody can shoot until it fills.
+    const stranded = !['lobby', 'finished'].includes(state.phase) && !poolConnected(state);
+    if (id !== hostId || (state.phase !== 'finished' && !stranded)) return false;
     const { players, options, mapId, difficulty, practice, bot, revision } = state;
     Object.assign(state, createGame(practice, { bot }), { players, options, mapId, difficulty, revision: revision + 1, balls: rack(options.variant) });
     return true;
