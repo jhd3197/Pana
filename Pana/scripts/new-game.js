@@ -48,10 +48,13 @@ export function options(argv) {
   return { id, kind, players, color: color.toLowerCase(), name, description, descriptionEn };
 }
 
-function fill(text, values) {
+// HTML templates get their values escaped: a quote in --description must not end an attribute.
+const escapeHtml = (value) => String(value).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+function fill(text, values, escape = String) {
   return text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
     if (!(key in values)) throw new Error(`Template placeholder {{${key}}} has no value`);
-    return String(values[key]);
+    return escape(values[key]);
   });
 }
 
@@ -62,7 +65,7 @@ function copyTree(from, to, values, written) {
     if (!entry.name.endsWith('.tmpl') || entry.name === 'knowledge.md.tmpl') continue;
     const target = path.join(to, entry.name.replace(/\.tmpl$/, ''));
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, fill(fs.readFileSync(source, 'utf8'), values));
+    fs.writeFileSync(target, fill(fs.readFileSync(source, 'utf8'), values, target.endsWith('.html') ? escapeHtml : String));
     written.push(target);
   }
 }
@@ -79,6 +82,8 @@ export function createGame(argv, { root = app, docs = path.join(repo, 'docs', 'k
     kindText: o.kind === 'table' ? 'turn-based table game' : 'real-time game',
     roomText: o.kind === 'table' ? 'table room' : 'live room',
     roomFile: o.kind === 'table' ? 'table-room.js' : 'live-room.js',
+    // Whole JS strings, so a name like Pa'lante stays valid code.
+    nameJs: JSON.stringify(o.name), titleJs: JSON.stringify(`${o.name} · Pana`),
     // Inside JSON strings (public/locales/en.json).
     ...Object.fromEntries(['name', 'description', 'descriptionEn'].map(k => [`${k}Json`, JSON.stringify(o[k]).slice(1, -1)])),
   };

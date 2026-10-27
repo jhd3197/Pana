@@ -19,9 +19,9 @@ const room = new {{Class}}Room({ code, name: loadName(), avatar: loadAvatar(), o
   onNotice: (text) => { $('event').textContent = text; },
   onStatus(text, failed = false) { $('connection').textContent = text; $('practice').hidden = !failed; render(room.state); },
 });
-const roomOptions = createRoomOptions($('room-options'), { title: '{{name}}', fields: ROOM_OPTIONS,
+const roomOptions = createRoomOptions($('room-options'), { title: {{nameJs}}, fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ title: '{{name}} · Pana', sound, orientation: 'libre', // i18n-ignore: the game's name
+const menu = createGameMenu({ title: {{titleJs}}, sound, orientation: 'libre', // i18n-ignore: the game's name
   pad: { move: 'wasd' },
   note: () => room.members.size > 1 ? loc('La ronda sigue mientras estás en el menú.') : loc('La ronda está en pausa.'),
   controls: [[loc('W A S D / flechas'), loc('Correr')], [loc('Toque'), loc('Flechas en pantalla')], ['M', loc('Activar o silenciar el sonido')]],
