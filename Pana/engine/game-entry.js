@@ -1,7 +1,7 @@
 // A light illustrated lobby paints before importing the game's full module graph.
 // Controls/settings remain the game's existing DOM, and membership stays in net.js.
 import { loadAvatar, loadName } from './avatar.js';
-import { cachedPortrait } from './portrait-cache.js';
+import { portraitImg } from './lobby-roster.js';
 import { icon } from './icons.js';
 import { inviteUrl, roomFromUrl } from './invite.js';
 import { finalizeRoomOptions } from './room-options.js';
@@ -60,19 +60,7 @@ const actionTray = el('div', 'pk-game-lobby-actions'); footer.append(actionTray,
 window.PANA_LOBBY_LOADING = true;
 document.addEventListener('pana:load-stage', e => { if (!failed) { status.textContent = e.detail; cover.say(e.detail); } });
 
-function portraitFor(person) {
-  let avatar = person.avatar || loadAvatar();
-  if (typeof avatar === 'string') { try { avatar = JSON.parse(avatar); } catch { avatar = {}; } }
-  const img = el('img'); img.alt = ''; const cached = cachedPortrait(avatar);
-  if (cached) img.src = cached;
-  if (!cached) {
-    img.hidden = true;
-    // Snapshot after the game is ready, so portrait rendering never delays game preparation.
-    const make = () => import('./portrait.js').then(m => m.portrait(avatar)).then(src => { img.src = src; img.hidden = false; }).catch(() => {});
-    if (loaded) make(); else document.addEventListener('pana:game-prepared', make, { once: true });
-  }
-  return img;
-}
+const portraitFor = person => portraitImg(person.avatar || loadAvatar());
 function renderRoster() {
   const players = link?.state.players.filter(p => p.connected !== false) || [{ id: 'local', name: loadName(), avatar: loadAvatar(), lobbyReady: ready, assetsReady: loaded }];
   const key = JSON.stringify(players.map(p => [p.id, p.name, p.avatar, p.lobbyReady, p.assetsReady])) + link?.state.host + loaded + (sala?.signature() || '');
