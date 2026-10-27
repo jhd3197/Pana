@@ -21,6 +21,7 @@ import {
 import { locKey } from '../../../engine/i18n.js';
 
 const RACE_CAP_MS = 20 * 60 * 1000;   // a race nobody finishes still ends
+const FINISH_SLACK_S = 5;   // latency and clock-sync error a real finish can carry
 const isAvailableCup = (mode) => CUPS.some(c => c.id === canonicalCupId(mode));
 const cleanMode = (mode) => isAvailableCup(mode) ? canonicalCupId(mode) : 'race';
 
@@ -203,6 +204,9 @@ export default class CarreritasRoom extends PanaRoom {
       const capSec = this.stageCapMs() / 1000;
       if (!Number.isFinite(time) || time <= 0 || time > capSec) return;
       const targetLaps = this.state.laps || LAPS;
+      // A finish needs the last lap in this car's poses and a time no shorter
+      // than the race has run on the server's clock (net races time from it).
+      if (r.lap < targetLaps || time < (Date.now() - this.state.startAt) / 1000 - FINISH_SLACK_S) return;
       if (this.cupSession) {
         const progress = targetLaps * 1e6 + (this.poses.get(m.id)?.[12] ?? 0);
         if (!acceptFinish(this.cupSession, {

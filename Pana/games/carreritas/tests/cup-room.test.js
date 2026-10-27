@@ -23,6 +23,11 @@ function createTestRoom(options = {}) {
       const handler = handlers.get(type);
       if (handler) handler(client, msg);
     },
+    // A real finish: the car's poses reach the last lap first.
+    finish(client, { id, time, ...ctx }) {
+      handlers.get('p')(client, { ...ctx, list: [validPosePacket(id, 99, 100)] });
+      handlers.get('finish')(client, { ...ctx, id, time });
+    },
     join(sessionId, joinOpts = {}) {
       const sent = [];
       const client = {
@@ -86,7 +91,7 @@ test('host-only cup and difficulty selection, protocol capability check, and sta
 });
 
 test('persistent 8-entrant roster, stage lap targets, stale packet rejection, and full 4-stage lifecycle', () => {
-  const { room, send, join, broadcasts } = createTestRoom({ mode: 'aventura', difficulty: 'facil' });
+  const { room, send, join, broadcasts, finish } = createTestRoom({ mode: 'aventura', difficulty: 'facil' });
   const { client: host } = join('host-1', { name: 'Ana', car: 0, wheel: 'calle' });
   const { client: guest } = join('guest-2', { name: 'Beto', car: 3, wheel: 'pista' });
 
@@ -138,15 +143,15 @@ test('persistent 8-entrant roster, stage lap targets, stale packet rejection, an
     assert.equal(room.state.racers.get('host-1').done, false);
 
     // First valid finish is accepted; duplicate finish with faster time is ignored
-    send(host, 'finish', { ...ctx, id: 'host-1', time: 45.2 });
+    finish(host, { ...ctx, id: 'host-1', time: 45.2 });
     send(host, 'finish', { ...ctx, id: 'host-1', time: 12.1 });
     assert.equal(room.state.racers.get('host-1').done, true);
     assert.equal(room.state.racers.get('host-1').time, 45.2);
     assert.equal(room.state.racers.get('host-1').lap, expectedLaps[stage] + 1);
 
     // Guest finishes second; host also reports one bot finish
-    send(guest, 'finish', { ...ctx, id: 'guest-2', time: 47.8 });
-    send(host, 'finish', { ...ctx, id: 'bot-1', time: 49.0 });
+    finish(guest, { ...ctx, id: 'guest-2', time: 47.8 });
+    finish(host, { ...ctx, id: 'bot-1', time: 49.0 });
 
     // Tick finalizes stage since all humans are done
     room.tick();
@@ -216,7 +221,7 @@ test('loading timeout marks unready human as DNS while ready humans race, and al
 });
 
 test('host handoff transfers bot ownership without resetting skillSeed or scores', () => {
-  const { room, send, join } = createTestRoom({ mode: 'pana' });
+  const { room, send, join, finish } = createTestRoom({ mode: 'pana' });
   const { client: host } = join('host-1', { name: 'Ana' });
   const { client: guest } = join('guest-2', { name: 'Beto' });
 
@@ -246,7 +251,7 @@ test('host handoff transfers bot ownership without resetting skillSeed or scores
   room.tick();
   assert.equal(room.state.phase, 'race');
 
-  send(guest, 'finish', { ...ctx, id: 'bot-1', time: 51.4 });
+  finish(guest, { ...ctx, id: 'bot-1', time: 51.4 });
   assert.equal(room.state.racers.get('bot-1').done, true);
 });
 
@@ -273,16 +278,32 @@ test('GP rejects missing context, legacy poses, foreign ownership and stale effe
   assert.equal(room.state.racers.get('host').done, false);
 });
 
+test('a finish needs the last lap and a time the race has really run', () => {
+  const { room, send, join, finish } = createTestRoom({ mode: 'pana' });
+  const { client: host } = join('host');
+  send(host, 'start');
+  const ctx = room.currentContext();
+  send(host, 'loaded', ctx); room.tick();
+  room.state.startAt = Date.now() - 60_000; room.tick();
+  send(host, 'p', { ...ctx, list: [validPosePacket('host', 1, 50)] });
+  send(host, 'finish', { ...ctx, id: 'host', time: 59 });
+  assert.equal(room.state.racers.get('host').done, false, 'still on the first lap');
+  finish(host, { ...ctx, id: 'host', time: 1 });
+  assert.equal(room.state.racers.get('host').done, false, 'one second after a minute of racing');
+  finish(host, { ...ctx, id: 'host', time: 59 });
+  assert.equal(room.state.racers.get('host').done, true);
+});
+
 test('departures preserve accepted finishes and prior points, later stages are DNS', () => {
-  const { room, send, join } = createTestRoom({ mode: 'pana' });
+  const { room, send, join, finish } = createTestRoom({ mode: 'pana' });
   const { client: host } = join('host'), { client: guest } = join('guest');
   send(host, 'start');
   const ctx = room.currentContext();
   send(host, 'loaded', ctx); send(guest, 'loaded', ctx); room.tick();
   room.state.startAt = Date.now() - 10; room.tick();
-  send(host, 'finish', { ...ctx, id: 'host', time: 50 });
+  finish(host, { ...ctx, id: 'host', time: 50 });
   room.onDrop(host); room.onLeave(host);
-  send(guest, 'finish', { ...ctx, id: 'guest', time: 55 }); room.tick();
+  finish(guest, { ...ctx, id: 'guest', time: 55 }); room.tick();
   assert.equal(room.cupSession.ledger.find(r => r.id === 'host').classification, 'finished');
   const points = standings(room.cupSession).find(r => r.id === 'host').points;
   room.resultsAt = Date.now() - GP_MIN_READ_MS - 1;
@@ -290,7 +311,7 @@ test('departures preserve accepted finishes and prior points, later stages are D
   assert.equal(room.state.racers.get('host').dns, true);
   const ctx2 = room.currentContext();
   send(guest, 'loaded', ctx2); room.tick(); room.state.startAt = Date.now() - 10; room.tick();
-  send(guest, 'finish', { ...ctx2, id: 'guest', time: 70 }); room.tick();
+  finish(guest, { ...ctx2, id: 'guest', time: 70 }); room.tick();
   assert.equal(standings(room.cupSession).find(r => r.id === 'host').points, points);
   assert.equal(room.cupSession.ledger.find(r => r.id === 'host' && r.stage === 1).classification, 'dns');
 });

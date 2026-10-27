@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Las carreras online de Carreritas ya no aceptan tiempos inventados.**
+  El servidor solo da por terminada la carrera de un carro que llegó a su
+  última vuelta y con un tiempo que cuadra con su propio reloj.
 - **Escribir el código de sala en mayúsculas ya te lleva con tus panas.**
   La sala muestra el código en mayúsculas; antes, copiarlo así en «Tengo un
   código» abría una sala vacía aparte.
