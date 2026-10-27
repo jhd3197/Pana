@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ServerError } from '@colyseus/core';
-import { PanaRoom, roomState, ROOM_FULL, InputBuffer, fillBots, memberAvatar, BOT_SEAT } from '../src/room-kit.js';
+import { PanaRoom, roomState, ROOM_FULL, InputBuffer, fillBots, memberAvatar, BOT_SEAT, leadToken } from '../src/room-kit.js';
 import { cappedRoom, createLimiter, clientAddress } from '../src/colyseus.js';
 import RelayRoom, { GUEST_BYTES } from '../src/relay-room.js';
 import { serveStatic, MIME } from '../src/static.js';
@@ -183,4 +183,16 @@ test("the relay drops a guest's oversized message but carries the host's", () =>
   t.send(host.client, 'relay', big);
   assert.deepEqual(t.broadcasts.map(b => [b.msg.id, b.msg.v.kind]), [[2, 'hello'], [1, 'snapshot']]);
   t.room.onDispose();
+});
+
+test("with PANA_LEAD_SECRET only the gateway's token makes a lead", () => {
+  process.env.PANA_LEAD_SECRET = 'test-secret';
+  try {
+    const t = createTestRoom(PlainRoom, { code: 'lead-token' }, { name: 'domino' });
+    t.join('guest'); t.join('faker', { lead: '1' });
+    assert.equal(t.room.state.host, 'guest', 'lead=1 alone is ignored');
+    t.join('mayor', { lead: leadToken('test-secret', 'domino', 'lead-token') });
+    assert.equal(t.room.state.host, 'mayor');
+    t.room.onDispose();
+  } finally { delete process.env.PANA_LEAD_SECRET; }
 });

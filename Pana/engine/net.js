@@ -28,8 +28,9 @@ function loadSdk() {
   return sdk;
 }
 
-// ?lead=1: this player is a pana.sh party's Pana Mayor and hosts the room.
-export const leadFromUrl = () => new URLSearchParams(location.search).has('lead');
+// ?lead=…: this player is a party's Pana Mayor and hosts the room (the server
+// checks the gateway's token when it has PANA_LEAD_SECRET); '' when absent.
+export const leadFromUrl = () => new URLSearchParams(location.search).get('lead') ?? '';
 
 // This device's private rejoin key: a game that hands back what a pana left
 // behind (Póquer's stack) matches on it, never on a public name.
@@ -59,7 +60,7 @@ export async function joinRoom(game, { resume = true, ...options }) {
     try { room = await client.reconnect(token); } catch { room = null; }
   }
   try {
-    room ??= await client.joinOrCreate(game, { ...options, lead: !!options.lead, lobbyLoading: !!window.PANA_LOBBY_LOADING, rejoin: deviceKey() });
+    room ??= await client.joinOrCreate(game, { ...options, lead: options.lead || '', lobbyLoading: !!window.PANA_LOBBY_LOADING, rejoin: deviceKey() });
   } catch (error) {
     if (isFull(error)) error.full = true;
     throw error;

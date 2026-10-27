@@ -55,7 +55,7 @@ const QS = new URLSearchParams(location.search), AUTO = QS.has('auto'), SPEED = 
 // You drive as the pana you made in the hub; the rivals are random ones.
 const ME = { name: loadName(), avatar: loadAvatar() };
 // ?room=<code> races online with panas (online.js); without it the race is local.
-// ?lead=1 marks the party's Pana Mayor, who hosts the room.
+// ?lead=… marks the party's Pana Mayor, who hosts the room (a token when the server checks one).
 const ROOM = roomFromUrl();
 const onlineModulePromise = ROOM ? import('./online.js') : null;
 let net = null;
@@ -2260,7 +2260,7 @@ try { savedTrack = localStorage.getItem('carreritas:track') || localStorage.getI
 // The cauchos from the last visit (fallback calle) dress the turntable car.
 garage.wheel = wheelById(wallet.wheel).id;   // the profile migrated any old 'carreritas:wheels' pick
 garage.index = Math.max(0, CARS.findIndex(c => c.id === wallet.car));   // the room join below sends this car
-if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat inside the reconnection window
+if (ROOM) goOnline(ROOM, QS.get('lead') ?? '');   // first: a reload reclaims its seat inside the reconnection window
 // Suites call buildTrack() and read TRACKS synchronously: every map loads before
 // PANA_PREPARED (showCar below). startRace() loads its own map either way.
 await Promise.all([featsReady, comboReady, ghostReady, gatesReady]);   // milestone toasts, the style score and the ghost are ready before any race can start

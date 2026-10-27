@@ -20,6 +20,7 @@
 // fillBots() and InputBuffer. The room's cap comes from game.json `players`
 // (colyseus.js), so a room never sets maxClients itself.
 
+import crypto from 'node:crypto';
 import { Room, CloseCode, ServerError } from '@colyseus/core';
 import { schema, t } from '@colyseus/schema';
 import { normalizeAvatar, randomAvatar } from '../../engine/avatar.js';
@@ -33,6 +34,11 @@ export const ROOM_FULL = 409;
 // i.e. during the party's move. Later they join like anyone else, so a game
 // already running never hands over to a host without its state.
 export const LEAD_WINDOW_MS = 15000;
+// With PANA_LEAD_SECRET set (a party gateway in front), `lead` must be this
+// token, which only the gateway can make; without it any `lead` counts.
+export const leadToken = (secret, game, code) => crypto.createHmac('sha256', secret).update(`${game}:${code}`).digest('hex').slice(0, 32);
+const isLead = (room, lead, secret = process.env.PANA_LEAD_SECRET) =>
+  secret ? typeof lead === 'string' && lead === leadToken(secret, room.roomName, room.code) : !!lead;
 
 export const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16) || 'pana';
 export const cleanCode = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24);
@@ -162,7 +168,7 @@ export class PanaRoom extends Room {
     const member = this.createMember(client, options);
     this.state.players.set(client.sessionId, member);
     // The party's Pana Mayor hosts, even when a guest's tab got here first.
-    if (options.lead && !this.lead && Date.now() - this.createdAt < LEAD_WINDOW_MS) {
+    if (isLead(this, options.lead) && !this.lead && Date.now() - this.createdAt < LEAD_WINDOW_MS) {
       this.lead = client.sessionId;
       this.setHost(client.sessionId);
     } else if (!this.state.host) this.setHost(client.sessionId);

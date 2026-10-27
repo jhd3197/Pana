@@ -23,6 +23,11 @@ These instructions run the open-source application on your own server.
    `PANA_CLIENT_IP_HEADER` to the header it fills with the visitor's address
    (`X-Forwarded-For`, `CF-Connecting-IP`). Requests from the machine itself
    are not limited when no header is set.
+5. A party front end that moves groups between rooms marks its leader with
+   `?lead=` so they host the new room. Set `PANA_LEAD_SECRET` on both, and the
+   front end sends `HMAC-SHA256(secret, "<game>:<room>")` (hex, first 32
+   characters); any other `lead` is ignored. Without the secret, any `lead`
+   counts, which is fine when nothing links to Pana with one.
 
 ## Requirements
 
