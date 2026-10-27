@@ -87,10 +87,10 @@ export function locn(n, one, other, vars) {
   if (found == null) return fill(n === 1 ? one : other, all);
   if (typeof found === 'string') return fill(found, all);
   plural ??= new Intl.PluralRules(language);
-  return fill(found[plural.select(n)] ?? found.other ?? found.one, all);
+  return fill(found[plural.select(n)] || found.other || found.one, all);
 }
 
-// Numbers, dates and lists in the player's language.
+// Numbers and lists in the player's language.
 const formatters = new Map();
 const cached = (kind, options, make) => {
   const id = `${kind}:${JSON.stringify(options)}`;
@@ -99,9 +99,7 @@ const cached = (kind, options, make) => {
 };
 export const locale = language === SOURCE ? 'es-VE' : language;
 export const formatNumber = (n, options = {}) => cached('n', options, () => new Intl.NumberFormat(locale, options)).format(n);
-export const formatDate = (d, options = {}) => cached('d', options, () => new Intl.DateTimeFormat(locale, options)).format(d);
 export const formatList = (items, options = {}) => cached('l', options, () => new Intl.ListFormat(locale, options)).format(items);
-export const compareText = (a, b) => cached('c', {}, () => new Intl.Collator(locale)).compare(a, b);
 
 // ---------- loading ----------
 async function readDictionary(url) {

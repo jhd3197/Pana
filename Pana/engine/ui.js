@@ -82,7 +82,7 @@ export function createGameMenu({
       keyboardRows.hidden = state.device !== 'keyboard';
       touchHelp.hidden = state.device !== 'touch';
       padHint.hidden = state.device !== 'gamepad';
-      padHint.textContent = `${formatPadLabel('A', state.family)} · Elegir    ${formatPadLabel('B', state.family)} · Volver${pause ? `    ${formatPadLabel('LB / RB', state.family)} · Secciones` : ''}`;
+      padHint.textContent = `${formatPadLabel('A', state.family)} · ${loc('Elegir')}    ${formatPadLabel('B', state.family)} · ${loc('Volver')}${pause ? `    ${formatPadLabel('LB / RB', state.family)} · ${loc('Secciones')}` : ''}`;
     });
   });
   const uid = menuCount++ ? `-${menuCount}` : '';

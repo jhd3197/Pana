@@ -45,7 +45,6 @@ export function padControls(options = {}) {
   setup = { native: false, keys: {}, ...options };
   publishInput(true);
 }
-export const padSetup = () => setup;
 
 let detected=typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches?'touch':'keyboard',lastPointer=detected,padId='',connected=false;
 const inputListeners=new Set();
