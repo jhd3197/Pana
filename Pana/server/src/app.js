@@ -17,7 +17,8 @@ function gamePublicDir(game) {
 
 export function createRequestHandler(startedAt, colyseus) {
   return (req, res) => {
-    const url = new URL(req.url, 'http://localhost');
+    let url;
+    try { url = new URL(req.url, 'http://localhost'); } catch { return res.writeHead(400).end('bad request'); }
     const pathname = url.pathname;
     if (servePackedAsset(res, pathname)) return;
 
