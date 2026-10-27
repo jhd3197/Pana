@@ -10,6 +10,7 @@
 // with a tolerance.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 export const base = process.env.PANA_TEST_URL || process.env.PANA_QA_URL || 'http://localhost:8461';
@@ -32,7 +33,7 @@ export function launch(options = {}) {
 
 // Absolute path for screenshots, independent of the directory the suite ran from.
 export function qaDir(metaUrl) {
-  const dir = path.join(path.dirname(new URL(metaUrl).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', 'qa');
+  const dir = path.join(path.dirname(fileURLToPath(metaUrl)), '..', 'qa');
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
