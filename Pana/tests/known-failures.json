@@ -40,5 +40,11 @@
     "match": "plaza bounded driving-view geometry",
     "since": "2026-10-22",
     "note": "Reproduced on unchanged c497250 with --baseline; Plaza exceeds the existing 3.6 M driving-view triangle cap."
+  },
+  {
+    "suite": "Pana/games/bochinche/tests/browser.mjs",
+    "match": "mobile touch jump never reached the host",
+    "since": "2026-10-26",
+    "note": "The same touch-jump wait times out on 65ff921 (before the pana roster) with retries off; every step before it passes."
   }
 ]

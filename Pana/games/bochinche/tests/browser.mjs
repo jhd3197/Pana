@@ -132,7 +132,7 @@ try {
     room.onState=function(state){window.touchJumped ||= state.fight?.events.some(e=>e.type==='jump'&&e.slot===0);return render.call(this,state);};
   });
   await mobile.locator('#jump').tap();
-  await waitFor(mobile,()=>window.touchJumped);
+  await waitFor(mobile,()=>window.touchJumped).catch(e=>{throw new Error(`mobile touch jump never reached the host: ${e.message}`);});
   const boxes=await mobile.locator('.fighter-panel:visible').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,bottom:r.bottom};}));
   assert.equal(boxes.length,6);assert(boxes.every(b=>b.left>=0&&b.right<=844&&b.bottom<220));
   for(let i=1;i<boxes.length;i++)assert(boxes[i].left>=boxes[i-1].right);
