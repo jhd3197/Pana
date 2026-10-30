@@ -5,6 +5,7 @@ import { createArenaEnvironment } from '/engine/worlds/arenas.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { createMuelle } from './muelle.js';
 import { createNoche } from './noche.js';
+import { createTerminal } from './terminal.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import * as THREE from 'three';
@@ -21,7 +22,7 @@ import { splatTexture, pavingTexture } from '/engine/models/props/paintball.js';
 import { rng } from '/engine/random.js';
 import { WARM_DAY, PALETTE, BUNTING } from '/engine/worlds/look.js';
 import { Puffs } from '/engine/fx.js';
-import { SIZE, SPREAD, coverFor } from './rules.js';
+import { SIZE, SPREAD, coverFor, boundsFor } from './rules.js';
 
 // First person: the camera sits at the pana's eyes and the marker is held in view.
 const EYE = 1.55, LOOK_UP = .55, LOOK_DOWN = -.7;
@@ -37,8 +38,9 @@ export function createScene(canvas) {
   const hemi = new THREE.HemisphereLight(WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5); scene.add(hemi);
   const sun = new THREE.DirectionalLight(WARM_DAY.sun.color, 3.2); sun.position.set(-15, 35, 16); sun.castShadow = true; scene.add(sun.target);
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 80 }); sun.shadow.mapSize.setScalar(shadowSize(2048)); sun.shadow.normalBias = .03; scene.add(sun);
-  // Maps may bring their own light (the night field); everything else plays in the warm day.
-  const DAY = { background: WARM_DAY.background, fog: [90, 190], hemi: [WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5], sun: [WARM_DAY.sun.color, 3.2], exposure: 1.05, sky: true, glow: false };
+  // Maps may bring their own light (the night field) or a longer view (El Puerto); the
+  // rest of the warm day fills in whatever a map leaves out.
+  const DAY = { background: WARM_DAY.background, fog: [90, 190], far: 220, hemi: [WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5], sun: [WARM_DAY.sun.color, 3.2], exposure: 1.05, sky: true, glow: false };
   // At night a headlamp follows the camera and paint glows: balls carry a halo, splats shine.
   const headlamp = new THREE.SpotLight('#fff1d6', 60, 30, .42, .6, 1.3); headlamp.visible = false; headlamp.position.set(0, .1, 0); headlamp.target.position.set(0, -.6, -10); camera.add(headlamp, headlamp.target);
   const halo = glowTexture(), halos = new Map();
@@ -48,7 +50,7 @@ export function createScene(canvas) {
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sun.color.set(look.sun[0]); sun.intensity = look.sun[1]; renderer.toneMappingExposure = look.exposure;
-    sky.mesh.visible = look.sky !== false; glow = !!look.glow; headlamp.visible = glow;
+    sky.mesh.visible = look.sky !== false; glow = !!look.glow; headlamp.visible = glow; camera.far = look.far;
   }
   const defaultCourt = new THREE.Group(); scene.add(defaultCourt);
   let environment = null, mapId = ''; scene.userData.mapId = mapId;
@@ -146,8 +148,8 @@ export function createScene(canvas) {
     environment?.dispose(); environment = null; crates?.dispose(); crates = null; mapId = id; variant = layout; scene.userData.mapId = id;
     defaultCourt.visible = id === 'plaza'; cameraBounds.length = 0;
     if (id === 'plaza') { crates = plazaCover(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...defaultCameraBounds, ...crates.bounds); }
-    else { environment = id === 'muelle' ? createMuelle(layout) : id === 'noche' ? createNoche(layout) : createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) }); scene.add(environment.group); cameraBounds.push(...environment.cameraBounds); }
-    light(environment?.lighting || DAY);
+    else { environment = id === 'muelle' ? createMuelle(layout) : id === 'noche' ? createNoche(layout) : id === 'terminal' ? createTerminal(layout) : createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) }); scene.add(environment.group); cameraBounds.push(...environment.cameraBounds); }
+    light({ ...DAY, ...environment?.lighting });
     initialized = false;
   }
   // Paint bursts: impacts, knockouts. Stains are glossy blobs stuck to a pana's body.
@@ -274,7 +276,9 @@ export function createScene(canvas) {
       camera.clearViewOffset();
     } else {
       if (held) held.visible = false;
-      destination.set(lobby ? 0 : THREE.MathUtils.clamp((me?.x || 0) * .4, -10, 10), .8, lobby ? -1 : THREE.MathUtils.clamp((me?.z || 0) * .4, -9, 9));
+      // The overview follows the pana a little; on a long court it follows further.
+      const court = boundsFor(state.mapId), reach = court.x > court.z ? .8 : .4;
+      destination.set(lobby ? 0 : THREE.MathUtils.clamp((me?.x || 0) * reach, 17 - court.x, court.x - 17), .8, lobby ? -1 : THREE.MathUtils.clamp((me?.z || 0) * .4, 18 - court.z, court.z - 18));
       if (!initialized) { target.copy(destination); initialized = true; } else target.lerp(destination, 1 - Math.exp(-dt * 5));
       camera.fov = mobile ? 64 : 54;
       camera.position.copy(target).add(new THREE.Vector3(lobby ? 18 : 0, lobby ? 34 : mobile ? 38 : 34, lobby ? 48 : mobile ? 40 : 46)); camera.lookAt(target);

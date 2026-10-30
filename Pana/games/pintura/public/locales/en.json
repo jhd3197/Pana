@@ -29,10 +29,6 @@
     "one": "{n} taken",
     "other": "{n} taken"
   },
-  "{n} vida": {
-    "one": "{n} life",
-    "other": "{n} lives"
-  },
   "{name} capturó la bandera.": "{name} captured the flag.",
   "{name} te pintó desde {distance} m · sin vidas, observando la ronda": "{name} painted you from {distance} m · out of lives, watching the round",
   "{name} te pintó desde {distance} m · vuelves en {n}": "{name} painted you from {distance} m · back in {n}",
@@ -86,6 +82,7 @@
   "En teléfono camina con las flechas y arrastra el dedo por la pantalla para mirar. Mantén Pinta: la mira se pega al rival visible que tengas delante.": "On a phone, walk with the arrows and drag your finger across the screen to look. Hold Paint: the sight sticks to the visible rival in front of you.",
   "Explosión de pintura: un pepazo por rival.": "Paint explosion: one hit per rival.",
   "Falta un pana en el otro equipo": "The other team needs a player",
+  "Fortaleza": "Fortress",
   "Fuego amigo": "Friendly fire",
   "Girada": "Rotated",
   "Girar sin ratón": "Turn without a mouse",
@@ -119,6 +116,7 @@
   "Paintball entre panas": "Paintball among friends",
   "Paintball entre panas. Corre entre las barricadas, apunta y pinta a tus rivales. Rondas rápidas, reapariciones y bots para calentar.": "Paintball with friends. Run between barricades, aim and paint your rivals. Quick rounds, respawns and bots to warm up.",
   "Partes de tu kit": "Your kit's parts",
+  "Pasillos": "Corridors",
   "Patio": "Yard",
   "Pegajosa": "Sticky",
   "Pepazo": "Pepazo",
