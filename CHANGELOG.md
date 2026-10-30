@@ -12,6 +12,10 @@ becomes the GitHub release's notes.
   El anfitrión elige 4, 5 o 6 jugadores en la sala; con cinco o seis la mesa
   crece y trae un tablero redondo en estrella, con Morado y Naranja, y los
   puestos vacíos los juegan bots.
+- **Pepazo estrena El Puerto: dos bases frente a frente en un patio de contenedores.**
+  Una cancha de 116 m con el galpón en el medio, grúas pórtico y barcos en
+  el muelle; cada ronda trae Pasillos, Fortaleza o Laberinto, y los bots
+  ya cruzan el patio a buscarte aunque no te vean.
 - **En Dominó nadie puede ver tus fichas.**
   El servidor reparte y juega los bots; a cada pana solo le llegan sus
   propias fichas, y las de los demás quedan boca abajo hasta que se cierra la mano.

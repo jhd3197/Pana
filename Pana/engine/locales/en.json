@@ -99,6 +99,10 @@
     "one": "{n} player",
     "other": "{n} players"
   },
+  "{n} vida": {
+    "one": "{n} life",
+    "other": "{n} lives"
+  },
   "{n}/8 panas · el anfitrión da la salida": "{n}/8 players · the host starts the race",
   "{n}/8 panas · tú das la salida": "{n}/8 players · you start the race",
   "{name} · Bot": "{name} · Bot",
@@ -136,6 +140,7 @@
   "Al azar": "Random",
   "Al fondo": "All the way",
   "Al natural": "Au naturel",
+  "Alcance": "Reach",
   "Alguien": "Someone",
   "Altas": "High",
   "Alto": "High",
@@ -166,6 +171,7 @@
   "Bajo": "Low",
   "Barril": "Barrel",
   "Bot": "Bot",
+  "Botiquín": "First-aid kit",
   "Botones": "Buttons",
   "Brava": "Fierce",
   "Buen equilibrio; la de los teléfonos.": "A good balance; the phone default.",
@@ -278,6 +284,7 @@
   "Dificultad": "Difficulty",
   "Disfraces": "Disguises",
   "Disfraz": "Disguise",
+  "Dos bases frente a frente en el patio de contenedores, con el galpón en el medio.": "Two bases face off across the container yard, with the steel shed in the middle.",
   "Editar pana": "Edit pana",
   "Editar tu pana": "Edit your pana",
   "El ajuste automático bajó la resolución al {percent} % porque iba lento. Elegir una resolución lo reinicia.": "Auto adjust lowered the resolution to {percent} % because it was running slow. Picking a resolution resets it.",
@@ -690,6 +697,7 @@
   "Tab": "Tab",
   "Tabla": "Table",
   "Táctil": "Touch",
+  "Tambor": "Drum",
   "Teclado": "Keyboard",
   "Tengo un código": "I have a code",
   "Terminar prueba": "End test",
@@ -750,18 +758,11 @@
   "Volumen": "Volume",
   "Volumen general": "Main volume",
   "Volver": "Back",
-  "Volver a la sala": "Back to the room",
   "Volver a intentar": "Try again",
+  "Volver a la sala": "Back to the room",
   "Volver a Pana": "Back to Pana",
   "Vuelta": "Lap",
   "Vueltas": "Laps",
   "WASD": "WASD",
-  "Zona muerta": "Deadzone",
-  "Tambor": "Drum",
-  "Alcance": "Reach",
-  "{n} vida": {
-    "one": "{n} life",
-    "other": "{n} lives"
-  },
-  "Botiquín": "First-aid kit"
+  "Zona muerta": "Deadzone"
 }

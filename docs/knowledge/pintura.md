@@ -117,6 +117,39 @@ cached per glow state, so switching maps never reuses a lit one in the dark.
 The map holds six spotlights and one point light under the tower; keep the
 count low, every lit material pays for each one.
 
+## El Puerto
+
+Pepazo-only base-to-base map (`terminal` in `PAINT_ARENAS`, player name El
+Puerto; `puerto` is already Puerto Coco). It is the only rectangular court:
+`boundsFor(id)` gives `{ x, z }` half-extents (58 × 32 here, square elsewhere)
+and every fence test in `rules.js` goes through it; `sizeFor` is the larger
+one, for whatever frames the whole court. Even spawns are the west (orange)
+base, odd the east, so team seats and the two flag homes land in their own
+base. `public/terminal-layout.js` lists only the west half of each yard
+(Pasillos, Fortaleza, Laberinto) and mirrors it, so both teams always get the
+same map. Container sizes match the library `shippingContainer` (2.65 m per
+level, box = length + .3), so models and collision agree. Base barrels and
+ammo piles join a yard only where they keep the 2.4 m passages.
+
+The owner's prototype also had a playable second floor (container roofs,
+catwalks, the shed's mezzanine) and cranes that move containers between
+rounds. Pepazo simulates a flat court, so towers are just taller cover and
+the mezzanine is overhead scenery with no stairs.
+
+`public/terminal.js` returns `lighting: { fog, far }`: `scene.js` merges a
+map's partial lighting over `DAY`, and `far` sets the camera's far plane so
+the other base stays visible 104 m away. The quay sits at z = 80, well south
+of the fence: at z = 48 the "Ver la cancha" camera flew through the
+ship-to-shore crane booms. On a court wider than it is deep, the overview
+follows the pana at 0.8× instead of 0.4×.
+
+Bots out of sight of a rival more than 12 m away walk a 1 m navigation grid
+(`navGrid`, cached per map and layout) along a breadth-first distance field
+from the target, refreshed at most twice a second (`Arena.route`). Flag
+bots use the same route. Without it a bot circles in its own base forever on
+this court; the rules test proves a lone bot reaches an idle pana within 30 s
+on every layout.
+
 ## Look
 
 The plaza court (fence, paving, bunting and pueblo spread with `SIZE`/`SPREAD`) follows the paint-battle brand board: `engine/worlds/look.js`
@@ -146,7 +179,7 @@ Online matches continue through the shared menu; local practice pauses.
 
 ## Shared map selection
 
-Puerto Coco, Hato del Sol, Ruinas del Mango, Muelle de La Guaira and Cancha de Noche are available in the lobby.
+Puerto Coco, Hato del Sol, Ruinas del Mango, Muelle de La Guaira, Cancha de Noche and El Puerto are available in the lobby.
 The host chooses the setting; the selected map follows snapshots, practice,
 late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
 layout variants, collision, table clearance, lifecycle and verification.

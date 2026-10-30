@@ -83,6 +83,22 @@ test('the container yard is selectable, keeps bots inside and flags at its spawn
   for (const f of flags.flags) assert.equal(blocked(f.homeX, f.homeZ, 1.4, 'muelle'), false);
 });
 
+test('El Puerto: a long court, mirrored yards and bots that cross it', async () => {
+  const { coverFor, spawnsFor, boundsFor, sizeFor } = await import('../public/rules.js');
+  assert.deepEqual(boundsFor('terminal'), { x: 58, z: 32 }); assert.equal(sizeFor('terminal'), 58);
+  assert.equal(blocked(50, 0, .55, 'terminal'), false, 'open well past a square court'); assert.equal(blocked(0, 31.8, .55, 'terminal'), true, 'the fence runs along z = ±32');
+  spawnsFor('terminal').forEach((s, i) => assert.equal(Math.sign(s.x), i % 2 ? 1 : -1, 'even seats start west, odd seats east'));
+  for (const variant of [0, 1, 2]) for (const o of coverFor('terminal', variant)) assert.ok(coverFor('terminal', variant).some(m => Math.abs(m.x + o.x) < 1e-9 && m.z === o.z && m.w === o.w), `variant ${variant}: ${o.x},${o.z} has its mirror`);
+  for (const variant of [0, 1, 2]) {
+    const g = new Arena('terminal', 'normal', { mode: 'teams' });
+    g.add(1, { name: 'Pana', avatar: {} }); g.add(2, { name: 'Bot', avatar: {}, bot: true });
+    g.round = variant; g.start(); assert.equal(g.variant, variant);
+    const [me, rival] = g.players; let found = false;
+    for (let i = 0; i < 600 && !found; i++) { g.step(.05, new Map([[1, {}]])); found = Math.hypot(rival.x - me.x, rival.z - me.z) < 25; assert.equal(blocked(rival.x, rival.z, .55, 'terminal', variant), false); }
+    assert.ok(found, `variant ${variant}: the rival bot walks the lanes to a pana it cannot see within 30 s`);
+  }
+});
+
 test('aguante: three pepazos take a pana out, quiet seconds wash the paint off', () => {
   const g = arena({}), [a, b] = g.players;
   const shoot = () => { Object.assign(a, { x: -3, z: -4, shield: 0, cooldown: 0, reload: 0, ammo: 12 }); Object.assign(b, { x: 3, z: -4, shield: 0 }); g.step(.05, new Map([[1, { ax: 1, az: 0, fire: true }]])); for (let i = 0; i < 4; i++) g.step(.05); };

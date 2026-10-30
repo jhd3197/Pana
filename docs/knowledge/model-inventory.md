@@ -1,8 +1,8 @@
 # Pana — current model inventory
 
-Audited 2026-10-24. Generated from the real Studio registry plus a reviewed source ledger.
+Audited 2026-10-30. Generated from the real Studio registry plus a reviewed source ledger.
 
-**565 Studio resources**, including **25 Fauna entries**, **50 vegetation entries**, **32 vehicles** and **43 maps**. **142 resources are preview-only.** The separate ledger identifies **30 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**619 Studio resources**, including **25 Fauna entries**, **50 vegetation entries**, **32 vehicles** and **43 maps**. **142 resources are preview-only.** The separate ledger identifies **30 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -203,28 +203,28 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Offshore sailboat (older) | Bululú board | [island-scenery.js](../../Pana/engine/worlds/island-scenery.js#L42) | Four box-hull sailboats still bob offshore. Not the new peñero. |
 | Golden mango landmark tree | Bululú board | [island-environment.js](../../Pana/engine/worlds/island-environment.js#L39) | Special large fruit tree; separate construction from flora.mangoTree. |
 | Original plaza church | Escondidas; Cocina; Plaza circuit | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js#L45) | Active small bell tower/chapel, distinct from colonialChurch. |
-| Summit terminal | Páramo | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L5) | Upper/lower terminals; separate from the catalog heritage cable-car station. |
-| Aerial cable system and cabins | Páramo | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L19) | Six moving cabins, two cable curves; parameterized scene assembly. |
-| Cable support tower | Páramo | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L39) | Terrain-dependent support height. |
-| Diving school | Chi Chi | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L46) | Facade, dive tanks and diver flag. |
-| Coastal fort | Chi Chi | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L63) | Lookout landmark on the mountain coast. |
-| Maracaibo-inspired bridge | Plaza circuit | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L75) | Full driving bridge; use its actual road deck when previewing. |
-| Grandstand | Estadio | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L95) | Eight stands with different dimensions/colors, covering the infield and outer sectors. |
-| Canal villa | Plaza circuit | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L109) | Waterfront houses and balconies. |
-| Small rowboat (older) | Selva; Llanos | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L450) | Two active river boats. Keep shallow-water footprint when upgrading. |
-| Canal/dive-village boat | Plaza circuit; Chi Chi | [world-kit.js](../../Pana/games/carreritas/public/tracks/world-kit.js#L108) | Cabin option; different builder from the coast peñero and island sailboats. |
-| Faceted boulder | Páramo; Chi Chi; Desierto | [world-kit.js](../../Pana/games/carreritas/public/tracks/world-kit.js#L118) | Instanced geological scatter, separate from props.rock. |
-| Catch basket | Atrapa los mangos | [atrapa.js](../../Pana/games/bululu/public/minigames/atrapa.js#L22) | Held by players; needs a standalone preview adapter. |
-| Coconut | Atrapa los mangos | [atrapa.js](../../Pana/games/bululu/public/minigames/atrapa.js#L34) | Falling hazard with three dark eyes. |
+| Summit terminal | Páramo | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L6) | Upper/lower terminals; separate from the catalog heritage cable-car station. |
+| Aerial cable system and cabins | Páramo | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L20) | Six moving cabins, two cable curves; parameterized scene assembly. |
+| Cable support tower | Páramo | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L40) | Terrain-dependent support height. |
+| Diving school | Chi Chi | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L47) | Facade, dive tanks and diver flag. |
+| Coastal fort | Chi Chi | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L64) | Lookout landmark on the mountain coast. |
+| Maracaibo-inspired bridge | Plaza circuit | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L76) | Full driving bridge; use its actual road deck when previewing. |
+| Grandstand | Estadio | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L96) | Eight stands with different dimensions/colors, covering the infield and outer sectors. |
+| Canal villa | Plaza circuit | [world-landmarks.js](../../Pana/games/carreritas/public/tracks/world-landmarks.js#L110) | Waterfront houses and balconies. |
+| Small rowboat (older) | Selva; Llanos | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L459) | Two active river boats. Keep shallow-water footprint when upgrading. |
+| Canal/dive-village boat | Plaza circuit; Chi Chi | [world-kit.js](../../Pana/games/carreritas/public/tracks/world-kit.js#L109) | Cabin option; different builder from the coast peñero and island sailboats. |
+| Faceted boulder | Páramo; Chi Chi; Desierto | [world-kit.js](../../Pana/games/carreritas/public/tracks/world-kit.js#L119) | Instanced geological scatter, separate from props.rock. |
+| Catch basket | Atrapa los mangos | [atrapa.js](../../Pana/games/bululu/public/minigames/atrapa.js#L23) | Held by players; needs a standalone preview adapter. |
+| Coconut | Atrapa los mangos | [atrapa.js](../../Pana/games/bululu/public/minigames/atrapa.js#L35) | Falling hazard with three dark eyes. |
 | Board die | Bululú board | [board.js](../../Pana/games/bululu/public/board.js#L175) | Six face textures; game-driven roll animation. |
 | Golden mango cart | Bululú board | [board.js](../../Pana/games/bululu/public/board.js#L203) | Cart, striped umbrella, chalkboard and reward beam. |
 | Player token pedestal | Bululú board | [board.js](../../Pana/games/bululu/public/board.js#L541) | Colored base under shared character; not a new character sculpt. |
 | Breakable supply crate | All eight Carreritas races | [pickup-art.js](../../Pana/games/carreritas/public/pickup-art.js#L13) | Gameplay crate is distinct from the Plaza disguise crate. |
 | Collectible coin | All eight Carreritas races | [pickup-art.js](../../Pana/games/carreritas/public/pickup-art.js#L56) | Coin trails and pickups. |
-| Mango peel | Carreritas item use | [items.js](../../Pana/games/carreritas/public/items.js#L64) | Three peel strips and seed; not the whole mango. |
+| Mango peel | Carreritas item use | [items.js](../../Pana/games/carreritas/public/items.js#L88) | Three peel strips and seed; not the whole mango. |
 | Kitchen sign | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js#L66) | Signs and flour-sack labels; text variants grouped. |
-| Open pantry/fridge | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js#L30) | Shelves with tomatoes, milk cartons and shared cheese. Assembly includes its food dressing. |
-| Condiment bottles and flour sacks | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js#L44) | Counter and floor dressing made inline; two prop types grouped as one set. |
+| Open pantry/fridge | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js#L31) | Shelves with tomatoes, milk cartons and shared cheese. Assembly includes its food dressing. |
+| Condiment bottles and flour sacks | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js#L45) | Counter and floor dressing made inline; two prop types grouped as one set. |
 
 ## Scene assemblies, terrain, effects and embedded parts
 
@@ -233,20 +233,20 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Reliquia mine and temple | Reliquia; Studio map | [scene.js](../../Pana/games/reliquia/public/scene.js#L54) | Camp with the truck plus floors dealt from a seeded room deck; enclosed ruin galleries from the shared ruinShell, library props only. Treasure, artifact and tool models are cataloged in reliquia-treasure.js. |
 | Mounted horse and riding tack | Galope, Bululú coleo; hub tile | [llanero-rider.js](../../Pana/engine/models/fauna/farm/llanero-rider.js#L9) | Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt. |
 | Horse course and distinct wetlands | Galope; Studio map | [scene.js](../../Pana/games/galope/public/scene.js#L22) | Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately. |
-| Galope living Llanos landscape | Galope; Studio map | [landscape.js](../../Pana/games/galope/public/landscape.js#L15) | Hato gathering places, bank-connected canoe landing, moriche groves, green/dry grass, shore-only reeds and continuous far plain. All 13 new models have individual Studio previews. |
+| Galope living Llanos landscape | Galope; Studio map | [landscape.js](../../Pana/games/galope/public/landscape.js#L16) | Hato gathering places, bank-connected canoe landing, moriche groves, green/dry grass, shore-only reeds and continuous far plain. All 13 new models have individual Studio previews. |
 | Selva pyramid | Selva | [selva-world.js](../../Pana/games/carreritas/public/tracks/selva-world.js#L70) | Stepped landmark outside the driving tunnel. |
 | Road temple tunnel and portals | Selva | [selva-temple.js](../../Pana/games/carreritas/public/tracks/selva-temple.js#L38) | Swept along the actual road; not the unused standalone temple entrance. |
 | Selva plank crossing | Selva | [selva-world.js](../../Pana/games/carreritas/public/tracks/selva-world.js#L208) | Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit. |
-| Simple waterfall sheet | Selva | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L296) | Active older waterfall; separate from waterfallRocks in Chi Chi. |
-| Pond and river wrappers | Selva | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L286) | waterPond/waterRibbon wrap the shared water surface. |
+| Simple waterfall sheet | Selva | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L305) | Active older waterfall; separate from waterfallRocks in Chi Chi. |
+| Pond and river wrappers | Selva | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L295) | waterPond/waterRibbon wrap the shared water surface. |
 | Country grass tufts | Llanos; Desierto | [country-details.js](../../Pana/games/carreritas/public/tracks/country-details.js#L6) | Instanced grass, absent from the 22 plant catalog entries. |
 | Country entrance gantry | Llanos; Desierto | [country-details.js](../../Pana/games/carreritas/public/tracks/country-details.js#L17) | Map-specific entrance text and width. |
 | Country bridge crossings | Llanos; Desierto | [country-details.js](../../Pana/games/carreritas/public/tracks/country-details.js#L26) | Road-conforming decks/rails; not standalone rope bridges. |
 | Verge posts and dirt shoulders | Llanos; Desierto | [country-details.js](../../Pana/games/carreritas/public/tracks/country-details.js#L42) | Route-generated posts, shoulders and tire ruts. |
-| Llanos wetland landing | Llanos | [llanos-world.js](../../Pana/games/carreritas/public/tracks/llanos-world.js#L122) | Dock planks and supports; capybaras now use shared wildlife. |
-| Generic race edges | Multiple Carreritas circuits | [world-kit.js](../../Pana/games/carreritas/public/tracks/world-kit.js#L82) | Steel, timber and kerb variants, generated along the route. |
+| Llanos wetland landing | Llanos | [llanos-world.js](../../Pana/games/carreritas/public/tracks/llanos-world.js#L126) | Dock planks and supports; capybaras now use shared wildlife. |
+| Generic race edges | Multiple Carreritas circuits | [world-kit.js](../../Pana/games/carreritas/public/tracks/world-kit.js#L83) | Steel, timber and kerb variants, generated along the route. |
 | Chevrons/start line/sector signs/ramps | Carreritas | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L144) | Four route-generated furniture families; ramps depend on each track definition. |
-| Race terrain and waterways | Carreritas | [world-kit.js](../../Pana/games/carreritas/public/tracks/world-kit.js#L30) | Terrain, sea and stream generators; each map supplies shape and palette. |
+| Race terrain and waterways | Carreritas | [world-kit.js](../../Pana/games/carreritas/public/tracks/world-kit.js#L31) | Terrain, sea and stream generators; each map supplies shape and palette. |
 | Water surface system | Carreritas | [water-surface.js](../../Pana/engine/models/effects/water-surface.js#L36) | Ocean, river, canal and pool configurations; not separate species/objects. |
 | Bululú tide wash | Bululú circuit | [bululu-tide.js](../../Pana/games/carreritas/public/tracks/bululu-tide.js#L20) | Animated surface tied to tire grip and wetness. |
 | Board island terrain | Bululú board | [island-terrain.js](../../Pana/engine/worlds/island-terrain.js#L79) | Shoreline, beach, hills, river and path cuts. |
@@ -254,26 +254,26 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Tepui and waterfall | Bululú board | [island-landscape.js](../../Pana/engine/worlds/island-landscape.js#L83) | Three mesas; one waterfall/mist landmark. Not the Selva waterfall. |
 | Living sky and cloud layers | Carreritas; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours | [sky.js](../../Pana/engine/worlds/sky.js#L7) | One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds. |
 | Island dock and village light strings | Bululú board | [island-environment.js](../../Pana/engine/worlds/island-environment.js#L194) | Placement-specific geometry; not separate library factories. |
-| Race-island piers | Bululú circuit | [bululu.js](../../Pana/games/carreritas/public/tracks/bululu.js#L113) | Inline harbor planks and pilings. |
+| Race-island piers | Bululú circuit | [bululu.js](../../Pana/games/carreritas/public/tracks/bululu.js#L114) | Inline harbor planks and pilings. |
 | Plaza streets, gardens and mirador | Plaza circuit | [plaza-town.js](../../Pana/games/carreritas/public/tracks/plaza-town.js#L49) | Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately. |
 | Plaza waterfront canals and docks | Plaza circuit | [plaza-waterfront.js](../../Pana/games/carreritas/public/tracks/plaza-waterfront.js#L23) | Canal network and moorings around canalVilla. |
 | Continuous circuit surroundings | All eight Carreritas races | [world-horizon.js](../../Pana/engine/worlds/coastal/world-horizon.js#L15) | Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron. |
 | Plaza outer neighborhoods | Plaza circuit | [plaza-outskirts.js](../../Pana/games/carreritas/public/tracks/plaza-outskirts.js#L10) | Connected outer lanes, 51 additional houses, 26 planted courtyards and road-safe groves. Reuses existing house and plant factories. |
-| Llanos pastures and gallery woodland | Llanos | [llanos-landscape.js](../../Pana/games/carreritas/public/tracks/llanos-landscape.js#L9) | Four pastures, repeated ranch fences, harvest bales, morichal palms and distant ceiba groves. Existing animals retain their space. |
-| Stadium venue grounds | Estadio | [stadium-grounds.js](../../Pana/games/carreritas/public/tracks/stadium-grounds.js#L10) | Entrance, perimeter, concourse, planted parking and infields. Parked copies reuse real garage vehicles with no driver. |
-| Football pitch and goals | Estadio | [estadio.js](../../Pana/games/carreritas/public/tracks/estadio.js#L32) | Pitch stripes, markings and two goal frames. |
-| Pit garages | Estadio | [estadio.js](../../Pana/games/carreritas/public/tracks/estadio.js#L55) | Eight inline garage blocks and numbered signs. |
-| Floodlights and scoreboard | Estadio | [estadio.js](../../Pana/games/carreritas/public/tracks/estadio.js#L73) | Two inline landmark families. |
-| Basketball court and banners | Estadio | [estadio.js](../../Pana/games/carreritas/public/tracks/estadio.js#L87) | Court and sponsor panels; shared hoops already cataloged. |
+| Llanos pastures and gallery woodland | Llanos | [llanos-landscape.js](../../Pana/games/carreritas/public/tracks/llanos-landscape.js#L10) | Four pastures, repeated ranch fences, harvest bales, morichal palms and distant ceiba groves. Existing animals retain their space. |
+| Stadium venue grounds | Estadio | [stadium-grounds.js](../../Pana/games/carreritas/public/tracks/stadium-grounds.js#L11) | Entrance, perimeter, concourse, planted parking and infields. Parked copies reuse real garage vehicles with no driver. |
+| Football pitch and goals | Estadio | [estadio.js](../../Pana/games/carreritas/public/tracks/estadio.js#L33) | Pitch stripes, markings and two goal frames. |
+| Pit garages | Estadio | [estadio.js](../../Pana/games/carreritas/public/tracks/estadio.js#L56) | Eight inline garage blocks and numbered signs. |
+| Floodlights and scoreboard | Estadio | [estadio.js](../../Pana/games/carreritas/public/tracks/estadio.js#L74) | Two inline landmark families. |
+| Basketball court and banners | Estadio | [estadio.js](../../Pana/games/carreritas/public/tracks/estadio.js#L88) | Court and sponsor panels; shared hoops already cataloged. |
 | Chi Chi retaining walls and river bridges | Chi Chi | [chichi-village.js](../../Pana/games/carreritas/public/tracks/chichi-village.js#L41) | Bridge geometry follows road/river. Retaining walls in chichi.js. |
 | Bululú board tiles, paths, stairs and pins | Bululú board | [board.js](../../Pana/games/bululu/public/board.js#L62) | Tile-kind texture variants, raised supports, fork paths and waypoint sprites. |
 | Sunny minigame stage | Both Bululú minigames | [stage.js](../../Pana/games/bululu/public/minigames/stage.js#L19) | Sky, ground, clouds and shared landscape props. |
-| Raft and spinning striped log | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L47) | Player platforms, floats, central post, rotating obstacle and sandbars. |
-| Minigame wave surface | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L40) | Older deformed plane, separate from the shared water shader. |
-| Boost pad | Carreritas | [items.js](../../Pana/games/carreritas/public/items.js#L88) | Animated ground marker, separate from collectible item models. |
-| Puffs, debris and speech bubbles | Bululú; Carreritas | [fx.js](../../Pana/engine/fx.js#L375) | Particle/sprite effects, not scenery inventory counts. |
+| Raft and spinning striped log | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L48) | Player platforms, floats, central post, rotating obstacle and sandbars. |
+| Minigame wave surface | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L41) | Older deformed plane, separate from the shared water shader. |
+| Boost pad | Carreritas | [items.js](../../Pana/games/carreritas/public/items.js#L112) | Animated ground marker, separate from collectible item models. |
+| Puffs, debris and speech bubbles | Bululú; Carreritas | [fx.js](../../Pana/engine/fx.js#L395) | Particle/sprite effects, not scenery inventory counts. |
 | Crate fragment bursts | Carreritas | [fragments.js](../../Pana/games/carreritas/public/fragments.js#L6) | Gameplay fragments reused from crate art. |
-| Steam, fire and order dressing | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js#L68) | Cooking state effects; recipes also have raw/prepared/cooked/burned variants. |
+| Steam, fire and order dressing | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js#L70) | Cooking state effects; recipes also have raw/prepared/cooked/burned variants. |
 | Thermal steam and water details | Chi Chi; shared fountains/waterfalls | [thermal-steam.js](../../Pana/engine/models/effects/thermal-steam.js#L5) | Reusable steam, droplets and ripple systems; water details also in water-details.js. |
 | Character accessories and expressions | All games; character editor | [avatar.js](../../Pana/engine/avatar.js#L25) | Eight non-empty hat options, three glasses options, five expression options and two non-empty extras. Some options share geometry/poses. Outfits are already cataloged; accessories and dizzy stars are embedded parts. |
 
@@ -281,13 +281,13 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 
 | Resource / family | Current location | Source | Finding |
 | --- | --- | --- | --- |
-| Old windmill | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L377) | Current Llanos uses ranch-props.waterWindmill. |
-| Old arepa stand | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L407) | Current maps use streetFoodKiosk. |
-| Generic dock | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L437) | Maps now build docks against their shore/deck. |
-| Generic sailboat | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L462) | No production caller; internally uses rowboat, which remains active. |
-| Generic plank/rope bridge | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L321) | Active crossings have road-specific decks or newer shared factories. |
-| Distant mountain ring | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L481) | Current maps use their own terrain or island-landscape. |
-| Old route landscape scatter | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L525) | Current worlds supply habitat-specific planting. |
+| Old windmill | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L386) | Current Llanos uses ranch-props.waterWindmill. |
+| Old arepa stand | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L416) | Current maps use streetFoodKiosk. |
+| Generic dock | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L446) | Maps now build docks against their shore/deck. |
+| Generic sailboat | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L471) | No production caller; internally uses rowboat, which remains active. |
+| Generic plank/rope bridge | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L330) | Active crossings have road-specific decks or newer shared factories. |
+| Distant mountain ring | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L490) | Current maps use their own terrain or island-landscape. |
+| Old route landscape scatter | No current production callsite | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L534) | Current worlds supply habitat-specific planting. |
 | Tire-wall generator | Runtime hook only; current tracks disable walls | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L65) | Code is still wired conditionally; distinguish dormant configuration from dead code. |
 | Fence-ring generator | Runtime hook only; no current track enables fence | [track-kit.js](../../Pana/games/carreritas/public/track-kit.js#L101) | Do not remove without checking future track configuration. |
 
@@ -384,7 +384,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Bote medio hundido · rowboat-sunk | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | rowboat |
 | Fuego fatuo · wisp | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | wisp |
 
-### Costa (29)
+### Costa (32)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -415,6 +415,9 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Almacén del muelle · transit-warehouse | Carreritas | [port-cargo.js](../../Pana/engine/models/props/port-cargo.js) | transitWarehouse |
 | Bolardo del puerto · port-bollard | Carreritas | [port-cargo.js](../../Pana/engine/models/props/port-cargo.js) | portBollard |
 | Grúa del puerto · port-crane | Carreritas | [port-crane.js](../../Pana/engine/models/props/port-crane.js) | portCrane |
+| Grúa pórtico del patio · yard-gantry | Pepazo | [port-crane.js](../../Pana/engine/models/props/port-crane.js) | yardGantry |
+| Galpón de acero · steel-shed | Pepazo | [port-cargo.js](../../Pana/engine/models/props/port-cargo.js) | steelShed |
+| Tambor de aceite · oil-drum | Pepazo | [port-cargo.js](../../Pana/engine/models/props/port-cargo.js) | oilDrum |
 | Buque portacontenedores · cargo-ship | Carreritas | [cargo-ship.js](../../Pana/engine/models/props/cargo-ship.js) | cargoShip |
 | Fortín de la costa · coastal-fortress | Carreritas | [coastal-fort.js](../../Pana/engine/models/props/coastal-fort.js) | coastalFortress |
 
@@ -575,7 +578,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Racimo de cristales · crystal-cluster | Preview only | [crystals.js](../../Pana/engine/models/props/crystals.js) | crystalCluster |
 | Cristales del arcoíris · crystal-garden | Preview only | [crystals.js](../../Pana/engine/models/props/crystals.js) | crystalGarden |
 
-### Objetos (153)
+### Objetos (204)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -654,6 +657,8 @@ The following list is generated, not manually copied. “In use” is the catalo
 | El Cohetón · paint-coheton | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
 | El Acolchado · paint-acolchado | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintVest |
 | Marcadora de pintura · paint-marker | ¡Pintura! | [paintball.js](../../Pana/engine/models/props/paintball.js) | createPaintMarker |
+| Toldo de equipo · team-canopy | Pepazo | [paintball.js](../../Pana/engine/models/props/paintball.js) | teamCanopy |
+| Sacos de arena · sandbag-wall | Pepazo | [paintball.js](../../Pana/engine/models/props/paintball.js) | sandbagWall |
 | Carretilla de carga · cargo-handcart | Carreritas | [cargo-handcart.js](../../Pana/engine/models/props/cargo-handcart.js) | cargoHandcart |
 | Casa amarilla · colonial-yellow | Carreritas | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
 | Casa azul con balcón · colonial-balcony | Carreritas | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
@@ -689,6 +694,27 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Tablero de Ludo · ludo-board | Ludo | [board-model.js](../../Pana/games/ludo/public/board-model.js) | createLudoBoard |
 | Ficha de Ludo · ludo-pawn | Ludo | [board-model.js](../../Pana/games/ludo/public/board-model.js) | createLudoPawn |
 | Dado de Ludo · ludo-die | Ludo | [board-model.js](../../Pana/games/ludo/public/board-model.js) | createLudoDie |
+| Ludo · Chócala · ludo-highfive | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Resbalón · ludo-slip | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Rodar · ludo-rollbarrel | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Moonwalk · ludo-moonwalk | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Resorte · ludo-spring | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Esquivar · ludo-dodge | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Caballito · ludo-piggy | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Paraguas · ludo-umbrella | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Túnel · ludo-tunnel | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Chicle · ludo-gum | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMotionPreview |
+| Ludo · Inicio de partida · ludo-intro | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · Tu turno · ludo-turn | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · Dado en suspenso · ludo-suspense | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · Casilla segura · ludo-safe | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · Bloqueo · ludo-block | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · Salto de rana · ludo-leap | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · Recta final · ludo-sprint | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · ¡Casi! · ludo-nearmiss | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · Sin movimientos · ludo-nomoves | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · A dormir · ludo-sleep | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
+| Ludo · Podio · ludo-podium | Ludo | [studio-preview.js](../../Pana/games/ludo/public/studio-preview.js) | createLudoMomentPreview |
 | Tarima del concurso · qqsmp-stage | ¿Quién quiere ser mi pana? | [studio-set.js](../../Pana/games/qqsmp/public/studio-set.js) | createQuizStage |
 | Podio del concurso · qqsmp-podium | ¿Quién quiere ser mi pana? | [studio-set.js](../../Pana/games/qqsmp/public/studio-set.js) | createQuizPodium |
 | Atril del animador · qqsmp-host-desk | ¿Quién quiere ser mi pana? | [studio-set.js](../../Pana/games/qqsmp/public/studio-set.js) | createHostDesk |
@@ -726,6 +752,34 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Gradas · chapita-gradas | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createBleachers |
 | Superbloque · chapita-superbloque | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createSuperbloque |
 | Tuyuyo · chapita-tuyuyo | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createTuyuyo |
+| Palo partido · chapita-palo-partido | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createPaloPartido |
+| Pelota · chapita-pelota | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createPelota |
+| Bate de madera · chapita-bate | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createBate |
+| Perro callejero · chapita-perro | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createPerro |
+| Alcantarilla · chapita-alcantarilla | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createAlcantarilla |
+| Periódico El Barrio · chapita-periodico | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createPeriodico |
+| Bola de paja · chapita-bola-de-paja | Chapita | [studio-set.js](../../Pana/games/chapita/public/studio-set.js) | createBolaDePaja |
+| Chapita · Lanzar y batear · chapita-jugada-hit | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Solo batear · chapita-jugada-swing | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Swing fallido · chapita-jugada-miss | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Helicóptero · chapita-jugada-helicopter | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Solo lanzar · chapita-jugada-pitch | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Discusión · chapita-jugada-argue | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Palo zafado · chapita-jugada-slip | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Bumerán · chapita-jugada-boomerang | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Chapazo · chapita-jugada-bean | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · La ventana · chapita-jugada-window | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Atrapada · chapita-jugada-catch | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Palo partido · chapita-jugada-broken | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Jonrón · chapita-jugada-home | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · El perro · chapita-jugada-dog | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Pa'l techo · chapita-jugada-roof | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Alcantarilla · chapita-jugada-drain | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Pinball · chapita-jugada-pinball | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · El abuelo · chapita-jugada-grandpa | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · ¡Carro! · chapita-jugada-car | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · ¡A comer! · chapita-jugada-dinner | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
+| Chapita · Celebración · chapita-jugada-dance | Chapita | [studio-preview.js](../../Pana/games/chapita/public/studio-preview.js) | createChapitaJugadaPreview |
 | Guante de boxeo · trifulca-guante | Trifulca | [set.js](../../Pana/games/trifulca/public/set.js) | boxingGlove |
 | Guante de boxeo azul · trifulca-guante-azul | Trifulca | [set.js](../../Pana/games/trifulca/public/set.js) | boxingGlove |
 | Casco de moto abierto · trifulca-casco | Trifulca | [set.js](../../Pana/games/trifulca/public/set.js) | motoHelmet |

@@ -4,6 +4,7 @@ import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/worlds/arena-layouts.js';
 import { MUELLE_COVERS, MUELLE_SPAWNS, MUELLE_SIZE } from './muelle-layout.js';
 import { NOCHE_COVERS, NOCHE_SPAWNS, NOCHE_SIZE } from './noche-layout.js';
+import { TERMINAL_COVERS, TERMINAL_SPAWNS, TERMINAL_BOUNDS } from './terminal-layout.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/play/difficulty.js';
 import { clamp } from '../../../engine/random.js';
 import { locKey } from '../../../engine/i18n.js';
@@ -34,14 +35,18 @@ export function cleanInput(input = {}) {
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
   return { x, z, ax, az, weapon: ['pistol', 'scatter', 'rapid', 'rocket'].includes(input.weapon) ? input.weapon : null, fire: input.fire === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true };
 }
-export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : id === 'noche' ? NOCHE_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
-// Half-width of each map's court: the container yard is larger still.
-export const sizeFor = id => id === 'muelle' ? MUELLE_SIZE : id === 'noche' ? NOCHE_SIZE : SIZE;
+export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : id === 'noche' ? NOCHE_SPAWNS : id === 'terminal' ? TERMINAL_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
+// Half-extents of each map's court. Most are square; El Puerto runs long between its two bases.
+const BOUNDS = new Map([['muelle', { x: MUELLE_SIZE, z: MUELLE_SIZE }], ['noche', { x: NOCHE_SIZE, z: NOCHE_SIZE }], ['terminal', TERMINAL_BOUNDS]]);
+export const boundsFor = id => BOUNDS.get(id) || { x: SIZE, z: SIZE };
+// The larger half-extent, for whatever frames the whole court.
+export const sizeFor = id => { const { x, z } = boundsFor(id); return Math.max(x, z); };
+const outside = (id, x, z, margin = 0) => { const b = boundsFor(id); return Math.abs(x) > b.x - margin || Math.abs(z) > b.z - margin; };
 // Every map has three fixed layouts and the round number picks one, so a rematch
 // plays a different court. Not random: everyone learns them.
 export const VARIANTS = 3;
 // Spanish keys: clients show them with loc().
-const VARIANT_NAMES = { muelle: [locKey('Patio'), locKey('Laberinto'), locKey('Torres')], noche: [locKey('Torre'), locKey('Inflables'), locKey('Tubos')], default: [locKey('Clásica'), locKey('Girada'), locKey('Cerrada')] };
+const VARIANT_NAMES = { muelle: [locKey('Patio'), locKey('Laberinto'), locKey('Torres')], terminal: [locKey('Pasillos'), locKey('Fortaleza'), locKey('Laberinto')], noche: [locKey('Torre'), locKey('Inflables'), locKey('Tubos')], default: [locKey('Clásica'), locKey('Girada'), locKey('Cerrada')] };
 export const variantName = (id, variant = 0) => (VARIANT_NAMES[id] || VARIANT_NAMES.default)[variant % VARIANTS];
 const gap = (a, b) => Math.max(Math.abs(a.x - b.x) - (a.w + b.w) / 2, Math.abs(a.z - b.z) - (a.d + b.d) / 2);
 // "Girada" turns the cover a quarter; the spawns and ring are symmetric under it.
@@ -65,6 +70,7 @@ export function coverFor(id, variant = 0) {
   let cover;
   if (id === 'muelle') cover = MUELLE_COVERS[variant];
   else if (id === 'noche') cover = NOCHE_COVERS[variant];
+  else if (id === 'terminal') cover = TERMINAL_COVERS[variant];
   else {
     const layout = arenaLayout(id), base = layout ? spread(layout.cover) : COVER;
     cover = [base, rotate(base), closed(base, layout ? id : 'plaza')][variant];
@@ -72,8 +78,7 @@ export function coverFor(id, variant = 0) {
   covers.set(key, cover); return cover;
 }
 export function blocked(x, z, radius = RADIUS, mapId = 'plaza', variant = 0) {
-  const size = sizeFor(mapId);
-  return Math.abs(x) > size - radius || Math.abs(z) > size - radius || coverFor(mapId, variant).some(o => Math.abs(x - o.x) < o.w / 2 + radius && Math.abs(z - o.z) < o.d / 2 + radius);
+  return outside(mapId, x, z, radius) || coverFor(mapId, variant).some(o => Math.abs(x - o.x) < o.w / 2 + radius && Math.abs(z - o.z) < o.d / 2 + radius);
 }
 export function segmentBox(x, z, dx, dz, o, padding = 0) {
   let near = 0, far = 1;
@@ -82,6 +87,26 @@ export function segmentBox(x, z, dx, dz, o, padding = 0) {
     else { let a = (lo - p) / d, b = (hi - p) / d; if (a > b) [a, b] = [b, a]; near = Math.max(near, a); far = Math.min(far, b); if (near > far) return null; }
   }
   return near;
+}
+// Bots walk to rivals they cannot see: open 1 m cells per layout, and a
+// breadth-first distance field from the target's cell, refreshed twice a second.
+const grids = new Map();
+function navGrid(id, variant) {
+  const key = `${id}:${variant}`; if (grids.has(key)) return grids.get(key);
+  const b = boundsFor(id), nx = Math.floor(b.x * 2), nz = Math.floor(b.z * 2), open = new Uint8Array(nx * nz);
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) open[j * nx + i] = blocked(i + .5 - b.x, j + .5 - b.z, .6, id, variant) ? 0 : 1;
+  const grid = { b, nx, nz, open, cell: (x, z) => clamp(Math.floor(z + b.z), 0, nz - 1) * nx + clamp(Math.floor(x + b.x), 0, nx - 1) };
+  grids.set(key, grid); return grid;
+}
+const STEPS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+function distanceField(grid, target) {
+  const { nx, nz, open } = grid, far = new Int32Array(nx * nz).fill(-1), queue = new Int32Array(nx * nz); let head = 0, tail = 0;
+  far[target] = 0; queue[tail++] = target;
+  while (head < tail) {
+    const c = queue[head++], i = c % nx, j = (c - i) / nx;
+    for (const [di, dj] of STEPS.slice(0, 4)) { const a = i + di, b = j + dj, n = b * nx + a; if (a >= 0 && b >= 0 && a < nx && b < nz && open[n] && far[n] < 0) { far[n] = far[c] + 1; queue[tail++] = n; } }
+  }
+  return far;
 }
 function segmentCircle(x, z, dx, dz, p) {
   const a = dx * dx + dz * dz, ox = x - p.x, oz = z - p.z, b = 2 * (ox * dx + oz * dz), c = ox * ox + oz * oz - .7 ** 2;
@@ -136,6 +161,23 @@ export class Arena {
     })[0];
     Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, stains: [], calm: 0, stamina: 1 }); this.refill(p);
   }
+  // A unit step for bot p along open cells toward (tx, tz), or null when no route is known.
+  route(p, tx, tz) {
+    const grid = navGrid(this.mapId, this.variant), target = grid.cell(tx, tz);
+    this.routes ||= new Map(); let route = this.routes.get(p.id);
+    if (!route || route.map !== `${this.mapId}:${this.variant}` || (route.target !== target && route.time - this.time > .5)) {
+      route = { map: `${this.mapId}:${this.variant}`, target, time: this.time, far: distanceField(grid, target) }; this.routes.set(p.id, route);
+    }
+    const { nx, nz, open } = grid, here = grid.cell(p.x, p.z), i = here % nx, j = (here - i) / nx; let best = null, score = route.far[here] >= 0 ? route.far[here] : Infinity;
+    for (const [di, dj] of STEPS) {
+      const a = i + di, b = j + dj, n = b * nx + a;
+      if (a < 0 || b < 0 || a >= nx || b >= nz || route.far[n] < 0 || (di && dj && (!open[j * nx + a] || !open[b * nx + i]))) continue;
+      const cost = route.far[n] + (di && dj ? .4 : 0); if (cost < score) { score = cost; best = n; }
+    }
+    if (best === null) return null;
+    const x = best % nx + .5 - grid.b.x - p.x, z = Math.floor(best / nx) + .5 - grid.b.z - p.z, length = Math.hypot(x, z) || 1;
+    return { x: x / length, z: z / length };
+  }
   bot(p) {
     const enemies = this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
     const q = enemies[0]; if (!q) return cleanInput();
@@ -146,12 +188,16 @@ export class Arena {
     const wobble = Math.sin(t * 2.3 + p.id * 1.7) * skill.wobble, aimX = dx / length * Math.cos(wobble) - dz / length * Math.sin(wobble), aimZ = dx / length * Math.sin(wobble) + dz / length * Math.cos(wobble);
     let x = clear ? dx / length * (length > 9 ? .8 : -.25) - dz / length * strafe * .6 : Math.cos(t * .6);
     let z = clear ? dz / length * (length > 9 ? .8 : -.25) + dx / length * strafe * .6 : Math.sin(t * .6);
-    if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { x = -dz / length; z = dx / length; }
+    // A rival out of sight and far away: walk the open lanes toward them.
+    const hunt = !clear && length > 12 && this.route(p, q.x, q.z);
+    if (hunt) ({ x, z } = hunt);
+    else if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { x = -dz / length; z = dx / length; }
     if (this.options.flag) {
       const carried = this.flags.find(f => f.carrier === p.id), target = carried ? this.flags[p.team] : this.flags[1 - p.team];
       const tx = carried ? target.homeX : target.x, tz = carried ? target.homeZ : target.z, d = Math.hypot(tx - p.x, tz - p.z) || 1;
       x = (tx - p.x) / d; z = (tz - p.z) / d;
-      if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { const swap = x; x = -z; z = swap; }
+      const step = d > 2 && this.route(p, tx, tz); if (step) ({ x, z } = step);
+      else if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { const swap = x; x = -z; z = swap; }
     }
     return cleanInput({ x, z, ax: aimX, az: aimZ, fire: clear && length < 34 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear });
   }
@@ -199,7 +245,7 @@ export class Arena {
         const t = segmentCircle(ball.x, ball.z, dx, dz, p); if (t !== null && t < earliest) { earliest = t; victim = p; }
       }
       ball.x += dx * Math.min(1, earliest); ball.z += dz * Math.min(1, earliest); ball.life -= dt;
-      if (earliest <= 1 || Math.abs(ball.x) > sizeFor(this.mapId) || Math.abs(ball.z) > sizeFor(this.mapId)) {
+      if (earliest <= 1 || outside(this.mapId, ball.x, ball.z)) {
         ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern });
         if (ball.rocket) this.blast(ball,ball.splash);
         else if (victim) this.hit(victim, this.players.find(p => p.id === ball.owner), ball.color, { x: ball.vx, z: ball.vz });
@@ -229,7 +275,7 @@ export class Arena {
   }
   stepGrenades(dt) {
     for(const g of this.grenades) {
-      const dx=g.vx*dt,dz=g.vz*dt,wall=this.cover.some(o=>segmentBox(g.x,g.z,dx,dz,o,.15)!==null) || Math.abs(g.x+dx)>sizeFor(this.mapId)-.2 || Math.abs(g.z+dz)>sizeFor(this.mapId)-.2;
+      const dx=g.vx*dt,dz=g.vz*dt,wall=this.cover.some(o=>segmentBox(g.x,g.z,dx,dz,o,.15)!==null) || outside(this.mapId,g.x+dx,g.z+dz,.2);
       if(wall) { if(g.kind==='chispita' && !g.bounced) { g.vx*=-.65;g.vz*=-.65;g.bounced=true; } else { g.vx=g.vz=0; } }
       else { g.x+=dx;g.z+=dz; }
       if(g.kind==='chispita' && !g.bounced && g.life<g.total/2) {g.bounced=true;g.vx*=.75;g.vz*=.75;}
