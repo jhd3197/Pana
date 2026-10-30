@@ -46,7 +46,7 @@ for (const { id } of ARENAS.filter(m => m.id !== 'plaza')) {
 
   test(`${id}: selected cover stops paint, including a long segment across a thin wall`, () => {
     const game = new Arena(id), o = coverFor(id)[0];
-    game.add(1, { name: 'Uno' }); game.add(2, { name: 'Dos' }); game.start();
+    game.add(1, { name: 'Uno' }); game.add(2, { name: 'Dos' }); game.start(); game.go();
     Object.assign(game.players[0], { x: o.x - o.w / 2 - 2, z: o.z, shield: 0 });
     Object.assign(game.players[1], { x: o.x + o.w / 2 + 2, z: o.z, shield: 0 });
     game.balls.push({ id: 1, owner: 1, x: game.players[0].x, z: o.z, vx: 300, vz: 0, life: 2 });
