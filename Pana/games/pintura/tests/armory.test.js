@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Arena, cleanInput } from '../public/rules.js';
 import { cleanKit, kitStats, MARKERS } from '../public/armory-data.js';
-const arena=kit=>{const a=new Arena();a.add(1,{name:'Ana'});a.add(2,{name:'Bea'});a.selectKit(1,kit);a.start();Object.assign(a.players[0],{x:-22,z:-22,shield:0});Object.assign(a.players[1],{x:-22,z:-15,shield:0});return a;};
+const arena=kit=>{const a=new Arena();a.add(1,{name:'Ana'});a.add(2,{name:'Bea'});a.selectKit(1,kit);a.start();a.go();Object.assign(a.players[0],{x:-22,z:-22,shield:0});Object.assign(a.players[1],{x:-22,z:-15,shield:0});return a;};
 test('kits sanitize identifiers and cap two distinct attachments',()=>{
  assert.deepEqual(cleanKit({weapon:'hacked',attachments:['barrel','barrel','bad','hopper','stock']}).attachments,['barrel','hopper']);
  assert.equal(cleanKit(null).weapon,'pistol');assert.equal(cleanInput({grenade:'true',weapon:'bad'}).grenade,false);

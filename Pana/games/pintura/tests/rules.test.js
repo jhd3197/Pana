@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Arena, blocked, cleanInput, segmentBox, coverFor, COVER, SIZE } from '../public/rules.js';
-const arena = (options = { toughness: 1 }) => { const g = new Arena('plaza', 'normal', options); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); return g; };
+const arena = (options = { toughness: 1 }) => { const g = new Arena('plaza', 'normal', options); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); g.go(); return g; };
 test('inputs are finite, bounded and diagonal movement is normalized', () => {
   assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, weapon: null, grenade: false, fire: false, reload: false, sprint: false });
   const input = cleanInput({ x: 99, z: 99, ax: Infinity, az: NaN, fire: 'yes' }); assert.ok(Math.abs(Math.hypot(input.x, input.z) - 1) < 1e-9); assert.equal(input.fire, false);
@@ -33,7 +33,7 @@ test('ammo, cooldown, manual reload and automatic reload are enforced', () => {
 });
 test('timer, target score and rematches produce clean rounds', () => {
   const g = arena(); g.time = .01; g.step(.05); assert.equal(g.phase, 'finished');
-  g.start(); assert.equal(g.round, 2); assert.equal(g.time, 180); assert.equal(g.players[0].score, 0);
+  g.start(); g.go(); assert.equal(g.round, 2); assert.equal(g.time, 180); assert.equal(g.players[0].score, 0);
   g.players[0].score = 10; g.step(.05); assert.equal(g.phase, 'finished'); assert.equal(g.balls.length, 0);
 });
 test('bots move and fire without escaping the playable arena', () => {
@@ -45,7 +45,7 @@ test('bots move and fire without escaping the playable arena', () => {
 test('bot marksmanship follows the difficulty; only the lobby or results change it', () => {
   function hits(difficulty) {
     const g = new Arena('plaza', difficulty, { lives: 0 }); g.add(1, { name: 'Blanco', avatar: {} }); g.add(2, { name: 'Bot', avatar: {}, bot: true });
-    g.start(); const target = g.players[0], bot = g.players[1];
+    g.start(); g.go(); const target = g.players[0], bot = g.players[1];
     for (let n = 0; n < 900; n++) {
       Object.assign(bot, { x: -6, z: -14 }); Object.assign(target, { x: 6, z: -14, shield: 0 });
       g.step(.05, new Map([[1, {}]])); if (g.phase !== 'playing') break;
@@ -92,7 +92,7 @@ test('El Puerto: a long court, mirrored yards and bots that cross it', async () 
   for (const variant of [0, 1, 2]) {
     const g = new Arena('terminal', 'normal', { mode: 'teams' });
     g.add(1, { name: 'Pana', avatar: {} }); g.add(2, { name: 'Bot', avatar: {}, bot: true });
-    g.round = variant; g.start(); assert.equal(g.variant, variant);
+    g.round = variant; g.start(); g.go(); assert.equal(g.variant, variant);
     const [me, rival] = g.players; let found = false;
     for (let i = 0; i < 600 && !found; i++) { g.step(.05, new Map([[1, {}]])); found = Math.hypot(rival.x - me.x, rival.z - me.z) < 25; assert.equal(blocked(rival.x, rival.z, .55, 'terminal', variant), false); }
     assert.ok(found, `variant ${variant}: the rival bot walks the lanes to a pana it cannot see within 30 s`);

@@ -35,6 +35,8 @@ try {
   const guestId=await b.evaluate(()=>pinturaDebug.room.id);
   await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && p.kit.attachments.length===2 && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
   await a.screenshot({ path: `${out}/lobby.png` }); await a.locator('#start').click(); await wait(b, () => pinturaDebug.room.state.phase === 'playing');
+  // Both clients load the court, then the room counts 3-2-1: input only counts after ¡YA!
+  await wait(b, () => { const s = pinturaDebug.room.state; return !s.loading && !s.countdown; });
   assert.equal(await a.evaluate(() => pinturaDebug.world.view), 'primera');
   await b.evaluate(()=>pinturaDebug.room.selectKit({weapon:'rapid',armor:'wind'}));
   await b.locator('#world').focus();await b.keyboard.press('g');
@@ -82,7 +84,7 @@ try {
   await b.close(); await c.close();
   }
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` }); await m.locator('#practice').tap();
-  await wait(m, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing'); assert.ok(await m.locator('#fire').isVisible());
+  await wait(m, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing' && !pinturaDebug.room.state.loading && !pinturaDebug.room.state.countdown); assert.ok(await m.locator('#fire').isVisible());
   // A bot's hit would respawn the pana elsewhere mid-check: shield it while touch movement is measured.
   await wait(m, () => pinturaDebug.room.game.players[0].respawn === 0);
   await m.evaluate(() => { pinturaDebug.room.game.players[0].shield = 30; });

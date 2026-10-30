@@ -39,6 +39,8 @@ export class PaintConnection {
   }
   selectKit(kit) { this.kit=kit; if(this.local) { if(this.game.selectKit(this.id,kit)) this.publish(); } else if(this.connected) this.link.send('kit',kit); }
   start() { if (this.local) { this.game.start(); this.publish(); } else if (this.connected) this.link.send('start'); }
+  // This client has the round's court on screen and can play.
+  ready(round) { if (this.local) { if (this.game.markReady(this.id, round)) this.publish(); } else if (this.connected) this.link.send('ready', { round }); }
   input(value) { this.current = cleanInput(value); if (!this.local && this.connected) this.link.send('input', this.current); }
   practice() {
     this.local = true; this.link?.leave(); this.connected = true; this.game = new Arena(this.state.mapId, this.state.difficulty, this.state.options);
