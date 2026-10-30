@@ -28,7 +28,7 @@ try{
   await a.locator('[data-room-option="captureBonus"][data-value="true"]').click();
   await a.locator('[data-room-option="threeSixes"][data-value="false"]').click();
   await b.waitForFunction(()=>ludoDebug.room.state.options.threeSixes===false);
-  assert.deepEqual(await b.evaluate(()=>ludoDebug.room.state.options),{entry:'one-six',captureBonus:true,threeSixes:false,assistedEntry:true,turnSeconds:60,starter:'cacho'});
+  assert.deepEqual(await b.evaluate(()=>ludoDebug.room.state.options),{seats:4,entry:'one-six',captureBonus:true,threeSixes:false,assistedEntry:true,turnSeconds:60,starter:'cacho'});
   await b.locator('#pana-room-more').click();
   assert.ok(await b.locator('[data-room-option="captureBonus"][data-value="false"]').isDisabled());
   await b.locator('#pana-room-done').click();
@@ -194,8 +194,8 @@ try{
   assert.ok(await m.locator('#world').evaluate(el=>el.getBoundingClientRect().height>250));
   await m.evaluate(()=>ludoDebug.room.cut());await m.locator('#practice').waitFor({state:'visible'});await m.locator('#practice').click();
   assert.ok(await m.locator('#invite').isDisabled());await m.locator('#start').click();assert.equal(await m.evaluate(()=>ludoDebug.room.state.phase),'starter');
-  // Build the three models and twenty-one shared animation previews through the real catalog.
-  assert.equal(await m.evaluate(async()=>{const {ASSETS}=await import('/studio/catalog.js');for(const asset of ASSETS.filter(a=>a.id.startsWith('ludo-'))){const {group}=await asset.build();if(!group.children.length)throw Error('empty model');group.userData.dispose();}return ASSETS.filter(a=>a.id.startsWith('ludo-')).length;}),24);
+  // Build the five models (three boards) and twenty-one shared animation previews through the real catalog.
+  assert.equal(await m.evaluate(async()=>{const {ASSETS}=await import('/studio/catalog.js');for(const asset of ASSETS.filter(a=>a.id.startsWith('ludo-'))){const {group}=await asset.build();if(!group.children.length)throw Error('empty model');group.userData.dispose();}return ASSETS.filter(a=>a.id.startsWith('ludo-')).length;}),26);
   const response=await m.request.get(`${base}/api/games`);const listing=await response.json();assert.ok(JSON.stringify(listing).includes('Ludo'));
   await m.goto(base);await m.getByRole('heading',{name:'Ludo',exact:true}).waitFor();
   console.log('ok: win/rematch, portrait and landscape touch, local fallback, Studio models and hub discovery');

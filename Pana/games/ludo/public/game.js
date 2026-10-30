@@ -9,7 +9,7 @@ import { sound } from '/engine/fx.js';
 import { shout } from '/engine/kit.js';
 import { bindDiceThrow } from '/engine/play/dice-throw.js';
 import { LudoRoom } from './network.js';
-import { HOME, COLORS, COLOR_NAMES, legalMoves, chooseMove, ranking, eventText as eventLine } from './rules.js';
+import { COLOR_NAMES, trackOf, legalMoves, chooseMove, ranking, eventText as eventLine } from './rules.js';
 import { loc, locn, formatList } from '/engine/i18n.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { LUDO_OPTIONS, defaultLudoOptions } from './options.js';
@@ -83,7 +83,7 @@ function render(rawState){
   if(ended){
     $('result-title').textContent=loc('¡Ganó {name}!',{name:state.players[state.winner].name});
     const ranked=ranking(state.players);
-    fillRoster($('result-roster'),ranked.map((p,i)=>({rank:i+1,name:p.name,detail:loc(COLOR_NAMES[p.seat]),end:`${p.pieces.filter(v=>v===HOME).length}/4`,me:p.id===room.id})));
+    fillRoster($('result-roster'),ranked.map((p,i)=>({rank:i+1,name:p.name,detail:loc(COLOR_NAMES[p.seat]),end:`${p.pieces.filter(v=>v===trackOf(state).home).length}/4`,me:p.id===room.id})));
   }
   world?.update(state,room.connected?seat:-1);
   if(ended)$('results').hidden=!!world?.celebrating;

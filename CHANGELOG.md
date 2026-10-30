@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ludo ahora se juega de cuatro a seis panas.**
+  El anfitrión elige 4, 5 o 6 jugadores en la sala; con cinco o seis la mesa
+  crece y trae un tablero redondo en estrella, con Morado y Naranja, y los
+  puestos vacíos los juegan bots.
 - **En Dominó nadie puede ver tus fichas.**
   El servidor reparte y juega los bots; a cada pana solo le llegan sus
   propias fichas, y las de los demás quedan boca abajo hasta que se cierra la mano.

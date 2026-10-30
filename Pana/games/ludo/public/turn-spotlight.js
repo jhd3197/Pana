@@ -12,7 +12,7 @@ export function createTurnSpotlight(scene, audio) {
     const ready=state.phase==='playing'&&!state.turnPause&&state.turn===ownSeat;
     if(previous && ready && (!previous.ready||previous.round!==state.round)) {
       seat=ownSeat;started=performance.now();
-      const points=[0,1,2,3].map(piece=>boardPoint(seat,-1,piece));
+      const points=[0,1,2,3].map(piece=>boardPoint(seat,-1,piece,state.players.length));
       const x=points.reduce((sum,p)=>sum+p[0],0)/4,z=points.reduce((sum,p)=>sum+p[1],0)/4;
       spot.position.set(x,8,z);spot.target.position.set(x,1.5,z);
       audio.moment('turn');

@@ -32,7 +32,7 @@ export function finishBoard(board) {
   board.traverse(mesh => {
     if (!mesh.isMesh) return;
     const width = mesh.geometry.parameters?.width, mat = mesh.material;
-    mat.map = mat.color.getHexString() === '86522f' ? wood : width > 1.9 && width < 2.2 ? yard : paper;
+    mat.map = mat.color.getHexString() === '86522f' ? wood : width > 1.9 && width < 2.2 || mesh.userData.role === 'yard' ? yard : paper;
   });
   board.userData.studioFinish = true;
 }

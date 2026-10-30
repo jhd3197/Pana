@@ -26,6 +26,15 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
 .score:nth-child(2) { grid-area: 1 / 1; }
 .score:nth-child(3) { grid-area: 1 / 2; }
 .score:nth-child(4) { grid-area: 2 / 2; }
+/* Five and six seats: three rows, each plate on its pana's side of the table. */
+#scoreboard[data-seats="5"], #scoreboard[data-seats="6"] { grid-template-rows: repeat(3,min-content); }
+#scoreboard[data-seats="6"] .score:nth-child(1), #scoreboard[data-seats="5"] .score:nth-child(1) { grid-area: 3 / 1; }
+#scoreboard[data-seats="6"] .score:nth-child(2), #scoreboard[data-seats="5"] .score:nth-child(2) { grid-area: 2 / 1; }
+#scoreboard[data-seats="6"] .score:nth-child(3) { grid-area: 1 / 1; }
+#scoreboard[data-seats="6"] .score:nth-child(4) { grid-area: 1 / 2; }
+#scoreboard[data-seats="6"] .score:nth-child(5), #scoreboard[data-seats="5"] .score:nth-child(4) { grid-area: 2 / 2; }
+#scoreboard[data-seats="6"] .score:nth-child(6), #scoreboard[data-seats="5"] .score:nth-child(5) { grid-area: 3 / 2; }
+#scoreboard[data-seats="5"] .score:nth-child(3) { grid-area: 1 / 1 / 2 / 3; justify-self: center; width: min(280px,100%); }
 .score.active { border-color: var(--seat-color); }
 .score-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .score-head i { width: 8px; height: 24px; background: var(--seat-color); flex: none; }

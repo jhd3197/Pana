@@ -1,6 +1,6 @@
 {
   "name": "Ludo",
   "description": "Tira el dado, captura fichas y lleva tus cuatro piezas a casa. Una mesa 3D para jugar con tus panas o contra bots.",
-  "players": 4,
+  "players": 6,
   "color": "#ff4b4b"
 }
