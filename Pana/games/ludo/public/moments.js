@@ -2,7 +2,8 @@ import { createMomentVisual } from './moment-visual.js';
 import { transitionMoments, landingMoments } from './moment-events.js';
 import { COLORS, ranking } from './rules.js';
 
-export function createLudoMoments(root,pawns,audio,board=null) {
+// board: a getter, since five and six seats swap the board for a star.
+export function createLudoMoments(root,pawns,audio,board=()=>null) {
   let previous=null,state=null,active=null,queue=[],saved=[],idle=0,slept=false;
   const history=[];
   function restore(){for(const {model,position,rotation,scale} of saved){model.position.copy(position);model.rotation.copy(rotation);model.scale.copy(scale);}saved=[];}
@@ -31,8 +32,8 @@ export function createLudoMoments(root,pawns,audio,board=null) {
     let actors=pawns.filter(p=>!p.path&&!p.flight&&!p.motion&&(a.kind==='intro'||p.seat===a.seat&&(a.piece===undefined||p.piece===a.piece)));
     if(a.kind==='podium')actors=ranking(state.players).slice(0,3).map(p=>pawns.find(q=>q.seat===p.seat&&q.piece===0));
     saved=actors.map(({model})=>({model,position:model.position.clone(),rotation:model.rotation.clone(),scale:model.scale.clone()}));
-    if(a.kind==='intro'&&board){
-      for(const tile of board.children.slice(2)){
+    if(a.kind==='intro'&&board()){
+      for(const tile of board().children.slice(2)){
         saved.push({model:tile,position:tile.position.clone(),rotation:tile.rotation.clone(),scale:tile.scale.clone()});
         const reveal=Math.min(1,Math.max(.001,(a.time/1.15-Math.hypot(tile.position.x,tile.position.z)*.06)*4));tile.scale.multiplyScalar(reveal);
       }

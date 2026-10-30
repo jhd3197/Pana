@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LudoGame, HOME, RING, SAFE, cellFor, rotateCell, ringIndex, legalMoves, chooseMove, eventText } from '../public/rules.js';
+import { LudoGame, HOME, RING, SAFE, SEAT_CHOICES, cellFor, rotateCell, ringIndex, ludoTrack, legalMoves, chooseMove, eventText } from '../public/rules.js';
 import { starterResult } from '../../../engine/play/quien-empieza-rules.js';
 // Skips ¿Quién empieza?: seat 0 starts.
-const game = () => { const g=new LudoGame(123);g.addPlayer(1,'Juan',{hat:'gorra'});g.addPlayer(2,'Ana',{});g.start();g.phase='playing';g.starter=null;return g; };
+const game = (seats=4) => { const g=new LudoGame(123,seats);g.addPlayer(1,'Juan',{hat:'gorra'});g.addPlayer(2,'Ana',{});g.start();g.phase='playing';g.starter=null;return g; };
 const cachos = (g, bots) => { for (let i = 0; i < 400 && g.phase === 'starter'; i++) g.stepStarter(.1, bots); };
 // A seed whose next throws are exactly these values.
 function seedFor(values){
@@ -43,6 +43,29 @@ test('52 distinct ring cells, rotated starts and private home lanes match the bo
     for(let p=51;p<=HOME;p++)assert.ok(!RING.some(c=>c.join(',')===cellFor(s,p).join(',')));
   }
 });
+const key=cell=>cell.map(v=>v.toFixed(3)).join(',');
+test('five and six seats: a star of distinct ring cells, private lanes and safe starts',()=>{
+  for(const seats of [5,6]){
+    const {ring,lap,home,safe,cells}=ludoTrack(seats);
+    assert.equal(ring,13*seats);assert.equal(lap,13*seats-2);assert.equal(home,lap+6);
+    assert.equal(new Set(cells.map(key)).size,ring,'ring cells are unique');
+    assert.deepEqual(safe,Array.from({length:seats},(_,s)=>[13*s,13*s+8]).flat());
+    const lanes=new Set(),yards=new Set();
+    for(let s=0;s<seats;s++){
+      assert.deepEqual(cellFor(s,0,0,seats),cells[13*s],'a seat enters on its own start');
+      for(let p=0;p<=lap;p++)assert.deepEqual(cellFor(s,p,0,seats),cells[ringIndex(s,p,seats)]);
+      for(let p=lap+1;p<home;p++){const c=key(cellFor(s,p,0,seats));assert.ok(!cells.some(r=>key(r)===c));lanes.add(c);}
+      for(let piece=0;piece<4;piece++)yards.add(key(cellFor(s,-1,piece,seats)));
+      // The last ring cell is the arm's tip, right next to the lane's first cell.
+      const [tx,tz]=cellFor(s,lap,0,seats),[lx,lz]=cellFor(s,lap+1,0,seats);assert.ok(Math.abs(Math.hypot(tx-lx,tz-lz)-1)<1e-9);
+    }
+    assert.equal(lanes.size,5*seats,'lanes never share a cell');assert.equal(yards.size,4*seats);
+    // Neighbouring ring cells stay one step apart all the way round.
+    for(let i=0;i<ring;i++){const [ax,az]=cells[i],[bx,bz]=cells[(i+1)%ring];assert.ok(Math.hypot(ax-bx,az-bz)<1.5,`step ${i}`);}
+    for(const index of cells.keys())assert.equal(ringIndex(Math.floor(index/13),index%13,seats),index,'round trip');
+  }
+  assert.equal(ludoTrack(4).cells,RING);assert.deepEqual([...ludoTrack(4).safe].sort((a,b)=>a-b),SAFE);assert.equal(ludoTrack(4).home,HOME);
+});
 test('yard requires six; entry consumes the roll and grants another roll',()=>{
   const g=game();g.die=5;assert.deepEqual(legalMoves(g),[]);assert.equal(g.move(0),false);
   g.die=6;assert.deepEqual(legalMoves(g),[0,1,2,3]);assert.equal(g.move(0),true);
@@ -53,6 +76,11 @@ test('captures every rival on an unsafe square, preserving friendly pieces',()=>
   g.move(0);assert.deepEqual(g.players[1].pieces,[-1,-1,-1,-1]);assert.deepEqual(g.players[0].pieces,[18,18,-1,-1]);assert.equal(g.turn,1);
 });
 test('safe squares allow opponents to share without capture',()=>{
+  for(const seats of [5,6])for(const target of ludoTrack(seats).safe){
+    const g=game(seats),ring=13*seats;g.players[0].pieces[0]=target===0?-1:target-1;g.die=target===0?6:1;
+    const rival=target<13?seats-1:1,progress=(target-rival*13+ring)%ring;
+    g.players[rival].pieces[0]=progress;g.move(0);assert.equal(g.players[rival].pieces[0],progress);
+  }
   for(const target of SAFE){
     const g=game();g.players[0].pieces[0]=target===0?-1:target-1;g.die=target===0?6:1;
     const rival=target<13?3:1,progress=(target-rival*13+52)%52;
@@ -98,16 +126,26 @@ test('late join and migration preserve pieces, pending dice and seeded future ro
   assert.equal(restored.die,4);assert.equal(restored.rng,g.rng);assert.equal(restored.turn,g.turn);
   assert.equal(restored.move(0),true);assert.equal(restored.players[0].pieces[0],31);
 });
-test('200 seeded bot matches finish and preserve all sixteen pieces at every action',()=>{
+for(const seats of SEAT_CHOICES)test(`200 seeded ${seats}-seat bot matches finish and keep every piece at every action`,()=>{
+  const {home}=ludoTrack(seats);
   for(let seed=1;seed<=200;seed++){
-    const g=new LudoGame(seed);g.start();cachos(g);let steps=0;
-    while(g.phase!=='finished'&&steps++<15000){
+    const g=new LudoGame(seed,seats);g.start();
+    assert.deepEqual(g.starter.contenders,Array.from({length:seats},(_,s)=>s));
+    cachos(g);let steps=0;
+    while(g.phase!=='finished'&&steps++<20000){
       assert.ok(g.die?g.move(chooseMove(g)):g.roll());
-      for(const p of g.players){assert.equal(p.pieces.length,4);assert.ok(p.pieces.every(v=>Number.isInteger(v)&&v>=-1&&v<=HOME));}
-      assert.ok(g.turn>=0&&g.turn<4);
+      assert.equal(g.players.length,seats);
+      for(const p of g.players){assert.equal(p.pieces.length,4);assert.ok(p.pieces.every(v=>Number.isInteger(v)&&v>=-1&&v<=home));}
+      assert.ok(g.turn>=0&&g.turn<seats);
     }
-    assert.equal(g.phase,'finished',`seed ${seed}`);assert.ok(g.players[g.winner].pieces.every(v=>v===HOME));
+    assert.equal(g.phase,'finished',`seed ${seed}`);assert.ok(g.players[g.winner].pieces.every(v=>v===home));
   }
+});
+test('four seats replay the same seeded match as before five and six existed',()=>{
+  // Fingerprint of seed 7's whole bot match, recorded on the four-seat-only rules.
+  const g=new LudoGame(7);g.start();cachos(g);const log=[];
+  while(g.phase!=='finished'){if(g.die){const m=chooseMove(g);log.push(m);g.move(m);}else{g.roll();log.push(g.lastDie);}}
+  assert.deepEqual([g.winner,log.length,g.rng],[0,732,4111943361]);
 });
 
 

@@ -6,7 +6,7 @@ import { createGameTable, createGameChair, disposeModel } from '/engine/models/p
 import { createLudoToss, HOP, FLIGHT, motionDuration } from './dice-timing.js';
 import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { sound, Puffs, Shockwaves } from '/engine/fx.js';
-import { createLudoBoard, createLudoPawn, createLudoDie, boardPoint } from './board-model.js';
+import { createLudoBoard, createLudoPawn, createLudoDie, boardPoint, tableScale } from './board-model.js';
 import { createCaminoMotion } from './camino-motion.js';
 import { chooseMotion } from './motion-choice.js';
 import { createLudoMoments } from './moments.js';
@@ -14,13 +14,14 @@ import { createTurnSpotlight } from './turn-spotlight.js';
 import { createLudoSounds } from './sounds.js';
 import { poseFace } from './studio-finish.js';
 import { sharedCellLayout } from './piece-layout.js';
-import { COLORS, HOME, legalMoves } from './rules.js';
+import { COLORS, ludoTrack, legalMoves } from './rules.js';
 
 const PAWN_Y = 1.67, DIE_Y = 1.835;
 // Die orientations with each value facing up (+Y).
 const FACE_UP = { 1: [0, 0, 0], 2: [-Math.PI / 2, 0, 0], 3: [0, 0, Math.PI / 2], 4: [0, 0, -Math.PI / 2], 5: [Math.PI / 2, 0, 0], 6: [Math.PI, 0, 0] };
-// Follow the board rotation: red near-left, green far-left, yellow far-right, blue near-right.
-const seatAngle = seat => -Math.PI / 4 - seat * Math.PI / 2;
+// Follow the board rotation. Four seats: red near-left, green far-left, yellow
+// far-right, blue near-right; five and six sit between the star's arms the same way.
+const seatAngle = (seat, seats = 4) => -Math.PI * (2 * seat + 1) / seats;
 
 export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) {
   // The shared plaza stage (perspective camera, sky, sun) like Billar and Póquer.
@@ -28,28 +29,45 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
   const stage=createTableWorld(canvas),{renderer,scene,camera}=stage,own=new THREE.Group();scene.add(own);
   // Reuse the shared table and chairs; the board sits above the felt.
   const table=createGameTable({feltColor:'#334f49',caption:''});own.add(table);
-  const board=createLudoBoard();board.position.y=1.46;own.add(board);
-  const chairs=[],characters=[],keys=[],moods=[0,0,0,0].map(()=>({kind:'',t:0}));
-  for(let seat=0;seat<4;seat++){
-    const angle=seatAngle(seat);
-    const chair=createGameChair();chair.position.set(Math.sin(angle)*4.6,0,Math.cos(angle)*4.6);chair.rotation.y=angle+Math.PI;own.add(chair);chairs.push(chair);
-  }
+  const chairs=[],characters=[],keys=[],moods=[],pawns=[];
   const puffs=new Puffs(own),waves=new Shockwaves(own);
-  const pawns=[];
-  for(let seat=0;seat<4;seat++)for(let piece=0;piece<4;piece++){
-    const model=createLudoPawn({seat,number:piece+1});model.userData.piece=piece;model.userData.seat=seat;own.add(model);
-    pawns.push({model,seat,piece,target:new THREE.Vector3(),initialized:false,playable:false,progress:-1,path:null,flight:null,squash:0});
-  }
-  const moments=createLudoMoments(own,pawns,audio,board);
+  // The table, chairs and seated panas, framed inside the canvas between the HUD bars.
+  const bounds=new THREE.Box3(),focus=new THREE.Vector3();
+  let seats=0,board=null,reach=1,nearClearance=0,lap=50,home=56;
+  const moments=createLudoMoments(own,pawns,audio,()=>board);
   const spotlight=createTurnSpotlight(scene,audio);
-  const diePivot=new THREE.Group(),die=createLudoDie();die.position.y=-.215;diePivot.add(die);diePivot.position.set(3.08,1.675,0);own.add(diePivot);
+  const diePivot=new THREE.Group(),die=createLudoDie();die.position.y=-.215;diePivot.add(die);own.add(diePivot);
+  // Five and six seats bring the star board: a wider table, chairs further out.
+  function seatTable(count){
+    if(count===seats)return;seats=count;reach=tableScale(seats);({lap,home}=ludoTrack(seats));
+    moments.dispose();
+    for(const p of pawns){p.motion?.dispose();p.model.userData.dispose();p.model.removeFromParent();}
+    for(const chair of chairs){disposeModel(chair);chair.removeFromParent();}
+    characters.forEach(c=>c?.dispose());board?.userData.dispose();board?.removeFromParent();
+    pawns.length=chairs.length=characters.length=keys.length=0;
+    moods.splice(0,moods.length,...Array.from({length:seats},()=>({kind:'',t:0})));
+    table.scale.set(reach,1,reach);
+    board=createLudoBoard({seats});board.position.y=1.46;own.add(board);
+    for(let seat=0;seat<seats;seat++){
+      const angle=seatAngle(seat,seats);
+      const chair=createGameChair();chair.position.set(Math.sin(angle)*4.6*reach,0,Math.cos(angle)*4.6*reach);chair.rotation.y=angle+Math.PI;own.add(chair);chairs.push(chair);
+    }
+    for(let seat=0;seat<seats;seat++)for(let piece=0;piece<4;piece++){
+      const model=createLudoPawn({seat,number:piece+1});model.userData.piece=piece;model.userData.seat=seat;own.add(model);
+      pawns.push({model,seat,piece,target:new THREE.Vector3(),initialized:false,playable:false,progress:-1,path:null,flight:null,squash:0});
+    }
+    bounds.min.set(-3.65*reach,.9,-3.65*reach);bounds.max.set(3.65*reach,2.65,3.65*reach);
+    bounds.getCenter(focus);nearClearance=bounds.getSize(new THREE.Vector3()).length()/2+.5;
+    if(!toss&&!shake){diePivot.position.set(3.08*reach,1.675,0);rest.copy(diePivot.position);}
+  }
   // ¿Quién empieza?: a cacho on the board's edge in front of each pana.
   const starter=createStarterStage({root:own,camera,canvas,scale:.62,onInput:onStarter,
-    spot:seat=>{const a=seatAngle(seat);return{position:[Math.sin(a)*2.95,1.665,Math.cos(a)*2.95],out:[Math.sin(a),Math.cos(a)]};}});
+    spot:seat=>{const a=seatAngle(seat,seats);return{position:[Math.sin(a)*2.95*reach,1.665,Math.cos(a)*2.95*reach],out:[Math.sin(a),Math.cos(a)]};}});
   const ray=new THREE.Raycaster(),cursor=new THREE.Vector2();
   let current=null,time=0,lastRoll='',lastRound=-1,disposed=false,toss=null,shake=0;
-  const rest=diePivot.position.clone();
+  const rest=new THREE.Vector3();
   const final=new THREE.Quaternion(),spin=new THREE.Quaternion(),axis=new THREE.Vector3();
+  seatTable(4);
   function pick(event){
     const r=canvas.getBoundingClientRect();cursor.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);ray.setFromCamera(cursor,camera);
     const hit=ray.intersectObjects(pawns.filter(p=>p.playable).map(p=>p.model),true)[0];
@@ -58,18 +76,19 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
   function click(e){const piece=pick(e);if(piece!==null)onPiece?.(piece);}
   function hover(e){canvas.style.cursor=pick(e)===null?'default':'pointer';}
   canvas.addEventListener('click',click);canvas.addEventListener('pointermove',hover);
-  const cell=(seat,progress,piece)=>{const [x,z]=boardPoint(seat,progress,piece);return new THREE.Vector3(x,PAWN_Y,z);};
+  const cell=(seat,progress,piece)=>{const [x,z]=boardPoint(seat,progress,piece,seats);return new THREE.Vector3(x,PAWN_Y,z);};
   // Where a seat's thrower holds the die: over the board edge in front of their chair.
-  const handFor=seat=>{const a=seatAngle(seat);return new THREE.Vector3(Math.sin(a)*3.25,2.35,Math.cos(a)*3.25);};
+  const handFor=seat=>{const a=seatAngle(seat,seats);return new THREE.Vector3(Math.sin(a)*3.25*reach,2.35,Math.cos(a)*3.25*reach);};
   function throwDie(state){
-    const {seat,power}=state.toss||{seat:state.turn,power:.5},a=seatAngle(seat),from=handFor(seat);
-    const seed=state.rng>>>0,side=((seed>>>8&255)/255-.5)*1.1,reach=2.35-power*2.05;
-    const to=new THREE.Vector3(Math.sin(a)*reach+Math.cos(a)*side,DIE_Y,Math.cos(a)*reach-Math.sin(a)*side);
+    const {seat,power}=state.toss||{seat:state.turn,power:.5},a=seatAngle(seat,seats),from=handFor(seat);
+    const seed=state.rng>>>0,side=((seed>>>8&255)/255-.5)*1.1,land=(2.35-power*2.05)*reach;
+    const to=new THREE.Vector3(Math.sin(a)*land+Math.cos(a)*side,DIE_Y,Math.cos(a)*land-Math.sin(a)*side);
     toss={path:createLudoToss({from:from.toArray(),to:to.toArray(),power,seed}),started:performance.now(),t:0,hit:0,power,value:state.lastDie};
     final.setFromEuler(new THREE.Euler(...FACE_UP[state.lastDie])).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),(seed&1023)/1023*Math.PI*2));
     audio.throw(power);
   }
   function update(state,ownSeat){
+    seatTable(state.players.length);
     spotlight.update(state,ownSeat);
     moments.update(state);current=state;
     for(const p of state.players){
@@ -91,7 +110,7 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
       }
     }
     for(const p of pawns){
-      const progress=state.players[p.seat].pieces[p.piece],key=boardPoint(p.seat,progress,p.piece).join(',');
+      const progress=state.players[p.seat].pieces[p.piece],key=boardPoint(p.seat,progress,p.piece,seats).join(',');
       if(!occupancy.has(key))occupancy.set(key,[]);occupancy.get(key).push(p);
     }
     for(const p of pawns){
@@ -105,12 +124,12 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
         } else if(progress<0){p.path=null;eaten.push(p);}
       }
       p.progress=progress;
-      let [x,z]=boardPoint(p.seat,progress,p.piece);
+      let [x,z]=boardPoint(p.seat,progress,p.piece,seats);
       const group=occupancy.get(`${x},${z}`),layout=sharedCellLayout(group.length,group.indexOf(p));
-      p.displayScale=progress===HOME?1:layout.scale;
-      p.target.set(x+(progress===HOME?0:layout.x),PAWN_Y+(progress===HOME?0:layout.y),z+(progress===HOME?0:layout.z));p.playable=p.seat===ownSeat&&legal.includes(p.piece);
+      p.displayScale=progress===home?1:layout.scale;
+      p.target.set(x+(progress===home?0:layout.x),PAWN_Y+(progress===home?0:layout.y),z+(progress===home?0:layout.z));p.playable=p.seat===ownSeat&&legal.includes(p.piece);
       p.model.userData.halo.visible=p.playable;
-      if(progress===HOME){p.target.x+=(p.piece%2-.5)*.2;p.target.z+=(Math.floor(p.piece/2)-.5)*.2;}
+      if(progress===home){p.target.x+=(p.piece%2-.5)*.2;p.target.z+=(Math.floor(p.piece/2)-.5)*.2;}
       if(!p.initialized||!sameRound){p.model.position.copy(p.target);p.model.rotation.set(0,0,0);p.path=p.flight=null;p.initialized=true;}
     }
     for(const p of pawns)if(p.path)p.path[p.path.length-1].copy(p.target);
@@ -120,11 +139,11 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
       for(const p of eaten)p.flight={from:p.model.position.clone(),started:performance.now(),delay,t:-delay,spin:(p.piece%2?1:-1)*(3+p.piece)};
     }
     for(const p of hopping){
-      const partners=pawns.filter(q=>q!==p&&!changed.has(q)&&q.progress>=0&&q.progress<HOME&&q.displayScale===1&&!pawns.some(a=>a.motion?.partner===q.model)&&p.path.some(at=>at.distanceTo(q.target)<.55));
+      const partners=pawns.filter(q=>q!==p&&!changed.has(q)&&q.progress>=0&&q.progress<home&&q.displayScale===1&&!pawns.some(a=>a.motion?.partner===q.model)&&p.path.some(at=>at.distanceTo(q.target)<.55));
       const friend=partners.find(q=>q.seat===p.seat),rival=partners.find(q=>q.seat!==p.seat);
       let style=chooseMotion({rng:state.rng,revision:state.revision,seat:p.seat,piece:p.piece,steps:p.path.length-1,friend:!!friend,rival:!!rival,capture:!!p.eats});
       const crossed=partners.find(q=>p.path.slice(1,-1).some(at=>Math.hypot(at.x-q.target.x,at.z-q.target.z)<.15));
-      if(!p.eats&&p.progress>=51)style='sprint';
+      if(!p.eats&&p.progress>lap)style='sprint';
       else if(!p.eats&&crossed&&(state.rng%3===0||p.path.length<=3))style='leap';
       p.lastMotion=style;
       if(style!=='hop'){
@@ -145,7 +164,7 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
   // The capture: a dust ring where the hunter lands, the victim's colour in the
   // air, and both panas at the table react.
   function land(p){
-    p.squash=1;audio.land({entry:p.from<0,home:p.progress===HOME,capture:!!p.eats,win:p.progress===HOME&&current?.winner===p.seat});
+    p.squash=1;audio.land({entry:p.from<0,home:p.progress===home,capture:!!p.eats,win:p.progress===home&&current?.winner===p.seat});
     moments.land(p);
     if(!p.eats)return;
     const at=p.model.position;
@@ -155,9 +174,6 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
     moods[p.seat]={kind:'cheer',t:2.2};
     onCapture?.({by:p.seat,victims:p.eats.victims});p.eats=null;
   }
-  // The table, chairs and seated panas, framed inside the canvas between the HUD bars.
-  const bounds=new THREE.Box3(new THREE.Vector3(-3.65,.9,-3.65),new THREE.Vector3(3.65,2.65,3.65));
-  const focus=bounds.getCenter(new THREE.Vector3()),nearClearance=bounds.getSize(new THREE.Vector3()).length()/2+.5;
   let top=false;
   const dock=document.querySelector('.action-panel');
   function frame(dt){
@@ -172,7 +188,7 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
     camera.near=Math.max(.1,camera.position.distanceTo(focus)-nearClearance);camera.updateProjectionMatrix();
     for(const p of pawns){
       const m=p.model;
-      poseFace(m,time,p.flight?'surprised':p.progress===HOME?'happy':'idle');
+      poseFace(m,time,p.flight?'surprised':p.progress===home?'happy':'idle');
       const elapsed=p.path?Math.max(p.elapsed+dt,(performance.now()-p.started)/1000):0;
       if(p.path)p.elapsed=elapsed;
       if(p.motion){

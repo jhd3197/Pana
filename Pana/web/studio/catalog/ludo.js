@@ -1,6 +1,8 @@
 import { object } from './objects.js';
 export const LUDO = [
   {id:'ludo-board',name:'Tablero de Ludo',factory:'createLudoBoard',description:'Tablero de madera, cuatro patios y casillas seguras. Superficie a 0,12 m; lado de 5,65 m.'},
+  {id:'ludo-board-5',name:'Tablero de Ludo · 5 jugadores',factory:'createLudoBoard',previewOptions:{seats:5},description:'Tablero redondo en estrella: cinco brazos, cinco patios y pasillos privados. Superficie a 0,12 m; diámetro de 6,93 m.'},
+  {id:'ludo-board-6',name:'Tablero de Ludo · 6 jugadores',factory:'createLudoBoard',previewOptions:{seats:6},description:'Tablero redondo en estrella: seis brazos, seis patios y pasillos privados. Superficie a 0,12 m; diámetro de 7,76 m.'},
   {id:'ludo-pawn',name:'Ficha de Ludo',factory:'createLudoPawn',description:'Ficha numerada con halo de selección. Origen en la base; altura de 0,42 m.'},
   {id:'ludo-die',name:'Dado de Ludo',factory:'createLudoDie',description:'Dado con seis caras y puntos. Origen en la base; lado de 0,43 m.'},
 ].map(def=>object({...def,source:'/g/ludo/board-model.js',category:'Objetos',usedBy:['Ludo'],dependencies:['/g/ludo/rules.js','/g/ludo/studio-finish.js','/engine/models/props/game-table.js']}));

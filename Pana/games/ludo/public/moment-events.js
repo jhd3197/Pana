@@ -1,4 +1,4 @@
-import { HOME, SAFE, ringIndex } from './rules.js';
+import { trackOf, ringIndex } from './rules.js';
 import { locKey } from '../../../engine/i18n.js';
 export const MOMENTS = ['intro','turn','suspense','safe','block','leap','sprint','nearmiss','nomoves','sleep','podium'];
 // Source text, drawn with loc() on the moment's caption.
@@ -16,14 +16,15 @@ export function transitionMoments(before, after) {
   return events;
 }
 export function landingMoments(state, seat, piece) {
-  const progress=state.players[seat].pieces[piece];
-  if (progress<0||progress>=HOME) return [];
-  const index=ringIndex(seat,progress),events=[];
-  if (progress<=50&&SAFE.includes(index)) events.push({kind:'safe',seat,piece});
+  const progress=state.players[seat].pieces[piece],{seats,ring,lap,home,safe}=trackOf(state);
+  if (progress<0||progress>=home) return [];
+  const index=ringIndex(seat,progress,seats),ahead=(index+1)%ring,events=[];
+  if (progress<=lap&&safe.includes(index)) events.push({kind:'safe',seat,piece});
   if (state.players[seat].pieces.filter(v=>v===progress).length>1) events.push({kind:'block',seat,piece});
-  if (progress<50&&!SAFE.includes((index+1)%52)) {
-    const rival=state.players.find(p=>p.seat!==seat&&p.pieces.some(v=>v>=0&&v<=50&&ringIndex(p.seat,v)===(index+1)%52));
-    if(rival)events.push({kind:'nearmiss',seat:rival.seat,piece:rival.pieces.findIndex(v=>v>=0&&v<=50&&ringIndex(rival.seat,v)===(index+1)%52)});
+  if (progress<lap&&!safe.includes(ahead)) {
+    const at=p=>p.pieces.findIndex(v=>v>=0&&v<=lap&&ringIndex(p.seat,v,seats)===ahead);
+    const rival=state.players.find(p=>p.seat!==seat&&at(p)>=0);
+    if(rival)events.push({kind:'nearmiss',seat:rival.seat,piece:at(rival)});
   }
   return events;
 }
