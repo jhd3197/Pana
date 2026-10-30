@@ -1,7 +1,8 @@
 # Ludo
 
-`/g/ludo/` is a four-color individual table game. Empty seats are bots; a friend
-joining takes the first bot's pieces, including a pending roll. All game copy
+`/g/ludo/` is an individual table game for four, five or six colors. Empty
+seats are bots; a friend joining takes the first bot's pieces, including a
+pending roll. All game copy
 is Spanish. The hub discovers `game.json` and categorizes it as Mesa.
 
 ## House rules
@@ -26,8 +27,36 @@ bonus roll and an optional third-six penalty. Entry, capture and third-six defau
 assisted-entry option limits yard droughts.
 Only the host changes them in the lobby; typed validation rejects an entire
 invalid patch. Snapshots, rematches and local fallback preserve the options.
-Ludo remains four players because its authored board has four private lanes and
-four colors; increasing room metadata alone would overlap lanes and pieces.
+## Four, five or six seats
+
+The room option `seats` (Jugadores: 4, 5, 6) is the length of `players`; every
+rule reads the count from `players.length` (`trackOf(state)`), never from the
+option, so old snapshots without it restore as four. `seat(n)` resizes in the
+lobby only: panas keep their seat while it exists, one beyond the new count
+takes the first bot seat, and a count below the seated panas rejects the whole
+options patch. A pana arriving at a full lobby adds a seat up to six (the
+`game.json` cap); mid-match they watch. Colors and bot names extend to Morado
+`#a46bff` (Yoli) and Naranja `#ff8a3d` (Cheo). Local play keeps the count.
+
+`ludoTrack(n)`: 13 ring cells per seat, `lap = 13n - 2`, five lane cells, home
+at `lap + 6`; safe cells are every start `13·s` and `13·s + 8`. Four seats
+keep the authored cross (`RING`, lap 50, home 56) byte for byte: a test
+replays seed 7's whole bot match against a fingerprint recorded before.
+
+Five and six seats use a star (`starMetrics` in rules, cell units centered on
+7). Each seat owns a three-cell arm around a polygon center whose apothem is
+`1.5 / tan(π/n)`; arm `s` points at angle `2πs/n` (outward `[-sin, cos]`).
+Ring cells go out along one side column of each arm, across its tip and back
+in along the other; ring index `13·s` (a start) is the inbound column's fifth
+cell from the center, so the last ring cell before a lane is the arm's tip. Round yards sit
+between arms at `θ + π/n`, far enough out that the yard disc never touches an
+arm. Home is 0.58 of the apothem along the arm, inside its colored wedge.
+`board-model.js` builds the round wood board (radius from `starMetrics`),
+tiles turned to their arm, and `tableScale(n)` grows the shared table, chair
+radius, hand, cacho spots, die rest, throw reach and camera bounds together
+(1.21 for five, 1.35 for six; exactly 1 for four). The scene rebuilds board,
+chairs, pawns and characters when the count changes; moments read the board
+through a getter for that reason.
 
 ## Coordinates and ownership
 
@@ -46,7 +75,7 @@ This uses the existing trusted-friends host model, not server anti-cheat.
 
 The `event` line is a list of `{ text, vars }` Spanish source sentences;
 `eventText` in `rules.js` joins them in the viewer's language (the cachos'
-note travels as `vars.how`). The protocol is `ludo-v5` since this change.
+note travels as `vars.how`). The protocol is `ludo-v6` since the seat count option.
 
 ## Visuals and controls
 
@@ -77,14 +106,19 @@ the visible board, and the in-game buttons remain below it.
 ## Proof
 
 - `node --test Pana/games/ludo/tests/rules.test.js`: rule edges, stale requests,
-  restore, coordinate consistency and 200 seeded complete bot games.
+  restore, coordinate consistency, star geometry and 200 seeded complete bot
+  games for each of four, five and six seats.
 - `PANA_TEST_URL=http://127.0.0.1:8487 npm run test:browser -- ludo`: real
   two-client rolls/moves, physical raycast, pending-roll host migration, late
   bot replacement, pause, finish/rematch, both mobile orientations, local
   fallback, Studio factories and hub discovery. Screenshots: `art/ludo/`.
+- `seats.browser.js`: five and six seats on two clients: lobby option, every
+  pana beside their own star yard, a guest's capture and finish on star cells,
+  one progress plate per seat. Screenshots: `art/ludo/seats-*.png`.
 - `.\dev.ps1 check`: repository syntax, unit and convention checks.
 
-Chair angles use `-π/4 - seat·π/2` to follow `rotateCell`: red near-left,
+Chair angles use `-π(2·seat + 1)/n` (`seatAngle` in `scene.js`; for four seats
+`-π/4 - seat·π/2`) to follow `rotateCell` and the star's yards: red near-left,
 green far-left, yellow far-right and blue near-right. The same angle places
 starter cachos and dice throws. Reversing its sign swaps green and blue while
 leaving red and yellow apparently correct. The two-client suite checks every
@@ -151,7 +185,8 @@ shows the pip result after the physical throw settles; move inputs wait for
 that reveal, and holding the shake button never disables its release event.
 Capture totals live in rule snapshots and reset on rematch.
 
-The four corner progress plates are hidden by default. Hold either Shift key
+The corner progress plates (one per seat; five and six use three rows) are
+hidden by default. Hold either Shift key
 to inspect; releasing Shift, losing focus, hiding the page or opening the menu
 clears them. «Ver panas» toggles the same view for touch and keyboard users.
 V switches the existing camera view. The closer perspective frame reserves
