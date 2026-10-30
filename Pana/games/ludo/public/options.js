@@ -2,6 +2,8 @@ import { optionDefaults, applyRoomOptions } from '../../../engine/room-options-r
 import { STARTER_FIELD } from '../../../engine/play/quien-empieza-rules.js';
 import { loc } from '../../../engine/i18n.js';
 export const LUDO_OPTIONS = [
+  // Five and six seats play on a star board; empty seats are bots.
+  { id: 'seats', label: loc('Jugadores'), default: 4, choices: [[4, '4'], [5, '5'], [6, '6']] },
   { id: 'entry', label: loc('Salir del patio'), default: 'six', choices: [['six', loc('Con un 6')], ['one-six', loc('Con 1 o 6')]] },
   { id: 'captureBonus', label: loc('Tirar otra vez al capturar'), default: false, advanced: true, choices: [[false, loc('No')], [true, loc('Sí')]] },
   { id: 'threeSixes', label: loc('Tres seis seguidos pierden turno'), default: true, advanced: true, choices: [[true, loc('Sí')], [false, loc('No')]] },
