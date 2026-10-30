@@ -63,7 +63,7 @@ export function createArmory({room,onPick}) {
  document.getElementById('armory-go').onclick=()=>{save();dialog.close();if(room.isHost)room.start();};
  document.getElementById('armory-range').onclick=()=>{
   target.group.visible=true;
-  range=new Arena();range.add(1,{name:loc('Tú')});range.add(2,{name:loc('Blanco')});range.selectKit(1,kit);range.start();range.go();
+  range=new Arena('plaza');range.add(1,{name:loc('Tú')});range.add(2,{name:loc('Blanco')});range.selectKit(1,kit);range.start();range.go();
   Object.assign(range.players[0],{x:-22,z:-22,shield:0});Object.assign(range.players[1],{x:-22,z:-15,shield:0});
   document.getElementById('range-controls').hidden=false;document.getElementById('range-status').textContent=loc('Apunta al blanco: el kit usa sus reglas reales.');
  };

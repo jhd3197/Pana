@@ -42,7 +42,7 @@ $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-ar
 } };
 const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
 const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: FIELDS, change: options => room.configure(options), reset() {
-  room.configure(DEFAULT_OPTIONS); room.selectMap('plaza'); room.selectDifficulty(DEFAULT_DIFFICULTY);
+  room.configure(DEFAULT_OPTIONS); room.selectMap('terminal'); room.selectDifficulty(DEFAULT_DIFFICULTY);
 } });
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),

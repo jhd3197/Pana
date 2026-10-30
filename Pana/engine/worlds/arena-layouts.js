@@ -20,10 +20,12 @@ export const TABLE_ARENAS = [...ARENAS,
 export const validTableArena = id => TABLE_ARENAS.some(map=>map.id===id);
 // Pepazo's own maps: the shared arenas plus the container yard, the night
 // field and the El Puerto terminal, which have no hunt or table layout, so they never join `ARENAS`.
-export const PAINT_ARENAS = [...ARENAS,
+// El Puerto is Pepazo's default, so it leads the picker and is the fallback.
+export const PAINT_ARENAS = [
+  { id: 'terminal', name: 'El Puerto', description: locKey('Dos bases frente a frente en el patio de contenedores, con el galpón en el medio.') },
+  ...ARENAS,
   { id: 'muelle', name: 'Muelle de La Guaira', description: locKey('Contenedores apilados, la grúa del puerto y la calle colonial frente al mar.') },
   { id: 'noche', name: 'Cancha de Noche', description: locKey('Reflectores rojos, luz morada y pintura que brilla en la oscuridad.') },
-  { id: 'terminal', name: 'El Puerto', description: locKey('Dos bases frente a frente en el patio de contenedores, con el galpón en el medio.') },
 ];
 export const validPaintArena = id => PAINT_ARENAS.some(map => map.id === id);
 export const paintArenaInfo = id => PAINT_ARENAS.find(map => map.id === id) || PAINT_ARENAS[0];

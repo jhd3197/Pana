@@ -9,7 +9,7 @@ try {
   await waitFor(page,()=>pinturaDebug.room.local && pinturaDebug.room.state.phase==='playing');
   const result = await page.evaluate(async()=>{
     const {Arena}=await import('/g/pintura/rules.js');
-    const {world,room}=pinturaDebug, game=new Arena();
+    const {world,room}=pinturaDebug, game=new Arena('plaza');
     room.local=true;room.link?.leave();room.tick=()=>{};
     game.add(71,{name:'Ana'});game.add(72,{name:'Luis'});game.start();
     const [a,b]=game.players;Object.assign(a,{x:-25,z:-15});Object.assign(b,{x:-22,z:-15,shield:0});

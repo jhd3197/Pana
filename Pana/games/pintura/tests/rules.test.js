@@ -85,6 +85,8 @@ test('the container yard is selectable, keeps bots inside and flags at its spawn
 
 test('El Puerto: a long court, mirrored yards and bots that cross it', async () => {
   const { coverFor, spawnsFor, boundsFor, sizeFor } = await import('../public/rules.js');
+  const { PAINT_ARENAS } = await import('../../../engine/worlds/arena-layouts.js');
+  assert.equal(new Arena().mapId, 'terminal', 'El Puerto is the default map'); assert.equal(PAINT_ARENAS[0].id, 'terminal', 'and leads the picker');
   assert.deepEqual(boundsFor('terminal'), { x: 58, z: 32 }); assert.equal(sizeFor('terminal'), 58);
   assert.equal(blocked(50, 0, .55, 'terminal'), false, 'open well past a square court'); assert.equal(blocked(0, 31.8, .55, 'terminal'), true, 'the fence runs along z = ±32');
   spawnsFor('terminal').forEach((s, i) => assert.equal(Math.sign(s.x), i % 2 ? 1 : -1, 'even seats start west, odd seats east'));

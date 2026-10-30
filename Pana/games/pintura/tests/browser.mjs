@@ -54,6 +54,8 @@ try {
   await b.locator('#armory-close').click();
   const guestId=await b.evaluate(()=>pinturaDebug.room.id);
   await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && p.kit.attachments.length===2 && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
+  // The routes below walk the plaza's outer lane; El Puerto is the default map.
+  await a.evaluate(() => pinturaDebug.room.selectMap('plaza')); await wait(b, () => pinturaDebug.room.state.mapId === 'plaza');
   await a.screenshot({ path: `${out}/lobby.png` }); await a.locator('#start').click(); await wait(b, () => pinturaDebug.room.state.phase === 'playing');
   // Both clients load the court, then the room counts 3-2-1: input only counts after ¡YA!
   await wait(b, () => { const s = pinturaDebug.room.state; return !s.loading && !s.countdown; });
