@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ServerError } from '@colyseus/core';
-import { PanaRoom, roomState, ROOM_FULL, InputBuffer, fillBots, memberAvatar, BOT_SEAT, leadToken } from '../src/room-kit.js';
+import { PanaRoom, roomState, ROOM_FULL, InputBuffer, fillBots, memberAvatar, BOT_SEAT, leadToken, MAX_MEMBERS } from '../src/room-kit.js';
 import { cappedRoom, createLimiter, clientAddress } from '../src/colyseus.js';
 import RelayRoom, { GUEST_BYTES } from '../src/relay-room.js';
 import { serveStatic, MIME } from '../src/static.js';
@@ -77,8 +77,9 @@ test('a room that fails while creating releases its code and handler errors are 
 
 test('game.json players is the room cap', () => {
   assert.equal(new (cappedRoom(RelayRoom, 4))().maxClients, 4);
-  assert.equal(new (cappedRoom(RelayRoom, 20))().maxClients, 8);
-  assert.equal(new (cappedRoom(RelayRoom, undefined))().maxClients, 8);
+  assert.equal(new (cappedRoom(RelayRoom, 20))().maxClients, MAX_MEMBERS);
+  assert.equal(new (cappedRoom(RelayRoom, 8))().maxClients, 8);
+  assert.equal(new (cappedRoom(RelayRoom, undefined))().maxClients, MAX_MEMBERS);
 });
 
 test('room helpers: input expiry, bot seats, safe avatars', () => {
