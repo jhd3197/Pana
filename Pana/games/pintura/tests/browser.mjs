@@ -11,7 +11,9 @@ async function walk(p, key, until) { await p.keyboard.down(key); await wait(p, `
 // Spawns are drawn per round. From any plaza spawn: out to the clear lane past
 // |24| round the court, along it to its south side (z < -25.5), then to x. Keys
 // move along world axes (the overview, or first person facing yaw 0).
-async function toSouthLane(p, x) {
+// edge: x is a wall to press against (the court ends near |26.4|), so walk on until past it;
+// otherwise x only needs to be near.
+async function toSouthLane(p, x, edge = false) {
   const at = () => p.evaluate(`(({ x, z }) => ({ x, z }))(${mine})`);
   let me = await at();
   if (Math.abs(me.z) >= Math.abs(me.x)) await walk(p, me.z < 0 ? 'w' : 's', me.z < 0 ? 'z < -24' : 'z > 24');
@@ -23,7 +25,8 @@ async function toSouthLane(p, x) {
     await walk(p, 'w', 'z < -25.5');
   }
   me = await at();
-  if (Math.abs(me.x - x) > 1) await walk(p, me.x < x ? 'd' : 'a', me.x < x ? `x > ${x}` : `x < ${x}`);
+  if (edge) { if (x > 0 ? me.x <= x : me.x >= x) await walk(p, x > 0 ? 'd' : 'a', x > 0 ? `x > ${x}` : `x < ${x}`); }
+  else if (Math.abs(me.x - x) > 1) await walk(p, me.x < x ? 'd' : 'a', me.x < x ? `x > ${x}` : `x < ${x}`);
   await walk(p, 'w', 'z < -25.5');
 }
 async function open(name, room = code, mobile = false) {
@@ -71,9 +74,9 @@ try {
   await b.locator('#menu').click(); await b.locator('#pana-tab-settings').click();
   await b.locator('.pana-settings-nav button', { hasText: 'Pepazo' }).click();
   await b.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await b.keyboard.press('Escape');
-  await b.locator('#world').focus(); await toSouthLane(b, 26);
+  await b.locator('#world').focus(); await toSouthLane(b, 26, true);
   await wait(b, `!${mine}.walk`);
-  await a.locator('#world').focus(); await a.evaluate(() => pinturaDebug.world.look(-pinturaDebug.world.yaw)); await toSouthLane(a, -21);
+  await a.locator('#world').focus(); await a.evaluate(() => pinturaDebug.world.look(-pinturaDebug.world.yaw)); await toSouthLane(a, -10);
   const guest = await b.evaluate(() => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id));
   await wait(a, id => { const g = pinturaDebug.room.state.players.find(p => p.id === id); return g.x > 26 && g.z < -25.5; }, guest.id);
   await a.evaluate(id => { const { room, world } = pinturaDebug, me = room.state.players.find(p => p.id === room.id), g = room.state.players.find(p => p.id === id); world.look(Math.atan2(-(g.x - me.x), -(g.z - me.z)) - world.yaw); }, guest.id);
