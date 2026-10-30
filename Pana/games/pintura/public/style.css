@@ -51,6 +51,12 @@ body.called .callout { display: grid; position: fixed; left: 50%; top: 24%; tran
 @keyframes callout-pop { 0% { opacity: 0; transform: translateX(-50%) scale(1.6); } 12% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-14px); } }
 .variant { display: none; }
 body.round-start .variant { display: block; position: fixed; left: 50%; top: 30%; transform: translateX(-50%); pointer-events: none; animation: hit-fade 2.4s ease-in forwards; }
+/* Until this pana's court is built and every rival loaded: the map's card, not a half-drawn scene. */
+.round-loading { z-index: 30; }
+/* The round's 3-2-1 and its ¡YA!: the callout's lettering, big and centred. */
+.countdown { display: none; }
+body.counting .countdown { display: block; position: fixed; left: 50%; top: 42%; margin: 0; transform: translate(-50%, -50%); pointer-events: none; z-index: 7; font: 400 clamp(96px, 16vw, 180px)/1 var(--pk-display, var(--pk-sans)); color: var(--pk-game); text-shadow: 0 6px 0 #0006, 0 0 24px #0004; animation: count-pop .9s ease-out both; }
+@keyframes count-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.8); } 18%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 .killfeed { position: fixed; top: 200px; left: 24px; margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; pointer-events: none; max-width: min(340px, 60vw); }
 .killfeed li { padding: 6px 10px; border-radius: 10px; background: var(--pk-night); font-size: 13px; font-weight: 700; animation: feed-in .25s ease-out; }
 .killfeed b { font-weight: 900; }

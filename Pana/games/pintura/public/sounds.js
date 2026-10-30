@@ -25,5 +25,8 @@ export const sfx = {
     if (long) { sound.tone(1760 * lift, .3, .22, 'sine', .07); sound.tone(2640 * lift, .38, .2, 'sine', .04); }
   },
   hurt() { noise(.18, 480, .6, .32); sound.sweep(320, 90, .22, 'sine', .14); },
+  // The 3-2-1 ticks, then a brighter rising call for ¡YA!
+  count() { sound.tone(660, 0, .12, 'square', .07); },
+  go() { sound.tone(880, 0, .14, 'square', .08); sound.tone(1320, .1, .32, 'square', .08); },
   out() { noise(.3, 380, .5, .3); sound.sweep(520, 100, .7, 'triangle', .12); },
 };

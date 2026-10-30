@@ -21,6 +21,7 @@ import { createLookControls } from '/engine/play/first-person.js';
 import { createFeats } from '/engine/feats.js';
 import { createHitFeats } from './feats.js';
 import { coverFor, TARGET, segmentBox, paintSeats, variantName } from './rules.js';
+import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { loc, locn } from '/engine/i18n.js';
 
 const $ = id => document.getElementById(id), code = roomCode();
@@ -41,7 +42,7 @@ $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-ar
 } };
 const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
 const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: FIELDS, change: options => room.configure(options), reset() {
-  room.configure(DEFAULT_OPTIONS); room.selectMap('plaza'); room.selectDifficulty(DEFAULT_DIFFICULTY);
+  room.configure(DEFAULT_OPTIONS); room.selectMap('terminal'); room.selectDifficulty(DEFAULT_DIFFICULTY);
 } });
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),
@@ -163,6 +164,33 @@ function aguante(state, me) {
   $('aguante').replaceChildren(...Array.from({ length: total }, (_, i) => { const pip = document.createElement('i'); pip.className = i < left ? 'pip' : 'pip pip--painted'; return pip; }));
   $('aguante').setAttribute('aria-label', loc('Aguante {left} de {total}', { left, total }));
 }
+// Each round: build its court and compile it, then tell the room this pana can play.
+let preparedRound = 0, preparingRound = 0, lastCount = 0;
+async function prepareRound(state) {
+  const round = preparingRound = state.round;
+  if (!window.PANA_PREPARED) await new Promise(resolve => document.addEventListener('pana:game-prepared', resolve, { once: true }));
+  world.setMap(state.mapId, state.variant || 0); await world.renderer.compileAsync(world.scene, world.camera).catch(() => {});
+  if (preparingRound !== round) return;
+  preparedRound = round; room.ready(round); render(room.state);
+}
+// The loading card while anyone loads, then 3, 2, 1 and ¡YA! from the room's countdown.
+function roundStart(state) {
+  const round = state.phase === 'playing' ? state.round : 0;
+  if (round && preparingRound !== round) prepareRound(state);
+  const preparing = !!round && (state.loading > 0 || preparedRound !== round);
+  $('round-loading').hidden = !preparing;
+  if (preparing) {
+    $('loading-map').textContent = paintArenaInfo(state.mapId).name; $('loading-court').textContent = loc('Cancha {court}', { court: loc(variantName(state.mapId, state.variant || 0)) });
+    $('loading-copy').textContent = preparedRound === round ? loc('Esperando a los demás panas…') : loc('Cargando la cancha…');
+  }
+  const count = round && !preparing && state.countdown > 0 ? Math.ceil(state.countdown) : 0;
+  if (count === lastCount) return;
+  clearTimeout(roundStart.timer);
+  if (count) { $('countdown').textContent = String(count); flash('counting'); sfx.count(); }
+  else if (round && !preparing) { $('countdown').textContent = loc('¡YA!'); flash('counting'); flash('round-start'); sfx.go(); roundStart.timer = setTimeout(() => document.body.classList.remove('counting'), 1000); }
+  else document.body.classList.remove('counting');
+  lastCount = count;
+}
 const teamScore = state => loc('Naranja {orange} — Turquesa {teal}', { orange: state.teamScores?.[0] || 0, teal: state.teamScores?.[1] || 0 });
 function render(state) {
   optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
@@ -191,7 +219,8 @@ function render(state) {
   $('respawn').textContent = me?.eliminated ? lastKiller ? loc('{name} te pintó desde {distance} m · sin vidas, observando la ronda', lastKiller) : loc('¡Te pintaron! · sin vidas, observando la ronda')
     : lastKiller ? loc('{name} te pintó desde {distance} m · vuelves en {n}', { ...lastKiller, n: Math.ceil(me?.respawn || 0) }) : loc('¡Te pintaron! · vuelves en {n}', { n: Math.ceil(me?.respawn || 0) });
   // Events and balls are numbered per simulation: starting practice begins a new count.
-  if (room.local !== lastLocal) { lastLocal = room.local; lastEvent = null; lastBall = 0; lastRound = 0; }
+  if (room.local !== lastLocal) { lastLocal = room.local; lastEvent = null; lastBall = 0; lastRound = 0; preparedRound = preparingRound = 0; }
+  roundStart(state);
   const events = state.events || [];
   if (lastEvent === null) lastEvent = Math.max(0, ...events.map(e => e.n));
   for (const e of events) if (e.n > lastEvent) { lastEvent = e.n; if (state.phase === 'playing') announce(e, state); }
@@ -200,7 +229,7 @@ function render(state) {
   if(state.phase==='playing' && $('armory').open) $('armory').close();
   $('stamina').style.setProperty('--left', String(me?.stamina ?? 1)); $('stamina').classList.toggle('stamina--full', (me?.stamina ?? 1) >= 1);
   if (!$('scoreboard').hidden) showBoard(true);
-  if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = loc('Cancha {court}', { court: loc(variantName(state.mapId, state.variant || 0)) }); flash('round-start'); hitFeats.reset(); }
+  if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = loc('Cancha {court}', { court: loc(variantName(state.mapId, state.variant || 0)) }); hitFeats.reset(); }
   $('results').hidden = !finished;
   if (finished) {
     menu.close(); looking.release(); showBoard(false); const winners = order.filter(p => state.winners?.includes(p.id));

@@ -307,7 +307,7 @@ export function createScene(canvas) {
     aim.visible = !lobby && !first && !!aimPoint; if (aimPoint) aim.position.set(aimPoint.x, .07, aimPoint.z);
     puffs.update(dt); elapsed += dt; sky.update(elapsed); renderer.render(scene, camera);
   }
-  return { renderer, scene, camera, avatars, draw,
+  return { renderer, scene, camera, avatars, draw, setMap,
     setView(value) { cameraView = value; initialized = false; },
     get view() { return cameraView; },
     get yaw() { return yaw; },

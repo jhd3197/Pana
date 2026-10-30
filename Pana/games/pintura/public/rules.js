@@ -7,11 +7,15 @@ import { NOCHE_COVERS, NOCHE_SPAWNS, NOCHE_SIZE } from './noche-layout.js';
 import { TERMINAL_COVERS, TERMINAL_SPAWNS, TERMINAL_BOUNDS } from './terminal-layout.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/play/difficulty.js';
 import { clamp } from '../../../engine/random.js';
+import { pickSpawn } from './spawn-picker.js';
 import { locKey } from '../../../engine/i18n.js';
 
 // Pepazo plays a 54 m court: every map's cover spreads 1.5× from the centre and
 // an outer ring of barricades keeps the long perimeter lanes from staying open.
 export const SIZE = 27, SPREAD = 1.5, DURATION = 180, TARGET = 10, SPEED = 7, RADIUS = .55, BALL_SPEED = 34;
+// A round holds still until every pana has loaded its court (or READY_TIMEOUT
+// seconds passed), then counts COUNTDOWN seconds down before anyone moves.
+export const READY_TIMEOUT = 8, COUNTDOWN = 3;
 export const COLORS = ['#f28b42', '#29c5cd', '#d363a6', '#a1bd43', '#8d85df', '#f0c34c', '#ed615c', '#64b898'];
 const RING = [[11, 21.5, 3.6, 1.6, 2], [-11, -21.5, 3.6, 1.6, 2], [-11, 21.5, 3.6, 1.6, 1.8], [11, -21.5, 3.6, 1.6, 1.8],
   [21.5, -11, 1.6, 3.6, 2], [-21.5, 11, 1.6, 3.6, 2], [21.5, 11, 1.6, 3.6, 1.8], [-21.5, -11, 1.6, 3.6, 1.8]].map(([x, z, w, d, h]) => ({ x, z, w, d, h, height: h }));
@@ -114,7 +118,7 @@ function segmentCircle(x, z, dx, dz, p) {
   const t = (-b - Math.sqrt(disc)) / (2 * a); return t >= 0 && t <= 1 ? t : null;
 }
 export class Arena {
-  constructor(mapId = 'plaza', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.puddles = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; }
+  constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.puddles = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; }
   selectKit(id, value) { const p=this.players.find(p=>p.id===id && p.connected); if(!p || this.phase==='playing') return false; p.kit=cleanKit(value); p.weapon=p.kit.weapon; return true; }
   configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.players.forEach(p => { p.color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? p.team : p.seat]; }); return true; }
   moveSeat(actorId, from, to, hostId) {
@@ -142,6 +146,8 @@ export class Arena {
     const seat = p && !occupied.includes(p.seat) ? p.seat : Array.from({ length: 8 }, (_, i) => i).find(i => !occupied.includes(i));
     if (seat === undefined) return null;
     const team = seat % 2, color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? team : seat];
+    // Arriving after the wait (mid-countdown or mid-round) counts as ready.
+    if (this.phase === 'playing' && !this.loading) this.ready.add(id);
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); return p; }
     p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, shots: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p); return p;
@@ -149,17 +155,39 @@ export class Arena {
   start() {
     if (this.phase === 'playing' || !this.canStart()) return false;
     this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = []; this.grenades = []; this.puddles = [];
-    this.players.forEach((p, i) => Object.assign(p, spawnsFor(this.mapId)[i % 8], { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5 }));
+    this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5 }));
     this.players.forEach(p => this.refill(p));
+    // One by one, so each pana spawns away from the rivals already placed and on a free spot.
+    const placed = [];
+    for (const p of this.players) { Object.assign(p, this.spawnPoint(p, placed.filter(q => !this.sameTeam(p, q)), placed.map(q => q.spawn))); placed.push(p); }
+    this.ready = new Set(); this.loading = READY_TIMEOUT; this.countdown = 0; this.checkReady();
     this.say(locKey('¡A pintar! Cancha {variant}.'), { variant: variantName(this.mapId, this.variant) }); return true;
   }
+  // Nothing moves, fires or takes paint, and the clock waits, until the 3-2-1 ends.
+  get live() { return this.phase === 'playing' && !this.loading && !this.countdown; }
+  // A pana's client loaded this round's court. Bots never wait; nor do rounds without people.
+  markReady(id, round) {
+    if (this.phase !== 'playing' || !this.loading || !Number.isInteger(round) || round !== this.round || !this.players.some(p => p.id === id && p.connected && !p.bot)) return false;
+    this.ready.add(id); this.checkReady(); return true;
+  }
+  checkReady() { if (this.loading && this.players.every(p => p.bot || !p.connected || this.ready.has(p.id))) { this.loading = 0; this.countdown = COUNTDOWN; } }
+  // Skip the wait and the countdown: the armory's range and tests that only exercise play.
+  go() { this.loading = this.countdown = 0; }
   refill(p) { const stats=kitStats(p.kit,this.options); p.ammo=stats.magazine; p.reserve=stats.reserve ?? 0; p.weapon=stats.id; p.grenadeReady=true; p.grenadeHeld=false; p.shots=0; }
+  // Respawn protection: 1.5 s of shield (the ring blinks in the scene) so nobody is
+  // painted on arrival; firing or throwing cancels it early.
   respawn(p) {
-    const spawn = [...spawnsFor(this.mapId)].sort((a, b) => {
-      const nearest = s => Math.min(...this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)).map(q => Math.hypot(q.x - s.x, q.z - s.z)), 100);
-      return nearest(b) - nearest(a);
-    })[0];
+    const spawn = this.spawnPoint(p, this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)));
     Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, stains: [], calm: 0, stamina: 1 }); this.refill(p);
+  }
+  // A spawn far from these rivals, out of their sight if possible and not p's last one.
+  // Team rounds keep each side on its own half of the spawns: even indices are team 0's
+  // (El Puerto's west base and the orange flag), odd ones team 1's.
+  spawnPoint(p, enemies, taken = []) {
+    const spawns = spawnsFor(this.mapId), teams = this.options.mode === 'teams' || this.options.flag;
+    const sees = (e, s) => !this.cover.some(o => segmentBox(e.x, e.z, s.x - e.x, s.z - e.z, o) !== null);
+    p.spawn = pickSpawn(spawns, { enemies, taken, last: p.spawn ?? -1, allowed: teams ? spawns.map((_, i) => i).filter(i => i % 2 === p.team) : null, sees, rng: this.random });
+    const { x, z } = spawns[p.spawn]; return { x, z };
   }
   // A unit step for bot p along open cells toward (tx, tz), or null when no route is known.
   route(p, tx, tz) {
@@ -202,7 +230,10 @@ export class Arena {
     return cleanInput({ x, z, ax: aimX, az: aimZ, fire: clear && length < 34 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear });
   }
   step(dt, inputs = new Map()) {
-    if (this.phase !== 'playing') return; dt = clamp(dt, 0, .05); this.time = Math.max(0, this.time - dt);
+    if (this.phase !== 'playing') return; dt = clamp(dt, 0, .05);
+    if (this.loading) { this.loading = Math.max(0, this.loading - dt); if (this.loading) this.checkReady(); else this.countdown = COUNTDOWN; return; }
+    if (this.countdown) { this.countdown = Math.max(0, this.countdown - dt); return; }
+    this.time = Math.max(0, this.time - dt);
     for (const p of this.players) {
       if (!p.connected || p.eliminated) continue;
       p.slow = Math.max(0, (p.slow || 0) - dt);
@@ -335,7 +366,7 @@ export class Arena {
     const best = teams ? Math.max(...this.teamScores) : Math.max(...this.players.map(p => p.score));
     return this.players.filter(p => (teams ? this.teamScores[p.team] : p.score) === best).map(p => p.id);
   }
-  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, time: this.time, players: this.players.map(p => ({ ...p, impact: p.impact ? { ...p.impact } : null, stains: [...p.stains] })), grenades:this.grenades.map(g=>({...g})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message, messageVars: this.messageVars ? { ...this.messageVars } : null }; }
+  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, loading: this.loading, countdown: this.countdown, time: this.time, players: this.players.map(p => ({ ...p, impact: p.impact ? { ...p.impact } : null, stains: [...p.stains] })), grenades:this.grenades.map(g=>({...g})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message, messageVars: this.messageVars ? { ...this.messageVars } : null }; }
 }
 
 // Stable lobby positions are independent of member IDs and survive roster changes.

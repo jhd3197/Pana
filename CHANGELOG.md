@@ -12,6 +12,10 @@ becomes the GitHub release's notes.
   Nueva opción «Parrilla» (Normal o 12 carros): los bots llenan los puestos
   vacíos en carreras y copas, solo o en la sala online, que ahora recibe
   hasta doce panas; con ocho o menos todo corre igual que antes.
+- **Pepazo espera a todos antes de arrancar la ronda.**
+  Hay pantalla de carga y, cuando todos cargaron, una cuenta 3-2-1: hasta el
+  ¡YA! nadie se mueve, dispara ni recibe disparos. Ahora apareces lejos de
+  tus rivales, y El Puerto es el mapa por defecto.
 - **En Trifulca los peleadores ya no se meten uno dentro del otro.**
   Cada pana guarda su espacio en el ring y se separa suave si queda
   encima del otro; los golpes, el empujón y el agarre empujan igual que antes.
