@@ -6,6 +6,26 @@ const base = process.env.PANA_TEST_URL || 'http://localhost:8461', code = `paint
 const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
 const out = 'Pana/games/pintura/qa'; await mkdir(out, { recursive: true });
 const wait = (p, fn, arg, timeout = 60000) => p.waitForFunction(fn, arg, { timeout });
+const mine = 'pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id)';
+async function walk(p, key, until) { await p.keyboard.down(key); await wait(p, `${mine}.${until}`); await p.keyboard.up(key); }
+// Spawns are drawn per round. From any plaza spawn: out to the clear lane past
+// |24| round the court, along it to its south side (z < -25.5), then to x. Keys
+// move along world axes (the overview, or first person facing yaw 0).
+async function toSouthLane(p, x) {
+  const at = () => p.evaluate(`(({ x, z }) => ({ x, z }))(${mine})`);
+  let me = await at();
+  if (Math.abs(me.z) >= Math.abs(me.x)) await walk(p, me.z < 0 ? 'w' : 's', me.z < 0 ? 'z < -24' : 'z > 24');
+  else await walk(p, me.x < 0 ? 'a' : 'd', me.x < 0 ? 'x < -24' : 'x > 24');
+  me = await at();
+  if (me.z > -24) {
+    // From the far x side, the lane itself leads south; from the north, cross to x's side first.
+    if (Math.abs(me.x) < 24 || Math.sign(me.x) === Math.sign(x)) await walk(p, x < 0 ? 'a' : 'd', x < 0 ? 'x < -24.5' : 'x > 24.5');
+    await walk(p, 'w', 'z < -25.5');
+  }
+  me = await at();
+  if (Math.abs(me.x - x) > 1) await walk(p, me.x < x ? 'd' : 'a', me.x < x ? `x > ${x}` : `x < ${x}`);
+  await walk(p, 'w', 'z < -25.5');
+}
 async function open(name, room = code, mobile = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1 });
   await context.addInitScript(name => { localStorage.setItem('pana:name', name); localStorage.setItem('pana:settings', JSON.stringify({ sound: false, quality: 'baja' })); localStorage.setItem('pana:avatar', JSON.stringify({ outfit: 'hoodie', outfitColor: '#3775cc', hat: 'gorra' })); }, name);
@@ -49,13 +69,9 @@ try {
   await b.locator('#menu').click(); await b.locator('#pana-tab-settings').click();
   await b.locator('.pana-settings-nav button', { hasText: 'Pepazo' }).click();
   await b.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await b.keyboard.press('Escape');
-  const mine = 'pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id)';
-  await b.locator('#world').focus();
-  await b.keyboard.down('d'); await wait(b, `${mine}.x > 26`); await b.keyboard.up('d');
-  await b.keyboard.down('w'); await wait(b, `${mine}.z < -25.5`); await b.keyboard.up('w');
+  await b.locator('#world').focus(); await toSouthLane(b, 26);
   await wait(b, `!${mine}.walk`);
-  await a.locator('#world').focus(); await a.evaluate(() => pinturaDebug.world.look(-pinturaDebug.world.yaw));
-  await a.keyboard.down('w'); await wait(a, `${mine}.z < -25.5`); await a.keyboard.up('w');
+  await a.locator('#world').focus(); await a.evaluate(() => pinturaDebug.world.look(-pinturaDebug.world.yaw)); await toSouthLane(a, -21);
   const guest = await b.evaluate(() => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id));
   await wait(a, id => { const g = pinturaDebug.room.state.players.find(p => p.id === id); return g.x > 26 && g.z < -25.5; }, guest.id);
   await a.evaluate(id => { const { room, world } = pinturaDebug, me = room.state.players.find(p => p.id === room.id), g = room.state.players.find(p => p.id === id); world.look(Math.atan2(-(g.x - me.x), -(g.z - me.z)) - world.yaw); }, guest.id);
