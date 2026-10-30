@@ -28,10 +28,10 @@ import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer, getSettings, onSettings, rendererOptions } from '/engine/settings.js';
 import { applyRaceQuality } from './quality.js';
 import { shout } from '/engine/kit.js';
-import { LAPS, lapsForTrack, RIVALS, AI_WHEELS, POSE_HZ, FINISH_GRACE_MS, GP_GRID, GP_INTERMISSION_MS, GP_MIN_READ_MS, gridSlot, cleanCosmetics, aiVessels, kitTunes } from './online-rules.js';
+import { LAPS, lapsForTrack, RIVALS, AI_WHEELS, POSE_HZ, FINISH_GRACE_MS, fieldSize, rivalName, GP_INTERMISSION_MS, GP_MIN_READ_MS, gridSlot, cleanCosmetics, aiVessels, kitTunes } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
 import { CUPS, cupById, trophyName, cupTracks, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
-import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, finalizeStage, markRacing, markStarted, retryStage, seededOrder, seededUnit, standings as championshipStandings } from './cup-rules.js';
+import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, finalizeStage, markRacing, markStarted, retryStage, seededOrder, cupSkill, standings as championshipStandings } from './cup-rules.js';
 import { advanceLap, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
@@ -272,6 +272,7 @@ $('play').onclick = () => {
 $('go-online').onclick = () => { sound.unlock(); return goOnline(newRoomCode(), true); };
 $('lobby-invite').onclick = () => menu.share();
 $('lobby-bots').onchange = (e) => net?.bots(e.target.checked);
+for (const b of $('field-pick').querySelectorAll('button')) b.onclick = () => { const size = Number(b.dataset.field); if (!net) { setup.field = size; saveSetup(); renderSetup(); } else if (net.isHost) net.field(size); };
 $('lobby-solo').onclick = () => { location.href = location.pathname; };
 
 // ======================================================================
@@ -385,7 +386,7 @@ function renderSetup() {
   const hostCanConfig = !net || (net.isHost && ['lobby', 'results', 'complete'].includes(net.state?.phase));
   press('mode-pick', 'mode', activeMode);
   press('difficulty-pick', 'difficulty', activeDiff);
-  press('laps-pick', 'laps', setup.laps);
+  press('laps-pick', 'laps', setup.laps); press('field-pick', 'field', net ? (net.state?.field || 0) : setup.field);
   const lapsRow = $('laps-pick').closest('.setup-row');
   if (lapsRow) lapsRow.hidden = !!net;
   const mirrorOpen = mirrorUnlocked(loadTrophies());
@@ -396,10 +397,12 @@ function renderSetup() {
   $('split').setAttribute('aria-checked', String(setup.split));
   const battle = activeMode === 'battle', cup = isCupMode(activeMode) ? cupById(activeMode) : null;
   if (!net) {
-    $('launch-note').innerHTML = `<span class="pk-dot"></span>${cup ? (setup.split ? loc('Dos panas contra 6 rivales') : loc('Tú contra 7 rivales')) : setup.split ? loc('Dos panas contra 2 rivales') : loc('Tú contra 3 rivales')}`;
+    const rivals = (battle ? BATTLE_RACERS : localField(!!cup)) - (setup.split ? 2 : 1);
+    $('launch-note').innerHTML = `<span class="pk-dot"></span>${setup.split ? loc('Dos panas contra {n} rivales', { n: rivals }) : loc('Tú contra {n} rivales', { n: rivals })}`;
   }
   for (const b of $('laps-pick').querySelectorAll('button')) b.disabled = battle || !!cup;
   for (const b of $('difficulty-pick').querySelectorAll('button')) b.disabled = !hostCanConfig;
+  for (const b of $('field-pick').querySelectorAll('button')) b.disabled = !hostCanConfig || battle || (!!net && !net.state?.bots);
   const trophies = profile.trophies, legacy = profile.legacyTrophies;
   for (const b of $('mode-pick').querySelectorAll('button')) {
     b.hidden = !!net && b.dataset.mode === 'battle';
@@ -616,8 +619,8 @@ const lapProgress = (c) => paramOf(c.x, c.z, c.y) / T.TOTAL;
 // ======================================================================
 // Racers
 // ======================================================================
-const RACERS = 4;
-const GP_RACERS = 8;
+const BATTLE_RACERS = 4;   // races and cups take the field size from setup (online-rules.js fieldSize)
+const localField = cup => fieldSize({ humans: setup.split ? 2 : 1, cup, field: setup.field });
 const LOCAL_PLAYER = 'local-player';
 const LOCAL_GUEST = 'local-guest';
 
@@ -636,18 +639,15 @@ function createLocalCup(cupId, playerIndex, wheelId, split, difficulty) {
     id: LOCAL_GUEST, name: loc('Jugador 2'), kind: 'human', owner: 'local', avatar: randomAvatar(),
     loadout: { car: guestCar, wheel: 'calle' }, skillSeed: `${sessionId}:guest`,
   });
-  for (let i = 0; entrants.length < GP_RACERS; i++) {
+  for (let i = 0; entrants.length < localField(true); i++) {
     const car = cars[i];
     entrants.push({
-      id: `local-bot-${i + 1}`, name: names[i], kind: 'bot', owner: 'local', avatar: randomAvatar(),
+      id: `local-bot-${i + 1}`, name: rivalName(names, i), kind: 'bot', owner: 'local', avatar: randomAvatar(),
       loadout: { car, wheel: AI_WHEELS[CARS[car].id] || 'calle', ...aiVessels(CARS[car].id) }, skillSeed: `${sessionId}:bot-${i + 1}`,
     });
   }
   return createCupSession({ cupId, sessionId, seed, difficulty, bots: true, entrants });
 }
-
-const cupSkill = (entrant, difficulty) => difficulty.skill[0]
-  + seededUnit(entrant.skillSeed) * (difficulty.skill[1] - difficulty.skill[0]);
 
 function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosmetics = null) {
   if (typeof avatar === 'string') { try { avatar = JSON.parse(avatar); } catch { avatar = null; } }
@@ -913,7 +913,8 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     } else {
       const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
       const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
-      const rivals = others.slice(0, RACERS - 1).map((car, i) => ({ car, name: names[i], wheel: AI_WHEELS[CARS[car].id] }));
+      const RACERS = race.mode === 'battle' ? BATTLE_RACERS : localField(false), pool = [...names, ...RIVALS.slice(6)];
+      const rivals = others.slice(0, RACERS - 1).map((car, i) => ({ car, name: rivalName(pool, i), wheel: AI_WHEELS[CARS[car].id] }));
       race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
       if (race.split) {
         const p2 = makeRacer((playerIndex + 1) % CARS.length, false, loc('Jugador 2'), 'calle');
@@ -922,7 +923,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
         race.cars.push(p2);
       }
       for (let i = race.cars.length; i < RACERS; i++) {
-        if (!await step(loc('Preparando los panas… {n}/{total}', { n: i, total: RACERS }), 0.5 + i * 0.08)) return;
+        if (!await step(loc('Preparando los panas… {n}/{total}', { n: i, total: RACERS }), 0.5 + i * 0.32 / RACERS)) return;
         const r = rivals[i - (race.split ? 2 : 1)] ?? rivals[i - 1];
         race.cars.push(makeRacer(r.car, false, r.name, r.wheel, r.avatar));
       }
@@ -2094,8 +2095,7 @@ function renderLobby(s) {
     `<li class="pk-row${p.id === net.id ? ' is-me' : ''}${p.connected ? '' : ' away'}" translate="no"><span class="pk-row-n">${p.id === s.host ? SVG.crown : i + 1}</span>`
     + `<span class="chip" style="--c:${CARS[p.car]?.color || '#fff'}"></span>${esc(p.name)}`
     + `<span class="pk-row-end">${p.connected ? esc(CARS[p.car]?.name || '') : loc('reconectando…')}</span></li>`).join('');
-  const gridTarget = cup ? GP_GRID : 4;
-  const bots = Math.max(0, (s.bots ? Math.max(gridTarget, s.players.length) : s.players.length) - s.players.length);
+  const bots = fieldSize({ humans: s.players.length, bots: s.bots, cup: !!cup, field: s.field }) - s.players.length;
   $('launch-note').innerHTML = `<span class="pk-dot"></span>${locn(s.players.length, '{n} pana', '{n} panas')}${bots ? ` + ${locn(bots, '{n} rival', '{n} rivales')}` : ''}`;
   $('lobby-bots').checked = s.bots;
   $('lobby-bots').disabled = !host || live;

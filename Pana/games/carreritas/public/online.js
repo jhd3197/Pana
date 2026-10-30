@@ -111,6 +111,7 @@ class RaceLink {
   pick(car, wheel, cosmetics) { this.send('pick', { car, wheel, cosmetics }); }
   track(id) { this.send('track', { id }); }
   bots(on) { this.send('bots', { on }); }
+  field(size) { this.send('field', { size }); }
   mode(mode) { this.send('mode', { mode }); }
   difficulty(id) { this.send('difficulty', { id }); }
   start() { this.send('start'); }

@@ -1,4 +1,5 @@
 import { cupById } from './cup-definitions.js';
+import { MAX_RACERS } from './online-rules.js';
 
 export const POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
 export const CLASSIFIED = new Set(['finished', 'dnf']);
@@ -22,6 +23,9 @@ function randomSource(seed) {
 }
 
 export const seededUnit = (seed) => randomSource(seed)();
+// A cup bot's skill: fixed for the whole cup by its seed, inside the difficulty's band.
+export const cupSkill = (entrant, difficulty) => difficulty.skill[0]
+  + seededUnit(entrant.skillSeed) * (difficulty.skill[1] - difficulty.skill[0]);
 
 export function seededOrder(ids, seed) {
   const random = randomSource(seed);
@@ -58,7 +62,7 @@ const copyEntrant = (entrant, index) => {
 export function createCupSession({ cupId = 'pana', sessionId, seed = 1, difficulty = 'normal', bots = true, entrants }) {
   const cup = cupById(cupId);
   if (!cup || cup.id !== cupId || !cup.available) throw new TypeError('Cup is not available');
-  if (!Array.isArray(entrants) || entrants.length < 1 || entrants.length > 8) throw new TypeError('A cup needs one to eight entrants');
+  if (!Array.isArray(entrants) || entrants.length < 1 || entrants.length > MAX_RACERS) throw new TypeError(`A cup needs one to ${MAX_RACERS} entrants`);
   const roster = entrants.map(copyEntrant);
   const ids = roster.map(entrant => entrant.id);
   if (new Set(ids).size !== ids.length) throw new TypeError('Entrant IDs must be unique');

@@ -87,6 +87,8 @@
 .finish-screen #result-board .pk-row.is-me .pk-row-n{background:var(--pk-yellow);color:#111018}
 .finish-screen #result-board .chip{border-radius:0;width:7px;align-self:stretch;height:auto;background:var(--c)}
 .finish-screen #result-board .pk-row-name{font:24px var(--pk-display)}.finish-screen #result-board small{font:12px var(--pk-sans);color:inherit;opacity:.8}
+/* A grid past eight cars: shorter rows so all twelve fit beside the personal card. */
+.finish-screen #result-board:has(> :nth-child(9)){gap:5px}.finish-screen #result-board:has(> :nth-child(9)) .pk-row{min-height:48px}.finish-screen #result-board:has(> :nth-child(9)) .pk-row-n{font-size:28px}
 .finish-screen .race-personal{grid-column:2;grid-row:1;position:static;width:auto;margin:0;border:0;padding:0 0 10px;transform:skew(-8deg)}
 .finish-screen .race-personal dl{display:block}.finish-screen .race-personal .pl{font-size:76px}.finish-screen .race-personal .who b{font-size:27px}.finish-screen .race-personal dl>div{padding:12px 20px}.finish-screen .race-personal dt{font-size:12px}.finish-screen .race-personal dd{font-size:26px}
 .finish-screen #cup-table{grid-column:1}.finish-screen .res-coins{grid-column:2;border:0;padding:0;background:none}.finish-screen .res-coins>.mango-symbol {display:none}

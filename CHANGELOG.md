@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas ya corre con hasta doce carros en la pista.**
+  Nueva opción «Parrilla» (Normal o 12 carros): los bots llenan los puestos
+  vacíos en carreras y copas, solo o en la sala online, que ahora recibe
+  hasta doce panas; con ocho o menos todo corre igual que antes.
 - **En Trifulca los peleadores ya no se meten uno dentro del otro.**
   Cada pana guarda su espacio en el ring y se separa suave si queda
   encima del otro; los golpes, el empujón y el agarre empujan igual que antes.

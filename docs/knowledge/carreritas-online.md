@@ -20,9 +20,11 @@ are less than 15 seconds apart. Warming an offline garage does not load the
 Colyseus SDK; a later cold CDN fetch can otherwise exhaust the deliberate party
 leader window and test a different scenario from the one intended.
 
-Aguacero sends one `cloud` effect with a unique ID, timestamp and at most seven
-target/delay/duration records. Keep this below the room's 512-character effect
-limit. Delayed recipients subtract elapsed server-clock time before scheduling;
+Aguacero sends one `cloud` effect with a unique ID, timestamp and one
+target/delay/duration record per rival: up to eleven on a twelve-car grid,
+delays rounded to centiseconds. Keep this below the room's 1,024-character
+effect limit (it was 512 for eight cars); a full twelve-car wave is about
+500 characters. Delayed recipients subtract elapsed server-clock time before scheduling;
 duplicate IDs are bounded to a 64-entry cache, reset with the item system.
 Chancleta damage is still decided exclusively by its victim's client, and its
 `hit` relay ends the same projectile on other screens.

@@ -39,6 +39,7 @@ export function cleanSetup(setup = {}) {
     laps: LAP_CHOICES.has(source.laps) ? source.laps : 3,
     mirror: source.mirror === true,
     split: source.split === true,
+    field: source.field === 12 ? 12 : 0,   // online-rules.js FIELDS: 0 = the mode's grid
   };
 }
 

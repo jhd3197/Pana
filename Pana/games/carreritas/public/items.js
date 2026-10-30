@@ -10,6 +10,7 @@ import { isGhost } from './recovery-rules.js';
 import { makeRocket, makeChancleta, makeShield, makeTrap, ITEM_ICONS } from './item-art.js';
 import { loseCoins } from './drive-rules.js';
 import { rng } from '../../../engine/random.js';
+import { MAX_RACERS } from './online-rules.js';
 
 // Coins move, spin and hide through plain Object3D proxies, exactly as when
 // each was a mesh; their pieces draw as one InstancedMesh per part. Forty
@@ -342,7 +343,7 @@ export function createItems(hooks) {
       const wave = rainWave(hooks.standings(), c, time);
       const victims = wave.map(w => w.target), id = nextId(c);
       rainQueue.push(...wave);
-      emit('cloud', c, { id, at: hooks.now?.(), wave: wave.map(w => ({ id: w.target.netId, delay: w.delay, time: w.time })) });
+      emit('cloud', c, { id, at: hooks.now?.(), wave: wave.map(w => ({ id: w.target.netId, delay: Math.round(w.delay * 100) / 100, time: w.time })) });
       sound.sweep(220, 90, 0.9, 'sawtooth', 0.06);
       feedback(c, victims.length ? locn(victims.length, '¡Aguacero sobre {n} rival!', '¡Aguacero sobre {n} rivales!') : loc('Nadie más en la pista: llovió en vano'));
     } else if (kind === 'jugo' || kind === 'jugo3') {
@@ -566,7 +567,7 @@ export function createItems(hooks) {
     const elapsed = Number.isFinite(d.at) && hooks.now ? Math.max(0, (hooks.now() - d.at) / 1000) : 0;
     // Legacy clouds remain readable while all players refresh to the new client.
     const wave = Array.isArray(d.wave) ? d.wave : (d.ids || []).map(id => ({ id, delay: 0, time: d.time }));
-    for (const w of wave.slice(0, 8)) {
+    for (const w of wave.slice(0, MAX_RACERS - 1)) {
       const target = byId(w.id), delay = Math.max(0, Math.min(15, Number(w.delay) || 0));
       const time = Math.max(0, Math.min(8, Number(w.time) || CLOUD_TIME) - Math.max(0, elapsed - delay));
       if (target && time > 0) rainQueue.push({ target, delay: Math.max(0, delay - elapsed), time });
