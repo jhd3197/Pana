@@ -79,6 +79,15 @@ wins and the titles are handed out.
   `dizzy` for 2.1 s; a clean hit then is a caída. Recovering without one
   resets mareo to 55. Getting up takes `7 + 6 × (caídas − 1)` presses before
   the ref's ten (one count per 0.85 s). Three caídas or the ten is a K.O.
+- Body space: centres closer than `BODY_GAP` (1 m) push apart along the line
+  between them, each body at most `SEPARATE` (5 m/s), so a deep overlap eases
+  out in a few ticks while walking in or a trompón lunge still stops at the
+  gap. 0.85 m let the kart helmets and the guard's forward lean fuse heads.
+  Everyone in the ring takes part, also down, dodging or invulnerable bodies
+  (invulnerability only stops hits); benched and knocked-out ones don't. Only
+  positions move, so knockback velocity is untouched. Same spot: the first
+  body goes to −X. The duel's pull back to z = 0 runs before the step so the
+  push has the last word; the ref's clinch range is `BODY_GAP + 0.2`.
 - The bell after `seconds`: card = jabs + 3 × trompones + 6 × caídas
   inflicted + 0.35 × seconds pressing forward + 0.25 × blocks. A gap under 1
   point goes to the crowd (cheers plus bets per corner).

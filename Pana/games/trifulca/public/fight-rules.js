@@ -26,7 +26,11 @@ export const dodgeCue = b => {
 };
 export const SPEED = { forward: 2.7, back: 2.2, side: 2.4 };
 export const MAREO_MAX = 100, MAREO_CALMA = 75, KO_CAIDAS = 3, COUNT_STEP = .85;
-export const BODY_GAP = .85;
+// Centres closer than BODY_GAP (two helmets plus a guard's forward lean) ease
+// apart along the line between them, each at most SEPARATE m/s: a deep overlap
+// (a tag-in, a fling) slides out over a few ticks, while walking in, even on a
+// trompón's lunge, still stops at the gap. 1 m is also where bots back off.
+export const BODY_GAP = 1, SEPARATE = 5;
 
 // The ring is the panas. `circle` arenas have a human ring (shoved back in by
 // the crowd); the tent's ring has ropes that bounce.
@@ -280,11 +284,14 @@ export function stepBodies(bodies, arena, dt, moves, emit) {
   }
   // Hits.
   for (const self of ring) strike(self, foesOf(self), emit);
-  // Bodies never overlap.
+  // Bodies keep their space: everyone in the ring, even down, dodging or
+  // invulnerable (that only stops hits). Only positions move, so knockback
+  // velocity carries on. Two on the same spot split along X, the first body
+  // (the red corner) to the left.
   for (let i = 0; i < ring.length; i++) for (let j = i + 1; j < ring.length; j++) {
     const a = ring[i], b = ring[j], dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
     if (d >= BODY_GAP) continue;
-    const push = (BODY_GAP - d) / 2, nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0;
+    const push = Math.min((BODY_GAP - d) / 2, SEPARATE * dt), nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0;
     a.x -= nx * push; a.z -= nz * push; b.x += nx * push; b.z += nz * push;
   }
   // Ropes bounce in the tent; elsewhere the crowd handles the edge (rules.js).

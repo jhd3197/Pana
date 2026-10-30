@@ -11,7 +11,7 @@
 import { draw, clamp, seedOf } from '/engine/random.js';
 import { defaultOptions, roomOptions } from './options.js';
 import { locKey } from '../../../engine/i18n.js';
-import { arenaOf, newBody, control, presses, stepBodies, edge, crowdSpot, scorecard, setAct, addMareo, knockDown, inRing, facing, CORNERS, MAREO_CALMA } from './fight-rules.js';
+import { arenaOf, newBody, control, presses, stepBodies, edge, crowdSpot, scorecard, setAct, addMareo, knockDown, inRing, facing, CORNERS, MAREO_CALMA, BODY_GAP } from './fight-rules.js';
 import { botInput } from './bot-rules.js';
 
 // Alone, ganador se queda is a ladder: you against five rivals, each one
@@ -345,11 +345,12 @@ export class Trifulca {
       if (press.a && this.tag(b)) press.a = 0;
       control(b, move, press, (e) => this.emitFight(e));
     }
-    const kos = stepBodies(this.bodies, arena, dt, moves, (e) => this.fightEvent(e));
     // One on one the fight stays on a line across the camera, like a fighting
     // game: a sidestep (W/S, a dodge) moves off it and the line pulls you back.
+    // Pulled before the step, so the bodies' push apart has the last word.
     const duel = this.bodies.filter(inRing);
     if (duel.length === 2) for (const b of duel) if (b.act !== 'dodge') b.z -= b.z * Math.min(1, dt * 2.2);
+    const kos = stepBodies(this.bodies, arena, dt, moves, (e) => this.fightEvent(e));
     this.stepProps(dt, arena);
     for (const p of crowd()) this.crowdStep(p, moves.get(p.id), pressed.get(p.id), dt, arena);
     if (this.phase !== 'fight') return;   // a ¡cálmate! ended it
@@ -506,7 +507,7 @@ export class Trifulca {
     // Clinch: too long hugging without a clean hit and the ref splits them.
     if (ring.length !== 2) return;
     const [a, b] = ring, d = Math.hypot(a.x - b.x, a.z - b.z);
-    f.close = d < 1.05 ? f.close + dt : 0;
+    f.close = d < BODY_GAP + .2 ? f.close + dt : 0;
     if (f.close > 2.6) {
       f.close = 0;
       const nx = (b.x - a.x) / (d || 1), nz = (b.z - a.z) / (d || 1);

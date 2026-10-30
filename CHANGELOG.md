@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Trifulca los peleadores ya no se meten uno dentro del otro.**
+  Cada pana guarda su espacio en el ring y se separa suave si queda
+  encima del otro; los golpes, el empujón y el agarre empujan igual que antes.
 - **Ludo ahora se juega de cuatro a seis panas.**
   El anfitrión elige 4, 5 o 6 jugadores en la sala; con cinco o seis la mesa
   crece y trae un tablero redondo en estrella, con Morado y Naranja, y los
