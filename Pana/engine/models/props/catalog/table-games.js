@@ -14,4 +14,6 @@ export default [
   ['paint-coheton', 'El Cohetón', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'rocket' }],
   ['paint-acolchado', 'El Acolchado', 'paintball-kit', 'createPaintVest', 'Pepazo', {}],
   ['paint-marker', 'Marcadora de pintura', 'paintball', 'createPaintMarker', '¡Pintura!', {}],
+  ['team-canopy', 'Toldo de equipo', 'paintball', 'teamCanopy', 'Pepazo', { color: '#29c5cd' }],
+  ['sandbag-wall', 'Sacos de arena', 'paintball', 'sandbagWall', 'Pepazo', { w: 4 }],
 ].map(([id, name, module, factory, game, previewOptions]) => ({ id, name, category: 'Objetos', source: `/engine/models/props/${module}.js`, factory, usedBy: [game], pack: 'table-games', previewOptions }));

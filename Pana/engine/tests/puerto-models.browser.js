@@ -8,7 +8,7 @@ try {
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
   await page.setContent('<style>body{margin:0}canvas{display:block}</style><canvas></canvas><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   await page.evaluate(async()=>{const preview=await import('/studio/preview.js'),{ASSETS}=await import('/studio/catalog.js'),stage=preview.createPreview(document.querySelector('canvas'),true);stage.renderer.setSize(1000,760);stage.camera.aspect=1000/760;window.proof={preview,stage,assets:ASSETS.filter(a=>a.pack==='puerto')};});
-  const ids=await page.evaluate(()=>proof.assets.map(a=>a.id));assert.equal(ids.length,9);const metrics=[];
+  const ids=await page.evaluate(()=>proof.assets.map(a=>a.id));assert.equal(ids.length,12);const metrics=[];
   for(const id of ids) {
     const result=await page.evaluate(async id=>{
       const {preview,stage,assets}=proof,asset=assets.find(a=>a.id===id),a=await asset.build(),b=await asset.build(),geometries=new Set();
