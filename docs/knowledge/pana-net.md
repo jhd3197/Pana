@@ -171,5 +171,6 @@ Colyseus 0.18's Node adapter passes a matchmaking `ServerError.code` to HTTP
 `writeHead`. A WebSocket-style 4009 code is not a valid HTTP status: its thrown
 range error falls through to a misleading 404. The room kit now uses 409 for
 capacity rejection; the client accepts 409 and legacy 4009. The plan-56
-`cup-failures.browser.js` capacity case joins eight independent sessions and
-asserts the ninth receives `full: true`, through the actual HTTP/SDK path.
+`cup-failures.browser.js` capacity case joins as many independent sessions as
+Carreritas' `game.json` `players` (twelve) and asserts the next receives
+`full: true`, through the actual HTTP/SDK path.

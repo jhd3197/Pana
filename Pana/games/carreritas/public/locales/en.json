@@ -330,8 +330,6 @@
   "Dos objetos: usa uno para abrir otra caja": "Two items: use one to open another box",
   "Dos palas de madera.": "Two wooden blades.",
   "dos panas": "two players",
-  "Dos panas contra 2 rivales": "Two players against 2 rivals",
-  "Dos panas contra 6 rivales": "Two players against 6 rivals",
   "Duración aproximada: {minutes} min, incluyendo resultados y cargas normales.": "Approximate length: {minutes} min, including results and normal loading.",
   "Edición anterior": "Previous edition",
   "El aguacero moja a todos tus rivales durante 5 segundos; potenciado dura 7,5.": "The downpour soaks all your rivals for 5 seconds; powered up it lasts 7.5.",
@@ -647,7 +645,6 @@
   "Tu carrera sigue en curso.": "Your race is still on.",
   "Tu carro": "Your car",
   "Tú contra 3 rivales": "You against 3 rivals",
-  "Tú contra 7 rivales": "You against 7 rivals",
   "Tú eliges la aventura para la sala.": "You pick the adventure for the room.",
   "Tú eliges la copa ({cup}) y das la salida.": "You pick the cup ({cup}) and start the race.",
   "Tú eliges la pista y das la salida.": "You pick the track and start the race.",
@@ -679,7 +676,7 @@
   "Vacío": "Empty",
   "Vehículo anterior": "Previous vehicle",
   "Vehículo siguiente": "Next vehicle",
-  "Veintidós circuitos y siete copas Grand Prix por tierra, agua y aire: corre con tu pana entre pueblos, salinas, cuevas y el gran salto del tepuy. Hasta ocho panas online.": "Twenty-two circuits and seven Grand Prix cups over land, water and air: race your pana through towns, salt flats, caves and the big tepui jump. Up to eight players online.",
+  "Veintidós circuitos y siete copas Grand Prix por tierra, agua y aire: corre con tu pana entre pueblos, salinas, cuevas y el gran salto del tepuy. Hasta doce panas online.": "Twenty-two circuits and seven Grand Prix cups over land, water and air: race your pana through towns, salt flats, caves and the big tepui jump. Up to twelve players online.",
   "Vel": "Spd",
   "Vel. máx": "Top speed",
   "Ver carro en 3D": "View car in 3D",
@@ -692,5 +689,9 @@
   "Volver al Hub": "Back to the Hub",
   "vuelta {n}/{total}": "lap {n}/{total}",
   "Vuelta {n}/{total}": "Lap {n}/{total}",
-  "Winche": "Winch"
+  "Winche": "Winch",
+  "Dos panas contra {n} rivales": "Two players against {n} rivals",
+  "Tú contra {n} rivales": "You against {n} rivals",
+  "Parrilla": "Grid",
+  "12 carros": "12 cars"
 }

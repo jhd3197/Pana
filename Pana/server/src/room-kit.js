@@ -25,7 +25,8 @@ import { Room, CloseCode, ServerError } from '@colyseus/core';
 import { schema, t } from '@colyseus/schema';
 import { normalizeAvatar, randomAvatar } from '../../engine/avatar.js';
 
-export const MAX_MEMBERS = 8;
+// The largest room any game.json may ask for (Carreritas' twelve-car grid).
+export const MAX_MEMBERS = 12;
 export const RECONNECT_SECONDS = 20;
 // onCreate failures travel over HTTP matchmaking. Colyseus 0.18's Node
 // adapter treats this as an HTTP status; a WebSocket close code becomes 404.

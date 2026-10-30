@@ -530,6 +530,8 @@ body:has(#race:not(.hidden)) .pana-pad-prompts, #race .keys, #race .p2-keys { di
 #pana-lobby-shell.prototype-sala .pk-game-lobby-settings{transform:none;min-width:0;overflow:visible;box-sizing:border-box}
 #pana-lobby-shell.prototype-sala .pk-game-lobby-settings>*{transform:none}
 #pana-lobby-shell.prototype-sala .pk-game-lobby-player,#pana-lobby-shell.prototype-sala .pk-game-lobby-empty{transform:none;box-shadow:none;height:clamp(130px,20vh,180px)}
+/* Twelve seats are three rows: a little shorter so they fit beside the settings. */
+#pana-lobby-shell.prototype-sala .pk-game-lobby-players:has(> :nth-child(9))>:is(.pk-game-lobby-player,.pk-game-lobby-empty){height:clamp(120px,18vh,165px)}
 #pana-lobby-shell.prototype-sala .pk-game-lobby-player>*{transform:none}
 #pana-lobby-shell.prototype-sala .pk-game-lobby-head{min-width:0;flex-wrap:wrap}
 #pana-lobby-shell.prototype-sala .pk-game-lobby-players{min-width:0}

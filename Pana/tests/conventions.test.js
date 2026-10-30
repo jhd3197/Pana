@@ -7,6 +7,7 @@ import path from 'node:path';
 import { isOnline, gameUrl } from '../web/games.js';
 import { staticImports, resolve, specifiers } from './import-graph.js';
 import { FIRST_LOAD_MODULES, GAME_JS_LIMIT, GAME_JS_SLACK, GAME_JS_ALLOWED } from './budgets.js';
+import { MAX_MEMBERS } from '../server/src/room-kit.js';
 
 const app = path.resolve(import.meta.dirname, '..');
 const rel = (file) => path.relative(app, file).split(path.sep).join('/');
@@ -80,7 +81,7 @@ test('every game has the files the hub and the kit expect', () => {
     const json = meta(id), html = read(pub(id, 'index.html'));
     if (typeof json.name !== 'string' || !json.name) problems.push(`${id}: game.json needs a name`);
     if (typeof json.description !== 'string' || !json.description) problems.push(`${id}: game.json needs a description`);
-    if (!Number.isInteger(json.players) || json.players < 1 || json.players > 8) problems.push(`${id}: game.json players must be 1–8`);
+    if (!Number.isInteger(json.players) || json.players < 1 || json.players > MAX_MEMBERS) problems.push(`${id}: game.json players must be 1–${MAX_MEMBERS}`);
     if (!/^#[0-9a-f]{6}$/i.test(json.color || '')) problems.push(`${id}: game.json color must be #rrggbb`);
     if ('tileName' in json && (typeof json.tileName !== 'string' || !json.tileName || json.tileName.length > 12)) problems.push(`${id}: game.json tileName is a short name for the hub card (1–12 characters)`);
     if (!fs.existsSync(pub(id, 'card.js'))) problems.push(`${id}: no public/card.js for the hub tile`);
