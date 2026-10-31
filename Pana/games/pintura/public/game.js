@@ -16,7 +16,7 @@ import { sound } from '/engine/fx.js';
 import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
-import { sfx } from './sounds.js';
+import { sfx, createSteps } from './sounds.js';
 import { pressJump } from '/engine/play/jump.js';
 import { createLookControls } from '/engine/play/first-person.js';
 import { createFeats } from '/engine/feats.js';
@@ -30,7 +30,8 @@ const params = new URLSearchParams(location.search);
 const held = new Set(), pads = []; let aim = null, firing = false, jumpPress = 0, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastKiller = '', wasReloading = false, lastDry = 0; const seenShots = new Map();
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
 const hitFeats = createHitFeats(createFeats($('toast')));
-let weapon = 'pistol', queuedGrenade = false;
+let weapon = 'pistol', queuedGrenade = false, lastWeapon = '';
+const steps = createSteps(), seenSplats = new Set();
 let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').dataset.failed = String(failed); $('connection').textContent = text; document.dispatchEvent(new Event('pana:sala-update')); $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
@@ -167,11 +168,19 @@ function shots(state, me) {
   }
 }
 // The crosshair ring and the HUD bar fill while the marker reloads or (slow markers) cools down.
+// A ball that lands splats: heard where it lands, quieter with distance.
+function splats(state, me) {
+  for (const s of state.splats) { if (seenSplats.has(s.id)) continue; seenSplats.add(s.id); if (s.life > 8.6 && me) sfx.impact(.9 / (1 + Math.hypot(s.x - me.x, s.z - me.z) / 8)); }
+  if (seenSplats.size > 400) for (const id of seenSplats) if (!state.splats.some(s => s.id === id)) seenSplats.delete(id);
+}
 function cooldown(state, me) {
   const stats = kitStats(me?.kit, state.options), reloading = me?.reload > 0, cooling = !reloading && stats.cadence >= .4 && me?.cooldown > 0;
   const progress = reloading ? 1 - me.reload / stats.reload : cooling ? 1 - me.cooldown / stats.cadence : 1;
   document.body.classList.toggle('reloading', !!reloading); document.body.classList.toggle('cooling', !!cooling);
   document.body.style.setProperty('--cd', Math.min(1, Math.max(0, progress)).toFixed(3));
+  if (me && lastWeapon && me.weapon !== lastWeapon) sfx.swap();
+  lastWeapon = me?.weapon || '';
+  if (reloading && !wasReloading) sfx.reload(me.weapon, stats.reload);
   if (wasReloading && !reloading && me?.ammo > 0) { sfx.reloaded(); flash('reloaded'); }
   wasReloading = !!reloading;
 }
@@ -203,7 +212,7 @@ function roundStart(state) {
   const count = round && !preparing && state.countdown > 0 ? Math.ceil(state.countdown) : 0;
   if (count === lastCount) return;
   clearTimeout(roundStart.timer);
-  if (count) { $('countdown').textContent = String(count); flash('counting'); sfx.count(); }
+  if (count) { $('countdown').textContent = String(count); flash('counting'); sfx.count(count); }
   else if (round && !preparing) { $('countdown').textContent = loc('¡YA!'); flash('counting'); flash('round-start'); sfx.go(); roundStart.timer = setTimeout(() => document.body.classList.remove('counting'), 1000); }
   else document.body.classList.remove('counting');
   lastCount = count;
@@ -241,7 +250,7 @@ function render(state) {
   const events = state.events || [];
   if (lastEvent === null) lastEvent = Math.max(0, ...events.map(e => e.n));
   for (const e of events) if (e.n > lastEvent) { lastEvent = e.n; if (state.phase === 'playing') announce(e, state); }
-  if (state.phase === 'playing') { shots(state, me); cooldown(state, me); } else { seenShots.clear(); wasReloading = false; document.body.classList.remove('reloading', 'cooling'); }
+  if (state.phase === 'playing') { shots(state, me); cooldown(state, me); splats(state, me); } else { seenShots.clear(); seenSplats.clear(); steps.reset(); lastWeapon = ''; wasReloading = false; document.body.classList.remove('reloading', 'cooling'); }
   aguante(state, me); $('grenade').disabled=!me?.grenadeReady; $('grenade').textContent=me?.grenadeReady?loc('Granada'):loc('Sin granada');
   if(state.phase==='playing' && $('armory').open) $('armory').close();
   $('stamina').style.setProperty('--left', String(me?.stamina ?? 1)); $('stamina').classList.toggle('stamina--full', (me?.stamina ?? 1) >= 1);
@@ -266,7 +275,7 @@ function frame(now) {
   if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now;
   if (active()) world.look((Number(held.has('q')) - Number(held.has('e'))) * dt * 2.2);
   document.body.classList.toggle('first-person', cameraView === 'primera' && room.state.phase === 'playing');
-  armory.update(dt); world.draw(room.state, room.id, dt, aim); minimap.draw(room.state, room.id, world.forward()); requestAnimationFrame(frame);
+  armory.update(dt); world.draw(room.state, room.id, dt, aim); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); armory.dispose(); teamRoster.dispose(); looking.dispose(); room.dispose(); world.dispose(); }, { once: true });
