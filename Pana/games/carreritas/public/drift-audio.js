@@ -2,15 +2,13 @@
 // the slide and climbs in pitch with speed and charge, a chime as each charge
 // level lands (blue, orange, purple), warning ticks in the overheat window
 // and a hiss when the tyres burn. On a river run the screech gives way to a
-// water rush and the outboard's buzz. The tyre loop and the RPM-driven motor
-// are the engine's shared vehicle audio (engine/vehicle-audio.js). Synthesised on the shared WebAudio
+// water rush and the outboard's buzz. The tyre loop is the engine's shared vehicle audio
+// (engine/vehicle-audio.js); the car's motor is the shared sound.startEngine putt-putt (engine/fx.js). Synthesised on the shared WebAudio
 // context (engine/fx.js sound): no files. game.js calls update once per drawn
 // frame; `active` false (paused, finished, garage) fades everything out.
 import { DRIFT_LEVELS, OVERHEAT_WARN } from './drive-rules.js';
-import { createMotor, createTyres, vehicleSfx } from '/engine/vehicle-audio.js';
+import { createTyres, vehicleSfx } from '/engine/vehicle-audio.js';
 
-// Each car's engine note, by car id; anything else gets the compact four.
-const ENGINE = { chamo: 'compact', lancha: 'sport', machito: 'truck', bala: 'sport', toro: 'muscle', familiar: 'compact', rumbera: 'compact', montanero: 'truck', escarabajo: 'beetle', sedan: 'compact', buseta: 'bus', pickup: 'truck' };
 
 const LEVEL_NOTES = [[], [660, 880], [660, 880, 1100], [660, 880, 1100, 1320]];
 
@@ -22,7 +20,7 @@ function noiseBuffer(ctx, seconds = 2) {
 }
 
 export function createDriftAudio(sound) {
-  let rig = null, engine = null, engineId = '', lastLevel = 0, lastBoat = false, tickT = 0, wasBurning = false, chargedLevel = 0;
+  let rig = null, lastLevel = 0, lastBoat = false, tickT = 0, wasBurning = false, chargedLevel = 0;
 
   // Built on first use, once the audio context exists (a user gesture).
   function build() {
@@ -56,10 +54,6 @@ export function createDriftAudio(sound) {
       // Tyres: loud with the slide, pitch with speed and charge, a crunch off the tarmac.
       const loose = on && c.onGround && (c.surface === 'dirt' || c.surface === 'grass' || c.offRoad) ? 'dirt' : 'road';
       rig.tyres.update({ slip: drifting ? 1 : 0, speed, charge: level, surface: loose });
-      // The motor: RPM from the speed through the gearbox, the turbo whine while boosting.
-      const id = c?.def?.id || '';
-      if (!engine || (c && id !== engineId)) { engine?.stop(); engineId = id; engine = createMotor(sound, { profile: ENGINE[id] || 'compact', topSpeed: c?.tune?.top ? c.tune.top * 1.1 : 42 }); }
-      engine.update(dt, { speed, boost: on && c.boost > 0.3 ? 1 : 0, active: !!on && !c.boat && !c.done });
       // Water: a rush that grows with speed and the outboard's buzz.
       const boat = on && c.boat;
       set(rig.rush.g.gain, boat ? 0.03 + Math.min(0.06, speed * 0.0018) : 0, 0.12);

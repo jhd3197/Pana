@@ -44,4 +44,4 @@ to `PROFILES` in `vehicle-revs.js` (the test checks it fires in an audible band)
 
 ## Used by
 
-Carreritas (motor, tyres, boost, crash, drift skid), Pepazo (everything on foot and every gun).
+Carreritas (tyres, boost, crash, drift skid; its car motor is still the older `sound.startEngine` in `engine/fx.js`, players preferred it to `createMotor`), Pepazo (everything on foot and every gun).
