@@ -276,14 +276,32 @@ Team and flag lobbies show the shared avatar roster, with four orange and four t
 
 ## Armory and composed combat kits
 
-`armory-data.js` is the shared, pure source for four markers, two attachment
-slots, one armor slot, three grenades and cosmetics. `cleanKit` allowlists all
-IDs and deduplicates at most two attachments. `kitStats` composes real tradeoffs
-and still honors pistol-only, fast-reload and room toughness options.
+`armory-data.js` is the shared, pure source for six markers, two attachment
+slots, one armor slot, three grenades and cosmetics. `kitStats` composes real
+tradeoffs and still honors pistol-only, fast-reload and room toughness options.
 
-The server accepts `kit` only for the sender's seat before a round; clients
-cannot change armor/grenades mid-round. Weapon keys retain the existing weapon
-switch behavior, with reload debt and no refill of limited rocket reserve.
+Attachment slots are positional: `kit.attachments` is always
+`[slot 0, slot 1]`, each an id or `null`, so every consumer filters nulls.
+`cleanKit` reads up to two entries as slot positions (old saved dense kits land
+in slots 0 and 1), packs a longer list, allowlists, dedupes and applies
+`canAttach`. `setSlot(kit, i, id|null)` fills or clears one slot and moves a
+part already in the other slot; `changeWeapon` returns the new kit plus the
+parts that no longer fit. `ATTACHMENT_RULES` lists what each marker takes:
+everything, except no light stock on La Lejana (it has its own) or La Bazuca
+(shoulder tube). Per-weapon mount points will read the same table. A barrel on
+a marker that already flies straight (spread 0: Chispa, Cohetón, Bazuca) adds
+12% shot speed instead of tightening spread, so range and the precision row's
+m/s both move; on the others it tightens spread and adds 12% flight time.
+
+The server accepts `kit` only for the sender's seat before a round and answers
+a refused one with `kit-rejected` (`reason: 'playing'`); `Arena.kitRejection`
+gives the reason and practice reports it the same way. The armory shows it in
+`#armory-note`, or as a toast when closed; opening the armory mid-round toasts
+that it opens between rounds. Number keys and the pause menu's marker go
+through `armory.setWeapon`: the saved `pintura:kit` and client kit follow, the
+lobby also sends the kit, and mid-round the server takes it from
+`input.weapon`, running the same `cleanKit` so both sides drop the same parts.
+Swaps keep reload debt and never refill limited rocket reserve.
 Rocket splash and grenade blasts apply at most one hit per victim and respect
 cover, teams and spawn protection. Respawn restores one grenade. Sticky pools
 expire and slow opponents; Chispita bounces before its fuse expires.
@@ -296,9 +314,11 @@ server. It never spends ammo or emits shots into the multiplayer room.
 attachments and padded vest to both preview and gameplay. Studio registers
 those same models. Paint pattern changes are cosmetic and never change hits.
 
-The two-client browser proof picks a guest kit, verifies the host receives it,
-checks the attachment cap and grenade consumption, rejects a mid-round armor
-change, then proves real shooting, respawn, host departure and rematch. Mobile
+The two-client browser proof picks a guest kit slot by slot (slot 2 first,
+clearing slot 1 leaves slot 2), checks the stock coming off La Bazuca, verifies
+the host receives each kit, checks grenade consumption, rejects and announces a
+mid-round armor change, checks a number-key swap reaches the saved kit, then
+proves real shooting, respawn, host departure and rematch. Mobile
 controls put reload and grenade beside a tall fire button without overflowing.
 
 ## Calculated kit nivel

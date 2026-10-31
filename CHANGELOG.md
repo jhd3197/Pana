@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Pepazo cada accesorio queda en el espacio donde lo pusiste.**
+  Tocas Accesorio 1 o 2 y eliges qué va ahí (o Ninguno); la armería avisa si
+  una pieza no cabe en tu marcadora o si intentas cambiar el kit en plena ronda,
+  cambiar de marcadora con 1 a 6 queda guardado, y el cañón afinado hace más
+  rápidos los tiros de La Chispa, El Cohetón y La Bazuca.
+
 - **"Más ajustes" ahora se ve como el panel de la sala.**
   Esquinas rectas, sombra dura, el título en placa amarilla, las mismas fichas
   y botones que los ajustes de la sala, en todos los juegos; sigue igual de compacto.

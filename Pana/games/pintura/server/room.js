@@ -6,7 +6,8 @@ export default class PaintRoom extends PanaRoom {
   onCreate(options) {
     super.onCreate(options); this.game = new Arena(); this.inputs = new InputBuffer(350);
     this.onMessage('move-seat', (client, data) => { const actor = this.seatOf(client); if (this.game.moveSeat(actor, data?.from, data?.to, this.isHost(client) ? actor : null)) this.publish(); });
-    this.onMessage('kit', (client,data) => { if(this.game.selectKit(this.seatOf(client),data)) this.publish(); });
+    // A refused kit (mid-round) is answered, so the armory can say why nothing changed.
+    this.onMessage('kit', (client,data) => { const seat=this.seatOf(client); if(this.game.selectKit(seat,data)) this.publish(); else client.send('kit-rejected', { reason: this.game.kitRejection(seat) || 'invalid' }); });
     // A client finished loading this round's court; stale rounds and bots are ignored.
     this.onMessage('ready', (client, data) => { if (this.game.markReady(this.seatOf(client), data?.round)) this.publish(); });
     this.onMessage('input', (client, data) => this.inputs.set(this.seatOf(client), cleanInput(data)));

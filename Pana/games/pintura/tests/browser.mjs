@@ -46,17 +46,36 @@ try {
   await b.locator('[data-slot="weapon"]').click();
   await b.locator('#armory-choices [data-id="rocket"]').click();
   await b.locator('#armory-parts-back').click();
-  await b.locator('[data-slot="attachments"]').first().click();
-  await b.locator('#armory-choices [data-id="hopper"]').click();
-  await b.locator('#armory-choices [data-id="barrel"]').click();
-  assert.equal(await b.locator('#armory-choices [data-id="stock"]').isDisabled(),true);
-  await b.locator('#armory-parts-back').click();
+  // Attachment slots are explicit: a part lands in the slot that was clicked and stays there.
+  const slotButton = i => b.locator(`[data-slot="attachments"][data-index="${i}"]`);
+  const savedKit = () => b.evaluate(() => JSON.parse(localStorage.getItem('pintura:kit')));
+  await slotButton(1).click(); assert.equal(await slotButton(1).getAttribute('aria-pressed'), 'true');
+  assert.match(await b.locator('#armory-parts-back').textContent(), /Accesorio 2/);
+  await b.locator('#armory-choices [data-id="hopper"]').click(); await b.locator('#armory-parts-back').click();
+  assert.equal(await slotButton(1).locator('b').textContent(), 'Tolva grande'); assert.equal(await slotButton(0).locator('b').textContent(), 'Sin accesorio');
+  assert.deepEqual((await savedKit()).attachments, [null, 'hopper']);
+  await slotButton(0).click(); await b.locator('#armory-choices [data-id="stock"]').click(); await b.locator('#armory-parts-back').click();
+  const guestId=await b.evaluate(()=>pinturaDebug.room.id);
+  const seen = (want) => wait(a, ([id, want]) => JSON.stringify(pinturaDebug.room.state.players.find(p => p.id === id).kit.attachments) === want, [guestId, JSON.stringify(want)]);
+  await seen(['stock', 'hopper']);
+  // La Bazuca takes no stock: it comes off, the armory says so, and the hopper keeps its slot.
+  await b.locator('[data-slot="weapon"]').click(); await b.locator('#armory-choices [data-id="bazooka"]').click();
+  assert.match(await b.locator('#armory-note').textContent(), /Culata ligera/);
+  assert.deepEqual((await savedKit()).attachments, [null, 'hopper']); await b.locator('#armory-parts-back').click();
+  await slotButton(0).click(); assert.equal(await b.locator('#armory-choices [data-id="stock"]').isDisabled(), true);
+  assert.match(await b.locator('#armory-choices [data-id="stock"]').textContent(), /No cabe en esta marcadora/);
+  await b.locator('#armory-choices [data-id="barrel"]').click(); await b.locator('#armory-parts-back').click();
+  await b.locator('[data-slot="weapon"]').click(); await b.locator('#armory-choices [data-id="rocket"]').click(); await b.locator('#armory-parts-back').click();
+  await seen(['barrel', 'hopper']);
+  // Clearing slot 0 leaves slot 1 where it was.
+  await slotButton(0).click(); await b.locator('#armory-choices [data-id=""]').click(); await b.locator('#armory-parts-back').click();
+  assert.equal(await slotButton(0).locator('b').textContent(), 'Sin accesorio'); assert.equal(await slotButton(1).locator('b').textContent(), 'Tolva grande');
+  assert.deepEqual((await savedKit()).attachments, [null, 'hopper']);
   await b.locator('[data-slot="armor"]').click();await b.locator('#armory-choices [data-id="padded"]').click();
   await b.locator('#armory-parts-back').click();
   await b.locator('[data-slot="grenade"]').click();await b.locator('#armory-choices [data-id="pegajosa"]').click();
   await b.locator('#armory-close').click();
-  const guestId=await b.evaluate(()=>pinturaDebug.room.id);
-  await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && p.kit.attachments.length===2 && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
+  await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && JSON.stringify(p.kit.attachments)==='[null,"hopper"]' && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
   // The routes below walk the plaza's outer lane; El Puerto is the default map.
   await a.evaluate(() => pinturaDebug.room.selectMap('plaza')); await wait(b, () => pinturaDebug.room.state.mapId === 'plaza');
   await a.screenshot({ path: `${out}/lobby.png` }); await a.locator('#start').click(); await wait(b, () => pinturaDebug.room.state.phase === 'playing');
@@ -67,7 +86,14 @@ try {
   await b.locator('#world').focus();await b.keyboard.press('g');
   await wait(a,id=>!pinturaDebug.room.state.players.find(p=>p.id===id).grenadeReady,guestId);
   assert.equal(await a.evaluate(id=>pinturaDebug.room.state.players.find(p=>p.id===id).kit.weapon,guestId),'rocket','mid-round kit edit is rejected');
-  console.log('ok: armory choices replicate, two-attachment cap, one grenade and mid-round kit lock');
+  // The refusal is said, not swallowed.
+  await wait(b, () => /plena ronda/.test(document.getElementById('toast').textContent));
+  // A number key changes the marker in the room and in the saved kit.
+  await a.locator('#world').focus(); await a.keyboard.press('3');
+  await wait(a, () => JSON.parse(localStorage.getItem('pintura:kit')).weapon === 'rapid' && pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).kit.weapon === 'rapid');
+  await a.keyboard.press('1'); await wait(a, `${mine}.kit.weapon === 'pistol'`);
+  assert.equal(await a.evaluate(() => JSON.parse(localStorage.getItem('pintura:kit')).weapon), 'pistol');
+  console.log('ok: armory slots stay put, parts that do not fit come off, kits replicate, mid-round kit lock is announced and number keys update the saved kit');
 
   // The guest crosses the court with the overview option (world-axis keys); the
   // host plays the default first-person view: turn, walk, then fire along the crosshair.

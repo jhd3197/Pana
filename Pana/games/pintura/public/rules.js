@@ -124,6 +124,8 @@ function distanceField(grid, target) {
 export class Arena {
   constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.puddles = []; this.booms = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; }
   selectKit(id, value) { const p=this.players.find(p=>p.id===id && p.connected); if(!p || this.phase==='playing') return false; p.kit=cleanKit(value); p.weapon=p.kit.weapon; return true; }
+  // Why selectKit would refuse this seat right now ('' when it would accept): the client says so instead of dropping the pick.
+  kitRejection(id) { return !this.players.some(p=>p.id===id && p.connected) ? 'absent' : this.phase==='playing' ? 'playing' : ''; }
   configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.players.forEach(p => { p.color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? p.team : p.seat]; }); return true; }
   moveSeat(actorId, from, to, hostId) {
     if (!['lobby', 'finished'].includes(this.phase) || !(this.options.mode === 'teams' || this.options.flag)) return false;
@@ -286,7 +288,8 @@ export class Arena {
       if (p.reload > 0) { p.reload = Math.max(0, p.reload - dt); if (!p.reload) { p.ammo = stats.reserve != null ? Math.min(stats.magazine,p.reserve) : stats.magazine; if(stats.reserve != null) p.reserve-=p.ammo; } }
       const input = p.bot ? this.bot(p) : cleanInput(inputs.get(p.id));
       if(input.weapon && input.weapon !== p.kit.weapon && this.options.weapons !== 'pistol') {
-        p.kit={...p.kit,weapon:input.weapon}; stats=kitStats(p.kit,this.options);
+        // Parts that do not fit the new marker come off, exactly as the client's armory drops them.
+        p.kit=cleanKit({...p.kit,weapon:input.weapon}); stats=kitStats(p.kit,this.options);
         p.ammo=Math.min(p.ammo,stats.magazine); p.reserve=0;
         if(p.shots>0) { p.ammo=0; p.reload=stats.reload; }
       }
