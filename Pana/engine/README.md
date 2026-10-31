@@ -2,6 +2,8 @@
 
 Shared game code, served to browsers at `/engine/*`. Browser ESM, no build step.
 Extract reusable code when a second page needs it; keep gameplay with its game.
+[`docs/SHARED-ENGINE.md`](../../docs/SHARED-ENGINE.md) maps every shared piece to
+the games that use it and lists what is still local.
 
 Three layers, so it's clear what every game stands on and what only some use:
 

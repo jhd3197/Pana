@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El motor tiene un mapa de lo que comparten los juegos, y quien programa lo mira primero.**
+  `docs/SHARED-ENGINE.md` dice qué hace cada pieza, dónde vive, cómo se usa y qué
+  juegos la usan, con un diagrama y la lista de lo que falta por migrar; `AGENTS.md`
+  y `CLAUDE.md` piden consultarlo antes de crear una mecánica y sumar ahí lo nuevo.
 - **Pepazo estrena marcador: la carrera arriba, tus pepas abajo y un mapa redondo.**
   Arriba van tú, el reloj y el rival más cercano (o tu equipo contra el otro),
   con la meta debajo; abajo a la izquierda tu aguante, tu resistencia y la
