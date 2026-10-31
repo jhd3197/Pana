@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia y Pepazo ahora se oyen caminar, correr y saltar.**
+  Cada paso suena según el piso y el ritmo sale de qué tan rápido vas, correr
+  suena más fuerte y apurado, y al saltar y caer se oye el despegue y el golpe
+  en el suelo. El movimiento de los dos juegos ahora sale del mismo controlador
+  del motor, así que se sienten igual y no cambia cómo se mueven.
+
 - **Mi pana vuelve a abrir en un par de segundos, con un vestidor de fondo.**
   Volver al editor ya no tarda cinco a ocho segundos: el ajuste del cuerpo del
   chef (lo que más tardaba) se guarda en el navegador y solo se calcula la
