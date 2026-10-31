@@ -7,7 +7,7 @@ import {CUPS} from '../public/cup-definitions.js';
 const {chromium}=createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH||'playwright');
 const browser=await chromium.launch({headless:true});
 const origin=process.env.PANA_TEST_URL||'http://localhost:8461',count=Number(process.env.PANA_GP_CLIENTS||2);
-const cups=process.env.PANA_GP_CUPS?.split(',')||['aventura','agua'];
+const cups=process.env.PANA_GP_CUPS?.split(',')||['pana'];
 const pages=[],errors=[],records=[];
 try{
   const code='water'+Math.random().toString(36).slice(2,8);

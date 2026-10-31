@@ -16,7 +16,7 @@ try {
     localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'baja' }));
   });
   const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
-  await page.goto(`${base}/studio.html#track-desierto`);
+  await page.goto(`${base}/studio.html#track-llanos`);
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
   await page.waitForFunction(() => panaLibrary.current && document.querySelector('#preview-status').hidden, null, { timeout: 90000 });
   assert.equal(await page.evaluate(() => panaLibrary.thumbnails.state.generated), 0, 'opening one circuit does not prepare the catalog');
@@ -86,10 +86,10 @@ try {
     assert.equal(await page.evaluate(() => panaLibrary.tour.active), false);
     assert.equal(await page.evaluate(() => panaLibrary.scene.children.filter(o=>o.userData.isSky).length),0,'overview releases the sky');
   }
-  await choose('track-desierto'); await seek(500);
+  await choose('track-llanos'); await seek(500);
   await page.locator('#tour-copy').click();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  assert.match(copied, /50\.0 %/); assert.match(copied, /Pista XYZ:/); assert.match(copied, /\/studio\/assets\/track-desierto/);
+  assert.match(copied, /50\.0 %/); assert.match(copied, /Pista XYZ:/); assert.match(copied, /\/studio\/assets\/track-llanos/);
   assert.equal(await page.evaluate(() => panaLibrary.tour.playing), false);
   await page.locator('#tour-speed').selectOption('4'); await seek(999);
   await page.locator('#tour-play').click(); await page.waitForFunction(() => !panaLibrary.tour.playing);
@@ -115,7 +115,7 @@ try {
   assert.equal(await page.evaluate(() => document.querySelector('#studio-app').classList.contains('expanded-view')), false);
   assert.equal(await page.evaluate(() => panaLibrary.camera.fov), 34);
   await page.locator('#camera-view').selectOption('side'); assert.equal(await page.evaluate(() => panaLibrary.camera.position.x > 0), true);
-  await choose('track-desierto'); await page.setViewportSize({ width: 390, height: 844 });
+  await choose('track-llanos'); await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#tour-play').click(); await page.waitForFunction(() => panaLibrary.tour.distance > 2); await page.locator('#tour-play').click();
   await page.locator('#tour-expand').click();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);

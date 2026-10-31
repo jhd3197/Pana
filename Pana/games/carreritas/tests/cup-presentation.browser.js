@@ -14,10 +14,10 @@ try{
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/g/carreritas/?debug&manual`);
   await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
   await page.evaluate(async()=>{
-    setup.mode='agua';await startRace(0);
+    setup.mode='pana';await startRace(0);
     const rules=await import('./cup-rules.js'),entrants=race.cup.session.entrants.map((e,i)=>({...e,name:i<2?'Pana con nombre largo compartido':e.name}));
     race.cars.forEach(c=>c.name=entrants.find(e=>e.id===c.entrantId).name);
-    const session=rules.createCupSession({cupId:'agua',sessionId:'presentation-only',seed:1,entrants});
+    const session=rules.createCupSession({cupId:'pana',sessionId:'presentation-only',seed:1,entrants});
     for(let stage=0;stage<4;stage++){
       rules.beginStage(session);rules.markRacing(session);
       const results=entrants.map((e,i)=>({id:e.id,classification:i===5?'dnf':i===6?'dns':i===7?'retired':'finished',started:i!==6,time:60+(i<2?(stage%2?1-i:i):i),progress:500-i}));

@@ -81,7 +81,7 @@ try {
   await page.evaluate(() => window.pendingRace);
   assert.equal(await page.evaluate(() => race.state), 'off');
   await page.evaluate(() => startRace(1));
-  assert.equal(await page.evaluate(() => getActiveTrack().id), 'desierto');
+  assert.equal(await page.evaluate(() => getActiveTrack().id), 'llanos');
   assert.equal(await page.evaluate(() => race.cars.length), 4);
   // A failed constructor leaves a usable return path and can be retried.
   await page.evaluate(async () => {

@@ -71,7 +71,7 @@ test('every stock car with street cauchos lands inside the bands', () => {
 });
 
 test('the unloaded workshop and built race use the same kit pieces',()=>{
- for(const [id,expected] of [['chuao',['car','boat']],['margarita',['car','boat']],['delta',['car','boat']],['galipan',['car','air']]]){
+ for(const [id,expected] of [['delta',['car','boat']],['galipan',['car','air']]]){
   const metadata=TRACK_DEFINITIONS.find(t=>t.id===id);
   assert.deepEqual(trackPieces(metadata),expected,id+' before scenery loads');
   assert.deepEqual(trackPieces({def:metadata}),expected,id+' in the live world');

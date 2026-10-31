@@ -64,8 +64,8 @@ try{
   const ledger=await host.evaluate(()=>getNet().cup.ledger),session=await host.evaluate(()=>getNet().cup.sessionId);
   assert.equal(ledger.find(r=>r.stage===2&&r.id===guestId).classification,'retired');
   assert.equal(ledger.find(r=>r.stage===3&&r.id===guestId).classification,'dns');
-  await control.evaluate(()=>{getNet().lobby();getNet().mode('agua');getNet().start();});
-  await wait(spectator,old=>getNet().cup?.sessionId!==old&&getNet().cup?.cupId==='agua',session);
+  await control.evaluate(()=>{getNet().lobby();getNet().mode('pana');getNet().start();});
+  await wait(spectator,old=>getNet().cup?.sessionId!==old&&getNet().cup?.cupId==='pana',session);
   const fresh=await spectator.evaluate(()=>({cup:getNet().cup,poses:getNet().poseMemo.size}));
   assert.equal(fresh.cup.ledger.length,0);assert.ok(fresh.cup.entrants.some(e=>e.id===spectatorId));
   assert.deepEqual(errors,[]);await mkdir('art/grand-prix',{recursive:true});await writeFile('art/grand-prix/failure-ledger.json',JSON.stringify({first,second,ledger,fresh:fresh.cup},null,2));

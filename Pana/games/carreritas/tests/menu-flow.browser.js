@@ -140,8 +140,8 @@ try {
   await fallback.route('**/images/menu/**', route => route.abort());
   await load(fallback, '&manual');
   await leaveLobby(fallback);
-  await fallback.locator('[data-circuit="plaza"]').click();
-  assert.equal(await fallback.locator('#track-name').textContent(), 'Plaza Pana');
+  await fallback.locator('[data-circuit="llanos"]').click();
+  assert.equal(await fallback.locator('#track-name').textContent(), 'Los Llanos');
   await fallback.locator('#menu-next').click();
   assert.ok(await fallback.locator('#play').isEnabled());
   await fallback.locator('#play').click();
@@ -168,10 +168,10 @@ try {
   await leaveLobby(host);
   await guest.locator('#pana-lobby-shell').waitFor({ state: 'hidden' });
   await step(guest, 'track');
-  assert.ok(await guest.locator('[data-circuit="plaza"]').isDisabled());
+  assert.ok(await guest.locator('[data-circuit="llanos"]').isDisabled());
   assert.ok(await guest.locator('#menu-back').isHidden(), 'a guest cannot take the room back to the lobby');
-  await host.locator('[data-circuit="plaza"]').click();
-  await guest.waitForFunction(() => document.getElementById('track-name').textContent === 'Plaza Pana');
+  await host.locator('[data-circuit="llanos"]').click();
+  await guest.waitForFunction(() => document.getElementById('track-name').textContent === 'Los Llanos');
   await host.locator('#menu-next').click();
   await guest.locator('#menu-next').click();
   await guest.evaluate(()=>{getWallet().coins=500;});

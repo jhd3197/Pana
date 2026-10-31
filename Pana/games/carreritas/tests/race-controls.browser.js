@@ -5,7 +5,7 @@ import {menuStep} from './menu-helpers.js';
 const browser=await chromium.launch({headless:true});
 try{
  const page=await browser.newPage();
- await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/g/carreritas/?debug&manual&track=plaza`);
+ await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/g/carreritas/?debug&manual&track=estadio`);
  await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
  await menuStep(page,'track');
  await page.evaluate(async()=>{await startRace(0);for(let i=0;i<270;i++)updateRace(1/60);race.state='go';race.count=0;

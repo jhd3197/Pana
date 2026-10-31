@@ -4,8 +4,9 @@
 // game.js is wiring only: at most GAME_JS_LIMIT lines; the files in
 // GAME_JS_ALLOWED predate the limit and may shrink, never grow, and when one
 // shrinks by more than GAME_JS_SLACK its cap comes down with it.
-// 161: every page loads engine/i18n.js (its language) before anything shows.
-export const FIRST_LOAD_MODULES = 161;
+// 162: every page loads engine/i18n.js (its language) before anything shows, and
+// Carreritas loads premium-tracks.js, the hook the private build fills with circuits.
+export const FIRST_LOAD_MODULES = 162;
 export const GAME_JS_LIMIT = 600, GAME_JS_SLACK = 25;
 export const GAME_JS_ALLOWED = { carreritas: 2297, bululu: 1248, embuste: 650 };
 export const gameJsCap = (id) => GAME_JS_ALLOWED[id] ?? GAME_JS_LIMIT;

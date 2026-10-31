@@ -22,7 +22,7 @@ try{
   await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
   await page.waitForFunction(()=>performance.getEntriesByName('carreritas:garage-ready').length>0,null,{timeout:90000});
   for(let cycle=0;cycle<3;cycle++){
-    await page.evaluate(async cycle=>{toGarage();setup.mode='agua';setup.split=cycle>0;setup.mirror=cycle>0;await startRace(0);},cycle);
+    await page.evaluate(async cycle=>{toGarage();setup.mode='pana';setup.split=cycle>0;setup.mirror=cycle>0;await startRace(0);},cycle);
     for(let stage=0;stage<4;stage++){
       await page.waitForFunction(()=>race.state==='count',null,{timeout:120000});
       const result=await page.evaluate(()=>{
@@ -43,7 +43,7 @@ try{
   const last=records.filter(r=>r.memory);assert.equal(last[2].listeners,last[1].listeners);
   assert.equal(last[2].intervals,last[1].intervals);
   assert.ok(last[2].memory.geometries<=last[1].memory.geometries+2);assert.ok(last[2].memory.textures<=last[1].memory.textures+2);
-  const cancellation=await page.evaluate(async()=>{buildTrack('estadio');await startRace(0);toGarage();setup.mode='agua';const pending=startRace(0);toGarage();await pending;return {state:race.state,cars:race.cars.length,hidden:document.getElementById('loading').hidden||document.getElementById('loading').classList.contains('hidden')};});
+  const cancellation=await page.evaluate(async()=>{buildTrack('estadio');await startRace(0);toGarage();setup.mode='pana';const pending=startRace(0);toGarage();await pending;return {state:race.state,cars:race.cars.length,hidden:document.getElementById('loading').hidden||document.getElementById('loading').classList.contains('hidden')};});
   assert.equal(cancellation.state,'off');assert.equal(cancellation.cars,0);
   assert.deepEqual(errors,[]);await mkdir('art/grand-prix',{recursive:true});await writeFile('art/grand-prix/lifetime.json',JSON.stringify({records,cancellation},null,2));
 }finally{await browser.close();}

@@ -72,7 +72,7 @@ test('join options are cleaned to known cars, wheels and tracks', () => {
   assert.equal(cleanCar(CAR_COUNT), 0);
   assert.equal(cleanCar(1), 1);
   assert.equal(cleanWheel('nope'), 'calle');
-  assert.equal(cleanTrack('playa'), 'bululu');
+  assert.equal(cleanTrack('playa'), cleanTrack('bululu'), 'the legacy playa id follows bululu, whichever build has it');
   assert.equal(cleanTrack('nope'), TRACK_IDS[0]);
   assert.deepEqual([gridSlot(0), gridSlot(3)], [{ lane: 3.5, row: 0 }, { lane: -3.5, row: 1 }]);
 });

@@ -177,7 +177,7 @@ try {
 
   // Elevated pickups use local terrain height, including coins on the island.
   const elevated = await page.evaluate(async () => {
-    toGarage(); buildTrack('bululu'); await startRace(0);
+    toGarage(); buildTrack('galipan'); await startRace(0);
     const c = race.player, coin = race.items.coins.reduce((a, b) => a.y > b.y ? a : b);
     c.x = coin.x; c.y = coin.y; c.z = coin.z;
     race.items.update(1 / 60, [c], true);

@@ -17,7 +17,7 @@ try {
     const stage=preview.createPreview(document.querySelector('canvas'),true);stage.renderer.setSize(1440,960,false);stage.camera.aspect=1.5;
     window.proof={THREE,preview,ASSETS,stage};
   });
-  for(const id of process.env.PANA_ASSET_TEST_MAPS?.split(',')||['reef-fish','reef-fish-school','plaza','cocina','isla','track-estadio','track-desierto','track-llanos','track-chichi','track-selva','track-paramo','track-plaza','track-bululu']) {
+  for(const id of process.env.PANA_ASSET_TEST_MAPS?.split(',')||['reef-fish','reef-fish-school','plaza','cocina','isla','track-estadio','track-llanos']) {
     const record=await page.evaluate(async id=>{
       const {THREE,preview,ASSETS,stage}=proof,asset=ASSETS.find(a=>a.id===id),model=await asset.build();
       const check=(ok,message)=>{if(!ok)throw Error(`${id}: ${message}`);};

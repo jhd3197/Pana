@@ -69,7 +69,7 @@ try {
 
   // Guest's car pick reaches the room; host's track pick reaches the guest.
   await menuClick(host, '#t-next');
-  await until(guest, () => getNet().state.track === 'desierto');
+  await until(guest, () => getNet().state.track === 'llanos');
   await chooseCar(guest, 1);
   await until(host, (id) => getNet().state.players.find(p => p.id === id)?.car === 1, g.id);
   assert.equal(await guest.evaluate(() => document.getElementById('track-name').textContent), 'Pana Desierto');
