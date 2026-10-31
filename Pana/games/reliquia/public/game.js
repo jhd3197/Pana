@@ -10,6 +10,7 @@ import { shout } from '/engine/kit.js';
 import { createToast } from '/engine/hud.js';
 import { elapsedClock } from '/engine/live-room.js';
 import { createLookControls } from '/engine/play/first-person.js';
+import { pressJump } from '/engine/play/jump.js';
 import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { Expedition, BARKS, interaction } from './rules.js';
 import { ExpeditionRoom } from './network.js';
@@ -29,7 +30,7 @@ const canvas = $('world'), view = createView(canvas), hud = createHud(), ambienc
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
 let jumpPress = 0;
-function jump(){if(playing())jumpPress=(jumpPress+1)&255;}
+function jump(){if(playing())jumpPress=pressJump(jumpPress);}
 function clearInput() { keys.clear(); touch.clear(); }
 const solo = () => room.offline || room.members.size === 1;
 const playing = () => state.phase === 'playing' && !menu.isOpen;

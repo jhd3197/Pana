@@ -9,6 +9,7 @@ import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/play/diffic
 import { clamp } from '../../../engine/random.js';
 import { pickSpawn } from './spawn-picker.js';
 import { locKey } from '../../../engine/i18n.js';
+import { stepJump, resetJump, jumpCount } from '../../../engine/play/jump.js';
 
 // Pepazo plays a 54 m court: every map's cover spreads 1.5× from the centre and
 // an outer ring of barricades keeps the long perimeter lanes from staying open.
@@ -30,14 +31,16 @@ export const COVER = spread(PLAZA_COVER);
 export const SPAWNS = [{ x: -14, z: -14 }, { x: 14, z: 14 }, { x: 14, z: -14 }, { x: -14, z: 14 }, { x: 0, z: -15 }, { x: 0, z: 15 }, { x: -15, z: 0 }, { x: 15, z: 0 }].map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
 const PAINT_SPAWNS = ARENA_SPAWNS.map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
 // Bot marksmanship per difficulty: aim wobble (radians) and how much of the
-// time a bot with a clear line keeps the trigger down (sine threshold).
-export const BOT_SKILL = { facil: { wobble: .16, trigger: .45 }, normal: { wobble: .07, trigger: -.2 }, dificil: { wobble: .035, trigger: -.5 }, experto: { wobble: .012, trigger: -.8 } };
+// time a bot with a clear line keeps the trigger down (sine threshold), and how
+// stale (seconds) the rival's position is when it aims: paintballs fly 85 m/s, so
+// without that lag bots would rarely miss a strafing rival at range.
+export const BOT_SKILL = { facil: { wobble: .16, trigger: .45, reaction: .15 }, normal: { wobble: .07, trigger: -.2, reaction: .4 }, dificil: { wobble: .035, trigger: -.5, reaction: .5 }, experto: { wobble: .012, trigger: -.8, reaction: .6 } };
 export function cleanInput(input = {}) {
   if (!input || typeof input !== 'object') input = {};
   const num = n => Number.isFinite(n) ? clamp(n, -1, 1) : 0;
   let x = num(input.x), z = num(input.z), length = Math.hypot(x, z); if (length > 1) { x /= length; z /= length; }
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
-  return { x, z, ax, az, weapon: ['pistol', 'scatter', 'rapid', 'rocket'].includes(input.weapon) ? input.weapon : null, fire: input.fire === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true };
+  return { x, z, ax, az, weapon: ['pistol', 'scatter', 'rapid', 'rocket'].includes(input.weapon) ? input.weapon : null, fire: input.fire === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, jump: jumpCount(input) };
 }
 export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : id === 'noche' ? NOCHE_SPAWNS : id === 'terminal' ? TERMINAL_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
 // Half-extents of each map's court. Most are square; El Puerto runs long between its two bases.
@@ -149,13 +152,13 @@ export class Arena {
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.
     if (this.phase === 'playing' && !this.loading) this.ready.add(id);
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); return p; }
-    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, shots: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
+    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p); return p;
   }
   start() {
     if (this.phase === 'playing' || !this.canStart()) return false;
     this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = []; this.grenades = []; this.puddles = [];
-    this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5 }));
+    this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }));
     this.players.forEach(p => this.refill(p));
     // One by one, so each pana spawns away from the rivals already placed and on a free spot.
     const placed = [];
@@ -173,12 +176,13 @@ export class Arena {
   checkReady() { if (this.loading && this.players.every(p => p.bot || !p.connected || this.ready.has(p.id))) { this.loading = 0; this.countdown = COUNTDOWN; } }
   // Skip the wait and the countdown: the armory's range and tests that only exercise play.
   go() { this.loading = this.countdown = 0; }
+  freezeJumps(inputs) { for (const p of this.players) if (!p.bot) resetJump(p, inputs.get(p.id)); }
   refill(p) { const stats=kitStats(p.kit,this.options); p.ammo=stats.magazine; p.reserve=stats.reserve ?? 0; p.weapon=stats.id; p.grenadeReady=true; p.grenadeHeld=false; p.shots=0; }
   // Respawn protection: 1.5 s of shield (the ring blinks in the scene) so nobody is
   // painted on arrival; firing or throwing cancels it early.
   respawn(p) {
     const spawn = this.spawnPoint(p, this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)));
-    Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, stains: [], calm: 0, stamina: 1 }); this.refill(p);
+    Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, stains: [], calm: 0, stamina: 1, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }); this.refill(p);
   }
   // A spawn far from these rivals, out of their sight if possible and not p's last one.
   // Team rounds keep each side on its own half of the spawns: even indices are team 0's
@@ -206,6 +210,12 @@ export class Arena {
     const x = best % nx + .5 - grid.b.x - p.x, z = Math.floor(best / nx) + .5 - grid.b.z - p.z, length = Math.hypot(x, z) || 1;
     return { x: x / length, z: z / length };
   }
+  // Where bot p thinks rival q is: a sample of q refreshed every `reaction` seconds.
+  botAim(p, q, reaction) {
+    const book = this.botSight ||= new Map(), now = DURATION - this.time, seen = book.get(p.id);
+    if (!seen || seen.id !== q.id || now - seen.at >= reaction || now < seen.at) book.set(p.id, { id: q.id, x: q.x, z: q.z, at: now });
+    return book.get(p.id);
+  }
   bot(p) {
     const enemies = this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
     const q = enemies[0]; if (!q) return cleanInput();
@@ -213,7 +223,8 @@ export class Arena {
     const clear = !this.cover.some(o => segmentBox(p.x, p.z, dx, dz, o) !== null);
     const t = (DURATION - this.time) * .7 + p.id, strafe = Math.sin(t) > 0 ? 1 : -1, skill = BOT_SKILL[this.difficulty] || BOT_SKILL.normal;
     // A deterministic wobble around the true line: weaker bots spray, sharp ones rarely miss.
-    const wobble = Math.sin(t * 2.3 + p.id * 1.7) * skill.wobble, aimX = dx / length * Math.cos(wobble) - dz / length * Math.sin(wobble), aimZ = dx / length * Math.sin(wobble) + dz / length * Math.cos(wobble);
+    const ref = this.botAim(p, q, skill.reaction), rx = ref.x - p.x, rz = ref.z - p.z, rl = Math.hypot(rx, rz) || 1;
+    const wobble = Math.sin(t * 2.3 + p.id * 1.7) * skill.wobble, aimX = rx / rl * Math.cos(wobble) - rz / rl * Math.sin(wobble), aimZ = rx / rl * Math.sin(wobble) + rz / rl * Math.cos(wobble);
     let x = clear ? dx / length * (length > 9 ? .8 : -.25) - dz / length * strafe * .6 : Math.cos(t * .6);
     let z = clear ? dz / length * (length > 9 ? .8 : -.25) + dx / length * strafe * .6 : Math.sin(t * .6);
     // A rival out of sight and far away: walk the open lanes toward them.
@@ -231,13 +242,14 @@ export class Arena {
   }
   step(dt, inputs = new Map()) {
     if (this.phase !== 'playing') return; dt = clamp(dt, 0, .05);
-    if (this.loading) { this.loading = Math.max(0, this.loading - dt); if (this.loading) this.checkReady(); else this.countdown = COUNTDOWN; return; }
-    if (this.countdown) { this.countdown = Math.max(0, this.countdown - dt); return; }
+    // A press made while everything is frozen is spent, not saved for the YA.
+    if (this.loading) { this.freezeJumps(inputs); this.loading = Math.max(0, this.loading - dt); if (this.loading) this.checkReady(); else this.countdown = COUNTDOWN; return; }
+    if (this.countdown) { this.freezeJumps(inputs); this.countdown = Math.max(0, this.countdown - dt); return; }
     this.time = Math.max(0, this.time - dt);
     for (const p of this.players) {
       if (!p.connected || p.eliminated) continue;
       p.slow = Math.max(0, (p.slow || 0) - dt);
-      if (p.respawn > 0) { p.respawn = Math.max(0, p.respawn - dt); if (!p.respawn) this.respawn(p); continue; }
+      if (p.respawn > 0) { p.respawn = Math.max(0, p.respawn - dt); resetJump(p, inputs.get(p.id)); if (!p.respawn) this.respawn(p); continue; }
       p.shield = Math.max(0, p.shield - dt); p.cooldown = Math.max(0, p.cooldown - dt);
       // Paint wears off after four quiet seconds, one pepazo every 1.5 s.
       if (p.paint > 0 && (p.calm += dt) >= 4) { p.paint--; p.stains = p.stains.slice(1); p.calm = 2.5; }
@@ -259,9 +271,10 @@ export class Arena {
       const speed = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (sprinting ? 1.45 : 1), x = p.x + input.x * speed * dt, z = p.z + input.z * speed * dt;
       if (!blocked(x, p.z, RADIUS, this.mapId, this.variant)) p.x = x; if (!blocked(p.x, z, RADIUS, this.mapId, this.variant)) p.z = z;
       p.walk = !!(input.x || input.z);
+      stepJump(p, input, dt);
       if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < stats.magazine && (stats.id !== 'rocket' || p.reserve > 0)) p.reload = stats.reload;
       if (input.fire && !sprinting && !p.cooldown && !p.reload && p.ammo > 0) {
-        p.ammo--; p.shots++; p.cooldown=stats.cadence; p.shield=0;
+        p.ammo--; p.shots++; p.fired++; p.cooldown=stats.cadence; p.shield=0;
         const jitter=stats.pellets===1 ? Math.sin(p.shots*2.4)*stats.spread : 0;
         const angles=stats.pellets===3 ? [-stats.spread,0,stats.spread] : [jitter];
         for(const angle of angles) this.balls.push({ id:++this.serial, owner:p.id, color:p.color, x:p.x, z:p.z,

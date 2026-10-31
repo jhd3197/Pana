@@ -80,10 +80,12 @@ try {
   const guest = await b.evaluate(() => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id));
   await wait(a, id => { const g = pinturaDebug.room.state.players.find(p => p.id === id); return g.x > 26 && g.z < -25.5; }, guest.id);
   await a.evaluate(id => { const { room, world } = pinturaDebug, me = room.state.players.find(p => p.id === room.id), g = room.state.players.find(p => p.id === id); world.look(Math.atan2(-(g.x - me.x), -(g.z - me.z)) - world.yaw); }, guest.id);
-  await a.keyboard.down(' ');
+  // Space hops (server-side), up and back down, before the duel.
+  await a.keyboard.press(' '); await wait(a, `${mine}.jumpHeight > .2`); await wait(a, `${mine}.jumpHeight === 0`);
+  await a.keyboard.down('Enter');
   // The first confirmed hit raises the feat toast (¡Pintaste a…!, then ¡Doble!/¡Triple pintada!).
   await wait(a, () => /Pintaste|pintada/.test(document.getElementById('toast').textContent));
-  await wait(a, `${mine}.score > 0`); await a.keyboard.up(' ');
+  await wait(a, `${mine}.score > 0`); await a.keyboard.up('Enter');
   await wait(b, `${mine}.hits > 0`);
   await wait(a, id => !!pinturaDebug.world.avatars.get(id)?.knockout, guest.id);
   assert.equal(await a.evaluate(id => pinturaDebug.world.avatars.get(id).knockout.physics.points.every(p => Number.isFinite(p.x+p.y+p.z)), guest.id), true);
