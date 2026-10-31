@@ -55,3 +55,26 @@ export const PAINT_KIT_BORE = Object.freeze({
   smg: .18, minigun: .2, slingshot: .31, revolver: .305, blunderbuss: .2, sprayer: .15,
   sixshooter: .232, pdw: .175, carbine: .175, bullpup: .175, marksman: .175, lmg: .2,
 });
+// Camo looks (the model draws them: paintball-kit.js `camo`). Patterned ones carry a
+// shader pattern, a scale and four colours (the base, then three accents); solid ones
+// are one plain body colour. Which a player owns is the game's business (Pepazo:
+// games/pintura/public/camos.js); here is only what each id looks like.
+export const PAINT_CAMOS = Object.freeze({
+  selva: { name: 'Selva', pattern: 'woodland', scale: 1, colors: ['#4b5b2c', '#2f3a1e', '#7a6a3a', '#1b1f14'] }, // i18n-ignore: proper name
+  medanos: { name: 'Médanos de Coro', pattern: 'digital', scale: 1, colors: ['#d8c49a', '#b89a68', '#8a6e48', '#efe3c4'] }, // i18n-ignore: proper name
+  bolivar: { name: 'Pico Bolívar', pattern: 'digital', scale: 1, colors: ['#eef2f3', '#b9c4c9', '#7f8d94', '#4c5a61'] }, // i18n-ignore: proper name
+  caracas: { name: 'Concreto caraqueño', pattern: 'digital', scale: 1.2, colors: ['#8d9293', '#5f6566', '#b9bdbd', '#2f3436'] }, // i18n-ignore: proper name
+  caribe: { name: 'Caribe', pattern: 'woodland', scale: 1.1, colors: ['#18b3b0', '#0c6f8a', '#f2e2b0', '#ff6f61'] }, // i18n-ignore: proper name
+  jaguar: { name: 'Jaguar', pattern: 'tiger', scale: 1, colors: ['#f28b42', '#d9732c', '#2a1d14', '#120c08'] }, // i18n-ignore: proper name
+  llanero: { name: 'Atardecer llanero', pattern: 'tiger', scale: .9, colors: ['#ff7a2f', '#ffb347', '#c2185b', '#3b1f4a'] }, // i18n-ignore: proper name
+  rumba: { name: 'Rumba neón', pattern: 'digital', scale: .9, colors: ['#1a1030', '#ff2fd1', '#26f0ff', '#b7ff2a'] }, // i18n-ignore: proper name
+  tricolor: { name: 'Tricolor', pattern: 'splash', scale: 1, colors: ['#ffcc00', '#00247d', '#cf142b', '#ffffff'] }, // i18n-ignore: proper name
+  pepazo: { name: 'Pepazo', pattern: 'splash', scale: 1, colors: ['#f8e9c9', '#ff4b4b', '#ffc629', '#3fa7c4'] }, // i18n-ignore: proper name
+});
+// Solid camos: one colour on the painted body, no shader at all.
+export const PAINT_SOLIDS = Object.freeze({
+  'liso-mango': '#f28b42', 'liso-caribe': '#29c5cd', 'liso-uva': '#8d85df',
+  'liso-crema': '#f8e9c9', 'liso-carbon': '#2f3d3c', 'liso-coral': '#ff4b4b',
+});
+// Every camo id a kit may name: the solids first, then the patterns.
+export const PAINT_CAMO_IDS = Object.freeze([...Object.keys(PAINT_SOLIDS), ...Object.keys(PAINT_CAMOS)]);

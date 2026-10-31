@@ -32,6 +32,8 @@ export const ICONS = {
   'wardrobe-cuello': svg("<path d=\"M8 8c0 11 5 17 12 17S32 19 32 8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.2\" stroke-linecap=\"round\"/><circle cx=\"20\" cy=\"30\" r=\"6\"/>"),
   'wardrobe-espalda': svg("<rect x=\"9\" y=\"11\" width=\"22\" height=\"24\" rx=\"6\"/><path d=\"M15 11V9a5 5 0 0 1 10 0v2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\"/><rect x=\"13\" y=\"24\" width=\"14\" height=\"7\" rx=\"2\" fill=\"var(--panel)\"/>"),
   dice: svg('<rect x="5" y="5" width="30" height="30" rx="7" fill="none" stroke="currentColor" stroke-width="3"/><g fill="currentColor"><circle cx="13" cy="13" r="3"/><circle cx="27" cy="27" r="3"/><circle cx="13" cy="27" r="3"/><circle cx="27" cy="13" r="3"/></g>'),
+  // A padlock: something not yours yet (Pepazo's locked camos).
+  lock: svg('<path d="M13 18v-5a7 7 0 0 1 14 0v5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><rect x="8" y="18" width="24" height="17" rx="3" fill="currentColor" stroke="#16161a" stroke-width="2.5"/><circle cx="20" cy="26" r="2.5" fill="#16161a"/>'),
   close: svg('<path d="m10 10 20 20M30 10 10 30" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>'),
   chevronLeft: svg('<path d="m24 10-8 10 8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
   plus: svg('<path d="M20 9v22M9 20h22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>'),

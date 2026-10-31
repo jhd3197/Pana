@@ -241,22 +241,27 @@ launchers in third person pays for one.
 `createPaintGrenade({ color })` is Pepazo's paint grenade (about 30 cm, upright,
 origin at its centre; `userData.light` is the fuse lamp's material to blink).
 
-Camo is in the model and inert: only `camo: '<preset id>'` (`PAINT_CAMOS`:
-selva, medanos, bolivar, caracas, caribe, jaguar, llanero, rumba, tricolor,
-pepazo) turns it on; free colour objects are ignored. It is a shader hook on the
+Camo goes on by id only: `camo: '<id>'` names a `PAINT_CAMOS` pattern (selva,
+medanos, bolivar, caracas, caribe, jaguar, llanero, rumba, tricolor, pepazo) or
+a `PAINT_SOLIDS` colour (`liso-mango`, `liso-caribe`, `liso-uva`, `liso-crema`,
+`liso-carbon`, `liso-coral`); free colour objects are ignored (`resolveCamo`).
+A solid one only recolours the painted body (`userData.camo.pattern` is
+`'solid'`, no shader, no extra attribute). A pattern is a shader hook on the
 painted body (`applyCamo`, patterns in `CAMO_PATTERNS`) reading a `camoPos`
 attribute baked in model space, so it wraps every part without UVs. All camo
 materials share one program (`customProgramCacheKey` is the fixed
-`'pana-camo'`; colours and pattern are uniforms set per material), and
-`engine/models/core/static-batch.js` keeps `camoPos` through a bake. No game
-passes `camo` yet.
+`'pana-camo'`; colours and pattern are uniforms set once per material at
+compile, nothing per frame), and `engine/models/core/static-batch.js` keeps
+`camoPos` through a bake. Used by Pepazo (its armory, held and third-person
+markers); who owns which camo is the game's rule, not the model's.
 
 The data behind it is `engine/play/paint-arsenal.js` (no Three.js, safe in
 rules and on the server): `PAINT_WEAPONS` (id → name, menu order),
 `PAINT_MELEE`, `PAINT_CLASSES` (eight marker classes plus granadas and melee;
 nickname and kind through `loc()`), `classOf(id)`, `PAINT_MOUNTS` (which
 attachments each model has a mount for), `PAINT_OPTICS` (the Mira kind each
-model draws: dot, holo, laser, scope, pin) and `PAINT_KIT_BORE`. The kit
+model draws: dot, holo, laser, scope, pin), `PAINT_KIT_BORE`, `PAINT_CAMOS`,
+`PAINT_SOLIDS` and `PAINT_CAMO_IDS` (every camo id, solids first). The kit
 re-exports all of it. Pepazo's `armory-data.js` builds its markers, attachment
 rules and optic tuning from it; `games/pintura/tests/paint-kit.browser.js`
 builds every marker with every allowed attachment set and keeps the model and
@@ -368,6 +373,7 @@ See candidates.
 | Shell (load, loops, teardown) | `engine/game-shell.js` (`bootGame`) | 17 games |
 | Invite links | `engine/invite.js` | all 24 (Capis a Pintazos through game-entry only) |
 | Seeded random, noise | `engine/random.js` | 14 games |
+| Gateway-vouched ownership (pana.sh signs `x-pana-camos` with `PANA_GATEWAY_SECRET`; `parseOwned(headers)` verifies the HMAC, timing-safe) | `server/src/camo-trust.js`, read in a room's `onAuth(client, options, context)` | Pepazo (camos). The catalog and the bridge client stay game-local: `games/pintura/public/camos.js`, `camo-store.js` |
 
 ## HUD and UI
 
@@ -376,7 +382,7 @@ See candidates.
 | Look, fonts, `--pk-*` tokens | `engine/kit.css`, `engine/kit.js` | all 24 |
 | Game skin: the lobby room panel's look for any panel or dialog (`.pk-skin-panel`, `-card`, `-plate`, `-label`, `-chips`, `-btn`, `-go`, `-link`; `--pk-skin-*` tokens) | `engine/kit.css` (pana-ui.md, "Game skin") | the shared sala (`sala.css` reads the tokens) and "Más ajustes" in the 23 room-options games |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | ui: all 24; settings: 16 |
-| Icons | `engine/icons.js` | Billar, Bochinche, Bululú, Capis a Pintazos (through room options), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
+| Icons (`lock` marks something not yours yet) | `engine/icons.js` | Billar, Bochinche, Bululú, Capis a Pintazos (through room options), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
 | Toast | `engine/hud.js` (`createToast`) | Billar, Caída, Capis a Pintazos, Cocina, Criollas, Curiara, Dominó, Embuste, Escondidas, Lancha, Parapente, Reliquia |
 | Touch controls | `engine/touch.js` | 17 games |
 | Gamepad | `engine/gamepad.js` | Carreritas, Trifulca; `ui`, `first-person`, `settings` and `game-entry` read pads for every game |

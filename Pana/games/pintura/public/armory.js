@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { createPaintKit, createPaintVest } from '/engine/models/props/paintball-kit.js';
-import { MARKERS, WEAPONS, ARMORY_CLASSES, ATTACHMENTS, throwRange, meleeInterval, OPTICS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, cleanKit, kitStats, kitRating, canAttach, setSlot, changeWeapon, opticOf, shotInterval, dpsOf } from './armory-data.js';
+import { MARKERS, WEAPONS, ARMORY_CLASSES, ATTACHMENTS, throwRange, meleeInterval, OPTICS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, FALLBACK_CAMO, cleanKit, kitStats, kitRating, canAttach, setSlot, changeWeapon, opticOf, shotInterval, dpsOf } from './armory-data.js';
 import { Arena } from './rules.js';
 import { ICONS } from '/engine/icons.js';
 import { pixelRatio } from '/engine/settings.js';
@@ -23,16 +23,58 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  const say=text=>{note.textContent=text;if(!dialog.open)notify(text);};
  const weaponName=id=>loc(WEAPONS.find(m=>m.id===id).name);
  const dropNote=(dropped,weapon)=>locn(dropped.length,'{parts} no cabe en {weapon} y salió del kit.','{parts} no caben en {weapon} y salieron del kit.',{parts:formatList(dropped.map(id=>loc(ATTACHMENTS.find(a=>a.id===id).name)),{type:'conjunction'}),weapon:weaponName(weapon)});
- room.onKitRejected=({reason}={})=>say(reason==='playing'?loc('No se pueden cambiar accesorios en plena ronda.'):loc('La sala no aceptó el kit. Inténtalo otra vez.'));
+ // An unowned camo comes back as a solid one: wear what the room wears (the saved pick stays until the next save).
+ room.onKitRejected=({reason}={})=>{
+  if(reason==='camo'){kit={...kit,camo:FALLBACK_CAMO};room.kit=kit;if(dialog.open){paint();rebuild();}say(loc('Ese camuflaje todavía no es tuyo: la sala te puso uno liso.'));return;}
+  say(reason==='playing'?loc('No se pueden cambiar accesorios en plena ronda.'):loc('La sala no aceptó el kit. Inténtalo otra vez.'));
+ };
  const rating=document.createElement('span');rating.id='armory-rating';document.getElementById('armory-name').after(rating);
  const className=document.createElement('small');className.id='armory-class';rating.after(className);
  // The class chips, the first row of the marker choices.
  const tabs=document.createElement('nav');tabs.id='armory-classes';tabs.setAttribute('aria-label',loc('Clases de marcadora'));
  const back=document.createElement('button');back.id='armory-parts-back';back.type='button';back.className='pk-btn';back.textContent=loc('‹ Atrás');choices.before(back);back.onclick=()=>dialog.classList.remove('choosing');
- const icons={weapon:'kitBarrel',attachments:'plus',armor:'kitVest',grenade:'kitGrenade',finish:'kitPaint',charm:'wardrobe-cuello',pattern:'kitPaint'};
+ const icons={weapon:'kitBarrel',attachments:'plus',armor:'kitVest',grenade:'kitGrenade',finish:'kitPaint',camo:'kitPaint',charm:'wardrobe-cuello',pattern:'kitPaint'};
  for(const b of document.querySelectorAll('#armory-slots button')){const icon=document.createElement('i');icon.innerHTML=ICONS[icons[b.dataset.slot]];b.insertBefore(icon,b.querySelector('b'));}
  let shown=null,ratedOptions='',category='weapon',slot=0,renderer=null,scene,camera,model,avatar,vest,target,range=null,acc=0; const balls=new Map();
  const catalog={weapon:WEAPONS,attachments:ATTACHMENTS,armor:ARMOR,grenade:GRENADES,finish:FINISHES,charm:CHARMS,pattern:PATTERNS};
+ // Camuflajes: camos.js and camo-store.js load with the first look at the tab (at once on
+ // pana.sh, whose bridge says what this pana owns). Without the bridge only the solid ones are yours.
+ let camoLib=null,camoData=null,camoLoad=null;
+ const camoName=id=>!id?loc('De fábrica'):camoLib?loc(camoLib.camoById(id)?.name||id):'…';
+ function loadCamos(fresh=false){
+  camoLoad??=Promise.all([import('./camos.js'),import('./camo-store.js')]).then(([lib,{createCamoStore}])=>{camoLib={...lib,store:createCamoStore()};});
+  return camoLoad.then(()=>camoLib.store.load({fresh})).then(data=>{camoData=data;room.setCamos?.(data.owned);if(dialog.open)paint();return data;});
+ }
+ if(window.PanaSh)loadCamos();
+ // One card per camo: a swatch from its palette, its state, a Comprar for mango ones.
+ // Every card previews on the 3D marker; only owned ones are picked.
+ function camoChoices(){
+  if(!camoLib){loadCamos();const wait=document.createElement('p');wait.className='armory-camo-note';wait.textContent=loc('Cargando camuflajes…');return [wait];}
+  const data=camoData||camoLib.store.data,head=document.createElement('p');head.className='armory-camo-note';
+  head.textContent=data.online?loc('Tienes {n} mangos. Los camuflajes van en cualquier arma.',{n:data.balance}):loc('Los camuflajes con candado se consiguen en pana.sh.');
+  return [head,...[{id:'',name:locKey('De fábrica')},...camoLib.CAMOS].map(c=>{
+   const st=c.id?camoLib.camoState(c.id,data):{state:'owned',text:loc('El color de fábrica de la marcadora')},card=document.createElement('div');
+   card.className='armory-camo';card.dataset.id=c.id;card.dataset.state=st.state;
+   const b=document.createElement('button');b.type='button';b.className='armory-choice';b.dataset.id=c.id;b.setAttribute('aria-pressed',String((kit.camo??'')===c.id));
+   if(st.state!=='owned')b.setAttribute('aria-disabled','true');
+   b.innerHTML=`<i class="armory-swatch"></i><b>${esc(loc(c.name))}</b><span>${st.state==='owned'?'':`<i class="armory-lock">${ICONS.lock}</i>`}${esc(st.text)}</span>`;
+   b.querySelector('.armory-swatch').style.background=c.id?camoLib.swatch(c.id):'linear-gradient(135deg,#f28b42 50%,#2f3d3c 50%)';
+   const look=()=>({...kit,camo:c.id||null});
+   for(const event of ['pointerenter','focus'])b.addEventListener(event,()=>rebuild(look()));
+   for(const event of ['pointerleave','blur'])b.addEventListener(event,()=>rebuild());
+   b.onclick=()=>{if(st.state!=='owned'){note.textContent=st.text;return;}kit=cleanKit(look());note.textContent='';save();paint();rebuild();};
+   card.append(b);
+   if(st.state==='buyable'||st.state==='cantAfford'){
+    const buy=document.createElement('button');buy.type='button';buy.className='pk-btn armory-buy';buy.textContent=loc('Comprar · {n} mangos',{n:st.price});buy.disabled=st.state!=='buyable';
+    buy.onclick=async()=>{buy.disabled=true;note.textContent=loc('Comprando…');const r=await camoLib.store.buy(c.id);
+     if(r.ok){camoData=r.data;room.setCamos?.(r.data.owned);if(camoLib.camoState(c.id,r.data).state==='owned'){kit=cleanKit(look());save();note.textContent=loc('¡{name} ya es tuyo!',{name:loc(c.name)});}}
+     else note.textContent=r.error||loc('No se pudo comprar. Inténtalo otra vez.');
+     paint();rebuild();};
+    card.append(buy);
+   }
+   return card;
+  })];
+ }
  function paintStats(value=kit){
   ratedOptions=JSON.stringify(room.state.options);
   rating.innerHTML=ratingBadge(kitRating(value,room.state.options));
@@ -55,10 +97,12 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   document.getElementById('armory-name').textContent=weaponName(kit.weapon);className.textContent=`${loc(group.name)} · ${loc(group.kind)}`;paintStats();
   for(const b of document.querySelectorAll('#armory-slots button')) {
    const field=b.dataset.slot;b.setAttribute('aria-pressed',String(category===field && (field!=='attachments' || slot===Number(b.dataset.index))));
+   if(field==='camo'){b.querySelector('b').textContent=camoName(kit.camo);continue;}
    const value=field==='attachments' ? ATTACHMENTS.find(a=>a.id===kit.attachments[Number(b.dataset.index)])?.name || locKey('Sin accesorio') : catalog[field].find(x=>x.id===kit[field]).name;
    // Generic part names are locKey() in armory-data.js; proper names pass through unchanged.
    b.querySelector('b').textContent=loc(value);
   }
+  if(category==='camo'){back.textContent=loc('‹ Atrás');choices.replaceChildren(...camoChoices());return;}
   const attaching=category==='attachments', arming=category==='weapon';
   back.textContent=attaching?loc('‹ Atrás · Accesorio {n}',{n:slot+1}):loc('‹ Atrás');
   // Markers come by class: a chip per class (nickname · kind), then that class's markers.
@@ -106,7 +150,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   avatar=buildCharacter(loadAvatar());avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;scene.add(avatar.group);vest=createPaintVest();avatar.group.add(vest);target=buildCharacter({...loadAvatar(),outfitColor:'#29c5cd'});target.group.position.set(1.8,0,-2);target.group.visible=false;scene.add(target.group);rebuild();
  }
  for(const b of document.querySelectorAll('#armory-slots button')) b.onclick=()=>{category=b.dataset.slot;slot=Number(b.dataset.index)||0;shown=null;note.textContent='';dialog.classList.add('choosing');paint();};
- const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda cambias de marcadora con 1 a 9, Z y X.'));return;}note.textContent='';dialog.classList.remove('choosing');dialog.showModal();init();paint();};
+ const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda cambias de marcadora con 1 a 9, Z y X.'));return;}note.textContent='';dialog.classList.remove('choosing');dialog.showModal();init();paint();if(camoLib||window.PanaSh)loadCamos();};
  document.getElementById('open-armory').onclick=open;document.getElementById('armory-close').onclick=()=>dialog.close();
  document.getElementById('armory-go').onclick=()=>{save();dialog.close();if(room.isHost)room.start();};
  document.getElementById('armory-range').onclick=()=>{
@@ -120,7 +164,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  // The range lobs its grenade like a bot: the throw solved to blow on the target.
  document.getElementById('range-grenade').onclick=()=>{if(!range)return;const [p,dummy]=range.players,aim=range.aimGrenade(p,dummy.x,dummy.z);grenade=aim?{grenade:true,pitch:aim.pitch,charge:aim.charge}:{grenade:true};};
  dialog.addEventListener('close',()=>{range=null;if(target)target.group.visible=false;document.getElementById('range-controls').hidden=true;document.getElementById('open-armory').focus();});
- return {get kit(){return kit;}, get preview(){return model;}, open, setWeapon, update(dt){
+ return {get kit(){return kit;}, get preview(){return model;}, get camos(){return camoData;}, refreshCamos:()=>loadCamos(true), open, setWeapon, update(dt){
   if(!dialog.open||!renderer)return;if(ratedOptions!==JSON.stringify(room.state.options))paintStats();const c=renderer.domElement,w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
   model.rotation.y+=dt*.18;avatar.update(dt,{walk:false});
   if(range){acc+=dt;while(acc>=.05){range.step(.05,new Map([[1,{ax:0,az:1,fire,...(grenade||{})}]]));fire=grenade=false;acc-=.05;}const p=range.players[0],dummy=range.players[1];document.getElementById('range-status').textContent=`Blanco: ${dummy.paint} pepazos · ${dummy.hits} fuera · Carga: ${p.ammo} · ${p.reload>0?'Recargando':p.grenadeReady?'Granada lista':'Sin granada'}`;target.group.rotation.z=dummy.paint*.08;target.update(dt,{walk:false});if(dummy.respawn){dummy.respawn=0;Object.assign(dummy,{x:-22,z:-15,paint:0,shield:0});} }

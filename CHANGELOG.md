@@ -8,6 +8,14 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Pepazo tu marcadora lleva camuflaje: seis lisos para todos y diez estampados que se ganan pintando o con mangos.**
+  En la armería, Camuflaje muestra cada uno con su muestra y lo previsualiza en
+  la marcadora. Selva, Médanos, Bolívar, Caracas y Jaguar se ganan pintando
+  panas con una marcadora (por ejemplo 15 con La Parrandera) y luego van en
+  cualquier arma; Caribe, Tricolor, Llanero, Rumba y Pepazo se compran con
+  mangos en pana.sh. No hay selector de color libre, y la sala solo acepta los
+  camuflajes que pana.sh firma como tuyos.
+
 - **En Pepazo llegan Los del pescozón: El Bate, La Chancleta, El Rodillo, La Brocha, El Tobo y La Maraca, y la chancla se lanza.**
   Se eligen en la armería como las marcadoras, con su alcance, pepazos por
   golpe, golpes por segundo, movilidad y aguante, y tres accesorios propios
