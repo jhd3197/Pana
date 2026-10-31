@@ -39,7 +39,8 @@ export function createDifficultyPicker(parent, onChange, { label = loc('Dificult
     update(id, enabled) {
       const info = difficultyInfo(id);
       for (const b of buttons) { b.setAttribute('aria-pressed', String(b.dataset.difficulty === info.id)); b.disabled = !enabled; }
-      note.textContent = notes?.[info.id] ?? info.note;
+      // The settings dialog clamps the note to one line; the title keeps it whole.
+      note.textContent = note.title = notes?.[info.id] ?? info.note;
     },
   };
 }

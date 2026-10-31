@@ -4,6 +4,8 @@ import { Arena, cleanInput } from './rules.js';
 import { FIELDS } from './options.js';
 import { normalizeRoomOptions } from '/engine/room-options-rules.js';
 import { loc } from '/engine/i18n.js';
+// The server's bot names (room-kit BOT_NAMES), in the same order.
+const PRACTICE_BOTS = ['Coco', 'Lola', 'Cheo', 'Nena', 'Toño', 'Mari', 'Pepe']; // i18n-ignore: names
 
 export class PaintConnection {
   constructor(options) { Object.assign(this, options); this.state = new Arena().view(); this.connected = false; this.local = false; this.current = cleanInput(); this.accumulator = 0; }
@@ -38,8 +40,13 @@ export class PaintConnection {
     else this.link.send('difficulty', { difficulty });
   }
   selectKit(kit) { this.kit=kit; if(this.local) { if(this.game.selectKit(this.id,kit)) this.publish(); } else if(this.connected) this.link.send('kit',kit); }
-  start() { if (this.local) { this.game.start(); this.publish(); } else if (this.connected) this.link.send('start'); }
-  // Results → lobby to pick the next map. Practice keeps its bots: its start adds none.
+  // Practice seats its bots like the server does, from the room's `bots` option.
+  start() {
+    if (this.local) { this.game.seatBots(i => ({ name: PRACTICE_BOTS[i % PRACTICE_BOTS.length], avatar: randomAvatar() })); this.game.start(); this.publish(); }
+    else if (this.connected) this.link.send('start');
+  }
+  // Results → lobby to pick the next map. Practice keeps its bots on the lobby
+  // cards; start re-seats them from the `bots` option.
   toLobby() {
     if (!this.isHost || !this.connected) return;
     if (this.local) { if (this.game.toLobby({ keepBots: true })) this.publish(); } else this.link.send('lobby');
@@ -51,7 +58,6 @@ export class PaintConnection {
     this.local = true; this.link?.leave(); this.connected = true; this.game = new Arena(this.state.mapId, this.state.difficulty, this.state.options);
     this.game.add(1, { name: this.name, avatar: this.avatar, bot: false });
     if(this.kit) this.game.selectKit(1,this.kit);
-    ['Coco', 'Lola', 'Cheo'].forEach((name, i) => this.game.add(1000 + i, { name, avatar: randomAvatar(), bot: true }));
     this.onStatus(loc('Práctica con bots · a tu ritmo')); this.start();
   }
   publish() { this.state = this.game.view(); this.onState(this.state); }

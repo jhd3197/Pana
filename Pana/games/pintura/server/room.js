@@ -1,4 +1,5 @@
-import { PanaRoom, roomState, memberAvatar, fillBots, InputBuffer } from '../../../server/src/room-kit.js';
+import { PanaRoom, roomState, memberAvatar, BOT_NAMES, InputBuffer } from '../../../server/src/room-kit.js';
+import { randomAvatar } from '../../../engine/avatar.js';
 import { Arena, cleanInput } from '../public/rules.js';
 export default class PaintRoom extends PanaRoom {
   state = new (roomState({}, undefined, 'PaintRoomState'))();
@@ -16,9 +17,11 @@ export default class PaintRoom extends PanaRoom {
     this.onHostMessage('lobby', () => { if (this.game.toLobby()) { this.inputs.clear(); this.publish(); } });
     this.onHostMessage('start', () => {
       if (this.game.phase !== 'lobby') return;
-      this.game.players = this.game.players.filter(p => !p.bot && p.connected);
-      if (this.game.players.length === 1) fillBots(3, (seat, info) => this.game.add(seat, info));
-      this.inputs.clear(); this.game.start(); this.publish();
+      // The room's `bots` option decides how many join (Auto: three for a pana alone).
+      this.game.seatBots(i => ({ name: BOT_NAMES[i % BOT_NAMES.length], avatar: randomAvatar() }));
+      // A refused start (teams without a rival) leaves no bots behind in the lobby.
+      if (!this.game.start()) this.game.players = this.game.players.filter(p => !p.bot);
+      this.inputs.clear(); this.publish();
     });
     // Only a running round changes on its own; the lobby publishes on events.
     this.clock.setInterval(() => {
