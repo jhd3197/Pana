@@ -293,7 +293,32 @@ The dialog follows the lobby side panel's compact look: a one-row header (Más
 ajustes eyebrow, game title, host notice, close), one grid of equal cards with
 uppercase 11px labels and 34px segmented chips (3 columns from 900px, 2 from
 600px, 1 on phones; only the grid scrolls), then a thin footer: Restablecer
-sala, the adopted help buttons, Listo. Adopted `data-room-extra` nodes become
+sala, the adopted help buttons, Listo.
+
+### Game skin: the room panel's look for any panel or dialog
+
+The lobby room panel (`sala.css`) and "Más ajustes" wear one skin from
+`kit.css`, so a new popup gets the same look by using its classes, never by
+copying values. The tokens are `--pk-skin-shadow` (4px hard offset in
+`--pk-skin-shade`), `--pk-skin-lean` (-5deg), `--pk-skin-plate-lean` (-9deg),
+`--pk-skin-chip`/`-chip-hover`, `--pk-skin-well` and `--pk-skin-panel`;
+`sala.css` reads them too, so changing one changes both.
+
+| Class | Piece |
+|---|---|
+| `pk-skin-panel` | square leaning panel; the plate is a `::before`, so scrolling, hit areas and focus rings stay square. `--pk-skin-fill` sets its colour, `--pk-skin-reach` widens the plate past the box for tall panels |
+| `pk-skin-card` | the same plate for a card inside it (night fill); `.is-changed` adds the yellow ring |
+| `pk-skin-plate` | yellow title plate, display font, skewed like the lobby title |
+| `pk-skin-label` | uppercase muted 11px label |
+| `pk-skin-chips` | square chips (on a `.pk-seg`), yellow when `aria-pressed` |
+| `pk-btn pk-skin-btn` | square night button with the hard shadow (close, Volver, Restablecer) |
+| `pk-btn pk-skin-go` | yellow display-font skewed primary, like the start button (Listo) |
+| `pk-btn pk-skin-link` | small underlined muted text (help links) |
+
+Plates stand straight below 801px, like the lobby panel. The button classes
+carry a `:root` prefix so body themes such as `.banderin .pk-btn` cannot round
+them or swap their shadow. `room-options.js` puts the classes on its own markup
+and on adopted cards, chips and help links, so no game styles the dialog. Adopted `data-room-extra` nodes become
 cards of that grid after the schema fields (class `pk-room-card`); a team roster
 or a bare paragraph spans the whole row. Card copy is clamped (the difficulty
 note to one line, its full text in `title`). Keep choice labels short: chips
