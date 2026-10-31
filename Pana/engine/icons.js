@@ -11,6 +11,9 @@ const INK = '#16161a';
 export const ICONS = {
   kitBarrel: svg('<path d="M4 16h26v8H4z M30 14h6v12h-6z" fill="currentColor"/>'),
   kitHopper: svg('<path d="M7 27C7 9 33 9 33 27z M16 27h8v7h-8z" fill="currentColor"/>'),
+  // A marker's stock in profile, and a sight on its rail (Pepazo's Culata and Mira).
+  kitStock: svg('<path d="M4 13h18l12 9v7H23l-7-8H4z" fill="currentColor"/>'),
+  kitOptic: svg('<path d="M6 13h28v10H6z M12 23h4v6h-4z M24 23h4v6h-4z" fill="currentColor"/><circle cx="20" cy="18" r="3" fill="#16161a"/>'),
   kitVest: svg('<path d="M12 6l4 4h8l4-4 6 6-3 6v16H9V18l-3-6z" fill="currentColor"/>'),
   kitGrenade: svg('<circle cx="20" cy="23" r="12" fill="currentColor"/><path d="M16 8h8v5h-8z" fill="currentColor"/>'),
   kitMotor: svg('<rect x="8" y="14" width="22" height="16" rx="2" fill="currentColor"/><rect x="12" y="8" width="9" height="6" fill="currentColor"/><path d="M30 18h4v8h-4M8 19H4v6h4" fill="none" stroke="currentColor" stroke-width="2.5"/>'),

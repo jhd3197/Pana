@@ -135,10 +135,19 @@ const SHOTS = {
   },
   // Soft thwip for slingshots, darts and toys.
   pellet: v => { burst({ dur: .06, f0: 2200, f1: 900, q: 1.4, vol: .14 * v, priority: 2 }); pitch({ dur: .07, f0: 520, f1: 190, vol: .08 * v, priority: 2 }); },
+  // A rotary gun: a short, buzzy tick light enough to repeat twenty times a second.
+  minigun: v => {
+    const j = jit(.1);
+    burst({ dur: .018, f0: 3600 * j, type: 'highpass', vol: .1 * v, priority: 2 });
+    pitch({ dur: .035, f0: 190 * j, f1: 120, type: 'sawtooth', vol: .05 * v, priority: 2 });
+    punch(v, 120, .03, .05);
+  },
+  // A pump sprayer: a soft hiss of droplets, almost no punch.
+  spray: v => { burst({ dur: .07, f0: 5200 * jit(.1), f1: 3800, q: .6, vol: .05 * v, priority: 1 }); burst({ dur: .05, f0: 1500, q: 1.2, vol: .025 * v, priority: 1 }); },
   // A bright zap for energy toys.
   zap: v => { pitch({ dur: .14, f0: 1600, f1: 260, type: 'sawtooth', vol: .09 * v, priority: 2 }); burst({ dur: .05, f0: 4200, type: 'highpass', vol: .1 * v, priority: 2 }); },
 };
-const WEAPON_ALIAS = { chispa: 'pistol', trueno: 'scatter', gemelas: 'rapid', coheton: 'rocket', lejana: 'sniper', bazuca: 'bazooka', shotgun: 'scatter', smg: 'rapid', launcher: 'rocket', rifle: 'sniper' };
+const WEAPON_ALIAS = { chispa: 'pistol', trueno: 'scatter', gemelas: 'rapid', coheton: 'rocket', lejana: 'sniper', bazuca: 'bazooka', shotgun: 'scatter', smg: 'rapid', launcher: 'rocket', rifle: 'sniper', slingshot: 'pellet', sprayer: 'spray' };
 
 // ---------- reloads: a sequence laid out over `dur` seconds ----------
 const click = (delay, v = 1, f = 1700) => { pitch({ dur: .02, f0: f, f1: f * .55, type: 'square', vol: .045 * v, delay, priority: 1 }); burst({ dur: .02, f0: 3400, q: 1.5, vol: .06 * v, delay, priority: 1 }); };
