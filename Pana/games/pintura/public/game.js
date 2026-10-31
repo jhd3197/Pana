@@ -27,7 +27,7 @@ import { loc, locn } from '/engine/i18n.js';
 
 const $ = id => document.getElementById(id), code = roomCode();
 const params = new URLSearchParams(location.search);
-const held = new Set(), pads = []; let aim = null, firing = false, jumpPress = 0, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastBall = 0, lastKiller = '';
+const held = new Set(), pads = []; let aim = null, firing = false, jumpPress = 0, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastKiller = '', wasReloading = false, lastDry = 0; const seenShots = new Map();
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
 const hitFeats = createHitFeats(createFeats($('toast')));
 let weapon = 'pistol', queuedGrenade = false;
@@ -116,10 +116,12 @@ function input() {
       : rivals.sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z))[0];
     if (target) { ax = target.x - me.x; az = target.z - me.z; }
   }
-  const length = Math.hypot(ax, az) || 1;
+  const length = Math.hypot(ax, az) || 1, fire = queuedFire || firing || touchFire || held.has('enter');
+  // Pulling the trigger mid-reload clicks, so the wait is never silent.
+  if (fire && me.reload > 0 && performance.now() - lastDry > 450) { lastDry = performance.now(); sfx.dry(); }
   return { weapon, grenade:queuedGrenade, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
     Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))), sprint: held.has('shift'),
-    ax: ax / length, az: az / length, jump: jumpPress, fire: queuedFire || firing || touchFire || held.has('enter'), reload: queuedReload || held.has('r') };
+    ax: ax / length, az: az / length, jump: jumpPress, fire, reload: queuedReload || held.has('r') };
 }
 // A short CSS pulse: a hit marker on the crosshair or a paint flash when hit.
 function flash(name) { document.body.classList.remove(name); void document.body.offsetWidth; document.body.classList.add(name); }
@@ -144,23 +146,34 @@ function feedLine(e, state) {
 function announce(e, state) {
   const mine = e.owner === room.id, me = e.victim === room.id;
   if (e.type === 'out') feedLine(e, state);
-  if (mine && e.type === 'hit') { sfx.hitTick(); flash('hitmark'); hitFeats.hit(state.players.find(p => p.id === e.victim)?.name || loc('un pana')); }
+  if (mine && e.type === 'hit') { sfx.hitTick(); flash('hitmark'); navigator.vibrate?.(18); hitFeats.hit(state.players.find(p => p.id === e.victim)?.name || loc('un pana')); }
   if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); flash('scored'); callout(e, state); }
   if (me) {
     document.body.style.setProperty('--paint-hurt', `${e.color}aa`); flash('painted');
     if (e.type === 'out') { sfx.out(); lastKiller = { name: state.players.find(p => p.id === e.owner)?.name || loc('Un pana'), distance: e.distance }; } else sfx.hurt();
   }
 }
-// Hearing the court: every new paintball pops, quieter with distance.
+// Hearing and seeing the court: every shot pops, flashes and puffs, quieter with distance.
+// Shots are counted per pana (`fired`), not by ball: a point-blank ball is gone in one step.
 function shots(state, me) {
-  const owners = new Set();
-  for (const b of state.balls) {
-    if (b.id <= lastBall) continue;
-    if (owners.has(b.owner)) continue; owners.add(b.owner);
-    const shooter = state.players.find(p => p.id === b.owner), d = me ? Math.hypot(b.x - me.x, b.z - me.z) : 20;
-    sfx.shot(b.owner === room.id ? 1 : .7 / (1 + d / 7), shooter?.weapon);
+  const first = document.body.classList.contains('first-person');
+  for (const p of state.players) {
+    const before = seenShots.get(p.id); seenShots.set(p.id, p.fired || 0);
+    if (before === undefined || !(p.fired > before)) continue;
+    const mine = p.id === room.id, d = me ? Math.hypot(p.x - me.x, p.z - me.z) : 20;
+    sfx.shot(mine ? 1 : .7 / (1 + d / 7), p.weapon);
+    if (mine) { flash('muzzle'); flash('kicked'); }
+    if (!(mine && first)) world.muzzle(p);
   }
-  lastBall = Math.max(lastBall, ...state.balls.map(b => b.id));
+}
+// The crosshair ring and the HUD bar fill while the marker reloads or (slow markers) cools down.
+function cooldown(state, me) {
+  const stats = kitStats(me?.kit, state.options), reloading = me?.reload > 0, cooling = !reloading && stats.cadence >= .4 && me?.cooldown > 0;
+  const progress = reloading ? 1 - me.reload / stats.reload : cooling ? 1 - me.cooldown / stats.cadence : 1;
+  document.body.classList.toggle('reloading', !!reloading); document.body.classList.toggle('cooling', !!cooling);
+  document.body.style.setProperty('--cd', Math.min(1, Math.max(0, progress)).toFixed(3));
+  if (wasReloading && !reloading && me?.ammo > 0) { sfx.reloaded(); flash('reloaded'); }
+  wasReloading = !!reloading;
 }
 function aguante(state, me) {
   const total = kitStats(me?.kit,state.options).toughness, left = me ? Math.max(0, total - (me.paint || 0)) : total, key = `${total}:${left}`;
@@ -223,12 +236,12 @@ function render(state) {
   $('respawn').textContent = me?.eliminated ? lastKiller ? loc('{name} te pintó desde {distance} m · sin vidas, observando la ronda', lastKiller) : loc('¡Te pintaron! · sin vidas, observando la ronda')
     : lastKiller ? loc('{name} te pintó desde {distance} m · vuelves en {n}', { ...lastKiller, n: Math.ceil(me?.respawn || 0) }) : loc('¡Te pintaron! · vuelves en {n}', { n: Math.ceil(me?.respawn || 0) });
   // Events and balls are numbered per simulation: starting practice begins a new count.
-  if (room.local !== lastLocal) { lastLocal = room.local; lastEvent = null; lastBall = 0; lastRound = 0; preparedRound = preparingRound = 0; }
+  if (room.local !== lastLocal) { lastLocal = room.local; lastEvent = null; seenShots.clear(); lastRound = 0; preparedRound = preparingRound = 0; }
   roundStart(state);
   const events = state.events || [];
   if (lastEvent === null) lastEvent = Math.max(0, ...events.map(e => e.n));
   for (const e of events) if (e.n > lastEvent) { lastEvent = e.n; if (state.phase === 'playing') announce(e, state); }
-  if (state.phase === 'playing') shots(state, me); else lastBall = 0;
+  if (state.phase === 'playing') { shots(state, me); cooldown(state, me); } else { seenShots.clear(); wasReloading = false; document.body.classList.remove('reloading', 'cooling'); }
   aguante(state, me); $('grenade').disabled=!me?.grenadeReady; $('grenade').textContent=me?.grenadeReady?loc('Granada'):loc('Sin granada');
   if(state.phase==='playing' && $('armory').open) $('armory').close();
   $('stamina').style.setProperty('--left', String(me?.stamina ?? 1)); $('stamina').classList.toggle('stamina--full', (me?.stamina ?? 1) >= 1);

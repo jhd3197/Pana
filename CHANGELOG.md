@@ -8,6 +8,17 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo dispara de verdad: bolas chicas, rápidas y con respuesta clara.**
+  Las bolas de pintura son más pequeñas y vuelan casi como un rayo, con una
+  estela para seguirlas, y la Chispa dispara cinco veces por segundo. Cada tiro
+  suena con chasquido, destello, retroceso y bocanada de pintura, y cada
+  pintada se oye y se ve en la mira. Un anillo en la mira y una barra en el
+  marcador muestran la recarga, con un clic al terminar. Los bots apuntan con
+  un pequeño retraso para no ser más certeros que antes.
+- **Pepazo tiene salto: Espacio, o el botón Saltar en el móvil.**
+  El salto es el de Reliquia, ahora compartido en el motor. Durante la carga y
+  la cuenta regresiva no se puede saltar. Disparar pasa de Espacio a Enter (o
+  clic, o el gatillo del mando); el botón A del mando salta.
 - **Carreritas ya corre con hasta doce carros en la pista.**
   Nueva opción «Parrilla» (Normal o 12 carros): los bots llenan los puestos
   vacíos en carreras y copas, solo o en la sala online, que ahora recibe

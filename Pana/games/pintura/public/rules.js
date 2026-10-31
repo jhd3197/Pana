@@ -152,7 +152,7 @@ export class Arena {
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.
     if (this.phase === 'playing' && !this.loading) this.ready.add(id);
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); return p; }
-    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, shots: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
+    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p); return p;
   }
   start() {
@@ -274,7 +274,7 @@ export class Arena {
       stepJump(p, input, dt);
       if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < stats.magazine && (stats.id !== 'rocket' || p.reserve > 0)) p.reload = stats.reload;
       if (input.fire && !sprinting && !p.cooldown && !p.reload && p.ammo > 0) {
-        p.ammo--; p.shots++; p.cooldown=stats.cadence; p.shield=0;
+        p.ammo--; p.shots++; p.fired++; p.cooldown=stats.cadence; p.shield=0;
         const jitter=stats.pellets===1 ? Math.sin(p.shots*2.4)*stats.spread : 0;
         const angles=stats.pellets===3 ? [-stats.spread,0,stats.spread] : [jitter];
         for(const angle of angles) this.balls.push({ id:++this.serial, owner:p.id, color:p.color, x:p.x, z:p.z,

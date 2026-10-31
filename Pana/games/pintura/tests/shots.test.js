@@ -36,3 +36,11 @@ test('bots stay as deadly as before the faster paintballs, and sharper bots stil
   assert.ok(facil > 1.5 && facil < 6, `facil ${facil}`);
   assert.ok(experto > 2.5 && experto < 7, `experto ${experto}`);
 });
+test('every shot is counted, even a point-blank one whose ball is gone in one step', () => {
+  const g = new Arena('plaza', 'normal', { lives: 0 }); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); g.go();
+  const [a, b] = g.players; Object.assign(a, { x: 0, z: -14 }); Object.assign(b, { x: 2, z: -14, shield: 0 });
+  assert.equal(a.fired, 0);
+  g.step(.05, new Map([[1, { ax: 1, az: 0, fire: true }]]));
+  assert.equal(a.fired, 1); assert.equal(g.balls.length, 0, 'the ball already hit'); assert.equal(g.view().players[0].fired, 1);
+  g.refill(a); assert.equal(a.fired, 1, 'reloading and respawning never reset the count');
+});

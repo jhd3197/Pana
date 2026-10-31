@@ -13,11 +13,15 @@ export const sfx = {
       return;
     }
     const heavy = weapon === 'scatter' ? 1.5 : 1;
-    noise(.07 * heavy, weapon === 'rapid' ? 2200 : 1600, .9, .22 * volume);
-    sound.sweep(200 / heavy, 60, .09 * heavy, 'sine', .16 * volume);
+    noise(.07 * heavy, weapon === 'rapid' ? 2200 : 1600, .9, .26 * volume);
+    noise(.022, 4200, .8, .2 * volume);   // the crack of the air gun
+    sound.sweep(200 / heavy, 60, .09 * heavy, 'sine', .2 * volume);
   },
+  // Pulling the trigger while reloading, and the marker ready again.
+  dry() { sound.tone(170, 0, .05, 'square', .06); },
+  reloaded() { sound.tone(520, 0, .05, 'square', .07); sound.tone(780, .07, .08, 'square', .07); },
   impact(volume = 1) { noise(.06, 900, 1.2, .14 * volume); },
-  hitTick() { sound.tone(1400, 0, .035, 'square', .05); sound.tone(2100, .035, .045, 'square', .045); },
+  hitTick() { sound.tone(1400, 0, .04, 'square', .11); sound.tone(2100, .04, .06, 'square', .1); sound.sweep(260, 110, .08, 'sine', .14); noise(.04, 3200, 1, .1); },
   knockout(long = false, streak = 1) {
     noise(.2, 650, .7, .26);
     const lift = 1 + Math.min(4, streak - 1) * .12;

@@ -34,7 +34,7 @@ export function createScene(canvas) {
   const scene = new THREE.Scene(); scene.background = new THREE.Color(WARM_DAY.background); scene.fog = new THREE.Fog(WARM_DAY.background, 90, 190);
   const sky = createSky(WARM_DAY.sky); scene.add(sky.mesh);
   const camera = new THREE.PerspectiveCamera(72, 1, .05, 220), target = new THREE.Vector3(), destination = new THREE.Vector3(); scene.add(camera);
-  let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, kick = 0, shake = 0, sprintFov = 0, lastAmmo = 12;
+  let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, kick = 0, shake = 0, sprintFov = 0, lastFired = 0;
   const hemi = new THREE.HemisphereLight(WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5); scene.add(hemi);
   const sun = new THREE.DirectionalLight(WARM_DAY.sun.color, 3.2); sun.position.set(-15, 35, 16); sun.castShadow = true; scene.add(sun.target);
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 80 }); sun.shadow.mapSize.setScalar(shadowSize(2048)); sun.shadow.normalBias = .03; scene.add(sun);
@@ -257,15 +257,16 @@ export function createScene(canvas) {
       const body = avatars.get(id).group.position;
       lift += ((down ? 3.2 : 0) - lift) * (1 - Math.exp(-dt * 4));
       sway += ((me.walk && !down ? 1 : 0) - sway) * (1 - Math.exp(-dt * 8)); bob += dt * (me.sprint ? 13 : 9) * sway;
-      if (state.phase === 'playing' && me.ammo < lastAmmo) kick = 1;
-      kick = Math.max(0, kick - dt * 6); lastAmmo = me.ammo;
+      // Every shot kicks, even a point-blank one whose ball never reaches a snapshot.
+      if (state.phase === 'playing' && me.fired > lastFired) kick = 1;
+      kick = Math.max(0, kick - dt * 6); lastFired = me.fired;
       // Sprinting widens the view a little.
       sprintFov += ((me.sprint ? 7 : 0) - sprintFov) * (1 - Math.exp(-dt * 6));
       camera.fov = (mobile ? 80 : 72) + sprintFov;
       camera.position.set(body.x, EYE + lift + body.y + Math.abs(Math.sin(bob)) * .05 * sway, body.z);
       shake = Math.max(0, shake - dt * 3);
       const jolt = shake * shake * .05;
-      camera.rotation.set(pitch - lift * .22 + kick * .03 + (Math.random() - .5) * jolt, yaw + (Math.random() - .5) * jolt, Math.sin(bob) * .008 * sway + (Math.random() - .5) * jolt, 'YXZ');
+      camera.rotation.set(pitch - lift * .22 + kick * .045 + (Math.random() - .5) * jolt, yaw + (Math.random() - .5) * jolt, Math.sin(bob) * .008 * sway + (Math.random() - .5) * jolt, 'YXZ');
       // Pull the marker in when the pana stands against cover, so it never pokes through.
       camera.updateMatrixWorld(); camera.getWorldDirection(front); front.y = 0; front.normalize(); frontRay.set(camera.position, front);
       let clearance = 2;
@@ -314,7 +315,9 @@ export function createScene(canvas) {
     setView(value) { cameraView = value; initialized = false; },
     get view() { return cameraView; },
     get yaw() { return yaw; },
-    look(yawDelta, pitchDelta = 0) { yaw += yawDelta; pitch = THREE.MathUtils.clamp(pitch + pitchDelta, LOOK_DOWN, LOOK_UP); },
+    // A puff of paint at a marker's muzzle.
+  muzzle(p) { puffs.spawn({ x: p.x + p.ax * .6, y: 1.15, z: p.z + p.az * .6 }, { color: p.color, count: 4, spread: .22, size: .22, rise: .3, life: .16 }); },
+  look(yawDelta, pitchDelta = 0) { yaw += yawDelta; pitch = THREE.MathUtils.clamp(pitch + pitchDelta, LOOK_DOWN, LOOK_UP); },
     // Where the crosshair points on the court (shots fly level).
     forward() { return { x: -Math.sin(yaw), z: -Math.cos(yaw) }; },
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
