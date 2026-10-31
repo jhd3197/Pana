@@ -64,6 +64,31 @@ Used by: Reliquia, Pepazo.
 
 Used by: Escondidas, Pepazo, Reliquia.
 
+### Side view: destructible ground and walking on it
+
+`engine/play/terrain-mask.js` (pure): a grid of solid/air cells with a paint
+layer, row 0 at the bottom. `createMask`, `fillHeights`, `carve` (round
+crater), `fill`, `splash` (paint that fades to the rim), `solidAt`,
+`groundBelow`, `surfaceY`, `slopeAt`, `circleHits`, `surfaceNormal`, `stainAt`,
+`markDirty`/`takeDirty`, and `paintRGBA` (texture bytes: grass on every top
+surface, earth darkening with depth, paint blended over; upload as a
+`THREE.DataTexture`, no canvas).
+
+`engine/play/side-walker.js` (pure): `stepSideWalker(p, input, dt, mask, opts)`
+walks a body left and right over the mask, steps over bumps, refuses bare
+slopes steeper than `maxClimb`, slides down painted slopes (`slick`,
+`slipAngle`), jumps on `jump.js`'s press counter, falls off ledges and into the
+water (`drowned`); `knock(p, vx, vy)` throws it, `settled(p)` says it stopped.
+
+```js
+import { createMask, carve, splash } from '../../../engine/play/terrain-mask.js';
+import { stepSideWalker, knock } from '../../../engine/play/side-walker.js';
+carve(mask, x, y, 3.5); splash(mask, x, y, 4.6, team);
+const r = stepSideWalker(capy, { x: dir, jump }, dt, mask, { water: 4 });
+```
+
+Used by: Capis a Pintazos. Notes: `docs/knowledge/capis.md`.
+
 ### Spawn picker (game-local)
 
 `games/pintura/public/spawn-picker.js`. `rankSpawns` and `pickSpawn`: pure,
@@ -89,6 +114,23 @@ const { t, victim, dx, dz } = sweep(ball, dt, { boxes: cover, targets: rivals, p
 ```
 
 Used by: Pepazo (every ball and rocket, and the sniper tracer).
+
+### Lobbed shots seen from the side (gravity and wind)
+
+`engine/play/ballistic.js` (pure). `aimVelocity(angle, facing, speed)`,
+`stepFlight(ball, dt, { wind, solid, targets, bounds })` (gravity, a sideways
+wind push, the step swept against the ground predicate and round targets with
+`projectile.js`'s `segmentCircle`, so nothing tunnels) and
+`simulateFlight(start, opts)` (the whole arc and where it ends: the aim
+preview and a bot's shot search use the same flight). `FLIGHT` holds the
+default gravity (18) and wind force (7).
+
+```js
+const ball = { x, y, ...aimVelocity(angle, facing, power * 32) };
+const { hit, victim } = stepFlight(ball, dt, { wind, solid: (x, y) => solidAt(mask, x, y), targets });
+```
+
+Used by: Capis a Pintazos (La Bazuca de pintura, its aim preview and the bot).
 
 ### Scope and aim zoom
 
