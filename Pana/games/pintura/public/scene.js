@@ -241,11 +241,12 @@ export function createScene(canvas) {
       avatar.ring.material.color.set(p.color);
       const falling = down && avatar.out < 2.2;
       avatar.group.visible = p.connected && (!down || falling) && !(first && p.id === id);
-      if (Math.hypot(avatar.group.position.x - p.x, avatar.group.position.z - p.z) > 6) avatar.group.position.set(p.x, 0, p.z);
-      else avatar.group.position.lerp(new THREE.Vector3(p.x, 0, p.z), 1 - Math.exp(-dt * 20));
+      const air = p.jumpHeight || 0;
+      if (Math.hypot(avatar.group.position.x - p.x, avatar.group.position.z - p.z) > 6) avatar.group.position.set(p.x, air, p.z);
+      else avatar.group.position.lerp(new THREE.Vector3(p.x, air, p.z), 1 - Math.exp(-dt * 20));
       avatar.flinch = Math.max(0, avatar.flinch - dt * 5);
       avatar.group.rotation.set(-avatar.flinch * .35, Math.atan2(p.ax, p.az), 0);
-      avatar.group.position.y = 0; avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = !down && (p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0);
+      avatar.ring.position.y = .05 - avatar.group.position.y; avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = !down && (p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0);
       avatar.marker.visible = !down; avatar.vest.visible = !down && p.kit?.armor === 'padded';
       if (falling && avatar.knockout) { avatar.group.rotation.set(0, Math.atan2(p.ax,p.az), 0); avatar.knockout.update(dt); }
       else avatar.update(dt, { walk: p.walk, run: p.walk });
@@ -261,7 +262,7 @@ export function createScene(canvas) {
       // Sprinting widens the view a little.
       sprintFov += ((me.sprint ? 7 : 0) - sprintFov) * (1 - Math.exp(-dt * 6));
       camera.fov = (mobile ? 80 : 72) + sprintFov;
-      camera.position.set(body.x, EYE + lift + Math.abs(Math.sin(bob)) * .05 * sway, body.z);
+      camera.position.set(body.x, EYE + lift + body.y + Math.abs(Math.sin(bob)) * .05 * sway, body.z);
       shake = Math.max(0, shake - dt * 3);
       const jolt = shake * shake * .05;
       camera.rotation.set(pitch - lift * .22 + kick * .03 + (Math.random() - .5) * jolt, yaw + (Math.random() - .5) * jolt, Math.sin(bob) * .008 * sway + (Math.random() - .5) * jolt, 'YXZ');

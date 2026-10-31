@@ -17,6 +17,7 @@ import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
 import { sfx } from './sounds.js';
+import { pressJump } from '/engine/play/jump.js';
 import { createLookControls } from '/engine/play/first-person.js';
 import { createFeats } from '/engine/feats.js';
 import { createHitFeats } from './feats.js';
@@ -26,7 +27,7 @@ import { loc, locn } from '/engine/i18n.js';
 
 const $ = id => document.getElementById(id), code = roomCode();
 const params = new URLSearchParams(location.search);
-const held = new Set(), pads = []; let aim = null, firing = false, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastBall = 0, lastKiller = '';
+const held = new Set(), pads = []; let aim = null, firing = false, jumpPress = 0, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastBall = 0, lastKiller = '';
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
 const hitFeats = createHitFeats(createFeats($('toast')));
 let weapon = 'pistol', queuedGrenade = false;
@@ -47,12 +48,12 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),
   notes: { facil: loc('Los bots fallan seguido y disparan menos.'), normal: loc('Bots con buena mano, pero se les va alguna.'), dificil: loc('Los bots apuntan fino y no sueltan el gatillo.'), experto: loc('Casi no fallan: muévete y cúbrete.') } });
-const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Space', loc('Disparar')], a: ['Space', loc('Disparar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
+const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
  
   options: [{ id: 'weapon', label: loc('Marcadora (si la sala permite todas)'), choices: MARKERS.map(m=>[m.id,m.name]), get: () => weapon, set: value => { weapon = value; } },
     { id: 'view', label: loc('Cámara'), choices: [['primera', loc('Primera persona')], ['cancha', loc('Ver la cancha')]], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? loc('La práctica está en pausa.') : loc('La ronda online sigue mientras estás en el menú.'),
-  controls: [[loc('WASD / Flechas'), loc('Caminar hacia donde miras')], [loc('Ratón'), loc('Mirar y apuntar (haz clic en la cancha para capturarlo)')], [loc('Clic / Espacio'), loc('Disparar pintura')], ['Shift', loc('Correr (no puedes disparar corriendo)')], ['Tab', loc('Ver la tabla')], ['Q / E', loc('Girar sin ratón')], ['R', loc('Recargar')], ['1 / 2 / 3 / 4', loc('Chispa / Trueno / Gemelas / Cohetón')], ['G', loc('Lanzar granada')], ['M', loc('Sonido')], ['Esc', loc('Soltar el ratón y abrir el menú')]],
+  controls: [[loc('WASD / Flechas'), loc('Caminar hacia donde miras')], [loc('Ratón'), loc('Mirar y apuntar (haz clic en la cancha para capturarlo)')], [loc('Clic / Enter'), loc('Disparar pintura')], [loc('Espacio'), loc('Saltar')], ['Shift', loc('Correr (no puedes disparar corriendo)')], ['Tab', loc('Ver la tabla')], ['Q / E', loc('Girar sin ratón')], ['R', loc('Recargar')], ['1 / 2 / 3 / 4', loc('Chispa / Trueno / Gemelas / Cohetón')], ['G', loc('Lanzar granada')], ['M', loc('Sonido')], ['Esc', loc('Soltar el ratón y abrir el menú')]],
   tips: [loc('Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie. En bandera gana el equipo con tres capturas.'),
     loc('Las barricadas frenan las bolas. Tienes doce por carga; recargas con R o automáticamente al vaciarla.'),
     loc('Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.'),
@@ -66,9 +67,12 @@ $('room-code').textContent = loc('Sala {code}', { code }); $('rules').onclick = 
 $('grenade').onclick=()=>{if(active())queuedGrenade=true;};
 $('start').onclick = () => { sound.unlock(); if (!room.connected && $('connection').dataset.failed === 'true') room.practice(); else room.start(); }; $('again').onclick = () => room.start();
 for (const id of ['practice', 'fallback']) $(id).onclick = () => { menu.close(); $('recovery').hidden = true; room.practice(); };
-function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = queuedGrenade = false; pads.forEach(p => p.release()); room.input({}); }
+function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = queuedGrenade = false; pads.forEach(p => p.release()); room.input({ jump: jumpPress }); }
+// Space or the Saltar button. The count rides every input, so frozen play (loading, the 3-2-1) spends it.
+function jump() { const s = room.state; if (active() && !s.loading && !s.countdown) jumpPress = pressJump(jumpPress); }
 function active() { return !$('armory').open && room.connected && room.state.phase === 'playing' && !menu.isOpen; }
 for (const [id, key] of [['up', 'w'], ['left', 'a'], ['down', 's'], ['right', 'd'], ['reload', 'r']]) pads.push(holdButton($(id), { down: () => { held.add(key); if (key === 'r') queuedReload = true; }, up: () => held.delete(key), paused: () => !active() }));
+pads.push(holdButton($('jump'), { down: jump, up: () => {}, paused: () => !active() }));
 pads.push(holdButton($('fire'), { down: () => { touchFire = queuedFire = true; sound.unlock(); }, up: () => { touchFire = false; }, paused: () => !active() }));
 const looking = createLookControls(canvas, { enabled: () => active() && cameraView === 'primera', look: (yaw, pitch) => world.look(yaw, pitch),
   press(event) { sound.unlock(); if (event.button === 0) firing = queuedFire = true; },
@@ -87,7 +91,7 @@ addEventListener('keydown', event => {
   const key = event.key.toLowerCase(); if (['1', '2', '3', '4'].includes(key)) weapon = ['pistol', 'scatter', 'rapid', 'rocket'][Number(key) - 1]; if (key === 'm') toggleMute();
   if (key === 'g' && active() && !event.repeat) queuedGrenade = true;
   if (key === 'tab') { event.preventDefault(); if (room.state.phase === 'playing') showBoard(true); }
-  if (['w', 'a', 's', 'd', 'q', 'e', 'r', ' ', 'shift', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ') queuedFire = true; if (key === 'r') queuedReload = true; } }
+  if (['w', 'a', 's', 'd', 'q', 'e', 'r', ' ', 'enter', 'shift', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ' && !event.repeat) jump(); if (key === 'enter') queuedFire = true; if (key === 'r') queuedReload = true; } }
 });
 addEventListener('keyup', event => { const key = event.key.toLowerCase(); held.delete(key); if (key === 'tab') showBoard(false); });
 // Hold Tab: everyone's knockouts, times painted and current streak.
@@ -99,8 +103,8 @@ function showBoard(open) {
     detail: [locn(p.hits, '{n} recibida', '{n} recibidas'), p.streak > 1 && loc('racha de {n}', { n: p.streak }), p.bot && loc('Bot')].filter(Boolean).join(' · '), end: p.score, score: true, me: p.id === room.id })));
 }
 function input() {
-  if (!active()) return {};
-  const me = room.state.players.find(p => p.id === room.id); if (!me) return {};
+  if (!active()) return { jump: jumpPress };
+  const me = room.state.players.find(p => p.id === room.id); if (!me) return { jump: jumpPress };
   let ax, az;
   if (cameraView === 'primera') ({ x: ax, z: az } = world.forward());
   else { if (pointerPosition) aim = world.point(...pointerPosition); ax = aim ? aim.x - me.x : me.ax; az = aim ? aim.z - me.z : me.az; }
@@ -115,7 +119,7 @@ function input() {
   const length = Math.hypot(ax, az) || 1;
   return { weapon, grenade:queuedGrenade, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
     Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))), sprint: held.has('shift'),
-    ax: ax / length, az: az / length, fire: queuedFire || firing || touchFire || held.has(' '), reload: queuedReload || held.has('r') };
+    ax: ax / length, az: az / length, jump: jumpPress, fire: queuedFire || firing || touchFire || held.has('enter'), reload: queuedReload || held.has('r') };
 }
 // A short CSS pulse: a hit marker on the crosshair or a paint flash when hit.
 function flash(name) { document.body.classList.remove(name); void document.body.offsetWidth; document.body.classList.add(name); }
