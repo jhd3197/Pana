@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bake } from '/engine/models/core/static-batch.js';
-import { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, classOf } from '../../play/paint-arsenal.js';
+import { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, PAINT_CAMOS, PAINT_SOLIDS, classOf } from '../../play/paint-arsenal.js';
 // Toy paintball markers, eighteen silhouettes you can tell apart in one glance:
 // La Chispa a slim pistol with its air tank under the barrel, El Trueno a double-barrelled
 // pump with a stick feed, Las Gemelas two drum-fed twins, El Cohetón a fat shoulder tube
@@ -82,17 +82,8 @@ const TRIGGER=[[.1,.05],[.13,.05],[.138,.0,.02],[.125,-.055,.012],[.108,-.055],[
 // Four colours: the base, then three accents. Patterns: woodland blobs, digital pixels,
 // tiger stripes along the barrel, and paint splats.
 export const CAMO_PATTERNS={woodland:'Selva',digital:'Pixelado',tiger:'Rayas',splash:'Salpicado'};
-export const PAINT_CAMOS={
- selva:{name:'Selva',pattern:'woodland',scale:1,colors:['#4b5b2c','#2f3a1e','#7a6a3a','#1b1f14']},
- medanos:{name:'Médanos de Coro',pattern:'digital',scale:1,colors:['#d8c49a','#b89a68','#8a6e48','#efe3c4']},
- bolivar:{name:'Pico Bolívar',pattern:'digital',scale:1,colors:['#eef2f3','#b9c4c9','#7f8d94','#4c5a61']},
- caracas:{name:'Concreto caraqueño',pattern:'digital',scale:1.2,colors:['#8d9293','#5f6566','#b9bdbd','#2f3436']},
- caribe:{name:'Caribe',pattern:'woodland',scale:1.1,colors:['#18b3b0','#0c6f8a','#f2e2b0','#ff6f61']},
- jaguar:{name:'Jaguar',pattern:'tiger',scale:1,colors:['#f28b42','#d9732c','#2a1d14','#120c08']},
- llanero:{name:'Atardecer llanero',pattern:'tiger',scale:.9,colors:['#ff7a2f','#ffb347','#c2185b','#3b1f4a']},
- rumba:{name:'Rumba neón',pattern:'digital',scale:.9,colors:['#1a1030','#ff2fd1','#26f0ff','#b7ff2a']},
- tricolor:{name:'Tricolor',pattern:'splash',scale:1,colors:['#ffcc00','#00247d','#cf142b','#ffffff']},
- pepazo:{name:'Pepazo',pattern:'splash',scale:1,colors:['#f8e9c9','#ff4b4b','#ffc629','#3fa7c4']}};
+// The looks themselves (PAINT_CAMOS patterns, PAINT_SOLIDS colours) are plain data in
+// engine/play/paint-arsenal.js, so rules and the server can allowlist the ids.
 const CAMO_GLSL=`
 uniform vec3 uC0,uC1,uC2,uC3;uniform float uScale;uniform int uPattern;varying vec3 vCamo;
 float cHash(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
@@ -128,9 +119,11 @@ export function applyCamo(material,camo=material.userData.camo){
  material.userData.camo={colors:[...camo.colors],pattern:camo.pattern,scale:camo.scale||1};
  material.onBeforeCompile=camoCompile;material.customProgramCacheKey=camoKey;material.needsUpdate=true;return material;
 }
-// `camo` is a preset id ('selva') or nothing; there are no free colours. Without it
-// the marker is built exactly as before (no shader hook, no extra attribute).
-export const resolveCamo=camo=>typeof camo==='string'&&Object.hasOwn(PAINT_CAMOS,camo)?PAINT_CAMOS[camo]:null;
+// `camo` is a preset id ('selva', 'liso-uva') or nothing; there are no free colours.
+// A solid one ('liso-*') resolves to `pattern: 'solid'` and only recolours the body (no
+// shader); without one the marker is built exactly as before (no hook, no attribute).
+const SOLID_SPECS=Object.fromEntries(Object.entries(PAINT_SOLIDS).map(([id,color])=>[id,Object.freeze({pattern:'solid',scale:1,colors:Object.freeze([color])})]));
+export const resolveCamo=camo=>typeof camo!=='string'?null:Object.hasOwn(PAINT_CAMOS,camo)?PAINT_CAMOS[camo]:Object.hasOwn(SOLID_SPECS,camo)?SOLID_SPECS[camo]:null;
 // Stores each painted vertex's position on the weapon, so the camo is fixed to the marker.
 function bakeCamo(root,material){
  root.updateMatrixWorld(true);const inv=root.matrixWorld.clone().invert(),v=new THREE.Vector3(),m=new THREE.Matrix4();
@@ -142,14 +135,16 @@ function bakeCamo(root,material){
 
 // Names, classes, mounts and optic kinds are plain data in engine/play/paint-arsenal.js, so
 // game rules can read them without Three.js.
-export { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, classOf };
+export { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, PAINT_CAMOS, PAINT_SOLIDS, classOf };
 export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],charm='none',pattern='splat',camo=null}={}) {
  // An unknown id draws La Chispa rather than failing a whole scene.
  if(!Object.hasOwn(PAINT_WEAPONS,weapon)&&!Object.hasOwn(PAINT_MELEE,weapon))weapon='pistol';
  if(!Array.isArray(attachments))attachments=[];
  const group=new THREE.Group(),K=parts(group);
  const {mat,put,label,within,holder,box,tube,post,blob,slab,turn,turnY,capsule,hose,gbox,gcyl,gball,many,dispose}=K;
- const has=id=>attachments.includes(id);
+ const has=id=>attachments.includes(id),camoSpec=resolveCamo(camo);
+ // A solid camo is just the body colour: no shader, nothing per frame.
+ if(camoSpec?.pattern==='solid')color=camoSpec.colors[0];
  const paint=mat(color,{metalness:.25,roughness:.36}),dark=mat('#2f3d3c',{roughness:.55}),rubber=mat('#1e2524',{roughness:.92}),
   cream=mat('#f8e9c9',{roughness:.5}),steel=mat('#b3c3c3',{metalness:.75,roughness:.28}),ink=mat('#16161a',{roughness:.6}),
   coral=mat('#ff4b4b',{roughness:.4}),wood=mat('#8b5e3c',{roughness:.68}),woodDark=mat('#6b452b',{roughness:.7}),
@@ -842,8 +837,8 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
  group.userData.optic=optic_;group.userData.bore=mounts[0]?.muzzle.y??null;
  group.name=PAINT_WEAPONS[weapon]||PAINT_MELEE[weapon];
  // Camo goes on the painted body: matte it down a little so the pattern reads.
- const camoSpec=resolveCamo(camo);
- if(camoSpec){paint.roughness=.6;paint.metalness=.05;applyCamo(paint,camoSpec);bakeCamo(group,paint);group.userData.camo=camoSpec;}
+ if(camoSpec?.pattern==='solid')group.userData.camo=camoSpec;
+ else if(camoSpec){paint.roughness=.6;paint.metalness=.05;applyCamo(paint,camoSpec);bakeCamo(group,paint);group.userData.camo=camoSpec;}
  group.userData.dispose=dispose;return group;
 }
 // The same marker batched into a few draws (one per surface finish instead of

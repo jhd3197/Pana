@@ -47,6 +47,13 @@ try {
     if (kit.createPaintKit({ weapon: 'nope' }).name !== 'La Chispa') problems.push('an unknown id does not fall back to La Chispa');
     // Camo: only a preset id turns it on; free colours are ignored.
     if (kit.resolveCamo({ colors: ['#000', '#111', '#222', '#333'], pattern: 'digital' }) !== null || kit.resolveCamo('none') !== null) problems.push('free camo colours are accepted');
+    // A solid camo is only the body colour: no shader hook, no camoPos, baked or not.
+    for (const solid of [kit.createPaintKit({ weapon: 'smg', camo: 'liso-uva' }), kit.bakePaintKit({ weapon: 'smg', camo: 'liso-uva' })]) {
+      if (solid.userData.camo?.pattern !== 'solid') problems.push('a solid camo lost its settings');
+      if (meshes(solid).some(m => m.geometry.attributes.camoPos || m.material.userData.camo || m.material.onBeforeCompile?.name === 'camoCompile')) problems.push('a solid camo compiles the camo shader');
+      if (!meshes(solid).some(m => m.material.color?.getHexString() === '8d85df' || m.geometry.attributes.color)) problems.push('a solid camo did not recolour the body');
+      solid.userData.dispose();
+    }
     const renderer = new THREE.WebGLRenderer({ canvas: document.createElement('canvas') }); renderer.setSize(64, 64, false); renderer.debug.checkShaderErrors = true;
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(40, 1, .1, 20); camera.position.set(2, 1, 3); camera.lookAt(0, .2, .5);
     scene.add(new THREE.HemisphereLight('#fff', '#445', 2));
