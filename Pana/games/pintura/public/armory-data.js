@@ -2,7 +2,7 @@
 // Marker, vest and grenade names are proper names and stay Spanish; generic
 // names and blurbs are locKey() and shown with loc() (armory.js).
 import { locKey } from '../../../engine/i18n.js';
-import { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, classOf } from '../../../engine/play/paint-arsenal.js';
+import { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_SOLIDS, PAINT_CAMO_IDS, classOf } from '../../../engine/play/paint-arsenal.js';
 import { meleeDef } from '../../../engine/play/melee.js';
 // The simulation step (rules.js TICK). A marker fires on a tick, so its real
 // interval is its `cadence` rounded up to whole ticks: see shotInterval.
@@ -129,6 +129,17 @@ export const FINISHES = [{id:'factory',name:locKey('De fábrica'),color:null},{i
 export const CHARMS = [{id:'none',name:locKey('Sin llavero')},{id:'mango',name:'Manguito'},{id:'ball',name:locKey('Bola de pintura')}];
 export const PATTERNS = [{id:'splat',name:locKey('Salpicadura')},{id:'stripe',name:locKey('Rayas')},{id:'dots',name:locKey('Puntos')}];
 const pick = (list,id) => list.some(x=>x.id===id) ? id : list[0].id;
+// Camuflajes: a kit names one camo id or none (null: the factory body). The catalog with
+// names and unlock rules is camos.js (loaded with the armory's camo tab); the rules only
+// need the ids. The solid ones are everyone's from the start; the rest a player must own
+// (pana.sh says which, signed: server/src/camo-trust.js), so selectKit checks them.
+export const CAMO_IDS = PAINT_CAMO_IDS;
+export const START_CAMOS = Object.freeze(Object.keys(PAINT_SOLIDS));
+// What an unowned pick falls back to.
+export const FALLBACK_CAMO = START_CAMOS[0];
+const cleanCamo = id => typeof id === 'string' && CAMO_IDS.includes(id) ? id : null;
+// Whether a player owning `owned` (a Set or array of ids, or nothing) may wear `camo`.
+export const ownsCamo = (camo, owned) => camo == null || START_CAMOS.includes(camo) || (owned instanceof Set ? owned.has(camo) : Array.isArray(owned) && owned.includes(camo));
 // Three attachment slots. A kit stores `attachments` as a fixed [slot 0, slot 1,
 // slot 2] array of id|null so a part stays in the slot the player put it in. Every
 // marker's mounts (muzzle, feed, stock, rail) are separate places on the model, so
@@ -143,7 +154,7 @@ export function cleanKit(value={}) {
  // Up to ATTACHMENT_SLOTS entries are slot positions; a longer list (old or hostile) is packed.
  const list=raw.length>ATTACHMENT_SLOTS?raw.filter(id=>canAttach(weapon,id)).filter((id,i,all)=>all.indexOf(id)===i):raw;
  const attachments=Array.from({length:ATTACHMENT_SLOTS},(_,i)=>{const id=list[i];return canAttach(weapon,id) && !list.slice(0,i).includes(id) ? id : null;});
- return { weapon, attachments, armor:pick(ARMOR,value.armor), grenade:pick(GRENADES,value.grenade), finish:pick(FINISHES,value.finish), charm:pick(CHARMS,value.charm), pattern:pick(PATTERNS,value.pattern) };
+ return { weapon, attachments, armor:pick(ARMOR,value.armor), grenade:pick(GRENADES,value.grenade), finish:pick(FINISHES,value.finish), charm:pick(CHARMS,value.charm), pattern:pick(PATTERNS,value.pattern), camo:cleanCamo(value.camo) };
 }
 // The attachment in each slot, always ATTACHMENT_SLOTS long.
 export const slotsOf = kit => cleanKit(kit).attachments;

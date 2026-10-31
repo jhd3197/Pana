@@ -498,6 +498,65 @@ brass scope zooms past 1.5, so it gets the scope overlay like a rifle; that is
 the model's sight, kept as a joke with a real cost (−2% mobility for a
 shotgun that cannot reach 12 m).
 
+## Camuflajes
+
+A fixed set of sixteen; there is no free colour picker anywhere in the game
+(`tests/camos.test.js` greps `public/` for colour inputs). `kit.camo` is one id
+or `null` (the factory body, coloured by `finish`). `public/camos.js` is the
+catalog, the same ids and rules as pana.sh's `gateway/camos.json` (keep the two
+equal):
+
+| Kind | Camos | How |
+|---|---|---|
+| `start` | `liso-mango` `liso-caribe` `liso-uva` `liso-crema` `liso-carbon` `liso-coral` | everyone's; solid body colour |
+| `kills` | `selva` carbine 15, `medanos` marksman 10, `bolivar` sniper 10, `caracas` smg 25, `jaguar` blunderbuss 15 | paint that many people with that marker; then it goes on any weapon |
+| `mangos` | `caribe` 240, `tricolor` 300, `llanero` 360, `rumba` 420, `pepazo` 480 | bought with mangos on pana.sh |
+
+The patterned ten take pattern, scale and colours from `PAINT_CAMOS`, the solid
+six from `PAINT_SOLIDS` (`engine/play/paint-arsenal.js`; `caribe` the pattern is
+not `liso-caribe`). `camoState(id, data)` gives the armory's state (`owned`,
+`locked`, `buyable`, `cantAfford`) and its text ("7/15 pintadas con La
+Parrandera"; the client writes its own progress text from the marker names).
+
+- **Who owns what.** Online, only pana.sh says, and only through the room
+  socket: its proxy adds `x-pana-camos` and `x-pana-camos-sig` (hex
+  HMAC-SHA256 of that exact value with `PANA_GATEWAY_SECRET`, stripping any the
+  browser sent). Colyseus 0.18 hands the upgrade headers to the room's instance
+  `onAuth(client, options, context)` (`context.headers`); `server/room.js`
+  runs them through `server/src/camo-trust.js` `parseOwned` and stores the
+  result in `client.auth`, then per seat (`Arena.setCamos`, never in `view()`).
+  A reconnect has no new auth and keeps the seat's list. Only the room
+  socket's headers are read: a static `onAuth` would make Colyseus skip the
+  instance one, and pana.sh signs the socket anyway. No secret, no or a bad
+  signature: solid camos only. `PANA_UNLOCK_ALL_CAMOS=1` owns everything, for
+  local screenshots and tests only (`docs/DEPLOYMENT.md`).
+- **Refusal.** `Arena.selectKit` swaps an unowned camo for `FALLBACK_CAMO`
+  (`liso-mango`) and keeps the rest of the kit; the room then sends
+  `kit-rejected` with `reason: 'camo'` and the armory says so (inline, or a
+  toast when closed) and wears what the room wears. Practice does the same with
+  the owned list the armory read (`room.setCamos`).
+- **Client.** `camo-store.js` wraps `window.PanaSh.camos()` / `buyCamo(id)`
+  (cached 30 s, 5 s timeout, never rejects). Without the bridge (public Pana)
+  only the start camos are owned and the rest say "Disponible en pana.sh"; a
+  bridge without a session says to sign in. `camos.js` and `camo-store.js` are
+  dynamic imports (the camo tab, or at once when `window.PanaSh` exists): the
+  first load is at its module cap. The rules only need the ids, which come
+  from `paint-arsenal.js` (`CAMO_IDS`, `START_CAMOS` in `armory-data.js`).
+- **Armory.** Slot Camuflaje: a card per camo with a CSS swatch from its
+  palette (no canvas), a padlock and the reason when it is not yours, and
+  Comprar · N mangos (disabled when short) on mango ones. Every card previews on
+  the 3D marker; only owned ones are picked. The choice saves in `pintura:kit`.
+- **Unlock progress.** Every rival you paint (hit or knockout blow, not a
+  teammate) sends `statEvent('pintura.hits.<weapon>')` from
+  `feats.js` `weaponHit`, besides `pintura.paint-hits`; grenade blasts and
+  unknown ids send nothing. pana.sh counts only the five kills weapons. If its
+  bridge exposes `onCamoUnlocked(callback)`, the game toasts the unlock and
+  refreshes the armory.
+- **Rendering.** `scene.js` passes the kit (camo included) to the model, so the
+  held marker, the third-person `bakePaintKit` marker and the thrown chancla
+  rebuild when the camo changes (it is part of the model key). A solid camo is
+  a plain colour; patterns share one shader program and set their uniforms once.
+
 ## Balancing
 
 Eighteen markers in eight classes (`PAINT_CLASSES`). The rules: a role

@@ -44,7 +44,9 @@ let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').dataset.failed = String(failed); $('connection').textContent = text; document.dispatchEvent(new Event('pana:sala-update')); $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
-const armory = createArmory({ room, onPick: value => { weapon = value; }, notify: createToast($('toast')) });
+const toast = createToast($('toast')), armory = createArmory({ room, onPick: value => { weapon = value; }, notify: toast });
+// pana.sh may call back when a camo unlocks mid-session (optional in its bridge).
+if (typeof window.PanaSh?.onCamoUnlocked === 'function') window.PanaSh.onCamoUnlocked(id => import('./camos.js').then(({ camoById }) => { const c = camoById(id); if (c) { toast(loc('¡Camuflaje {name} desbloqueado!', { name: loc(c.name) })); armory.refreshCamos(); } }));
 $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-armory').click(), read: () => {
   const describe = p => { const stats = kitStats(p.kit || room.kit, room.state.options); return { id: room.link?.state.players.find(m => m.seat === p.id)?.id, kit: stats.name, level: kitRating(p.kit || room.kit, room.state.options), color: p.color || '#ffc629', team: (room.state.options?.mode === 'teams' || room.state.options?.flag) ? (p.team ? loc('Turquesa') : loc('Naranja')) : '' }; };
   const people = room.state.players.filter(p => p.connected && !p.bot).length || 1;
@@ -194,6 +196,8 @@ function feedLine(e, state) {
 function announce(e, state) {
   const mine = e.owner === room.id, me = e.victim === room.id;
   if (e.type === 'out') feedLine(e, state);
+  // Every rival you paint counts for that weapon's camo (pana.sh unlocks it), knockout blows too.
+  if (mine && !me && !(teamsOn(state) && state.players.find(p => p.id === e.victim)?.team === myPana()?.team)) hitFeats.weaponHit(e.weapon);
   if (mine && e.type === 'hit') { sfx.hitTick(); flash('hitmark'); navigator.vibrate?.(18); hitFeats.hit(state.players.find(p => p.id === e.victim)?.name || loc('un pana')); }
   if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); flash('scored'); combat.streak(e.streak || 1); callout(e, state); }
   if (me) {
@@ -304,6 +308,7 @@ function roundStart(state) {
   else document.body.classList.remove('counting');
   lastCount = count;
 }
+const teamsOn = state => state.options?.mode === 'teams' || !!state.options?.flag;
 const teamScore = state => loc('Naranja {orange} — Turquesa {teal}', { orange: state.teamScores?.[0] || 0, teal: state.teamScores?.[1] || 0 });
 function render(state) {
   optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');

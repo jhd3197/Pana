@@ -41,9 +41,12 @@ export class PaintConnection {
     if (this.local) { if (this.game.selectDifficulty(difficulty)) this.publish(); }
     else this.link.send('difficulty', { difficulty });
   }
+  // The camos this pana owns beyond the solid ones (the armory reads them from pana.sh).
+  // Online the server only trusts the gateway's signed list; practice trusts this one.
+  setCamos(owned) { this.camos = [...(owned || [])]; if (this.local) this.game.setCamos(this.id, this.camos); }
   selectKit(kit) {
     this.kit=kit;
-    if(this.local) { if(this.game.selectKit(this.id,kit)) this.publish(); else this.onKitRejected?.({ reason: this.game.kitRejection(this.id) || 'invalid' }); }
+    if(this.local) { const camo=this.game.camoRefusal(this.id,kit); if(this.game.selectKit(this.id,kit)) { this.publish(); if(camo) this.onKitRejected?.({ reason: 'camo', camo }); } else this.onKitRejected?.({ reason: this.game.kitRejection(this.id) || 'invalid' }); }
     else if(this.connected) this.link.send('kit',kit);
   }
   // Practice seats its bots like the server does, from the room's `bots` option.
@@ -62,7 +65,7 @@ export class PaintConnection {
   input(value) { this.current = cleanInput(value); if (!this.local && this.connected) this.link.send('input', this.current); }
   practice() {
     this.local = true; this.link?.leave(); this.connected = true; this.game = new Arena(this.state.mapId, this.state.difficulty, this.state.options);
-    this.game.add(1, { name: this.name, avatar: this.avatar, bot: false });
+    this.game.add(1, { name: this.name, avatar: this.avatar, bot: false }); this.game.setCamos(1, this.camos);
     if(this.kit) this.game.selectKit(1,this.kit);
     this.onStatus(loc('Práctica con bots · a tu ritmo')); this.start();
   }

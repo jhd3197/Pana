@@ -86,6 +86,26 @@ try {
   await b.locator('[data-slot="grenade"]').click();await b.locator('#armory-choices [data-id="pegajosa"]').click();
   await b.locator('#armory-close').click();
   await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && JSON.stringify(p.kit.attachments)==='[null,"hopper","optic"]' && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
+  // Camuflajes: a fixed set. A solid one is everyone's and reaches the room; without pana.sh a
+  // patterned one is locked in the armory, and the room swaps it for a solid one if sent anyway.
+  await b.locator('#open-armory').click(); await b.locator('[data-slot="camo"]').click();
+  await b.locator('#armory-choices .armory-camo[data-id="liso-uva"] .armory-choice').click();
+  await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-uva', guestId);
+  assert.equal((await savedKit()).camo, 'liso-uva');
+  assert.equal(await b.evaluate(() => pinturaDebug.armory.preview.userData.camo?.pattern), 'solid');
+  assert.equal(await b.locator('#armory-choices input[type="color"]').count(), 0, 'no free colour picker');
+  const locked = b.locator('#armory-choices .armory-camo[data-id="selva"]');
+  assert.equal(await locked.getAttribute('data-state'), 'locked'); assert.match(await locked.textContent(), /pana\.sh/);
+  await locked.locator('.armory-choice').dispatchEvent('click'); assert.equal((await savedKit()).camo, 'liso-uva', 'a locked camo is not picked');
+  assert.match(await b.locator('#armory-note').textContent(), /pana.sh/);
+  await locked.locator('.armory-choice').hover(); await wait(b, () => pinturaDebug.armory.preview.userData.camo?.pattern === 'woodland');
+  await b.locator('#armory-parts-back').click(); await b.locator('#armory-close').click();
+  await b.evaluate(() => pinturaDebug.room.selectKit({ ...pinturaDebug.armory.kit, camo: 'selva' }));
+  await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-mango', guestId);
+  await wait(b, () => /camuflaje todavía no es tuyo/.test(document.getElementById('toast').textContent));
+  await b.evaluate(() => pinturaDebug.room.selectKit({ ...pinturaDebug.armory.kit, camo: 'liso-uva' }));
+  await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-uva', guestId);
+  console.log('ok: a solid camo reaches the room and the preview, a locked one is refused and announced');
   // The routes below walk the plaza's outer lane; El Puerto is the default map.
   await a.evaluate(() => pinturaDebug.room.selectMap('plaza')); await wait(b, () => pinturaDebug.room.state.mapId === 'plaza');
   await a.screenshot({ path: `${out}/lobby.png` }); await a.locator('#start').click(); await wait(b, () => pinturaDebug.room.state.phase === 'playing');

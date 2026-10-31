@@ -1,13 +1,15 @@
 import { PanaRoom, roomState, memberAvatar, BOT_NAMES, InputBuffer } from '../../../server/src/room-kit.js';
 import { randomAvatar } from '../../../engine/avatar.js';
 import { Arena, cleanInput } from '../public/rules.js';
+import { parseOwned } from '../../../server/src/camo-trust.js';
 export default class PaintRoom extends PanaRoom {
   state = new (roomState({}, undefined, 'PaintRoomState'))();
   onCreate(options) {
     super.onCreate(options); this.game = new Arena(); this.inputs = new InputBuffer(350);
     this.onMessage('move-seat', (client, data) => { const actor = this.seatOf(client); if (this.game.moveSeat(actor, data?.from, data?.to, this.isHost(client) ? actor : null)) this.publish(); });
     // A refused kit (mid-round) is answered, so the armory can say why nothing changed.
-    this.onMessage('kit', (client,data) => { const seat=this.seatOf(client); if(this.game.selectKit(seat,data)) this.publish(); else client.send('kit-rejected', { reason: this.game.kitRejection(seat) || 'invalid' }); });
+    // A camo the pana does not own is swapped for a solid one, and they are told.
+    this.onMessage('kit', (client,data) => { const seat=this.seatOf(client), camo=this.game.camoRefusal(seat,data); if(this.game.selectKit(seat,data)) { this.publish(); if(camo) client.send('kit-rejected', { reason: 'camo', camo }); } else client.send('kit-rejected', { reason: this.game.kitRejection(seat) || 'invalid' }); });
     // A client finished loading this round's court; stale rounds and bots are ignored.
     this.onMessage('ready', (client, data) => { if (this.game.markReady(this.seatOf(client), data?.round)) this.publish(); });
     this.onMessage('input', (client, data) => this.inputs.set(this.seatOf(client), cleanInput(data)));
@@ -31,7 +33,12 @@ export default class PaintRoom extends PanaRoom {
       if (running) this.publish();
     }, 50);
   }
+  // The room socket's upgrade headers (Colyseus 0.18 passes them here): the camos the
+  // pana.sh gateway signed for this pana. Always admits; unsigned means solid camos only.
+  onAuth(client, options, context) { return { camos: [...parseOwned(context?.headers)] }; }
   joined(client, member) {
+    // A reconnect has no new auth: the seat keeps what it was vouched for.
+    if (Array.isArray(client.auth?.camos)) this.game.setCamos(member.seat, client.auth.camos);
     if (this.game.players.filter(p => p.connected).length >= this.maxClients) { const bot = this.game.players.find(p => p.bot); if (bot) this.game.players.splice(this.game.players.indexOf(bot), 1); }
     this.game.add(member.seat, { name: member.name, avatar: memberAvatar(member), bot: false }); this.publish();
   }
