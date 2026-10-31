@@ -248,6 +248,32 @@ export const sfx = {
   tick(n = 0) { pitch({ dur: .03, f0: 1200 + (n % 12) * 60, type: 'triangle', vol: .05, priority: 1 }); },
   confirm() { pitch({ dur: .06, f0: 660, type: 'triangle', vol: .06, priority: 2 }); pitch({ dur: .1, f0: 990, type: 'triangle', vol: .06, delay: .05, priority: 2 }); },
   back() { pitch({ dur: .06, f0: 520, f1: 380, type: 'triangle', vol: .05, priority: 2 }); },
+  // A cartoon spring: a hop with bounce in it.
+  boing(volume = 1) {
+    pitch({ dur: .24, f0: 150, f1: 520, type: 'triangle', vol: .09 * volume, priority: 1 });
+    pitch({ dur: .2, f0: 300, f1: 1000, vol: .035 * volume, delay: .02, priority: 0 });
+  },
+  // A small animal's startled squeak (a capybara hit by paint).
+  squeak(volume = 1) {
+    const j = jit(.08);
+    pitch({ dur: .07, f0: 1500 * j, f1: 2100 * j, type: 'triangle', vol: .07 * volume, priority: 2 });
+    pitch({ dur: .1, f0: 1900 * j, f1: 1300 * j, type: 'triangle', vol: .06 * volume, delay: .08, priority: 2 });
+  },
+  // Something heavy falling into water: the plop, the rush and the drips.
+  splash(size = 1, { volume = 1 } = {}) {
+    const v = clamp(volume, 0, 1.5), k = clamp(size, .4, 1.5);
+    pitch({ dur: .16, f0: 260, f1: 90, vol: .16 * v, priority: 2 });
+    burst({ dur: .55 * k, f0: 1500, f1: 300, q: .6, type: 'lowpass', vol: .2 * v, priority: 2 });
+    burst({ dur: .35, f0: 2600, f1: 5200, q: .8, vol: .05 * v, delay: .05, priority: 1 });
+    for (let i = 0; i < 4; i++) pitch({ dur: .05, f0: rnd(700, 1300), f1: rnd(1400, 2200), vol: .03 * v, delay: .25 + i * .09 + rnd(0, .04), priority: 0 });
+  },
+  // Your turn: two bright notes.
+  chime() { pitch({ dur: .14, f0: 784, type: 'triangle', vol: .07, priority: 3 }); pitch({ dur: .3, f0: 1175, type: 'triangle', vol: .07, delay: .11, priority: 3 }); },
+  // The end of a match: a rising run for a win, a falling one for a loss.
+  sting(win = true) {
+    const notes = win ? [523, 659, 784, 1047] : [440, 370, 311, 262];
+    notes.forEach((f, i) => pitch({ dur: i === notes.length - 1 ? .5 : .16, f0: f, f1: win || i < notes.length - 1 ? f : f * .94, type: 'triangle', vol: .08, delay: i * .13, priority: 3 }));
+  },
   // The 3-2-1 beeps and the brighter GO.
   count(n = 1) { pitch({ dur: .14, f0: 660 + (3 - clamp(n, 1, 3)) * 0, type: 'square', vol: .08, priority: 3 }); pitch({ dur: .14, f0: 330, type: 'sine', vol: .08, priority: 3 }); },
   go() { pitch({ dur: .16, f0: 880, type: 'square', vol: .085, priority: 3 }); pitch({ dur: .34, f0: 1320, type: 'square', vol: .085, delay: .1, priority: 3 }); pitch({ dur: .4, f0: 440, type: 'triangle', vol: .09, delay: .1, priority: 3 }); },

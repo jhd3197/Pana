@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Nuevo juego: Capis a Pintazos, artillería de pintura por turnos contra la máquina.**
+  Tres capis por equipo en la orilla del llano: camina, apunta, carga la bazuca
+  de pintura y mide el viento; cada pintazo abre un cráter, la tierra pintada
+  resbala y un capi pintado al 100 % o que cae al río queda fuera.
+
 ## 0.8.0 - 2026-10-31
 
 - **En Ludo un 1 también da otra tirada.** Si sacas un 1 y mueves, vuelves a
