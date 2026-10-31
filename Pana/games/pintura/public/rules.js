@@ -31,8 +31,10 @@ export const COVER = spread(PLAZA_COVER);
 export const SPAWNS = [{ x: -14, z: -14 }, { x: 14, z: 14 }, { x: 14, z: -14 }, { x: -14, z: 14 }, { x: 0, z: -15 }, { x: 0, z: 15 }, { x: -15, z: 0 }, { x: 15, z: 0 }].map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
 const PAINT_SPAWNS = ARENA_SPAWNS.map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
 // Bot marksmanship per difficulty: aim wobble (radians) and how much of the
-// time a bot with a clear line keeps the trigger down (sine threshold).
-export const BOT_SKILL = { facil: { wobble: .16, trigger: .45 }, normal: { wobble: .07, trigger: -.2 }, dificil: { wobble: .035, trigger: -.5 }, experto: { wobble: .012, trigger: -.8 } };
+// time a bot with a clear line keeps the trigger down (sine threshold), and how
+// stale (seconds) the rival's position is when it aims: paintballs fly 85 m/s, so
+// without that lag bots would rarely miss a strafing rival at range.
+export const BOT_SKILL = { facil: { wobble: .16, trigger: .45, reaction: .15 }, normal: { wobble: .07, trigger: -.2, reaction: .4 }, dificil: { wobble: .035, trigger: -.5, reaction: .5 }, experto: { wobble: .012, trigger: -.8, reaction: .6 } };
 export function cleanInput(input = {}) {
   if (!input || typeof input !== 'object') input = {};
   const num = n => Number.isFinite(n) ? clamp(n, -1, 1) : 0;
@@ -208,6 +210,12 @@ export class Arena {
     const x = best % nx + .5 - grid.b.x - p.x, z = Math.floor(best / nx) + .5 - grid.b.z - p.z, length = Math.hypot(x, z) || 1;
     return { x: x / length, z: z / length };
   }
+  // Where bot p thinks rival q is: a sample of q refreshed every `reaction` seconds.
+  botAim(p, q, reaction) {
+    const book = this.botSight ||= new Map(), now = DURATION - this.time, seen = book.get(p.id);
+    if (!seen || seen.id !== q.id || now - seen.at >= reaction || now < seen.at) book.set(p.id, { id: q.id, x: q.x, z: q.z, at: now });
+    return book.get(p.id);
+  }
   bot(p) {
     const enemies = this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
     const q = enemies[0]; if (!q) return cleanInput();
@@ -215,7 +223,8 @@ export class Arena {
     const clear = !this.cover.some(o => segmentBox(p.x, p.z, dx, dz, o) !== null);
     const t = (DURATION - this.time) * .7 + p.id, strafe = Math.sin(t) > 0 ? 1 : -1, skill = BOT_SKILL[this.difficulty] || BOT_SKILL.normal;
     // A deterministic wobble around the true line: weaker bots spray, sharp ones rarely miss.
-    const wobble = Math.sin(t * 2.3 + p.id * 1.7) * skill.wobble, aimX = dx / length * Math.cos(wobble) - dz / length * Math.sin(wobble), aimZ = dx / length * Math.sin(wobble) + dz / length * Math.cos(wobble);
+    const ref = this.botAim(p, q, skill.reaction), rx = ref.x - p.x, rz = ref.z - p.z, rl = Math.hypot(rx, rz) || 1;
+    const wobble = Math.sin(t * 2.3 + p.id * 1.7) * skill.wobble, aimX = rx / rl * Math.cos(wobble) - rz / rl * Math.sin(wobble), aimZ = rx / rl * Math.sin(wobble) + rz / rl * Math.cos(wobble);
     let x = clear ? dx / length * (length > 9 ? .8 : -.25) - dz / length * strafe * .6 : Math.cos(t * .6);
     let z = clear ? dz / length * (length > 9 ? .8 : -.25) + dx / length * strafe * .6 : Math.sin(t * .6);
     // A rival out of sight and far away: walk the open lanes toward them.

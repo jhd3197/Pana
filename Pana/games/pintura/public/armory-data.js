@@ -3,9 +3,9 @@
 // names and blurbs are locKey() and shown with loc() (armory.js).
 import { locKey } from '../../../engine/i18n.js';
 export const MARKERS = [
- { id:'pistol', name:'La Chispa', blurb:locKey('La confiable. Precisa, pareja y ligera.'), magazine:12, reload:1.3, cadence:.25, mobility:1, spread:0, pellets:1, speed:34, life:1.5 }, // i18n-ignore: proper name
- { id:'scatter', name:'El Trueno', blurb:locKey('Tres bolas de cerca. De lejos pierde fuerza.'), magazine:8, reload:1.8, cadence:.75, mobility:.93, spread:.18, pellets:3, speed:34, life:.5 }, // i18n-ignore: proper name
- { id:'rapid', name:'Las Gemelas', blurb:locKey('Alterna las dos marcadoras. Mucha presión; recargar lleva tiempo.'), magazine:18, reload:2.4, cadence:.16, mobility:1, spread:.045, pellets:1, speed:34, life:1.1 }, // i18n-ignore: proper name
+ { id:'pistol', name:'La Chispa', blurb:locKey('La confiable. Precisa, pareja y ligera.'), magazine:12, reload:1.3, cadence:.2, mobility:1, spread:0, pellets:1, speed:85, life:.6 }, // i18n-ignore: proper name
+ { id:'scatter', name:'El Trueno', blurb:locKey('Tres bolas de cerca. De lejos pierde fuerza.'), magazine:8, reload:1.8, cadence:.75, mobility:.93, spread:.18, pellets:3, speed:85, life:.2 }, // i18n-ignore: proper name
+ { id:'rapid', name:'Las Gemelas', blurb:locKey('Alterna las dos marcadoras. Mucha presión; recargar lleva tiempo.'), magazine:18, reload:2.4, cadence:.16, mobility:1, spread:.045, pellets:1, speed:85, life:.44 }, // i18n-ignore: proper name
  { id:'rocket', name:'El Cohetón', blurb:locKey('Un cohete de pintura, un pepazo por rival. Cuatro cargas por vida; no permite correr.'), magazine:1, reserve:3, reload:3.2, cadence:1, mobility:.63, spread:0, pellets:1, speed:18, life:2.4, splash:4.5 }, // i18n-ignore: proper name
 ];
 export const ATTACHMENTS = [
