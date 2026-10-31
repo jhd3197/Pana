@@ -1,8 +1,12 @@
+import { botParticipation, botLevel, migrateRivals } from '../../../engine/room-option-fields.js';
+export { migrateRivals };
 import { optionDefaults, applyRoomOptions } from '../../../engine/room-options-rules.js';
+import { loc } from '../../../engine/i18n.js';
 export const ROOM_OPTIONS = [
-  { id: 'rivals', label: 'Pilotos del cerro', default: 'normal', choices: [['easy', 'Tranquilos'], ['normal', 'Normales'], ['hard', 'Bravos'], ['none', 'Ninguno']] },
-  { id: 'guide', label: 'Flecha guía', default: true, choices: [[true, 'Sí'], [false, 'No']] },
-  { id: 'thermals', label: 'Térmicas', default: 'normal', advanced: true, choices: [['weak', 'Flojas'], ['normal', 'Normales'], ['strong', 'Fuertes']] },
+  botParticipation(),
+  botLevel('rivals', 'easy', 'normal', 'hard', { visibleWhen: { bots: [true] } }),
+  { id: 'guide', label: loc('Flecha guía'), default: true, choices: [[true, loc('Sí')], [false, loc('No')]] },
+  { id: 'thermals', label: loc('Térmicas'), default: 'normal', advanced: true, choices: [['weak', loc('Flojas')], ['normal', loc('Normales')], ['strong', loc('Fuertes')]] },
 ];
 export const defaultOptions = () => optionDefaults(ROOM_OPTIONS);
-export const roomOptions = (current, patch) => applyRoomOptions(ROOM_OPTIONS, current, patch);
+export const roomOptions = (current, patch) => applyRoomOptions(ROOM_OPTIONS, migrateRivals(current), migrateRivals(patch));

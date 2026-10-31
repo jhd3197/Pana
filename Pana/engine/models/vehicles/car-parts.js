@@ -358,6 +358,18 @@ export const FINISHES = {
   metalico: { roughness: 0.3, metalness: 0.35 },
   camuflaje: { roughness: 0.82, metalness: 0 },
 };
+// The lofted bodies carry no UVs, so a textured finish would read one flat
+// colour: give them box-projected UVs in metres, like the extruded parts.
+function boxUVs(g) {
+  if (g.attributes.uv || !g.attributes.normal) return;
+  const p = g.attributes.position, n = g.attributes.normal, uv = new Float32Array(p.count * 2);
+  for (let i = 0; i < p.count; i++) {
+    const ax = Math.abs(n.getX(i)), ay = Math.abs(n.getY(i)), az = Math.abs(n.getZ(i));
+    const [u, v] = ax >= ay && ax >= az ? [p.getZ(i), p.getY(i)] : ay >= az ? [p.getX(i), p.getZ(i)] : [p.getX(i), p.getY(i)];
+    uv[i * 2] = u; uv[i * 2 + 1] = v;
+  }
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+}
 const finishCache = new Map();
 // Swap every body panel in the car's paint colour for the finished version.
 export function finish(car, kind) {
@@ -375,6 +387,7 @@ export function finish(car, kind) {
       m.needsUpdate = true;
       finishCache.set(key, m);
     }
+    if (kind === 'camuflaje') boxUVs(o.geometry);
     o.material = finishCache.get(key);
   });
   return car;

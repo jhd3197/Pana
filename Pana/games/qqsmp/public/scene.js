@@ -9,7 +9,9 @@ import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { createQuizStage, createQuizPodium, createHostDesk, createQuizScreen, createStageSpotlight, GOLD, NIGHT } from './studio-set.js';
-import { SEATS, LETTERS, TOP, score, mangos, resolveAnswer, ranking } from './rules.js';
+import { SEATS, LETTERS, TOP, score, mangos, resolveAnswer, ranking, participants, lineText } from './rules.js';
+import { createQuizAnimations } from './animations.js';
+import { loc } from '/engine/i18n.js';
 
 export const SEAT_COLORS = ['#ff4b4b', '#2ad1b2', '#ffc629', '#3d7bf2', '#ff8a1f', '#8e4de8'];
 const BOT_LOOKS = [
@@ -44,21 +46,22 @@ function paintScreen(ctx, w, h, s) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const title = (text, y, size, color = '#fff') => { ctx.font = `900 ${size}px "Luckiest Guy", system-ui, sans-serif`; ctx.fillStyle = color; ctx.fillText(text, w / 2, y); };
   if (s.phase === 'lobby' || !s.question) {
-    title('¿Quién quiere', h * .36, 120, GOLD); title('ser mi pana?', h * .54, 120, GOLD);
-    title('Esperando al anfitrión…', h * .78, 44, '#c9c2ff'); return;
+    title('¿Quién quiere', h * .36, 120, GOLD); title('ser mi pana?', h * .54, 120, GOLD); // i18n-ignore: the show's name on the set
+    title(loc('Esperando al anfitrión…'), h * .78, 44, '#c9c2ff'); return;
   }
   if (s.phase === 'finished') {
     const order = ranking(s);
-    title('¡MANGO DE ORO!', h * .2, 96, GOLD); title(order[0].name, h * .38, 110);
-    order.slice(0, 4).forEach((p, i) => title(`${i + 1}. ${p.name} · ${mangos(score(p))} mangos`, h * (.56 + i * .1), 46, i ? '#c9c2ff' : '#fff'));
+    title(loc('¡MANGO DE ORO!'), h * .2, 96, GOLD); title(order[0].name, h * .38, 110);
+    order.slice(0, 4).forEach((p, i) => title(loc('{rank}. {name} · {mangos} mangos', { rank: i + 1, name: p.name, mangos: mangos(score(p)) }), h * (.56 + i * .1), 46, i ? '#c9c2ff' : '#fff'));
     return;
   }
   box(ctx, 40, 30, w - 80, 70, 35, '#120c38', GOLD);
   ctx.font = '700 40px system-ui, sans-serif'; ctx.fillStyle = GOLD;
-  ctx.fillText(s.final ? `PREGUNTA FINAL · ${s.question.category}` : `${s.question.category} · Pregunta ${s.index + 1} de ${s.total}`, w / 2, 66);
+  const category = loc(s.question.category);
+  ctx.fillText(s.final ? loc('PREGUNTA FINAL · {category}', { category }) : loc('{category} · Pregunta {n} de {total}', { category, n: s.index + 1, total: s.total }), w / 2, 66);
   if (s.phase === 'bet') {
-    title('¿Cuántos mangos', h * .36, 100); title('te juegas?', h * .52, 100);
-    title(`${s.players.filter(p => p.betLocked).length} de ${s.players.length} ya apostaron`, h * .74, 48, '#c9c2ff');
+    title(loc('¿Cuántos mangos'), h * .36, 100); title(loc('te juegas?'), h * .52, 100);
+    title(loc('{n} de {total} ya apostaron', { n: participants(s).filter(p => p.betLocked).length, total: participants(s).length }), h * .74, 48, '#c9c2ff');
     return;
   }
   ctx.font = '800 58px system-ui, sans-serif';
@@ -96,19 +99,19 @@ function paintPlate(ctx, w, h, s, p, color) {
   let big = '', tone = '#fff', note = '';
   if (revealed) {
     const got = resolveAnswer(s.players, p.seat);
-    big = got === null ? '—' : LETTERS[got]; note = p.copy !== null ? `copió a ${s.players[p.copy].name}` : '';
+    big = got === null ? '—' : LETTERS[got]; note = p.copy !== null ? loc('copió a {name}', { name: s.players[p.copy].name }) : '';
     if (r.done) tone = p.outcome?.right ? '#5dff9e' : '#ff6b6b';
   } else if (s.phase === 'question' || s.phase === 'pause') {
-    big = p.locked ? 'LISTO' : '…'; tone = p.locked ? '#ffc629' : '#8c86c9';
+    big = p.locked ? loc('LISTO') : '…'; tone = p.locked ? '#ffc629' : '#8c86c9';
   } else if (s.phase === 'bet') {
-    big = p.betLocked ? 'APOSTÓ' : '…'; tone = p.betLocked ? '#ffc629' : '#8c86c9';
-  } else big = p.step >= TOP ? 'ORO' : `${p.step}/${TOP}`;
+    big = p.betLocked ? loc('APOSTÓ') : '…'; tone = p.betLocked ? '#ffc629' : '#8c86c9';
+  } else big = p.step >= TOP ? loc('ORO') : `${p.step}/${TOP}`;
   ctx.font = `900 ${big.length > 2 ? 58 : 92}px system-ui, sans-serif`; ctx.fillStyle = tone; ctx.fillText(big, w / 2, h / 2 + 4);
   ctx.font = '600 24px system-ui, sans-serif'; ctx.fillStyle = '#ffe7a1';
-  ctx.fillText(note || `${mangos(score(p))} mangos${p.planted ? ' · plantado' : ''}`, w / 2, h - 40);
+  ctx.fillText(note || (p.planted ? loc('{mangos} mangos · plantado', { mangos: mangos(score(p)) }) : loc('{mangos} mangos', { mangos: mangos(score(p)) })), w / 2, h - 40);
 }
 
-export function createQqsmpScene(canvas) {
+export function createQqsmpScene(canvas, { onAnimationCue } = {}) {
   const stage = createTableWorld(canvas, { fit: 'window', exposure: .95, background: '#0b0820', fog: [34, 90], sky: false, fov: 40, plazaScale: .9,
     hemi: ['#7a78e0', '#1a1030', 1.1], sun: { color: '#a9b8ff', intensity: .9, position: [-10, 20, 14], box: 14, far: 60, bias: -.0002 } });
   const { renderer, scene, camera } = stage, own = new THREE.Group(); scene.add(own);
@@ -130,11 +133,12 @@ export function createQqsmpScene(canvas) {
   });
   const goldMango = makeMango({ gold: true }); goldMango.scale.setScalar(.32); goldMango.position.set(0, 8.55, -5.2); own.add(goldMango);
   const labels = document.getElementById('world-labels');
-  const tags = podiums.map(() => { const el = document.createElement('div'); el.className = 'world-label'; labels.append(el); return el; });
+  const tags = podiums.map(() => { const el = document.createElement('div'); el.className = 'world-label'; el.translate = false; labels.append(el); return el; });
   const bubbles = createSeatBubbles(labels, SEATS + 1);
   const bounds = new THREE.Box3(new THREE.Vector3(-8.6, .3, -5.3), new THREE.Vector3(8.6, 8.4, 2.6));
   const projected = new THREE.Vector3(), aim = new THREE.Vector3();
   let current = null, time = 0, screenKey = '', bottom = 220, measured = 0, pointing = -1, hostTalk = 0;
+  const animations = createQuizAnimations(own, host, podiums, onAnimationCue);
 
   function syncCharacter(seat, p) {
     const look = normalizeAvatar(p.id === null ? BOT_LOOKS[seat] : p.avatar), key = JSON.stringify(look), slot = podiums[seat];
@@ -144,9 +148,17 @@ export function createQqsmpScene(canvas) {
 
   function update(state) {
     const previous = current; current = state;
+    const active = participants(state);
     for (const p of state.players) {
+      const visible = active.includes(p), slot = podiums[p.seat];
+      slot.podium.visible = visible; tags[p.seat].hidden = !visible;
+      if (slot.character) slot.character.group.visible = visible;
+      if (!visible) { bubbles.hide(p.seat); continue; }
+      const x = (active.indexOf(p) - (active.length - 1) / 2) * 2.45;
+      slot.podium.position.set(x, .3, -.6 - Math.abs(x) * .14); slot.podium.rotation.y = -x * .035;
       syncCharacter(p.seat, p);
-      const slot = podiums[p.seat], plate = JSON.stringify([state.phase, p.name, p.step, p.bonus, p.finalDelta, p.locked, p.betLocked, p.planted, state.reveal, p.copy, p.answer, p.outcome?.right]);
+      slot.character.group.visible = true;
+      const plate = JSON.stringify([state.phase, p.name, p.step, p.bonus, p.finalDelta, p.locked, p.betLocked, p.planted, state.reveal, p.copy, p.answer, p.outcome?.right]);
       if (plate !== slot.plate) { slot.plate = plate; slot.podium.userData.paint((ctx, w, h) => paintPlate(ctx, w, h, state, p, SEAT_COLORS[p.seat])); }
       const r = state.reveal, idx = r ? r.order.indexOf(p.seat) : -1;
       slot.podium.userData.setLight(state.gold === p.seat ? 'gold'
@@ -159,8 +171,10 @@ export function createQqsmpScene(canvas) {
     const key = JSON.stringify([state.phase, state.index, Math.ceil(state.timeLeft), state.reveal, state.question?.text, state.players.map(p => [p.name, p.betLocked, score(p)])]);
     if (key !== screenKey) { screenKey = key; screen.userData.paint((ctx, w, h) => paintScreen(ctx, w, h, state)); }
     pointing = state.phase === 'reveal' && !state.reveal.done ? state.reveal.order[state.reveal.shown - 1] ?? -1 : state.phase === 'finished' ? state.winner : -1;
-    if (state.hostLine && state.hostLine !== previous?.hostLine && state.phase !== 'lobby') { bubbles.say(HOST, state.hostLine, Math.min(4, 1.6 + state.hostLine.length * .035)); hostTalk = 1.2; }
+    const said = lineText(state.hostLine);
+    if (said && said !== lineText(previous?.hostLine) && state.phase !== 'lobby') { bubbles.say(HOST, said, Math.min(4, 1.6 + said.length * .035)); hostTalk = 1.2; }
     goldMango.visible = state.gold === null || state.phase === 'lobby';
+    animations.update(state);
   }
 
   function placeTag(el, position, seat) {
@@ -170,7 +184,8 @@ export function createQqsmpScene(canvas) {
     bubbles.place(seat, x, y);
   }
 
-  function frame(dt) {
+  function frame(dt, paused = false) {
+    animations.reset();
     time += dt; bubbles.tick(dt); hostTalk = Math.max(0, hostTalk - dt);
     // Keep the stage clear of the question panel (the HUD's children are fixed,
     // so the panel itself is measured).
@@ -188,6 +203,7 @@ export function createQqsmpScene(canvas) {
     });
     goldMango.rotation.y += dt * .8; goldMango.position.y = 8.55 + Math.sin(time * 2) * .08;
     podiums.forEach((slot, seat) => {
+      if (!slot.podium.visible) return;
       const p = current?.players[seat], target = podiumHeight(p ? (current.phase === 'reveal' && !current.reveal.done ? p.outcome?.from ?? p.step : p.step) : 0);
       slot.height = THREE.MathUtils.lerp(slot.height, target, 1 - Math.exp(-dt * 2.5)); slot.podium.userData.setHeight(slot.height);
       const c = slot.character; if (!c) return;
@@ -199,20 +215,37 @@ export function createQqsmpScene(canvas) {
       else if (slot.mood === 'tense') { left.rotation.set(-1.1, 0, -.5); right.rotation.set(-1.1, 0, .5); }
       else { left.rotation.set(-.15, 0, .14); right.rotation.set(-.15, 0, -.14); }
       c.neck.rotation.y = Math.sin(time * .5 + seat * 2) * .15; c.neck.rotation.x = slot.mood === 'lose' ? .3 : 0;
-      const head = c.group.position.clone(); head.y += 2.25; placeTag(tags[seat], head, seat);
-      if (p) tags[seat].textContent = `${p.name}${p.seat === current.gold ? ' · Mango de oro' : ''}`;
+      if (p) tags[seat].textContent = p.seat === current.gold ? loc('{name} · Mango de oro', { name: p.name }) : p.name;
     });
     host.update(dt, {});
     const [hl, hr] = host.arms, talk = hostTalk > 0 ? Math.sin(time * 9) * .25 : 0;
     hr.rotation.set(pointing >= 0 ? -1.6 : -.5 + talk, 0, pointing >= 0 ? -.3 : -.2); hl.rotation.set(-.6 - talk, 0, .25);
     host.neck.rotation.y = pointing >= 0 ? THREE.MathUtils.clamp(Math.atan2(podiums[pointing].podium.position.x - host.group.position.x, podiums[pointing].podium.position.z - host.group.position.z) - host.group.rotation.y, -.8, .8) : Math.sin(time * .7) * .2;
+    animations.frame(dt, paused);
+    // Once answers are public, give each reaction a TV close-up above the HUD.
+    // Keep the full board framed while anyone can still choose an answer.
+    const reaction = animations.current;
+    const closeup = phase === 'reveal' && current.reveal?.done && reaction;
+    if (closeup) {
+      const slot = podiums[reaction.seat], p = slot.podium.position;
+      const shot = new THREE.Box3(new THREE.Vector3(p.x - 1.5, .2 + slot.height, p.z - .8), new THREE.Vector3(p.x + 1.5, slot.height + 3.8, p.z + 1.1));
+      stage.frameCamera(shot, [.14, .15, 1], { x: margin, y: top, width: Math.max(160, w - margin * 2), height: Math.max(140, h - top - bottom) });
+      bubbles.hide(HOST);
+    }
+    podiums.forEach((slot, seat) => {
+      if (!slot.podium.visible || !slot.character) return;
+      tags[seat].hidden = !!closeup;
+      if (closeup) bubbles.hide(seat);
+      const head = slot.character.head.getWorldPosition(new THREE.Vector3()); head.y += .8; placeTag(tags[seat], head, seat);
+    });
     const hostHead = host.group.position.clone(); hostHead.y += 2.3; placeTag(null, hostHead, HOST);
     stage.draw(dt);
   }
 
   function dispose() {
+    animations.dispose();
     podiums.forEach(slot => slot.character?.dispose()); host.dispose(); tags.forEach(t => t.remove()); bubbles.dispose();
     disposeModel(goldMango); disposeModel(own); stage.dispose();
   }
-  return { renderer, scene, camera, update, frame, dispose, say: bubbles.say, podiums };
+  return { renderer, scene, camera, update, frame, dispose, say: bubbles.say, podiums, animations };
 }

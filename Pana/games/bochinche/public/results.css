@@ -1,0 +1,47 @@
+/* ¡Ganó!: the winner plate in their colour, a rising podium, the stats table
+   and three awards, over the Banderín results backdrop. */
+.boch-results { --ink: #16161a; --wc: var(--pk-yellow); }
+.boch-results .pk-results-card { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "win win" "pod stats" "awards acts"; gap: 24px 32px; align-items: end; }
+.boch-results .res-win { grid-area: win; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; position: relative; z-index: 1; }
+.boch-results .res-win h2 { margin: 0; padding: 8px 26px 2px; background: var(--wc); color: var(--ink); font: clamp(34px, 5vw, 64px)/1 var(--pk-display); box-shadow: 6px 6px 0 var(--ink); transform: skewX(-10deg); }
+.boch-results .res-chip { padding: 10px 18px 8px; background: var(--pk-night); font: 900 16px/1 var(--pk-sans); box-shadow: 4px 4px 0 var(--ink); transform: skewX(-10deg); }
+.boch-results .res-podium { grid-area: pod; position: relative; z-index: 1; display: flex; align-items: flex-end; justify-content: center; gap: 14px; min-height: 380px; }
+.boch-results .res-pod { position: relative; width: clamp(80px, 11vw, 170px); display: grid; justify-items: center; }
+.boch-results .res-pod .face { width: 78%; aspect-ratio: 1; object-fit: contain; margin-bottom: -6px; position: relative; z-index: 1; }
+.boch-results .res-pod .blk { width: 100%; height: calc(var(--h) * 1px); display: grid; justify-items: center; align-content: start; gap: 6px; padding: 14px 6px 0; background: var(--c); color: var(--ink); box-shadow: 6px 6px 0 var(--ink); transform-origin: bottom; animation: boch-rise 600ms calc(var(--d) * 1ms) cubic-bezier(.3, 1.3, .5, 1) both; }
+.boch-results .res-pod .blk b { font: clamp(36px, 4vw, 60px)/1 var(--pk-display); }
+.boch-results .res-pod .blk span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: clamp(14px, 1.4vw, 20px)/1 var(--pk-display); }
+.boch-results .res-pod .crown { position: absolute; top: -44px; width: 60px; z-index: 2; animation: boch-bob 1.8s ease-in-out infinite; }
+@keyframes boch-rise { from { transform: scaleY(0); } }
+@keyframes boch-bob { 50% { transform: translateY(-8px); } }
+.boch-results .res-stats { grid-area: stats; position: relative; z-index: 1; align-self: start; padding: 16px 22px; background: rgba(14, 11, 36, .95); box-shadow: 6px 6px 0 var(--ink); overflow-x: auto; }
+.boch-results table { width: 100%; border-collapse: collapse; }
+.boch-results th { padding: 6px 8px; font: 900 11px/1 var(--pk-sans); letter-spacing: .1em; text-transform: uppercase; color: var(--pk-muted); text-align: right; }
+.boch-results td { padding: 11px 8px; border-top: 1px solid rgba(255, 255, 255, .08); font: 22px/1 var(--pk-display); color: #fff; text-align: right; font-variant-numeric: tabular-nums; }
+.boch-results :is(th, td):first-child { text-align: left; }
+.boch-results td:first-child { display: flex; align-items: center; gap: 10px; font-size: 20px; white-space: nowrap; }
+.boch-results td:first-child i { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--ink); }
+.boch-results td.best { color: var(--pk-teal); }
+.boch-results tr.me td { background: rgba(255, 198, 41, .12); }
+.boch-results .res-awards { grid-area: awards; position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 12px; }
+.boch-results .res-award { display: flex; align-items: center; gap: 10px; padding: 10px 16px 8px 10px; background: rgba(14, 11, 36, .92); box-shadow: 4px 4px 0 var(--ink); transform: skewX(-10deg); }
+.boch-results .res-award > * { transform: skewX(10deg); }
+.boch-results .res-award i { width: 28px; height: 28px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px var(--ink); }
+.boch-results .res-award b { display: block; font: 18px/1 var(--pk-display); color: var(--pk-yellow); }
+.boch-results .res-award small { font: 800 13px/1.2 var(--pk-sans); color: var(--pk-muted); }
+.boch-results .res-acts { grid-area: acts; position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 14px; }
+.boch-results .res-acts .pk-btn { width: auto; margin: 0; }
+.boch-results .res-confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.boch-results .res-confetti i { position: absolute; top: -30px; width: 12px; height: 20px; background: var(--cc); animation: boch-fall var(--t) linear var(--dl) infinite; }
+@keyframes boch-fall { to { transform: translateY(110vh) rotate(540deg); } }
+.boch-results .res-mangos { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; margin-top: 14px; padding: 12px 14px; background: rgba(255, 255, 255, .05); font: 800 15px/1.3 var(--pk-sans); color: var(--pk-muted); }
+.boch-results .res-mangos > span, .boch-results .res-balance { display: grid; text-align: left; }
+.boch-results .res-mangos > b { grid-row: span 2; display: flex; align-items: center; gap: 8px; font: 28px/1 var(--pk-display); color: #ffd23f; }
+.boch-results .res-mangos > b svg { width: 30px; height: 30px; }
+.boch-results .res-balance { color: var(--pk-cream); }
+@media (max-width: 900px) {
+  .boch-results .pk-results-card { grid-template-columns: 1fr; grid-template-areas: "win" "pod" "stats" "awards" "acts"; }
+  .boch-results .res-podium { min-height: 300px; }
+  .boch-results .res-pod .blk { height: calc(var(--h) * .7px); }
+}
+@media (prefers-reduced-motion: reduce) { .boch-results :is(.res-pod .blk, .res-pod .crown, .res-confetti i) { animation: none; } }

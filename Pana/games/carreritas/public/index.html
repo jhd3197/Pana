@@ -60,7 +60,7 @@
           <button id="lobby-invite" type="button" class="pk-btn pk-btn--sm">Invitar panas</button>
         </div>
         <ol id="lobby-roster" class="pk-roster" aria-label="Panas en la sala"></ol>
-        <label class="lobby-bots"><input id="lobby-bots" type="checkbox" checked> Completar con rivales</label>
+        <label class="lobby-bots"><input id="lobby-bots" type="checkbox" checked> Panas y bots</label>
         <p id="lobby-status" class="lobby-status" role="status" aria-live="polite"></p>
       </section>
       <section id="setup" class="setup" aria-label="Tipo de carrera">
@@ -71,6 +71,10 @@
             <button type="button" data-mode="pana" aria-pressed="false">Copa Pana</button>
             <button type="button" data-mode="aventura" aria-pressed="false">Copa Aventura</button>
             <button type="button" data-mode="agua" aria-pressed="false">Copa del Agua</button>
+            <button type="button" data-mode="costa" aria-pressed="false">Copa Costa</button>
+            <button type="button" data-mode="cumbre" aria-pressed="false">Copa Cumbre</button>
+            <button type="button" data-mode="relampago" aria-pressed="false">Copa Relámpago</button>
+            <button type="button" data-mode="fantasia" aria-pressed="false">Copa Fantasía</button>
             <button type="button" data-mode="battle" aria-pressed="false">Globos</button>
           </div>
         </div>
@@ -80,6 +84,13 @@
             <button type="button" data-difficulty="facil" aria-pressed="false">Fácil</button>
             <button type="button" data-difficulty="normal" aria-pressed="true">Normal</button>
             <button type="button" data-difficulty="dificil" aria-pressed="false">Difícil</button>
+          </div>
+        </div>
+        <div class="setup-row">
+          <span class="pk-eyebrow">Parrilla</span>
+          <div id="field-pick" class="pk-seg" role="group" aria-label="Parrilla">
+            <button type="button" data-field="0" aria-pressed="true">Normal</button>
+            <button type="button" data-field="12" aria-pressed="false">12 carros</button>
           </div>
         </div>
         <div class="setup-row">
@@ -123,7 +134,7 @@
         <div class="pill main"><span class="pk-eyebrow">Tiempo</span><b id="time" class="pk-num">0.0</b></div>
         <div id="best-pill" class="pill" hidden><span class="pk-eyebrow">Mejor</span><b id="lap-best" class="pk-num small">—</b></div>
         <div id="ghost-pill" class="pill" hidden title="El fantasma de tu mejor vuelta corre contigo"><span class="pk-eyebrow">Fantasma</span><b id="ghost-time" class="pk-num small">—</b></div>
-        <div class="pill leader"><span class="pk-eyebrow">Líder</span><b id="leader" class="pk-num small">—</b></div>
+        <div class="pill leader"><span class="pk-eyebrow">Líder</span><b id="leader" class="pk-num small" translate="no">—</b></div>
       </div>
     </div>
 

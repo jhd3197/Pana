@@ -5,10 +5,10 @@
 
 import { schema, t } from '@colyseus/schema';
 import { randomUUID } from 'node:crypto';
-import { PanaRoom, Member, roomState, avatarJson, MAX_MEMBERS } from '../../../server/src/room-kit.js';
+import { PanaRoom, Member, roomState, avatarJson } from '../../../server/src/room-kit.js';
 import { randomAvatar } from '../../../engine/avatar.js';
 import {
-  LAPS, lapsForTrack, MIN_GRID, GP_GRID, COUNTDOWN_MS, LOAD_TIMEOUT_MS, GP_LOAD_TIMEOUT_MS,
+  LAPS, lapsForTrack, MAX_RACERS, fieldSize, cleanField, rivalName, COUNTDOWN_MS, LOAD_TIMEOUT_MS, GP_LOAD_TIMEOUT_MS,
   FINISH_GRACE_MS, GP_INTERMISSION_MS, GP_MIN_READ_MS, GP_PROTOCOL,
   RIVALS, AI_WHEELS, CAR_COUNT, cleanCar, cleanWheel, cleanTrack, cleanDifficulty, cleanCosmetics, validPose,
 } from '../public/online-rules.js';
@@ -18,8 +18,10 @@ import {
   abandonCup, acceptFinish, advanceStage, beginStage, createCupSession,
   finalizeStage, markRacing, markStarted, retireEntrant, retryStage, seededOrder,
 } from '../public/cup-rules.js';
+import { locKey } from '../../../engine/i18n.js';
 
 const RACE_CAP_MS = 20 * 60 * 1000;   // a race nobody finishes still ends
+const FINISH_SLACK_S = 5;   // latency and clock-sync error a real finish can carry
 const isAvailableCup = (mode) => CUPS.some(c => c.id === canonicalCupId(mode));
 const cleanMode = (mode) => isAvailableCup(mode) ? canonicalCupId(mode) : 'race';
 
@@ -58,6 +60,7 @@ const CarreritasState = roomState({
   difficulty: t.string().default('normal'),
   track: t.string().default('estadio'),
   bots: t.boolean().default(true),
+  field: t.uint8().default(0),          // 0 = the mode's grid (4, or 8 in a cup); 12 = full grid
   laps: t.uint8().default(LAPS),
   raceId: t.uint16().default(0),
   startAt: t.number().default(0),       // server epoch ms for "¡YA!"
@@ -123,6 +126,9 @@ export default class CarreritasRoom extends PanaRoom {
     this.onMessage('bots', (client, m) => {
       if (this.isHost(client) && this.canConfigure()) this.state.bots = !!m?.on;
     });
+    this.onMessage('field', (client, m) => {
+      if (this.isHost(client) && this.canConfigure()) this.state.field = cleanField(m?.size);
+    });
     this.onMessage('mode', (client, m) => {
       if (!this.isHost(client) || !this.canConfigure() || !this.supportsGp(client, m?.mode)) return;
       this.state.mode = cleanMode(m?.mode);
@@ -140,7 +146,7 @@ export default class CarreritasRoom extends PanaRoom {
     this.onMessage('start', (client) => {
       if (!this.isHost(client)) return;
       if (isAvailableCup(this.state.mode) && !this.allHumansSupportGp()) {
-        this.state.notice = 'Un pana tiene una versión anterior y no puede entrar al Gran Premio.';
+        this.state.notice = locKey('Un pana tiene una versión anterior y no puede entrar al Gran Premio.');
         return;
       }
       if (this.state.phase === 'lobby' || (this.state.phase === 'results' && !this.cupSession) || this.state.phase === 'complete') {
@@ -174,7 +180,7 @@ export default class CarreritasRoom extends PanaRoom {
       if (!Array.isArray(payload) && !this.matchesContext(payload)) return;
       const out = [];
       const maxLap = (this.state.laps || LAPS) + 1;
-      for (const entry of list.slice(0, MAX_MEMBERS)) {
+      for (const entry of list.slice(0, MAX_RACERS)) {
         if (!Array.isArray(entry)) continue;
         const [id, stamp, ...pose] = entry;
         const r = this.state.racers.get(id);
@@ -191,7 +197,7 @@ export default class CarreritasRoom extends PanaRoom {
       if (!r || r.owner !== client.sessionId || r.retired || r.dns || typeof m.k !== 'string' || m.k.length > 8) return;
       if (!['count', 'race'].includes(this.state.phase)) return;
       if ((this.cupSession || m.raceId != null) && !this.matchesContext(m)) return;
-      if (JSON.stringify(m.d ?? {}).length > 512) return;
+      if (JSON.stringify(m.d ?? {}).length > 1024) return;
       this.broadcast('fx', { ...this.currentContext(), id: m.id, k: m.k, d: m.d ?? {} }, { except: client });
     });
     this.onMessage('finish', (client, m) => {
@@ -202,6 +208,9 @@ export default class CarreritasRoom extends PanaRoom {
       const capSec = this.stageCapMs() / 1000;
       if (!Number.isFinite(time) || time <= 0 || time > capSec) return;
       const targetLaps = this.state.laps || LAPS;
+      // A finish needs the last lap in this car's poses and a time no shorter
+      // than the race has run on the server's clock (net races time from it).
+      if (r.lap < targetLaps || time < (Date.now() - this.state.startAt) / 1000 - FINISH_SLACK_S) return;
       if (this.cupSession) {
         const progress = targetLaps * 1e6 + (this.poses.get(m.id)?.[12] ?? 0);
         if (!acceptFinish(this.cupSession, {
@@ -331,7 +340,7 @@ export default class CarreritasRoom extends PanaRoom {
     this.state.notice = '';
     if (isAvailableCup(this.state.mode)) {
       if (!this.allHumansSupportGp()) {
-        this.state.notice = 'Un pana tiene una versión anterior y no puede entrar al Gran Premio.';
+        this.state.notice = locKey('Un pana tiene una versión anterior y no puede entrar al Gran Premio.');
         return;
       }
       return this.startCup(humans);
@@ -343,7 +352,7 @@ export default class CarreritasRoom extends PanaRoom {
     this.poses.clear();
     this.firstFinish = 0;
     this.state.laps = lapsForTrack(this.state.track);
-    const total = Math.min(MAX_MEMBERS, this.state.bots ? Math.max(MIN_GRID, humans.length) : humans.length);
+    const total = fieldSize({ humans: humans.length, bots: this.state.bots, field: this.state.field });
     const slots = shuffle([...Array(total).keys()]);
     for (const [id, p] of humans) {
       p.racing = true;
@@ -359,7 +368,7 @@ export default class CarreritasRoom extends PanaRoom {
     for (let i = 0; this.state.racers.size < total; i++) {
       const car = cars[i % cars.length];
       this.state.racers.set(`bot-${i + 1}`, new Racer({
-        kind: 'bot', owner: this.state.host, name: names[i % names.length], avatar: avatarJson(randomAvatar()),
+        kind: 'bot', owner: this.state.host, name: rivalName(names, i), avatar: avatarJson(randomAvatar()),
         car, wheel: AI_WHEELS[CAR_DEFINITIONS[car].id] || 'calle', slot: slots.pop(), lap: 0,
       }));
     }
@@ -374,7 +383,7 @@ export default class CarreritasRoom extends PanaRoom {
     const cup = cupById(this.state.mode);
     const seed = `${this.code || 'room'}:${Date.now()}:${Math.random()}`;
     const sessionId = `gp-${randomUUID()}`;
-    const total = Math.min(MAX_MEMBERS, this.state.bots ? Math.max(GP_GRID, humans.length) : humans.length);
+    const total = fieldSize({ humans: humans.length, bots: this.state.bots, cup: true, field: this.state.field });
     const taken = new Set(humans.map(([, p]) => p.car));
     const botCars = [
       ...seededOrder([...Array(CAR_COUNT).keys()].filter(i => !taken.has(i)), `${seed}:cars`),
@@ -389,7 +398,7 @@ export default class CarreritasRoom extends PanaRoom {
       const car = botCars[i % botCars.length];
       const botId = `bot-${i + 1}`;
       entrants.push({
-        id: botId, name: botNames[i % botNames.length], kind: 'bot', owner: this.state.host,
+        id: botId, name: rivalName(botNames, i), kind: 'bot', owner: this.state.host,
         avatar: avatarJson(randomAvatar()),
         loadout: { car, wheel: AI_WHEELS[CAR_DEFINITIONS[car].id] || 'calle' },
         skillSeed: `${sessionId}:${botId}`,
@@ -526,12 +535,12 @@ export default class CarreritasRoom extends PanaRoom {
     const now = Date.now(), s = this.state;
     const racing = [...s.players.values()].filter(p => p.racing);
     if (s.phase === 'loading') {
-      if (!racing.length) return this.toLobby(this.cupSession ? 'Ningún pana estuvo listo a tiempo. Volvimos a la sala.' : '');
+      if (!racing.length) return this.toLobby(this.cupSession ? locKey('Ningún pana estuvo listo a tiempo. Volvimos a la sala.') : '');
       const allReady = racing.every(p => p.loaded || !p.connected);
       if (allReady || now > this.loadDeadline) {
         const readyHumans = racing.filter(p => p.loaded && p.connected);
         if (!readyHumans.length) {
-          return this.toLobby('Ningún pana cargó la pista a tiempo. Volvimos a la sala.');
+          return this.toLobby(locKey('Ningún pana cargó la pista a tiempo. Volvimos a la sala.'));
         }
         for (const [id, p] of s.players.entries()) {
           if (p.racing && !p.loaded) {

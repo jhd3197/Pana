@@ -12,6 +12,11 @@ export default [
   ['paint-trueno', 'El Trueno', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'scatter' }],
   ['paint-gemelas', 'Las Gemelas', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'rapid' }],
   ['paint-coheton', 'El Cohetón', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'rocket' }],
+  ['paint-lejana', 'La Lejana', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'sniper' }],
+  ['paint-bazuca', 'La Bazuca', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'bazooka' }],
+  ['paint-cohete-bazuca', 'Cohete de La Bazuca', 'paintball-kit', 'createPaintRocket', 'Pepazo', {}],
   ['paint-acolchado', 'El Acolchado', 'paintball-kit', 'createPaintVest', 'Pepazo', {}],
   ['paint-marker', 'Marcadora de pintura', 'paintball', 'createPaintMarker', '¡Pintura!', {}],
+  ['team-canopy', 'Toldo de equipo', 'paintball', 'teamCanopy', 'Pepazo', { color: '#29c5cd' }],
+  ['sandbag-wall', 'Sacos de arena', 'paintball', 'sandbagWall', 'Pepazo', { w: 4 }],
 ].map(([id, name, module, factory, game, previewOptions]) => ({ id, name, category: 'Objetos', source: `/engine/models/props/${module}.js`, factory, usedBy: [game], pack: 'table-games', previewOptions }));

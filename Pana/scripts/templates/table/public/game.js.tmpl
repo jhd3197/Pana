@@ -9,6 +9,7 @@ import { roomCode, bootGame } from '/engine/game-shell.js';
 import { {{Class}}Room } from './network.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
+import { loc } from '/engine/i18n.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
@@ -17,13 +18,13 @@ const room = new {{Class}}Room({ code, name: loadName(), avatar: loadAvatar(), o
   onNotice: (text) => { $('event').textContent = text; },
   onStatus(text, failed = false) { $('connection').textContent = text; $('practice').hidden = !failed; render(room.state); },
 });
-const roomOptions = createRoomOptions($('room-options'), { title: '{{name}}', fields: ROOM_OPTIONS,
+const roomOptions = createRoomOptions($('room-options'), { title: {{nameJs}}, fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ title: '{{name}} · Pana', sound, orientation: 'libre',
-  pad: { buttons: true, keys: { x: ['Space', 'Tirar el dado'] } },
-  note: () => room.members.size > 1 ? 'La partida sigue mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
-  controls: [['Espacio', 'Tirar el dado'], ['Ratón / toque', 'Botón Tirar dado'], ['M', 'Activar o silenciar el sonido']],
-  tips: ['Tira el dado en tu turno. El primero en llegar a la meta de la sala gana.', 'Los puestos vacíos juegan con bots; un pana que llega toma su silla.'],
+const menu = createGameMenu({ title: {{titleJs}}, sound, orientation: 'libre', // i18n-ignore: the game's name
+  pad: { buttons: true, keys: { x: ['Space', loc('Tirar el dado')] } },
+  note: () => room.members.size > 1 ? loc('La partida sigue mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
+  controls: [[loc('Espacio'), loc('Tirar el dado')], [loc('Ratón / toque'), loc('Botón Tirar dado')], ['M', loc('Activar o silenciar el sonido')]],
+  tips: [loc('Tira el dado en tu turno. El primero en llegar a la meta de la sala gana.'), loc('Los puestos vacíos juegan con bots; un pana que llega toma su silla.')],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
@@ -41,15 +42,15 @@ function render(state) {
   if (!lobby && roomOptions.isOpen) roomOptions.close();
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby;
   $('start').disabled = !world || !room.connected || !room.isHost;
-  $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A jugar!' : 'Espera al anfitrión';
-  const rows = (players) => players.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? `${p.name} · tú` : p.name, detail: p.id === null ? 'Bot' : 'Pana', end: p.score, score: true, me: p.id === room.id }));
+  $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? loc('¡A jugar!') : loc('Espera al anfitrión');
+  const rows = (players) => players.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? loc('{name} · tú', { name: p.name }) : p.name, detail: p.id === null ? loc('Bot') : loc('Pana'), end: p.score, score: true, me: p.id === room.id }));
   fillRoster($('roster'), rows(state.players));
-  $('turn').textContent = ended ? '¡Partida terminada!' : myTurn() ? '¡Te toca tirar!' : `Turno de ${state.players[state.turn].name}`;
-  $('last').textContent = state.lastRoll ? `Último dado: ${state.lastRoll}` : 'Nadie ha tirado todavía';
+  $('turn').textContent = ended ? loc('¡Partida terminada!') : myTurn() ? loc('¡Te toca tirar!') : loc('Turno de {name}', { name: state.players[state.turn].name });
+  $('last').textContent = state.lastRoll ? loc('Último dado: {roll}', { roll: state.lastRoll }) : loc('Nadie ha tirado todavía');
   $('roll').disabled = !myTurn();
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
   if (ended) {
-    $('result-title').textContent = `¡Ganó ${state.players[state.winner].name}!`;
+    $('result-title').textContent = loc('¡Ganó {name}!', { name: state.players[state.winner].name });
     fillRoster($('result-roster'), rows([...state.players].sort((a, b) => b.score - a.score)));
   }
   world?.update(state);

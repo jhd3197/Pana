@@ -6,7 +6,10 @@ import { loadAvatar } from '/engine/avatar.js';
 import { cachedPortrait } from '/engine/portrait-cache.js';
 import { categories, category, artUrl } from './launcher-art.js';
 import { padControls } from '/engine/gamepad.js';
+import { loc, locn, language } from '/engine/i18n.js';
 
+// The tiles free their renderers on pagehide; Back to a cached hub reloads it.
+addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 const gamesEl = document.getElementById('games');
 const roomsEl = document.getElementById('rooms');
 const statusEl = document.getElementById('status');
@@ -21,8 +24,8 @@ if (savedFace) document.getElementById('pana-face').src = savedFace;
 const settings = createGameMenu({ title: 'Pana', pause: false, hotkey: false });
 const gear = settings.createButton({ id: 'open-settings', label: '', kbd: null, className: 'pk-btn icon-btn' });
 gear.prepend(icon('gear'));
-gear.setAttribute('aria-label', 'Ajustes');
-gear.title = 'Ajustes';
+gear.setAttribute('aria-label', loc('Ajustes'));
+gear.title = loc('Ajustes');
 document.getElementById('hub-actions').append(gear);
 // A controller works the whole hub like a menu: the stick or d-pad moves
 // between games and buttons, A presses, the menu button (☰) opens Ajustes
@@ -76,7 +79,7 @@ function loadCreator() {
     document.querySelector('.customizer').inert = false;
     document.getElementById('pana-random').disabled = false;
   })().catch(() => {
-    document.getElementById('pana-loading-copy').textContent = 'No pudimos preparar tu pana. Intenta otra vez.';
+    document.getElementById('pana-loading-copy').textContent = loc('No pudimos preparar tu pana. Intenta otra vez.');
     loading.querySelector('progress').hidden = true;
     const retry = document.getElementById('pana-loading-retry'); retry.hidden = false; retry.onclick = () => location.reload();
     stage.setAttribute('aria-busy', 'false');
@@ -172,7 +175,8 @@ function gameCard(game) {
   const art = el(url ? 'img' : 'canvas', 'game-art');
   if (url) { art.src = url; art.alt = ''; art.loading = 'lazy'; art.decoding = 'async'; }
   art.setAttribute('aria-hidden', 'true');
-  const name = el('h3', 'game-name', tileName(game));
+  // Game names stay as they are in every language.
+  const name = el('h3', 'game-name', tileName(game)); name.translate = false;
   name.setAttribute('aria-label', game.name);
   const body = el('div', 'game-body');
   body.append(name, el('span', 'game-meta', meta(game)));
@@ -201,11 +205,11 @@ function feature(game) {
   feat = game;
   try { localStorage.setItem('pana:featured', game.id); } catch { /* storage off */ }
   featureEl.style.setProperty('--tone', game.color || 'var(--pk-coral)');
-  document.getElementById('feature-tag').textContent = category(game);
+  document.getElementById('feature-tag').textContent = loc(category(game));
   document.getElementById('feature-name').textContent = shortName(game);
   document.getElementById('feature-copy').textContent = game.description;
   document.getElementById('feature-players').textContent = meta(game);
-  document.getElementById('feature-mode').textContent = isOnline(game) ? 'En línea · Práctica' : 'Individual';
+  document.getElementById('feature-mode').textContent = isOnline(game) ? loc('En línea · Práctica') : loc('Individual');
   featured.dataset.game = game.id;
   featured.dataset.online = String(isOnline(game));
   featured.href = gameUrl(game, newRoomCode());
@@ -250,7 +254,7 @@ function gameRow(label, list) {
   const arrows = [-1, 1].map(step => {
     const arrow = el('button', 'rail-arrow', step < 0 ? '←' : '→');
     arrow.type = 'button'; arrow.tabIndex = -1; arrow.dataset.padSkip = '';
-    arrow.setAttribute('aria-label', `${step < 0 ? 'Anteriores' : 'Más juegos'}: ${label}`);
+    arrow.setAttribute('aria-label', step < 0 ? loc('Anteriores: {row}', { row: label }) : loc('Más juegos: {row}', { row: label }));
     arrow.addEventListener('click', () => rail.scrollBy({ left: step * rail.clientWidth * .8, behavior: 'smooth' }));
     head.append(arrow);
     return arrow;
@@ -289,16 +293,16 @@ document.getElementById('create-room').addEventListener('click', () => {
   if (!feat || !isOnline(feat)) return;
   const dialog = document.getElementById('room-dialog');
   const room = newRoomCode();
-  document.getElementById('room-title').textContent = `Sala de ${shortName(feat)}`;
+  document.getElementById('room-title').textContent = loc('Sala de {game}', { game: shortName(feat) });
   document.getElementById('room-link').value = inviteUrl(room, feat.url);
-  document.getElementById('room-copy').textContent = 'Copiar link';
+  document.getElementById('room-copy').textContent = loc('Copiar link');
   document.getElementById('room-enter').onclick = () => launch(feat, gameUrl(feat, room), 'private');
   dialog.showModal();
 });
 
 document.getElementById('room-copy').addEventListener('click', async e => {
   const button = e.currentTarget;
-  try { await navigator.clipboard.writeText(document.getElementById('room-link').value); button.textContent = 'Link copiado'; }
+  try { await navigator.clipboard.writeText(document.getElementById('room-link').value); button.textContent = loc('Link copiado'); }
   catch { document.getElementById('room-link').select(); }
 });
 document.getElementById('join-code').addEventListener('click', () => document.getElementById('code-dialog').showModal());
@@ -311,26 +315,26 @@ for (const button of document.querySelectorAll('[data-close-dialog]')) button.ad
 
 async function loadGames() {
   try {
-    ({ games } = await fetch('/api/games').then((r) => r.json()));
+    ({ games } = await fetch(`/api/games?lang=${language}`).then((r) => r.json()));
     gamesEl.innerHTML = '';
     const order = ['carreritas', 'galope', 'curiara', 'domino', 'ludo', 'caida', 'poquer', 'billar', 'criollas', 'bululu', 'cocina', 'escondidas', 'pintura', 'embuste', 'reliquia'];
     // Unlisted (new) games go after the curated order, not before it.
     const rank = (g) => { const i = order.indexOf(g.id); return i < 0 ? order.length : i; };
     games.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
     const recent = recentGames().map(id => games.find(g => g.id === id)).filter(Boolean);
-    if (recent.length) gamesEl.append(gameRow('Seguir jugando', recent));
+    if (recent.length) gamesEl.append(gameRow(loc('Seguir jugando'), recent));
     for (const label of categories.filter(c => c !== 'Todos')) {
       const list = games.filter(g => category(g) === label);
-      if (list.length) gamesEl.append(gameRow(label, list));
+      if (list.length) gamesEl.append(gameRow(loc(label), list));
     }
     let saved = null;
     try { saved = localStorage.getItem('pana:featured'); } catch { /* storage off */ }
     const first = games.find((g) => g.id === saved) || games.find((g) => g.id === 'carreritas') || games[0];
     if (first) feature(first);
-    statusEl.textContent = `${games.length} juegos disponibles`;
+    statusEl.textContent = locn(games.length, '{n} juego disponible', '{n} juegos disponibles');
     loadRooms();
   } catch {
-    statusEl.textContent = 'no se pudo hablar con el servidor';
+    statusEl.textContent = loc('no se pudo hablar con el servidor');
   }
 }
 
@@ -343,7 +347,7 @@ async function loadRooms() {
     document.getElementById('rooms-count').textContent = rooms.length;
     roomsEl.innerHTML = '';
     if (rooms.length === 0) {
-      roomsEl.appendChild(el('div', 'empty', 'Nadie jugando todavía. Arranca un juego y comparte el link.'));
+      roomsEl.appendChild(el('div', 'empty', loc('Nadie jugando todavía. Arranca un juego y comparte el link.')));
       return;
     }
     for (const room of rooms) {
@@ -352,11 +356,13 @@ async function loadRooms() {
       const bar = el('i', 'room-tone');
       if (game?.color) bar.style.background = game.color;
       const info = el('div', 'room-info');
-      info.append(el('b', null, `${game ? shortName(game) : room.game} · ${room.players}/${room.max}`), el('span', 'names', room.names.join(', ')));
-      const join = el('a', null, 'Unirse →');
+      const title = el('b', null, `${game ? shortName(game) : room.game} · ${room.players}/${room.max}`), names = el('span', 'names', room.names.join(', '));
+      title.translate = names.translate = false;
+      info.append(title, names);
+      const join = el('a', null, loc('Unirse →'));
       join.href = playUrl(`/g/${room.game}/`, room.room, playerName());
       join.addEventListener('click', e => { e.preventDefault(); if (game) launch(game, join.href, 'join'); });
-      join.setAttribute('aria-label', `Unirse a la sala ${room.room} de ${game?.name || room.game}`);
+      join.setAttribute('aria-label', loc('Unirse a la sala {room} de {game}', { room: room.room, game: game?.name || room.game }));
       row.append(bar, info, join);
       roomsEl.appendChild(row);
     }

@@ -28,21 +28,29 @@ function defaultStorage() {
 export function createStats({ storage = defaultStorage(), now = () => Date.now(), send, maxEvents = MAX_EVENTS } = {}) {
   const sendEntry = send ?? ((entry) => globalThis.PanaSh?.stats?.(entry));
   const bridge = (entry) => { try { sendEntry(entry); } catch { /* the gateway never breaks a game */ } };
-  const data = (() => {
+  let data = { counters: {}, events: [], records: {} }, written = null;
+  // Re-read before every change: another tab, or a migration that ran after
+  // this module loaded, may have written since. Unreadable storage keeps memory.
+  const fresh = () => {
     try {
-      const raw = JSON.parse(storage?.getItem(KEY) || '{}');
-      return {
+      const text = storage?.getItem(KEY) ?? null;
+      if (text === written) return data;   // still ours: drift metres report every step
+      const raw = JSON.parse(text ?? 'null');
+      if (raw && typeof raw === 'object') data = {
         counters: raw.counters && typeof raw.counters === 'object' ? raw.counters : {},
         events: Array.isArray(raw.events) ? raw.events : [],
         records: raw.records && typeof raw.records === 'object' ? raw.records : {},
       };
-    } catch { return { counters: {}, events: [], records: {} }; }
-  })();
+    } catch { /* blocked or malformed: keep what is in memory */ }
+    return data;
+  };
+  fresh();
   const save = () => {
-    try { storage?.setItem(KEY, JSON.stringify(data)); } catch { /* full or disabled: keep it in memory */ }
+    try { const text = JSON.stringify(data); storage?.setItem(KEY, text); written = text; } catch { /* full or disabled: keep it in memory */ }
   };
   return {
     statCount(id, n = 1) {
+      fresh();
       if (!id || !Number.isFinite(n)) return data.counters[id] || 0;
       const total = (data.counters[id] || 0) + n;
       data.counters[id] = total;
@@ -52,6 +60,7 @@ export function createStats({ storage = defaultStorage(), now = () => Date.now()
     },
     statEvent(id) {
       if (!id) return 0;
+      fresh();
       const t = now();
       data.events.push({ id, t });
       if (data.events.length > maxEvents) data.events.splice(0, data.events.length - maxEvents);
@@ -63,6 +72,7 @@ export function createStats({ storage = defaultStorage(), now = () => Date.now()
     // times, 'max' for distances) and reports only improvements. Returns the
     // standing best.
     statRecord(id, value, { better = 'max' } = {}) {
+      fresh();
       if (!id || !Number.isFinite(value)) return data.records[id]?.value;
       const current = data.records[id];
       const standing = Number.isFinite(current?.value) ? current.value : undefined;
@@ -75,7 +85,7 @@ export function createStats({ storage = defaultStorage(), now = () => Date.now()
       return value;
     },
     // A copy of what is stored: { counters, events, records }. Suites and tests read it.
-    snapshot() { return { counters: { ...data.counters }, events: [...data.events], records: { ...data.records } }; },
+    snapshot() { fresh(); return { counters: { ...data.counters }, events: [...data.events], records: { ...data.records } }; },
   };
 }
 

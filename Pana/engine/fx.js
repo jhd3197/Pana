@@ -140,6 +140,26 @@ export const sound = {
     return 0.4;
   },
 
+  // A burst of band-passed white noise (a swish, a splat, a crowd's roar), on
+  // one shared looping buffer and within the voice limit. attack fades it in.
+  noise(dur, { freq = 900, q = .7, vol = .2, attack = 0, delay = 0, priority = 1 } = {}) {
+    if (!this.ctx || this.muted || vol < .005) return;
+    const t = this.ctx.currentTime + delay, v = this.admit(priority, t, t + dur);
+    if (!v) return;
+    if (!this.noiseBuffer) {
+      this.noiseBuffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 2, this.ctx.sampleRate);
+      const d = this.noiseBuffer.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const src = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain();
+    src.buffer = this.noiseBuffer; src.loop = true;
+    f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+    if (attack) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + attack); } else g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    src.connect(f).connect(g).connect(this.out()); v.gs.push(g);
+    src.start(t); src.stop(t + dur + .02);
+  },
+
   bonk(power = 1, priority = 1) {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime;

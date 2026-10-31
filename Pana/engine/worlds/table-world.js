@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createArenaSlot } from '/engine/worlds/arenas.js';
 import { createSky } from '/engine/worlds/sky.js';
-import { bindRenderer, shadowSize } from '/engine/settings.js';
+import { bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
 
 // Shared outdoor stage for every table game (Billar, Póquer, Ludo, Dominó,
@@ -19,7 +19,7 @@ const STAGE = {
 
 export function createTableWorld(canvas, options = {}) {
   const o = { ...STAGE, ...options, sun: { ...STAGE.sun, ...options.sun } };
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true, powerPreference: 'high-performance' }));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure;
   const unbind = bindRenderer(renderer, 1.5, { fit: o.fit }), scene = new THREE.Scene();

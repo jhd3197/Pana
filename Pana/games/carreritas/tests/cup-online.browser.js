@@ -91,7 +91,7 @@ try {
   await until(guest, () => getNet().state.mode === 'pana');
   const stageTracks = await guest.evaluate(() =>
     [...document.querySelectorAll('#cup-stages .cup-stage')].map(b => b.dataset.track));
-  assert.deepEqual(stageTracks, ['estadio', 'plaza', 'llanos', 'bululu'], 'guest sees all 4 Copa Pana stages');
+  assert.deepEqual(stageTracks, ['estadio', 'llanos', 'delta', 'galipan'], 'guest sees all 4 Copa Pana stages');
   step('lobby: host selects Copa Pana, duplicate names disambiguated by entrant ID');
 
   // Hold guest's loaded packet briefly on stage 1 to prove no premature countdown.
@@ -117,7 +117,7 @@ try {
   });
   step('stage 1 loading gate: room waited for slow client before starting countdown');
 
-  const expectedTracks = ['estadio', 'plaza', 'llanos', 'bululu'];
+  const expectedTracks = ['estadio', 'llanos', 'delta', 'galipan'];
   let initialEntrants = null;
   let oldContext = null;
 

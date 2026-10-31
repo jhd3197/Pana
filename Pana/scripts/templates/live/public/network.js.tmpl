@@ -1,5 +1,6 @@
 import { LiveRoom } from '/engine/live-room.js';
 import { Rush, cleanInput } from './rules.js';
+import { loc } from '/engine/i18n.js';
 
 // Host simulation on the shared live room (engine/live-room.js): the host
 // steps the round with everyone's latest input and publishes each tick; a new
@@ -15,7 +16,7 @@ export class {{Class}}Room extends LiveRoom {
     this.game = Rush.restore(this.state, this.members);
     for (const m of this.members.values()) this.game.addPlayer(m.id, m.name, m.id === this.id ? this.avatar : m.avatar || {});
     this.publish();
-    if (previous != null) this.onNotice('Cambió el anfitrión. La ronda sigue.');
+    if (previous != null) this.onNotice(loc('Cambió el anfitrión. La ronda sigue.'));
   }
   memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar || {}); this.publish(); } }
   memberHello(id, m) { this.memberJoined(m); }
@@ -24,5 +25,5 @@ export class {{Class}}Room extends LiveRoom {
     if (data.action === 'options' && id === this.hostId && this.game.configure(data.options)) this.publish();
     if (data.action === 'start' && id === this.hostId && this.game.phase !== 'playing') { this.game.start(data.bots !== false); this.publish(); }
   }
-  practice() { this.state = { ...new Rush().snapshot(), options: { ...this.state.options } }; super.practice('Ronda local · tú y los bots'); }
+  practice() { this.state = { ...new Rush().snapshot(), options: { ...this.state.options } }; super.practice(loc('Ronda local · tú y los bots')); }
 }

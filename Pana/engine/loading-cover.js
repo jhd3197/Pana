@@ -1,3 +1,4 @@
+import { loc } from './i18n.js';
 // The loading screen every page shares: the page's art, its name and what is
 // loading now, over everything until the page underneath is ready in its
 // final layout. Then it fades out, so nothing is seen jumping into place.
@@ -8,7 +9,7 @@
 //   cover.say('Calentando los motores…');
 //   cover.done();                                   // fades out after the next frame is painted
 //   cover.fail('No pudimos…', () => location.reload());
-export function showCover({ title = 'Pana', image = '', portrait = '', text = 'Cargando…' } = {}) {
+export function showCover({ title = 'Pana', image = '', portrait = '', text = loc('Cargando…') } = {}) {
   const node = document.createElement('div');
   node.className = 'pk-cover';
   node.setAttribute('role', 'status');
@@ -17,7 +18,7 @@ export function showCover({ title = 'Pana', image = '', portrait = '', text = 'C
   if (image) node.style.setProperty('--cover-image', `url("${image}")`);
   const card = document.createElement('div'); card.className = 'pk-cover-card';
   if (portrait) { const img = new Image(); img.className = 'pk-cover-portrait'; img.alt = ''; img.src = portrait; card.append(img); }
-  const name = document.createElement('b'); name.className = 'pk-cover-title'; name.textContent = title;
+  const name = document.createElement('b'); name.className = 'pk-cover-title'; name.textContent = title; name.translate = false;
   const line = document.createElement('p'); line.className = 'pk-cover-text'; line.textContent = text;
   const bar = document.createElement('span'); bar.className = 'pk-cover-bar'; bar.append(document.createElement('i'));
   card.append(name, line, bar); node.append(card);
@@ -45,7 +46,7 @@ export function showCover({ title = 'Pana', image = '', portrait = '', text = 'C
       line.textContent = message; bar.remove(); node.setAttribute('aria-busy', 'false');
       if (!retry) return;
       const button = document.createElement('button');
-      button.type = 'button'; button.className = 'pk-btn pk-btn--primary'; button.textContent = 'Volver a intentar';
+      button.type = 'button'; button.className = 'pk-btn pk-btn--primary'; button.textContent = loc('Volver a intentar');
       button.addEventListener('click', retry);
       card.append(button);
     },

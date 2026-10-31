@@ -1,5 +1,6 @@
 import { TableRoom } from '/engine/table-room.js';
 import { ChapitaGame } from './rules.js';
+import { loc } from '/engine/i18n.js';
 
 // Host simulation on the shared table room (engine/table-room.js): empty seats
 // are bots, snapshots are event-driven and migrate with the host. The host's
@@ -7,7 +8,7 @@ import { ChapitaGame } from './rules.js';
 // when something changed.
 export class ChapitaRoom extends TableRoom {
   constructor(options) {
-    super({ ...options, game: 'chapita', protocol: 'chapita-v1', texts: { practice: 'Calle local · tú y siete bots' } }, {
+    super({ ...options, game: 'chapita', protocol: 'chapita-v1', texts: { practice: loc('Calle local · tú y siete bots') } }, {
       fresh: prev => ({ ...new ChapitaGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}) }),
       restore: (state, members) => ChapitaGame.restore(state, members),
       snapshot: (game) => game.snapshot(),

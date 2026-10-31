@@ -12,7 +12,7 @@
 // default, and the player can change it in Ajustes (settings.js `orientation`).
 
 import { getSettings, onSettings } from './settings.js';
-
+import { loc } from './i18n.js';
 const svg = body => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${body}</svg>`;
 const arrow = d => svg(`<path d="${d}" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>`);
 
@@ -72,7 +72,7 @@ if (document.readyState === 'loading') addEventListener('DOMContentLoaded', () =
 
 // ---------- orientation ----------
 
-export const ORIENTATIONS = { horizontal: 'Horizontal', vertical: 'Vertical' };
+export const ORIENTATIONS = { horizontal: loc('Horizontal'), vertical: loc('Vertical') };
 const PORTRAIT = matchMedia('(orientation: portrait)');
 let guarded = false;
 
@@ -134,10 +134,10 @@ export function guardOrientation(gameDefault = 'libre') {
     if (!overlay) return;
     overlay.hidden = !show;
     overlay.classList.toggle('to-landscape', wanted === 'horizontal');
-    overlay.querySelector('h2').textContent = 'Gira tu teléfono';
+    overlay.querySelector('h2').textContent = loc('Gira tu teléfono');
     overlay.querySelector('p').textContent = wanted === 'horizontal'
-      ? 'Este juego se ve mejor en horizontal. Puedes cambiarlo en Ajustes.'
-      : 'Elegiste jugar en vertical. Puedes cambiarlo en Ajustes.';
+      ? loc('Este juego se ve mejor en horizontal. Puedes cambiarlo en Ajustes.')
+      : loc('Elegiste jugar en vertical. Puedes cambiarlo en Ajustes.');
   }
 
   PORTRAIT.addEventListener('change', () => { dismissed = false; update(); });

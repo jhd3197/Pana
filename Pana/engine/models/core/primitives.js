@@ -42,7 +42,22 @@ function canvasMat(w, h, draw) {
   return new THREE.MeshStandardMaterial({ map: t, roughness: 0.6, transparent: true, ...DECAL });
 }
 
+// A tiling texture painted on a canvas: draw(ctx, w, h). srgb for colour maps
+// (false for data such as bump maps); owned collects it for the caller's dispose.
+function canvasTexture(w, h, draw, { srgb = true, owned = null } = {}) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  owned?.push(t);
+  return t;
+}
+
 // Deterministic rng so scenery looks the same on every load (engine/random.js).
 
 
-export { M, mesh, box, tube, canvasMat, rng };
+export { M, mesh, box, tube, canvasMat, canvasTexture, rng };

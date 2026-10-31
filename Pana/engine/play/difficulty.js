@@ -1,3 +1,4 @@
+import { loc } from '../i18n.js';
 // One difficulty knob for aiming games (Billar, Bolas Criollas). It sets how
 // much of the shot the guide predicts and how well the bots play. No Three.js
 // and no DOM at import time, so pure rules.js files can read it.
@@ -8,13 +9,13 @@
 //   guide.bounces cushion rebounds previewed when nothing is hit
 //   aimError      a bot's typical aiming error, in radians
 export const DIFFICULTIES = Object.freeze([
-  { id: 'facil', label: 'Fácil', note: 'Guía completa, con choques y rebotes. Los bots rivales juegan relajados.',
+  { id: 'facil', label: loc('Fácil'), note: loc('Guía completa, con choques y rebotes. Los bots rivales juegan relajados.'),
     guide: { reach: 1, ghost: true, after: 1, bounces: 2 }, aimError: .05 },
-  { id: 'normal', label: 'Normal', note: 'La guía marca el contacto y un poco del recorrido.',
+  { id: 'normal', label: loc('Normal'), note: loc('La guía marca el contacto y un poco del recorrido.'),
     guide: { reach: 1, ghost: true, after: .35, bounces: 1 }, aimError: .02 },
-  { id: 'dificil', label: 'Difícil', note: 'Una guía corta, sin recorrido. Los bots afinan.',
+  { id: 'dificil', label: loc('Difícil'), note: loc('Una guía corta, sin recorrido. Los bots afinan.'),
     guide: { reach: .4, ghost: false, after: 0, bounces: 0 }, aimError: .009 },
-  { id: 'experto', label: 'Experto', note: 'Solo la dirección del tiro. Los bots casi no fallan.',
+  { id: 'experto', label: loc('Experto'), note: loc('Solo la dirección del tiro. Los bots casi no fallan.'),
     guide: { reach: .14, ghost: false, after: 0, bounces: 0 }, aimError: .003 },
 ]);
 export const DEFAULT_DIFFICULTY = 'normal';
@@ -23,7 +24,7 @@ export const difficultyInfo = id => DIFFICULTIES.find(d => d.id === id) || DIFFI
 
 // Lobby control: a labelled segmented choice. The host picks; guests see it.
 // `notes` replaces the aiming notes for games where difficulty means something else.
-export function createDifficultyPicker(parent, onChange, { label = 'Dificultad', notes = null } = {}) {
+export function createDifficultyPicker(parent, onChange, { label = loc('Dificultad'), notes = null } = {}) {
   const field = document.createElement('div'); field.className = 'pk-field pk-difficulty';
   const title = document.createElement('span'); title.className = 'pk-eyebrow'; title.id = 'difficulty-label'; title.textContent = label;
   const group = document.createElement('div'); group.className = 'pk-seg'; group.id = 'difficulty-options';

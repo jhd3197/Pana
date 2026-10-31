@@ -8,6 +8,9 @@ import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { createDominoTable, createDominoChair, createDominoTile } from './table-model.js';
 import { chainLayout } from './tiles.js';
 import { deck, legalEnds } from './rules.js';
+import { loc } from '/engine/i18n.js';
+
+const seatNote = (label, bot) => bot ? loc('{label} · bot', { label }) : label;
 
 const Y = 1.46, UP = new THREE.Vector3(0, 1, 0);
 const BOT_LOOKS = [
@@ -18,7 +21,7 @@ const BOT_LOOKS = [
 ];
 const nextFrame = () => new Promise(requestAnimationFrame);
 export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLoading = () => {} } = {}) {
-  onLoading('Abriendo la plaza…');
+  onLoading(loc('Abriendo la plaza…'));
   const stage = createTableWorld(canvas, { fit: 'window', exposure: 1.12, background: '#e5cd9f', fog: [28, 65], sky: false, fov: 38, plazaScale: .72,
     hemi: ['#e4f1ff', '#a4815a', 2.2], sun: { color: '#ffe4b1', intensity: 3.5, position: [-8, 16, 9], box: 12, far: 50, bias: -.00015 } });
   const { renderer, scene, camera, plaza } = stage; stage.sun.shadow.radius = 3;
@@ -33,6 +36,40 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
   }
   const bubbles = createSeatBubbles(document.getElementById('world-labels'), 6);
   const tiles = new Map();
+  // Rivals' hands arrive face down with no ids (the server keeps them). Each
+  // hidden slot borrows a mesh nobody can see, and keeps it while it stays.
+  const lent = new Map();   // seat → tile ids shown in that hand
+  function holders(state, pack) {
+    const held = new Map(), known = new Set(state.chain.map(t => t.id));
+    for (const p of state.players) p.hand.forEach((t, i) => { if (t.id) { held.set(t.id, { p, i }); known.add(t.id); } });
+    const masked = state.players.filter(p => p.hand.length && !p.hand[0].id), spare = [];
+    const lender = id => [...lent].find(([, ids]) => ids.includes(id))?.[0];
+    // A rival played a tile lent to another hand: the two face-down meshes trade
+    // places first, so the tile leaves from the hand that played it.
+    const last = state.history.at(-1);
+    if (last?.kind === 'play' && known.has(last.tile.id)) {
+      const from = lender(last.tile.id), mine = lent.get(last.seat);
+      if (from != null && from !== last.seat && mine?.length) {
+        const swap = mine.pop(), a = tiles.get(last.tile.id), b = tiles.get(swap);
+        lent.get(from)[lent.get(from).indexOf(last.tile.id)] = swap;
+        if (a && b) for (const key of ['position', 'quaternion']) { const keep = a.model[key].clone(); a.model[key].copy(b.model[key]); b.model[key].copy(keep); }
+      }
+    }
+    for (const seat of [...lent.keys()]) if (!masked.some(p => p.seat === seat)) lent.delete(seat);
+    for (const p of masked) {
+      const ids = (lent.get(p.seat) || []).filter(id => !known.has(id));
+      while (ids.length > p.hand.length) spare.push(ids.pop());
+      lent.set(p.seat, ids);
+    }
+    const taken = new Set([...lent.values()].flat());
+    const free = [...spare, ...pack.map(t => t.id).filter(id => !known.has(id) && !taken.has(id) && !spare.includes(id))];
+    for (const p of masked) {
+      const ids = lent.get(p.seat);
+      while (ids.length < p.hand.length && free.length) ids.push(free.shift());
+      ids.forEach((id, i) => held.set(id, { p, i }));
+    }
+    return held;
+  }
   for (const tile of deck()) {
     const model = createDominoTile(tile); model.userData.tileId = tile.id; scene.add(model);
     tiles.set(tile.id, { model, target: new THREE.Vector3(), rotation: new THREE.Quaternion(), lift: 0, initialized: false });
@@ -91,7 +128,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
       renderer.render(scene, camera); await nextFrame();
     }
   }
-  onLoading('Sentando a tus panas…');
+  onLoading(loc('Sentando a tus panas…'));
   await syncCharacters(BOT_LOOKS.map((_, seat) => ({ seat, id: null })));
   function update(stateValue, seat, chosen = null) {
     if (disposed) return;
@@ -111,9 +148,9 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
     const perRow = 7, positions = chainLayout(state.chain.length, perRow);
     const bounds = positions.reduce((b, p) => ({ minX: Math.min(b.minX, p.x - 38), maxX: Math.max(b.maxX, p.x + 38), minZ: Math.min(b.minZ, p.y - 38), maxZ: Math.max(b.maxZ, p.y + 38) }), { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
     const factor = Math.min(.0076,4.6/Math.max(bounds.maxX-bounds.minX,bounds.maxZ-bounds.minZ)), midX = (bounds.minX + bounds.maxX) / 2, midZ = (bounds.minZ + bounds.maxZ) / 2;
-    const chainIds = new Set(state.chain.map(t => t.id));
+    const chainIds = new Set(state.chain.map(t => t.id)), held = holders(state, pack);
     for (const [id, entry] of tiles) {
-      const index = state.chain.findIndex(t => t.id === id), p = state.players.find(p => p.hand.some(t => t.id === id));
+      const index = state.chain.findIndex(t => t.id === id), hold = held.get(id), p = hold?.p;
       entry.playable = false;entry.model.visible=state.phase==='lobby'||index>=0||!!p;
       if (index >= 0) {
         const pos = positions[index]; entry.target.set((pos.x - midX) * factor, Y, (pos.y - midZ) * factor);
@@ -123,11 +160,12 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
         entry.model.scale.setScalar(1.02*factor/.0076); entry.model.userData.faceUp(true);
         if (!entry.onBoard && entry.initialized) entry.lift = 1;
       } else if (p) {
-        const i = p.hand.findIndex(t => t.id === id), angle = p.seat * Math.PI*2 / seatCount;
+        const i = hold.i, angle = p.seat * Math.PI*2 / seatCount;
         entry.target.set((i - (p.hand.length - 1) / 2) * (p.hand.length>7?.29:.36), Y + .17, seatCount===6?3.1:2.65).applyAxisAngle(UP, angle);
         entry.rotation.setFromAxisAngle(UP, angle); entry.rotation.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 1.22));
         entry.model.scale.setScalar(1); entry.model.userData.faceUp(p.seat === seat || ['round-over', 'finished'].includes(state.phase));
         entry.playable = state.phase === 'playing' && state.turn === seat && p.seat === seat && legalEnds(state, p.hand[i]).length > 0;
+        if (!p.hand[i].id) entry.model.userData.faceUp(false);
       } else {
         const values=id.split('-').map(Number),n=values[0]*13+values[1];
         entry.target.set((n % 7 - 3) * .43, Y, (Math.floor(n / 7) - 3) * .39);
@@ -140,8 +178,8 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
       const label = labels[p.seat]; label.hidden = p.seat === seat && state.phase === 'playing'; label.replaceChildren();
       label.classList.toggle('active', state.phase === 'playing' && state.turn === p.seat); label.classList.toggle('partner', groupOf(state,p.seat) === groupOf(state,ownSeat));
       const title = document.createElement('strong'), note = document.createElement('span');
-      title.textContent = p.seat === seat ? `${p.name} · tú` : p.name;
-      note.textContent = state.phase === 'playing' && state.turn === p.seat ? p.seat === seat ? '¡Te toca!' : 'Pensando…' : `${p.seat === seat ? 'Tus fichas' : groupOf(state,p.seat) === groupOf(state,ownSeat) ? (seatCount===6?'Tu equipo':'Tu pareja') : 'Rival'}${p.id === null ? ' · bot' : ''}`;
+      title.translate = false; title.textContent = p.seat === seat ? loc('{name} · tú', { name: p.name }) : p.name;
+      note.textContent = state.phase === 'playing' && state.turn === p.seat ? p.seat === seat ? loc('¡Te toca!') : loc('Pensando…') : seatNote(p.seat === seat ? loc('Tus fichas') : groupOf(state,p.seat) === groupOf(state,ownSeat) ? (seatCount===6?loc('Tu equipo'):loc('Tu pareja')) : loc('Rival'), p.id === null);
       label.append(title, note);
     }
     for (const tip of tips) {
@@ -149,7 +187,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
       if (!state.chain.length) continue;
       const piece = state.chain[tip.index ? state.chain.length - 1 : 0];
       tip.element.textContent = `${tip.index ? 'B' : 'A'} · ${tip.index ? piece.b : piece.a}`;
-      tip.element.setAttribute('aria-label', `Colocar en la punta ${tip.index ? 'B' : 'A'}`);
+      tip.element.setAttribute('aria-label', loc('Colocar en la punta {end}', { end: tip.index ? 'B' : 'A' }));
       const tile = state.players[ownSeat].hand.find(t => t.id === selected);
       tip.element.disabled = !selected || !legalEnds(state, tile).includes(tip.index ? 'right' : 'left');
       tip.position.copy(tiles.get(piece.id).target); tip.position.y += .18;

@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles } from '../public/rules.js';
+import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles, participants, playable, lineText } from '../public/rules.js';
 import { QUESTIONS, CATEGORIES, PACKS } from '../public/questions.js';
+import fs from 'node:fs';
+import { voiceKey, narrationLines, revealLines, CORRECT_INTRO } from '../public/voice-key.js';
 
 let seq = 0;
 const act = (game, id, action, values = {}) => game.accept(id, { action, seq: ++seq, q: game.index, ...values }, 1);
@@ -40,6 +42,26 @@ test('room options are host-only and validated', () => {
   assert.equal(act(game, 1, 'options', { options: { seconds: 15 } }), false, 'locked once playing');
 });
 
+test('a question without exactly four distinct answers never reaches the board', () => {
+  assert.equal(playable(['¿Uno?', 'a', 'b', 'c', 'd']), true);
+  for (const bad of [['¿Tres?', 'a', 'b', 'c'], ['¿Cinco?', 'a', 'b', 'c', 'd', 'e'], ['¿Repetida?', 'a', 'A ', 'c', 'd'],
+    ['¿Vacía?', 'a', '', 'c', 'd'], { text: '¿Ordena?', answers: ['a', 'b', 'c', 'd'] }]) assert.equal(playable(bad), false, JSON.stringify(bad));
+  const cat = PACKS.venezuela.cats[0], before = QUESTIONS[cat].length;
+  QUESTIONS[cat].push(['¿Tres?', 'a', 'b', 'c'], ['¿Cinco?', 'a', 'b', 'c', 'd', 'e']);
+  try {
+    let game = humans();
+    for (let round = 0; round < 12; round++) {
+      game.start();
+      for (game.index = 0; game.index < game.deck.length; game.index++) {
+        game.ask();
+        assert.equal(game.question.answers.length, 4);
+        assert.ok(game.question.answers.every(Boolean));
+      }
+      assert.ok(game.deck.every(([c, n]) => c !== cat || n < before));
+    }
+  } finally { QUESTIONS[cat].length = before; }
+});
+
 test('a game deals the planned number of distinct questions, rotating categories', () => {
   const game = humans(); game.start();
   assert.equal(game.deck.length, 13);
@@ -47,26 +69,94 @@ test('a game deals the planned number of distinct questions, rotating categories
   assert.equal(new Set(game.deck.slice(0, 6).map(d => d[0])).size, 6);
 });
 
-test('answers stay secret in snapshots until the reveal, and lock once', () => {
+test('rematches exhaust each pack before reusing questions, including after handoff', () => {
+  for (const pack of Object.keys(PACKS)) {
+    let game = humans(); game.options.pack = pack;
+    const size = PACKS[pack].cats.reduce((n, cat) => n + QUESTIONS[cat].length, 0);
+    const seen = new Set();
+    for (let round = 0; round < 24; round++) {
+      game.start();
+      assert.equal(new Set(game.deck.map(d => d.join(':'))).size, game.deck.length);
+      for (const entry of game.deck) {
+        const key = entry.join(':');
+        if (seen.size < size) assert.ok(!seen.has(key), `${pack}: repeated ${key} before exhausting the bank`);
+        seen.add(key);
+      }
+      game = QuizGame.restore(game.snapshot(), new Map(game.players.map(p => [p.id, {}])));
+    }
+    assert.equal(seen.size, size);
+  }
+});
+
+test('switching from Venezuela to De todo uses fresh questions first', () => {
+  const game = humans(); game.start();
+  const seen = new Set(game.deck.map(d => d.join(':')));
+  game.options.pack = 'todo'; game.start();
+  assert.ok(game.deck.every(d => !seen.has(d.join(':'))));
+});
+
+test('the default timer leaves thirty seconds to listen and answer', () => {
+  const game = humans(); game.start();
+  assert.equal(game.timeLeft, 30);
+  game.tick(20); assert.equal(game.phase, 'question'); assert.equal(game.timeLeft, 10);
+  game.tick(10); assert.equal(game.phase, 'pause');
+});
+
+test('every question and its choices have Spanish recordings within the default timer', () => {
+  const dir = new URL('../public/audio/', import.meta.url);
+  const manifest = JSON.parse(fs.readFileSync(new URL('manifest.json', dir)));
+  const texts = [...new Set([CORRECT_INTRO, ...Object.values(QUESTIONS).flat().flatMap(([text, ...answers]) => narrationLines({ text, answers }))])];
+  assert.equal(new Set(texts.map(voiceKey)).size, texts.length, 'no hash collisions');
+  for (const text of texts) {
+    const key = voiceKey(text), entry = manifest.lines[key];
+    assert.equal(entry?.text, text);
+    assert.ok(entry.seconds > 0 && entry.seconds < 15, `time to answer after ${text}`);
+  }
+  for (const [text, ...answers] of Object.values(QUESTIONS).flat()) {
+    const seconds = narrationLines({ text, answers }).reduce((sum, line) => sum + manifest.lines[voiceKey(line)].seconds, 0);
+    const resultSeconds = revealLines({ text, answers, correct: 0 }).reduce((sum, line) => sum + manifest.lines[voiceKey(line)].seconds, 0);
+    assert.ok(resultSeconds < TIMES.result - .5, `complete reveal audio: ${text}`);
+    assert.ok(seconds < 25, `time to answer after all choices: ${text} (${seconds}s)`);
+  }
+  const pack = JSON.parse(fs.readFileSync(new URL('pack.json', dir)));
+  assert.equal(pack.files, texts.length);
+  assert.match(pack.sha256, /^[a-f0-9]{64}$/);
+});
+
+test('answers stay secret in snapshots until the reveal, while allowing changes', () => {
   const game = humans(); game.start();
   assert.ok(act(game, 1, 'answer', { choice: 2 }));
-  assert.equal(act(game, 1, 'answer', { choice: 1 }), false, 'already locked');
+  assert.ok(act(game, 1, 'answer', { choice: 1 }));
   const snap = game.snapshot();
   assert.equal(snap.players[0].locked, true);
   assert.equal(snap.players[0].answer, null);
-  assert.equal(game.players[0].answer, 2);
+  assert.equal(game.players[0].answer, 1);
   assert.equal(act(game, 2, 'answer', { choice: 1, q: 99 }), false, 'answer for another question');
 });
 
-test('the question pauses when everyone locks, then reveals by name and settles', () => {
+test('the answer key never leaves the host before the reveal, and a new host recovers it', () => {
+  const game = humans(); game.start();
+  const key = game.question.correct, snap = game.snapshot();
+  assert.equal(snap.question.correct, null);
+  assert.equal(game.question.correct, key, 'the host keeps its own copy');
+  const next = QuizGame.restore(snap, new Map(game.players.map(p => [p.id, {}])));
+  assert.equal(next.question.correct, key);
+  toReveal(game);
+  assert.equal(game.snapshot().question.correct, key, 'published with the reveal');
+});
+
+test('the last answer reveals and settles immediately, blocking further changes', () => {
   const game = humans(); game.start();
   for (let i = 1; i <= SEATS; i++) act(game, i, 'answer', { choice: i === 3 ? right(game) : wrong(game) });
-  assert.equal(game.phase, 'pause');
-  assert.equal(game.hostLine, '¿Esa es su respuesta final?');
-  run(game, g => g.phase === 'reveal');
-  assert.equal(game.reveal.shown, 1);
+  assert.equal(game.phase, 'reveal');
+  assert.equal(game.timeLeft, 30, 'no waiting for the remaining clock');
+  assert.equal(game.reveal.shown, SEATS, 'all podium answers appear immediately');
+  assert.equal(game.reveal.done, true);
+  assert.equal(act(game, SEATS, 'answer', { choice: right(game) }), false);
+  assert.equal(act(game, SEATS, 'cancel'), false);
+  assert.ok(lineText(game.hostLine).includes(game.question.answers[right(game)]));
   toReveal(game);
-  assert.match(game.hostLine, /Solo P3 se la sabía/);
+  assert.match(lineText(game.hostLine), /Solo P3 se la sabía/);
   assert.equal(game.players[2].step, 1);
   assert.equal(game.players[0].step, 0);
 });
@@ -79,8 +169,8 @@ test('a wrong answer drops to the last safe step; doble o nada drops one safe st
   for (let i = 1; i <= SEATS; i++) act(game, i, 'answer', { choice: wrong(game) });
   toReveal(game);
   assert.deepEqual(game.players.slice(0, 3).map(p => p.step), [4, 8, 0]);
-  assert.ok(game.callouts.some(c => /chivo y sin el mecate/.test(c.text) && c.seat === 0));
-  assert.match(game.hostLine, /fuera de base/);
+  assert.ok(game.callouts.some(c => /chivo y sin el mecate/.test(lineText(c)) && c.seat === 0));
+  assert.match(lineText(game.hostLine), /fuera de base/);
 });
 
 test('a right answer climbs, doble climbs two, and speed earns bonus mangos', () => {
@@ -92,7 +182,7 @@ test('a right answer climbs, doble climbs two, and speed earns bonus mangos', ()
   assert.equal(game.players[0].step, 2);
   assert.equal(game.players[1].step, 1);
   assert.ok(game.players[0].bonus > game.players[1].bonus);
-  assert.match(game.hostLine, /Palo/);
+  assert.match(lineText(game.hostLine), /Palo/);
 });
 
 test('copiarse follows the pana, chains through copies, and the host calls it out', () => {
@@ -107,7 +197,7 @@ test('copiarse follows the pana, chains through copies, and the host calls it ou
   for (let i = 5; i <= SEATS; i++) act(game, i, 'answer', { choice: right(game) });
   toReveal(game);
   assert.equal(game.players[1].stats.betrayed, 1);
-  assert.ok(game.callouts.some(c => c.text.startsWith('P1 se copió de P2… ¡y P2 puso la')));
+  assert.ok(game.callouts.some(c => lineText(c).startsWith('P1 se copió de P2… ¡y P2 puso la')));
   assert.equal(act(game, 1, 'copy', { target: 1 }), false, 'one use per game');
 });
 
@@ -185,10 +275,134 @@ test('a new host restores an open question and lets panas lock again', () => {
   assert.equal(copy.phase, 'pause');
 });
 
-test('the reveal waits a beat per name', () => {
+test('unanswered questions reach the deadline and reveal a beat per name', () => {
   const game = humans(); game.start();
-  for (let i = 1; i <= SEATS; i++) act(game, i, 'answer', { choice: 0 });
+  for (let i = 1; i < SEATS; i++) act(game, i, 'answer', { choice: 0 });
   run(game, g => g.phase === 'reveal');
   let ticks = 0; run(game, g => (ticks++, g.reveal.done));
   assert.ok(ticks * .05 >= TIMES.revealStep * (SEATS - 1));
+});
+
+test('changing and cancelling use the latest timestamp and stop at the deadline', () => {
+  const game = humans(); game.start(); const p = game.players[0];
+  act(game, 1, 'answer', { choice: wrong(game) });
+  game.tick(10);
+  assert.ok(act(game, 1, 'answer', { choice: right(game) }));
+  assert.equal(p.lockedLeft, 20);
+  game.tick(5);
+  assert.equal(act(game, 1, 'answer', { choice: right(game) }), false);
+  assert.equal(p.lockedLeft, 20, 'repeated clicks do not change the bonus');
+  assert.ok(act(game, 1, 'cancel'));
+  assert.equal(p.locked, false); assert.equal(p.answer, null); assert.equal(p.lockedLeft, 0);
+  assert.equal(act(game, 1, 'cancel'), false);
+  assert.ok(act(game, 1, 'answer', { choice: right(game) }));
+  assert.equal(p.lockedLeft, 15);
+  game.tick(15);
+  assert.equal(act(game, 1, 'cancel'), false);
+  assert.equal(act(game, 1, 'answer', { choice: wrong(game) }), false);
+  toReveal(game); assert.equal(p.outcome.bonus, 50);
+});
+
+test('cancelling a copy spends the comodin but permits an independent answer', () => {
+  const game = humans(); game.start(); const p = game.players[0];
+  act(game, 1, 'copy', { target: 1 });
+  assert.ok(act(game, 1, 'cancel'));
+  assert.equal(p.copy, null); assert.equal(p.used.copy, true);
+  assert.equal(act(game, 1, 'copy', { target: 2 }), false);
+  assert.ok(act(game, 1, 'answer', { choice: right(game) }));
+  assert.equal(resolveAnswer(game.players, 0), right(game));
+});
+
+test('narration follows displayed order without exposing the right answer', () => {
+  assert.deepEqual(narrationLines({ text: 'Ave', answers: ['Guacamayo', 'Cardenal', 'Colibrí', 'Turpial'], correct: 3 }),
+    ['Ave', 'Opción A.', 'Guacamayo', 'Opción B.', 'Cardenal', 'Opción C.', 'Colibrí', 'Opción D.', 'Turpial']);
+});
+
+test('replacing a copy follows the new choice and half still excludes hidden choices', () => {
+  const game = humans(); game.start(); const p = game.players[0];
+  act(game, 1, 'half'); act(game, 1, 'copy', { target: 1 });
+  assert.equal(act(game, 1, 'answer', { choice: p.half[0] }), false);
+  assert.ok(act(game, 1, 'answer', { choice: right(game) }));
+  assert.equal(p.copy, null); assert.equal(p.used.copy, true);
+  act(game, 1, 'cancel');
+  assert.equal(act(game, 1, 'half'), false);
+  assert.equal(act(game, 1, 'answer', { choice: p.half[0] }), false);
+});
+
+test('a final copy also ends voting, including bot submissions', () => {
+  const game = humans(); game.start();
+  for (let i = 1; i < SEATS; i++) act(game, i, 'answer', { choice: right(game) });
+  assert.equal(game.phase, 'question');
+  assert.ok(act(game, SEATS, 'copy', { target: 0 }));
+  assert.equal(game.phase, 'reveal'); assert.equal(game.reveal.done, true);
+  assert.equal(game.players[SEATS - 1].outcome.right, true);
+  const bots = new QuizGame(23); bots.start();
+  run(bots, g => g.phase === 'reveal');
+  assert.ok(bots.timeLeft > 0); assert.equal(bots.reveal.done, true);
+});
+
+test('the reveal announces the correct displayed letter and text', () => {
+  assert.deepEqual(revealLines({ answers: ['Guacamayo', 'Cardenal', 'Colibrí', 'Turpial'], correct: 3 }),
+    [CORRECT_INTRO, 'Opción D.', 'Turpial']);
+});
+
+test('Solo panas only counts connected humans for answers, scores and titles', () => {
+  const game = humans(2);
+  assert.equal(act(game, 2, 'options', { options: { mode: 'panas' } }), false);
+  assert.ok(act(game, 1, 'options', { options: { mode: 'panas' } }));
+  game.start();
+  assert.equal(participants(game).length, 2);
+  assert.equal(act(game, 1, 'copy', { target: 2 }), false, 'empty podium is not a copy target');
+  act(game, 1, 'answer', { choice: wrong(game) });
+  assert.ok(act(game, 1, 'cancel'));
+  act(game, 1, 'answer', { choice: right(game) });
+  assert.equal(game.phase, 'question');
+  game.tick(5);
+  assert.ok(game.players.slice(2).every(p => !p.locked), 'no hidden bot votes');
+  act(game, 2, 'answer', { choice: right(game) });
+  assert.equal(game.phase, 'reveal'); assert.equal(game.reveal.done, true);
+  assert.deepEqual(game.reveal.order, [0, 1]);
+  assert.ok(game.players.slice(2).every(p => p.outcome === null && p.stats.wrong === 0 && p.step === 0));
+  assert.deepEqual(ranking(game).map(p => p.seat).sort(), [0, 1]);
+  assert.deepEqual(Object.keys(titles(game)), ['0', '1']);
+});
+
+test('Solo panas runs a complete solo game and final without waiting for empty seats', () => {
+  const game = humans(1); game.options.mode = 'panas'; game.options.questions = 8; game.start();
+  for (let i = 0; i < 20000 && game.phase !== 'finished'; i++) {
+    if (game.phase === 'question') act(game, 1, 'answer', { choice: right(game) });
+    if (game.phase === 'bet') act(game, 1, 'bet', { choice: 2 });
+    game.tick(.05);
+  }
+  assert.equal(game.phase, 'finished'); assert.equal(game.winner, 0);
+  assert.equal(game.players[0].stats.right, 9);
+  assert.equal(ranking(game).length, 1);
+});
+
+test('Solo panas preserves seat indices across departures, joins and host handoff', () => {
+  const game = humans(3); game.options.mode = 'panas'; game.start();
+  game.players[0].step = 8;
+  game.removePlayer(1);
+  assert.deepEqual(participants(game).map(p => p.seat), [1, 2]);
+  act(game, 2, 'answer', { choice: right(game) });
+  act(game, 3, 'copy', { target: 1 });
+  assert.deepEqual(game.reveal.order, [1, 2], 'copy ordering uses stable seat indices');
+  game.addPlayer(4, 'New pana');
+  assert.equal(game.players[0].step, 0, 'a newcomer does not inherit a departed score');
+  const restored = QuizGame.restore(game.snapshot(), new Map([[2, {}], [4, {}]]));
+  assert.deepEqual(participants(restored).map(p => p.id), [4, 2]);
+  restored.ask(); act(restored, 2, 'answer', { choice: right(restored) });
+  restored.removePlayer(4);
+  assert.equal(restored.phase, 'reveal', 'departure releases the unanswered seat');
+  assert.deepEqual(restored.reveal.order, [1]);
+});
+
+test('copying a departing pana never substitutes a bot or scores the empty seat', () => {
+  const game = humans(3); game.options.mode = 'panas'; game.start();
+  act(game, 1, 'copy', { target: 1 }); game.removePlayer(2);
+  act(game, 3, 'answer', { choice: right(game) });
+  assert.equal(game.reveal.done, true);
+  assert.ok(game.callouts.some(c => lineText(c).includes('P1 se copió de P2')));
+  assert.equal(game.players[1].stats.betrayed, 0);
+  assert.equal(game.players[1].outcome, null);
 });

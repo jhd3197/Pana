@@ -18,7 +18,7 @@
 import { newRoomCode, roomFromUrl } from './invite.js';
 import { prepareScene } from './game-load.js';
 import { elapsedClock } from './live-room.js';
-
+import { loc } from './i18n.js';
 // The invite code from ?room=, or a new one written back into the URL so a
 // reload or a copied link lands in the same room.
 export function roomCode() {
@@ -52,7 +52,7 @@ export function bootGame({ load, ready = () => {}, tick, tickMs = 100, frame, di
     const loading = document.getElementById(loadingId);
     if (loading && !loading.querySelector('[data-retry]')) {
       const button = document.createElement('button');
-      button.className = 'pk-btn'; button.dataset.retry = ''; button.textContent = 'Volver a intentar';
+      button.className = 'pk-btn'; button.dataset.retry = ''; button.textContent = loc('Volver a intentar');
       button.onclick = () => location.reload();
       loading.append(button);
     }

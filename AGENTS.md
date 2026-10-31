@@ -8,6 +8,12 @@ touch.
 The app lives in `Pana/` (server, web, games, engine, scripts, tests). Docs are in
 `docs/`. Paths below are relative to `Pana/` unless they start with `docs/`.
 
+> **Before you build a mechanic** (movement, jump, footsteps, a sound, a countdown,
+> a spawn, a HUD piece, a lobby step), open `docs/SHARED-ENGINE.md`: if a row
+> already does it, use it. If you build something a second game could use, put it
+> in `engine/` (`engine/play/` for mechanics) and add its row to that map in the
+> same change.
+
 ## Every game is 3D
 
 - The playable view is a Three.js scene with a **perspective camera** and the
@@ -62,16 +68,22 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Loading, loops, teardown, room code in the URL | `engine/game-shell.js` (`bootGame`, `roomCode`) | |
 | Table stage, camera framing | `engine/worlds/table-world.js` (`createTableWorld`) | |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | `docs/knowledge/pana-ui.md` |
+| Main renderer, picture settings, frame stats | `engine/settings.js` (`rendererOptions`, `bindRenderer`, `shadowSize`), `engine/perf.js`, `npm run perf -- <game>` | pana-kit.md, "Picture settings" |
 | Room codes and invite links | `engine/invite.js` (`inviteUrl`, `roomFromUrl`, `newRoomCode`) | |
+| Player text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`), `npm run i18n` | `docs/knowledge/pana-i18n.md` |
 | Turn-based online room | `engine/table-room.js` (`TableRoom`) | `docs/knowledge/pana-net.md` |
 | Real-time online room | `engine/live-room.js` (`LiveRoom`, `elapsedClock`, `axis`; `predict` for your own character) | `docs/knowledge/pana-net.md` |
 | Anything else online | `engine/net.js` (`HostRoom`, `joinRoom`), `server/src/room-kit.js` | `docs/knowledge/pana-net.md` |
 | Seeded randomness, noise, clamp/lerp/pick | `engine/random.js` (`rng`, `draw`, `fbm2`, `clamp`, `lerp`, `pick`) | no Three.js: safe in `rules.js`; import it by relative path from code a server room loads |
 | End-of-round screen | `.pk-results` + `engine/results.js` (`fillRoster`) | pana-kit.md, "Results screen" |
 | Status toast | `engine/hud.js` (`createToast`) | reads how the element hides from its markup |
+| Mangos (the shared currency) | `engine/mangos.js` (`createMangoWallet`, `credit` with a receipt) | pay into it, never a game's own wallet; Carreritas' taller spends it |
 | Icons | `engine/icons.js` (SVG); never emoji or symbol glyphs | pana-kit.md, "Icons and colours" |
 | Touch controls, orientation | `engine/touch.js` | pana-kit.md, "Touch controls" |
 | The player's pana | `engine/avatar.js`, `engine/models/characters/pana/avatar-model.js` | `docs/knowledge/character-reference.md` |
+| Walk, sprint, jump, footsteps on foot | `engine/play/walker.js`, `jump.js`, `footsteps.js` | `docs/knowledge/shared-player.md`; Reliquia and Pepazo use it |
+| Sound effects, vehicle engines | `engine/sfx.js`, `engine/vehicle-audio.js` | `docs/knowledge/shared-sfx.md`; no audio files |
+| Who uses which piece, and what is still local | `docs/SHARED-ENGINE.md` | read it first; keep it current |
 | Browser suites | `tests/browser-kit.js` (`launch`, `openGame`, `waitPrepared`, `waitFor`) | |
 
 Never write sockets, retries, member lists or host election in a game, a per-game
@@ -86,14 +98,19 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
   game-specific.
 
 - Default port **8461** (env `PANA_PORT`). URLs: hub `/`, games `/g/<game>/`.
-- Game folders are lowercase Spanish words. Player-facing text is Spanish
-  (Venezuelan flavour welcome); code, comments and commits are English.
+- Game folders are lowercase Spanish words. Player-facing text is written in
+  Spanish (Venezuelan flavour welcome) through `loc()` and gets its English in
+  `locales/en.json` in the same change (`docs/knowledge/pana-i18n.md`); code,
+  comments and commits are English.
 - Every game uses the player's own pana, not a faceless placeholder.
 - A game's colours are named custom properties on its `body { --pk-game … }` rule;
   kit colours are `var(--pk-*)`. `--pk-game` matches `color` in `game.json`.
 - `players: 1` in `game.json` means no rooms: no `network.js`, no `?room=` links.
 - Keep dependencies minimal: the Colyseus packages on the server only.
 - Served images stay under 600 KB (JPEG or WebP for illustrations).
+- Runtime images/textures at least 100 KiB ship in per-game release packs
+  (`docs/knowledge/asset-packs.md`). Keep small icons and thumbnails in Git;
+  publish and verify a pack before committing its catalog. Never commit its ZIP.
 - `npm test` checks most of these (`tests/conventions.test.js`). When it fails, fix
   the code, not the test, unless the rule itself is changing.
 - When you add something every game must do (a call, a file, a markup hook), add
@@ -114,6 +131,7 @@ npm run test:browser -- all-games  # every game prepares a 3D scene without erro
 npm run shots -- carreritas --track chuao --at gate-60  # screenshots from the real loop, seconds
 npm run shots -- carreritas --track sabana --menu      # menu art: <id>.webp + thumb + sources.json
 npm run budget -- carreritas       # first-load modules and game.js lines vs their caps
+npm run i18n -- check              # every phrase has its English (sync, todo, fill, literals)
 npm run test:browser -- --changed  # only the suites for what changed since dev
 npm run test:browser -- carreritas --baseline  # failures rerun on the merge-base: regression or pre-existing
 npm run new-track -- morrocoy --name "Morrocoy"     # new Carreritas circuit, registered everywhere (--dry-run first)
@@ -191,6 +209,9 @@ heights compared with a tolerance, low quality forced (`tests/browser-kit.js`).
   Only an explicit user request to track a specific plan overrides this rule.
   Scratch scripts and logs go to the system temp folder, not `docs/plans/`.
 - Update this file only when a rule here changes.
+- Public documentation covers the open-source app, its integration interfaces
+  and generic self-hosting. Keep private hosting infrastructure, deployment
+  procedures and private-repository paths out of this repository.
 
 ## Commits
 

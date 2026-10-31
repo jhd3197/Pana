@@ -57,7 +57,8 @@ export function suitesFor(repo, files, suites) {
     if (isSuite(file)) { if (suites.includes(file)) must.add(file); continue; }
     const game = file.match(/^Pana\/games\/([^/]+)\//)?.[1];
     if (game) {
-      if (/\/tests\//.test(file)) continue;   // a test helper or fixture: its suites are listed when they change
+      // A test helper or fixture: the suites that import it.
+      if (/\/tests\//.test(file)) { for (const s of mentions(file.split('/').pop())) out.add(s); continue; }
       for (const s of suites) if (s.startsWith(`Pana/games/${game}/`)) out.add(s);
       must.add(`Pana/games/${game}/tests/browser.mjs`);
       for (const s of mentions(`/g/${game}/`)) if (!SMOKE.includes(s)) out.add(s);
@@ -73,7 +74,7 @@ export function suitesFor(repo, files, suites) {
       if (users.length <= FEW_GAMES) for (const g of users) for (const s of suites) if (s.startsWith(`Pana/games/${g}/`)) out.add(s);
       continue;
     }
-    const web = file.match(/^Pana\/web\/(studio|character)\//)?.[1];
+    const web = file === 'Pana/web/personaje.html' ? 'character' : file.match(/^Pana\/web\/(studio|character)(?:\/|\.html$)/)?.[1];
     if (web) { for (const s of suites) if (s.startsWith(`Pana/web/${web}/tests/`)) out.add(s); SMOKE.forEach(s => must.add(s)); continue; }
     if (/^Pana\/web\//.test(file)) { for (const s of suites) if (s.startsWith('Pana/web/tests/')) must.add(s); SMOKE.forEach(s => must.add(s)); continue; }
     if (/^Pana\/(server|scripts|tests)\//.test(file) || /^Pana\/engine\//.test(file) || file === 'package-lock.json' || file === 'package.json') {

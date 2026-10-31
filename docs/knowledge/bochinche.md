@@ -41,6 +41,9 @@ remote input responsiveness depends on round-trip latency.
 stocks, results, timer ties, deterministic restore and frame slicing.
 `npm run test:browser -- bochinche` uses actual six-client keyboard input,
 style changes, hits, KO/results, rematch, host departure and mobile touch.
+`panas.test.js` checks every costume, poder damage and status, real-input
+lunges, shots and Medusa's facing rule, and the stats checkpoint; the
+browser suite picks El Minotauro through Elige tu pana on a guest.
 
 ## Notes for agents
 
@@ -140,7 +143,8 @@ shared with the visual prototype. Strikes deal 18 damage near the dock and
 respect invulnerability. Stage state is included in the existing checkpoint;
 recreating authored scenery per round clears old warning and scorch state.
 
-Prueba de golpes supplies the four match themes: neutral special Rayo (14),
+Prueba de golpes supplies the shared moves: neutral special Rayo (14) on the
+base fighters (the pana panas replace it, see below),
 side special Candela (12), down special Hielo (10 with escapable freeze), and
 forward smash Jonrón (30 balanced, 26 fast, 34 heavy before charge scaling).
 Up-special keeps each style's recovery. Prototype cinematic freezes become
@@ -161,11 +165,53 @@ The prototype's eight-player caption does not change the six-player room cap.
 Water shader sampling converts the scaled world coordinates back to artifact
 metres, keeping the depth texture aligned to the island geometry.
 
-The Banderín HUD uses the shared portrait cache for each saved avatar, live
-stock pips with accessible counts, and a winner portrait at results. Its color
-tabs follow the world fighter colors. The room keeps shared side settings and
-the current three styles; the HUD reference's mock specials/rewards are not
-new gameplay rules.
+## Thirteen panas and their poderes
+
+`panas.js` is pure data shared by rules, room and scene: each pana has a
+wardrobe `look`, the colour keys its three `trajes` repaint (`paint`), props
+and a `move` with the poder's fields. Its display name is `poder`; keep the
+two keys apart, an object literal silently keeps only the last duplicate.
+`applyArtifactAttacks` registers one composite fighter per style and pana
+(`yeti:medusa`): the style's body, weight and other moves, with the poder as
+neutral special. Netcode, checkpoints and CPUs need no change because a
+fighter id is just a roster key. Base ids still carry Rayo for the lightning
+lab and old checkpoints. Humans start on a pana by join order; bots draw one
+from the seed and round.
+
+Poderes use only existing engine fields. Projectiles resolve with their full
+attack, so the raspado carries `freeze`. `requiresFacingTarget` makes Medusa's
+gaze miss a pana looking away. Arepazo's `bury` only applies on the ground;
+its 290° angle spikes airborne panas instead. Tambor's four `multiHit` beats
+add up to its listed damage; a direct `resolveAttackHit` applies the full
+damage in one call. Silbido and Embestida lunge through `movement`.
+
+A costume is the pana's wardrobe over the player's own fur and face, so every
+fighter is still the player's pana. El Minotauro's gold chain has no colour
+slot, so his trajes only change his HUD colour. `pana-props.js` caches
+geometry and materials for all fighters: remove props before
+`character.dispose()`, which frees every material it traverses.
+
+The room tallies KOs, falls, damage dealt and the biggest hit from combat
+events (`ko.target` is the last attacker) and keeps them in the checkpoint;
+results build the podium, table and awards from them. Each client pays its
+own player into the shared mango wallet (`fight-mangos.js`: 15/10/6/4/2/1
+by place, 3 per KO, 5 per award). The receipt is room code, room seed and
+round, so a reload or a second results render never pays twice.
+
+## Fight HUD and screens
+
+`fight-hud.js` follows the supplied Bochinche HUD: skewed plates with costume
+portraits, damage tiers at 50/100/150, stock dots, slam banners, hit pops at
+`scene.screenOf(slot)`, item calls and off-screen bubbles. Clásico, Esquinas
+and Mínimo are a per-viewer menu option. A skewed plate's bounding box is
+wider than its footprint by tan(10°) × height, so the six-plate sizing only
+applies to fine pointers; phones keep 58 px plates and a 12 px gap.
+
+Elige tu pana opens from the sala's Tu pana card. Its button says "Elegir
+pana" because the shared sala already has "Cambiar pana" (the avatar
+editor). Enter on a focused tile locks that tile; number and letter keys
+pick without locking. The last pick is saved per viewer and sent once on
+joining a sala.
 
 ## Shared scenery on authored stages
 

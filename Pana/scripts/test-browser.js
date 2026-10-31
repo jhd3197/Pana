@@ -283,9 +283,11 @@ Baseline: rerunning ${failed.length} failure(s) on ${sha.slice(0, 7)} (merge-bas
     try {
       fs.symlinkSync(path.join(repo, 'node_modules'), modules, 'junction');   // a junction: never copied, never recursed
       for (const r of failed) {
-        const out = spawnSync(process.execPath, [path.join(tree, 'Pana', 'scripts', 'test-browser.js'), r.label, '--fresh', '--retries', '0', '--jobs', '1'],
+        // A variant's label is "<file> <variant>"; filters match files, so the base runs the file's variants.
+        const file = r.label.split(' ')[0];
+        const out = spawnSync(process.execPath, [path.join(tree, 'Pana', 'scripts', 'test-browser.js'), file, '--fresh', '--retries', '0', '--jobs', '1'],
           { cwd: tree, encoding: 'utf8', env: { ...process.env, PANA_TEST_URL: '', PANA_PASS_CACHE: path.join(dir, 'passes.json') } });
-        const verdict = !fs.existsSync(path.join(tree, r.label)) ? 'new suite' : out.status ? 'pre-existing' : 'REGRESSION';
+        const verdict = !fs.existsSync(path.join(tree, file)) ? 'new suite' : out.status ? 'pre-existing' : 'REGRESSION';
         verdicts.set(r.label, verdict);
         console.log(`  ${verdict.padEnd(12)}  ${r.label}`);
         // Preserve the actual baseline failure, not just its exit status: two

@@ -4,7 +4,7 @@
 // on the crest) and every pana under its wing.
 import * as THREE from 'three';
 import { createSky } from '/engine/worlds/sky.js';
-import { shadowSize } from '/engine/settings.js';
+import { shadowSize, pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { createParapente, PARAPENTE } from '/engine/models/vehicles/parapente.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { orbitBird } from '/engine/models/animation/orbit-bird.js';
@@ -70,7 +70,7 @@ function courseMarkers(course) {
   deck.add(box(width, .3, 14, wood, 0, -.7, -4));
   for (const x of [-width / 2 + .5, 0, width / 2 - .5]) for (const z of [-10, 2.5]) deck.add(box(.4, 30, .4, dark, x, -15.7, z));
   for (const x of [-width / 2 - .4, width / 2 + .4]) deck.add(box(.3, 9, .3, dark, x, 3.6, 2.6));
-  const banner = label('DESPEGUE · GALIPÁN', { bg: 'rgba(47,163,224,.92)', scale: 4.4 }); banner.position.set(0, 8, 2.6); deck.add(banner);
+  const banner = label('DESPEGUE · GALIPÁN', { bg: 'rgba(47,163,224,.92)', scale: 4.4 }); banner.position.set(0, 8, 2.6); deck.add(banner); // i18n-ignore: world signage
   deck.position.set(S.x, S.y, S.z); group.add(deck);
   // M() materials and the zamuros' are shared with every other model: never disposed here.
   const shared = new Set();
@@ -109,7 +109,8 @@ function courseMarkers(course) {
 }
 
 export function createParapenteScene(canvas, { course: courseOf }) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true }));
+  renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5, { fit: 'canvas' });
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene(); scene.fog = new THREE.Fog(PALETTE.horizon, ...PALETTE.fog);
@@ -199,7 +200,7 @@ export function createParapenteScene(canvas, { course: courseOf }) {
   }
 
   function dispose() {
-    removeEventListener('resize', resize);
+    removeEventListener('resize', resize); unbind();
     for (const entry of pilots.values()) entry.model.dispose();
     markers?.dispose(); world.group.userData.dispose?.(); sky.dispose(); renderer.dispose();
   }

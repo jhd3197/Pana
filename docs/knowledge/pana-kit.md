@@ -46,6 +46,61 @@ the same tokens.
 | `pk-loading` | Full-screen loading card |
 | `pk-touch` (`--go --coral --sm --lg`, `data-icon="left/right/up/down/jump"`), `pk-dpad`, `pk-touch-zone` | On-screen touch controls (engine/touch.js). See "Touch controls" below |
 
+## Picture settings
+
+Ajustes > Imagen edits shared settings in `engine/settings.js`. **Calidad**
+(Nítida, Equilibrada, Rápida) is a preset for three knobs; changing one by
+hand shows Personalizada (`quality: 'custom'`):
+
+| Knob | Values | Reaches a game through | Live |
+|---|---|---|---|
+| `resolution` | 0.75, 1, 1.5, 2 (pixel-ratio cap) | `bindRenderer`, `pixelRatio()` | yes |
+| `shadows` | alta, media, baja, off | `shadowSize()`; off through `bindRenderer` | off yes, size on reload |
+| `detail` | alta, media, baja | games that read it (Carreritas, ambient life) | per game |
+| `fpsCap` | 0, 60, 30 | `bindRenderer` skips screen draws | yes |
+| `antialias` | on/off | `rendererOptions()` at creation | on reload |
+| `autoScale` | on/off | the frame-rate guard in `settings.js` | yes |
+| `perfOverlay` | on/off | `engine/perf.js` overlay | yes |
+
+A game's main renderer is `new THREE.WebGLRenderer(rendererOptions({...}))`
+bound with `bindRenderer(renderer, max)`, or comes from `createTableWorld`
+(`tests/conventions.test.js` checks it). Menu cards set
+`pixelRatio(max)` only. In a game, the Imagen page offers **Recargar
+ahora** while smoothing or the shadow size differ from what was loaded.
+
+`bindRenderer` wraps the renderer once. `shadowMap.enabled` reports false
+while shadows are off and returns the game's own value afterwards. A
+scene's materials are marked for update the first time it draws after the
+switch, because three.js compiles shadows into each program. With an FPS
+cap, screen draws in between are skipped; render-target draws (bakes,
+composer passes) are never skipped. A frame skipped just before the game
+stops drawing is painted once the interval has passed, so on-demand scenes
+(a table between turns) never stay stale.
+
+**Settings in the address.** `?pana-quality=baja&pana-shadows=off&pana-detail=baja&pana-resolution=1&pana-fps=30&pana-antialias=0&pana-autoscale=0&pana-stats&pana-sound=0`
+applies to that page only and is never saved. A value the player then picks
+on the page wins, is saved and leaves the address (so a reload keeps it).
+Invalid values are dropped. Browser suites, `npm run shots` and both
+benchmarks pin `autoScale: false`; with the guard on, a slow headless run
+lowers the resolution part-way through a measurement.
+
+**Measuring.** `engine/perf.js` loads on demand (the overlay, or
+`await import('/engine/perf.js')`). `snapshot()` reports the real loop: fps of
+drawn frames, p50/p95/worst frame, freezes over 50 ms, draws and triangles
+per frame, CPU submit, GPU time (`EXT_disjoint_timer_query_webgl2`), the
+drawn resolution and the guard's step. `measureFrame(n)` redraws each
+renderer's last frame n times, waiting on the GPU, which is the only
+number for scenes that draw on demand. `npm run perf -- <game> [--tiers]
+[--base ref]` uses both, per variant in the address; a game names its
+views in `tests/perf.views.js`. Headless frames are not vsync-paced in a
+race (Chuao at Nítida ran 260 fps on an RTX 4090), so compare GPU ms,
+draws and triangles. Measured 2026-10-25, 1280×800 at ×2: Dominó's lobby
+at Nítida draws 1.3k calls and 1.88 M triangles in 4.7 ms of GPU; shadows
+off draws 613 calls, 0.93 M triangles in 2.0 ms. The shadow pass is half
+of a table scene, and Equilibrada only saves resolution where a game's cap
+is above 1.5. Carreritas Chuao: Nítida 345 draws / 3.74 M triangles / 1.05 ms GPU,
+Equilibrada 316 / 1.56 M / 0.50 ms, Rápida 254 / 1.02 M / 0.25 ms.
+
 ## Table seating
 
 Table games use `createTableSeating(container, onSwap)` from

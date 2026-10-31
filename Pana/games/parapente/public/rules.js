@@ -2,7 +2,7 @@
 // and predict their own wing with the same fly(). The course (course.js) owns
 // beacons, thermals, rings and the ground under them.
 import { clamp } from '../../../engine/random.js';
-import { defaultOptions, roomOptions } from './options.js';
+import { defaultOptions, roomOptions, migrateRivals } from './options.js';
 import { airAt, targetOf, remaining, outside } from './course.js';
 
 // Airspeed in m/s and sink in m/s for each control. Brakes sink least and turn
@@ -16,7 +16,7 @@ export const DOWN = Object.freeze({ seconds: 2.5, above: 55, contact: .4 });
 export const LANDING = Object.freeze({ near: 150, perMetre: .2, cap: 25 });
 export const COUNTDOWN = 3, LIMIT = 360, GRACE = 5, SLOTS = 8, BOT_SEAT = 1000;
 export const COLORS = ['#2fa3e0', '#ff8a1f', '#ffc629', '#e8443a', '#8e4de8', '#2ad1b2', '#f15bb5', '#5fc93a'];
-const BOT_NAMES = ['La Zamura', 'El Cóndor', 'Doña Brisa', 'El Turpial', 'La Térmica', 'Cheo Alas', 'La Guacamaya', 'El Gavilán', 'Tía Nube', 'El Colibrí'];
+const BOT_NAMES = ['La Zamura', 'El Cóndor', 'Doña Brisa', 'El Turpial', 'La Térmica', 'Cheo Alas', 'La Guacamaya', 'El Gavilán', 'Tía Nube', 'El Colibrí']; // i18n-ignore: bot names
 const BOT_FUR = ['#cf7d22', '#d4914f', '#e0a463', '#c47f42', '#e8b97f', '#b06d3b', '#9a6038'];
 const RIVALS = { easy: { skill: [.45, .65] }, normal: { skill: [.65, .85] }, hard: { skill: [.85, 1] } };
 
@@ -99,6 +99,7 @@ export class Race {
   static restore(state, members, course) {
     const race = Object.assign(new Race(course), JSON.parse(JSON.stringify(state)));
     race.course = course;
+    race.options = { ...defaultOptions(), ...migrateRivals(race.options) };
     race.players = race.players.filter(p => members.has(p.id));
     race.pilots = race.pilots.filter(p => p.bot || members.has(p.id));
     return race;
@@ -123,7 +124,7 @@ export class Race {
     if (!this.course || !this.players.length || this.players.length > SLOTS) return false;
     const random = seeded(this.seed + this.raceId * 977);
     this.pilots = this.players.map((p, i) => this.pilot(i, p));
-    const rivals = RIVALS[this.options.rivals];
+    const rivals = this.options.bots !== false && RIVALS[this.options.rivals];
     for (let i = this.pilots.length, k = Math.floor(random() * BOT_NAMES.length); rivals && i < SLOTS; i++, k++) {
       const [lo, hi] = rivals.skill, skill = lo + random() * (hi - lo);
       const avatar = { fur: BOT_FUR[i % BOT_FUR.length], outfitColor: COLORS[i % COLORS.length], face: 'feliz' };

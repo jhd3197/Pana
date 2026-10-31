@@ -7,7 +7,9 @@ import {loadAvatar,loadName} from '/engine/avatar.js';
 import {sound,setSpeedLines} from '/engine/fx.js';
 import {createGameMenu,toggleMute} from '/engine/ui.js';
 import {fillRoster} from '/engine/results.js';
-import {inviteUrl,newRoomCode,roomFromUrl} from '/engine/invite.js';
+import {createRaceHud} from '/engine/river/hud.js';
+import {inviteUrl} from '/engine/invite.js';
+import {roomCode} from '/engine/game-shell.js';
 import {holdButton} from '/engine/touch.js';
 import {bindRenderer,pixelRatio} from '/engine/settings.js';
 import {RaceRoom} from './network.js';
@@ -17,26 +19,28 @@ import {createRaceScene} from './scene.js';
 import {createRider} from '/engine/models/fauna/farm/llanero-rider.js';
 import {tickWind} from '/engine/models/vegetation/plant-kit.js';
 import {createHorseWaterFX} from './water-fx.js';
+import { loc } from '/engine/i18n.js';
 
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),avatar=loadAvatar(),name=loadName();
 let coat='bay';try{coat=['bay','palomino','grey'].includes(localStorage.getItem('galope:coat'))?localStorage.getItem('galope:coat'):'bay';}catch{}
-const code=roomFromUrl()||newRoomCode();params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
-const keys=new Set(),touch=new Set(),riders=new Map();let paused=false,state,world,ready=false,lastPhase='',lastCountdown='',lastRace=0,hoofClock=0,drawClock=0,disposed=false;
+const code=roomCode();
+const hud=createRaceHud(sound);
+const keys=new Set(),touch=new Set(),riders=new Map();let paused=false,state,world,ready=false,lastPhase='',lastRace=0,hoofClock=0,drawClock=0,disposed=false;
 const room=new RaceRoom({code,name,avatar,coat,onState:s=>{state=s;},onStatus:(message,error=false)=>{$('connection').textContent=message;$('practice').classList.toggle('hidden',!error);if(error)showNotice(message);}});state=room.state;
-const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIELDS,change:patch=>room.configure(patch),reset:()=>{$('bots').checked=true;room.configure(cleanOptions());}});
+const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIELDS,change:patch=>room.configure(patch),reset:()=>{room.configure(cleanOptions());}});
 const touchButtons=[];
 function clearInput(){keys.clear();for(const b of touchButtons)b.release();touch.clear();}
-const menu=createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', 'Avanzar'], lt: ['KeyS', 'Frenar'], a: ['Space', 'Saltar troncos'], rb: ['ShiftLeft', 'Remate'], ls: ['ShiftLeft', 'Remate'], y: ['KeyR', 'Volver al camino'] } },title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?'La carrera sigue mientras abres el menú.':'La carrera está en pausa.',
-  controls:[['W / ↑','Avanzar'],['A D / ← →','Girar'],['S / ↓','Frenar'],['Shift','Remate: gasta resistencia'],['Espacio','Saltar troncos'],['R','Volver al camino'],['M','Sonido'],['Esc','Menú']],
-  invite:()=>inviteUrl(code),actions:[{id:'local-race',label:'Abrir carrera local',run:()=>room.practice()}],onOpen(){paused=true;clearInput();},onClose(){paused=false;}});
+const menu=createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', loc('Avanzar')], lt: ['KeyS', loc('Frenar')], a: ['Space', loc('Saltar troncos')], rb: ['ShiftLeft', loc('Remate')], ls: ['ShiftLeft', loc('Remate')], y: ['KeyR', loc('Volver al camino')] } },title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?loc('La carrera sigue mientras abres el menú.'):loc('La carrera está en pausa.'),
+  controls:[['W / ↑',loc('Avanzar')],['A D / ← →',loc('Girar')],['S / ↓',loc('Frenar')],['Shift',loc('Remate: gasta resistencia')],['Espacio',loc('Saltar troncos')],['R',loc('Volver al camino')],['M',loc('Sonido')],['Esc',loc('Menú')]],
+  invite:()=>inviteUrl(code),actions:[{id:'local-race',label:loc('Abrir carrera local'),run:()=>room.practice()}],onOpen(){paused=true;clearInput();},onClose(){paused=false;}});
 const navButton='pk-btn pk-btn--sm game-menu-button';
-$('game-nav').append(menu.createInviteButton({id:'invite',label:'Invitar',className:navButton}),menu.createSoundButton({id:'sound',className:navButton}),menu.createButton({id:'menu',className:navButton}));
-$('lobby-cta').append(menu.createInviteButton({id:'lobby-invite',label:'Invitar panas',className:'pk-btn'}));
+$('game-nav').append(menu.createInviteButton({id:'invite',label:loc('Invitar'),className:navButton}),menu.createSoundButton({id:'sound',className:navButton}),menu.createButton({id:'menu',className:navButton}));
+$('lobby-cta').append(menu.createInviteButton({id:'lobby-invite',label:loc('Invitar panas'),className:'pk-btn'}));
 $('room-code').textContent=code.toUpperCase();
 // Horse names for the HUD; the stamina panel is 12 pips, the last 4 kept for the remate.
-const COAT_NAMES={bay:'Castaño',palomino:'Dorado',grey:'Tordillo'},PIPS=12,RESERVE=4,coarse=matchMedia('(pointer:coarse)').matches;
+const COAT_NAMES={bay:loc('Castaño'),palomino:loc('Dorado'),grey:loc('Tordillo')},PIPS=12,RESERVE=4,coarse=matchMedia('(pointer:coarse)').matches;
 $('stamina-pips').replaceChildren(...Array.from({length:PIPS},()=>document.createElement('i')));
-$('jump-key').textContent=coarse?'Toca Salto':'Espacio para saltar';
+$('jump-key').textContent=coarse?loc('Toca Salto'):loc('Espacio para saltar');
 function showNotice(text){$('notice').textContent=text;$('notice').classList.remove('hidden');clearTimeout(showNotice.timer);showNotice.timer=setTimeout(()=>$('notice').classList.add('hidden'),3000);}
 function unlock(){try{sound.unlock();}catch{}}
 window.addEventListener('keydown',e=>{
@@ -57,7 +61,7 @@ function input(){if(paused)return {};return {throttle:keys.has('KeyS')||keys.has
 function choose(value){coat=value;for(const b of document.querySelectorAll('[data-coat]'))b.setAttribute('aria-pressed',String(b.dataset.coat===value));try{localStorage.setItem('galope:coat',value);}catch{}room.choose(value);}
 for(const b of document.querySelectorAll('[data-coat]'))b.onclick=()=>choose(b.dataset.coat);
 choose(coat);
-$('start').onclick=$('again').onclick=()=>{unlock();room.start($('bots').checked);};
+$('start').onclick=$('again').onclick=()=>{unlock();room.start();};
 $('practice').onclick=()=>{room.practice();$('practice').classList.add('hidden');};
 // Let the loading state paint before the shared procedural models are constructed.
 await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,30)));
@@ -95,36 +99,33 @@ function drawMap(player){
 }
 function updateUI(){
   roomOptions.update(state.options||cleanOptions(),room.isHost&&room.connected&&state.phase==='lobby');
-  $('bots').disabled = !room.connected || !room.isHost;
   course.setOptions(state.options);$('map-length').textContent=`${(LENGTH*state.options.laps/1000).toFixed(1).replace('.',',')} KM`;
   document.querySelector('.pk-stats .pk-stat b').textContent=state.options.laps;document.querySelectorAll('.pk-stats .pk-stat b')[1].textContent=raceJumps(state.options).length;
   for(const b of document.querySelectorAll('[data-coat]'))b.disabled=state.options.horse==='random';
   const lobby=state.phase==='lobby',done=state.phase==='finished',playing=!lobby&&!done;
   document.body.classList.toggle('in-lobby',lobby);$('lobby').classList.toggle('hidden',!lobby);$('hud').classList.toggle('hidden',!playing);$('results').classList.toggle('hidden',!done);
-  $('start').disabled=!room.connected||!room.isHost||!ready;$('start').firstChild.textContent=!room.connected?'Conectando… ':room.isHost?'¡A la salida! ':'Esperando al anfitrión… ';
-  $('again').disabled=!room.connected||!room.isHost;$('again').firstChild.textContent=room.isHost?'Otra carrera ':'Esperando al anfitrión… ';
+  $('start').disabled=!room.connected||!room.isHost||!ready;$('start').firstChild.textContent=(!room.connected?loc('Conectando…'):room.isHost?loc('¡A la salida!'):loc('Esperando al anfitrión…'))+' ';
+  $('again').disabled=!room.connected||!room.isHost;$('again').firstChild.textContent=(room.isHost?loc('Otra carrera'):loc('Esperando al anfitrión…'))+' ';
   const own=state.players.find(p=>p.id===room.id),ordered=standings(state),place=ordered.findIndex(p=>p.id===room.id)+1;
-  $('place').textContent=place||'—';$('field-size').textContent=`de ${ordered.length}`;
+  $('place').textContent=place||'—';$('field-size').textContent=loc('de {n}',{n:ordered.length});
   $('lap').textContent=`${Math.min(state.options.laps,1+Math.max(0,Math.floor((own?.progress||0)/LENGTH)))} / ${state.options.laps}`;
   $('timer').textContent=formatTime(own?.finish??state.time);
-  $('sector').textContent=own?.spectator?'Corres en la próxima':sector(own?.s||0);
+  $('sector').textContent=own?.spectator?loc('Corres en la próxima'):sector(own?.s||0);
   const stamina=own?.stamina??100,lit=Math.ceil(stamina/100*PIPS-.01);$('speed').textContent=Math.round((own?.speed||0)*3.6);$('stamina-label').textContent=`${Math.round(stamina)}%`;
   [...$('stamina-pips').children].forEach((pip,i)=>pip.className=i>=lit?'':own?.exhausted?'tired':i<RESERVE?'on':'teal');
-  $('horse-name').textContent=COAT_NAMES[own?.coat||coat];
+  $('horse-name').textContent=loc('Fuerza de {horse}',{horse:COAT_NAMES[own?.coat||coat]});
   // ¡Tronco! shows while the next log is a few strides ahead.
   const racing=state.phase==='racing'&&state.time>=.75&&own&&!own.spectator&&own.finish==null,ahead=racing?Math.min(...raceJumps(state.options).map(j=>distanceAhead(own.s,j.s,state.options))):Infinity;
   $('jump-cue').classList.toggle('hidden',!(ahead>2.5&&ahead<18&&!(own.jumpY>.2)));
-  $('gait').textContent=own?.water>.08?'CRUZANDO EL ESTERO':own?.exhausted?'RECUPERANDO':own?.drafting?'AL REBUFO':own?.speed>13?'¡AL REMATE!':own?.speed>4?'AL GALOPE':'AL PASO';
-  $('riding-tip').textContent=own?.finish!==null&&own?.finish!==undefined?'¡En la meta! Esperando a tus panas.':own?.stun>0?'¡El tronco! Salta un poco antes.':own?.water>.08?'El agua frena. Aquí recuperas fuerzas.':own?.exhausted?'Afloja el remate para recuperar fuerzas.':'Guarda fuerzas para el remate.';
-  $('leaderboard').replaceChildren(...ordered.slice(0,8).map((p,i)=>{const li=document.createElement('li');li.className=p.id===room.id?'pk-row is-me me':'pk-row';const b=document.createElement('b');b.className='pk-row-n';b.textContent=i+1;const span=document.createElement('span');span.className='row-name';span.textContent=p.name+(p.id===room.id?' · tú':'');const horse=document.createElement('span');horse.className='pk-row-end';horse.textContent=COAT_NAMES[p.coat]||'';li.append(b,span,horse);return li;}));
-  const count=state.phase==='countdown'?String(Math.max(1,Math.ceil(state.countdown))):state.phase==='racing'&&state.time<.75?'¡ARRE!':'';
-  $('countdown').classList.toggle('hidden',!count);$('countdown').textContent=count;
-  if(count&&count!==lastCountdown){sound.tone(count==='¡ARRE!'?740:370,0,.12,'triangle',.06);lastCountdown=count;}
+  $('gait').textContent=own?.water>.08?loc('CRUZANDO EL ESTERO'):own?.exhausted?loc('RECUPERANDO'):own?.drafting?loc('AL REBUFO'):own?.speed>13?loc('¡AL REMATE!'):own?.speed>4?loc('AL GALOPE'):loc('AL PASO');
+  $('riding-tip').textContent=own?.finish!==null&&own?.finish!==undefined?loc('¡En la meta! Esperando a tus panas.'):own?.stun>0?loc('¡El tronco! Salta un poco antes.'):own?.water>.08?loc('El agua frena. Aquí recuperas fuerzas.'):own?.exhausted?loc('Afloja el remate para recuperar fuerzas.'):loc('Guarda fuerzas para el remate.');
+  hud.leaderboard(ordered.map(p=>({me:p.id===room.id,name:p.id===room.id?loc('{name} · tú',{name:p.name}):p.name,end:COAT_NAMES[p.coat]||''})));
+  hud.countdown(state,loc('¡ARRE!'));
   if(state.raceId!==lastRace){lastRace=state.raceId;cameraReady=false;waterFX.reset();clearInput();}
   if(done&&(lastPhase!==state.phase||$('result-board').childElementCount!==ordered.length)){
-    $('result-title').textContent=place===1?'¡Ganaste, pana!':own?.finish!==null?'¡Llegaste, pana!':'¡Se cerró la carrera!';
-    $('result-copy').textContent=own?.finish!=null?`${place}.º lugar · ${formatTime(own.finish)} · ${own.hits} tropiezos`:'La próxima salida es tuya. Sigue las estacas y guarda fuerzas.';
-    fillRoster($('result-board'),ordered.map((p,i)=>({rank:i+1,name:p.name+(p.bot?' · hato':''),end:p.finish===null?'Sin terminar':formatTime(p.finish),me:p.id===room.id})));
+    $('result-title').textContent=place===1?loc('¡Ganaste, pana!'):own?.finish!==null?loc('¡Llegaste, pana!'):loc('¡Se cerró la carrera!');
+    $('result-copy').textContent=own?.finish!=null?loc('{place}.º lugar · {time} · {hits} tropiezos',{place,time:formatTime(own.finish),hits:own.hits}):loc('La próxima salida es tuya. Sigue las estacas y guarda fuerzas.');
+    fillRoster($('result-board'),ordered.map((p,i)=>({rank:i+1,name:p.bot?loc('{name} · hato',{name:p.name}):p.name,end:p.finish===null?loc('Sin terminar'):formatTime(p.finish),me:p.id===room.id})));
     if(lastPhase!==state.phase)sound.tone(660,0,.25,'triangle',.08);
   }
   lastPhase=state.phase;drawMap(own);
@@ -175,6 +176,5 @@ if(params.has('debug'))window.galope={room,get state(){return state;},world,ride
   at,LENGTH,JUMPS,groundAt,waterS:nearest(WETLANDS[0].x,WETLANDS[0].z).s,updateUI};
 window.addEventListener('pagehide',()=>{disposed=true;clearInterval(simulation);roomOptions.dispose();room.dispose();for(const r of riders.values())r.dispose();course.dispose();world.sky.dispose();waterFX.dispose();weather.dispose();dustGeometry.dispose();dustMaterial.dispose();unbind?.();renderer.dispose();},{once:true});
 // Back/forward cache restores a disposed WebGL scene; rebuild and rejoin safely.
-window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 
 await prepareScene(world);

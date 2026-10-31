@@ -10,10 +10,11 @@ import { cafeTerrace } from '/engine/models/props/cafe-terrace.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { pocketMarker } from './pocket-markers.js';
 import { createStarterStage } from '/engine/play/quien-empieza.js';
+import { loc } from '/engine/i18n.js';
 
 // Camera views: 'taco' rides behind the cue ball like a player bending over
 // the shot; 'plaza' frames the table in its setting; 'mesa' looks straight down.
-export const VIEWS = [['taco', 'Detrás de la bola'], ['mesa', 'Desde arriba'], ['plaza', 'Vista del lugar']];
+export const VIEWS = [['taco', loc('Detrás de la bola')], ['mesa', loc('Desde arriba')], ['plaza', loc('Vista del lugar')]];
 
 export function createPoolScene(canvas, { onStarter } = {}) {
   const stage = createTableWorld(canvas), { scene, camera, renderer } = stage;
@@ -148,7 +149,7 @@ export function createPoolScene(canvas, { onStarter } = {}) {
     }
     // Snapshots only: every starter change bumps the revision.
     const key = `${state.revision}:${state.phase}:${seat}`;
-    if (key !== starterKey) { starterKey = key; starter.update(state.phase === 'starter' ? state.starter : null, { ownSeat: seat, names: state.players.map(p => p.name) }); }
+    if (key !== starterKey) { starterKey = key; starter.update(state.phase === 'starter' ? state.starter : null, { ownSeat: seat, names: state.players.map(p => p.id === null ? loc(p.name) : p.name) }); }
     starter.frame(dt);
     stage.draw(dt);
   }

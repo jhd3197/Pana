@@ -29,7 +29,8 @@ function part(parts, shape, color, [x, y, z], [sx, sy, sz] = [1, 1, 1], [rx, ry,
   if (quaternion) tmp.quaternion.copy(quaternion); else tmp.rotation.set(rx, ry, rz);
   tmp.updateMatrix();
   // Colour functions see the unit shape's own coordinates (stripes, bands).
-  const g = unit[shape]().toNonIndexed(), c = new THREE.Color(), colors = [], p = g.attributes.position;
+  // Icosahedra (ball, egg) come non-indexed already; converting them again only warns.
+  const u = unit[shape](), g = u.index ? u.toNonIndexed() : u, c = new THREE.Color(), colors = [], p = g.attributes.position;
   for (let i = 0; i < p.count; i++) { c.setHex(typeof color === 'function' ? color(p.getX(i), p.getY(i), p.getZ(i)) : color); colors.push(c.r, c.g, c.b); }
   g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); g.applyMatrix4(tmp.matrix);
   parts.push(g);

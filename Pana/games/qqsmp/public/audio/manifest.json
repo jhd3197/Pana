@@ -1,0 +1,3194 @@
+{
+  "voice": "em_alex",
+  "language": "es",
+  "lines": {
+    "1b6896b3": {
+      "text": "La respuesta correcta es:",
+      "seconds": 1.776
+    },
+    "41de9dd8": {
+      "text": "«Ando limpio» significa…",
+      "seconds": 1.896
+    },
+    "522a5f7d": {
+      "text": "Opción A.",
+      "seconds": 1.056
+    },
+    "a5018f11": {
+      "text": "Estoy sin plata",
+      "seconds": 1.368
+    },
+    "d022d712": {
+      "text": "Opción B.",
+      "seconds": 0.984
+    },
+    "e1bb7a60": {
+      "text": "Me acabo de bañar",
+      "seconds": 1.536
+    },
+    "f2254b2f": {
+      "text": "Opción C.",
+      "seconds": 1.056
+    },
+    "c2c02ac3": {
+      "text": "Estoy sobrio",
+      "seconds": 1.128
+    },
+    "70314a7c": {
+      "text": "Opción D.",
+      "seconds": 1.008
+    },
+    "4aa5b195": {
+      "text": "Voy en camino",
+      "seconds": 1.2
+    },
+    "ea458390": {
+      "text": "Si alguien es pichirre, es…",
+      "seconds": 1.8
+    },
+    "2e76d4c3": {
+      "text": "Tacaño",
+      "seconds": 0.792
+    },
+    "9a02a778": {
+      "text": "Suertudo",
+      "seconds": 0.912
+    },
+    "d9a407f0": {
+      "text": "Chismoso",
+      "seconds": 0.96
+    },
+    "03ceb6b1": {
+      "text": "Adulador",
+      "seconds": 0.84
+    },
+    "c31fd7dd": {
+      "text": "«Más salado que pescado en Semana Santa» es alguien…",
+      "seconds": 2.976
+    },
+    "809702cd": {
+      "text": "Con muy mala suerte",
+      "seconds": 1.56
+    },
+    "411314af": {
+      "text": "Que cocina mal",
+      "seconds": 1.128
+    },
+    "6738c5cc": {
+      "text": "Que llora mucho",
+      "seconds": 1.272
+    },
+    "be1fa2dd": {
+      "text": "De la costa",
+      "seconds": 1.032
+    },
+    "e6e1cac5": {
+      "text": "Una ñapa es…",
+      "seconds": 1.272
+    },
+    "7b5ef7cd": {
+      "text": "Un poquito extra gratis",
+      "seconds": 1.68
+    },
+    "855bb794": {
+      "text": "Una siesta",
+      "seconds": 1.032
+    },
+    "7155f1fc": {
+      "text": "Una multa",
+      "seconds": 0.936
+    },
+    "3e8779b1": {
+      "text": "Un paso de baile",
+      "seconds": 1.44
+    },
+    "9a4ab739": {
+      "text": "Alguien que es «cuarto bate» es…",
+      "seconds": 1.992
+    },
+    "5f14fb4d": {
+      "text": "El más fuerte, el mejor",
+      "seconds": 1.68
+    },
+    "0a2efaf4": {
+      "text": "El que siempre llega de último",
+      "seconds": 1.944
+    },
+    "c127a356": {
+      "text": "El árbitro",
+      "seconds": 0.984
+    },
+    "18067ebc": {
+      "text": "El suplente",
+      "seconds": 1.056
+    },
+    "64748269": {
+      "text": "«Te quedaste sin el chivo y sin el mecate» quiere decir…",
+      "seconds": 3.096
+    },
+    "c70a161e": {
+      "text": "Lo perdiste todo",
+      "seconds": 1.392
+    },
+    "4a81656b": {
+      "text": "Ganaste la rifa",
+      "seconds": 1.392
+    },
+    "e7fe18a2": {
+      "text": "Te mudaste al campo",
+      "seconds": 1.536
+    },
+    "1976d99a": {
+      "text": "Llegaste tarde",
+      "seconds": 1.296
+    },
+    "8f2bd3a0": {
+      "text": "Algo que es una ladilla es…",
+      "seconds": 1.92
+    },
+    "359e37cc": {
+      "text": "Fastidioso",
+      "seconds": 1.128
+    },
+    "922be171": {
+      "text": "Divertido",
+      "seconds": 0.96
+    },
+    "115546aa": {
+      "text": "Caro",
+      "seconds": 0.6
+    },
+    "f05a9fcb": {
+      "text": "Rápido",
+      "seconds": 0.768
+    },
+    "16c36821": {
+      "text": "Si tu pana dice «estoy arrecho», está…",
+      "seconds": 2.448
+    },
+    "f7275ec6": {
+      "text": "Molesto",
+      "seconds": 0.864
+    },
+    "831f6177": {
+      "text": "Contento",
+      "seconds": 0.984
+    },
+    "34c7dcf8": {
+      "text": "Cansado",
+      "seconds": 0.84
+    },
+    "aa8bd3c4": {
+      "text": "Con hambre",
+      "seconds": 0.864
+    },
+    "80d99d83": {
+      "text": "Un sapo es…",
+      "seconds": 1.176
+    },
+    "6f6f99c1": {
+      "text": "Un chismoso que delata",
+      "seconds": 1.728
+    },
+    "374babfb": {
+      "text": "Un buen amigo",
+      "seconds": 1.248
+    },
+    "29845b4e": {
+      "text": "Un tacaño",
+      "seconds": 0.96
+    },
+    "9eb281a1": {
+      "text": "Un dormilón",
+      "seconds": 1.08
+    },
+    "a55b4953": {
+      "text": "Si alguien es gafo, es…",
+      "seconds": 1.704
+    },
+    "072413d9": {
+      "text": "Despistado, tonto",
+      "seconds": 1.464
+    },
+    "8c4d714b": {
+      "text": "Valiente",
+      "seconds": 0.888
+    },
+    "7d8bfe92": {
+      "text": "Adinerado",
+      "seconds": 0.96
+    },
+    "0ae6bca2": {
+      "text": "Muy rápido",
+      "seconds": 1.008
+    },
+    "4bd8824e": {
+      "text": "Alguien pavoso…",
+      "seconds": 1.32
+    },
+    "68f617ce": {
+      "text": "Trae mala suerte",
+      "seconds": 1.416
+    },
+    "afc7dfdb": {
+      "text": "Come mucho",
+      "seconds": 0.96
+    },
+    "c940239a": {
+      "text": "Baila bien",
+      "seconds": 0.936
+    },
+    "c628da9f": {
+      "text": "Viste elegante",
+      "seconds": 1.248
+    },
+    "3bb7f7e1": {
+      "text": "Un bululú es…",
+      "seconds": 1.272
+    },
+    "10a92804": {
+      "text": "Un alboroto de gente",
+      "seconds": 1.584
+    },
+    "dd33bcc1": {
+      "text": "Un pájaro llanero",
+      "seconds": 1.392
+    },
+    "69fba826": {
+      "text": "Un dulce de coco",
+      "seconds": 1.464
+    },
+    "874466c1": {
+      "text": "Un sombrero",
+      "seconds": 1.08
+    },
+    "d89e4a0b": {
+      "text": "«Hacer una vaca» es…",
+      "seconds": 1.608
+    },
+    "3e2bb25e": {
+      "text": "Reunir plata entre varios",
+      "seconds": 1.848
+    },
+    "c52b69a0": {
+      "text": "Ordeñar en el llano",
+      "seconds": 1.512
+    },
+    "9fb2ebd0": {
+      "text": "Dormir la siesta",
+      "seconds": 1.32
+    },
+    "c8ca7b14": {
+      "text": "Comer demasiado",
+      "seconds": 1.32
+    },
+    "888876ca": {
+      "text": "«Burda de bueno» significa…",
+      "seconds": 1.896
+    },
+    "ac35b60b": {
+      "text": "Buenísimo",
+      "seconds": 0.912
+    },
+    "f043819e": {
+      "text": "Más o menos",
+      "seconds": 1.104
+    },
+    "5ea49f09": {
+      "text": "Malísimo",
+      "seconds": 0.936
+    },
+    "11dc9480": {
+      "text": "Barato",
+      "seconds": 0.816
+    },
+    "ce9c9b13": {
+      "text": "«Ponerse las alpargatas» es…",
+      "seconds": 2.016
+    },
+    "32acafc7": {
+      "text": "Prepararse para algo",
+      "seconds": 1.512
+    },
+    "b11e4b71": {
+      "text": "Ir a la playa",
+      "seconds": 1.128
+    },
+    "6d5f3d69": {
+      "text": "Rendirse",
+      "seconds": 0.936
+    },
+    "2ffeadbf": {
+      "text": "Mudarse de casa",
+      "seconds": 1.488
+    },
+    "7cd675fa": {
+      "text": "«Hacerse el Willy Mays» viene de…",
+      "seconds": 2.136
+    },
+    "d3645a89": {
+      "text": "La Serie del Caribe de 1955 en Caracas",
+      "seconds": 3.888
+    },
+    "4376b506": {
+      "text": "Una telenovela",
+      "seconds": 1.248
+    },
+    "69740de4": {
+      "text": "Una canción de salsa",
+      "seconds": 1.656
+    },
+    "a1429b9f": {
+      "text": "Una comiquita",
+      "seconds": 1.176
+    },
+    "6d75bf9e": {
+      "text": "La palabra «mecate» viene del…",
+      "seconds": 2.064
+    },
+    "59832ead": {
+      "text": "Náhuatl",
+      "seconds": 0.792
+    },
+    "8939f390": {
+      "text": "Latín",
+      "seconds": 0.768
+    },
+    "a3e49386": {
+      "text": "Inglés",
+      "seconds": 0.72
+    },
+    "3d794b20": {
+      "text": "Francés",
+      "seconds": 0.816
+    },
+    "46f68e73": {
+      "text": "«Ñapa» viene de «yapa», una palabra…",
+      "seconds": 2.256
+    },
+    "0c3de63f": {
+      "text": "Quechua",
+      "seconds": 0.696
+    },
+    "0ff8b3d9": {
+      "text": "Árabe",
+      "seconds": 0.672
+    },
+    "e2d67710": {
+      "text": "Portuguesa",
+      "seconds": 1.032
+    },
+    "74a6037e": {
+      "text": "Italiana",
+      "seconds": 0.96
+    },
+    "5304d2d4": {
+      "text": "Se dice que «arepa» viene de «erepa», que en lengua indígena significa…",
+      "seconds": 4.008
+    },
+    "2c5d08bf": {
+      "text": "Maíz",
+      "seconds": 0.672
+    },
+    "2b0e3a49": {
+      "text": "Fuego",
+      "seconds": 0.72
+    },
+    "b45aef8c": {
+      "text": "Pan",
+      "seconds": 0.528
+    },
+    "f334e1d4": {
+      "text": "Redondo",
+      "seconds": 0.888
+    },
+    "d9d6b95d": {
+      "text": "Una teoría dice que «cotufa» viene del inglés…",
+      "seconds": 2.784
+    },
+    "9a0712fd": {
+      "text": "«Corn to fry»",
+      "seconds": 1.8
+    },
+    "3ef1ec74": {
+      "text": "«Cotton food»",
+      "seconds": 1.2
+    },
+    "75998ce0": {
+      "text": "«Cut off»",
+      "seconds": 0.912
+    },
+    "4f314525": {
+      "text": "«Coffee»",
+      "seconds": 0.864
+    },
+    "f6511eec": {
+      "text": "«Guachimán» viene del inglés…",
+      "seconds": 1.848
+    },
+    "8923f888": {
+      "text": "«Watchman»",
+      "seconds": 0.864
+    },
+    "0c1f660c": {
+      "text": "«Washing man»",
+      "seconds": 1.056
+    },
+    "85256be2": {
+      "text": "«Watch me»",
+      "seconds": 0.96
+    },
+    "3ca60400": {
+      "text": "«What a man»",
+      "seconds": 0.984
+    },
+    "676665b5": {
+      "text": "Una teoría dice que «chamo» viene del inglés…",
+      "seconds": 2.64
+    },
+    "b15d4946": {
+      "text": "«Chum», compañero",
+      "seconds": 1.272
+    },
+    "4f8bc71a": {
+      "text": "«Champion»",
+      "seconds": 0.864
+    },
+    "b5ecb89d": {
+      "text": "«Shame»",
+      "seconds": 0.72
+    },
+    "29b3d02e": {
+      "text": "«Charm»",
+      "seconds": 0.696
+    },
+    "86fd5b87": {
+      "text": "«Bluyín» viene de…",
+      "seconds": 1.368
+    },
+    "088cc7de": {
+      "text": "«Blue jeans»",
+      "seconds": 1.056
+    },
+    "6958430c": {
+      "text": "«Blue wine»",
+      "seconds": 1.056
+    },
+    "da37b076": {
+      "text": "«Blow in»",
+      "seconds": 0.84
+    },
+    "7cd2e23f": {
+      "text": "«Blue gin»",
+      "seconds": 0.96
+    },
+    "a2e633bb": {
+      "text": "El pasapalo se llama así porque ayuda a…",
+      "seconds": 2.592
+    },
+    "2c361957": {
+      "text": "Pasar el palo, el trago",
+      "seconds": 1.68
+    },
+    "682eb701": {
+      "text": "Jugar béisbol",
+      "seconds": 1.224
+    },
+    "18dbbed2": {
+      "text": "Cruzar un río",
+      "seconds": 1.272
+    },
+    "f798831d": {
+      "text": "Barrer el patio",
+      "seconds": 1.176
+    },
+    "68bb605b": {
+      "text": "Chuao es famoso por su…",
+      "seconds": 1.536
+    },
+    "d2308446": {
+      "text": "Cacao",
+      "seconds": 0.696
+    },
+    "cfc290a9": {
+      "text": "Café",
+      "seconds": 0.696
+    },
+    "40a7370f": {
+      "text": "Sal",
+      "seconds": 0.6
+    },
+    "1de1df1b": {
+      "text": "Caña de azúcar",
+      "seconds": 1.176
+    },
+    "39422c53": {
+      "text": "Del malecón de Puerto Colombia a Bahía de Cepe se va en…",
+      "seconds": 3.504
+    },
+    "b7480b0e": {
+      "text": "Peñero",
+      "seconds": 0.744
+    },
+    "9032f7f2": {
+      "text": "Autobús",
+      "seconds": 0.888
+    },
+    "dd02efb6": {
+      "text": "Teleférico",
+      "seconds": 1.104
+    },
+    "bace8a25": {
+      "text": "Caballo",
+      "seconds": 0.816
+    },
+    "bcf8a7c4": {
+      "text": "La Feria de La Chinita es en…",
+      "seconds": 2.016
+    },
+    "687c9642": {
+      "text": "Maracaibo",
+      "seconds": 1.008
+    },
+    "4eb78946": {
+      "text": "Mérida",
+      "seconds": 0.744
+    },
+    "b311a4d0": {
+      "text": "Barquisimeto",
+      "seconds": 1.128
+    },
+    "638da93f": {
+      "text": "Cumaná",
+      "seconds": 0.792
+    },
+    "53eb8c9c": {
+      "text": "La Colonia Tovar la fundaron inmigrantes…",
+      "seconds": 2.688
+    },
+    "6813824d": {
+      "text": "Alemanes",
+      "seconds": 0.864
+    },
+    "ae4955ed": {
+      "text": "Italianos",
+      "seconds": 0.984
+    },
+    "92a710fd": {
+      "text": "Portugueses",
+      "seconds": 1.008
+    },
+    "e8bc7bd3": {
+      "text": "Canarios",
+      "seconds": 0.84
+    },
+    "c8166a61": {
+      "text": "Los Médanos de Coro son…",
+      "seconds": 1.728
+    },
+    "334f95f8": {
+      "text": "Dunas de arena",
+      "seconds": 1.176
+    },
+    "a3499afa": {
+      "text": "Montañas nevadas",
+      "seconds": 1.44
+    },
+    "bb92bfac": {
+      "text": "Lagunas",
+      "seconds": 0.864
+    },
+    "98dd6d7e": {
+      "text": "Cuevas",
+      "seconds": 0.672
+    },
+    "599e7b9b": {
+      "text": "Mukumbarí, en Mérida, es…",
+      "seconds": 1.92
+    },
+    "410c830f": {
+      "text": "Un teleférico",
+      "seconds": 1.224
+    },
+    "60d6cde5": {
+      "text": "Un río",
+      "seconds": 0.792
+    },
+    "a2d22cdd": {
+      "text": "Un plato típico",
+      "seconds": 1.392
+    },
+    "cdd3ce9d": {
+      "text": "Un baile",
+      "seconds": 0.888
+    },
+    "8202b410": {
+      "text": "El Salto Ángel está en…",
+      "seconds": 1.848
+    },
+    "69c6af9f": {
+      "text": "Canaima, Bolívar",
+      "seconds": 1.32
+    },
+    "b8b28eba": {
+      "text": "Zulia",
+      "seconds": 0.744
+    },
+    "5b4cbcdf": {
+      "text": "Falcón",
+      "seconds": 0.84
+    },
+    "ebab428a": {
+      "text": "El Relámpago del Catatumbo se ve en…",
+      "seconds": 2.424
+    },
+    "70b2a412": {
+      "text": "Los Roques",
+      "seconds": 0.912
+    },
+    "204f2be1": {
+      "text": "Caracas",
+      "seconds": 0.816
+    },
+    "65f61dd1": {
+      "text": "Margarita",
+      "seconds": 1.008
+    },
+    "9ca4c022": {
+      "text": "Choroní queda en el estado…",
+      "seconds": 1.776
+    },
+    "05cd4aac": {
+      "text": "Aragua",
+      "seconds": 0.744
+    },
+    "d458988f": {
+      "text": "Sucre",
+      "seconds": 0.696
+    },
+    "d30bcadf": {
+      "text": "Lara",
+      "seconds": 0.648
+    },
+    "58a44fbe": {
+      "text": "Los Roques es…",
+      "seconds": 1.224
+    },
+    "227dc3e3": {
+      "text": "Un archipiélago",
+      "seconds": 1.224
+    },
+    "48e4b09f": {
+      "text": "Una montaña",
+      "seconds": 1.128
+    },
+    "b7115b43": {
+      "text": "Un desierto",
+      "seconds": 1.08
+    },
+    "b02fb93f": {
+      "text": "El Waraira Repano es el otro nombre de…",
+      "seconds": 2.568
+    },
+    "f8538666": {
+      "text": "El Ávila",
+      "seconds": 0.84
+    },
+    "62d47a09": {
+      "text": "El Salto Ángel",
+      "seconds": 1.272
+    },
+    "c0b77c7f": {
+      "text": "Los Médanos",
+      "seconds": 1.032
+    },
+    "97fcdb7d": {
+      "text": "El Pico Bolívar",
+      "seconds": 1.272
+    },
+    "17835e8f": {
+      "text": "La montaña más alta de Venezuela es el…",
+      "seconds": 2.664
+    },
+    "381ae922": {
+      "text": "Pico Bolívar",
+      "seconds": 1.08
+    },
+    "de271ac3": {
+      "text": "Pico Humboldt",
+      "seconds": 1.104
+    },
+    "13867244": {
+      "text": "Roraima",
+      "seconds": 0.816
+    },
+    "15f69693": {
+      "text": "Ávila",
+      "seconds": 0.672
+    },
+    "06719b52": {
+      "text": "El sonido grave del furruco sale de…",
+      "seconds": 2.448
+    },
+    "a641c59d": {
+      "text": "Frotar una vara sobre el cuero",
+      "seconds": 1.992
+    },
+    "863c17c5": {
+      "text": "Soplar un tubo",
+      "seconds": 1.272
+    },
+    "04d6fbaf": {
+      "text": "Agitar semillas",
+      "seconds": 1.344
+    },
+    "32a0df6e": {
+      "text": "Cuerdas de metal",
+      "seconds": 1.296
+    },
+    "6915da8e": {
+      "text": "La gaita es la música de…",
+      "seconds": 1.848
+    },
+    "7e1a2e36": {
+      "text": "Táchira",
+      "seconds": 0.768
+    },
+    "bfd0c034": {
+      "text": "¿Cuántas cuerdas tiene el cuatro?",
+      "seconds": 2.112
+    },
+    "b9fa1cf3": {
+      "text": "Cuatro",
+      "seconds": 0.744
+    },
+    "e7904215": {
+      "text": "Seis",
+      "seconds": 0.6
+    },
+    "f84eeb0f": {
+      "text": "Cinco",
+      "seconds": 0.72
+    },
+    "99cadbb0": {
+      "text": "Doce",
+      "seconds": 0.696
+    },
+    "5625d88f": {
+      "text": "El joropo es el baile típico de…",
+      "seconds": 2.304
+    },
+    "823cb386": {
+      "text": "Los Llanos",
+      "seconds": 0.912
+    },
+    "02fe8c44": {
+      "text": "Los Andes",
+      "seconds": 0.888
+    },
+    "b78a80c1": {
+      "text": "La Guajira",
+      "seconds": 0.984
+    },
+    "23c1627f": {
+      "text": "La hora loca es…",
+      "seconds": 1.272
+    },
+    "24b570cc": {
+      "text": "El momento de pitos y disfraces en la fiesta",
+      "seconds": 2.712
+    },
+    "5b62a2b6": {
+      "text": "Un partido de madrugada",
+      "seconds": 1.584
+    },
+    "6c7a50a7": {
+      "text": "Un programa de radio",
+      "seconds": 1.608
+    },
+    "cde0a9d6": {
+      "text": "La hora del almuerzo",
+      "seconds": 1.488
+    },
+    "c0b198fc": {
+      "text": "A «Alma llanera» le dicen…",
+      "seconds": 1.776
+    },
+    "3fdc4bda": {
+      "text": "El segundo himno",
+      "seconds": 1.32
+    },
+    "e1443057": {
+      "text": "La gaita de oro",
+      "seconds": 1.224
+    },
+    "2a11048f": {
+      "text": "El tango criollo",
+      "seconds": 1.368
+    },
+    "33eaa21d": {
+      "text": "La canción del Ávila",
+      "seconds": 1.584
+    },
+    "9d812657": {
+      "text": "Los tambores de San Juan suenan fuerte en…",
+      "seconds": 2.64
+    },
+    "2587f8ed": {
+      "text": "Barlovento",
+      "seconds": 1.032
+    },
+    "538a9ce0": {
+      "text": "Coro",
+      "seconds": 0.624
+    },
+    "dd1ed57e": {
+      "text": "A Simón Díaz le decían…",
+      "seconds": 1.824
+    },
+    "f94925da": {
+      "text": "El Tío Simón",
+      "seconds": 1.176
+    },
+    "018c3fdd": {
+      "text": "El Rey del Llano",
+      "seconds": 1.32
+    },
+    "3b9dc710": {
+      "text": "El Cuarto Bate",
+      "seconds": 1.248
+    },
+    "50255c37": {
+      "text": "El Gaitero Mayor",
+      "seconds": 1.344
+    },
+    "4e8d9bbe": {
+      "text": "La charrasca de la gaita es un instrumento que…",
+      "seconds": 2.688
+    },
+    "47459db8": {
+      "text": "Se raspa",
+      "seconds": 0.912
+    },
+    "907d43c4": {
+      "text": "Se sopla",
+      "seconds": 0.864
+    },
+    "392e38f7": {
+      "text": "Se golpea con baquetas",
+      "seconds": 1.752
+    },
+    "211a020d": {
+      "text": "Se pulsa con los dedos",
+      "seconds": 1.608
+    },
+    "a2095055": {
+      "text": "En diciembre, además de gaitas, se cantan…",
+      "seconds": 2.568
+    },
+    "6a412c80": {
+      "text": "Aguinaldos",
+      "seconds": 0.984
+    },
+    "d58d0712": {
+      "text": "Rancheras",
+      "seconds": 0.912
+    },
+    "f658e7ef": {
+      "text": "Tangos",
+      "seconds": 0.72
+    },
+    "8f4f3f05": {
+      "text": "Polkas",
+      "seconds": 0.72
+    },
+    "741cc92a": {
+      "text": "En la chapita, el bate suele ser…",
+      "seconds": 2.136
+    },
+    "4f9a567a": {
+      "text": "Un palo de escoba",
+      "seconds": 1.32
+    },
+    "f40d832a": {
+      "text": "Una botella",
+      "seconds": 1.104
+    },
+    "bd901ac8": {
+      "text": "Una chancleta",
+      "seconds": 1.176
+    },
+    "ae6e0789": {
+      "text": "Una tabla",
+      "seconds": 0.96
+    },
+    "1213753d": {
+      "text": "En la chapita, la «pelota» es…",
+      "seconds": 1.872
+    },
+    "aa7c2fe2": {
+      "text": "Una tapita de refresco",
+      "seconds": 1.632
+    },
+    "df668b62": {
+      "text": "Una naranja",
+      "seconds": 1.056
+    },
+    "a779c0fe": {
+      "text": "Una metra",
+      "seconds": 0.936
+    },
+    "164c826d": {
+      "text": "Una media enrollada",
+      "seconds": 1.488
+    },
+    "a62322ec": {
+      "text": "Una caimanera es…",
+      "seconds": 1.44
+    },
+    "b5740caa": {
+      "text": "Un partido informal entre panas",
+      "seconds": 2.136
+    },
+    "67666fae": {
+      "text": "Un río con caimanes",
+      "seconds": 1.488
+    },
+    "1f31e804": {
+      "text": "Un baile llanero",
+      "seconds": 1.296
+    },
+    "41540ec9": {
+      "text": "Una pelea de gallos",
+      "seconds": 1.464
+    },
+    "6df90587": {
+      "text": "Las metras son…",
+      "seconds": 1.176
+    },
+    "578a59ed": {
+      "text": "Canicas",
+      "seconds": 0.792
+    },
+    "83ee269b": {
+      "text": "Trompos",
+      "seconds": 0.768
+    },
+    "aacfbb5e": {
+      "text": "Papagayos",
+      "seconds": 1.008
+    },
+    "6db40f74": {
+      "text": "Barajitas",
+      "seconds": 1.032
+    },
+    "497d64b2": {
+      "text": "Un papagayo es…",
+      "seconds": 1.44
+    },
+    "2bb09230": {
+      "text": "Una cometa",
+      "seconds": 1.008
+    },
+    "31cbf569": {
+      "text": "Un trompo",
+      "seconds": 0.936
+    },
+    "0df6f366": {
+      "text": "Una pelota",
+      "seconds": 1.008
+    },
+    "a844d12e": {
+      "text": "Un yoyo",
+      "seconds": 0.96
+    },
+    "cf31f997": {
+      "text": "Para bailar el trompo se usa…",
+      "seconds": 1.992
+    },
+    "192d87fc": {
+      "text": "Un guaral",
+      "seconds": 0.912
+    },
+    "0dc359e8": {
+      "text": "Un palo",
+      "seconds": 0.864
+    },
+    "8ac1dbea": {
+      "text": "Un imán",
+      "seconds": 0.792
+    },
+    "d48b205e": {
+      "text": "Los Navegantes del Magallanes juegan de local en…",
+      "seconds": 2.976
+    },
+    "c2619d42": {
+      "text": "Valencia",
+      "seconds": 0.84
+    },
+    "7542c167": {
+      "text": "El primer venezolano en el Salón de la Fama del béisbol fue…",
+      "seconds": 3.744
+    },
+    "fb574098": {
+      "text": "Luis Aparicio",
+      "seconds": 1.272
+    },
+    "15791887": {
+      "text": "Andrés Galarraga",
+      "seconds": 1.392
+    },
+    "34e4e1e4": {
+      "text": "Omar Vizquel",
+      "seconds": 1.104
+    },
+    "791a5008": {
+      "text": "Miguel Cabrera",
+      "seconds": 1.2
+    },
+    "60453f27": {
+      "text": "Jugar «la ere» es…",
+      "seconds": 1.392
+    },
+    "3869be66": {
+      "text": "Perseguir y tocar al otro",
+      "seconds": 1.8
+    },
+    "c200ed52": {
+      "text": "Esconderse",
+      "seconds": 1.08
+    },
+    "41754493": {
+      "text": "Saltar la cuerda",
+      "seconds": 1.296
+    },
+    "6162ae43": {
+      "text": "Lanzar metras",
+      "seconds": 1.2
+    },
+    "f3c233a2": {
+      "text": "Pichar es…",
+      "seconds": 1.008
+    },
+    "c5c54af9": {
+      "text": "Lanzar la pelota",
+      "seconds": 1.392
+    },
+    "41d17bd2": {
+      "text": "Batear de jonrón",
+      "seconds": 1.392
+    },
+    "6971c0fd": {
+      "text": "Correr a primera",
+      "seconds": 1.224
+    },
+    "bb01d3db": {
+      "text": "Atrapar un elevado",
+      "seconds": 1.416
+    },
+    "9b53ff84": {
+      "text": "Un bateador ponchado…",
+      "seconds": 1.68
+    },
+    "740252f6": {
+      "text": "Se fue out con tres strikes",
+      "seconds": 1.896
+    },
+    "25c6762a": {
+      "text": "Llegó a primera",
+      "seconds": 1.2
+    },
+    "2abccbb3": {
+      "text": "Dio un jonrón",
+      "seconds": 1.104
+    },
+    "4e17b351": {
+      "text": "Robó una base",
+      "seconds": 1.296
+    },
+    "635c2316": {
+      "text": "«¡La sacaste de jonrón!» quiere decir…",
+      "seconds": 2.328
+    },
+    "b22fa508": {
+      "text": "Lo hiciste excelente",
+      "seconds": 1.512
+    },
+    "0dbd1345": {
+      "text": "Rompiste una ventana",
+      "seconds": 1.536
+    },
+    "7ef99903": {
+      "text": "Perdiste la pelota",
+      "seconds": 1.464
+    },
+    "b454e746": {
+      "text": "Te botaron del juego",
+      "seconds": 1.584
+    },
+    "aa4ee6a7": {
+      "text": "La reina pepiada lleva…",
+      "seconds": 1.656
+    },
+    "cc8f35db": {
+      "text": "Pollo y aguacate",
+      "seconds": 1.368
+    },
+    "4954b633": {
+      "text": "Caraotas y queso",
+      "seconds": 1.464
+    },
+    "4cae36e3": {
+      "text": "Carne mechada",
+      "seconds": 1.224
+    },
+    "1cfff3f9": {
+      "text": "Jamón y queso",
+      "seconds": 1.224
+    },
+    "1cf96552": {
+      "text": "El pabellón criollo lleva…",
+      "seconds": 1.92
+    },
+    "39956880": {
+      "text": "Carne mechada, caraotas, arroz y tajadas",
+      "seconds": 2.784
+    },
+    "a33dbf36": {
+      "text": "Pescado frito y tostones",
+      "seconds": 1.848
+    },
+    "49ed6ab7": {
+      "text": "Pollo y papas",
+      "seconds": 1.2
+    },
+    "c3a39f04": {
+      "text": "Chorizo y yuca",
+      "seconds": 1.368
+    },
+    "d6ecc663": {
+      "text": "Los tequeños son palitos de masa rellenos de…",
+      "seconds": 2.952
+    },
+    "e3f41dbf": {
+      "text": "Queso blanco",
+      "seconds": 1.104
+    },
+    "bd20ff39": {
+      "text": "Chocolate",
+      "seconds": 0.96
+    },
+    "3440e288": {
+      "text": "Carne",
+      "seconds": 0.672
+    },
+    "42f17f07": {
+      "text": "Guayaba",
+      "seconds": 0.864
+    },
+    "1144f693": {
+      "text": "La hallaca se envuelve en…",
+      "seconds": 1.872
+    },
+    "37fe5187": {
+      "text": "Hojas de plátano",
+      "seconds": 1.392
+    },
+    "4f5e3efd": {
+      "text": "Papel aluminio",
+      "seconds": 1.296
+    },
+    "b2fc88f9": {
+      "text": "Hojas de maíz",
+      "seconds": 1.248
+    },
+    "4b45dea1": {
+      "text": "Tela",
+      "seconds": 0.576
+    },
+    "34f56058": {
+      "text": "La cachapa se hace con…",
+      "seconds": 1.776
+    },
+    "85ac26b6": {
+      "text": "Maíz tierno",
+      "seconds": 1.104
+    },
+    "ea934d62": {
+      "text": "Harina de trigo",
+      "seconds": 1.2
+    },
+    "4f2b1143": {
+      "text": "Yuca",
+      "seconds": 0.672
+    },
+    "1dc2f79d": {
+      "text": "Arroz",
+      "seconds": 0.648
+    },
+    "cb3391c7": {
+      "text": "El papelón con limón se hace con…",
+      "seconds": 2.208
+    },
+    "51be4d03": {
+      "text": "Panela y limón",
+      "seconds": 1.224
+    },
+    "f18bd7f5": {
+      "text": "Azúcar morena y naranja",
+      "seconds": 1.776
+    },
+    "e08e3852": {
+      "text": "Miel y lima",
+      "seconds": 1.032
+    },
+    "0978032d": {
+      "text": "Caña y parchita",
+      "seconds": 1.224
+    },
+    "79d4fb0b": {
+      "text": "Los golfeados son…",
+      "seconds": 1.44
+    },
+    "2abb3f9f": {
+      "text": "Pan dulce con papelón y queso",
+      "seconds": 2.184
+    },
+    "1cf87bd3": {
+      "text": "Empanadas de pescado",
+      "seconds": 1.488
+    },
+    "b44ff2f1": {
+      "text": "Galletas de coco",
+      "seconds": 1.44
+    },
+    "46de4e78": {
+      "text": "Arepas fritas",
+      "seconds": 1.176
+    },
+    "a8a7c158": {
+      "text": "La chicha venezolana se hace con…",
+      "seconds": 2.184
+    },
+    "c3d4aded": {
+      "text": "Maíz morado",
+      "seconds": 1.128
+    },
+    "1c8e70f5": {
+      "text": "Piña",
+      "seconds": 0.648
+    },
+    "18633984": {
+      "text": "Avena",
+      "seconds": 0.744
+    },
+    "4bbeeabd": {
+      "text": "La salsa oscura del asado negro viene del…",
+      "seconds": 2.736
+    },
+    "e909b5b9": {
+      "text": "Papelón",
+      "seconds": 0.84
+    },
+    "a87d9d81": {
+      "text": "Vino tinto",
+      "seconds": 1.08
+    },
+    "a732bcdc": {
+      "text": "El bienmesabe es un postre de…",
+      "seconds": 2.088
+    },
+    "53614ed9": {
+      "text": "Coco",
+      "seconds": 0.624
+    },
+    "c606aded": {
+      "text": "Plátano",
+      "seconds": 0.816
+    },
+    "7616fda6": {
+      "text": "Lechosa",
+      "seconds": 0.936
+    },
+    "a54857c9": {
+      "text": "El cachito típico va relleno de…",
+      "seconds": 2.256
+    },
+    "c5db6c9d": {
+      "text": "Jamón",
+      "seconds": 0.72
+    },
+    "37b32395": {
+      "text": "Pollo",
+      "seconds": 0.648
+    },
+    "4a1486c2": {
+      "text": "Queso crema",
+      "seconds": 1.056
+    },
+    "ac09a76d": {
+      "text": "Atún",
+      "seconds": 0.672
+    },
+    "cbaf16dd": {
+      "text": "El pan de jamón lleva jamón, pasas y…",
+      "seconds": 2.496
+    },
+    "8a427116": {
+      "text": "Aceitunas",
+      "seconds": 1.008
+    },
+    "664de357": {
+      "text": "Caraotas",
+      "seconds": 0.96
+    },
+    "ee3ad364": {
+      "text": "Una tizana es…",
+      "seconds": 1.272
+    },
+    "9ebc9f1a": {
+      "text": "Jugo con frutas picadas",
+      "seconds": 1.728
+    },
+    "fd5594f1": {
+      "text": "Un dulce de leche",
+      "seconds": 1.44
+    },
+    "a060a7e2": {
+      "text": "Una sopa",
+      "seconds": 0.96
+    },
+    "44e40866": {
+      "text": "Un pan relleno",
+      "seconds": 1.272
+    },
+    "fde9ba64": {
+      "text": "La independencia de Venezuela se firmó el…",
+      "seconds": 2.616
+    },
+    "82d54b7a": {
+      "text": "5 de julio de 1811",
+      "seconds": 2.64
+    },
+    "f69c0581": {
+      "text": "19 de abril de 1810",
+      "seconds": 2.592
+    },
+    "feeec2ee": {
+      "text": "24 de junio de 1821",
+      "seconds": 3.168
+    },
+    "27c9fbca": {
+      "text": "12 de octubre de 1492",
+      "seconds": 3.072
+    },
+    "0ba10f06": {
+      "text": "La Batalla de Carabobo fue en…",
+      "seconds": 2.016
+    },
+    "b7c827d1": {
+      "text": "1821",
+      "seconds": 1.872
+    },
+    "b0c5de35": {
+      "text": "1810",
+      "seconds": 1.536
+    },
+    "3ccb37c7": {
+      "text": "1830",
+      "seconds": 1.776
+    },
+    "a5d47df3": {
+      "text": "1799",
+      "seconds": 2.112
+    },
+    "28805568": {
+      "text": "Simón Bolívar nació en…",
+      "seconds": 1.728
+    },
+    "47890560": {
+      "text": "Bogotá",
+      "seconds": 0.888
+    },
+    "4bc28746": {
+      "text": "Simón Rodríguez, el maestro de Bolívar, también usó el nombre…",
+      "seconds": 3.528
+    },
+    "8c82a91e": {
+      "text": "Samuel Robinson",
+      "seconds": 1.344
+    },
+    "c643debf": {
+      "text": "El Precursor",
+      "seconds": 1.032
+    },
+    "3e43d167": {
+      "text": "El Centauro",
+      "seconds": 1.056
+    },
+    "6d3e5060": {
+      "text": "El Mariscal",
+      "seconds": 1.056
+    },
+    "10bcb461": {
+      "text": "A Francisco de Miranda le dicen…",
+      "seconds": 2.208
+    },
+    "9fc455b8": {
+      "text": "El Libertador",
+      "seconds": 1.08
+    },
+    "287024d9": {
+      "text": "El Centauro de los Llanos",
+      "seconds": 1.632
+    },
+    "235022e6": {
+      "text": "El Gran Mariscal",
+      "seconds": 1.32
+    },
+    "2bc12c3b": {
+      "text": "Miranda izó por primera vez la bandera tricolor en…",
+      "seconds": 3.384
+    },
+    "de20d500": {
+      "text": "La Vela de Coro",
+      "seconds": 1.224
+    },
+    "51fcaba3": {
+      "text": "Angostura",
+      "seconds": 1.008
+    },
+    "5b3d5d55": {
+      "text": "Antonio José de Sucre ganó la batalla de…",
+      "seconds": 2.808
+    },
+    "3f5899f2": {
+      "text": "Ayacucho",
+      "seconds": 0.912
+    },
+    "647a8ecc": {
+      "text": "Carabobo",
+      "seconds": 0.888
+    },
+    "bdb842e1": {
+      "text": "Boyacá",
+      "seconds": 0.888
+    },
+    "5717e73f": {
+      "text": "La Victoria",
+      "seconds": 1.032
+    },
+    "d1ceb841": {
+      "text": "Luisa Cáceres de Arismendi es una heroína de…",
+      "seconds": 2.904
+    },
+    "94f29ee2": {
+      "text": "Apure",
+      "seconds": 0.744
+    },
+    "fca8a797": {
+      "text": "El «¡Vuelvan caras!» de Las Queseras del Medio lo gritó…",
+      "seconds": 3.216
+    },
+    "b5fde77c": {
+      "text": "José Antonio Páez",
+      "seconds": 1.44
+    },
+    "a59b8092": {
+      "text": "Simón Bolívar",
+      "seconds": 1.224
+    },
+    "a4dac0e2": {
+      "text": "Rafael Urdaneta",
+      "seconds": 1.32
+    },
+    "71a58c2b": {
+      "text": "Santiago Mariño",
+      "seconds": 1.416
+    },
+    "6e7dccff": {
+      "text": "Guaicaipuro fue un cacique de los…",
+      "seconds": 2.232
+    },
+    "c5a121c0": {
+      "text": "Teques",
+      "seconds": 0.696
+    },
+    "b408a99e": {
+      "text": "Waraos",
+      "seconds": 0.768
+    },
+    "1da5dbc8": {
+      "text": "Wayúu",
+      "seconds": 0.744
+    },
+    "26c9a890": {
+      "text": "Pemones",
+      "seconds": 0.744
+    },
+    "bd2cea02": {
+      "text": "Colón llegó a tierra firme venezolana en su…",
+      "seconds": 2.784
+    },
+    "a49493fb": {
+      "text": "Tercer viaje",
+      "seconds": 1.2
+    },
+    "24f9e3df": {
+      "text": "Primer viaje",
+      "seconds": 1.104
+    },
+    "63a8e005": {
+      "text": "Segundo viaje",
+      "seconds": 1.248
+    },
+    "eb5ad794": {
+      "text": "Quinto viaje",
+      "seconds": 1.152
+    },
+    "d3a2832e": {
+      "text": "Se dice que el nombre «Venezuela» viene de…",
+      "seconds": 2.544
+    },
+    "19bd28fe": {
+      "text": "Venecia, por los palafitos",
+      "seconds": 1.776
+    },
+    "53cfa50f": {
+      "text": "Un cacique llamado Venezue",
+      "seconds": 1.92
+    },
+    "1fb6ed7b": {
+      "text": "Una palabra portuguesa",
+      "seconds": 1.608
+    },
+    "09da5862": {
+      "text": "El nombre de un río",
+      "seconds": 1.392
+    },
+    "75ce0dba": {
+      "text": "El himno nacional de Venezuela es…",
+      "seconds": 2.208
+    },
+    "c94c6b0f": {
+      "text": "Gloria al Bravo Pueblo",
+      "seconds": 1.584
+    },
+    "3b2b51e1": {
+      "text": "Alma llanera",
+      "seconds": 1.056
+    },
+    "97edc70d": {
+      "text": "Patria querida",
+      "seconds": 1.152
+    },
+    "164f6771": {
+      "text": "Venezuela, tierra mía",
+      "seconds": 1.584
+    },
+    "83fd840c": {
+      "text": "La bandera de Venezuela tiene…",
+      "seconds": 1.944
+    },
+    "8d4bb25b": {
+      "text": "Ocho estrellas",
+      "seconds": 1.224
+    },
+    "460b062a": {
+      "text": "Siete estrellas",
+      "seconds": 1.296
+    },
+    "0eb5c09b": {
+      "text": "Una estrella",
+      "seconds": 1.176
+    },
+    "9f704c48": {
+      "text": "Diez estrellas",
+      "seconds": 1.176
+    },
+    "93796fec": {
+      "text": "José Gregorio Hernández fue un…",
+      "seconds": 2.064
+    },
+    "788bd9b9": {
+      "text": "Médico",
+      "seconds": 0.816
+    },
+    "5561fd0b": {
+      "text": "General",
+      "seconds": 0.816
+    },
+    "632a229d": {
+      "text": "Pintor",
+      "seconds": 0.744
+    },
+    "16be55ff": {
+      "text": "Músico",
+      "seconds": 0.864
+    },
+    "fb589a7c": {
+      "text": "El ave nacional de Venezuela es el…",
+      "seconds": 2.256
+    },
+    "f5f03e56": {
+      "text": "Turpial",
+      "seconds": 0.768
+    },
+    "95913d0a": {
+      "text": "Guacamayo",
+      "seconds": 1.032
+    },
+    "7ebffe18": {
+      "text": "Colibrí",
+      "seconds": 0.888
+    },
+    "d6bebc8d": {
+      "text": "Cardenal",
+      "seconds": 0.84
+    },
+    "9aac72c3": {
+      "text": "El árbol nacional de Venezuela es el…",
+      "seconds": 2.4
+    },
+    "b8c14140": {
+      "text": "Araguaney",
+      "seconds": 0.984
+    },
+    "da9bc23e": {
+      "text": "Samán",
+      "seconds": 0.696
+    },
+    "c9a323d2": {
+      "text": "Apamate",
+      "seconds": 0.96
+    },
+    "7ccbb555": {
+      "text": "Cují",
+      "seconds": 0.672
+    },
+    "d6b7d5ab": {
+      "text": "La flor nacional de Venezuela es la…",
+      "seconds": 2.376
+    },
+    "4f0c8920": {
+      "text": "Orquídea",
+      "seconds": 0.888
+    },
+    "946e6a72": {
+      "text": "Rosa",
+      "seconds": 0.768
+    },
+    "30bf4556": {
+      "text": "Cayena",
+      "seconds": 0.792
+    },
+    "e0190000": {
+      "text": "Trinitaria",
+      "seconds": 0.984
+    },
+    "90d1c8ab": {
+      "text": "El río más largo de Venezuela es el…",
+      "seconds": 2.472
+    },
+    "20057fa6": {
+      "text": "Orinoco",
+      "seconds": 0.936
+    },
+    "44f883d0": {
+      "text": "Caroní",
+      "seconds": 0.744
+    },
+    "915382b6": {
+      "text": "Guárico",
+      "seconds": 0.84
+    },
+    "e3e080a6": {
+      "text": "Los tepuyes son…",
+      "seconds": 1.248
+    },
+    "948d66ff": {
+      "text": "Montañas de cima plana",
+      "seconds": 1.776
+    },
+    "26535269": {
+      "text": "Volcanes activos",
+      "seconds": 1.368
+    },
+    "5341d62d": {
+      "text": "Lagunas saladas",
+      "seconds": 1.248
+    },
+    "537cdc3e": {
+      "text": "Cuevas de hielo",
+      "seconds": 1.176
+    },
+    "e55d6048": {
+      "text": "El Roraima está en la frontera con…",
+      "seconds": 2.328
+    },
+    "03df92a6": {
+      "text": "Brasil y Guyana",
+      "seconds": 1.392
+    },
+    "dae90f8f": {
+      "text": "Colombia",
+      "seconds": 0.816
+    },
+    "a994aa00": {
+      "text": "Trinidad",
+      "seconds": 0.888
+    },
+    "5cb016c8": {
+      "text": "Ecuador",
+      "seconds": 0.84
+    },
+    "db6e4702": {
+      "text": "El chigüire, o capibara, es…",
+      "seconds": 2.064
+    },
+    "64dc0f92": {
+      "text": "El roedor más grande del mundo",
+      "seconds": 2.136
+    },
+    "4b8489d0": {
+      "text": "Un tipo de cerdo",
+      "seconds": 1.392
+    },
+    "4ad89892": {
+      "text": "Un pariente del oso",
+      "seconds": 1.536
+    },
+    "8ec32a24": {
+      "text": "Un marsupial",
+      "seconds": 1.104
+    },
+    "72c5e8ef": {
+      "text": "El moriche es una…",
+      "seconds": 1.488
+    },
+    "81ca7904": {
+      "text": "Palma",
+      "seconds": 0.672
+    },
+    "b55bd58e": {
+      "text": "Serpiente",
+      "seconds": 0.936
+    },
+    "4f25c5e5": {
+      "text": "Flor de agua",
+      "seconds": 1.104
+    },
+    "f593bd57": {
+      "text": "Laguna",
+      "seconds": 0.792
+    },
+    "e29520b8": {
+      "text": "El cunaguaro es un…",
+      "seconds": 1.56
+    },
+    "96a71938": {
+      "text": "Felino",
+      "seconds": 0.768
+    },
+    "81274d05": {
+      "text": "Pájaro",
+      "seconds": 0.744
+    },
+    "c85081ac": {
+      "text": "Pez",
+      "seconds": 0.576
+    },
+    "5966858a": {
+      "text": "Mono",
+      "seconds": 0.696
+    },
+    "dd9d52e1": {
+      "text": "El oso frontino vive en…",
+      "seconds": 1.848
+    },
+    "af2e7fc3": {
+      "text": "Los Médanos de Coro",
+      "seconds": 1.416
+    },
+    "30a9ad7a": {
+      "text": "El Delta",
+      "seconds": 0.888
+    },
+    "6fad12d5": {
+      "text": "La Cueva del Guácharo está en…",
+      "seconds": 2.088
+    },
+    "4018d56d": {
+      "text": "Monagas",
+      "seconds": 0.84
+    },
+    "8adabf92": {
+      "text": "Nueva Esparta",
+      "seconds": 1.224
+    },
+    "a8899d12": {
+      "text": "El guácharo es un…",
+      "seconds": 1.464
+    },
+    "1325206f": {
+      "text": "Pájaro nocturno",
+      "seconds": 1.296
+    },
+    "cbeab6a6": {
+      "text": "Murciélago",
+      "seconds": 1.008
+    },
+    "819cce31": {
+      "text": "Pez de cueva",
+      "seconds": 1.056
+    },
+    "4e70eaea": {
+      "text": "Insecto",
+      "seconds": 0.864
+    },
+    "17643051": {
+      "text": "El parque nacional más antiguo de Venezuela es el…",
+      "seconds": 3.12
+    },
+    "d37b23cc": {
+      "text": "Henri Pittier",
+      "seconds": 1.08
+    },
+    "99620ff5": {
+      "text": "Canaima",
+      "seconds": 0.816
+    },
+    "6c981be3": {
+      "text": "Morrocoy",
+      "seconds": 0.864
+    },
+    "3441b8ab": {
+      "text": "Mochima",
+      "seconds": 0.84
+    },
+    "3065ae7c": {
+      "text": "La tonina del Orinoco es un…",
+      "seconds": 2.064
+    },
+    "4c8a53e0": {
+      "text": "Delfín de río",
+      "seconds": 1.248
+    },
+    "50e00741": {
+      "text": "Pez gato",
+      "seconds": 0.912
+    },
+    "fc0baaeb": {
+      "text": "Caimán",
+      "seconds": 0.768
+    },
+    "7e2837a2": {
+      "text": "Manatí",
+      "seconds": 0.84
+    },
+    "5b4e14c4": {
+      "text": "El planeta más grande del sistema solar es…",
+      "seconds": 2.904
+    },
+    "80730e6e": {
+      "text": "Júpiter",
+      "seconds": 0.864
+    },
+    "b373a07b": {
+      "text": "Saturno",
+      "seconds": 0.888
+    },
+    "463f9b13": {
+      "text": "La Tierra",
+      "seconds": 0.864
+    },
+    "c8ccbcc4": {
+      "text": "Neptuno",
+      "seconds": 0.864
+    },
+    "ece5f5e4": {
+      "text": "Al «planeta rojo» se le dice a…",
+      "seconds": 2.04
+    },
+    "adbe3138": {
+      "text": "Marte",
+      "seconds": 0.72
+    },
+    "47579146": {
+      "text": "Venus",
+      "seconds": 0.696
+    },
+    "e36e3243": {
+      "text": "Mercurio",
+      "seconds": 0.912
+    },
+    "be70133a": {
+      "text": "¿Cuántos planetas tiene el sistema solar?",
+      "seconds": 2.592
+    },
+    "b37993f6": {
+      "text": "Ocho",
+      "seconds": 0.672
+    },
+    "9ec4a5e6": {
+      "text": "Nueve",
+      "seconds": 0.672
+    },
+    "b164a467": {
+      "text": "Siete",
+      "seconds": 0.696
+    },
+    "b78d2f51": {
+      "text": "Diez",
+      "seconds": 0.624
+    },
+    "ba4d69e2": {
+      "text": "La fórmula del agua es…",
+      "seconds": 1.752
+    },
+    "afb3d320": {
+      "text": "H₂O",
+      "seconds": 1.2
+    },
+    "ebd6529f": {
+      "text": "CO₂",
+      "seconds": 0.84
+    },
+    "6f077120": {
+      "text": "O₂",
+      "seconds": 0.744
+    },
+    "1478c41f": {
+      "text": "NaCl",
+      "seconds": 0.96
+    },
+    "631bd3d4": {
+      "text": "El gas que necesitamos respirar para vivir es el…",
+      "seconds": 2.904
+    },
+    "c42436a5": {
+      "text": "Oxígeno",
+      "seconds": 0.936
+    },
+    "93578f2f": {
+      "text": "Nitrógeno",
+      "seconds": 0.984
+    },
+    "f5676a3e": {
+      "text": "Helio",
+      "seconds": 0.624
+    },
+    "cbec0e73": {
+      "text": "Dióxido de carbono",
+      "seconds": 1.44
+    },
+    "a947c2ad": {
+      "text": "El hueso más largo del cuerpo es el…",
+      "seconds": 2.496
+    },
+    "86a150ff": {
+      "text": "Fémur",
+      "seconds": 0.72
+    },
+    "5e843b23": {
+      "text": "Húmero",
+      "seconds": 0.672
+    },
+    "b1deeb72": {
+      "text": "Tibia",
+      "seconds": 0.672
+    },
+    "5675f954": {
+      "text": "Radio",
+      "seconds": 0.744
+    },
+    "48b98960": {
+      "text": "¿Qué viaja más rápido?",
+      "seconds": 1.68
+    },
+    "ca6fe59d": {
+      "text": "La luz",
+      "seconds": 0.744
+    },
+    "436d023e": {
+      "text": "El sonido",
+      "seconds": 0.96
+    },
+    "ff3ecdb8": {
+      "text": "Un avión",
+      "seconds": 0.84
+    },
+    "55a6846f": {
+      "text": "El viento",
+      "seconds": 0.888
+    },
+    "6ba73578": {
+      "text": "Las plantas fabrican su alimento con la…",
+      "seconds": 2.616
+    },
+    "be5286fe": {
+      "text": "Fotosíntesis",
+      "seconds": 1.2
+    },
+    "f7201bbc": {
+      "text": "Digestión",
+      "seconds": 0.912
+    },
+    "5b8c63ff": {
+      "text": "Evaporación",
+      "seconds": 1.08
+    },
+    "d51d3771": {
+      "text": "Respiración",
+      "seconds": 1.056
+    },
+    "7d0a7492": {
+      "text": "El corazón humano tiene…",
+      "seconds": 1.728
+    },
+    "7acfa6dd": {
+      "text": "Cuatro cavidades",
+      "seconds": 1.296
+    },
+    "1391f893": {
+      "text": "Dos cavidades",
+      "seconds": 1.224
+    },
+    "d46f8b3d": {
+      "text": "Tres cavidades",
+      "seconds": 1.2
+    },
+    "c36cbce3": {
+      "text": "Seis cavidades",
+      "seconds": 1.2
+    },
+    "fe7f236f": {
+      "text": "El símbolo químico del oro es…",
+      "seconds": 2.16
+    },
+    "57d5653b": {
+      "text": "Au",
+      "seconds": 0.456
+    },
+    "5ce477a4": {
+      "text": "Or",
+      "seconds": 0.504
+    },
+    "49d54f31": {
+      "text": "Ag",
+      "seconds": 0.528
+    },
+    "41d0c56b": {
+      "text": "Go",
+      "seconds": 0.504
+    },
+    "87b22054": {
+      "text": "Al nivel del mar, el agua hierve a…",
+      "seconds": 2.184
+    },
+    "9d96de2f": {
+      "text": "100 °C",
+      "seconds": 1.224
+    },
+    "68901af3": {
+      "text": "50 °C",
+      "seconds": 1.488
+    },
+    "c8c8a652": {
+      "text": "80 °C",
+      "seconds": 1.44
+    },
+    "8a9db2fe": {
+      "text": "150 °C",
+      "seconds": 1.8
+    },
+    "037f83a5": {
+      "text": "La teoría de la relatividad es de…",
+      "seconds": 2.328
+    },
+    "4d2749fc": {
+      "text": "Albert Einstein",
+      "seconds": 1.272
+    },
+    "78d6bbfb": {
+      "text": "Isaac Newton",
+      "seconds": 1.248
+    },
+    "34c1e8a1": {
+      "text": "Galileo Galilei",
+      "seconds": 1.248
+    },
+    "a79ce575": {
+      "text": "Marie Curie",
+      "seconds": 1.056
+    },
+    "5697e2ae": {
+      "text": "La capital de Japón es…",
+      "seconds": 1.824
+    },
+    "5b2b0269": {
+      "text": "Tokio",
+      "seconds": 0.672
+    },
+    "c9d06b3f": {
+      "text": "Pekín",
+      "seconds": 0.72
+    },
+    "6274e25c": {
+      "text": "Seúl",
+      "seconds": 0.696
+    },
+    "022e507e": {
+      "text": "Osaka",
+      "seconds": 0.816
+    },
+    "ddf7a6fa": {
+      "text": "El océano más grande es el…",
+      "seconds": 2.04
+    },
+    "f87ef170": {
+      "text": "Pacífico",
+      "seconds": 0.984
+    },
+    "5d838087": {
+      "text": "Atlántico",
+      "seconds": 0.984
+    },
+    "507fb32c": {
+      "text": "Índico",
+      "seconds": 0.84
+    },
+    "510297a4": {
+      "text": "Ártico",
+      "seconds": 0.84
+    },
+    "df3db65d": {
+      "text": "El país más grande del mundo es…",
+      "seconds": 2.328
+    },
+    "2acb5593": {
+      "text": "Rusia",
+      "seconds": 0.768
+    },
+    "94da8330": {
+      "text": "China",
+      "seconds": 0.672
+    },
+    "73ef49a0": {
+      "text": "Canadá",
+      "seconds": 0.816
+    },
+    "71dce9b0": {
+      "text": "Brasil",
+      "seconds": 0.84
+    },
+    "b4992e6b": {
+      "text": "La capital de Australia es…",
+      "seconds": 2.016
+    },
+    "218e3597": {
+      "text": "Canberra",
+      "seconds": 0.84
+    },
+    "c0e52986": {
+      "text": "Sídney",
+      "seconds": 0.768
+    },
+    "e802500c": {
+      "text": "Melbourne",
+      "seconds": 0.912
+    },
+    "792dd568": {
+      "text": "Perth",
+      "seconds": 0.528
+    },
+    "371f97a8": {
+      "text": "La Torre Eiffel está en…",
+      "seconds": 1.824
+    },
+    "ad474105": {
+      "text": "París",
+      "seconds": 0.72
+    },
+    "7f8df318": {
+      "text": "Londres",
+      "seconds": 0.768
+    },
+    "b82dfbc8": {
+      "text": "Roma",
+      "seconds": 0.696
+    },
+    "aa12ba38": {
+      "text": "Madrid",
+      "seconds": 0.84
+    },
+    "aee7d0f1": {
+      "text": "El continente con más países es…",
+      "seconds": 2.208
+    },
+    "e954b424": {
+      "text": "África",
+      "seconds": 0.816
+    },
+    "d8dcbe9b": {
+      "text": "Europa",
+      "seconds": 0.816
+    },
+    "89dc6f17": {
+      "text": "Asia",
+      "seconds": 0.696
+    },
+    "6fd5735a": {
+      "text": "América",
+      "seconds": 0.84
+    },
+    "2247ea13": {
+      "text": "La montaña más alta del mundo es el…",
+      "seconds": 2.472
+    },
+    "20efda37": {
+      "text": "Everest",
+      "seconds": 0.888
+    },
+    "d82096d3": {
+      "text": "Aconcagua",
+      "seconds": 1.032
+    },
+    "dd707180": {
+      "text": "Kilimanjaro",
+      "seconds": 1.032
+    },
+    "81ffe071": {
+      "text": "Mont Blanc",
+      "seconds": 0.912
+    },
+    "61000f86": {
+      "text": "El desierto cálido más grande del mundo es el…",
+      "seconds": 2.976
+    },
+    "4f99b747": {
+      "text": "Sahara",
+      "seconds": 0.744
+    },
+    "57aa3579": {
+      "text": "Atacama",
+      "seconds": 0.984
+    },
+    "73993ee6": {
+      "text": "Gobi",
+      "seconds": 0.648
+    },
+    "878ee27c": {
+      "text": "Kalahari",
+      "seconds": 0.84
+    },
+    "e8986d72": {
+      "text": "Machu Picchu está en…",
+      "seconds": 1.632
+    },
+    "b6045d2d": {
+      "text": "Perú",
+      "seconds": 0.552
+    },
+    "8c40103b": {
+      "text": "Bolivia",
+      "seconds": 0.84
+    },
+    "3bb5c9f5": {
+      "text": "México",
+      "seconds": 0.84
+    },
+    "8cd5f96a": {
+      "text": "Chile",
+      "seconds": 0.576
+    },
+    "9ac55fe2": {
+      "text": "La capital de Canadá es…",
+      "seconds": 1.872
+    },
+    "ff3dfebd": {
+      "text": "Ottawa",
+      "seconds": 0.792
+    },
+    "feb84576": {
+      "text": "Toronto",
+      "seconds": 0.888
+    },
+    "1392946b": {
+      "text": "Montreal",
+      "seconds": 0.912
+    },
+    "0e9e54b4": {
+      "text": "Vancouver",
+      "seconds": 0.936
+    },
+    "ad82ccd0": {
+      "text": "El Canal de Panamá une el océano Pacífico con el…",
+      "seconds": 3.072
+    },
+    "543cbfa3": {
+      "text": "Mediterráneo",
+      "seconds": 1.08
+    },
+    "f8b6520c": {
+      "text": "El país con forma de bota es…",
+      "seconds": 2.088
+    },
+    "8bb0bd67": {
+      "text": "Italia",
+      "seconds": 0.792
+    },
+    "29da22f6": {
+      "text": "Grecia",
+      "seconds": 0.768
+    },
+    "268c9f87": {
+      "text": "Portugal",
+      "seconds": 0.888
+    },
+    "9dd709f6": {
+      "text": "Colón llegó a América en…",
+      "seconds": 1.824
+    },
+    "d9fdba33": {
+      "text": "1492",
+      "seconds": 2.112
+    },
+    "45e37e83": {
+      "text": "1500",
+      "seconds": 1.152
+    },
+    "641b1585": {
+      "text": "1450",
+      "seconds": 1.944
+    },
+    "58e15dd5": {
+      "text": "1519",
+      "seconds": 1.704
+    },
+    "3ca6e2eb": {
+      "text": "El primer hombre en pisar la Luna fue…",
+      "seconds": 2.376
+    },
+    "a4835ed4": {
+      "text": "Neil Armstrong",
+      "seconds": 1.08
+    },
+    "903b9ff7": {
+      "text": "Yuri Gagarin",
+      "seconds": 1.104
+    },
+    "9757ed84": {
+      "text": "Buzz Aldrin",
+      "seconds": 1.08
+    },
+    "2c140bca": {
+      "text": "John Glenn",
+      "seconds": 0.912
+    },
+    "8d90cba6": {
+      "text": "Las pirámides de Guiza están en…",
+      "seconds": 2.28
+    },
+    "92b65395": {
+      "text": "Egipto",
+      "seconds": 0.816
+    },
+    "1dfdfa2b": {
+      "text": "El Muro de Berlín cayó en…",
+      "seconds": 1.872
+    },
+    "20476674": {
+      "text": "1989",
+      "seconds": 2.112
+    },
+    "2449ab57": {
+      "text": "1975",
+      "seconds": 2.064
+    },
+    "244be9ee": {
+      "text": "1961",
+      "seconds": 1.968
+    },
+    "984451c5": {
+      "text": "1995",
+      "seconds": 2.112
+    },
+    "8fa9ef7f": {
+      "text": "Donde estaba Tenochtitlan, la ciudad azteca, hoy está…",
+      "seconds": 3.312
+    },
+    "827e7442": {
+      "text": "Ciudad de México",
+      "seconds": 1.44
+    },
+    "840f9190": {
+      "text": "Lima",
+      "seconds": 0.672
+    },
+    "b6415c55": {
+      "text": "La Habana",
+      "seconds": 0.864
+    },
+    "71d459a4": {
+      "text": "Juana de Arco es una heroína de…",
+      "seconds": 2.088
+    },
+    "bcc34815": {
+      "text": "Francia",
+      "seconds": 0.768
+    },
+    "255b6a09": {
+      "text": "España",
+      "seconds": 0.864
+    },
+    "1def1112": {
+      "text": "Inglaterra",
+      "seconds": 0.96
+    },
+    "27bd977f": {
+      "text": "La Revolución francesa comenzó en…",
+      "seconds": 2.4
+    },
+    "a9d6c2d6": {
+      "text": "1789",
+      "seconds": 2.112
+    },
+    "a2c33019": {
+      "text": "1700",
+      "seconds": 1.32
+    },
+    "2ab9d250": {
+      "text": "1848",
+      "seconds": 2.016
+    },
+    "deda5de6": {
+      "text": "La imprenta de tipos móviles en Europa la inventó…",
+      "seconds": 3.024
+    },
+    "450e75ba": {
+      "text": "Gutenberg",
+      "seconds": 1.032
+    },
+    "76eb77bb": {
+      "text": "Da Vinci",
+      "seconds": 0.936
+    },
+    "c3a2f60d": {
+      "text": "Edison",
+      "seconds": 0.84
+    },
+    "ba50d5ca": {
+      "text": "Galileo",
+      "seconds": 0.84
+    },
+    "e297dfae": {
+      "text": "La Primera Guerra Mundial empezó en…",
+      "seconds": 2.52
+    },
+    "2758ba9a": {
+      "text": "1914",
+      "seconds": 1.8
+    },
+    "a05368e7": {
+      "text": "1939",
+      "seconds": 1.992
+    },
+    "295afc57": {
+      "text": "1900",
+      "seconds": 1.296
+    },
+    "1b58a7b6": {
+      "text": "1918",
+      "seconds": 1.896
+    },
+    "e556fae1": {
+      "text": "La capital del imperio inca era…",
+      "seconds": 2.16
+    },
+    "b2ea9e94": {
+      "text": "Cusco",
+      "seconds": 0.744
+    },
+    "991582bb": {
+      "text": "Quito",
+      "seconds": 0.624
+    },
+    "4ce30ab5": {
+      "text": "La Paz",
+      "seconds": 0.768
+    },
+    "63d7b97a": {
+      "text": "Cleopatra fue reina de…",
+      "seconds": 1.752
+    },
+    "de73934f": {
+      "text": "Persia",
+      "seconds": 0.744
+    },
+    "c6bd469f": {
+      "text": "La Gran Muralla está en…",
+      "seconds": 1.872
+    },
+    "08d4730c": {
+      "text": "Japón",
+      "seconds": 0.768
+    },
+    "9dbd062c": {
+      "text": "India",
+      "seconds": 0.696
+    },
+    "2ee886ab": {
+      "text": "Mongolia",
+      "seconds": 0.888
+    },
+    "53f223cc": {
+      "text": "En una cancha de fútbol, cada equipo tiene…",
+      "seconds": 2.616
+    },
+    "b3faee12": {
+      "text": "Once jugadores",
+      "seconds": 1.272
+    },
+    "5993eb10": {
+      "text": "Nueve jugadores",
+      "seconds": 1.272
+    },
+    "11512307": {
+      "text": "Diez jugadores",
+      "seconds": 1.2
+    },
+    "6ac7d0c6": {
+      "text": "Doce jugadores",
+      "seconds": 1.272
+    },
+    "4700d274": {
+      "text": "Los Juegos Olímpicos de verano se hacen cada…",
+      "seconds": 2.904
+    },
+    "31c1f7ba": {
+      "text": "Cuatro años",
+      "seconds": 1.056
+    },
+    "f7a7d510": {
+      "text": "Dos años",
+      "seconds": 0.984
+    },
+    "62b03a9e": {
+      "text": "Cinco años",
+      "seconds": 1.128
+    },
+    "35fd0ada": {
+      "text": "Tres años",
+      "seconds": 0.984
+    },
+    "b79cd2af": {
+      "text": "El Mundial de fútbol de 2022 lo ganó…",
+      "seconds": 3.072
+    },
+    "cc75630e": {
+      "text": "Argentina",
+      "seconds": 1.008
+    },
+    "aaa112cf": {
+      "text": "Croacia",
+      "seconds": 0.84
+    },
+    "8b7cf916": {
+      "text": "Usain Bolt es un velocista de…",
+      "seconds": 2.208
+    },
+    "bc2efba9": {
+      "text": "Jamaica",
+      "seconds": 0.84
+    },
+    "122397b4": {
+      "text": "Estados Unidos",
+      "seconds": 1.248
+    },
+    "38a17df3": {
+      "text": "Kenia",
+      "seconds": 0.672
+    },
+    "f2388c8c": {
+      "text": "Cuba",
+      "seconds": 0.624
+    },
+    "91870219": {
+      "text": "La bandera olímpica tiene…",
+      "seconds": 1.848
+    },
+    "e22ac25c": {
+      "text": "Cinco aros",
+      "seconds": 1.032
+    },
+    "eedc12b0": {
+      "text": "Cuatro aros",
+      "seconds": 1.008
+    },
+    "c43f9642": {
+      "text": "Seis aros",
+      "seconds": 0.912
+    },
+    "feeb16b4": {
+      "text": "Siete aros",
+      "seconds": 1.008
+    },
+    "2b6b527f": {
+      "text": "En baloncesto, un tiro desde detrás de la línea larga vale…",
+      "seconds": 3.48
+    },
+    "c5d5f122": {
+      "text": "Tres puntos",
+      "seconds": 1.032
+    },
+    "517c318c": {
+      "text": "Dos puntos",
+      "seconds": 1.032
+    },
+    "1bcf0ff8": {
+      "text": "Un punto",
+      "seconds": 0.96
+    },
+    "98e23542": {
+      "text": "Cuatro puntos",
+      "seconds": 1.128
+    },
+    "794e73d9": {
+      "text": "Wimbledon se juega sobre…",
+      "seconds": 1.848
+    },
+    "5c4d2bcc": {
+      "text": "Césped",
+      "seconds": 0.768
+    },
+    "7d1006a5": {
+      "text": "Arcilla",
+      "seconds": 0.864
+    },
+    "5d32aa76": {
+      "text": "Cemento",
+      "seconds": 0.864
+    },
+    "090ea90d": {
+      "text": "Madera",
+      "seconds": 0.744
+    },
+    "ba366193": {
+      "text": "Michael Jordan es una leyenda del…",
+      "seconds": 2.28
+    },
+    "ece757eb": {
+      "text": "Baloncesto",
+      "seconds": 1.128
+    },
+    "4c5b8d5a": {
+      "text": "Béisbol",
+      "seconds": 0.816
+    },
+    "b7a163fe": {
+      "text": "Fútbol americano",
+      "seconds": 1.344
+    },
+    "6e94b9d9": {
+      "text": "Golf",
+      "seconds": 0.624
+    },
+    "d5a5be81": {
+      "text": "Un maratón mide unos…",
+      "seconds": 1.728
+    },
+    "1448827f": {
+      "text": "42 kilómetros",
+      "seconds": 1.704
+    },
+    "d51ca9d8": {
+      "text": "21 kilómetros",
+      "seconds": 1.488
+    },
+    "51889560": {
+      "text": "10 kilómetros",
+      "seconds": 1.248
+    },
+    "8739c7c8": {
+      "text": "100 kilómetros",
+      "seconds": 1.2
+    },
+    "c25fc250": {
+      "text": "El Tour de Francia es una carrera de…",
+      "seconds": 2.448
+    },
+    "50079866": {
+      "text": "Ciclismo",
+      "seconds": 0.936
+    },
+    "d419bebd": {
+      "text": "Atletismo",
+      "seconds": 1.08
+    },
+    "07765811": {
+      "text": "Automovilismo",
+      "seconds": 1.296
+    },
+    "d1e97bc1": {
+      "text": "Natación",
+      "seconds": 0.912
+    },
+    "2c197189": {
+      "text": "En béisbol, el equipo que defiende tiene en el campo…",
+      "seconds": 2.976
+    },
+    "dcf28b41": {
+      "text": "Siete jugadores",
+      "seconds": 1.296
+    },
+    "57d37c5f": {
+      "text": "«Jaque mate» se dice en el…",
+      "seconds": 1.848
+    },
+    "45cf9bf8": {
+      "text": "Ajedrez",
+      "seconds": 0.864
+    },
+    "bc6dfbc6": {
+      "text": "Dominó",
+      "seconds": 0.768
+    },
+    "3b724758": {
+      "text": "Póquer",
+      "seconds": 0.648
+    },
+    "96c8de0f": {
+      "text": "Billar",
+      "seconds": 0.768
+    },
+    "f88859be": {
+      "text": "El animal más grande del mundo es la…",
+      "seconds": 2.568
+    },
+    "0b98b39c": {
+      "text": "Ballena azul",
+      "seconds": 1.128
+    },
+    "16147e5c": {
+      "text": "Jirafa",
+      "seconds": 0.816
+    },
+    "5357c2ac": {
+      "text": "Orca",
+      "seconds": 0.672
+    },
+    "c4124bfa": {
+      "text": "Elefanta africana",
+      "seconds": 1.392
+    },
+    "b05436e7": {
+      "text": "El animal terrestre más rápido es el…",
+      "seconds": 2.448
+    },
+    "a3376dba": {
+      "text": "Guepardo",
+      "seconds": 0.864
+    },
+    "fe423d52": {
+      "text": "León",
+      "seconds": 0.648
+    },
+    "c65ed9b3": {
+      "text": "Avestruz",
+      "seconds": 0.912
+    },
+    "d68f3a31": {
+      "text": "El pingüino es…",
+      "seconds": 1.368
+    },
+    "c0739f3c": {
+      "text": "Un ave",
+      "seconds": 0.816
+    },
+    "5038f1c9": {
+      "text": "Un mamífero",
+      "seconds": 1.08
+    },
+    "20922c15": {
+      "text": "Un pez",
+      "seconds": 0.816
+    },
+    "c4890812": {
+      "text": "Un reptil",
+      "seconds": 0.96
+    },
+    "b1725ad0": {
+      "text": "Las arañas tienen…",
+      "seconds": 1.416
+    },
+    "691abe7f": {
+      "text": "Ocho patas",
+      "seconds": 1.056
+    },
+    "52b9d7b0": {
+      "text": "Seis patas",
+      "seconds": 1.008
+    },
+    "e0365ae4": {
+      "text": "Diez patas",
+      "seconds": 1.056
+    },
+    "7d319a4a": {
+      "text": "Cuatro patas",
+      "seconds": 1.128
+    },
+    "b933c3b1": {
+      "text": "El murciélago es…",
+      "seconds": 1.392
+    },
+    "1ddc83d3": {
+      "text": "Un insecto",
+      "seconds": 1.008
+    },
+    "19670f51": {
+      "text": "El pulpo tiene…",
+      "seconds": 1.272
+    },
+    "6490389f": {
+      "text": "Ocho brazos",
+      "seconds": 1.152
+    },
+    "3b43286a": {
+      "text": "Seis brazos",
+      "seconds": 1.056
+    },
+    "09e87fa6": {
+      "text": "Diez brazos",
+      "seconds": 1.104
+    },
+    "ee22ace1": {
+      "text": "Doce brazos",
+      "seconds": 1.152
+    },
+    "2ab25952": {
+      "text": "El canguro vive en…",
+      "seconds": 1.656
+    },
+    "65e98669": {
+      "text": "Australia",
+      "seconds": 0.864
+    },
+    "5edbd1d4": {
+      "text": "Sudamérica",
+      "seconds": 1.056
+    },
+    "0dfb5c6c": {
+      "text": "El oso panda come sobre todo…",
+      "seconds": 2.064
+    },
+    "b70e162e": {
+      "text": "Bambú",
+      "seconds": 0.768
+    },
+    "949ae782": {
+      "text": "Pescado",
+      "seconds": 0.864
+    },
+    "ec5846ba": {
+      "text": "Miel",
+      "seconds": 0.576
+    },
+    "966a1be8": {
+      "text": "Frutas",
+      "seconds": 0.744
+    },
+    "cebc93ad": {
+      "text": "Las ballenas respiran con…",
+      "seconds": 1.92
+    },
+    "73c44378": {
+      "text": "Pulmones",
+      "seconds": 0.768
+    },
+    "5bb0b8a7": {
+      "text": "Branquias",
+      "seconds": 0.816
+    },
+    "f9daa4d4": {
+      "text": "La piel",
+      "seconds": 0.744
+    },
+    "2f988cb9": {
+      "text": "Aletas",
+      "seconds": 0.792
+    },
+    "ac043518": {
+      "text": "El animal famoso por cambiar de color es el…",
+      "seconds": 2.856
+    },
+    "7a2de1cc": {
+      "text": "Camaleón",
+      "seconds": 0.888
+    },
+    "6dd8f7ef": {
+      "text": "Loro",
+      "seconds": 0.672
+    },
+    "271e170c": {
+      "text": "Sapo",
+      "seconds": 0.672
+    },
+    "9c8d40a4": {
+      "text": "Gato",
+      "seconds": 0.696
+    },
+    "29e44bb4": {
+      "text": "El animal con trompa es el…",
+      "seconds": 1.92
+    },
+    "5947bdb7": {
+      "text": "Elefante",
+      "seconds": 1.008
+    },
+    "c12cc1c5": {
+      "text": "Rinoceronte",
+      "seconds": 1.104
+    },
+    "fc2a8230": {
+      "text": "Hipopótamo",
+      "seconds": 1.128
+    },
+    "c86a050f": {
+      "text": "Cocodrilo",
+      "seconds": 1.008
+    },
+    "0e10221e": {
+      "text": "La cría de la vaca se llama…",
+      "seconds": 1.872
+    },
+    "be80075d": {
+      "text": "Becerro",
+      "seconds": 0.84
+    },
+    "7ebc1c3f": {
+      "text": "Potro",
+      "seconds": 0.672
+    },
+    "292a2fbf": {
+      "text": "Cordero",
+      "seconds": 0.84
+    },
+    "0b350bab": {
+      "text": "Lechón",
+      "seconds": 0.768
+    },
+    "c5385114": {
+      "text": "La Mona Lisa la pintó…",
+      "seconds": 1.608
+    },
+    "faa4b019": {
+      "text": "Leonardo da Vinci",
+      "seconds": 1.536
+    },
+    "eb11b793": {
+      "text": "Pablo Picasso",
+      "seconds": 1.272
+    },
+    "f4651ee0": {
+      "text": "Miguel Ángel",
+      "seconds": 1.152
+    },
+    "06455582": {
+      "text": "Vincent van Gogh",
+      "seconds": 1.32
+    },
+    "eac8413f": {
+      "text": "«Don Quijote de la Mancha» lo escribió…",
+      "seconds": 2.184
+    },
+    "97efc8e8": {
+      "text": "Miguel de Cervantes",
+      "seconds": 1.464
+    },
+    "90267fff": {
+      "text": "Lope de Vega",
+      "seconds": 1.2
+    },
+    "6cad7d61": {
+      "text": "García Márquez",
+      "seconds": 1.248
+    },
+    "5b3f3c51": {
+      "text": "Shakespeare",
+      "seconds": 1.032
+    },
+    "0c296c27": {
+      "text": "«Cien años de soledad» es de…",
+      "seconds": 1.992
+    },
+    "10664dbf": {
+      "text": "Gabriel García Márquez",
+      "seconds": 1.68
+    },
+    "44434eca": {
+      "text": "Rómulo Gallegos",
+      "seconds": 1.32
+    },
+    "b8db12dc": {
+      "text": "Pablo Neruda",
+      "seconds": 1.08
+    },
+    "6fe7a430": {
+      "text": "Isabel Allende",
+      "seconds": 1.368
+    },
+    "234072b2": {
+      "text": "«Romeo y Julieta» la escribió…",
+      "seconds": 1.968
+    },
+    "f3893a08": {
+      "text": "William Shakespeare",
+      "seconds": 1.536
+    },
+    "98023c00": {
+      "text": "Charles Dickens",
+      "seconds": 1.152
+    },
+    "a5820ab0": {
+      "text": "Molière",
+      "seconds": 0.768
+    },
+    "3ed184c2": {
+      "text": "Cervantes",
+      "seconds": 0.912
+    },
+    "52c939a6": {
+      "text": "¿Cuántas notas tiene la escala de do, re, mi…?",
+      "seconds": 2.688
+    },
+    "7f65933d": {
+      "text": "El instrumento con 88 teclas es el…",
+      "seconds": 2.928
+    },
+    "010fe67e": {
+      "text": "Piano",
+      "seconds": 0.6
+    },
+    "11e871f9": {
+      "text": "Acordeón",
+      "seconds": 0.912
+    },
+    "418233ad": {
+      "text": "Arpa",
+      "seconds": 0.648
+    },
+    "97700e7c": {
+      "text": "Xilófono",
+      "seconds": 0.864
+    },
+    "1b2a2b52": {
+      "text": "Harry Potter estudia magia en…",
+      "seconds": 2.112
+    },
+    "0dfc2af8": {
+      "text": "Hogwarts",
+      "seconds": 0.72
+    },
+    "1b90d586": {
+      "text": "Narnia",
+      "seconds": 0.768
+    },
+    "b3f3eb35": {
+      "text": "Gotham",
+      "seconds": 0.792
+    },
+    "93baf3bd": {
+      "text": "Atlantis",
+      "seconds": 0.888
+    },
+    "55ff30b1": {
+      "text": "Mario, el de los videojuegos, trabaja de…",
+      "seconds": 2.544
+    },
+    "9ec663b3": {
+      "text": "Plomero",
+      "seconds": 0.768
+    },
+    "e6a2de57": {
+      "text": "Panadero",
+      "seconds": 0.864
+    },
+    "04d73f3f": {
+      "text": "Bombero",
+      "seconds": 0.816
+    },
+    "ea902551": {
+      "text": "Cartero",
+      "seconds": 0.792
+    },
+    "01ca1020": {
+      "text": "«La noche estrellada» la pintó…",
+      "seconds": 1.992
+    },
+    "a7597218": {
+      "text": "Claude Monet",
+      "seconds": 1.104
+    },
+    "76164e42": {
+      "text": "Salvador Dalí",
+      "seconds": 1.224
+    },
+    "92bce306": {
+      "text": "Frida Kahlo",
+      "seconds": 0.984
+    },
+    "aa81525a": {
+      "text": "Los Beatles eran de…",
+      "seconds": 1.584
+    },
+    "ba2b09cd": {
+      "text": "Liverpool",
+      "seconds": 0.936
+    },
+    "477f5ce5": {
+      "text": "Nueva York",
+      "seconds": 0.984
+    },
+    "bc1bf432": {
+      "text": "Dublín",
+      "seconds": 0.768
+    },
+    "eaa440e6": {
+      "text": "A Pinocho le crece la nariz cuando…",
+      "seconds": 2.256
+    },
+    "1b4cd11f": {
+      "text": "Miente",
+      "seconds": 0.768
+    },
+    "2ec13080": {
+      "text": "Estornuda",
+      "seconds": 1.008
+    },
+    "91186cc1": {
+      "text": "Tiene hambre",
+      "seconds": 1.008
+    },
+    "267308f5": {
+      "text": "Se duerme",
+      "seconds": 0.888
+    },
+    "cf194739": {
+      "text": "«Doña Bárbara» la escribió…",
+      "seconds": 1.776
+    },
+    "7ae2b065": {
+      "text": "Andrés Eloy Blanco",
+      "seconds": 1.632
+    },
+    "55bf6f68": {
+      "text": "Arturo Uslar Pietri",
+      "seconds": 1.536
+    },
+    "2d9eda43": {
+      "text": "Teresa de la Parra",
+      "seconds": 1.248
+    }
+  }
+}

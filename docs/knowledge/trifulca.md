@@ -54,6 +54,9 @@ wins and the titles are handed out.
   de caballero and titles. `bot-rules.js` holds the bots. Pure; tested by
   `tests/rules.test.js`.
 - `public/network.js`: the live room; the host runs the night at 20 Hz.
+  "Otra noche" sends `lobby` (`Trifulca.toLobby`, answered by `LiveRoom`): the
+  night returns to the lobby, where the host may change the arena and mode;
+  `start()` refuses a finished night. Leaving the tutorial uses the same path.
 - `public/scene.js`: stage, panas, NPC neighbours, the ref, the TV camera and
   the replay. `fighters.js` poses a pana (fighters wear the wardrobe's kart
   helmet, and every jab, trompón, block, taunt and win picks one of a few
@@ -79,6 +82,15 @@ wins and the titles are handed out.
   `dizzy` for 2.1 s; a clean hit then is a caída. Recovering without one
   resets mareo to 55. Getting up takes `7 + 6 × (caídas − 1)` presses before
   the ref's ten (one count per 0.85 s). Three caídas or the ten is a K.O.
+- Body space: centres closer than `BODY_GAP` (1 m) push apart along the line
+  between them, each body at most `SEPARATE` (5 m/s), so a deep overlap eases
+  out in a few ticks while walking in or a trompón lunge still stops at the
+  gap. 0.85 m let the kart helmets and the guard's forward lean fuse heads.
+  Everyone in the ring takes part, also down, dodging or invulnerable bodies
+  (invulnerability only stops hits); benched and knocked-out ones don't. Only
+  positions move, so knockback velocity is untouched. Same spot: the first
+  body goes to −X. The duel's pull back to z = 0 runs before the step so the
+  push has the last word; the ref's clinch range is `BODY_GAP + 0.2`.
 - The bell after `seconds`: card = jabs + 3 × trompones + 6 × caídas
   inflicted + 0.35 × seconds pressing forward + 0.25 × blocks. A gap under 1
   point goes to the crowd (cheers plus bets per corner).
@@ -245,3 +257,15 @@ bundled Three.js copy is served. Unit tests cover timing, recovery, guard,
 dodge, range, stamina, mirroring and restored state. The two-client suite
 sends I/U/O from the guest and observes the matching hit and score on both
 clients.
+
+## Languages
+
+The announcer's random colour lines (`LINES` in `narrator.js`) stay Spanish
+in every language; the other narrator lines are interface. `lineFor` returns
+Spanish source (`locKey`) plus `vars`, with name lists as arrays: the HUD's
+`call()` shows `loc(text)` with lists joined in the player's language, and the
+voice always speaks the Spanish, since it uses a Spanish speech voice. Room
+notices and night titles also travel as source. `deviceText` in `hud.js`
+swaps key names on already translated text, so an English translation keeps
+"Space", "or left click", "or right click" and "D or the right arrow" word for
+word and never uses I, O, T, L, K, J or U as ordinary words.

@@ -17,10 +17,10 @@
 // flavour: 'cacho', or 'moneda' for two sides: one coin flip, no inputs.
 import { rollOffGroups } from './roll-off.js';
 import { rng } from '../random.js';
-
+import { loc, locKey } from '../i18n.js';
 export const STARTER_FIELD = {
-  id: 'starter', label: '¿Quién empieza?', default: 'cacho', advanced: true,
-  choices: [['cacho', 'Cacho'], ['azar', 'Al azar'], ['anfitrion', 'El anfitrión'], ['revancha', 'Revancha: el que perdió']],
+  id: 'starter', label: loc('¿Quién empieza?'), default: 'cacho', advanced: true,
+  choices: [['cacho', loc('Cacho')], ['azar', loc('Al azar')], ['anfitrion', loc('El anfitrión')], ['revancha', loc('Revancha: el que perdió')]],
 };
 // Seconds. Nobody waits for a slow pana: the cacho slams on its own.
 export const SHAKE_LIMIT = 8, LIFT = 2.6, ORDER_HOLD = 3, FLIP = 2.8;
@@ -58,7 +58,8 @@ export function createStarter({ seats, need = 'first', seed = 1, option = 'cacho
   };
   if (s.option === 'azar' || s.option === 'anfitrion' || s.seats.length < 2) {
     finish(s, s.option === 'azar' ? shuffle(s, s.seats, 404) : s.seats); s.phase = 'done';
-    s.note = s.option === 'azar' ? 'Orden al azar' : s.option === 'anfitrion' ? 'Orden de la mesa' : '';
+    // Shared state: each client translates the note where it shows it.
+    s.note = s.option === 'azar' ? locKey('Orden al azar') : s.option === 'anfitrion' ? locKey('Orden de la mesa') : '';
     return s;
   }
   if (s.option === 'revancha' && s.seats.includes(last)) s.lead = [last];
@@ -161,12 +162,12 @@ export function starterBarks(s) {
   const top = Math.max(...seats.map(seat => thrown[seat])), best = seats.filter(seat => thrown[seat] === top);
   const lines = new Map();
   for (const seat of seats) {
-    if (thrown[seat] === 6) lines.set(seat, '¡Seis! ¿Quién te para?');
-    else if (thrown[seat] === 1) lines.set(seat, 'Uno… qué pava.');
+    if (thrown[seat] === 6) lines.set(seat, loc('¡Seis! ¿Quién te para?'));
+    else if (thrown[seat] === 1) lines.set(seat, loc('Uno… qué pava.'));
   }
-  if (best.length > 1) lines.set(best[0], '¡Empate! Otra vez, pues.');
+  if (best.length > 1) lines.set(best[0], loc('¡Empate! Otra vez, pues.'));
   else if (!s.lead.length && s.groups[0].includes(best[0])) {
-    if (!lines.has(best[0])) lines.set(best[0], '¡Sale primero!');
+    if (!lines.has(best[0])) lines.set(best[0], loc('¡Sale primero!'));
     const low = Math.min(...seats.map(seat => thrown[seat])), loser = seats.find(seat => thrown[seat] === low && seat !== best[0]);
     if (loser !== undefined && !lines.has(loser)) lines.set(loser, 'Eso fue trampa.');
   }

@@ -10,6 +10,7 @@
 // grid of CELL metres; the path goes from the entrance (south, row 0) to the
 // exit (north), with side rooms and sometimes a hidden one off it.
 import { rng } from '../../../engine/random.js';
+import { locKey } from '../../../engine/i18n.js';
 import { SMALL, BIG_POOL, ARTIFACTS } from './items.js';
 
 export const CELL = 26, SPACING = 220, ROWS = 4, COLS = [-1, 0, 1], HEIGHT = 4.6;
@@ -19,12 +20,13 @@ const CAMP_RECT = [-18, -2, 18, 30], STUB = 6.2;
 // The montacargas cage: 3.2 m square around a stop's centre.
 export const CAGE = 1.6;
 
+// Shown with loc() where they are drawn; the run itself keeps the Spanish key.
 export const ROOM_NAMES = {
-  entrada: 'La bajada', tesoro: 'Cámara del tesoro', columnas: 'Sala de columnas', trampas: 'Pasillo de las losas',
-  idolo: 'El altar del ídolo', veta: 'La veta de oro', cripta: 'La cripta', santuario: 'El santuario', puente: 'El abismo',
-  ruedas: 'Las dos ruedas', guardian: 'El trono del guardián', boveda: 'La bóveda de oro', oculta: 'La sala escondida',
+  entrada: locKey('La bajada'), tesoro: locKey('Cámara del tesoro'), columnas: locKey('Sala de columnas'), trampas: locKey('Pasillo de las losas'),
+  idolo: locKey('El altar del ídolo'), veta: locKey('La veta de oro'), cripta: locKey('La cripta'), santuario: locKey('El santuario'), puente: locKey('El abismo'),
+  ruedas: locKey('Las dos ruedas'), guardian: locKey('El trono del guardián'), boveda: locKey('La bóveda de oro'), oculta: locKey('La sala escondida'),
 };
-export const FLOOR_NAMES = ['El campamento', 'Las afueras de la mina', 'Las cámaras trampa', 'Las ruinas malditas', 'La bóveda del jaguar', 'El oro profundo'];
+export const FLOOR_NAMES = [locKey('El campamento'), locKey('Las afueras de la mina'), locKey('Las cámaras trampa'), locKey('Las ruinas malditas'), locKey('La bóveda del jaguar'), locKey('El oro profundo')];
 const SIZES = { entrada: [16, 14], tesoro: [16, 14], columnas: [18, 16], trampas: [16, 16], idolo: [14, 14], veta: [16, 14], cripta: [16, 16],
   santuario: [12, 12], puente: [18, 18], ruedas: [18, 16], guardian: [20, 18], boveda: [22, 22], oculta: [12, 12] };
 const DECK = ['tesoro', 'columnas', 'trampas', 'idolo', 'veta', 'cripta', 'santuario', 'puente'];

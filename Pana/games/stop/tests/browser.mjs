@@ -112,6 +112,17 @@ try {
   assert.deepEqual(await totals(guest), await totals(host));
   assert.ok(await guest.locator('#results').isVisible(), 'the results card shows');
   assert.ok((await guest.locator('#result-roster').textContent()).includes('Cuarto bate'), 'titles are on the results card');
+  assert.equal(await guest.locator('#recap li').count(), 3, 'Lo mejor de la noche lists every round');
+  // Words the table voted in stay in both browsers, and the host's next
+  // table (a new room, same browser) counts them from the start.
+  const voted = await host.evaluate(() => stopDebug.room.state.dictionary.map(d => d.word));
+  assert.ok(voted.length > 0, 'the table voted words in');
+  const kept = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('pana.stop.mesa') || '[]').map(d => d.word));
+  for (const page of [host, guest]) { const words = await kept(page); assert.deepEqual(voted.filter(w => !words.includes(w)), [], `saved in every browser (has ${JSON.stringify(words)})`); }
+  const next = await host.context().newPage();
+  await next.goto(host.url().replace(/room=[^&]+/, `room=${room}-next`), { waitUntil: 'domcontentloaded' });
+  await waitFor(next, (words) => window.stopDebug?.room?.isHost && words.every(w => stopDebug.room.state.dictionary?.some(d => d.word === w)), voted);
+  await next.close();
   assert.deepEqual([...host.errors, ...guest.errors], []);
-  console.log('PASS stop: two clients write in secret, STOP ends writing for both, a yellow vote resolves and the scores agree.');
+  console.log('PASS stop: two clients write in secret, STOP ends writing for both, a yellow vote resolves, the scores agree and voted words carry over.');
 } finally { await browser.close(); }

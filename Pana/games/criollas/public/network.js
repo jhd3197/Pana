@@ -1,14 +1,15 @@
 import { TableRoom } from '/engine/table-room.js';
 import { createGame, acceptAction, step, STEP, copy, botPlayer } from './rules.js';
+import { loc, locn } from '/engine/i18n.js';
 
 // The table setting (goal, place, difficulty) survives new rooms and practice.
-const keepTarget = (prev) => prev ? { ...createGame(), target: prev.target, ballsPerPlayer: prev.ballsPerPlayer || 4, remaining: Array(6).fill(prev.ballsPerPlayer || 4), mapId: prev.mapId || 'plaza', difficulty: prev.difficulty || 'normal', opener: prev.opener || 'cacho' } : createGame();
+const keepTarget = (prev) => prev ? { ...createGame(), target: prev.target, ballsPerPlayer: prev.ballsPerPlayer || 4, remaining: Array(6).fill(prev.ballsPerPlayer || 4), mapId: prev.mapId || 'plaza', difficulty: prev.difficulty || 'normal', opener: prev.opener || 'cacho', turnSeconds: prev.turnSeconds ?? 60 } : createGame();
 
 export class CriollasRoom extends TableRoom {
   constructor(options) {
     super({ ...options, game: 'criollas', protocol: 'criollas-v3', texts: {
-      handoff: 'Cambió el anfitrión. La mano continúa.',
-      practice: 'Jugando con bots · tus panas pueden entrar por invitación en una sala online.', ...options.texts } }, {
+      handoff: loc('Cambió el anfitrión. La mano continúa.'),
+      practice: loc('Jugando con bots · tus panas pueden entrar por invitación en una sala online.'), ...options.texts } }, {
       fresh: keepTarget,
       practice: (prev) => ({ ...keepTarget(prev), local: true }),
       restore: (state) => copy(state),
@@ -18,7 +19,7 @@ export class CriollasRoom extends TableRoom {
     });
     this.accumulator = 0; this.broadcastElapsed = 0;
   }
-  statusText() { const n = this.members.size; return `${n} pana${n === 1 ? '' : 's'} conectado${n === 1 ? '' : 's'} · ${6 - n} puesto${6 - n === 1 ? '' : 's'} con bots`; }
+  statusText() { const n = this.members.size; return locn(n, '{n} pana conectado · {bots}', '{n} panas conectados · {bots}', { bots: locn(6 - n, '{n} puesto con bots', '{n} puestos con bots') }); }
   seatMembers() {
     this.game.players.forEach((p, i) => { if (p.id !== null && !this.members.has(p.id)) this.game.players[i] = botPlayer(i); });
     for (const m of this.members.values()) {

@@ -1,22 +1,26 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Mi pana · Pana</title><meta name="theme-color" content="#0e0b24"><link rel="icon" href="data:,">
+<title>Mi pana · Pana</title><meta name="theme-color" content="#ff4b4b"><link rel="icon" href="data:,">
 <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/character/editor.css">
+<link rel="preload" as="image" href="/images/launcher/personaje-cover.webp" type="image/webp"><link rel="modulepreload" href="/character/editor.js"><link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"><link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.core.js">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
 </head><body><div class="app">
+  <div class="awning" aria-hidden="true"></div>
   <header>
-    <a class="logo" href="/">PANA</a>
-    <span class="crumb">Mi pana · <b>Editor de personaje</b></span><a class="ghost" href="/" data-pad-back>Volver a los juegos</a><span id="wardrobe-store"></span>
-    <label class="namefield"><span>Tu nombre</span><input id="name" maxlength="16" autocomplete="off" spellcheck="false"></label>
+    <a class="back" href="/" data-pad-back aria-label="Volver a los juegos"><span data-shared-icon="back"></span></a>
+    <h1 class="plate"><span>Mi pana</span></h1>
+    <label class="namefield"><input id="name" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Tu nombre" aria-label="Tu nombre"></label>
+    <span id="wardrobe-store"></span>
   </header>
   <main>
     <section class="stage" id="stage" aria-label="Tu pana en 3D. Arrastra para girarlo.">
-      <div class="nametag"><small>Así se ve</small><span id="nametag">pana</span></div>
+      <div class="nametag"><span id="nametag">pana</span></div>
+      <a class="trybar" id="trybar" hidden></a>
       <div class="views">
         <button class="pill" type="button" data-view="body">Todo</button>
         <button class="pill" type="button" data-view="head">Cabeza</button>
         <button class="pill" type="button" data-view="back">Espalda</button>
-        <button class="pill" type="button" id="spin" aria-pressed="false">Girar</button>
+        <button class="pill" type="button" id="spin" aria-pressed="false" aria-label="Girar"><span data-shared-icon="whirl"></span>Girar</button>
       </div>
       <div class="poses" role="group" aria-label="Pose">
         <button class="pill" type="button" data-pose="idle" aria-pressed="true">Quieto</button>
@@ -24,15 +28,14 @@
         <button class="pill" type="button" data-pose="walk" aria-pressed="false">Caminar</button>
         <button class="pill" type="button" data-pose="run" aria-pressed="false">Correr</button>
       </div>
-      <span class="helptip">Arrastra para girar · Pasa el mouse sobre una pieza para probarla</span>
       <div id="loading">Preparando tu pana…</div>
       <div id="busy" hidden>Cambiando el pelaje…</div>
     </section>
     <aside class="panel" inert aria-label="Guardarropa">
-      <div class="presetbar"><p class="eyebrow">Conjuntos listos</p><div id="presets"></div></div>
+      <div class="presetbar" role="group" aria-label="Conjuntos listos"><div id="presets"></div></div>
       <nav class="tabs" id="tabs" role="tablist" aria-label="Partes del pana"></nav>
       <div id="tabbody" role="tabpanel"></div>
-      <div class="summary"><p class="eyebrow">Tu pana lleva</p><div id="chips"></div></div>
+      <div class="summary" aria-label="Tu pana lleva"><div id="chips"></div></div>
       <div class="actions">
         <button class="ghost icon" type="button" id="undo" aria-label="Deshacer" title="Deshacer"><span data-shared-icon="back"></span></button>
         <button class="ghost icon" type="button" id="redo" aria-label="Rehacer" title="Rehacer"><span data-shared-icon="back"></span></button>
@@ -41,7 +44,7 @@
         <button class="ghost" type="button" id="openload" aria-expanded="false">Código</button>
         <button class="go" type="button" id="save">Guardar para jugar</button>
       </div>
-      <div id="codepanel" hidden><textarea id="codebox" aria-label="Código de tu pana" placeholder="Pega aquí un código PANA2-… o copia el tuyo"></textarea><div class="codebtns"><button class="ghost" type="button" id="copy">Copiar el mío</button><button class="ghost" type="button" id="load">Cargar este</button></div></div>
+      <div id="codepanel" hidden><textarea id="codebox" aria-label="Código de tu pana" placeholder="PANA2-…"></textarea><div class="codebtns"><button class="ghost" type="button" id="copy">Copiar</button><button class="ghost" type="button" id="load">Cargar</button></div></div>
     </aside>
   </main>
 </div>

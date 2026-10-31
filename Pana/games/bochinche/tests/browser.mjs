@@ -11,10 +11,19 @@ try {
   assert(await host.evaluate(()=>bochincheDebug.world.camera.isPerspectiveCamera));
   await guest.locator('[data-style="1"]').click();
   await waitFor(host,()=>bochincheDebug.room.state.players[1].style===1);
+  // Elige tu pana through the real screen: W is El Minotauro, Enter locks it in.
+  await guest.locator('#pana-change').click();
+  await guest.locator('.boch-pick').waitFor();
+  await guest.keyboard.press('w');
+  await guest.keyboard.press('Enter');
+  await waitFor(host,()=>bochincheDebug.room.state.players[1].pana==='minotauro');
+  assert(await guest.locator('.boch-pick').isHidden());
   await host.evaluate(()=>bochincheDebug.room.action('options',{options:{stocks:1,items:false,seats:2}}));
   await waitFor(guest,()=>bochincheDebug.room.state.options.stocks===1);
   await host.locator('#start').click();
   await waitFor(guest,()=>bochincheDebug.room.state.fight?.phase==='playing');
+  assert.equal(await host.evaluate(()=>bochincheDebug.room.game.combat.fighters[1].fighter),'platformer:minotauro');
+  for(const page of [host,guest]) assert.equal(await page.locator('#fighter-1 .poder').innerText(),'Embestida');
   const x=await guest.evaluate(()=>bochincheDebug.room.state.fight.fighters[1].position.x);
   await guest.keyboard.down('a');
   await waitFor(host,x=>bochincheDebug.room.state.fight.fighters[1].position.x<x-35,x);
@@ -123,7 +132,7 @@ try {
     room.onState=function(state){window.touchJumped ||= state.fight?.events.some(e=>e.type==='jump'&&e.slot===0);return render.call(this,state);};
   });
   await mobile.locator('#jump').tap();
-  await waitFor(mobile,()=>window.touchJumped);
+  await waitFor(mobile,()=>window.touchJumped).catch(e=>{throw new Error(`mobile touch jump never reached the host: ${e.message}`);});
   const boxes=await mobile.locator('.fighter-panel:visible').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,bottom:r.bottom};}));
   assert.equal(boxes.length,6);assert(boxes.every(b=>b.left>=0&&b.right<=844&&b.bottom<220));
   for(let i=1;i<boxes.length;i++)assert(boxes[i].left>=boxes[i-1].right);

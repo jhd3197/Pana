@@ -5,6 +5,7 @@
 // of sight never leave the Night except through it.
 
 import { SEATS, BELL, VENTS, HIDES, FIXES, distance, moveBody, sightClear, zoneAt, inBounds, stationById, ventById, hideById, near, REACH } from './layout.js';
+import { locKey } from '../../../engine/i18n.js';
 
 export const MIN_PLAYERS = 4, MAX_PLAYERS = 8;
 export const SPEED = 5, GHOST_SPEED = 6.2, RADIUS = 0.45;
@@ -17,16 +18,17 @@ export const QUICK = { timers: { reveal: 1.5, task: 0.1, wrap: 3, firstWrap: 1, 
 export const WRAP_RANGE = 2.2, REPORT_RANGE = 4, BELL_RANGE = REACH + 0.5, VENT_RANGE = 1.8, HIDE_RANGE = 1.9;
 // What a mummy can turn into (the shared plaza props), a few times a night.
 export const DISGUISES = ['barrel', 'crate', 'cooler', 'planter'], DISGUISE_CHARGES = 3;
+export const DISGUISE_NAMES = { barrel: locKey('Barril'), crate: locKey('Caja'), cooler: locKey('Cava'), planter: locKey('Mata') };
 
 // The mummies' tricks. One at a time (traps aside), on a shared cooldown.
 // fix: how it ends. 'pair' needs two panas holding E together at the spot(s).
 export const SABOTAGES = {
-  apagar: { name: 'Apagar la reliquia', fix: 'pair', hint: 'Dos panas mantengan E junto a la reliquia de la fogata.' },
-  momia: { name: '¡Un, dos, tres, momia!', fix: 'time', hint: 'Cuando el guardián mira, no te muevas.' },
-  bejuco: { name: 'Trampa de bejuco', fix: 'trap', hint: 'Una trampa invisible en el camino.' },
-  puente: { name: 'Cortar el puente', fix: 'hold', hint: 'Mantén E en una punta del puente.' },
-  radio: { name: 'Interferir la radio', fix: 'hold', hint: 'Mantén E en la antena de la carpa de la radio.' },
-  crecida: { name: 'Crecida del río', fix: 'both', critical: true, hint: 'Dos panas: uno en cada palanca de la represa, a la vez.' },
+  apagar: { name: locKey('Apagar la reliquia'), fix: 'pair', hint: locKey('Dos panas mantengan E junto a la reliquia de la fogata.') },
+  momia: { name: locKey('¡Un, dos, tres, momia!'), fix: 'time', hint: locKey('Cuando el guardián mira, no te muevas.') },
+  bejuco: { name: locKey('Trampa de bejuco'), fix: 'trap', hint: locKey('Una trampa invisible en el camino.') },
+  puente: { name: locKey('Cortar el puente'), fix: 'hold', hint: locKey('Mantén E en una punta del puente.') },
+  radio: { name: locKey('Interferir la radio'), fix: 'hold', hint: locKey('Mantén E en la antena de la carpa de la radio.') },
+  crecida: { name: locKey('Crecida del río'), fix: 'both', critical: true, hint: locKey('Dos panas: uno en cada palanca de la represa, a la vez.') },
 };
 export const TRAPS = 2, TRAP_RADIUS = 0.9;
 // The guardian of ¡Un, dos, tres, momia! looks for `look` seconds out of every five.
@@ -34,9 +36,9 @@ export const guardianLooks = (elapsed, look = TIMERS.look) => elapsed % 5 >= 5 -
 
 // Quick chat for meetings, always available (free text is a room option).
 export const PHRASES = [
-  '¡Embuste!', 'Yo estaba en la mina', 'Yo estaba en la cocina', 'Yo estaba en el templo', 'Yo estaba en la cascada',
-  'Yo estaba en el muelle', 'Yo estaba en el depósito', 'Yo estaba en la radio', 'Yo hice el malacate, vean',
-  'Lo vi saliendo de un tronco', '¿Y tú qué hacías en la cava?', 'No vi nada', 'Saltemos esta vez', 'Yo confío en ti',
+  locKey('¡Embuste!'), locKey('Yo estaba en la mina'), locKey('Yo estaba en la cocina'), locKey('Yo estaba en el templo'), locKey('Yo estaba en la cascada'),
+  locKey('Yo estaba en el muelle'), locKey('Yo estaba en el depósito'), locKey('Yo estaba en la radio'), locKey('Yo hice el malacate, vean'),
+  locKey('Lo vi saliendo de un tronco'), locKey('¿Y tú qué hacías en la cava?'), locKey('No vi nada'), locKey('Saltemos esta vez'), locKey('Yo confío en ti'),
 ];
 export const cleanText = t => String(t ?? '').replace(/[\u0000-\u001f]/g, ' ').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
 
@@ -56,15 +58,15 @@ export const TASKS_EACH = 5;
 // tasks show an animation to anyone who can see the station: only a pana's
 // count, so seeing one finish proves that pana.
 export const TASKS = [
-  { id: 'malacate', name: 'Girar el malacate', stations: ['malacate'], seconds: 3, visual: 'winch' },
-  { id: 'faroles', name: 'Encender faroles', stations: ['faroles'], seconds: 3, visual: 'lanterns' },
-  { id: 'reliquia', name: 'Armar la reliquia', stations: ['reliquia'], seconds: 3 },
-  { id: 'tabla', name: 'Arreglar la tabla', stations: ['tabla'], seconds: 3 },
-  { id: 'agua', name: 'Llenar agua', stations: ['agua'], seconds: 2 },
-  { id: 'arepas', name: 'Hacer arepas', stations: ['arepas'], seconds: 3 },
-  { id: 'radio', name: 'Sintonizar la radio', stations: ['radio'], seconds: 2 },
-  { id: 'jeroglificos', name: 'Limpiar jeroglíficos', stations: ['jeroglificos'], seconds: 3 },
-  { id: 'provisiones', name: 'Subir provisiones', stations: ['prov-muelle', 'prov-cocina'], seconds: 2 },
+  { id: 'malacate', name: locKey('Girar el malacate'), stations: ['malacate'], seconds: 3, visual: 'winch' },
+  { id: 'faroles', name: locKey('Encender faroles'), stations: ['faroles'], seconds: 3, visual: 'lanterns' },
+  { id: 'reliquia', name: locKey('Armar la reliquia'), stations: ['reliquia'], seconds: 3 },
+  { id: 'tabla', name: locKey('Arreglar la tabla'), stations: ['tabla'], seconds: 3 },
+  { id: 'agua', name: locKey('Llenar agua'), stations: ['agua'], seconds: 2 },
+  { id: 'arepas', name: locKey('Hacer arepas'), stations: ['arepas'], seconds: 3 },
+  { id: 'radio', name: locKey('Sintonizar la radio'), stations: ['radio'], seconds: 2 },
+  { id: 'jeroglificos', name: locKey('Limpiar jeroglíficos'), stations: ['jeroglificos'], seconds: 3 },
+  { id: 'provisiones', name: locKey('Subir provisiones'), stations: ['prov-muelle', 'prov-cocina'], seconds: 2 },
 ];
 export const taskById = id => TASKS.find(t => t.id === id);
 export const mummyCount = n => (n >= 7 ? 2 : 1);
@@ -212,7 +214,7 @@ export class Night {
   // ---------- actions ----------
   // Every client action lands here; anything out of place is ignored.
   act(seat, action, data = {}) {
-    const p = this.players.get(seat), [phase, handler] = this.actions[action] || [];
+    const p = this.players.get(seat), [phase, handler] = Object.hasOwn(this.actions, action) ? this.actions[action] : [];
     if (!p || !handler || this.phase !== phase || p.spectator) return false;
     return !!handler.call(this, p, data ?? {});
   }

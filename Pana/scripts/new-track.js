@@ -62,7 +62,7 @@ function replaceOnce(text, pattern, replace, what) {
 function appendToList(text, pattern, id, what) {
   return replaceOnce(text, pattern, (all, items) => {
     if (new RegExp(`'${id}'`).test(items)) throw new Error(`${what} already lists '${id}'`);
-    return all.replace(items, `${items}, '${id}'`);
+    return items.trim() ? all.replace(items, `${items}, '${id}'`) : all.replace('[]', `['${id}']`);
   }, what);
 }
 
@@ -113,7 +113,7 @@ export function planTrack(root, { id, name, blurb, style = 'calipso', song }) {
   edit(PATHS.maps, text => appendToList(text, /assert\.deepEqual\(ids, \[([^\]]*)\]/, id, 'the maps suite id list'));
   edit(PATHS.music, text => {
     text = replaceOnce(text, /TRACK_STYLE = \{ /, `TRACK_STYLE = { ${id}: '${style}', `, 'TRACK_STYLE');
-    return replaceOnce(text, /\(\{([^}]*)\}\)\[trackId\]/, (all, items) => `({${items},${id}:'${song}'})[trackId]`, 'the songFor alias map');
+    return replaceOnce(text, /SONG_REMAP = \{ /, `SONG_REMAP = { ${id}: '${song}', `, 'SONG_REMAP');
   });
   edit(PATHS.readme, text => replaceOnce(text, /Toy-car racing on ([a-z-]+) circuits/, (all, word) => {
     const n = wordNumber(word);

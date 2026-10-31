@@ -6,10 +6,11 @@ import { loadAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { createDie } from './board.js';
+import { pixelRatio } from '/engine/settings.js';
 
 export function mount(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(pixelRatio(2));
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 60);
   camera.position.set(4.2, 3.4, 7.5);

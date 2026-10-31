@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
 import { backToLobby, chooseCar, leaveLobby, menuStep } from './menu-helpers.js';
 import { TRACK_DEFINITIONS } from '../public/track-definitions.js';
+import { CUPS } from '../public/cup-definitions.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const browser = await chromium.launch({ headless: true,
   ...(process.env.PANA_BROWSER_PATH ? { executablePath: process.env.PANA_BROWSER_PATH } : {}) });
@@ -72,11 +73,11 @@ try {
   }
   assert.equal(await page.evaluate(() => !!race.trackGroup), false, 'browsing artwork never constructs scenery');
   await page.locator('[data-format=cups]').click();
-  for (const id of ['pana', 'aventura', 'agua']) {
+  for (const { id } of CUPS) {
     await page.locator(`[data-mode="${id}"]`).click();
     assert.equal(await page.locator('.cup-stage').count(), 4);
     assert.ok(await page.locator('#circuit-grid').isHidden());
-    assert.equal(await page.locator('.cup-choice img').count(), 12);
+    assert.equal(await page.locator('.cup-choice img').count(), CUPS.length * 4);
     // Each championship starts at its actual first circuit.
     assert.match(await page.locator('#menu-summary').textContent(), /^Copa/);
   }
@@ -139,8 +140,8 @@ try {
   await fallback.route('**/images/menu/**', route => route.abort());
   await load(fallback, '&manual');
   await leaveLobby(fallback);
-  await fallback.locator('[data-circuit="plaza"]').click();
-  assert.equal(await fallback.locator('#track-name').textContent(), 'Plaza Pana');
+  await fallback.locator('[data-circuit="llanos"]').click();
+  assert.equal(await fallback.locator('#track-name').textContent(), 'Los Llanos');
   await fallback.locator('#menu-next').click();
   assert.ok(await fallback.locator('#play').isEnabled());
   await fallback.locator('#play').click();
@@ -167,10 +168,10 @@ try {
   await leaveLobby(host);
   await guest.locator('#pana-lobby-shell').waitFor({ state: 'hidden' });
   await step(guest, 'track');
-  assert.ok(await guest.locator('[data-circuit="plaza"]').isDisabled());
+  assert.ok(await guest.locator('[data-circuit="llanos"]').isDisabled());
   assert.ok(await guest.locator('#menu-back').isHidden(), 'a guest cannot take the room back to the lobby');
-  await host.locator('[data-circuit="plaza"]').click();
-  await guest.waitForFunction(() => document.getElementById('track-name').textContent === 'Plaza Pana');
+  await host.locator('[data-circuit="llanos"]').click();
+  await guest.waitForFunction(() => document.getElementById('track-name').textContent === 'Los Llanos');
   await host.locator('#menu-next').click();
   await guest.locator('#menu-next').click();
   await guest.evaluate(()=>{getWallet().coins=500;});

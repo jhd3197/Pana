@@ -10,7 +10,7 @@ export function newRoomCode() {
 
 // The ?room= code in a query string, cleaned; '' when there is none.
 export function roomFromUrl(search = location.search) {
-  return (new URLSearchParams(search).get('room') || '').replace(/[^a-z0-9-]/gi, '').slice(0, 24);
+  return (new URLSearchParams(search).get('room') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24);
 }
 
 // The link to share for a room. path: the game's page (defaults to this one).

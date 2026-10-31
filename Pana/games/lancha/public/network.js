@@ -13,6 +13,7 @@ function ghostRace(state) {
   return (ghost = Object.assign(new Race(), structuredClone(state), { river }));
 }
 import { LiveRoom } from '/engine/live-room.js';
+import { loc } from '/engine/i18n.js';
 
 // Host simulation on the shared live room (engine/live-room.js): the host
 // steps the race with everyone's held keys and publishes each tick; a new host
@@ -20,8 +21,8 @@ import { LiveRoom } from '/engine/live-room.js';
 export class LanchaRoom extends LiveRoom {
   constructor(options) {
     super({ ...options, game: 'lancha', protocol: 'lancha-v1', texts: {
-      connecting: 'Arrancando hacia la sala…', full: 'Sala llena. Abre una carrera local.',
-      lost: 'Se perdió la conexión. Reconectando…', offline: 'Sin conexión. Puedes correr en local.' } }, {
+      connecting: loc('Arrancando hacia la sala…'), full: loc('Sala llena. Abre una carrera local.'),
+      lost: loc('Se perdió la conexión. Reconectando…'), offline: loc('Sin conexión. Puedes correr en local.') } }, {
       valid: (state) => Array.isArray(state?.boats),
       // Your own lancha answers the throttle at once; the host corrects it.
       predict: {
@@ -32,13 +33,13 @@ export class LanchaRoom extends LiveRoom {
     this.state = new Race().snapshot();
   }
   cleanInput(raw) { return cleanInput(raw); }
-  statusText() { return `${this.members.size}/8 panas · ${this.isHost ? 'tú das la salida' : 'el anfitrión da la salida'}`; }
+  statusText() { const n = this.members.size; return this.isHost ? loc('{n}/8 panas · tú das la salida', { n }) : loc('{n}/8 panas · el anfitrión da la salida', { n }); }
   takeOver(previous) {
     super.takeOver(previous);
     this.game = Race.restore(this.state, this.members);
     for (const m of this.members.values()) if (!this.game.players.some(p => p.id === m.id)) this.game.addPlayer(m.id, m.name, m.id === this.id ? this.avatar : m.avatar || {});
     this.publish();
-    if (previous != null) this.onNotice('Cambió el anfitrión. La carrera sigue.');
+    if (previous != null) this.onNotice(loc('Cambió el anfitrión. La carrera sigue.'));
   }
   memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar || {}); this.publish(); } }
   memberHello(id, m) { if (this.isHost) { this.game.addPlayer(id, m.name, m.avatar || {}); this.publish(); } }
@@ -50,5 +51,5 @@ export class LanchaRoom extends LiveRoom {
     if (data.action === 'options' && this.game.configure(data.options)) this.publish();
     if (data.action === 'start' && ['lobby', 'finished'].includes(this.game.phase) && this.game.start()) this.publish();
   }
-  practice() { const local = new Race(); local.configure(this.state.options); this.state = local.snapshot(); super.practice('Carrera local · tú y las lanchas del río'); }
+  practice() { const local = new Race(); local.configure(this.state.options); this.state = local.snapshot(); super.practice(loc('Carrera local')); }
 }

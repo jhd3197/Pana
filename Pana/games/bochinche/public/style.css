@@ -11,32 +11,11 @@ body { --pk-game: #ff8a3d; --bash-p1: var(--pk-yellow); --bash-p2: var(--pk-teal
 .styles button { display: flex; justify-content: space-between; gap: 12px; text-align: left; }
 .styles small { font: 700 11px var(--pk-sans); opacity: .8; }
 .styles [aria-pressed="true"] { background: var(--pk-game); color: var(--pk-night); }
+/* The fight HUD (plates, clock, banners) lives in hud-banderin.css. */
 .status-panel { position: fixed; left: 50%; top: 20px; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; min-width: 100px; padding: 8px 16px; }
 #timer { font: 32px var(--pk-display); font-variant-numeric: tabular-nums; line-height: 1; }
 #score { font-size: 10px; color: var(--pk-muted); }
 #event:empty { display: none; }
-.fighters { position: fixed; bottom: 58px; left: 3%; right: 3%; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
-.fighter-panel { --fighter-color: var(--bash-p1); flex: 1; min-width: 0; max-width: 250px; padding: 12px 16px; border-bottom: 4px solid var(--fighter-color); }
-#fighter-1 { --fighter-color: var(--bash-p2); }
-#fighter-2 { --fighter-color: var(--bash-p3); }
-#fighter-3 { --fighter-color: var(--bash-p4); }
-#fighter-4 { --fighter-color: var(--bash-p5); }
-#fighter-5 { --fighter-color: var(--bash-p6); }
-.fighter-panel[data-out="true"] { opacity: .5; }
-.fighter-label { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.fighter-name { font-weight: 900; color: var(--fighter-color); max-width: 125px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fighter-style { font-size: 10px; color: var(--pk-muted); white-space: nowrap; }
-.fighter-vitals { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.damage { display: block; font: 58px var(--pk-display); line-height: 1.1; font-variant-numeric: tabular-nums; transform-origin: left center; color: var(--pk-cream); }
-.damage small { font-size: .45em; }
-[data-danger="medium"] .damage { color: var(--pk-yellow); }
-[data-danger="high"] .damage { color: var(--pk-coral); }
-.fighter-reserves { display: grid; gap: 3px; min-width: 64px; }
-.stocks { font-size: 13px; font-weight: 900; }
-.shield-label { font-size: 9px; color: var(--pk-muted); }
-.shield-track { height: 4px; background: var(--pk-deep); overflow: hidden; border-radius: 2px; }
-.shield-track span { display: block; width: 100%; height: 100%; transform-origin: left; background: var(--fighter-color); transition: transform .1s linear; }
-#countdown { position: fixed; left: 50%; top: 24%; transform: translateX(-50%); font-size: clamp(42px, 7vw, 88px); white-space: nowrap; pointer-events: none; }
 .key-guide { position: fixed; bottom: 24px; width: 100%; text-align: center; font-size: 12px; color: var(--pk-night); pointer-events: none; }
 .connection { position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; color: var(--pk-night); font-size: 10px; }
 #touch { display: none; position: fixed; left: 16px; right: 16px; bottom: 24px; pointer-events: none; }
@@ -46,49 +25,10 @@ body { --pk-game: #ff8a3d; --bash-p1: var(--pk-yellow); --bash-p2: var(--pk-teal
   #touch { display: flex; justify-content: space-between; align-items: end; }
   .pk-dpad { pointer-events: auto; }
   .key-guide { display: none; }
-  .fighters { bottom: auto; top: 70px; left: 12px; right: 12px; }
-  .fighter-panel { width: 154px; padding: 6px 10px; border-bottom-width: 3px; }
-  .fighter-name { font-size: 12px; max-width: 100px; }
-  .fighter-style { display: none; }
-  .damage { font-size: 34px; }
-  .fighter-reserves { min-width: 55px; gap: 1px; }
-  .stocks { font-size: 11px; }
-  .shield-label { font-size: 8px; }
-  #timer { font-size: 25px; }
-  .status-panel { top: 14px; padding: 7px 12px; }
-  #countdown { top: 35%; }
-}
-@media (max-width: 600px) and (pointer: fine) {
-  .fighter-panel { width: 150px; padding: 8px; }
-  .fighter-style { display: none; }
-  .damage { font-size: 40px; }
-  .status-panel { top: 75px; }
 }
 @media (prefers-reduced-motion: reduce) { .shield-track span { transition: none; } }
 
-@media (max-width: 1000px) {
-  .fighter-style { display: none; }
-  .fighter-panel { padding: 6px 8px; }
-  .fighter-vitals { gap: 4px; }
-  .damage { font-size: 34px; }
-  .fighter-reserves { min-width: 44px; }
-}
-@media (max-width: 600px) {
-  .fighters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .fighter-panel { width: auto; max-width: none; }
-}
 
-@media (min-width: 601px) and (max-width: 1100px) {
-  .fighters { gap: 6px; }
-  .fighter-panel { padding: 6px; }
-  .fighter-vitals { gap: 3px; }
-  .fighter-reserves { min-width: 36px; }
-  .damage { font-size: 28px; }
-  .stocks { font-size: 10px; }
-}
 .pana-sala .styles { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
 .pana-sala .styles button { flex-direction: column; gap: 4px; align-items: start; }
 .pana-sala .styles small { white-space: normal; }
-/* Six fighters keep three-digit damage readable without crowding reserves. */
-.fighters:has(#fighter-5:not([hidden])) .fighter-panel { padding: 8px; }
-.fighters:has(#fighter-5:not([hidden])) .damage { font-size: clamp(26px,3.2vw,42px); }

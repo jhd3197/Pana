@@ -1,3 +1,4 @@
+// i18n-ignore-file: table barks are Venezuelan banter and stay Spanish.
 // What the panas at the dominó table shout. Pure: turns new history events,
 // and the end of a mano, into speech bubbles. Lines are seeded by the event,
 // so every client shows the same bark without sending it over the network.

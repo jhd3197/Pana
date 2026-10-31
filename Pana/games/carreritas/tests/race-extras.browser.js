@@ -79,16 +79,16 @@ try {
 
   // The ghost turns lancha on Chuao's river run: a stored lap that crosses
   // the waterfall gate.
-  await page.goto(`${origin}/g/carreritas/?debug&manual&track=chuao`);
+  await page.goto(`${origin}/g/carreritas/?debug&manual&track=llanos`);
   await page.waitForFunction(() => window.garage?.car && window.getGates);
   const ghost = await page.evaluate(async () => {
-    toGarage(); buildTrack('chuao');
+    toGarage(); buildTrack('llanos');
     const T = getActiveTrack(), run = getGates().runs[0], poses = [];
     for (let i = 0; i <= 40; i++) {
       const s = run.s0 - 40 + i * 4, a = T.pointAt(s), b = T.pointAt(s + 0.5), h = Math.atan2(b.x - a.x, b.y - a.y);
       poses.push([i * 120, a.x, T.groundAt(a.x, a.y), a.y, h, 0, 0, 30, 0, 0, 0, 1, 1, 0, 0, 0]);
     }
-    localStorage.setItem('carreritas:ghost:chuao', JSON.stringify({ lap: 4.8, poses }));
+    localStorage.setItem('carreritas:ghost:llanos', JSON.stringify({ lap: 4.8, poses }));
     return true;
   });
   assert.ok(ghost);

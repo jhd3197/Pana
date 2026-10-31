@@ -25,13 +25,13 @@ import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { fillRoster } from '/engine/results.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { holdButton } from '/engine/touch.js';
-import { pixelRatio, bindRenderer, getSettings, onSettings } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, getSettings, onSettings, rendererOptions } from '/engine/settings.js';
 import { applyRaceQuality } from './quality.js';
 import { shout } from '/engine/kit.js';
-import { LAPS, lapsForTrack, RIVALS, AI_WHEELS, POSE_HZ, FINISH_GRACE_MS, GP_GRID, GP_INTERMISSION_MS, GP_MIN_READ_MS, gridSlot, cleanCosmetics, aiVessels, kitTunes } from './online-rules.js';
+import { LAPS, lapsForTrack, RIVALS, AI_WHEELS, POSE_HZ, FINISH_GRACE_MS, fieldSize, rivalName, GP_INTERMISSION_MS, GP_MIN_READ_MS, gridSlot, cleanCosmetics, aiVessels, kitTunes } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
-import { CUPS, cupById, cupTracks, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
-import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, finalizeStage, markRacing, markStarted, retryStage, seededOrder, seededUnit, standings as championshipStandings } from './cup-rules.js';
+import { CUPS, cupById, trophyName, cupTracks, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
+import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, finalizeStage, markRacing, markStarted, retryStage, seededOrder, cupSkill, standings as championshipStandings } from './cup-rules.js';
 import { advanceLap, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
@@ -41,9 +41,10 @@ import { PAINTS, paintOf, FLAMES, earnings, mirrorUnlocked, repaintHex } from '.
 import { createProfileStore, recordCupTrophy, trophyCredits } from './cup-profile.js';
 import { settleRace } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
-import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
+let soaringVulture = null; import('/engine/models/fauna/birds/soaring-vulture.js').then(m => { soaringVulture = m.soaringVulture; });   // only rescues need it
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { DRAFT_TIME, DRAFT_BOOST, DRIFT_LEVELS, driftLevel, startBoost, startCue, inSlipstream, loseCoins, physicsFrame, DrivingSpring as Spring } from './drive-rules.js';
+import { loc, locn, locKey, formatNumber } from '/engine/i18n.js';
 
 const $ = (id) => document.getElementById(id), esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const rand = (a, b) => a + Math.random() * (b - a), pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -54,29 +55,29 @@ const QS = new URLSearchParams(location.search), AUTO = QS.has('auto'), SPEED = 
 // You drive as the pana you made in the hub; the rivals are random ones.
 const ME = { name: loadName(), avatar: loadAvatar() };
 // ?room=<code> races online with panas (online.js); without it the race is local.
-// ?lead=1 marks the party's Pana Mayor, who hosts the room.
+// ?lead=… marks the party's Pana Mayor, who hosts the room (a token when the server checks one).
 const ROOM = roomFromUrl();
 const onlineModulePromise = ROOM ? import('./online.js') : null;
 let net = null;
 let menuFlow = null;
 
 const LINES = {
-  crash: ['¡AY!', '¡UEPA!', '¡Ñooo!', '¡Mi carro!', '¡Epa, chamo!', '¡Qué molleja!'],
-  air: ['¡Wiii!', '¡Ayayay!', '¡Me fui!'],
-  wall: ['¡Ups!', '¡Pum!', '¡Mi pintura!'],
-  trick: ['¡Truco!', '¡Qué vacilón!', '¡Mírame!'],
-  rocket: ['¡Arranque cohete!', '¡Fiuuu!', '¡Me fui!'],
-  pop: ['¡Mi globo!', '¡Pop!', '¡Nooo, mi globo!'],
-  rescue: ['¡Zamuro, ayúdame!', '¡Al rescate!', '¡Sácame de aquí!'],
-  out: ['¡Me quedé sin globos!', '¡Me reventaron!'],
-  stall: ['¡Se me ahogó!', '¡Ay no, el motor!'],
-  honk: { meep: '¡MEEP MEEP!', cucaracha: '♪ Cucaracha ♪', grave: '¡PAAAAN!', fiesta: '♪ ¡Rumba! ♪' },
+  crash: [locKey('¡AY!'), locKey('¡UEPA!'), locKey('¡Ñooo!'), locKey('¡Mi carro!'), locKey('¡Epa, chamo!'), locKey('¡Qué molleja!')],
+  air: [locKey('¡Wiii!'), locKey('¡Ayayay!'), locKey('¡Me fui!')],
+  wall: [locKey('¡Ups!'), locKey('¡Pum!'), locKey('¡Mi pintura!')],
+  trick: [locKey('¡Truco!'), locKey('¡Qué vacilón!'), locKey('¡Mírame!')],
+  rocket: [locKey('¡Arranque cohete!'), locKey('¡Fiuuu!'), locKey('¡Me fui!')],
+  pop: [locKey('¡Mi globo!'), locKey('¡Pop!'), locKey('¡Nooo, mi globo!')],
+  rescue: [locKey('¡Zamuro, ayúdame!'), locKey('¡Al rescate!'), locKey('¡Sácame de aquí!')],
+  out: [locKey('¡Me quedé sin globos!'), locKey('¡Me reventaron!')],
+  stall: [locKey('¡Se me ahogó!'), locKey('¡Ay no, el motor!')],
+  honk: { meep: '¡MEEP MEEP!', cucaracha: '♪ Cucaracha ♪', grave: '¡PAAAAN!', fiesta: '♪ ¡Rumba! ♪' }, // i18n-ignore: horn sounds and song names
 };
 
 let driverCards = null; import('./driver-cards.js').then(m => { driverCards = m; });   // rival panas as cards
 
 // ---------- renderer ----------
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer(rendererOptions({ antialias: true }));
 renderer.setPixelRatio(pixelRatio(2));
 bindRenderer(renderer, 2);
 renderer.setSize(innerWidth, innerHeight);
@@ -271,6 +272,7 @@ $('play').onclick = () => {
 $('go-online').onclick = () => { sound.unlock(); return goOnline(newRoomCode(), true); };
 $('lobby-invite').onclick = () => menu.share();
 $('lobby-bots').onchange = (e) => net?.bots(e.target.checked);
+for (const b of $('field-pick').querySelectorAll('button')) b.onclick = () => { const size = Number(b.dataset.field); if (!net) { setup.field = size; saveSetup(); renderSetup(); } else if (net.isHost) net.field(size); };
 $('lobby-solo').onclick = () => { location.href = location.pathname; };
 
 // ======================================================================
@@ -315,6 +317,7 @@ race.debris = new Debris(race.scene);
 const lazyRace = (key, stub, load, make) => { race[key] = stub; return load.then(m => { race[key] = make(m); return m; }); };
 let driftFx = null;
 import('./drift-fx.js').then(m => { driftFx = m; });
+lazyRace('vsfx', { skid() {}, boost() {}, crash() {} }, import('/engine/vehicle-audio.js'), m => m.vehicleSfx);   // skid, boost and crash one-shots from the shared vehicle audio
 lazyRace('water', { update() {}, stop() {} }, import('./water-ambience.js'), m => m.createWaterAmbience(sound));   // river and sea sound
 lazyRace('skidMarks', { lay() {}, update() {}, clear() {} }, import('./skid-marks.js'), m => new m.SkidMarks(race.scene, { focus: () => race.player }));
 lazyRace('slowMo', { update() {}, trigger() {}, scale: 1, punch: 0 }, import('./slow-mo.js'), m => m.createSlowMo());
@@ -332,7 +335,7 @@ race.purpleRelease = () => { race.slowMo.trigger(); race.shake = Math.min(1.2, r
 // ---------- race setup: mode, difficulty, laps, mirror (local races) ----------
 let profileStorage = null;
 try { profileStorage = localStorage; } catch { /* private mode */ }
-const profileStore = createProfileStore(profileStorage);
+const profileStore = createProfileStore(profileStorage, { onMangos: balance => { $('shop-coins').textContent = balance; } });   // fights elsewhere pay in
 const profile = profileStore.load();
 const setup = profile.setup;
 const isCupMode = (mode) => CUPS.some(c => c.id === mode);
@@ -384,41 +387,43 @@ function renderSetup() {
   const hostCanConfig = !net || (net.isHost && ['lobby', 'results', 'complete'].includes(net.state?.phase));
   press('mode-pick', 'mode', activeMode);
   press('difficulty-pick', 'difficulty', activeDiff);
-  press('laps-pick', 'laps', setup.laps);
+  press('laps-pick', 'laps', setup.laps); press('field-pick', 'field', net ? (net.state?.field || 0) : setup.field);
   const lapsRow = $('laps-pick').closest('.setup-row');
   if (lapsRow) lapsRow.hidden = !!net;
   const mirrorOpen = mirrorUnlocked(loadTrophies());
   if (!mirrorOpen) setup.mirror = false;
   $('mirror').disabled = !mirrorOpen;
-  $('mirror').title = mirrorOpen ? '' : 'Gana un trofeo en una copa para desbloquear el modo espejo';
+  $('mirror').title = mirrorOpen ? '' : loc('Gana un trofeo en una copa para desbloquear el modo espejo');
   $('mirror').setAttribute('aria-checked', String(setup.mirror));
   $('split').setAttribute('aria-checked', String(setup.split));
   const battle = activeMode === 'battle', cup = isCupMode(activeMode) ? cupById(activeMode) : null;
   if (!net) {
-    $('launch-note').innerHTML = `<span class="pk-dot"></span>${cup ? (setup.split ? 'Dos panas contra 6 rivales' : 'Tú contra 7 rivales') : setup.split ? 'Dos panas contra 2 rivales' : 'Tú contra 3 rivales'}`;
+    const rivals = (battle ? BATTLE_RACERS : localField(!!cup)) - (setup.split ? 2 : 1);
+    $('launch-note').innerHTML = `<span class="pk-dot"></span>${setup.split ? loc('Dos panas contra {n} rivales', { n: rivals }) : loc('Tú contra {n} rivales', { n: rivals })}`;
   }
   for (const b of $('laps-pick').querySelectorAll('button')) b.disabled = battle || !!cup;
   for (const b of $('difficulty-pick').querySelectorAll('button')) b.disabled = !hostCanConfig;
+  for (const b of $('field-pick').querySelectorAll('button')) b.disabled = !hostCanConfig || battle || (!!net && !net.state?.bots);
   const trophies = profile.trophies, legacy = profile.legacyTrophies;
   for (const b of $('mode-pick').querySelectorAll('button')) {
     b.hidden = !!net && b.dataset.mode === 'battle';
     b.disabled = !hostCanConfig;
     const won = trophies[b.dataset.mode], earlier = legacy[b.dataset.mode];
     const shown = won ?? earlier?.trophy;
-    b.title = shown ? `Trofeo de ${shown}${!won && earlier ? ' · Edición anterior' : ''}` : '';
+    b.title = !shown ? '' : !won && earlier ? loc('Trofeo de {trophy} · Edición anterior', { trophy: trophyName(shown) }) : loc('Trofeo de {trophy}', { trophy: trophyName(shown) });
     b.querySelector('.mode-trophy')?.remove();
     b.querySelector('.mode-legacy')?.remove();
     if (shown) {
       const dot = document.createElement('span');
       dot.className = 'mode-trophy';
       dot.style.setProperty('--trophy', `var(--trophy-${shown})`);
-      dot.setAttribute('aria-label', `trofeo de ${shown}${!won && earlier ? ', edición anterior' : ''}`);
+      dot.setAttribute('aria-label', !won && earlier ? loc('trofeo de {trophy}, edición anterior', { trophy: trophyName(shown) }) : loc('trofeo de {trophy}', { trophy: trophyName(shown) }));
       b.append(dot);
     }
     if (!won && earlier) {
       const label = document.createElement('small');
       label.className = 'mode-legacy';
-      label.textContent = 'Edición anterior';
+      label.textContent = loc('Edición anterior');
       b.append(label);
     }
   }
@@ -434,7 +439,7 @@ function renderSetup() {
       btn.dataset.track = stage.track;
       const trackDef = getTrack(stage.track);
       btn.setAttribute('aria-pressed', String(TRACKS[trackIndex]?.id === stage.track));
-      btn.innerHTML = `<span>${idx + 1}. ${esc(trackDef.name)}</span><small>${stage.laps} ${stage.laps === 1 ? 'vuelta' : 'vueltas'}</small>`;
+      btn.innerHTML = `<span>${idx + 1}. ${esc(trackDef.name)}</span><small>${locn(stage.laps, '{n} vuelta', '{n} vueltas')}</small>`;
       const art = new Image(); art.alt = ''; art.loading = 'lazy'; art.decoding = 'async';
       setMenuImage(art, trackArt(stage.track, true)); btn.prepend(art);
       btn.onclick = () => {
@@ -449,10 +454,10 @@ function renderSetup() {
   } else {
     stagesEl.replaceChildren();
   }
-  if (!mirrorOpen && !cup && activeMode !== 'battle') $('setup-note').textContent = 'Gana un trofeo en una copa para desbloquear el modo espejo.';
+  if (!mirrorOpen && !cup && activeMode !== 'battle') $('setup-note').textContent = loc('Gana un trofeo en una copa para desbloquear el modo espejo.');
   else $('setup-note').textContent = cup
     ? `${cup.name}: ${cupTracks(cup).map(id => getTrack(id).name).join(' → ')}. ${approximateCupText(cup)}`
-    : battle ? 'Globos: tres globos por carro. Cada golpe revienta uno. Gana el último con globos.' : '';
+    : battle ? loc('Globos: tres globos por carro. Cada golpe revienta uno. Gana el último con globos.') : '';
   if (!net) {
     $('t-prev').disabled = $('t-next').disabled = !!cup;
     if (cup) {
@@ -515,12 +520,12 @@ function selectTrack(id, lapsOverride = null) {
     const seconds=Math.round(route.TOTAL*laps/speed/15)*15;
     return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
   }):[];
-  $('track-blurb').textContent = `${laps ? `${estimate[0]}–${estimate[1]} min aprox. · ${laps} ${laps === 1 ? 'vuelta' : 'vueltas'}` : 'batalla de globos'}. ${def.blurb}`
-    + (def.rain ? ' Está lloviendo: los cauchos de lluvia agarran mejor.' : '');
+  $('track-blurb').textContent = (laps ? loc('{from}–{to} min aprox.', { from: estimate[0], to: estimate[1] }) + ' · ' + locn(laps, '{n} vuelta', '{n} vueltas') : loc('batalla de globos')) + '. ' + def.blurb
+    + (def.rain ? ' ' + loc('Está lloviendo: los cauchos de lluvia agarran mejor.') : '');
   const activeMode = net ? (net.state?.mode || 'race') : setup.mode;
   const cup = isCupMode(activeMode) ? cupById(activeMode) : null;
   const cupStageIdx = cup ? cup.stages.findIndex(s => s.track === def.id) : -1;
-  $('track-of').textContent = cupStageIdx >= 0 ? `Carrera ${cupStageIdx + 1}/4` : `Pista ${trackIndex + 1}/${TRACKS.length}`;
+  $('track-of').textContent = cupStageIdx >= 0 ? loc('Carrera {n}/4', { n: cupStageIdx + 1 }) : loc('Pista {n}/{total}', { n: trackIndex + 1, total: TRACKS.length });
   drawTrackPreview($('track-map'), route);
   menuFlow?.refresh();
   return route;
@@ -563,7 +568,7 @@ function finishTrack() {
   ghostIO?.devGhost(T.id);   // start fetching the track's shipped ghost, if any
   applyPalette(T.def.palette);
   race.items = createItems({
-    scene: race.trackGroup, puffs: race.puffs, sound, G, track: T, rain: race.rain,
+    scene: race.trackGroup, puffs: race.puffs, sound, G, track: T, rain: race.rain, get vsfx() { return race.vsfx; },
     crash: (c, power, side) => crash(c, power, side),
     explode: (pos) => {
       race.shockwaves.explode(pos, { radius: 4.8, scorch: true });
@@ -587,9 +592,9 @@ function finishTrack() {
     emit: (kind, c, data) => { if (race.netRace && !c.remote) net.fx(c.netId, kind, data); },
   });
   race.hazards = createHazards(T, race.trackGroup);
-  applyRaceQuality(renderer, race, getSettings().quality);
+  applyRaceQuality(renderer, race, getSettings());
   $('mm-track').textContent = T.name;
-  $('mm-sub').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta`;
+  $('mm-sub').textContent = loc('{km} km por vuelta', { km: (T.TOTAL / 1000).toFixed(2) });
   minimap.build(T);
   race.trackReady = true;
 }
@@ -615,8 +620,8 @@ const lapProgress = (c) => paramOf(c.x, c.z, c.y) / T.TOTAL;
 // ======================================================================
 // Racers
 // ======================================================================
-const RACERS = 4;
-const GP_RACERS = 8;
+const BATTLE_RACERS = 4;   // races and cups take the field size from setup (online-rules.js fieldSize)
+const localField = cup => fieldSize({ humans: setup.split ? 2 : 1, cup, field: setup.field });
 const LOCAL_PLAYER = 'local-player';
 const LOCAL_GUEST = 'local-guest';
 
@@ -632,21 +637,18 @@ function createLocalCup(cupId, playerIndex, wheelId, split, difficulty) {
     loadout: { car: playerIndex, wheel: wheelId, ...raceStyle(playerIndex) }, skillSeed: `${sessionId}:player`,
   }];
   if (split) entrants.push({
-    id: LOCAL_GUEST, name: 'Jugador 2', kind: 'human', owner: 'local', avatar: randomAvatar(),
+    id: LOCAL_GUEST, name: loc('Jugador 2'), kind: 'human', owner: 'local', avatar: randomAvatar(),
     loadout: { car: guestCar, wheel: 'calle' }, skillSeed: `${sessionId}:guest`,
   });
-  for (let i = 0; entrants.length < GP_RACERS; i++) {
+  for (let i = 0; entrants.length < localField(true); i++) {
     const car = cars[i];
     entrants.push({
-      id: `local-bot-${i + 1}`, name: names[i], kind: 'bot', owner: 'local', avatar: randomAvatar(),
+      id: `local-bot-${i + 1}`, name: rivalName(names, i), kind: 'bot', owner: 'local', avatar: randomAvatar(),
       loadout: { car, wheel: AI_WHEELS[CARS[car].id] || 'calle', ...aiVessels(CARS[car].id) }, skillSeed: `${sessionId}:bot-${i + 1}`,
     });
   }
   return createCupSession({ cupId, sessionId, seed, difficulty, bots: true, entrants });
 }
-
-const cupSkill = (entrant, difficulty) => difficulty.skill[0]
-  + seededUnit(entrant.skillSeed) * (difficulty.skill[1] - difficulty.skill[0]);
 
 function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosmetics = null) {
   if (typeof avatar === 'string') { try { avatar = JSON.parse(avatar); } catch { avatar = null; } }
@@ -838,15 +840,14 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   const def = TRACKS[trackIndex], tip = pick(TIPS);
   $('loading-title').textContent = def.name;
   setMenuImage($('loading-art'), trackArt(def.id));
-  $('loading-meta').textContent = race.cup ? `${race.cup.definition.name} · Carrera ${race.cup.session.stageIndex + 1} de 4 · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`
-    : race.mode === 'battle' ? `Carreritas · Batalla de globos · ${def.name}` : `Carreritas · Pista ${trackIndex + 1} de ${TRACKS.length} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`;
+  $('loading-meta').textContent = race.cup ? [race.cup.definition.name, loc('Carrera {n} de 4', { n: race.cup.session.stageIndex + 1 }), locn(race.laps, '{n} vuelta', '{n} vueltas')].join(' · ')
+    : race.mode === 'battle' ? ['Carreritas', loc('Batalla de globos'), def.name].join(' · ') : ['Carreritas', loc('Pista {n} de {total}', { n: trackIndex + 1, total: TRACKS.length }), locn(race.laps, '{n} vuelta', '{n} vueltas')].join(' · ');
   $('loading-blurb').textContent = def.blurb;
   music.preload(songFor(def.id, race.mode));
   $('loading-tip-icon').innerHTML = tip[0];
   $('loading-tip').textContent = tip[1];
   $('play').disabled = true;
-  sound.stopEngine();
-  music.stop();
+  sound.stopEngine(); music.stop();
   race.water.stop();
   const step = async (label, progress) => {
     $('loading-status').textContent = label;
@@ -856,7 +857,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     return generation === loadGeneration;
   };
   try {
-    if (!await step('Preparando la pista…', 0.05)) return;
+    if (!await step(loc('Preparando la pista…'), 0.05)) return;
     const cameraModule = await import('./chase-camera.js');
     if (generation !== loadGeneration) return;
     followCam ||= cameraModule.createChaseCamera(race, () => T, rand, () => cameraStyle);
@@ -872,11 +873,11 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       }
       finishTrack();
     }
-    if (!await step('Preparando los carros…', 0.5)) return;
+    if (!await step(loc('Preparando los carros…'), 0.5)) return;
     if (roster) {
       const activeRoster = roster.filter(r => (!r.retired && !r.dns) || r.id === net.id);
       for (const [i, r] of activeRoster.entries()) {
-        if (!await step(`Preparando los panas… ${i + 1}/${activeRoster.length}`, 0.5 + (i + 1) / activeRoster.length * 0.3)) return;
+        if (!await step(loc('Preparando los panas… {n}/{total}', { n: i + 1, total: activeRoster.length }), 0.5 + (i + 1) / activeRoster.length * 0.3)) return;
         const mine = r.id === net.id;
         const c = makeRacer(r.car, mine, r.name, r.wheel, r.avatar, r.cosmetics);
         c.entrantId = r.id;
@@ -897,7 +898,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     } else if (race.cup) {
       const session = race.cup.session, grid = session.grids[session.stageIndex];
       for (const [i, id] of grid.entries()) {
-        if (!await step(`Preparando los panas… ${i + 1}/${grid.length}`, 0.5 + (i + 1) / grid.length * 0.3)) return;
+        if (!await step(loc('Preparando los panas… {n}/{total}', { n: i + 1, total: grid.length }), 0.5 + (i + 1) / grid.length * 0.3)) return;
         const entrant = session.entrants.find(item => item.id === id);
         const mine = id === LOCAL_PLAYER, guest = id === LOCAL_GUEST;
         const c = makeRacer(entrant.loadout.car, mine, entrant.name, entrant.loadout.wheel, entrant.avatar, entrant.loadout);
@@ -912,16 +913,17 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     } else {
       const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
       const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
-      const rivals = others.slice(0, RACERS - 1).map((car, i) => ({ car, name: names[i], wheel: AI_WHEELS[CARS[car].id] }));
+      const RACERS = race.mode === 'battle' ? BATTLE_RACERS : localField(false), pool = [...names, ...RIVALS.slice(6)];
+      const rivals = others.slice(0, RACERS - 1).map((car, i) => ({ car, name: rivalName(pool, i), wheel: AI_WHEELS[CARS[car].id] }));
       race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
       if (race.split) {
-        const p2 = makeRacer((playerIndex + 1) % CARS.length, false, 'Jugador 2', 'calle');
+        const p2 = makeRacer((playerIndex + 1) % CARS.length, false, loc('Jugador 2'), 'calle');
         p2.human = 2;
         p2.skill = 1;
         race.cars.push(p2);
       }
       for (let i = race.cars.length; i < RACERS; i++) {
-        if (!await step(`Preparando los panas… ${i}/${RACERS}`, 0.5 + i * 0.08)) return;
+        if (!await step(loc('Preparando los panas… {n}/{total}', { n: i, total: RACERS }), 0.5 + i * 0.32 / RACERS)) return;
         const r = rivals[i - (race.split ? 2 : 1)] ?? rivals[i - 1];
         race.cars.push(makeRacer(r.car, false, r.name, r.wheel, r.avatar));
       }
@@ -956,7 +958,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
         race.ghost = ghostPlay.spawnGhost({ recording: recorded, buildCar: () => {
           const by = recorded.by, car = by ? Math.max(0, CARS.findIndex(d => d.id === recorded.car)) : playerIndex;
           const c = makeRacer(car, false, by || ME.name, wheelId, by ? recorded.avatar : ME.avatar, by ? null : raceStyle(playerIndex));
-          c.name = by || 'Fantasma';
+          c.name = by || loc('Fantasma');
           setGhost(c, true);
           return c;
         } });
@@ -982,7 +984,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     $('loading').classList.add('hidden'); $('garage').classList.add('hidden');
     await race.screens.prepare(race.cars, race.player, T, AUTO || (roster && net.state.startAt > 0)); if (generation !== loadGeneration) return;
     race.screens.tick('off', 0); $('loading').classList.remove('hidden');
-    if (!await step('Preparando los gráficos…', 0.81)) return;
+    if (!await step(loc('Preparando los gráficos…'), 0.81)) return;
     renderer.toneMapping = THREE.NoToneMapping;
     updateRace(0);
     const { prepareRace } = await import('./prepare-race.js');
@@ -990,7 +992,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     // Each gate vessel sculpts its own pana (~300 ms): build and warm them
     // behind the cover, not as each racer reaches the gate on lap one.
     await gatesReady; const vessels = [];
-    for (const c of race.cars) { const built = gatesApi.prebuild(c); vessels.push(...built); if (built.length && !await step('Preparando los vehículos…', 0.81)) return; }
+    for (const c of race.cars) { const built = gatesApi.prebuild(c); vessels.push(...built); if (built.length && !await step(loc('Preparando los vehículos…'), 0.81)) return; }
     // Cars turn translucent at GO (start grace): compile that variant now too.
     const solid = race.cars.filter(c => !c.ghost);
     vessels.forEach(g => { g.visible = true; }); solid.forEach(c => { c.ghost = true; syncGhostAppearance(c); });
@@ -1002,14 +1004,14 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     if (roster) {
       // Everyone counts down together once every pana has loaded.
       net.loaded();
-      if (!await step('Esperando a los panas…', 1)) return;
+      if (!await step(loc('Esperando a los panas…'), 1)) return;
       if (!await net.until(s => s.raceId !== race.netRace || s.startAt > 0 || s.phase === 'lobby', (s) => {
         const racing = s.players.filter(p => p.racing), ready = racing.filter(p => p.loaded).length;
-        $('loading-status').textContent = `Esperando a los panas… ${ready}/${racing.length} listos`;
+        $('loading-status').textContent = loc('Esperando a los panas… {n}/{total} listos', { n: ready, total: racing.length });
       }) || generation !== loadGeneration) return;
       if (net.state.raceId !== race.netRace || net.state.phase === 'lobby') return;
       syncRacers(net.state);
-    } else if (!await step('¡Listo!', 1)) return;
+    } else if (!await step(loc('¡Listo!'), 1)) return;
     if (race.cup && !roster) markRacing(race.cup.session);
     race.loadingRaceId = 0;
     race.state = 'count';
@@ -1033,7 +1035,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     if (generation === loadGeneration) {
       if (!race.trackReady && T?.group) race.trackGroup = T.group;
       race.screens.tick('off', 0); $('loading').classList.remove('hidden');
-      $('loading-status').textContent = 'No pudimos preparar la carrera. Vuelve al garaje e inténtalo otra vez.';
+      $('loading-status').textContent = loc('No pudimos preparar la carrera. Vuelve al garaje e inténtalo otra vez.');
       race.state = 'off';
       race.loadingRaceId = 0;
       mode = 'garage';
@@ -1058,8 +1060,7 @@ function toGarage() {
   $('play').disabled = false;
   race.state = 'off';
   clearRace();
-  sound.stopEngine();
-  music.stop();
+  sound.stopEngine(); music.stop();
   race.water.stop();
   $('race').classList.add('hidden');
   $('garage').classList.remove('hidden');
@@ -1088,23 +1089,23 @@ let paused = false;
 let cameraStyle = 'dinamica';
 try { if (localStorage.getItem('carreritas:camera') === 'suave') cameraStyle = 'suave'; } catch { /* session preference */ }
 // The pad drives the car through controls.js; the engine works the garage and menus with it.
-const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race' && race.state !== 'end', help: [['RT / A', 'Acelerar'], ['LT / B', 'Frenar'], ['Stick izq. / Cruceta', 'Girar'], ['RB', 'Derrapar'], ['LB', 'Objeto adelante'], ['X', 'Objeto atrás'], ['Cruceta ↑', 'Cambiar objeto'], ['View / L3', 'Mirar atrás'], ['Y', 'Rescate']] },
-  title: 'Carreritas', heading: 'Pausa', sound, orientation: 'horizontal',
-  options: [{ id: 'camera', label: 'Cámara', choices: [['dinamica', 'Dinámica'], ['suave', 'Suave · sin inclinación']], get: () => cameraStyle,
+const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race' && race.state !== 'end', help: [['RT / A', loc('Acelerar')], ['LT / B', loc('Frenar')], ['Stick izq. / Cruceta', loc('Girar')], ['RB', loc('Derrapar')], ['LB', loc('Objeto adelante')], ['X', loc('Objeto atrás')], ['Cruceta ↑', loc('Cambiar objeto')], ['View / L3', loc('Mirar atrás')], ['Y', loc('Rescate')]] },
+  title: 'Carreritas', heading: loc('Pausa'), sound, orientation: 'horizontal',
+  options: [{ id: 'camera', label: loc('Cámara'), choices: [['dinamica', loc('Dinámica')], ['suave', loc('Suave · sin inclinación')]], get: () => cameraStyle,
     set(value) { if (!['dinamica', 'suave'].includes(value)) return; cameraStyle = value; try { localStorage.setItem('carreritas:camera', value); } catch { /* session preference */ } } }],
-  note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
-  controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Shift / K', 'Saltar y derrapar · truco en el aire'], ['Espacio / E', 'Lanzar objeto adelante'],
-    ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['C', 'Mirar atrás'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
-  tips: ['Mantén el botón de derrape y gira. La ayuda corrige si te acercas al borde; gira al otro lado para abrir la curva.',
-    'Suelta el botón de derrape al salir de la curva: el carro se estabiliza y las chispas dan turbo. No hace falta esperar a las moradas.',
-    'Puedes acelerar antes del ¡YA!. Desde el final del "1" sales con arranque cohete; desde el "3" el motor se ahoga y sale flojito un momento.',
-    'Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.',
-    'Sales y vuelves del rescate como fantasma durante 3 segundos. Los roces entre carros ya no te lanzan al aire.',
-    'Cada carro tiene su talento: lee su ficha y combina cauchos con derrapes, rebufo o piruetas.',
-    'Calidad Rápida reduce sombras, lluvia y detalles para equipos lentos. No cambia la física ni reduce el retraso de internet.'],
+  note: () => mode === 'race' ? (race.state === 'end' ? loc('La carrera terminó.') : race.netRace ? loc('Carrera online: no se detiene.') : loc('La carrera está en pausa.')) : loc('Estás en el garaje.'),
+  controls: [['W / ↑', loc('Acelerar')], ['S / ↓', loc('Frenar')], ['A D / ← →', loc('Girar')], ['Shift / K', loc('Saltar y derrapar · truco en el aire')], ['Espacio / E', loc('Lanzar objeto adelante')],
+    ['X', loc('Lanzar objeto atrás')], ['1 2', loc('Elegir objeto')], ['Q', loc('Cambiar objeto')], ['R', loc('Pedir rescate al zamuro')], ['C', loc('Mirar atrás')], ['H', loc('Claxon')], ['M', loc('Sonido')], ['Esc', loc('Pausa')]],
+  tips: [loc('Mantén el botón de derrape y gira. La ayuda corrige si te acercas al borde; gira al otro lado para abrir la curva.'),
+    loc('Suelta el botón de derrape al salir de la curva: el carro se estabiliza y las chispas dan turbo. No hace falta esperar a las moradas.'),
+    loc('Puedes acelerar antes del ¡YA!. Desde el final del "1" sales con arranque cohete; desde el "3" el motor se ahoga y sale flojito un momento.'),
+    loc('Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'),
+    loc('Sales y vuelves del rescate como fantasma durante 3 segundos. Los roces entre carros ya no te lanzan al aire.'),
+    loc('Cada carro tiene su talento: lee su ficha y combina cauchos con derrapes, rebufo o piruetas.'),
+    loc('Calidad Rápida reduce sombras, lluvia y detalles para equipos lentos. No cambia la física ni reduce el retraso de internet.')],
   actions: [
-    { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race' && !race.netRace && (!race.cup || ['loading', 'racing'].includes(race.cup.session.status)), run: () => startRace(race.playerIndex, race.playerWheel) },
-    { id: 'to-garage', label: 'Volver al garaje', kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
+    { id: 'restart', label: loc('Reiniciar carrera'), kind: 'secondary', visible: () => mode === 'race' && !race.netRace && (!race.cup || ['loading', 'racing'].includes(race.cup.session.status)), run: () => startRace(race.playerIndex, race.playerWheel) },
+    { id: 'to-garage', label: loc('Volver al garaje'), kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
   ],
   invite: () => inviteLink(),
   canOpen: () => mode !== 'loading',
@@ -1118,8 +1119,8 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
   },
   onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.reset(); },
 });
-$('race').querySelector('.hud-corner').append(menu.createButton({ id: 'pause', label: 'Pausa', className: 'pause-button pk-btn pk-btn--sm' }));
-$('garage').querySelector('.bar').append(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle pk-btn pk-btn--sm' }));
+$('race').querySelector('.hud-corner').append(menu.createButton({ id: 'pause', label: loc('Pausa'), className: 'pause-button pk-btn pk-btn--sm' }));
+$('garage').querySelector('.bar').append(menu.createButton({ id: 'settings', label: loc('Ajustes'), className: 'toggle pk-btn pk-btn--sm' }));
 for (const kbd of document.querySelectorAll('#pause kbd, #settings kbd')) kbd.classList.add('pk-kbd');
 
 $('again').onclick = () => {
@@ -1219,9 +1220,12 @@ function playerInput(n = 1) {
 }
 
 // Game controllers: poll each frame, fire item / rescue / pause on presses.
-let padsBefore = [null, null];
+let padsBefore = [null, null], pads = null;
+// game-entry.js has already loaded it: not a first-load module of its own.
+import('/engine/gamepad.js').then(m => { pads = m; });
 function pollPads() {
-  const list = navigator.getGamepads?.() || [];
+  // Alone, the pad in use drives; split screen hands out the controllers in order.
+  const list = !pads ? [] : race.p2 ? pads.padList() : [pads.activePad()];
   race.pads = [padInput(list[0],getSettings()), padInput(list[1],getSettings())];
   race.pads.forEach((pad, i) => {
     const hit = pressed(pad, padsBefore[i]);
@@ -1261,7 +1265,7 @@ function aiInput(c) {
 
 function say(c, lines, time) {
   const text = typeof lines === 'string' ? lines : pick(lines);
-  c.bubble.say(text, time);
+  c.bubble.say(loc(text), time);
   if (race.netRace && !c.remote) net.fx(c.netId, 'say', { text, time });
 }
 
@@ -1379,7 +1383,7 @@ function syncVulture(c, dt) {
   c.awayT = Math.max(0, (c.awayT || 0) - dt);
   let v = vultures.get(c);
   if (!(c.rescueT > 0 || c.awayT > 0)) { if (v) v.visible = false; return; }
-  if (!v) {
+  if (!v) { if (!soaringVulture) return;
     v = soaringVulture({ seed: c.def.num });
     v.scale.setScalar(2.1);
     v.name = 'rescue-zamuro';
@@ -1398,7 +1402,7 @@ function hitHazard(c, power, side, hz) {
   crash(c, power, side);
   c.vx *= -0.3; c.vz *= -0.3;
   say(c, pick(race.hazards.lines(hz)), 1.1);
-  sound.bonk(power / 10);
+  race.vsfx.crash(power / 10, 'wall');
 }
 
 // "¡YA!": the player's timing decides a turbo or a stall; rivals sometimes
@@ -1411,7 +1415,7 @@ function launchGrid() {
     const timing = c.isPlayer && !AUTO ? startBoost(race.throttleAt) : Math.random() < 0.35 ? startBoost(1.3) : startBoost(2.2);
     if (timing.boost) {
       c.boost = Math.max(c.boost, timing.boost);
-      if (c.isPlayer) { sound.turbo(); say(c, LINES.rocket, 1); }
+      if (c.isPlayer) { race.vsfx.boost(); say(c, LINES.rocket, 1); }
     }
     if (timing.stall) { c.stall = timing.stall; say(c, LINES.stall, 1); }
   }
@@ -1428,7 +1432,7 @@ function slipstreams(dt) {
     if (c.draft >= DRAFT_TIME) {
       c.draft = 0;
       c.boost = Math.max(c.boost, DRAFT_BOOST * (c.tune.draftBoost ?? 1));
-      if (c.isPlayer) { sound.turbo(); c.itemMessage = '¡Rebufo!'; c.itemMessageT = 1; }
+      if (c.isPlayer) { race.vsfx.boost(); c.itemMessage = loc('¡Rebufo!'); c.itemMessageT = 1; }
     }
   }
 }
@@ -1443,7 +1447,7 @@ function collidePair(a, b) {
   if (isGhost(a) || isGhost(b) || a.done || b.done || a.dns || b.dns || a.retired || b.retired) return;
   const hit = resolveContact(a, b);
   if (hit?.kind === 'crash') {
-    sound.bonk(hit.speed / 8);
+    race.vsfx.crash(hit.speed / 8, 'car');
     for (const [c, contact] of [[a, hit.a], [b, hit.b]]) if (contact.hit) {
       c.heave.v -= Math.min(2, contact.power * 0.15);
       c.drift = 0; c.driftT = 0;
@@ -1451,7 +1455,7 @@ function collidePair(a, b) {
       recordImpact(c, race.clock);
     }
   } else if (hit?.kind === 'bump') {
-    sound.bonk(0.4);
+    race.vsfx.crash(0.4, 'bump');
   }
 }
 
@@ -1528,7 +1532,7 @@ function updateRace(dt, presentation = true) {
     if (race.netRace) race.count = Math.min(3.999, 1 + (net.state.startAt - net.now()) / 1000);
     else race.count -= dt;
     const n = Math.ceil(race.count) - 1;
-    $('count').textContent = n > 0 ? n : '¡YA!';
+    $('count').textContent = n > 0 ? n : loc('¡YA!');
     // Rocket start: remember when the gas went down (and stayed down); the number's colour shows how the start will go.
     race.throttleAt = playerInput().throttle > 0 ? race.throttleAt ?? race.count : null;
     $('count').dataset.rev = race.throttleAt == null ? '' : startCue(race.throttleAt);
@@ -1623,22 +1627,22 @@ function presentRace(dt) {
   const place = order.indexOf(p);
   race.tags.update(race.ghost ? [...race.cars, race.ghost.car] : race.cars, race.camera, p, { show: !race.split && race.state !== 'end', order });
   if (race.mode === 'battle') {
-    setText('lap-label', 'Globos');
+    setText('lap-label', loc('Globos'));
     setText('lap', `${p.balloons}/${BALLOONS}`);
   } else {
-    setText('lap-label', 'Vuelta');
+    setText('lap-label', loc('Vuelta'));
     setText('lap', `${Math.min(race.laps, Math.max(1, p.lap))}/${race.laps}`);
   }
   if (race.shownPlace !== place) {
     race.shownPlace = place;
     $('pos').innerHTML = `${place + 1}<sup>º</sup>`;
-    $('pos').setAttribute('aria-label', `Posición ${place + 1} de ${order.length}`);
+    $('pos').setAttribute('aria-label', loc('Posición {n} de {total}', { n: place + 1, total: order.length }));
   }
-  setText('leader', order[0] === p ? '¡Tú!' : order[0].name);
+  setText('leader', order[0] === p ? loc('¡Tú!') : order[0].name);
   setText('time', race.mode === 'battle' ? clockText(Math.max(0, BATTLE_TIME - race.clock)) : clockText(p.done ? p.time : race.clock));
   if (race.mode !== 'battle' && race.laps > 1 && p.lap === race.laps && !p.finalLap && !p.done) {
     p.finalLap = true;
-    shout('¡Vuelta final!');
+    shout(loc('¡Vuelta final!'));
     music.setTempo(1.14);
   }
   music.muffle(p.spin > 0 && !race.p2); // a spin-out dulls the band until you recover
@@ -1657,13 +1661,13 @@ function presentRace(dt) {
   if (boost.dataset.drift !== charge) boost.dataset.drift = charge;
   const driftHint = $('drift-hint');
   driftHint.hidden = !p.drift;
-  const driftText = p.drift ? (Number(charge) ? 'Suelta: turbo' : 'Derrape asistido') : '';
+  const driftText = p.drift ? (Number(charge) ? loc('Suelta: turbo') : loc('Derrape asistido')) : '';
   if (driftHint.textContent !== driftText) driftHint.textContent = driftText;
   const driftButton = document.querySelector('.touch-drift');
-  const driftAction = p.drift && Number(charge) ? '¡Suelta!' : 'Derrape';
+  const driftAction = p.drift && Number(charge) ? loc('¡Suelta!') : loc('Derrape');
   if (driftButton.textContent !== driftAction) {
     driftButton.textContent = driftAction;
-    driftButton.setAttribute('aria-label', driftAction === 'Derrape' ? 'Derrapar o saltar' : 'Suelta para recibir turbo');
+    driftButton.setAttribute('aria-label', driftAction === loc('Derrape') ? loc('Derrapar o saltar') : loc('Suelta para recibir turbo'));
   }
   const segs = boost.children;
   for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', i < lit);
@@ -1730,16 +1734,16 @@ function readRoad(p, dt) {
   $('incoming').hidden = !threat && !(p.rainIn > 0);
   $('incoming-arrow').hidden = !threat;
   if (threat) {
-    const names = { cohete: '¡Cohete!', chancleta: '¡La chancleta viene por ti!', mango: '¡Mango!' };
-    $('incoming-text').textContent = names[threat.f.kind] || '¡Cuidado!';
+    const names = { cohete: loc('¡Cohete!'), chancleta: loc('¡La chancleta viene por ti!'), mango: loc('¡Mango!') };
+    $('incoming-text').textContent = names[threat.f.kind] || loc('¡Cuidado!');
     const rel = Math.atan2(threat.dx, threat.dz) - p.h;
     $('incoming-arrow').style.transform = `rotate(${(race.mirror ? 1 : -1) * rel}rad)`;
-  } else if (p.rainIn > 0) $('incoming-text').textContent = `Aguacero en ${Math.ceil(p.rainIn)} s`;
+  } else if (p.rainIn > 0) $('incoming-text').textContent = loc('Aguacero en {s} s', { s: Math.ceil(p.rainIn) });
   // Lap splits: a new lap shows its time; the best one gets a shout.
   if (race.mode !== 'battle' && p.lap > race.lapSeen && p.lap <= race.laps + 1) {
     race.lapSeen = p.lap;
     const { lap, best } = lapSplit(race.splits, race.clock);
-    if (best && race.splits.length > 1) shout(`¡Vuelta rápida! ${clockText(lap)}`, { tone: 'teal' });
+    if (best && race.splits.length > 1) shout(loc('¡Vuelta rápida! {time}', { time: clockText(lap) }), { tone: 'teal' });
     race.bestLap = Math.min(race.bestLap ?? Infinity, lap);
     $('lap-best').textContent = clockText(race.bestLap);
     $('best-pill').hidden = false;
@@ -1749,8 +1753,8 @@ function readRoad(p, dt) {
 function showP2(order) {
   const p2 = race.p2, place = order.indexOf(p2) + 1, item = activeItem(p2);
   $('p2-pos').innerHTML = `${place}<sup>º</sup>`;
-  $('p2-lap').textContent = race.mode === 'battle' ? `Globos ${p2.balloons}/${BALLOONS}` : `Vuelta ${Math.min(race.laps, Math.max(1, p2.lap))}/${race.laps}`;
-  $('p2-item').textContent = item ? (item.rolling > 0 ? 'Abriendo…' : ITEMS[item.kind].name) : 'Sin objeto';
+  $('p2-lap').textContent = race.mode === 'battle' ? loc('Globos {n}/{total}', { n: p2.balloons, total: BALLOONS }) : loc('Vuelta {n}/{total}', { n: Math.min(race.laps, Math.max(1, p2.lap)), total: race.laps });
+  $('p2-item').textContent = item ? (item.rolling > 0 ? loc('Abriendo…') : ITEMS[item.kind].name) : loc('Sin objeto');
 }
 
 // Each slot rolls independently: picking a reserve never locks the active item.
@@ -1763,7 +1767,7 @@ function showItem(p) {
   lastItem = key;
   p.inventory.forEach((item, i) => {
     const selected = i === p.selected;
-    const label = item ? item.rolling > 0 ? 'Abriendo…' : ITEMS[item.kind].name : 'Vacío';
+    const label = item ? item.rolling > 0 ? loc('Abriendo…') : ITEMS[item.kind].name : loc('Vacío');
     $('item-icon-' + i).innerHTML = item ? item.rolling > 0 ? ICONS[Math.floor(item.rolling * 12) % ICONS.length] : ITEMS[item.kind].icon : '+';
     $('item-n-' + i).textContent = item?.n > 1 ? `×${item.n}` : '';
     $('item-label-' + i).textContent = label;
@@ -1772,20 +1776,20 @@ function showItem(p) {
     slot.classList.toggle('rolling', !!(item && item.rolling > 0));
     slot.dataset.rarity = item && item.rolling <= 0 ? (isJuiced(p) ? 'gold' : ITEMS[item.kind]?.rarity || 'blue') : '';
     slot.setAttribute('aria-pressed', String(selected));
-    slot.setAttribute('aria-label', `Objeto ${i + 1}: ${label}${selected ? ', equipado' : ', seleccionar'}`);
+    slot.setAttribute('aria-label', selected ? loc('Objeto {n}: {item}, equipado', { n: i + 1, item: label }) : loc('Objeto {n}: {item}, seleccionar', { n: i + 1, item: label }));
     slot.disabled = !item || p.done;
   });
   const item = activeItem(p), ready = item && item.rolling <= 0 && !p.done && p.spin <= 0;
-  const status = p.itemMessageT > 0 ? p.itemMessage : canBlock(p) ? 'Mango equipado · bloquea un mangazo' : '';
+  const status = p.itemMessageT > 0 ? p.itemMessage : canBlock(p) ? loc('Mango equipado · bloquea un mangazo') : '';
   if ($('item-status').textContent !== status) $('item-status').textContent = status;
   $('item').classList.toggle('protected', canBlock(p));
   $('throw-front').disabled = $('throw-back').disabled = !ready;
   const aimed = !item || AIMED.has(item.kind);
-  $('throw-front').querySelector('span').textContent = item?.kind?.startsWith('jugo') ? 'Beber' : aimed ? 'Adelante' : 'Usar';
+  $('throw-front').querySelector('span').textContent = item?.kind?.startsWith('jugo') ? loc('Beber') : aimed ? loc('Adelante') : loc('Usar');
   $('throw-back').disabled = !ready || !aimed;
   $('swap-item').disabled = !p.inventory[1 - p.selected] || p.done;
   $('coin-count').textContent = String(p.coins).padStart(2, '0');
-  $('coin-bonus').textContent = `+${Number((p.coins * COIN_SPEED * 100).toFixed(1)).toLocaleString('es-VE')}% velocidad`;
+  $('coin-bonus').textContent = loc('+{pct}% velocidad', { pct: formatNumber(Number((p.coins * COIN_SPEED * 100).toFixed(1))) });
   $('coins').classList.toggle('picked', p.coinFlash > 0);
   $('coins').classList.toggle('full', p.coins === MAX_COINS);
 }
@@ -1851,7 +1855,7 @@ function renderCup() {
   const finalizedStages = session.finalized.map((f, idx) => f ? idx : -1).filter(idx => idx >= 0);
   const viewStage = session.finalized[session.stageIndex] ? session.stageIndex : (finalizedStages.at(-1) ?? session.stageIndex);
   const view = cupStandingsView(session, viewStage);
-  $('cup-title').textContent = `${race.cup.definition.name} · ${session.status === 'complete' ? 'Final' : `Carrera ${viewStage + 1} de 4`}`;
+  $('cup-title').textContent = race.cup.definition.name + ' · ' + (session.status === 'complete' ? loc('Final') : loc('Carrera {n} de 4', { n: viewStage + 1 }));
   const colors = new Map(race.cars.map(c => [c.entrantId || c.netId, c.def.color]));
   const myId = race.player?.entrantId || race.player?.netId || net?.id || LOCAL_PLAYER;
   fillRoster($('cup-board'), view.map((r, i) => {
@@ -1859,7 +1863,7 @@ function renderCup() {
     chip.className = 'chip';
     chip.style.setProperty('--c', colors.get(r.id) || CARS[r.entrant.loadout.car]?.color || '#fff');
     const details = [
-      `+${r.racePoints} pts`,
+      loc('+{n} pts', { n: r.racePoints }),
       r.classification ? CLASSIFICATION_TEXT[r.classification] : null,
       r.stage > 0 || viewStage > 0 ? rankChangeText(r.rankChange) : null,
       r.decidedBy && i <= 2 ? tiebreakText(r.decidedBy) : null,
@@ -1870,7 +1874,7 @@ function renderCup() {
       name: r.name,
       detail: details,
       me: r.id === myId,
-      end: `${r.points} pts`,
+      end: loc('{n} pts', { n: r.points }),
       score: true,
       className: r.rankChange > 0 ? 'rank-up' : r.rankChange < 0 ? 'rank-down' : '',
     };
@@ -1883,7 +1887,7 @@ function finish() {
   driftCombo.finish(race.player);   // bank a live chain so the results count it
   const ghost = race.recorder.finish(); race.lapRecord ||= !!ghost?.saved;
   if (ghost?.saved) {
-    shout('¡Nuevo fantasma! Tu mejor vuelta corre contigo');
+    shout(loc('¡Nuevo fantasma! Tu mejor vuelta corre contigo'));
     const lapMs = Math.round(ghost.best * 1000), trackId = T.id;   // stats load lazily: the garage's first load is capped
     import('/engine/stats.js').then(m => m.statRecord(`carreritas.best-lap:${trackId}`, lapMs, { better: 'min' }));
   }
@@ -1895,16 +1899,16 @@ function finish() {
   const ahead = (c) => c.done && (!p.done || c.time < p.time);
   const place = 1 + race.cars.filter((c) => c !== p && ahead(c)).length;
   const winner = race.cars.filter(ahead).sort((a, b) => a.time - b.time)[0];
-  $('result-title').textContent = p.dns ? 'No saliste a tiempo (DNS)' : !p.done ? 'Se acabó el tiempo' : place === 1 ? '¡Ganaste!' : `${place}º lugar`;
-  $('result-time').textContent = `${T?.name || ''} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'} · ${p.done && !p.dns ? clockText(p.time) : 'sin terminar'} · ${p.def.name} · ${p.lost || 0} piezas perdidas`
-    + (winner && place > 1 ? ` · ganó ${winner.name}` : '');
-  if (race.bestLap != null) $('result-time').textContent += ` · mejor vuelta ${clockText(race.bestLap)}`;
-  if (race.p2) $('result-time').textContent += ` · Jugador 2: ${standings().indexOf(race.p2) + 1}º`;
+  $('result-title').textContent = p.dns ? loc('No saliste a tiempo (DNS)') : !p.done ? loc('Se acabó el tiempo') : place === 1 ? loc('¡Ganaste!') : loc('{n}º lugar', { n: place });
+  $('result-time').textContent = `${T?.name || ''} · ${locn(race.laps, '{n} vuelta', '{n} vueltas')} · ${p.done && !p.dns ? clockText(p.time) : loc('sin terminar')} · ${p.def.name} · ${locn(p.lost || 0, '{n} piezas perdidas', '{n} piezas perdidas')}`
+    + (winner && place > 1 ? ' · ' + loc('ganó {name}', { name: winner.name }) : '');
+  if (race.bestLap != null) $('result-time').textContent += ' · ' + loc('mejor vuelta {time}', { time: clockText(race.bestLap) });
+  if (race.p2) $('result-time').textContent += ' · ' + loc('Jugador 2: {n}º', { n: standings().indexOf(race.p2) + 1 });
   if (race.mode === 'battle') {
     const order = standings(), rank = order.indexOf(p) + 1;
-    $('result-title').textContent = p.balloons > 0 && rank === 1 ? '¡Ganaste la batalla!' : p.balloons > 0 ? `${rank}º lugar` : '¡Sin globos!';
-    $('result-time').textContent = `${T.name} · batalla de globos · ${p.balloons} ${p.balloons === 1 ? 'globo' : 'globos'} · ${p.def.name}`
-      + (p.balloons === 0 ? ` · aguantaste ${clockText(p.outAt ?? race.clock)}` : '');
+    $('result-title').textContent = p.balloons > 0 && rank === 1 ? loc('¡Ganaste la batalla!') : p.balloons > 0 ? loc('{n}º lugar', { n: rank }) : loc('¡Sin globos!');
+    $('result-time').textContent = `${T.name} · ${loc('batalla de globos')} · ${locn(p.balloons, '{n} globo', '{n} globos')} · ${p.def.name}`
+      + (p.balloons === 0 ? ' · ' + loc('aguantaste {time}', { time: clockText(p.outAt ?? race.clock) }) : '');
   }
   const won = race.mode === 'battle' ? p.balloons > 0 && standings()[0] === p : p.done && !p.dns && place === 1;
   if (won) driftFeats.win();
@@ -1925,14 +1929,14 @@ function finish() {
       const myId = p.entrantId || p.netId || net?.id || LOCAL_PLAYER;
       const cupPlace = cupRows.findIndex(row => row.id === myId);
       const trophy = cupTrophy(session, myId);
-      $('result-title').textContent = cupPlace === 0 ? `¡Ganaste la ${race.cup.definition.name}!` : `${cupPlace + 1}º en la ${race.cup.definition.name}`;
-      if (trophy) $('result-time').textContent += ` · trofeo de ${trophy}`;
+      $('result-title').textContent = cupPlace === 0 ? loc('¡Ganaste la {cup}!', { cup: race.cup.definition.name }) : loc('{n}º en la {cup}', { n: cupPlace + 1, cup: race.cup.definition.name });
+      if (trophy) $('result-time').textContent += ' · ' + loc('trofeo de {trophy}', { trophy: trophyName(trophy) });
       const tiedPodium = cupRows.slice(0, 3).find(row => row.decidedBy);
       if (tiedPodium) $('result-time').textContent += ` · ${tiebreakText(tiedPodium.decidedBy)}`;
     }
     if (race.p2) {
       const p2CupPlace = championshipStandings(session).findIndex(row => row.id === LOCAL_GUEST);
-      if (p2CupPlace >= 0) $('result-time').textContent += ` · Copa Jugador 2: ${p2CupPlace + 1}º`;
+      if (p2CupPlace >= 0) $('result-time').textContent += ' · ' + loc('Copa Jugador 2: {n}º', { n: p2CupPlace + 1 });
     }
   }
   renderCup();
@@ -1941,8 +1945,8 @@ function finish() {
     trophy: race.cup ? cupTrophy(race.cup.session, myId) : null, record: race.lapRecord })) saveWallet();
   if (race.netRace) updateResultActions(net.state);
   else {
-    $('again').textContent = race.cup ? (race.cup.session.status === 'complete' ? 'Otra copa' : 'Siguiente pista') : 'Otra vez';
-    $('again').disabled = false; $('back').textContent = 'Garaje';
+    $('again').textContent = race.cup ? (race.cup.session.status === 'complete' ? loc('Otra copa') : loc('Siguiente pista')) : loc('Otra vez');
+    $('again').disabled = false; $('back').textContent = loc('Garaje');
   }
   race.resultKey = '';
   renderResults(standings(), p);
@@ -1986,14 +1990,14 @@ function renderResults(order, player) {
     const id = c.entrantId || c.netId;
     const rec = stageMap?.get(id);
     const endText = race.mode === 'battle'
-      ? `${c.balloons} ${c.balloons === 1 ? 'globo' : 'globos'}`
+      ? locn(c.balloons, '{n} globo', '{n} globos')
       : rec
-        ? `${rec.classification === 'finished' ? clockText(rec.time ?? c.time) : CLASSIFICATION_TEXT[rec.classification] ?? 'Sin terminar'} · +${rec.points} pts`
-        : c.done ? clockText(c.time) : `vuelta ${Math.min(race.laps, Math.max(1, c.lap))}/${race.laps}`;
+        ? `${rec.classification === 'finished' ? clockText(rec.time ?? c.time) : CLASSIFICATION_TEXT[rec.classification] ?? loc('Sin terminar')} · ${loc('+{n} pts', { n: rec.points })}`
+        : c.done ? clockText(c.time) : loc('vuelta {n}/{total}', { n: Math.min(race.laps, Math.max(1, c.lap)), total: race.laps });
     const style = driftCombo.totalOf(c);
     const king = style > 0 && style === styleBest, chocon = hitsBest >= 5 && c.hits === hitsBest;
     const level = nivelOf(c.tunes?.car ?? c.tune ?? c.def.tune);
-    const detail = [`Nivel ${bandOf(level).letter} ${level}`, style > 0 && `Estilo: ${style} pts${king ? ' · ¡Rey del Derrape!' : ''}`, chocon && `El Chocón: ${c.hits} choques`].filter(Boolean).join(' · ');
+    const detail = [loc('Nivel {band} {n}', { band: bandOf(level).letter, n: level }), style > 0 && (king ? loc('Estilo: {n} pts · ¡Rey del Derrape!', { n: style }) : loc('Estilo: {n} pts', { n: style })), chocon && loc('El Chocón: {n} choques', { n: c.hits })].filter(Boolean).join(' · ');
     return {
       rank: i + 1, lead: chip, name: c.name, me: c === player || (id && id === myId), end: endText,
       detail: detail || null,
@@ -2002,7 +2006,6 @@ function renderResults(order, player) {
   }));
   race.screens.rows?.(displayOrder,player);
 }
-
 
 // ======================================================================
 // Online (online.js + server/room.js). Remote cars are kinematic: they
@@ -2088,32 +2091,31 @@ function renderLobby(s) {
   const cup = isCupMode(s.mode) ? cupById(s.mode) : null;
   $('lobby-code').textContent = net.code;
   $('lobby-roster').innerHTML = s.players.map((p, i) =>
-    `<li class="pk-row${p.id === net.id ? ' is-me' : ''}${p.connected ? '' : ' away'}"><span class="pk-row-n">${p.id === s.host ? SVG.crown : i + 1}</span>`
+    `<li class="pk-row${p.id === net.id ? ' is-me' : ''}${p.connected ? '' : ' away'}" translate="no"><span class="pk-row-n">${p.id === s.host ? SVG.crown : i + 1}</span>`
     + `<span class="chip" style="--c:${CARS[p.car]?.color || '#fff'}"></span>${esc(p.name)}`
-    + `<span class="pk-row-end">${p.connected ? esc(CARS[p.car]?.name || '') : 'reconectando…'}</span></li>`).join('');
-  const gridTarget = cup ? GP_GRID : 4;
-  const bots = Math.max(0, (s.bots ? Math.max(gridTarget, s.players.length) : s.players.length) - s.players.length);
-  $('launch-note').innerHTML = `<span class="pk-dot"></span>${s.players.length} ${s.players.length === 1 ? 'pana' : 'panas'}${bots ? ` + ${bots} ${bots === 1 ? 'rival' : 'rivales'}` : ''}`;
+    + `<span class="pk-row-end">${p.connected ? esc(CARS[p.car]?.name || '') : loc('reconectando…')}</span></li>`).join('');
+  const bots = fieldSize({ humans: s.players.length, bots: s.bots, cup: !!cup, field: s.field }) - s.players.length;
+  $('launch-note').innerHTML = `<span class="pk-dot"></span>${locn(s.players.length, '{n} pana', '{n} panas')}${bots ? ` + ${locn(bots, '{n} rival', '{n} rivales')}` : ''}`;
   $('lobby-bots').checked = s.bots;
   $('lobby-bots').disabled = !host || live;
   $('t-prev').disabled = $('t-next').disabled = !host || live || !!cup;
   renderSetup();
-  const hostName = s.players.find(p => p.id === s.host)?.name || 'el anfitrión';
+  const hostName = s.players.find(p => p.id === s.host)?.name || loc('el anfitrión');
   if (s.notice) {
-    $('lobby-status').textContent = s.notice;
+    $('lobby-status').textContent = loc(s.notice);
   } else if (live) {
-    if (myRacer?.dns) $('lobby-status').textContent = 'No cargaste a tiempo esta etapa (DNS). Entras en la siguiente pista.';
-    else if (racing) $('lobby-status').textContent = 'Tu carrera sigue en curso.';
-    else if (cup) $('lobby-status').textContent = 'Campeonato en curso: espectador hasta la próxima copa.';
-    else $('lobby-status').textContent = 'Carrera en curso: entras en la próxima.';
+    if (myRacer?.dns) $('lobby-status').textContent = loc('No cargaste a tiempo esta etapa (DNS). Entras en la siguiente pista.');
+    else if (racing) $('lobby-status').textContent = loc('Tu carrera sigue en curso.');
+    else if (cup) $('lobby-status').textContent = loc('Campeonato en curso: espectador hasta la próxima copa.');
+    else $('lobby-status').textContent = loc('Carrera en curso: entras en la próxima.');
   } else {
     $('lobby-status').textContent = host
-      ? (cup ? `Tú eliges la copa (${cup.name}) y das la salida.` : 'Tú eliges la pista y das la salida.')
-      : (cup ? `${hostName} preparó la ${cup.name}.` : `${hostName} elige la pista y da la salida.`);
+      ? (cup ? loc('Tú eliges la copa ({cup}) y das la salida.', { cup: cup.name }) : loc('Tú eliges la pista y das la salida.'))
+      : (cup ? loc('{name} preparó la {cup}.', { name: hostName, cup: cup.name }) : loc('{name} elige la pista y da la salida.', { name: hostName }));
   }
   const canRejoinStage = live && myRacer && !myRacer.retired && !myRacer.dns && mode === 'garage';
-  $('play').textContent = canRejoinStage ? 'Entrar a la pista' : host ? (live ? 'Carrera en curso' : '¡Vámonos!') : live ? 'Carrera en curso' : `Esperando a ${hostName}`;
-  $('split').closest('label').hidden = s.players.length > 1; $('start').disabled = !host; $('start').textContent = host ? '¡Arrancar!' : `Esperando a ${hostName}`; menuFlow?.enter(s.garage || live ? 'garage' : 'lobby');
+  $('play').textContent = canRejoinStage ? loc('Entrar a la pista') : host ? (live ? loc('Carrera en curso') : loc('¡Vámonos!')) : live ? loc('Carrera en curso') : loc('Esperando a {name}', { name: hostName });
+  $('split').closest('label').hidden = s.players.length > 1; $('start').disabled = !host; $('start').textContent = host ? loc('¡Arrancar!') : loc('Esperando a {name}', { name: hostName }); menuFlow?.enter(s.garage || live ? 'garage' : 'lobby');
   $('play').disabled = (!canRejoinStage && (live || !host)) || mode !== 'garage';
   menuFlow?.refresh();
 }
@@ -2125,16 +2127,16 @@ function updateResultActions(s) {
   if (inCupIntermission) {
     const remainingMs = s.intermissionEndsAt > 0 ? s.intermissionEndsAt - net.now() : 0;
     const waitReadWindow = remainingMs > (GP_INTERMISSION_MS - GP_MIN_READ_MS);
-    $('again').textContent = host ? 'Siguiente pista' : 'Siguiente pista pronto…';
+    $('again').textContent = host ? loc('Siguiente pista') : loc('Siguiente pista pronto…');
     $('again').disabled = !host || waitReadWindow;
   } else if (inCupComplete) {
-    $('again').textContent = host ? 'Otra copa' : 'Esperando al anfitrión';
+    $('again').textContent = host ? loc('Otra copa') : loc('Esperando al anfitrión');
     $('again').disabled = !host || !['results', 'complete'].includes(s.phase);
   } else {
-    $('again').textContent = host ? 'Otra carrera' : 'Esperando al anfitrión';
+    $('again').textContent = host ? loc('Otra carrera') : loc('Esperando al anfitrión');
     $('again').disabled = !host || s.phase !== 'results';
   }
-  $('back').textContent = host && ['results', 'complete'].includes(s.phase) ? 'Sala' : 'Garaje';
+  $('back').textContent = host && ['results', 'complete'].includes(s.phase) ? loc('Sala') : loc('Garaje');
 }
 
 function inviteLink() {
@@ -2149,7 +2151,7 @@ async function goOnline(code, lead) {
   $('go-online').hidden = true;
   $('setup').hidden = false;
   $('lobby-code').textContent = code;
-  $('lobby').dataset.failed = 'false'; $('lobby-status').textContent = 'Conectando con la sala…';
+  $('lobby').dataset.failed = 'false'; $('lobby-status').textContent = loc('Conectando con la sala…');
   $('play').disabled = true;
   const url = new URL(location.href);
   url.searchParams.set('room', code);
@@ -2161,9 +2163,9 @@ async function goOnline(code, lead) {
       net = await joinRace({ code, lead, name: ME.name, avatar: ME.avatar, car: garage.index, wheel: garage.wheel, cosmetics: raceStyle(garage.index) }).then(link => booted.then(() => link));
     } catch (error) {
       $('lobby').dataset.failed = 'true'; console.warn('Carreritas online unavailable', error);
-      $('lobby-status').textContent = error?.full ? 'La sala está llena.' : 'No pudimos entrar a la sala. Puedes correr en local.';
+      $('lobby-status').textContent = error?.full ? loc('La sala está llena.') : loc('No pudimos entrar a la sala. Puedes correr en local.');
       $('play').disabled = false;
-      $('play').textContent = '¡Vámonos!';
+      $('play').textContent = loc('¡Vámonos!');
       $('lobby-solo').hidden = false;
       return null;
     } finally { joining = null; menuFlow?.refresh(); }
@@ -2176,9 +2178,10 @@ async function goOnline(code, lead) {
       $('net-status').classList.toggle('bad', !!bad); document.dispatchEvent(new Event('pana:sala-update'));
     });
     net.on('left', () => { document.dispatchEvent(new Event('pana:sala-update'));
-      $('lobby-status').textContent = 'Saliste de la sala. Recarga para volver a entrar.';
+      $('lobby-status').textContent = loc('Saliste de la sala. Recarga para volver a entrar.');
       $('lobby-solo').hidden = false;
     });
+    net.pick(garage.index, garage.wheel, raceStyle(garage.index));   // a car picked while connecting
     onNetState(net.state);
     return net;
   })();
@@ -2200,7 +2203,7 @@ function frame() {
     updateGarage(dt);
     // A soft bloom on lamps and the ring, unless the quality is set low.
     // Phones skip it: their high pixel ratio smears the glow.
-    if (getSettings().quality !== 'baja' && FINE_POINTER) (garage.bloom ??= garageBloom(renderer, garage.scene, garage.camera)).render();
+    if (getSettings().detail !== 'baja' && FINE_POINTER) (garage.bloom ??= garageBloom(renderer, garage.scene, garage.camera)).render();
     else renderer.render(garage.scene, garage.camera);
   } else if (mode === 'race') {
     renderer.toneMapping = THREE.NoToneMapping;
@@ -2255,13 +2258,14 @@ let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('carreritas:track') || localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
 // The cauchos from the last visit (fallback calle) dress the turntable car.
 garage.wheel = wheelById(wallet.wheel).id;   // the profile migrated any old 'carreritas:wheels' pick
-if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat inside the reconnection window
+garage.index = Math.max(0, CARS.findIndex(c => c.id === wallet.car));   // the room join below sends this car
+if (ROOM) goOnline(ROOM, QS.get('lead') ?? '');   // first: a reload reclaims its seat inside the reconnection window
 // Suites call buildTrack() and read TRACKS synchronously: every map loads before
 // PANA_PREPARED (showCar below). startRace() loads its own map either way.
 await Promise.all([featsReady, comboReady, ghostReady, gatesReady]);   // milestone toasts, the style score and the ghost are ready before any race can start
 if (DEBUG) await loadTracks();
 selectTrack(QS.get('track') || savedTrack);
-showCar(Math.max(0, CARS.findIndex(c => c.id === wallet.car)));
+showCar(garage.index);
 frame();
 let lastGarageInput = performance.now();
 for (const event of ['pointerdown', 'wheel', 'keydown']) {
@@ -2288,4 +2292,4 @@ menuFlow = createMenuFlow({
   },
 });
 markBooted(); export const sceneReady = Promise.race([menuFlow.ready, new Promise(go => { const t = setInterval(() => { if (mode !== 'garage') { clearInterval(t); go(); } }, 200); })]);   // the shared lobby waits for the garage, or a race rejoined after a reload
-onSettings((s, changed) => { if (changed.includes('quality')) applyRaceQuality(renderer, race, s.quality); });
+onSettings((s, changed) => { if (changed.includes('detail') || changed.includes('shadows')) applyRaceQuality(renderer, race, s); });

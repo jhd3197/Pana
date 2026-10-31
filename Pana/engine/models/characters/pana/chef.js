@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { curve, ellipsoid, fingerprint, mesh, ovalRing, patch, surface } from '/engine/models/characters/pana/geometry.js';
+import { curve, ellipsoid, fingerprint, mesh, ovalRing, patch, readFit, surface, writeFit } from '/engine/models/characters/pana/geometry.js';
 import { gameDetail } from '/engine/models/characters/pana/detail.js';
 
 // Avatar colors do not change torso geometry. Reuse the expensive depth sample
 // per tessellation profile; each character still owns its meshes and skeleton.
-const depthGrids = new Map();
+const depthGrids = new Map(), depthKeys = new Map();
 // The neck strap's fit (rays around the torso) is likewise the same for every
 // pana of a profile; with it kept, the ray proxies are built only on a miss.
 const strapFits = new Map();
@@ -16,6 +16,9 @@ function apronDepth(x, y) {
   const ease = 0.025 + 0.055 * (1 - THREE.MathUtils.smoothstep(y, 0.76, 1.18));
   return -0.015 + 0.54 * Math.sqrt(Math.max(0.025, 1 - q)) + ease;
 }
+
+// A fingerprint of the surfaces the depth grid is cast on (and where they sit).
+const fitKey = (profile, proxies) => 'depth|' + profile + '|' + proxies.map(p => fingerprint(p.geometry.attributes.position.array) + '@' + fingerprint(p.matrixWorld.elements)).join('|');
 
 // Fit once against the actual fuller torso. A small depth grid is reused by
 // the apron, pocket and stitches, so no raycasting is needed during animation.
@@ -33,16 +36,24 @@ function fitBody(body, foundation) {
   };
   const profile = gameDetail() ? 'game' : 'studio';
   const ray = new THREE.Raycaster(), nx = 30, ny = 36, minX = -0.74, minY = 0.69, width = 1.48, height = 1.35, depths = depthGrids.get(profile) || [];
-  if (!depths.length) for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
-    const x = minX + i / nx * width, y = minY + j / ny * height;
-    ray.set(new THREE.Vector3(x, y, 2), new THREE.Vector3(0, 0, -1));
-    const hit = ray.intersectObjects(proxiesOnce(), false).find(h => h.point.z > 0);
-    depths.push(hit ? hit.point.z : apronDepth(x, y) - 0.025);
+  if (!depths.length) {
+    // Between pages the grid is kept against a fingerprint of the surfaces it is cast on.
+    const key = fitKey(profile, proxiesOnce()); depthKeys.set(profile, key); const saved = readFit(key, (nx + 1) * (ny + 1));
+    if (saved) depths.push(...saved);
+    else {
+      for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
+        const x = minX + i / nx * width, y = minY + j / ny * height;
+        ray.set(new THREE.Vector3(x, y, 2), new THREE.Vector3(0, 0, -1));
+        const hit = ray.intersectObjects(proxiesOnce(), false).find(h => h.point.z > 0);
+        depths.push(hit ? hit.point.z : apronDepth(x, y) - 0.025);
+      }
+      writeFit(key, depths);
+    }
   }
   depthGrids.set(profile, depths);
   let level = null;
   return {
-    profile,
+    profile, key: depthKeys.get(profile) || '',
     front(x, y) {
       const gx = THREE.MathUtils.clamp((x - minX) / width * nx, 0, nx - 0.00001);
       const gy = THREE.MathUtils.clamp((y - minY) / height * ny, 0, ny - 0.00001);
@@ -156,12 +167,18 @@ export function createChefOutfit({ body, head, material, texture, foundation }) 
   ], 0.105, cloth);
   const strapPositions = neckStrap.geometry.attributes.position, strapKey = `${fit.profile}|${fingerprint(strapPositions.array)}`;
   if (!strapFits.has(strapKey)) {
-    for (let i = 0; i < strapPositions.count; i++) {
-      const x = strapPositions.getX(i), y = strapPositions.getY(i), z = strapPositions.getZ(i);
-      const p = z > 0.2 ? new THREE.Vector3(x, y, fit.front(x, y) + 0.016) : fit.around(x, y, z);
-      strapPositions.setXYZ(i, p.x, p.y, p.z);
+    // The strap's rays are also kept between pages; around() would build the level index.
+    const fitKeyName = 'strap|' + strapKey + '|' + fit.key, saved = readFit(fitKeyName, strapPositions.array.length);
+    if (saved) strapFits.set(strapKey, saved);
+    else {
+      for (let i = 0; i < strapPositions.count; i++) {
+        const x = strapPositions.getX(i), y = strapPositions.getY(i), z = strapPositions.getZ(i);
+        const p = z > 0.2 ? new THREE.Vector3(x, y, fit.front(x, y) + 0.016) : fit.around(x, y, z);
+        strapPositions.setXYZ(i, p.x, p.y, p.z);
+      }
+      strapFits.set(strapKey, strapPositions.array.slice());
+      writeFit(fitKeyName, strapPositions.array);
     }
-    strapFits.set(strapKey, strapPositions.array.slice());
   }
   strapPositions.array.set(strapFits.get(strapKey));
   neckStrap.geometry.computeVertexNormals();

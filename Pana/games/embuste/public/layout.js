@@ -12,25 +12,27 @@
 // Metres, +x east, +z south (north is -z). Zones are rectangles that overlap
 // where two of them join.
 
+import { locKey } from '../../../engine/i18n.js';
+// Place names are Spanish keys; screens show them with loc().
 export const ZONES = [
-  { id: 'fogata', name: 'La fogata', x: 0, z: 0, w: 20, d: 20, lit: true },
-  { id: 'puente', name: 'El puente colgante', x: -17, z: 0, w: 15, d: 6, path: true },
-  { id: 'cruce', name: 'El cruce', x: -30, z: 0, w: 12, d: 12 },
-  { id: 'sendero-cascada', name: 'Sendero de la cascada', x: -30, z: -14.5, w: 6, d: 17, path: true },
-  { id: 'cascada', name: 'La cascada', x: -30, z: -30, w: 18, d: 14 },
-  { id: 'escalinata', name: 'La escalinata', x: -30, z: -42, w: 6, d: 10, path: true },
-  { id: 'templo', name: 'El templo', x: -30, z: -56, w: 22, d: 18 },
-  { id: 'tunel', name: 'El túnel', x: -2, z: -58, w: 34, d: 5, path: true },
-  { id: 'mina', name: 'La mina', x: 24, z: -56, w: 18, d: 18 },
-  { id: 'rieles', name: 'Los rieles', x: 24, z: -41, w: 6, d: 12, path: true },
-  { id: 'deposito', name: 'El depósito', x: 24, z: -28, w: 16, d: 14 },
-  { id: 'sendero-este', name: 'Sendero del depósito', x: 24, z: -12, w: 6, d: 18, path: true },
-  { id: 'camino-radio', name: 'Camino de la radio', x: 19, z: 0, w: 18, d: 6, path: true },
-  { id: 'radio', name: 'La carpa de la radio', x: 36, z: 0, w: 16, d: 14 },
-  { id: 'sendero-cocina', name: 'Sendero de la cocina', x: 0, z: 14, w: 6, d: 8, path: true },
-  { id: 'cocina', name: 'La cocina', x: 0, z: 24, w: 18, d: 12 },
-  { id: 'sendero-muelle', name: 'Sendero del muelle', x: 14, z: 24, w: 10, d: 5, path: true },
-  { id: 'muelle', name: 'El muelle', x: 26, z: 25, w: 14, d: 12 },
+  { id: 'fogata', name: locKey('La fogata'), x: 0, z: 0, w: 20, d: 20, lit: true },
+  { id: 'puente', name: locKey('El puente colgante'), x: -17, z: 0, w: 15, d: 6, path: true },
+  { id: 'cruce', name: locKey('El cruce'), x: -30, z: 0, w: 12, d: 12 },
+  { id: 'sendero-cascada', name: locKey('Sendero de la cascada'), x: -30, z: -14.5, w: 6, d: 17, path: true },
+  { id: 'cascada', name: locKey('La cascada'), x: -30, z: -30, w: 18, d: 14 },
+  { id: 'escalinata', name: locKey('La escalinata'), x: -30, z: -42, w: 6, d: 10, path: true },
+  { id: 'templo', name: locKey('El templo'), x: -30, z: -56, w: 22, d: 18 },
+  { id: 'tunel', name: locKey('El túnel'), x: -2, z: -58, w: 34, d: 5, path: true },
+  { id: 'mina', name: locKey('La mina'), x: 24, z: -56, w: 18, d: 18 },
+  { id: 'rieles', name: locKey('Los rieles'), x: 24, z: -41, w: 6, d: 12, path: true },
+  { id: 'deposito', name: locKey('El depósito'), x: 24, z: -28, w: 16, d: 14 },
+  { id: 'sendero-este', name: locKey('Sendero del depósito'), x: 24, z: -12, w: 6, d: 18, path: true },
+  { id: 'camino-radio', name: locKey('Camino de la radio'), x: 19, z: 0, w: 18, d: 6, path: true },
+  { id: 'radio', name: locKey('La carpa de la radio'), x: 36, z: 0, w: 16, d: 14 },
+  { id: 'sendero-cocina', name: locKey('Sendero de la cocina'), x: 0, z: 14, w: 6, d: 8, path: true },
+  { id: 'cocina', name: locKey('La cocina'), x: 0, z: 24, w: 18, d: 12 },
+  { id: 'sendero-muelle', name: locKey('Sendero del muelle'), x: 14, z: 24, w: 10, d: 5, path: true },
+  { id: 'muelle', name: locKey('El muelle'), x: 26, z: 25, w: 14, d: 12 },
 ];
 export const BOUNDS = { minX: -42, maxX: 45, minZ: -66, maxZ: 32 };
 
@@ -43,16 +45,16 @@ export const BRIDGE = { x: -17, z: 0, w: 6, d: 6 };
 // Task stations: the object you work at. You use it from within REACH.
 export const REACH = 2;
 export const STATIONS = [
-  { id: 'malacate', name: 'El malacate', x: 24, z: -62.5, zone: 'mina' },
-  { id: 'faroles', name: 'Los faroles', x: -33.5, z: -4.5, zone: 'cruce' },
-  { id: 'reliquia', name: 'Mesa de la reliquia', x: 19.5, z: -31, zone: 'deposito' },
-  { id: 'tabla', name: 'Tabla del puente', x: -25.5, z: 4, zone: 'cruce' },
-  { id: 'agua', name: 'La poza', x: -25, z: -33.5, zone: 'cascada' },
-  { id: 'arepas', name: 'El budare', x: -5, z: 27.5, zone: 'cocina' },
-  { id: 'radio', name: 'La radio', x: 40, z: 4.5, zone: 'radio' },
-  { id: 'jeroglificos', name: 'Muro de jeroglíficos', x: -30, z: -63.5, zone: 'templo' },
-  { id: 'prov-muelle', name: 'La curiara', x: 30, z: 29, zone: 'muelle' },
-  { id: 'prov-cocina', name: 'La despensa', x: 6, z: 20.5, zone: 'cocina' },
+  { id: 'malacate', name: locKey('El malacate'), x: 24, z: -62.5, zone: 'mina' },
+  { id: 'faroles', name: locKey('Los faroles'), x: -33.5, z: -4.5, zone: 'cruce' },
+  { id: 'reliquia', name: locKey('Mesa de la reliquia'), x: 19.5, z: -31, zone: 'deposito' },
+  { id: 'tabla', name: locKey('Tabla del puente'), x: -25.5, z: 4, zone: 'cruce' },
+  { id: 'agua', name: locKey('La poza'), x: -25, z: -33.5, zone: 'cascada' },
+  { id: 'arepas', name: locKey('El budare'), x: -5, z: 27.5, zone: 'cocina' },
+  { id: 'radio', name: locKey('La radio'), x: 40, z: 4.5, zone: 'radio' },
+  { id: 'jeroglificos', name: locKey('Muro de jeroglíficos'), x: -30, z: -63.5, zone: 'templo' },
+  { id: 'prov-muelle', name: locKey('La curiara'), x: 30, z: 29, zone: 'muelle' },
+  { id: 'prov-cocina', name: locKey('La despensa'), x: 6, z: 20.5, zone: 'cocina' },
 ];
 
 // Where sabotage gets fixed.
@@ -65,23 +67,23 @@ export const FIXES = {
 
 // Mummy shortcuts: hollow logs and temple tunnels, in linked pairs.
 export const VENTS = [
-  { id: 'tronco-cascada', name: 'Tronco de la cascada', x: -37.5, z: -26, link: 'tronco-cocina', kind: 'log' },
-  { id: 'tronco-cocina', name: 'Tronco de la cocina', x: -7.5, z: 28.5, link: 'tronco-cascada', kind: 'log' },
-  { id: 'boca-templo', name: 'Boca del templo', x: -39, z: -60, link: 'boca-mina', kind: 'tunnel' },
-  { id: 'boca-mina', name: 'Boca de la mina', x: 31.5, z: -60, link: 'boca-templo', kind: 'tunnel' },
-  { id: 'tronco-deposito', name: 'Tronco del depósito', x: 30.5, z: -23, link: 'tronco-radio', kind: 'log' },
-  { id: 'tronco-radio', name: 'Tronco de la radio', x: 42.5, z: -5.5, link: 'tronco-deposito', kind: 'log' },
-  { id: 'tronco-cruce', name: 'Tronco del cruce', x: -35, z: 4.5, link: 'tronco-muelle', kind: 'log' },
-  { id: 'tronco-muelle', name: 'Tronco del muelle', x: 20.5, z: 22, link: 'tronco-cruce', kind: 'log' },
+  { id: 'tronco-cascada', name: locKey('Tronco de la cascada'), x: -37.5, z: -26, link: 'tronco-cocina', kind: 'log' },
+  { id: 'tronco-cocina', name: locKey('Tronco de la cocina'), x: -7.5, z: 28.5, link: 'tronco-cascada', kind: 'log' },
+  { id: 'boca-templo', name: locKey('Boca del templo'), x: -39, z: -60, link: 'boca-mina', kind: 'tunnel' },
+  { id: 'boca-mina', name: locKey('Boca de la mina'), x: 31.5, z: -60, link: 'boca-templo', kind: 'tunnel' },
+  { id: 'tronco-deposito', name: locKey('Tronco del depósito'), x: 30.5, z: -23, link: 'tronco-radio', kind: 'log' },
+  { id: 'tronco-radio', name: locKey('Tronco de la radio'), x: 42.5, z: -5.5, link: 'tronco-deposito', kind: 'log' },
+  { id: 'tronco-cruce', name: locKey('Tronco del cruce'), x: -35, z: 4.5, link: 'tronco-muelle', kind: 'log' },
+  { id: 'tronco-muelle', name: locKey('Tronco del muelle'), x: 20.5, z: 22, link: 'tronco-cruce', kind: 'log' },
 ];
 
 // Pana hiding spots.
 export const HIDES = [
-  { id: 'carpa', name: 'La carpa de dormir', x: -7.5, z: 7.5, prop: 'tent' },
-  { id: 'cava', name: 'La cava', x: 7, z: 28.5, prop: 'cooler' },
-  { id: 'cascada', name: 'Detrás de la cascada', x: -34, z: -35.5, prop: 'falls' },
-  { id: 'cajas', name: 'Las cajas', x: 30, z: -33.5, prop: 'crate' },
-  { id: 'barril', name: 'El barril', x: 42.5, z: 6, prop: 'barrel' },
+  { id: 'carpa', name: locKey('La carpa de dormir'), x: -7.5, z: 7.5, prop: 'tent' },
+  { id: 'cava', name: locKey('La cava'), x: 7, z: 28.5, prop: 'cooler' },
+  { id: 'cascada', name: locKey('Detrás de la cascada'), x: -34, z: -35.5, prop: 'falls' },
+  { id: 'cajas', name: locKey('Las cajas'), x: 30, z: -33.5, prop: 'crate' },
+  { id: 'barril', name: locKey('El barril'), x: 42.5, z: 6, prop: 'barrel' },
 ];
 
 export const OBSTACLES = [

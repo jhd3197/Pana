@@ -3,10 +3,11 @@ import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { barrel, crate, planter } from '/engine/models/props/plaza.js';
+import { pixelRatio } from '/engine/settings.js';
 
 export function mount(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  renderer.setPixelRatio(pixelRatio(1.5));
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(35, 1, 0.1, 40);
   camera.position.set(4, 3.4, 7); camera.lookAt(0, 1, 0);
   scene.add(new THREE.HemisphereLight(0xffffff, 0xb69062, 2.5));

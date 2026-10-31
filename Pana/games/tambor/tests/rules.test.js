@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Rueda, cleanInput, callWindow, callPace, awardTitles, RUEDA_SIZE, GOLPE_SIZE, MOVES } from '../public/rules.js';
+import { Rueda, cleanInput, callWindow, callPace, awardTitles, RUEDA_SIZE, GOLPE_SIZE, MOVES, eventSpoken, eventShown } from '../public/rules.js';
 import { SONGS, STATIONS, chart, songFor, secondsPerBeat, songBeats, isGolpeBeat, golpePattern, playable } from '../public/songs.js';
 import { Judge, GOOD } from '../public/judge.js';
 import { rng } from '/engine/random.js';
@@ -82,7 +82,7 @@ test('three missed calls: ¡Sal de la rueda! and the next pana in line jumps in'
   });
   assert.equal(ana.role, 'crowd');
   assert.equal(g.line.at(-1), 1, 'she goes to the back of the line');
-  assert.ok(g.events.some(e => e.kind === 'kick' && e.text.includes('Ana')));
+  assert.ok(g.events.some(e => e.kind === 'kick' && eventSpoken(e) === '¡Sal de la rueda, Ana!' && eventShown(e) === eventSpoken(e)));
   assert.ok(g.events.some(e => e.kind === 'enter' && e.id === next));
   assert.equal(g.player(next).role, 'dancer');
   assert.ok(ana.stats.fastestKick > 0);

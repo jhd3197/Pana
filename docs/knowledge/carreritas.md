@@ -41,8 +41,9 @@ largest game and uses the shared lobby followed by Copa and the full-screen Tall
 - Dev ghost: `public/ghosts/<trackId>.json` ships a signed lap
   (`{ by, car, avatar, lap, poses }`); `pickGhost` races it while it beats
   your own best (ghost-recorder.js). To ship one: race the track with
-  `?debug`, then run `exportGhost()` in the console and drop the file in
-  `public/ghosts/`. The ghost also turns lancha on river runs.
+  `?debug`, then run `exportGhost()` in the console, drop the file in
+  `public/ghosts/` and add the track id to `SHIPPED_GHOSTS` (only listed
+  tracks are fetched). The ghost also turns lancha on river runs.
 - Race glow: `public/race-fx.js` (lazy; `race.glow` stub until it loads)
   draws the turbo exhaust (`drive.js`, every boosting step), impact sparks
   (wall hits in `drive.js`, `crash()` in game.js) and coin sparkles (pickup
@@ -133,5 +134,30 @@ largest game and uses the shared lobby followed by Copa and the full-screen Tall
   Proof: `tests/flight-gates.browser.js`. A car in its spawn or rescue phase
   draws translucent (`isGhost`), the plane too: drop a `shots` run well
   before the gate (`--at gate-160 --shots 14`) to see it solid.
+- Twelve-car grid: `MAX_RACERS` (12) and `fieldSize()` in
+  `public/online-rules.js` decide how many cars start. The "Parrilla" setting
+  (`setup.field` offline, room `state.field` online, host only) is 0 for the
+  mode's grid (4 in a race, 8 in a cup, unchanged) or 12; bots fill every
+  empty slot and are off with "Solo panas". Globos stays at four. `gridSlot`
+  keeps two lanes at ±3.5 m and 8 m rows: slots 8–11 are rows 4 and 5, 41
+  and 49 m behind the line. Bots past the eighth take `MORE_RIVALS` names,
+  so seeded eight-car cups keep their names, cars and grids. Places 9–12
+  score no cup points. `server/src/room-kit.js` `MAX_MEMBERS` is 12;
+  every other game is still capped by its own `game.json`. Proof:
+  `tests/grid.test.js` and `tests/grid.browser.js` (every circuit's twelve
+  slots: at least 4.5 m of road outside each car, no gaps, water or
+  gates; a twelve-car race). Roadside breakables sit 5.4 m or more off the
+  centreline, clear of the outer lanes.
+- Twelve-car cost (RTX 4090 via ANGLE/D3D11, 1280 × 720, start grid in
+  view, Copa Pana stage 1, two runs each): simulation step 0.24–0.27 →
+  0.29–0.33 ms, bots' `aiInput` about 0.005 ms a tick, `presentRace`
+  0.33–0.43 → 0.44–0.45 ms, render submit 4.7–5.5 → 6.3–6.7 ms, draws
+  ~490 → ~580, triangles 1.33 M → 1.57–1.62 M. Selva's grid with 4 → 12
+  cars: draws ~710 → ~990, 1.79 M → 3.07 M triangles, 5.4 → 9.1 ms: cars
+  near the camera dominate, distant rivals already draw as driver cards.
+  Loading a 12-car quick race takes ~2 s more than a 4-car one (headless).
+  Wire: one pose is ~55 bytes of JSON; the host's 20 Hz batch for a
+  whole cup grid is 810 → 1,168 bytes a tick, 15.8 → 22.8 KB/s per
+  receiving client; the room relays it in 6.5–7.3 → 9.6–10.4 µs.
 - Carreritas signals readiness with `window.PANA_PREPARED` once the garage car is
   built, like every other game (tests/browser-kit.js `waitPrepared`).

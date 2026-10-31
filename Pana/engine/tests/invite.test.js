@@ -11,6 +11,7 @@ test('roomFromUrl cleans the code and returns empty without one', () => {
   assert.equal(roomFromUrl('?room=a%20b<c>'), 'abc');
   assert.equal(roomFromUrl('?room=' + 'x'.repeat(40)).length, 24);
   assert.equal(roomFromUrl('?name=Juan'), '');
+  assert.equal(roomFromUrl('?room=K3XQPT'), 'k3xqpt', 'the lobby shows codes in capitals; typing them must reach the same room');
 });
 
 test('an invite carries only the room code', () => {

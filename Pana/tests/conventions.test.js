@@ -7,6 +7,7 @@ import path from 'node:path';
 import { isOnline, gameUrl } from '../web/games.js';
 import { staticImports, resolve, specifiers } from './import-graph.js';
 import { FIRST_LOAD_MODULES, GAME_JS_LIMIT, GAME_JS_SLACK, GAME_JS_ALLOWED } from './budgets.js';
+import { MAX_MEMBERS } from '../server/src/room-kit.js';
 
 const app = path.resolve(import.meta.dirname, '..');
 const rel = (file) => path.relative(app, file).split(path.sep).join('/');
@@ -35,6 +36,16 @@ function walkAll(dir, keep, out = []) {
 
 const pub = (id, file) => path.join(gamesDir, id, 'public', file);
 const meta = (id) => JSON.parse(read(path.join(gamesDir, id, 'game.json')));
+
+test('room settings and scaffolds use shared bot and mode vocabulary', () => {
+  const files = games.map(id => pub(id, 'options.js')).filter(file => fs.existsSync(file));
+  files.push(...walk(path.join(app, 'scripts', 'templates'), name => name === 'options.js.tmpl'));
+  const obsolete = /["']?label["']?\s*:\s*['"](?:Velocidad CPU|Nivel de los bots|Los bots|Pilotos del cerro|Lanchas del río|Partida|Juego)['"]/;
+  assert.deepEqual(files.filter(file => obsolete.test(read(file))).map(rel), []);
+  for (const id of ['galope', 'curiara']) {
+    assert.ok(!/id=["']bots["']/.test(read(pub(id, 'index.html'))), `${id}: bot participation belongs to shared room options, not a local checkbox`);
+  }
+});
 
 test('runtime, browser harnesses and scaffolds share the Three.js pin', () => {
   const problems = [];
@@ -70,7 +81,7 @@ test('every game has the files the hub and the kit expect', () => {
     const json = meta(id), html = read(pub(id, 'index.html'));
     if (typeof json.name !== 'string' || !json.name) problems.push(`${id}: game.json needs a name`);
     if (typeof json.description !== 'string' || !json.description) problems.push(`${id}: game.json needs a description`);
-    if (!Number.isInteger(json.players) || json.players < 1 || json.players > 8) problems.push(`${id}: game.json players must be 1–8`);
+    if (!Number.isInteger(json.players) || json.players < 1 || json.players > MAX_MEMBERS) problems.push(`${id}: game.json players must be 1–${MAX_MEMBERS}`);
     if (!/^#[0-9a-f]{6}$/i.test(json.color || '')) problems.push(`${id}: game.json color must be #rrggbb`);
     if ('tileName' in json && (typeof json.tileName !== 'string' || !json.tileName || json.tileName.length > 12)) problems.push(`${id}: game.json tileName is a short name for the hub card (1–12 characters)`);
     if (!fs.existsSync(pub(id, 'card.js'))) problems.push(`${id}: no public/card.js for the hub tile`);
@@ -231,6 +242,25 @@ test('every game is a 3D scene with the player\'s pana', () => {
   assert.deepEqual(problems, []);
 });
 
+// Resolution, shadows, the FPS cap and stats reach a renderer through
+// bindRenderer; smoothing through rendererOptions (docs/knowledge/pana-kit.md,
+// "Picture settings"). Menu cards and previews only read pixelRatio.
+test('every game\'s main renderer follows the picture settings', () => {
+  const problems = [];
+  const engineFiles = walk(path.join(app, 'engine'), n => n.endsWith('.js')).filter(f => !/[\\/]tests[\\/]/.test(f));
+  for (const id of games) {
+    const files = walk(path.join(gamesDir, id, 'public'), n => n.endsWith('.js')).filter(f => !/[\\/](card|preview)\.js$/.test(f));
+    if (!files.some(f => /bindRenderer\(|createTableWorld\(/.test(read(f)))) problems.push(`${id}: main renderer is never bound (bindRenderer or createTableWorld)`);
+  }
+  for (const file of [...engineFiles, ...games.flatMap(id => walk(path.join(gamesDir, id, 'public'), n => n.endsWith('.js')))]) {
+    const code = read(file);
+    for (const [, name] of code.matchAll(/bindRenderer\(\s*([\w.]+)/g)) {
+      if (new RegExp(`\\b${name.replace('.', '\\.')}\\s*=\\s*new\\s+THREE\\.WebGLRenderer\\((?!rendererOptions\\()`).test(code)) problems.push(`${rel(file)}: ${name} is bound but its options skip rendererOptions (/engine/settings.js)`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
 // ---------- The file split (docs/ARCHITECTURE.md, "A game's files") ----------
 test('rules files are pure: no DOM, no Three.js, no browser storage', () => {
   const problems = [];
@@ -343,6 +373,10 @@ test('no emoji or emoji-prone glyphs anywhere in engine/ or web/', () => {
 
 test('served images stay small (at most 600 KB)', () => {
   const problems = [];
+  const packs = JSON.parse(read(path.join(app, 'server/src/asset-packs.json')));
+  for (const pack of Object.values(packs)) for (const [name, entry] of Object.entries(pack.entries)) {
+    if (/^(web\/images\/|games\/)/.test(name) && /\.(png|jpe?g|webp|avif|gif)$/i.test(name) && entry.bytes > 600 * 1024) problems.push(`${name}: packed image exceeds 600 KB`);
+  }
   for (const dir of [path.join(app, 'web', 'images'), ...games.map(id => path.join(gamesDir, id, 'public'))]) {
     if (!fs.existsSync(dir)) continue;
     for (const file of walk(dir, n => /\.(png|jpe?g|webp|gif)$/i.test(n))) {
@@ -351,6 +385,21 @@ test('served images stay small (at most 600 KB)', () => {
     }
   }
   assert.deepEqual(problems, []);
+});
+
+test('large runtime raster assets belong to a release pack', () => {
+  const packs = JSON.parse(read(path.join(app, 'server/src/asset-packs.json')));
+  const enrolled = new Set(Object.values(packs).flatMap(pack => Object.keys(pack.entries)));
+  const directories = ['web/images', 'web/character/references', 'engine', ...games.map(id => `games/${id}/public`)];
+  const missing = [];
+  for (const dir of directories) {
+    const full = path.join(app, dir); if (!fs.existsSync(full)) continue;
+    for (const file of walk(full, name => /\.(png|jpe?g|webp|avif|gif|ktx2|hdr|exr)$/i.test(name))) {
+      if (rel(file).includes('/qa/')) continue;
+      if (fs.statSync(file).size >= 100 * 1024 && !enrolled.has(rel(file))) missing.push(rel(file));
+    }
+  }
+  assert.deepEqual(missing, [], 'Run the asset-packs tool; keep big runtime files out of Git');
 });
 
 // ---------- Tests and docs that agents keep rewriting ----------
@@ -408,4 +457,37 @@ test('the shared side-menu sala is the default for every game', () => {
   assert.ok(!/\['carreritas', 'pintura'\]\.includes\(game\)/.test(entry), 'no game allowlist for the core layout');
   const sala = read(path.join(app, 'engine/sala.js'));
   assert.ok(sala.includes('if (!config)'), 'games without workshop metadata still receive the common layout');
+});
+
+// Languages (docs/knowledge/pana-i18n.md). Spanish is the source and the key;
+// every phrase a player sees has its English, and player text in code goes
+// through loc(), so a new string can never ship untranslated.
+test('every phrase players see has its English (npm run i18n -- check)', async () => {
+  const { problems } = await import('../scripts/i18n.js');
+  assert.deepEqual(problems(), []);
+});
+
+// Spanish literals outside loc() per file, as counted by `npm run i18n --
+// literals`. A file may only lose them; one not listed has none. When a count
+// drops, lower it here in the same change so it cannot creep back.
+test('player text goes through loc(): Spanish literals never grow', async () => {
+  const { literals, sources, SHARED, games: localized } = await import('../scripts/i18n.js');
+  const allowed = JSON.parse(read(path.join(app, 'tests', 'i18n-literals.json')));
+  const problems = [], seen = new Set();
+  for (const file of [...sources(SHARED), ...localized.flatMap(sources)].filter(f => /\.m?js$/.test(f))) {
+    const name = rel(file), count = literals(read(file)).sure.length, cap = allowed[name] ?? 0;
+    seen.add(name);
+    if (count > cap) problems.push(`${name}: ${count} Spanish literals outside loc() (allowed ${cap}); npm run i18n -- literals --show`);
+    else if (count < cap) problems.push(`${name}: down to ${count}; lower its count in tests/i18n-literals.json`);
+  }
+  for (const name of Object.keys(allowed)) if (!seen.has(name)) problems.push(`${name}: listed in tests/i18n-literals.json but gone`);
+  assert.deepEqual(problems, []);
+});
+
+test('scaffolds start translated: loc() in code and an English locale file', () => {
+  for (const kind of ['table', 'live']) {
+    const root = path.join(app, 'scripts', 'templates', kind, 'public');
+    assert.ok(read(path.join(root, 'game.js.tmpl')).includes("from '/engine/i18n.js'"), `${kind}: scaffold game.js must use loc()`);
+    assert.ok(fs.existsSync(path.join(root, 'locales', 'en.json.tmpl')), `${kind}: scaffold misses public/locales/en.json`);
+  }
 });

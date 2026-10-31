@@ -8,6 +8,7 @@ import { Puffs, sound } from '/engine/fx.js';
 import { createGameTable } from '/engine/models/props/game-table.js';
 import { createSpanishCard, SUIT_COLORS } from '/engine/models/props/spanish-cards.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 const TIME = 30;
 const TABLE = 0.8;                 // the domino table, scaled down for standing panas
@@ -61,10 +62,10 @@ function spotPlate(caption) {
 
 export default {
   id: 'caida',
-  title: '¡Caída!',
-  howto: 'Cuando la carta nueva tenga el mismo número que la de antes, ¡dale primero! Si le das sin caída, pierdes un punto.',
-  keys: [['Espacio', '¡dale!']],
-  touch: { pad: 'none', action: '¡Dale!' },
+  title: locKey('¡Caída!'),
+  howto: locKey('Cuando la carta nueva tenga el mismo número que la de antes, ¡dale primero! Si le das sin caída, pierdes un punto.'),
+  keys: [[locKey('Espacio'), locKey('¡dale!')]],
+  touch: { pad: 'none', action: locKey('¡Dale!') },
   icon: 'card',
   time: TIME,
 
@@ -73,11 +74,11 @@ export default {
     const stage = sunnyStage(scene);
     const puffs = new Puffs(scene);
 
-    const table = createGameTable({ feltColor: '#245e50', caption: 'CAÍDA · ENTRE PANAS' });
+    const table = createGameTable({ feltColor: '#245e50', caption: 'CAÍDA · ENTRE PANAS' });   // i18n-ignore: signage painted in the world
     table.scale.setScalar(TABLE);
     scene.add(table);
-    const plates = [['ANTES', BEFORE], ['AHORA', NOW]].map(([text, at]) => {
-      const p = spotPlate(text);
+    const plates = [[locKey('ANTES'), BEFORE], [locKey('AHORA'), NOW]].map(([text, at]) => {
+      const p = spotPlate(loc(text));
       p.mesh.position.set(at.x, TOP + 0.002, 1.95);
       scene.add(p.mesh);
       return p;
@@ -179,7 +180,7 @@ export default {
       if (isMatch()) {
         a.score += 1;
         lastWin = clock;
-        a.bubble.say(pick(['¡CAÍDA!', '¡Mía!', '¡Epa!']), 0.9);
+        a.bubble.say(loc(pick([locKey('¡CAÍDA!'), locKey('¡Mía!'), locKey('¡Epa!')])), 0.9);
         sound.bonk(0.6);
         if (human(a)) sound.pickup();
         const to = new THREE.Vector3(a.x, TOP + 1.2, a.z);
@@ -192,11 +193,11 @@ export default {
         serial++;
         nextIn = 0.75;
       } else if (clock - lastWin < 0.4) {
-        a.bubble.say('¡Tarde!', 0.7);   // beaten to it: no penalty
+        a.bubble.say(loc('¡Tarde!'), 0.7);   // beaten to it: no penalty
       } else {
         a.score -= 1;
         a.lock = LOCK;
-        a.bubble.say(pick(['−1 ¡No era!', '−1 ¡Upa!', '−1 ¡Ay, no!']), 0.9);
+        a.bubble.say(loc(pick([locKey('−1 ¡No era!'), locKey('−1 ¡Upa!'), locKey('−1 ¡Ay, no!')])), 0.9);
         sound.boing();
         puffs.spawn(NOW.clone().setY(TOP + 0.3), { color: 0xd04a3a, count: 4, spread: 0.7, size: 0.4, rise: 1, life: 0.5 });
       }

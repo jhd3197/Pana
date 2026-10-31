@@ -1,5 +1,6 @@
 import { TableRoom } from '/engine/table-room.js';
 import { QuizGame } from './rules.js';
+import { loc } from '/engine/i18n.js';
 
 // Host simulation on the shared table room (engine/table-room.js): empty
 // podiums are bots, the host runs the clock and keeps every answer secret
@@ -7,7 +8,7 @@ import { QuizGame } from './rules.js';
 export class QqsmpRoom extends TableRoom {
   constructor(options) {
     super({ ...options, game: 'qqsmp', protocol: 'qqsmp-v1',
-      texts: { connecting: 'Conectando con el estudio…', practice: 'Estudio local · tú y cinco bots', handoff: 'Cambió el anfitrión. El concurso sigue.' } }, {
+      texts: { connecting: loc('Conectando con el estudio…'), practice: loc('Estudio local · tú y cinco bots'), handoff: loc('Cambió el anfitrión. El concurso sigue.') } }, {
       fresh: prev => ({ ...new QuizGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}) }),
       restore: (state, members) => QuizGame.restore(state, members),
       snapshot: (game) => game.snapshot(),

@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { StopGame, SEATS, TIMES, POINTS, HARD, CLASICAS, CRIOLLAS, MAX_ANSWER, PERSONALITY, cleanAnswer, cleanSheet, judge, lettersFor,
-  pickCategories, ranking, titles, verdictText } from '../public/rules.js';
-import { letterOf } from '/engine/play/saber-match.js';
+import { StopGame, SEATS, TIMES, POINTS, EASY, MEDIUM, HARD, ALPHABET, CLASICAS, CRIOLLAS, VARIADAS, MAX_ANSWER, PERSONALITY, cleanAnswer, cleanSheet, judge, lettersFor,
+  pickCategories, ranking, rememberWords, MESA_LIMIT, seated, titles, verdictText, tooShort, lineText } from '../public/rules.js';
+import { letterOf, isCrude } from '/engine/play/saber-match.js';
+import { PACKS, FREE_PROMPTS, CEP, SABER_IDS, freePrompt, kindOf, label } from '../public/categories.js';
 
 let seq = 0;
 const act = (game, id, action, values = {}) => game.accept(id, { action, seq: ++seq, round: game.round, ...values }, 1);
@@ -45,7 +46,7 @@ test('room options are host-only and validated, and Stop rápido plays three cat
   assert.equal(act(game, 2, 'start'), false, 'only the host starts');
 });
 
-test('category sets: Clásicas, Criollas, Mezcla and Al azar, 6 to 10 of them', () => {
+test('category sets: Clásicas, Criollas, Variadas, Mezcla and Al azar, 6 to 10 of them', () => {
   const state = { seed: 4 };
   assert.deepEqual(pickCategories(state, { set: 'clasicas', count: 8, mode: 'normal' }), CLASICAS);
   const criollas = pickCategories(state, { set: 'criollas', count: 8, mode: 'normal' });
@@ -53,7 +54,7 @@ test('category sets: Clásicas, Criollas, Mezcla and Al azar, 6 to 10 of them', 
   const ten = pickCategories(state, { set: 'clasicas', count: 10, mode: 'normal' });
   assert.equal(ten.length, 10); assert.equal(new Set(ten).size, 10); assert.deepEqual(ten.slice(0, 8), CLASICAS);
   const mix = pickCategories(state, { set: 'mezcla', count: 6, mode: 'normal' });
-  assert.equal(mix.filter(c => CLASICAS.includes(c)).length, 3);
+  assert.equal(mix.filter(c => CLASICAS.includes(c)).length, 2, 'two from each of the three sets');
   const azar = pickCategories(state, { set: 'azar', count: 9, mode: 'normal' });
   assert.equal(new Set(azar).size, 9);
 });
@@ -111,12 +112,13 @@ test('sheets stay secret in snapshots until the review; only progress travels', 
   assert.deepEqual(snap.players[seatOf(game, 2)].sheet, ['Coro', '', 'Celeste'], 'the review shows every sheet');
 });
 
-test('¡STOP! needs a full sheet, gives the rest 3 seconds, and only then pencils go down', () => {
+test('¡STOP! needs a full sheet, gives the rest 5 seconds, and only then pencils go down', () => {
   const game = writing(humans(2));
   assert.equal(act(game, 1, 'stop', { sheet: ['Caracas', '', 'Café'] }), false, 'an empty box');
+  assert.equal(act(game, 1, 'stop', { sheet: ['C', 'C.', 'Ccc'] }), false, 'lone letters are not answers');
   assert.equal(act(game, 1, 'stop', { sheet: ['Caracas', 'Caimán', 'Café'], round: 99 }), false, 'another round');
   assert.ok(act(game, 1, 'stop', { sheet: ['Caracas', 'Caimán', 'Café'] }));
-  assert.equal(game.phase, 'basta'); assert.equal(game.hostLine, '¡Basta! 3… 2… 1…');
+  assert.equal(game.phase, 'basta'); assert.equal(lineText(game.hostLine), '¡Basta! 5 segundos…');
   assert.equal(act(game, 2, 'stop', { sheet: ['Coro', 'Cabra', 'Crema'] }), false, 'one STOP per round');
   assert.ok(act(game, 2, 'progress', { filled: 3 }), 'the others keep writing');
   run(game, g => g.phase !== 'basta');
@@ -131,7 +133,7 @@ test('the time limit puts the pencils down when nobody stops, and a silent pana 
   const game = writing(humans(SEATS), { options: { seconds: 60 } });
   run(game, g => g.phase !== 'write');
   assert.equal(game.phase, 'collect'); assert.equal(game.stopper, null);
-  assert.match(game.hostLine, /Se acabó el tiempo/);
+  assert.match(lineText(game.hostLine), /Se acabó el tiempo/);
   assert.ok(game.writeTime >= 60 - .1);
   for (let id = 1; id < SEATS; id++) sheetFor(game, id, ['Caracas', 'Caimán', 'Café']);
   assert.equal(game.phase, 'collect', 'waits for the last pana');
@@ -201,7 +203,7 @@ test('votes: authors cannot vote, a tie favors the author, two thirds earn Creat
   assert.equal(game.review.items[seatOf(game, 1)].points, 50 + POINTS.creative, 'shared, plus Creatividad');
   assert.equal(game.players[seatOf(game, 3)].stats.thumbsDown, 1);
   assert.ok(game.dictionary.some(d => d.category === 'color' && d.word === 'Hormiga'));
-  assert.match(game.hostLine, /Pedazo de loco/);
+  assert.match(lineText(game.hostLine), /Pedazo de loco/);
   run(game, g => g.review.index === 1);
   // Hulk as an animal: tie 3 to 3 (author 7 can't vote, 8 abstains) counts for the author, no bonus.
   assert.equal(game.review.stage, 'vote');
@@ -216,7 +218,7 @@ test('votes: authors cannot vote, a tie favors the author, two thirds earn Creat
 test('a rejected word scores nothing and counts toward El abusador', () => {
   const game = writing(humans(SEATS), { letter: 'N', categories: ['animal'] });
   handIn(game, { 1: ['Nemo'], 2: ['Nutria'], 3: ['Narval'], 4: ['Nutria'], 5: ['Ñu'], 6: [''], 7: ['Nutria'], 8: ['Narval'] });
-  assert.match(game.hostLine, /abusando/);
+  assert.match(lineText(game.hostLine), /abusando/);
   voteAll(game, 0, false);
   const g = game.review.groups[0], nemo = game.review.items[seatOf(game, 1)];
   assert.equal(g.accepted, false); assert.equal(nemo.points, 0);
@@ -228,9 +230,9 @@ test('a rejected word scores nothing and counts toward El abusador', () => {
 test('Oreo shows 200 puntos, then ¡Ni lo sueñes!, and counts like any doubtful color', () => {
   const game = writing(humans(SEATS), { letter: 'O', categories: ['color'] });
   handIn(game, { 1: ['Oreo'], 2: ['Ocre'], 3: ['Oliva'], 4: ['Oro'], 5: ['Ocre'], 6: ['Oro'], 7: ['Oliva'], 8: ['Ocre'] });
-  assert.match(game.hostLine, /200 puntos/);
+  assert.match(lineText(game.hostLine), /200 puntos/);
   run(game, g => g.phaseTime > 1.5);
-  assert.match(game.hostLine, /Ni lo sueñes/);
+  assert.match(lineText(game.hostLine), /Ni lo sueñes/);
   voteAll(game, 0, p => p.id % 2 === 0);
   assert.ok(game.review.items[seatOf(game, 1)].points <= 100 + POINTS.creative, 'never 200');
 });
@@ -335,7 +337,7 @@ test('a full game: rounds, totals, a winner and the end titles', () => {
   assert.equal(game.winner, order[0].seat);
   assert.ok(game.titles[game.winner].includes('Cuarto bate'));
   assert.ok(game.players[seatOf(game, 1)].stats.empty >= 3, 'blank sheets earn Monte y culebra points');
-  assert.match(game.hostLine, /Calabaza, calabaza/);
+  assert.match(lineText(game.hostLine), /Calabaza, calabaza/);
   const t = titles(game);
   assert.ok(Object.values(t).flat().includes('Monte y culebra'));
   assert.equal(game.players.reduce((n, p) => n + p.total, 0) > 0, true);
@@ -347,4 +349,180 @@ test('a pana who sits in a bot chair mid-round writes their own sheet', () => {
   game.addPlayer(7, 'Nueva');
   const p = game.players.find(x => x.id === 7);
   assert.equal(p.filled, 0); assert.equal(game.plans[p.seat], null);
+});
+
+test('Solo panas: empty chairs never spin, write, vote or rank', () => {
+  const game = humans(2);
+  assert.ok(act(game, 1, 'options', { options: { withBots: false } }));
+  assert.deepEqual(seated(game).map(p => p.id), [1, 2]);
+  for (let round = 0; round < 6; round++) {
+    if (round === 0) game.start(); else game.nextRound();
+    assert.ok(seated(game).some(p => p.seat === game.spinner), 'only a pana spins');
+  }
+  writing(game);
+  run(game, g => g.phase !== 'write', 1000);
+  assert.equal(game.phase, 'write', 'no bot shouts STOP');
+  handIn(game, { 1: ['Caracas', 'Caimán', 'Café'], 2: ['Cumaná', 'Conejo', 'Celeste'] });
+  assert.deepEqual(game.review.items.map(i => i.seat).sort(), seated(game).map(p => p.seat).sort());
+  assert.equal(game.plans.filter(Boolean).length, 0, 'no bot votes planned');
+  assert.deepEqual(ranking(game).map(p => p.id).sort(), [1, 2]);
+  assert.ok(Object.values(titles(game)).flat().length > 0);
+});
+
+test('Solo panas: a pana leaving mid-vote drops their answers and the vote can still finish', () => {
+  const game = humans(3);
+  act(game, 1, 'options', { options: { withBots: false } });
+  writing(game, { categories: ['color'] });
+  handIn(game, { 1: ['Celeste'], 2: ['Crema'], 3: ['Cxzq'] });
+  game.removePlayer(3);
+  assert.ok(!game.review.items.some(i => i.seat === seatOf({ players: game.players }, null)));
+  assert.equal(seated(game).length, 2);
+  run(game, g => g.phase === 'tally' || g.phase === 'spin');
+  assert.ok(['tally', 'spin'].includes(game.phase));
+  const fresh = humans(2); act(fresh, 1, 'options', { options: { withBots: false } });
+  fresh.start(); fresh.addPlayer(9, 'Nuevo');
+  assert.equal(fresh.players.find(p => p.id === 9).total, 0);
+});
+
+test('a lone letter is never an answer, even when the table would wave it through', () => {
+  for (const answer of ['C', 'c.', 'C C', 'Ccc', 'Ç']) assert.deepEqual([judge(answer, 'cosa', 'C').status, judge(answer, 'cosa', 'C').reason], ['red', 'short'], answer);
+  for (const answer of ['Ca', 'Col', 'Caracas']) assert.notEqual(judge(answer, 'ciudad', 'C').reason, 'short', answer);
+  assert.equal(verdictText({ reason: 'short', answer: 'C' }), 'Eso no es una palabra');
+  const game = writing(humans(2));
+  handIn(game, { 1: ['Caracas', 'Caimán', 'Café'], 2: ['C', 'C', 'C'] });
+  assert.ok(game.review.items.filter(i => i.seat === seatOf(game, 2)).every(i => i.status === 'red' && i.reason === 'short'));
+  assert.equal(game.review.groups.length, 0, 'nothing for the table to vote on');
+});
+
+test('words a table voted in carry over to the next table, cleaned and capped', () => {
+  const kept = rememberWords([{ category: 'cosa', word: 'Cachivache' }], [
+    { category: 'cosa', word: 'cachivache' }, { category: 'nope', word: 'Cosa' }, { category: 'animal', word: 'C' },
+    { category: 'animal', word: '  Cunaguaro <b> ' }, null, 'Cuchara']);
+  assert.deepEqual(kept, [{ category: 'cosa', word: 'Cachivache' }, { category: 'animal', word: 'Cunaguaro b' }]);
+  const game = writing(humans(2));
+  game.dictionary = kept;
+  assert.equal(judge('Cachivache', 'cosa', 'C', { dictionary: game.dictionary }).reason, 'mesa');
+  const many = Array.from({ length: MESA_LIMIT + 20 }, (_, i) => ({ category: 'cosa', word: `Cosa ${'ab'.repeat(1 + i % 9)}${i}` }));
+  assert.equal(rememberWords([], many).length, MESA_LIMIT);
+});
+
+test('letter levels: easy, easy and medium, or every letter; the bag carries into the next game', () => {
+  assert.deepEqual(lettersFor({ letters: 'faciles' }), EASY);
+  assert.deepEqual(lettersFor({ letters: 'normales' }), lettersFor({ hard: false }));
+  assert.deepEqual(lettersFor({ letters: 'todas' }), ALPHABET);
+  assert.equal(EASY.length + MEDIUM.length + HARD.length, ALPHABET.length);
+  const game = humans(SEATS); game.options.letters = 'faciles'; game.start();
+  const seen = [];
+  for (let i = 0; i < 8; i++) { game.phase = 'spin'; game.para(null); seen.push(game.letter); }
+  game.start();
+  for (let i = 0; i < 6; i++) { game.phase = 'spin'; game.para(null); seen.push(game.letter); }
+  assert.equal(new Set(seen).size, EASY.length, 'a new game in the same room plays the letters not yet seen');
+});
+
+test('a known first word with more after it counts for names and colours', () => {
+  assert.equal(judge('Pedro Pérez', 'nombre', 'P').status, 'green');
+  assert.equal(judge('Verde manzana', 'color', 'V').status, 'green');
+  assert.equal(judge('Verde manzana', 'color', 'V').key, judge('Verde', 'color', 'V').key, 'same as the plain colour');
+  assert.equal(judge('Puerto Cabello', 'ciudad', 'P').status, 'green');
+  assert.notEqual(judge('Perú Bonito', 'pais', 'P').reason, 'known', 'other categories need the whole answer');
+});
+
+test('Variadas plays the new categories first, and Mezcla deals from all three sets', () => {
+  const game = new StopGame(4);
+  const variadas = pickCategories(game, { set: 'variadas', count: 8 });
+  assert.deepEqual([...variadas.slice(0, VARIADAS.length)].sort(), [...VARIADAS].sort());
+  const mezcla = pickCategories(game, { set: 'mezcla', count: 9 });
+  for (const set of [CLASICAS, CRIOLLAS, VARIADAS]) assert.equal(mezcla.filter(c => set.includes(c)).length, 3);
+  for (const cat of VARIADAS) assert.equal(judge({ profesion: 'Médico', deporte: 'Béisbol', cuerpo: 'Brazo', casa: 'Licuadora', planta: 'Orquídea', pelicula: 'Coco' }[cat], cat, { profesion: 'M', deporte: 'B', cuerpo: 'B', casa: 'L', planta: 'O', pelicula: 'C' }[cat]).status, 'green', cat);
+});
+
+test('every pack deals the table count without repeats; criollo prompts wait for Más criollo', () => {
+  const game = new StopGame(7);
+  for (const pack of PACKS) for (const count of [6, 8, 10]) {
+    const list = pickCategories(game, { set: pack.id, count, cep: false, criollo: false });
+    assert.equal(list.length, count, `${pack.id} deals ${count}`);
+    assert.equal(new Set(list).size, count, `${pack.id} never repeats`);
+    assert.ok(list.every(id => !freePrompt(id)?.criollo), `${pack.id} keeps criollo prompts out`);
+  }
+  const reirse = pickCategories(game, { set: 'reirse', count: 10, criollo: true });
+  assert.ok(reirse.every(id => kindOf(id) === 'libre'), "Pa' reírse is all free prompts");
+  const many = Array.from({ length: 30 }, () => pickCategories(game, { set: 'reirse', count: 10, criollo: true })).flat();
+  assert.ok(many.some(id => freePrompt(id)?.criollo), 'with Más criollo they can come out');
+});
+
+test('Ciudad, estado o país: one box, any of the three counts, never beside its parts', () => {
+  const game = new StopGame(3);
+  const merged = pickCategories(game, { set: 'clasicas', count: 8, cep: true });
+  assert.ok(merged.includes('cep') && !merged.some(id => CEP.parts.includes(id)), 'cep replaces ciudad and país');
+  assert.ok(pickCategories(game, { set: 'chamos', count: 10 }).includes('cep'));
+  for (let i = 0; i < 20; i++) { const list = pickCategories(game, { set: 'azar', count: 10, cep: true }); assert.ok(!(list.includes('cep') && list.some(id => CEP.parts.includes(id)))); }
+  for (const word of ['Caracas', 'Carabobo', 'Colombia']) assert.equal(judge(word, 'cep', 'C').status, 'green', word);
+  assert.ok(judge('Caracas', 'cep', 'C').key.startsWith('cep:'), 'shared key inside the box');
+  assert.equal(judge('Caracas', 'cep', 'C').key, judge('caracas', 'cep', 'C').key);
+  assert.equal(label('cep'), 'Ciudad, estado o país');
+});
+
+test('free prompts and own categories: every clean answer goes to a vote unless this table accepted it', () => {
+  assert.deepEqual([judge('Queso', 'nevera', 'Q').status, judge('Queso', 'nevera', 'Q').reason], ['yellow', 'libre']);
+  assert.equal(judge('Pan', 'nevera', 'Q').reason, 'letter');
+  assert.equal(judge('Q', 'nevera', 'Q').reason, 'short');
+  assert.equal(judge('Mierda', 'delito', 'M').reason, 'crude');
+  assert.equal(judge('Mierda', 'delito', 'M', { criollo: true }).status, 'yellow');
+  assert.equal(judge('Queso', 'nevera', 'Q', { dictionary: [{ category: 'nevera', word: 'Queso' }] }).status, 'green');
+  assert.equal(judge('Profe Pérez', '+Profe del liceo', 'P').reason, 'libre');
+  assert.equal(label('+Profe del liceo'), 'Profe del liceo');
+  for (const p of FREE_PROMPTS) {
+    assert.ok(p.label && p.short, p.id);
+    assert.ok(!SABER_IDS.includes(p.id) && p.id !== 'cep', `${p.id} has its own id`);
+    for (const w of p.words) assert.ok(!tooShort(w) && w.length <= MAX_ANSWER && cleanAnswer(w) === w && !isCrude(w), `${p.id}: ${w}`);
+    assert.ok(EASY.filter(l => p.words.some(w => letterOf(w) === l)).length >= 7, `${p.id} gives bots words for most easy letters`);
+  }
+  const kept = rememberWords([{ category: 'nevera', word: 'Queso' }, { category: 'cep', word: 'Caracas' }, { category: '+Profe', word: 'Pérez' }], []);
+  assert.deepEqual(kept.map(d => d.category), ['nevera', 'cep'], 'own categories stay at their table');
+});
+
+test('the host sets up to three own categories in the lobby; they are dealt first and bots leave them blank', () => {
+  const game = humans(2, 5);
+  assert.equal(act(game, 2, 'custom', { list: ['Profe del liceo'] }), false, 'only the host');
+  assert.equal(act(game, 1, 'custom', { list: 'Profe' }), false, 'a list');
+  assert.ok(act(game, 1, 'custom', { list: ['  Profe   del liceo ', 'profe del liceo', 'X', 'Mierda', 'Algo de Maracaibo', 'Chamo <b>'] }));
+  assert.deepEqual(game.custom, ['Profe del liceo', 'Algo de Maracaibo', 'Chamo b'], 'cleaned, deduped, crude out, three at most');
+  assert.ok(act(game, 1, 'custom', { list: ['Una más larga de lo que cabe en la libreta'] }));
+  assert.ok(game.custom[0].length <= 28, 'short enough for the sheet');
+  assert.ok(act(game, 1, 'custom', { list: ['Profe del liceo', 'Algo de Maracaibo', 'Chamo b'] }));
+  game.options.count = 6;
+  assert.ok(act(game, 1, 'start'));
+  assert.deepEqual(game.categories.slice(0, 3), ['+Profe del liceo', '+Algo de Maracaibo', '+Chamo b']);
+  assert.equal(act(game, 1, 'custom', { list: [] }), false, 'not once the game started');
+  run(game, g => g.phase === 'write');
+  game.writeTime = game.limit;
+  for (const p of game.players.filter(p => p.id === null)) assert.deepEqual(game.botSheet(p).slice(0, 3), ['', '', '']);
+});
+
+test('bots answer free prompts from their pool, with the round letter', () => {
+  const game = humans(1, 11);
+  writing(game, { letter: 'C', categories: ['nevera', 'excusa', 'playa'], options: { bots: 'dificiles' } });
+  game.writeTime = game.limit;
+  const words = game.players.filter(p => p.id === null).flatMap(p => game.botSheet(p)).filter(Boolean);
+  assert.ok(words.length > 6, 'bots fill most boxes');
+  for (const w of words) assert.equal(letterOf(w), 'C');
+});
+
+test('a table of free answers gets more time to vote, and the round keeps its recap', () => {
+  const game = humans(4, 12);
+  writing(game, { letter: 'P', categories: ['nevera', 'nombre', 'cosa'], options: { withBots: false } });
+  handIn(game, { 1: ['Pasta', 'Pedro', 'Pelota'], 2: ['Pollo', 'Pablo', 'Piedra'], 3: ['Perro caliente', 'Paola', 'Pala'], 4: ['Papas', 'Paula', 'Peine'] });
+  assert.equal(game.review.groups.length, 4);
+  assert.equal(game.review.voteTime, TIMES.vote + 3 * TIMES.voteEach);
+  assert.equal(game.timeLeft, game.review.voteTime);
+  voteAll(game, 0, true); voteAll(game, 1, p => p.id === 3); voteAll(game, 2, false); voteAll(game, 3, true);
+  assert.equal(game.review.stage, 'result');
+  run(game, g => g.phase === 'tally');
+  const [h] = game.history;
+  assert.equal(h.letter, 'P'); assert.equal(h.round, 1);
+  assert.ok(Number.isInteger(h.top.seat) && h.top.points > 0);
+  assert.equal(h.best.word, 'Pasta', 'the first creative answer with the most votes');
+  assert.equal(h.best.category, 'nevera');
+  assert.deepEqual([h.debate.word, h.debate.yes, h.debate.no], ['Pollo', 1, 2], 'the closest vote');
+  game.start(); assert.deepEqual(game.history, [], 'a new game starts a new recap');
 });

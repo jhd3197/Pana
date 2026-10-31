@@ -80,7 +80,7 @@ try {
       assert.equal(await page.locator('.pana-menu').evaluate(n => n.scrollWidth > n.clientWidth + 1), false, `${name} fits ${viewport.width}`);
     }
   }
-  await page.locator('.pana-reset').click();
+  await category('Ratón y teclado'); await page.locator('.pana-reset').click();   // resets the tab on screen: Ratón
   assert.equal(await page.evaluate(async () => (await import('/engine/settings.js')).getSettings().mouseSensitivity), 1);
   await page.evaluate(async () => {
     const { padControls } = await import('/engine/gamepad.js');
@@ -96,7 +96,7 @@ try {
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const touch = await mobile.newPage(); await touch.goto(`${base}/ajustes.html`);
   await touch.locator('.pana-settings-workspace').waitFor();
-  await touch.getByText('Opciones de las ayudas', { exact: true }).tap();
+  await touch.getByRole('tab', { name: 'Ayudas', exact: true }).tap();
   await touch.getByRole('radio', { name: 'Teclado', exact: true }).tap();
   assert.equal(await touch.locator('html').getAttribute('data-pana-input'), 'keyboard');
   await touch.getByRole('radio', { name: 'Automático', exact: true }).first().tap();

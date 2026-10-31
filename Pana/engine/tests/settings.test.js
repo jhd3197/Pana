@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULTS, normalizeSettings, inputAxis, getSettings, setSettings, resetInputSettings } from '/engine/settings.js';
+import { DEFAULTS, QUALITY, normalizeSettings, parseUrlSettings, inputAxis, getSettings, setSettings, resetInputSettings, pixelRatio, shadowSize } from '/engine/settings.js';
 import { controllerFamily, formatPadLabel, readPad, playKeys } from '/engine/gamepad.js';
 import { padInput } from '../../games/carreritas/public/controls.js';
 
@@ -47,4 +47,34 @@ test('reset controls preserves audio, picture and the visibility preference', ()
   assert.equal(s.mouseSensitivity, 1); assert.equal(s.padDeadzone, .18); assert.equal(s.inputHints, 'auto');
   assert.equal(s.sound, false); assert.equal(s.quality, 'baja'); assert.equal(s.hints, false);
   setSettings(DEFAULTS);
+});
+
+test('a picture preset sets its knobs and a hand-made change becomes custom', () => {
+  const legacy = normalizeSettings({ quality: 'baja' });
+  assert.deepEqual([legacy.resolution, legacy.shadows, legacy.detail], [1, 'baja', 'baja'], 'a preset saved before the knobs keeps meaning the same');
+  setSettings({ quality: 'media' });
+  assert.equal(getSettings().resolution, QUALITY.media.resolution);
+  setSettings({ shadows: 'off' });
+  assert.equal(getSettings().quality, 'custom'); assert.equal(getSettings().resolution, 1.5, 'other knobs stay');
+  setSettings({ shadows: 'media' });
+  assert.equal(getSettings().quality, 'media', 'matching every knob of a preset names it again');
+  setSettings({ quality: 'baja', detail: 'alta' });
+  assert.equal(getSettings().detail, 'alta', 'a knob named with a preset wins'); assert.equal(getSettings().quality, 'custom');
+  assert.equal(normalizeSettings({ resolution: 3, shadows: 'ultra', fpsCap: 45 }).quality, DEFAULTS.quality, 'unknown values fall back');
+  setSettings(DEFAULTS);
+});
+
+test('picture knobs drive pixel ratio and shadow size', () => {
+  setSettings({ quality: 'alta', resolution: 1 });
+  assert.equal(pixelRatio(2), Math.min(1, globalThis.devicePixelRatio || 1));
+  setSettings({ shadows: 'media' }); assert.equal(shadowSize(2048), 1024);
+  setSettings({ shadows: 'baja' }); assert.equal(shadowSize(1024), 256);
+  setSettings(DEFAULTS);
+});
+
+test('settings in the address are parsed, validated and limited to this page', () => {
+  assert.deepEqual(parseUrlSettings('?pana-quality=baja&pana-shadows=off&pana-autoscale=0&pana-stats&pana-fps=30&other=1'),
+    { resolution: 1, shadows: 'off', detail: 'baja', autoScale: false, perfOverlay: true, fpsCap: 30 });
+  assert.deepEqual(parseUrlSettings('?pana-resolution=7&pana-shadows=ultra&pana-sound=no'), { sound: false }, 'invalid values are dropped');
+  assert.deepEqual(parseUrlSettings(''), {});
 });

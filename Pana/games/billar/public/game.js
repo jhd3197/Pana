@@ -1,20 +1,22 @@
 import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/play/map-picker.js';
-import { createDifficultyPicker, DIFFICULTIES } from '/engine/play/difficulty.js';
+import { createDifficultyPicker } from '/engine/play/difficulty.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { lazySound } from '/engine/lazy-sound.js';
 import { holdButton } from '/engine/touch.js';
 import { ICONS } from '/engine/icons.js';
 import { fillRoster } from '/engine/results.js';
 import { PoolRoom } from './network.js';
-import { groupName, groupOf, canPlace, remaining } from './rules.js';
+import { groupName, groupOf, canPlace, remaining, messageText } from './rules.js';
 import { createPoolScene, VIEWS } from './scene.js';
-import { shotPower, paintCharge } from '/engine/play/shot-charge.js';
+import { paintCharge, createShotCharge } from '/engine/play/shot-charge.js';
 import { POOL_OPTIONS, teamOf, playingSeats, poolConnected, canStartPool } from './match-rules.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { createTableSeating } from '/engine/play/table-seating.js';
 import { createToast } from '/engine/hud.js';
+import { loc, locn } from '/engine/i18n.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const notify = createToast($('toast'), { ms: 3200 });
@@ -22,23 +24,17 @@ const params = new URLSearchParams(location.search); params.set('room', code);
 history.replaceState(null, '', `${location.pathname}?${params}`);
 let angle = 0, placement = null, held = 0, stopped = false, lastRevision = -1, previousPhase = 'lobby', drag = null;
 const spin = { x: 0, y: 0 };
-let charge = null, power = .65;
+let power = .65;
 const world = createPoolScene($('table'), { onStarter: (cacho, power) => { if (!menu.isOpen) { audio.unlock(); room.action('starter', { cacho, power }); } } }), portraitKeys = [], portraitCache = new Map();
 // The chosen camera is a personal preference, remembered on this device.
 let cameraView = 'taco';
 try { const saved = localStorage.getItem('pana:billar:view'); if (VIEWS.some(([v]) => v === saved)) cameraView = saved; } catch { /* storage may be blocked */ }
 function setCamera(value) {
-  cameraView = value; world.setView(value); $('camera').dataset.view = value; $('camera').setAttribute('aria-label', `Cámara: ${VIEWS.find(([v]) => v === value)[1]}`);
+  cameraView = value; world.setView(value); $('camera').dataset.view = value; $('camera').setAttribute('aria-label', loc('Cámara: {view}', { view: VIEWS.find(([v]) => v === value)[1] }));
   try { localStorage.setItem('pana:billar:view', value); } catch { /* storage may be blocked */ }
 }
 let portraitsModule;
-const audio = {
-  muted: false, volume: .8, impl: null, unlocked: false,
-  unlock() { this.unlocked = true; this.impl?.unlock(); },
-  setVolume(value) { this.volume = value; this.impl?.setVolume(value); },
-  tone(...args) { if (this.impl) { this.impl.muted = this.muted; this.impl.tone(...args); } },
-};
-import('/engine/fx.js').then(({ sound }) => { audio.impl = sound; sound.setVolume(audio.volume); if (audio.unlocked) sound.unlock(); }).catch(() => {});
+const audio = lazySound();
 const room = new PoolRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed = false) {
     $('connection').textContent = message; $('recovery-copy').textContent = message;
@@ -48,37 +44,36 @@ const room = new PoolRoom({ code, name: loadName(), avatar: loadAvatar(), onStat
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.action('difficulty', { difficulty }));
 const roomOptions = createRoomOptions($('room-options'), { title: 'Billar', fields: POOL_OPTIONS,
-  change: options => { if(options.format === 'duel' && room.state.players.filter(p=>p.id!==null).length>2){notify('Individual es para dos panas. Con más jugadores, elige Por equipos.');return;} room.action('options', { options }); }, reset: () => room.action('reset-options') });
+  change: options => { if(options.format === 'duel' && room.state.players.filter(p=>p.id!==null).length>2){notify(loc('Individual es para dos panas. Con más jugadores, elige Por equipos.'));return;} room.action('options', { options }); }, reset: () => room.action('reset-options') });
 const seating = createTableSeating($('seating'), (from, to) => room.action('swap', { from, to }));
 const menu = createGameMenu({
-  pad: { move: 'arrows', moveLabel: 'Afinar el taco; con bola en mano, mover la blanca', cursor: 'Apuntar en la mesa', keys: { a: ['Space', 'Fuerza: mantén y suelta para tirar'], x: ['Enter', 'Confirmar la bola en mano'], lb: ['ShiftLeft', 'Afinar más fino'], y: ['KeyC', 'Cámara'] } },
-  title: 'Billar · Pana', orientation: 'libre', sound: audio,
-  note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La mesa está en pausa.',
-  controls: [['Ratón / dedo', 'Toca la mesa para apuntar; detrás de la bola, arrastra a los lados para girar'], ['← →', 'Afina la dirección del taco'], ['Mantener Tirar / Espacio / Enter', 'La fuerza sube y baja: suelta para tirar. Rojo es más fuerte'], ['Enter con bola en mano', 'Confirma la posición'], ['Flechas con bola en mano', 'Mueve la blanca antes de colocarla'], ['Efecto', 'Toca la bola blanca del panel para darle efecto'], ['C', 'Cambia la cámara'], ['M', 'Sonido'], ['Esc', 'Menú']],
+  pad: { move: 'arrows', moveLabel: loc('Afinar el taco; con bola en mano, mover la blanca'), cursor: loc('Apuntar en la mesa'), keys: { a: ['Space', loc('Fuerza: mantén y suelta para tirar')], x: ['Enter', loc('Confirmar la bola en mano')], lb: ['ShiftLeft', loc('Afinar más fino')], y: ['KeyC', loc('Cámara')] } },
+  title: 'Billar · Pana', orientation: 'libre', sound: audio, // i18n-ignore: game name
+  note: () => room.members.size > 1 ? loc('La mesa sigue jugando mientras estás en el menú.') : loc('La mesa está en pausa.'),
+  controls: [[loc('Ratón / dedo'), loc('Toca la mesa para apuntar; detrás de la bola, arrastra a los lados para girar')], ['← →', loc('Afina la dirección del taco')], [loc('Mantener Tirar / Espacio / Enter'), loc('La fuerza sube y baja: suelta para tirar. Rojo es más fuerte')], [loc('Enter con bola en mano'), loc('Confirma la posición')], [loc('Flechas con bola en mano'), loc('Mueve la blanca antes de colocarla')], [loc('Efecto'), loc('Toca la bola blanca del panel para darle efecto')], ['C', loc('Cambia la cámara')], ['M', loc('Sonido')], ['Esc', loc('Menú')]],
   tips: [
-    '¿Quién rompe? Al empezar la partida todos sacuden el cacho a la vez y lo tapan: rompe el dado más alto; si empatan arriba, solo ellos sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.',
-    'Elige Individual para jugar uno contra uno, o Por equipos para dos grupos de uno, dos o tres panas. Los compañeros rotan después de cada tiro, incluso cuando el equipo sigue jugando. El anfitrión organiza los puestos antes de empezar.',
-    'Toca primero una bola de tu grupo. Después del contacto, mete una bola o haz que cualquiera llegue a una banda. Si metes una de las tuyas sin falta, sigues tirando.',
-    'Bola 8: la primera bola legal asigna lisas o rayadas. Vacía tu grupo antes de la ocho; meterla antes de tiempo o con falta pierde la mesa. En el saque, la ocho se repone.',
-    'Bola 9: toca primero la bola de menor número. Una combinación legal que meta la nueve gana la mesa. Si entra con falta, la nueve vuelve a la mesa.',
-    'Las faltas dan bola en mano. Con Cocina, coloca dentro de la zona amarilla y cruza su borde antes del primer contacto.',
-    'Si activas Cantar tronera, elige el número que ves junto al agujero. Solo conserva turno una bola que entre en esa tronera; la ocho en otra tronera pierde la mesa.',
-    'En práctica juegas todas las bolas y dejas la ocho para el final. Las faltas te dejan colocar la blanca y seguir.',
-    'La dificultad cambia la guía: en Fácil ves adónde van las dos bolas y los rebotes; en Experto solo la dirección del taco. Pana Bot también afina la puntería.',
-    'Efecto: arriba la blanca sigue después del choque, abajo regresa y a los lados cambia el rebote en las bandas.',
-    'Si alguien sale, su puesto queda libre para otro pana. La mesa conserva las bolas y el turno. El anfitrión empieza la revancha.',
+    loc('¿Quién rompe? Al empezar la partida todos sacuden el cacho a la vez y lo tapan: rompe el dado más alto; si empatan arriba, solo ellos sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.'),
+    loc('Elige Individual para jugar uno contra uno, o Por equipos para dos grupos de uno, dos o tres panas. Los compañeros rotan después de cada tiro, incluso cuando el equipo sigue jugando. El anfitrión organiza los puestos antes de empezar.'),
+    loc('Toca primero una bola de tu grupo. Después del contacto, mete una bola o haz que cualquiera llegue a una banda. Si metes una de las tuyas sin falta, sigues tirando.'),
+    loc('Bola 8: la primera bola legal asigna lisas o rayadas. Vacía tu grupo antes de la ocho; meterla antes de tiempo o con falta pierde la mesa. En el saque, la ocho se repone.'),
+    loc('Bola 9: toca primero la bola de menor número. Una combinación legal que meta la nueve gana la mesa. Si entra con falta, la nueve vuelve a la mesa.'),
+    loc('Las faltas dan bola en mano. Con Cocina, coloca dentro de la zona amarilla y cruza su borde antes del primer contacto.'),
+    loc('Si activas Cantar tronera, elige el número que ves junto al agujero. Solo conserva turno una bola que entre en esa tronera; la ocho en otra tronera pierde la mesa.'),
+    loc('En práctica juegas todas las bolas y dejas la ocho para el final. Las faltas te dejan colocar la blanca y seguir.'),
+    loc('La dificultad cambia la guía: en Fácil ves adónde van las dos bolas y los rebotes; en Experto solo la dirección del taco. Pana Bot también afina la puntería.'),
+    loc('Efecto: arriba la blanca sigue después del choque, abajo regresa y a los lados cambia el rebote en las bandas.'),
+    loc('Si alguien sale, su puesto queda libre para otro pana. La mesa conserva las bolas y el turno. El anfitrión empieza la revancha, o desde el menú vuelve a la sala si nadie llega.'),
   ],
   invite: () => inviteUrl(code), onOpen() { clearInput(); render(room.state); },
-  options: [{ id: 'view', label: 'Cámara', choices: VIEWS, get: () => cameraView, set: setCamera },
-    // Local tables change difficulty any time; an online match keeps the host's choice.
-    { id: 'difficulty', label: 'Dificultad', choices: DIFFICULTIES.map(d => [d.id, d.label]), get: () => room.state.difficulty,
-      set: value => { if (!room.action('difficulty', { difficulty: value })) notify('En una partida online la dificultad la elige el anfitrión antes de empezar.'); } }],
+  actions: [{ id: 'back-to-lobby', label: loc('Volver a la sala'), run: () => room.action('setup'),
+    visible: () => room.isHost && !['lobby', 'finished'].includes(room.state.phase) && !poolConnected(room.state) }],
+  options: [{ id: 'view', label: loc('Cámara'), choices: VIEWS, get: () => cameraView, set: setCamera }],
   onClose() { if (room.state.phase !== 'finished') render(room.state); },
   canOpen: () => room.state.phase !== 'finished',
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
 $('lobby-invite-slot').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
-$('room-code').textContent = `Sala ${code}`;
+$('room-code').textContent = loc('Sala {code}', { code });
 $('rules').onclick = () => menu.open('controls');
 $('start').onclick = () => room.action('start');
 $('again').onclick = () => room.action('start');
@@ -89,11 +84,13 @@ $('camera').innerHTML = ICONS.camera;
 $('camera').onclick = () => setCamera(VIEWS[(VIEWS.findIndex(([v]) => v === cameraView) + 1) % VIEWS.length][0]);
 setCamera(cameraView);
 // The english pad: a cue ball with a red dot where the tip will strike.
+const SPIN_TEXT = { '0,0': loc('al centro'), '1,0': loc('arriba'), '-1,0': loc('abajo'), '0,1': loc('derecha'), '0,-1': loc('izquierda'),
+  '1,1': loc('arriba derecha'), '1,-1': loc('arriba izquierda'), '-1,1': loc('abajo derecha'), '-1,-1': loc('abajo izquierda') };
 function setSpin(x, y) {
   const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; }
   spin.x = Math.round(x * 20) / 20; spin.y = Math.round(y * 20) / 20;
   $('spin-dot').style.transform = `translate(${spin.x * 34}px, ${-spin.y * 34}px)`;
-  $('spin').setAttribute('aria-valuetext', spin.x || spin.y ? `${spin.y > 0 ? 'arriba' : spin.y < 0 ? 'abajo' : ''} ${spin.x > 0 ? 'derecha' : spin.x < 0 ? 'izquierda' : ''}`.trim() : 'al centro');
+  $('spin').setAttribute('aria-valuetext', SPIN_TEXT[`${Math.sign(spin.y)},${Math.sign(spin.x)}`]);
 }
 function spinAt(event) { const r = $('spin').getBoundingClientRect(); setSpin((event.clientX - r.left - r.width / 2) / (r.width * .4), -(event.clientY - r.top - r.height / 2) / (r.height * .4)); }
 $('spin').addEventListener('pointerdown', event => { if ($('spin').disabled) return; event.preventDefault(); $('spin').setPointerCapture(event.pointerId); spinAt(event); });
@@ -106,53 +103,44 @@ $('spin').addEventListener('keydown', event => {
 });
 
 function ownTurn() { return !menu.isOpen && !roomOptions.isOpen && room.connected && room.state.phase === 'aiming' && room.seat === room.state.turn && poolConnected(room.state); }
-function updateCharge(now = performance.now()) {
-  if (!charge) return;
-  power = shotPower(now - charge.started);
-  paintCharge($('power'), power, $('power-value'));
-}
-function chargeValid() { return ownTurn() && !room.state.ballInHand && charge?.revision === room.state.revision; }
-function cancelCharge() {
-  charge = null; power = .65;
+// Ending a charge (released or cancelled) puts the controls back.
+function chargeEnded() {
+  power = .65;
   $('power-bar').hidden = true; $('shoot').classList.remove('is-charging');
-  $('shoot').firstChild.textContent = room.state.ballInHand ? 'Colocar ' : 'Tirar ';
+  $('shoot').firstChild.textContent = room.state.ballInHand ? `${loc('Colocar')} ` : `${loc('Tirar')} `;
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !ownTurn() || room.state.ballInHand;
   $('pocket').disabled = !ownTurn() || room.state.ballInHand;
 }
+const charge = createShotCharge({ ready: () => ownTurn() && !room.state.ballInHand, revision: () => room.state.revision,
+  change: value => { if (value === null) chargeEnded(); else { power = value; paintCharge($('power'), power, $('power-value')); } },
+  shoot: (value, { pocket }) => room.action('shoot', { angle, power: value, spin: { ...spin }, pocket }) });
 function beginCharge(source) {
-  if (!ownTurn() || charge) return;
+  if (!ownTurn() || charge.active) return;
   if (room.state.ballInHand) { place(placement || room.state.balls[0]); return; }
-  if (room.state.options.calledPocket && $('pocket').value === '') { notify('Elige la tronera donde quieres meter la bola.'); return; }
+  if (room.state.options.calledPocket && $('pocket').value === '') { notify(loc('Elige la tronera donde quieres meter la bola.')); return; }
   audio.unlock(); held = 0; drag = null;
-  charge = { source, started: performance.now(), revision: room.state.revision, pocket: $('pocket').value === '' ? null : Number($('pocket').value) };
   $('power-bar').hidden = false; $('shoot').classList.add('is-charging');
-  $('shoot').firstChild.textContent = 'Soltar ';
+  $('shoot').firstChild.textContent = `${loc('Soltar')} `;
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = true;
   $('pocket').disabled = true;
-  updateCharge();
-}
-function releaseCharge(source) {
-  if (charge?.source !== source) return;
-  const valid = chargeValid(); updateCharge();
-  const shot = { angle, power, spin: { ...spin }, pocket: charge.pocket }; cancelCharge();
-  if (valid) room.action('shoot', shot);
+  charge.begin(source, { pocket: $('pocket').value === '' ? null : Number($('pocket').value) });
 }
 function place(point) {
-  if (!canPlace(room.state, point.x, point.y)) { notify('Pon la blanca en un lugar libre, lejos de las troneras.'); return; }
+  if (!canPlace(room.state, point.x, point.y)) { notify(loc('Pon la blanca en un lugar libre, lejos de las troneras.')); return; }
   room.action('place', point); placement = null;
 }
 const pads = [-1, 1].map((direction, i) => holdButton($(i ? 'aim-right' : 'aim-left'), {
-  down: () => { if (ownTurn()) { held = direction; angle += direction * .006; } }, up: () => { held = 0; }, paused: () => !ownTurn() || room.state.ballInHand || !!charge,
+  down: () => { if (ownTurn()) { held = direction; angle += direction * .006; } }, up: () => { held = 0; }, paused: () => !ownTurn() || room.state.ballInHand || charge.active,
 }));
 pads.push(holdButton($('shoot'), {
   down: () => beginCharge('pointer'),
-  up: event => { if (event?.type === 'pointerup') releaseCharge('pointer'); else cancelCharge(); },
-  paused: () => !ownTurn() || !!charge,
+  up: event => { if (event?.type === 'pointerup') charge.release('pointer'); else charge.cancel(); },
+  paused: () => !ownTurn() || charge.active,
 }));
-function clearInput() { cancelCharge(); held = 0; drag = null; pads.forEach(p => p.release()); }
+function clearInput() { charge.cancel(); held = 0; drag = null; pads.forEach(p => p.release()); }
 
 function aim(event) {
-  if (!ownTurn() || charge) return;
+  if (!ownTurn() || charge.active) return;
   const point = world.point(event.clientX, event.clientY);
   if (!point) return;
   if (room.state.ballInHand) placement = point;
@@ -162,7 +150,7 @@ function aim(event) {
 // would chase itself: a drag turns the cue, a tap aims at the spot.
 const chasing = () => world.view === 'taco' && !room.state.ballInHand;
 $('table').addEventListener('pointerdown', event => {
-  if (!ownTurn() || charge) return; event.preventDefault(); $('table').focus({ preventScroll: true }); $('table').setPointerCapture(event.pointerId);
+  if (!ownTurn() || charge.active) return; event.preventDefault(); $('table').focus({ preventScroll: true }); $('table').setPointerCapture(event.pointerId);
   if (chasing()) drag = { x: event.clientX, angle, moved: false }; else aim(event);
 });
 $('table').addEventListener('pointermove', event => {
@@ -185,7 +173,7 @@ addEventListener('keydown', event => {
   if (!ownTurn()) return;
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Enter'].includes(event.key)) event.preventDefault();
   if (event.key === ' ' || event.key === 'Enter') { if (!event.repeat) beginCharge(event.key); return; }
-  if (charge) return;
+  if (charge.active) return;
   if (room.state.ballInHand && event.key.startsWith('Arrow')) {
     const point = placement || { x: room.state.balls[0].x, y: room.state.balls[0].y };
     let x = event.key === 'ArrowLeft' ? -8 : event.key === 'ArrowRight' ? 8 : 0;
@@ -195,11 +183,13 @@ addEventListener('keydown', event => {
   } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') angle += (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? .002 : .012);
 });
 addEventListener('keyup', event => {
-  if (charge?.source === event.key) { event.preventDefault(); releaseCharge(event.key); }
+  if (charge.source === event.key) { event.preventDefault(); charge.release(event.key); }
 });
 
+// Empty seats hold the synced Spanish placeholder name.
+const nameOf = player => player.id === null ? loc(player.name) : player.name;
 function render(state) {
-  seating.update(state.options.format === 'duel' ? state.players.slice(0,2) : state.players, { teams: state.options.format !== 'duel', enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.hostId, emptyLabel: 'libre' });
+  seating.update(state.options.format === 'duel' ? state.players.slice(0,2) : state.players, { teams: state.options.format !== 'duel', enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.hostId, emptyLabel: loc('libre') });
   roomOptions.update(state.options, room.connected && room.isHost && ['lobby', 'finished'].includes(state.phase));
   if (state.phase !== 'lobby' && roomOptions.isOpen) roomOptions.close();
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
@@ -208,7 +198,7 @@ function render(state) {
   document.body.classList.toggle('in-lobby', lobby); $('welcome').hidden = !lobby; $('play-controls').hidden = lobby || ended;
   const ready = room.connected && (lobby || ended ? canStartPool(state) : poolConnected(state));
   $('start').disabled = !ready || !room.isHost;
-  $('start').textContent = !room.connected ? 'Conectando…' : !ready ? state.options.format === 'duel' ? 'Espera a tu rival · 1 contra 1' : 'Completa dos equipos iguales' : !room.isHost ? 'El anfitrión abre la mesa' : '¡A romper!';
+  $('start').textContent = !room.connected ? loc('Conectando…') : !ready ? state.options.format === 'duel' ? loc('Espera a tu rival · 1 contra 1') : loc('Completa dos equipos iguales') : !room.isHost ? loc('El anfitrión abre la mesa') : loc('¡A romper!');
   for (const id of ['invite', 'lobby-invite']) $(id).disabled = !room.connected || room.offline;
   if (room.offline || room.connected) $('recovery').hidden = true;
   for (let seat = 0; seat < 2; seat++) {
@@ -216,30 +206,30 @@ function render(state) {
     const player = teamOf(state.turn) === seat ? state.players[state.turn] : members[0] || state.players[seat];
     $(`player-${seat}`).hidden = state.practice && seat === 1;
     $(`player-${seat}`).classList.toggle('is-turn', !lobby && !ended && seat === teamOf(state.turn));
-    $(`name-${seat}`).textContent = members.length > 1 ? `Equipo ${seat + 1} · ${members.map(p => p.name).join(', ')}` : `${player.name}${player.id === room.id ? ' · tú' : ''}`;
+    $(`name-${seat}`).textContent = members.length > 1 ? loc('Equipo {n} · {names}', { n: seat + 1, names: members.map(p => p.name).join(', ') }) : player.id === room.id ? loc('{name} · tú', { name: player.name }) : nameOf(player);
     $(`name-${seat}`).title = $(`name-${seat}`).textContent;
-    $(`group-${seat}`).textContent = state.options.variant === 'nine' ? `Bola ${Math.min(...remaining(state, seat).map(b => b.id))} primero · ${state.scores[seat]} mesas` : state.practice ? `${remaining(state, 0).length} antes de la ocho` : remaining(state, seat).length === 0 && state.groups[seat] ? 'A por la ocho' : groupName(state.groups[seat]);
+    $(`group-${seat}`).textContent = state.options.variant === 'nine' ? locn(state.scores[seat], 'Bola {ball} primero · {n} mesa', 'Bola {ball} primero · {n} mesas', { ball: Math.min(...remaining(state, seat).map(b => b.id)) }) : state.practice ? loc('{n} antes de la ocho', { n: remaining(state, 0).length }) : remaining(state, seat).length === 0 && state.groups[seat] ? loc('A por la ocho') : groupName(state.groups[seat]);
     const track = $(`balls-${seat}`); track.replaceChildren();
     const balls = state.balls.filter(b => b.id && (state.options.variant === 'nine' ? b.id <= 9 : state.practice ? b.id < 8 : state.groups[seat] && groupOf(b.id) === state.groups[seat]));
     for (const ball of balls) { const node = document.createElement('i'); node.textContent = ball.id; node.classList.toggle('potted', ball.pocketed); track.append(node); }
     updatePortrait(player, seat);
   }
   const active = ownTurn();
-  if (charge && !chargeValid()) clearInput();
-  $('turn-status').textContent = !room.connected ? 'Reconectando…' : !ready ? 'Esperando a tu pana' : !lobby && !playingSeats(state).includes(room.seat) ? 'Entras en la próxima mesa' : state.phase === 'starter' ? '¿Quién rompe?' : state.phase === 'rolling' ? 'Rodando…'
-    : active ? state.ballInHand ? 'Coloca la blanca' : '¡Tu turno!' : `Turno de ${state.players[state.turn].name}`;
-  $('message').textContent = state.ballInHand && active ? state.options.foulPlacement === 'kitchen' ? 'Coloca en la zona amarilla. La blanca debe salir de cocina antes de tocar otra bola.' : 'Toca un lugar libre de la mesa. Después apunta y tira.' : state.message;
+  if (charge.active && !charge.valid()) clearInput();
+  $('turn-status').textContent = !room.connected ? loc('Reconectando…') : !ready ? loc('Esperando a tu pana') : !lobby && !playingSeats(state).includes(room.seat) ? loc('Entras en la próxima mesa') : state.phase === 'starter' ? loc('¿Quién rompe?') : state.phase === 'rolling' ? loc('Rodando…')
+    : active ? state.ballInHand ? loc('Coloca la blanca') : loc('¡Tu turno!') : loc('Turno de {name}', { name: nameOf(state.players[state.turn]) });
+  $('message').textContent = state.ballInHand && active ? state.options.foulPlacement === 'kitchen' ? loc('Coloca en la zona amarilla. La blanca debe salir de cocina antes de tocar otra bola.') : loc('Toca un lugar libre de la mesa. Después apunta y tira.') : messageText(state.message);
   document.querySelector('.versus').textContent = state.options.variant === 'nine' ? '9' : '8';
-  document.querySelector('.table-caption span').textContent = state.options.variant === 'nine' ? 'BOLA NUEVE' : 'BOLA OCHO';
+  document.querySelector('.table-caption span').textContent = state.options.variant === 'nine' ? loc('BOLA NUEVE') : loc('BOLA OCHO');
   $('shoot').disabled = !active;
   $('called-pocket').hidden = !state.options.calledPocket || lobby || ended;
-  $('pocket').disabled = !active || !!charge || state.ballInHand;
+  $('pocket').disabled = !active || charge.active || state.ballInHand;
   $('shot-clock').hidden = !state.options.shotSeconds || state.phase !== 'aiming';
-  $('shot-clock').textContent = `Tiempo: ${Math.max(0, Math.ceil(state.options.shotSeconds - state.turnElapsed))} s`;
+  $('shot-clock').textContent = loc('Tiempo: {n} s', { n: Math.max(0, Math.ceil(state.options.shotSeconds - state.turnElapsed)) });
   $('charge-tip').hidden = !active || state.ballInHand;
-  for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !active || state.ballInHand || !!charge;
-  $('side-controls').hidden = lobby || ended; $('power-bar').hidden = !charge;
-  $('shoot').firstChild.textContent = state.ballInHand ? 'Colocar ' : charge ? 'Soltar ' : 'Tirar ';
+  for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !active || state.ballInHand || charge.active;
+  $('side-controls').hidden = lobby || ended; $('power-bar').hidden = !charge.active;
+  $('shoot').firstChild.textContent = `${state.ballInHand ? loc('Colocar') : charge.active ? loc('Soltar') : loc('Tirar')} `;
   if (state.revision !== lastRevision) {
     if (state.phase === 'rolling' && previousPhase !== 'rolling') audio.tone(360, 0, .06, 'triangle', .12);
     if (previousPhase === 'rolling' && state.phase !== 'rolling') { placement = null; $('pocket').value = ''; setSpin(0, 0); audio.tone(600, 0, .08, 'sine', .08); }
@@ -249,12 +239,12 @@ function render(state) {
   if (ended) {
     menu.close();
     $('organize-table').disabled = !room.isHost;
-    $('result-title').textContent = state.practice ? state.result.winner === null ? '¡Otra mesa!' : '¡Mesa limpia!' : state.options.format === 'duel' ? `¡Ganó ${state.players[state.result.winner]?.name}!` : `¡Ganó el equipo ${state.result.team + 1}!`;
-    $('result-copy').textContent = `${state.result.reason} ${state.scores.join(' – ')} · ${state.shots} tiros en la mesa.`;
-    fillRoster($('result-board'), state.players.filter(p => p.id !== null).map(p => ({ name: p.name, detail: state.practice ? 'Práctica' : groupName(state.groups[teamOf(state.players.indexOf(p))]), me: p.id === room.id,
-      end: teamOf(state.players.indexOf(p)) === state.result.team ? 'Ganador' : '' })));
-    $('again').disabled = !room.isHost || !ready; $('again').textContent = !ready ? 'Esperando a tu pana' : room.isHost ? 'La revancha' : 'El anfitrión prepara la revancha';
-    if (room.isHost && ready && !state.result.matchFinished) $('again').textContent = 'Siguiente mesa';
+    $('result-title').textContent = state.practice ? state.result.winner === null ? loc('¡Otra mesa!') : loc('¡Mesa limpia!') : state.options.format === 'duel' ? loc('¡Ganó {name}!', { name: state.players[state.result.winner]?.name }) : loc('¡Ganó el equipo {n}!', { n: state.result.team + 1 });
+    $('result-copy').textContent = [loc(state.result.reason), locn(state.shots, '{score} · {n} tiro en la mesa.', '{score} · {n} tiros en la mesa.', { score: state.scores.join(' – ') })].join(' ');
+    fillRoster($('result-board'), state.players.filter(p => p.id !== null).map(p => ({ name: p.name, detail: state.practice ? loc('Práctica') : groupName(state.groups[teamOf(state.players.indexOf(p))]), me: p.id === room.id,
+      end: teamOf(state.players.indexOf(p)) === state.result.team ? loc('Ganador') : '' })));
+    $('again').disabled = !room.isHost || !ready; $('again').textContent = !ready ? loc('Esperando a tu pana') : room.isHost ? loc('La revancha') : loc('El anfitrión prepara la revancha');
+    if (room.isHost && ready && !state.result.matchFinished) $('again').textContent = loc('Siguiente mesa');
     if (previousPhase !== 'finished') $('again').focus();
   }
   previousPhase = state.phase;
@@ -280,8 +270,8 @@ let frameTime = performance.now();
 function frame(now) {
   if (stopped) return;
   const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now;
-  if (charge) { if (chargeValid()) updateCharge(now); else clearInput(); }
-  if (ownTurn() && !charge) angle += held * dt * .45;
+  if (charge.active) { if (charge.valid()) charge.update(now); else clearInput(); }
+  if (ownTurn() && !charge.active) angle += held * dt * .45;
   world.draw(room.state, { angle, power, spin, active: ownTurn(), placement, calledPocket: $('pocket').value === '' ? -1 : Number($('pocket').value), dt, seat: room.connected ? room.seat : -1 }); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);

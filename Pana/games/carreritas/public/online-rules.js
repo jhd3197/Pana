@@ -14,6 +14,15 @@ export const LAPS = 3;
 export const lapsForTrack = id => TRACK_DEFINITIONS.find(t=>t.id===id)?.defaultLaps ?? LAPS;
 export const MIN_GRID = 4;               // bots fill the grid up to four racers
 export const GP_GRID = 8;                // Grand Prix defaults to eight racers
+export const MAX_RACERS = 12;            // the full grid: six rows of two
+export const FIELDS = [0, MAX_RACERS];   // host's field size: 0 = the mode's default
+export const cleanField = (n) => FIELDS.includes(n) ? n : 0;
+// How many cars start: bots fill up to the field (the mode's default, or the
+// host's full grid); with bots off only the humans race.
+export function fieldSize({ humans, bots = true, cup = false, field = 0 }) {
+  const target = cleanField(field) || (cup ? GP_GRID : MIN_GRID);
+  return Math.min(MAX_RACERS, bots ? Math.max(target, humans) : humans);
+}
 export const POSE_HZ = 20;
 export const COUNTDOWN_MS = 3500;        // "3" shows a little longer than the rest
 export const LOAD_TIMEOUT_MS = 30000;
@@ -23,7 +32,10 @@ export const GP_INTERMISSION_MS = 12000;
 export const GP_MIN_READ_MS = 5000;
 export const GP_PROTOCOL = 2;
 
-export const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'El Pelúo', 'La Nena'];
+export const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'El Pelúo', 'La Nena']; // i18n-ignore: rival names are names
+// Bots past the eighth: kept apart so seeded eight-car grids keep their names.
+export const MORE_RIVALS = ['Doña Rosa', 'El Musiú', 'La Catira', 'Chuchito']; // i18n-ignore: rival names are names
+export const rivalName = (names, i) => i < names.length ? names[i] : MORE_RIVALS[(i - names.length) % MORE_RIVALS.length];
 // Thematic cauchos per car, so rival loadouts show up in every race.
 export const AI_WHEELS = { chamo: 'calle', lancha: 'lluvia', machito: 'barro', bala: 'slick', toro: 'barro', familiar: 'lluvia', rumbera: 'palo', montanero: 'barro',
   escarabajo: 'calle', sedan: 'calle', buseta: 'lluvia', pickup: 'barro', jeep: 'barro', hatch: 'slick', rustico: 'barro', malibu: 'slick' };
@@ -82,5 +94,6 @@ export function validPose(p) {
   return Array.isArray(p) && p.length === POSE_LENGTH && p.every(v => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) < 1e6);
 }
 
-// Grid slot -> lane and row, two by two like the local race.
+// Grid slot -> lane and row, two by two like the local race; a twelve-car
+// grid adds rows 4 and 5 behind the eight-car one.
 export const gridSlot = (slot) => ({ lane: slot % 2 ? -3.5 : 3.5, row: Math.floor(slot / 2) });

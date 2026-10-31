@@ -2,7 +2,7 @@
 // A lancha is driven, not paddled: hold the throttle and steer the outboard.
 // Holding is always fastest, so there is nothing to mash. The river
 // (course.js on /engine/river/river.js) owns banks, levels and currents.
-import { FIELDS, cleanOptions } from './options.js';
+import { FIELDS, cleanOptions, migrateRivals } from './options.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { courseRiver, RIVER } from './course.js';
 import { TONINA, clamp, angle } from '../../../engine/river/river.js';
@@ -18,7 +18,7 @@ export const PHOTO = Object.freeze({ within: 12, gap: 3.5, real: 1.6, speed: .3 
 export const COLORS = ['#e2683c', '#2f9e8f', '#e6b33a', '#7a5bc4', '#d64f7a', '#4d8fd6', '#8fb84a', '#c9824a'];
 export const SLOTS = 8;
 const RIVALS = { easy: { cap: .8, wobble: 1.5 }, normal: { cap: .93, wobble: 1 }, hard: { cap: 1, wobble: .5 } };
-const BOT_NAMES = ['El Motorista', 'La Curva', 'Don Chalupa', 'La Garza', 'El Bagre', 'Tía Lancha', 'El Rayao', 'La Sardina', 'Cheo Motor', 'La Payara', 'El Morocoto', 'Yoli Fuera de Borda'];
+const BOT_NAMES = ['El Motorista', 'La Curva', 'Don Chalupa', 'La Garza', 'El Bagre', 'Tía Lancha', 'El Rayao', 'La Sardina', 'Cheo Motor', 'La Payara', 'El Morocoto', 'Yoli Fuera de Borda']; // i18n-ignore: bot names
 const BOT_OUTFITS = ['#d6553d', '#3f8f7a', '#e1a83a', '#6c58b8', '#c94f74', '#4a86c8', '#7fa848', '#b97a46'];
 const START = { rows: [34, 24], offsets: [-7.2, -2.4, 2.4, 7.2] };
 
@@ -36,7 +36,7 @@ export class Race {
   }
   configure(patch = {}) {
     if (!['lobby', 'finished'].includes(this.phase)) return false;
-    const next = applyRoomOptions(FIELDS, this.options, patch); if (!next) return false;
+    const next = applyRoomOptions(FIELDS, cleanOptions(this.options), migrateRivals(patch)); if (!next) return false;
     const changed = next.falls !== this.options.falls || next.items !== this.options.items;
     this.options = next; if (changed) this.river = courseRiver(next);
     this.boats = []; return true;
@@ -62,7 +62,7 @@ export class Race {
   start(seed = Math.floor(Math.random() * 1e9)) {
     if (!this.canStart()) return false;
     this.seed = seed; this.boats = [];
-    const humans = this.players.slice(0, SLOTS), bots = this.options.rivals === 'none' ? 0 : SLOTS - humans.length;
+    const humans = this.players.slice(0, SLOTS), bots = this.options.bots === false || this.options.rivals === 'none' ? 0 : SLOTS - humans.length;
     humans.forEach(p => this.boats.push(this.newBoat({ id: p.id, name: p.name, avatar: p.avatar, bot: false })));
     for (let i = 0; i < bots; i++) {
       const slot = this.boats.length;

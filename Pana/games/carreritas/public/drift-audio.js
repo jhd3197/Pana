@@ -2,10 +2,13 @@
 // the slide and climbs in pitch with speed and charge, a chime as each charge
 // level lands (blue, orange, purple), warning ticks in the overheat window
 // and a hiss when the tyres burn. On a river run the screech gives way to a
-// water rush and the outboard's buzz. Synthesised on the shared WebAudio
+// water rush and the outboard's buzz. The tyre loop is the engine's shared vehicle audio
+// (engine/vehicle-audio.js); the car's motor is the shared sound.startEngine putt-putt (engine/fx.js). Synthesised on the shared WebAudio
 // context (engine/fx.js sound): no files. game.js calls update once per drawn
 // frame; `active` false (paused, finished, garage) fades everything out.
 import { DRIFT_LEVELS, OVERHEAT_WARN } from './drive-rules.js';
+import { createTyres, vehicleSfx } from '/engine/vehicle-audio.js';
+
 
 const LEVEL_NOTES = [[], [660, 880], [660, 880, 1100], [660, 880, 1100, 1320]];
 
@@ -29,17 +32,13 @@ export function createDriftAudio(sound) {
       src.connect(f).connect(g).connect(out); src.start();
       return { f, g };
     };
-    const screech = loop('bandpass', 1600, 6);
+    const tyres = createTyres(sound);
     const rush = loop('lowpass', 900, 0.7);
-    // A tonal edge under the screech: the tyre "sings" once the drift charges.
-    const whine = ctx.createOscillator(), wf = ctx.createBiquadFilter(), wg = ctx.createGain();
-    whine.type = 'sawtooth'; whine.frequency.value = 900; wf.type = 'bandpass'; wf.frequency.value = 1800; wf.Q.value = 8; wg.gain.value = 0;
-    whine.connect(wf).connect(wg).connect(out); whine.start();
     // The outboard: a buzzy low saw, only on the water.
     const motor = ctx.createOscillator(), mf = ctx.createBiquadFilter(), mg = ctx.createGain();
     motor.type = 'sawtooth'; motor.frequency.value = 70; mf.type = 'lowpass'; mf.frequency.value = 600; mg.gain.value = 0;
     motor.connect(mf).connect(mg).connect(out); motor.start();
-    return { screech, rush, whine, wg, motor, mg };
+    return { tyres, rush, motor, mg };
   }
 
   const set = (param, value, tau = 0.06) => param.setTargetAtTime(value, sound.ctx.currentTime, tau);
@@ -52,11 +51,9 @@ export function createDriftAudio(sound) {
       const speed = on ? Math.abs(c.vf || 0) : 0;
       const drifting = on && c.drift && c.onGround && !c.boat;
       const level = drifting ? c.driftLvl || 0 : 0;
-      // Screech: loud with the slide, pitch with speed and charge.
-      set(rig.screech.g.gain, drifting ? 0.05 + level * 0.018 : 0, drifting ? 0.04 : 0.09);
-      set(rig.screech.f.frequency, 1150 + speed * 18 + level * 260);
-      set(rig.wg.gain, level ? 0.006 + level * 0.005 : 0, 0.08);
-      set(rig.whine.frequency, 520 + level * 180 + speed * 6);
+      // Tyres: loud with the slide, pitch with speed and charge, a crunch off the tarmac.
+      const loose = on && c.onGround && (c.surface === 'dirt' || c.surface === 'grass' || c.offRoad) ? 'dirt' : 'road';
+      rig.tyres.update({ slip: drifting ? 1 : 0, speed, charge: level, surface: loose });
       // Water: a rush that grows with speed and the outboard's buzz.
       const boat = on && c.boat;
       set(rig.rush.g.gain, boat ? 0.03 + Math.min(0.06, speed * 0.0018) : 0, 0.12);
@@ -78,7 +75,7 @@ export function createDriftAudio(sound) {
       }
       // The burn: a hiss and a low crunch, once.
       const burning = (c.burnT || 0) > 0;
-      if (burning && !wasBurning) { sound.skid(1.6); sound.sweep(260, 60, 0.4, 'sawtooth', 0.08); }
+      if (burning && !wasBurning) { vehicleSfx.skid(1.6); sound.sweep(260, 60, 0.4, 'sawtooth', 0.08); }
       wasBurning = burning;
       // Hitting the water: a deep splash under the visual crown.
       if (boat && !lastBoat) { sound.sweep(180, 50, 0.5, 'sine', 0.22); sound.sweep(900, 200, 0.35, 'triangle', 0.05); }

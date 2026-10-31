@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, acceptAction, finishShot, step, rack, legalTarget, canPlace, advanceShotClock, botShot } from '../public/rules.js';
+import { createGame, acceptAction, finishShot, step, rack, legalTarget, canPlace, advanceShotClock, botShot, messageText } from '../public/rules.js';
 import { poolConnected, defaultPoolOptions, poolOptions } from '../public/match-rules.js';
 
 function table(count = 6, options = {}) {
@@ -91,7 +91,7 @@ test('kitchen placement restricts the cue ball and prohibits contact before leav
   Object.assign(s.balls[1], { x: 160, y: 100 });
   assert.ok(act(s, 'shoot', { angle: 0, power: .05 }));
   for (let i = 0; i < 4000 && s.phase === 'rolling'; i++) step(s);
-  assert.equal(s.ballInHand, true); assert.match(s.message, /cocina/);
+  assert.equal(s.ballInHand, true); assert.match(messageText(s.message), /cocina/);
 });
 test('shot clock passes to the next team and survives snapshot restore without reset', () => {
   const s = table(6, { shotSeconds: 30 }); advanceShotClock(s, 29);
@@ -132,4 +132,13 @@ test('individual tables seat two friends opposite each other and reject team-siz
  outcome(s);assert.equal(s.turn,1);outcome(s);assert.equal(s.turn,0);
  const group=createGame();for(let i=0;i<3;i++)group.players[i].id=10+i;
  assert.equal(act(group,'options',{options:{format:'duel'}},10),false);
+});
+test('mid-rack, the host can take a stranded table back to the room; a full table cannot', () => {
+  const s = table(2, { format: 'duel' });
+  s.phase = 'aiming';
+  assert.equal(act(s, 'setup', {}, 10), false, 'both panas are here: the rack goes on');
+  s.players[1].id = null;
+  assert.equal(poolConnected(s), false);
+  assert.equal(act(s, 'setup', {}, 11), false, 'only the host');
+  assert(act(s, 'setup', {}, 10)); assert.equal(s.phase, 'lobby');
 });

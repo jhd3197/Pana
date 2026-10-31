@@ -125,3 +125,10 @@ test('a record report with no id or no number keeps the standing best', () => {
   assert.equal(stats.statRecord('', 100), undefined);
   assert.equal(sent.length, 1);
 });
+
+test('a report keeps what another tab wrote after this one loaded', () => {
+  const storage = memStorage(), a = createStats({ storage, send: () => {} }), b = createStats({ storage, send: () => {} });
+  a.statCount('pintura.paint-hits', 3);
+  b.statCount('pintura.paint-hits', 2);
+  assert.equal(createStats({ storage, send: () => {} }).snapshot().counters['pintura.paint-hits'], 5);
+});

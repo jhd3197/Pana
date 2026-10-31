@@ -18,6 +18,7 @@ import { china } from '/engine/models/props/china.js';
 import { scarletMacaw } from '/engine/models/fauna/birds/scarlet-macaw.js';
 import { sunnyStage, makeActors, pick } from './stage.js';
 import { chinazoSim, CHINAZO, CAMERA, seatsFor, TRUNK, BRANCHES, WALL, ROOF, BUSHES, MANGOS, RUSTLE } from './chinazo-sim.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 const S = CHINAZO.scale;
 const up = new THREE.Vector3(0, 1, 0);
@@ -165,9 +166,9 @@ function bushes(scene, r) {
 // ---------- the module ----------
 export default {
   id: 'chinazo',
-  title: '¡Chinazo!',
-  howto: 'Las iguanas se están comiendo los mangos. Apunta, estira la china y suéltala: la piedra tarda un poquito, así que apunta adelante de las que corren. Cada iguana vale 1 y la dorada vale 3. ¡Ojo con la guacamaya: te quita 2!',
-  keys: [['Ratón', 'apuntar'], ['Clic', 'estirar y soltar'], ['WASD + Espacio', 'sin ratón']],
+  title: locKey('¡Chinazo!'),
+  howto: locKey('Las iguanas se están comiendo los mangos. Apunta, estira la china y suéltala: la piedra tarda un poquito, así que apunta adelante de las que corren. Cada iguana vale 1 y la dorada vale 3. ¡Ojo con la guacamaya: te quita 2!'),
+  keys: [[locKey('Ratón'), locKey('apuntar')], [locKey('Clic'), locKey('estirar y soltar')], [locKey('WASD + Espacio'), locKey('sin ratón')]],
   icon: 'iguana',
   input: 'aim',
   aspect: 16 / 9,   // the sim tests hits through its own copy of this camera, the same on every screen
@@ -284,23 +285,23 @@ export default {
         const at = new THREE.Vector3(...sim.bodyAt(ig.hit.state));
         puffs.spawn(at, { color: ig.golden ? 0xffd23f : 0xffffff, count: ig.golden ? 10 : 5, spread: 0.9, size: 0.45, rise: 1.4, life: 0.5 });
         a.cheer = 0.9;
-        if (ig.golden) { a.bubble.say('¡DE ORO!', 1); sound.horn('fiesta'); }
-        else if (random() < (mine ? 0.5 : 0.25)) a.bubble.say(pick(['¡Chinazo!', '¡Bonk!', '¡Toma!', '¡Fuera, iguana!']), 0.8);
+        if (ig.golden) { a.bubble.say(loc('¡DE ORO!'), 1); sound.horn('fiesta'); }
+        else if (random() < (mine ? 0.5 : 0.25)) a.bubble.say(loc(pick([locKey('¡Chinazo!'), locKey('¡Bonk!'), locKey('¡Toma!'), locKey('¡Fuera, iguana!')])), 0.8);
         if (mine) sound.pickup();
       } else if (e.type === 'bird') {
         const b = birds.get(e.bird);
         if (b) {
-          b.bubble.say(pick(['¡CUAC!', '¡Grosero!', '¡Epa!']), 1.2);
+          b.bubble.say(loc(pick([locKey('¡CUAC!'), locKey('¡Grosero!'), locKey('¡Epa!')])), 1.2);
           puffs.spawn(b.g.position.clone().setY(b.g.position.y + 1.1), { color: pick([0xcd3d30, 0xe6b73d, 0x286bb3]), count: 8, spread: 1, size: 0.3, rise: -0.6, life: 1 });
         }
         sound.sweep(1900, 900, 0.16, 'sawtooth', 0.07);
         sound.sweep(2100, 1100, 0.14, 'sawtooth', 0.06);
-        a.bubble.say(pick(['¡Ay, la guacamaya!', '¡Perdón!', '¡Uy!']), 1);
+        a.bubble.say(loc(pick([locKey('¡Ay, la guacamaya!'), locKey('¡Perdón!'), locKey('¡Uy!')])), 1);
       } else if (e.type === 'mango') {
         const mg = mangos[e.mango.i];
         mg.falling = true;
         sound.plop();
-        if (mine) a.bubble.say('¡Plop!', 0.6);
+        if (mine) a.bubble.say(loc('¡Plop!'), 0.6);
       } else if (e.type === 'miss') {
         const to = new THREE.Vector3(...e.stone.to);
         puffs.spawn(to, { color: to.y > 4.5 ? 0x5a9a3f : 0xb8a58c, count: 3, spread: 0.5, size: 0.3, rise: 0.4, life: 0.4 });
@@ -324,9 +325,9 @@ export default {
       } else if (e.type === 'reloaded') {
         if (mine) sound.tone(700, 0, 0.05, 'square', 0.04);
       } else if (e.type === 'plaga') {
-        banner.say('¡PLAGA!', 2);
+        banner.say(loc('¡PLAGA!'), 2);
         sound.horn('fiesta');
-        for (const b of actors) b.bubble.say(pick(['¡Son muchas!', '¡La plaga!', '¡Ay, mis mangos!']), 1.2);
+        for (const b of actors) b.bubble.say(loc(pick([locKey('¡Son muchas!'), locKey('¡La plaga!'), locKey('¡Ay, mis mangos!')])), 1.2);
       }
     }
 

@@ -15,9 +15,73 @@ host runs every timer in `advance(dt)`.
 - `public/network.js`: the room; `step(dt)` slices the host tick into 50 ms.
 - `public/street.js`: the two fields dressed from the model library.
 - `public/studio-set.js`: the chapita, the palos, the señora's window, the
-  floors, the chain-link fence, bleachers, superbloque, tuyuyo and the apodo
-  decal, registered in Studio (`web/studio/catalog/chapita.js`).
-- `public/scene.js`, `public/hud.js`, `public/game.js`, `tests/browser.mjs`.
+  floors, the chain-link fence, bleachers, superbloque, tuyuyo, the apodo
+  decal and the jugadas' props (dog, drain, paper, tumbleweed, broken palo,
+  ball and bat), registered in Studio (`web/studio/catalog/chapita.js`).
+- `public/jugadas.js` (pure), `public/jugada-motion.js`, `public/jugada-fx.js`,
+  `public/sounds.js`, `public/studio-preview.js`: the jugadas locas below.
+- `public/scene.js`, `public/hud.js`, `public/game.js`, `tests/browser.mjs`,
+  `tests/jugadas.test.js`, `tests/jugadas.browser.js`.
+
+## Batting aids and the diamond
+
+- The local batter sees two rings at the plate (scene.js `drawAim`): the
+  aim at medium height, sliding to the real `pitch.target` between 60 % and
+  80 % of the flight, and an approach ring scaled `1 + 3·(T − t)/T` that
+  meets it at the arrival. Green inside `window()`, red when late or when the
+  pitch leaves the zone. `world.aim` exposes it for the browser suite.
+- The palo height follows `pitch.arrives` unless the batter pressed W/S for
+  that pitch (`manualFor` in game.js), so timing is the skill. Three ticks
+  land at T − 0,5, T − 0,25 and T. After a swing, `swingFeedback` shows
+  ¡Perfecto! (within 35 % of the window), ¡Bien!, ¡Temprano! or ¡Tarde!
+- Headless WebGL in the suites renders about one frame a second, so timing
+  checks drive `world.frame(0)` with a shifted `clocks.pitch` instead of
+  waiting on real frames.
+- `BASES` form a diamond (1st and 3rd at x ±2,85, z −6; 2nd on the acera at
+  z −12, y 0,15). The asphalt top is y 0,03 and sidewalks 0,15: chalk drawn
+  lower is hidden. Runners queue every bag on the way (`slot.route`) and run
+  home through the rest when they score, instead of cutting across.
+- Swing and throw sounds are CC0 bamboo swishes (`public/audio/`, see
+  `SOURCE.md`); the synth covers them until they decode.
+
+## Jugadas locas
+
+The Studio workbench's 21 plays run in matches, each tied to a real outcome:
+strikeout swinging → `miss` or `helicopter`; looking → `pitch` or `argue`;
+a swinging strike → sometimes `slip`; a bent-cap ball → sometimes
+`boomerang`; contact → `hit` juice (or `broken` on weak contact, q < 0,25);
+a fielder's catch → `catch`, a fielder's chapazo or a hit batter → `bean`;
+foul → `grandpa`, a ground foul or a short roller → `drain`; sencillo →
+`dog`; wall or azotea → `roof`; post → `pinball`; jonrón → `home`; window →
+`window`; inning change → sometimes `dinner`; the carro house rule → `car`;
+the end screen → `dance` for the winners.
+
+- The host picks in `rules.js` through `jugadas.js`, hashing the seed and the
+  pitch count (`roll`), never `draw()`: adding or tuning a jugada does not
+  change how any game plays out. The id travels in `result.jugada` (numbered
+  by `result.n`), `hit.jugada` (contact) and `hit.after` (catch/chapazo), and
+  `result.until` stretches to `JUGADAS[id].seconds` so the next pitch never
+  cuts one short.
+- Everything a jugada does is cosmetic. `jugada-motion.js` poses panas after
+  their own `update()`, owns the cap's position while it plays, and `stop()`
+  resets body, head, eyes, expression, palo and props. Channels that
+  `update()` never resets (body `rotation.y`, `position.x/z`) must be set
+  absolutely each frame, never with `+=`. The scene syncs every pana's walk
+  target to where a jugada left them, so they walk back instead of popping.
+- The scene runs two channels with separate effect pools: contact (`swing`,
+  `hit`, `broken`) and main (everything else), so a catch can follow the
+  contact flash. Jugada camera shots are clamped to the street (|x| < 3,8 on
+  the near street), or they land inside a house.
+- A pitch high (1,05–2,2 m) and more than 0,9 m inside the batter's side is a
+  chapazo to the batter: tuyuyo, `chapazos` stat, a walk to first. About one
+  a game between bots.
+- Pitch flavours (`pitch.flavor`): `fuego` with two strikes, `loca` for a bent
+  cap, `globito` for a float; drawn by a third effect pool in the scene.
+- The `equipo` room option (Chapita y escoba / Pelota y bate) only swaps the
+  models (`createPelota`, `createBate`); the physics stay the chapita's.
+- All-bot games show around 35 jugadas each; the rarest are `window` and
+  `pinball` (physics decides those). Studio's `chapita-jugada-<id>` pages
+  sample the same motion code with a short lead-in; turn on Animación.
 
 ## Field
 
@@ -75,3 +139,10 @@ scoring objects at these numbers; only the dressing differs.
   otherwise a viewport resize crops the previous frame instead of reframing it.
   The browser suite projects home plate on both maps at desktop and portrait
   sizes and verifies that the pitching panel does not cover it.
+
+## Languages
+
+`result` and `event` carry `text` as a Spanish source (`locKey`) plus
+`vars` and `runs`; `hud.js` `eventText` words them on each screen, so the
+host never syncs its own language. Titles, house rules and bot styles in
+`rules.js` are sources too, shown through `loc()` in `hud.js`.

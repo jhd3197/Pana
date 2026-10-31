@@ -54,8 +54,8 @@ const TILE_ART = {
   blue: { fill: '#3d7bf2', edge: '#2453b8', text: '+3', coin: true },
   red: { fill: '#ff4b4b', edge: '#b5121b', text: '-3', coin: true },
   event: { fill: '#ffd23f', edge: '#c48b00', text: '?', coin: false },
-  start: { fill: '#2ad1b2', edge: '#14806c', text: 'SALIDA', coin: false },
-  tree: { fill: '#8e4de8', edge: '#5a2aa8', text: 'ÁRBOL', coin: false },
+  start: { fill: '#2ad1b2', edge: '#14806c', text: 'SALIDA', coin: false },   // i18n-ignore: painted on the tile
+  tree: { fill: '#8e4de8', edge: '#5a2aa8', text: 'ÁRBOL', coin: false },   // i18n-ignore: painted on the tile
 };
 
 const tileMats = {};
@@ -274,7 +274,7 @@ function buildStand() {
     c.fillStyle = '#f3e9d7';
     c.textAlign = 'center';
     c.font = '30px "Luckiest Guy", system-ui, sans-serif';
-    ['EL MANGO HACE', 'TODO MÁS', 'BONITO'].forEach((t, i) => c.fillText(t, 128, 66 + i * 40));
+    ['EL MANGO HACE', 'TODO MÁS', 'BONITO'].forEach((t, i) => c.fillText(t, 128, 66 + i * 40));   // i18n-ignore: a chalkboard sign
   }), 0, 0.95, 0));
   chalk.add(box(0.08, 0.8, 0.08, dark, -0.6, 0.3, -0.1));
   chalk.add(box(0.08, 0.8, 0.08, dark, 0.6, 0.3, -0.1));

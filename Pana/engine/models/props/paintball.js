@@ -49,3 +49,32 @@ export function pavingTexture() {
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(4.6, 4.6); texture.anisotropy = 4; return texture;
 }
+
+// A team's pop-up canopy: four poles and a square peaked roof in the team colour.
+// Ground origin; the poles stand at ±size/2.
+export function teamCanopy({ color = '#f28b42', size = 5.2, height = 2.9 } = {}) {
+  const root = new THREE.Group(), cloth = new THREE.MeshStandardMaterial({ color, roughness: .75, side: THREE.DoubleSide }), pole = new THREE.MeshStandardMaterial({ color: '#d8d8d8', metalness: .4, roughness: .4 });
+  const add = (geometry, material, x, y, z) => { const mesh = new THREE.Mesh(geometry, material); mesh.position.set(x, y, z); mesh.castShadow = mesh.receiveShadow = true; root.add(mesh); return mesh; };
+  const half = size / 2;
+  for (const x of [-half, half]) for (const z of [-half, half]) add(new THREE.CylinderGeometry(.045, .05, height, 8), pole, x, height / 2, z);
+  add(new THREE.ConeGeometry(half * Math.SQRT2, 1.3, 4, 1, true), cloth, 0, height + .65, 0).rotation.y = Math.PI / 4;
+  // A short valance hangs round the edge.
+  for (const [x, z, turn] of [[0, -half, 0], [0, half, 0], [-half, 0, 1], [half, 0, 1]]) add(new THREE.BoxGeometry(size, .28, .03), cloth, x, height - .1, z).rotation.y = turn * Math.PI / 2;
+  const result = bake(root); const geometry = new Set(); root.traverse(o => { if (o.geometry) geometry.add(o.geometry); }); geometry.forEach(g => g.dispose());
+  result.name = 'Toldo de equipo'; return result;
+}
+
+// A run of stacked sandbags, fitted to a w × h × d box (long side along X). Ground origin.
+export function sandbagWall({ w = 6, h = .7, d = .8, seed = 1 } = {}) {
+  const root = new THREE.Group(), r = rng(seed), rows = Math.max(1, Math.round(h / .23)), per = Math.max(1, Math.round(w / .62));
+  const tones = ['#b8a070', '#a99063', '#c2ab7c'].map(color => new THREE.MeshStandardMaterial({ color, roughness: .95 }));
+  const bag = new RoundedBoxGeometry(1, 1, 1, 2, .3);
+  for (let row = 0; row < rows; row++) for (let i = 0; i < per - (row % 2); i++) {
+    const mesh = new THREE.Mesh(bag, tones[Math.floor(r() * 3)]), length = w / per;
+    mesh.scale.set(length * 1.02, h / rows * 1.05, d * (.9 + r() * .1));
+    mesh.position.set(-w / 2 + length * (i + .5 + (row % 2) / 2), h / rows * (row + .5), (r() - .5) * .06); mesh.rotation.y = (r() - .5) * .08;
+    mesh.castShadow = mesh.receiveShadow = true; root.add(mesh);
+  }
+  const result = bake(root); bag.dispose();
+  result.name = 'Sacos de arena'; return result;
+}

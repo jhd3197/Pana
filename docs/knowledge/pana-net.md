@@ -36,6 +36,10 @@ on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
   in fixed 50 ms slices from real elapsed time. Drive it with `elapsedClock()`:
   a host in a background tab gets timers about once a second, and a fixed
   `tick(0.05)` would slow the game twenty times for everyone.
+  A game whose rules have `toLobby()` (`engine/play/round-lobby.js`) gets the
+  host's `room.action('lobby')` for free: LiveRoom calls it and publishes,
+  without a `handle()` line. Results screens use it so the host picks the next
+  map in the lobby instead of replaying the same one.
   A guest sends its input only to the host, and only when it changed or
   every 200 ms (a third of `inputTtl` if that is shorter), so an idle stick
   costs nothing and the host never expires it; a new host gets it at once.
@@ -107,10 +111,18 @@ Rules the base enforces, so games must not re-implement them:
 - A pana whose connection drops counts as left until the SDK reconnects it, then
   joins again with the same seat. A reloaded page is a new pana with a new seat
   (seats are never reused), so per-seat ledgers can't go stale. Games only see
-  `memberLeft` / `memberJoined`.
+  `memberLeft` / `memberJoined`. In a full room that new pana is refused while
+  the old seat is still held (20 s); a tab that was in the room waits that out
+  and retries (`full()`), a newcomer sees "Sala llena".
 - Avatars come from the room (sanitized server-side); `hello` still runs so
   extras and late avatar changes arrive.
-- Snapshots up to 256 KB per message; keep them event-driven or ~20 Hz.
+- Snapshots up to 256 KB per message; keep them event-driven or ~20 Hz. Only
+  the host may send that much: a guest's relay message stops at 32 KB.
+- To hand back what a pana left behind, match on the device's rejoin key
+  (`options.rejoin` in `joined`, cleaned by `cleanKey`; server-side only),
+  never on the name: names are public in `/api/rooms`. Póquer's stacks do.
+- Matchmaking is limited per visitor address (`PANA_CLIENT_IP_HEADER` behind a
+  proxy); this machine's own requests are free, so suites never hit it.
 
 ## A game with its own room (Carreritas)
 
@@ -163,5 +175,6 @@ Colyseus 0.18's Node adapter passes a matchmaking `ServerError.code` to HTTP
 `writeHead`. A WebSocket-style 4009 code is not a valid HTTP status: its thrown
 range error falls through to a misleading 404. The room kit now uses 409 for
 capacity rejection; the client accepts 409 and legacy 4009. The plan-56
-`cup-failures.browser.js` capacity case joins eight independent sessions and
-asserts the ninth receives `full: true`, through the actual HTTP/SDK path.
+`cup-failures.browser.js` capacity case joins as many independent sessions as
+Carreritas' `game.json` `players` (twelve) and asserts the next receives
+`full: true`, through the actual HTTP/SDK path.

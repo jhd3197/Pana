@@ -5,7 +5,8 @@ import path from 'node:path';
 import { MINIGAMES } from '../public/minigames/index.js';
 
 const dir = path.resolve(import.meta.dirname, '..', 'public', 'minigames');
-const quoted = (source, key) => source.match(new RegExp(`\\b${key}: '([^']+)'`))?.[1];
+// A title is a Spanish source, plain or marked with locKey().
+const quoted = (source, key) => source.match(new RegExp(`\\b${key}: (?:locKey\\()?'([^']+)'`))?.[1];
 
 test('the lazy minigame list matches every minigame module', () => {
   for (const { id, title } of MINIGAMES) {

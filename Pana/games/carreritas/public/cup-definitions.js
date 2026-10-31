@@ -1,7 +1,10 @@
-export const CURRENT_CUP_EDITION = 2;
+import { loc } from '../../../engine/i18n.js';
+// Absent or empty in the public build; the pana.sh overlay fills it.
+const { PREMIUM_CUPS = [] } = await import('./premium-tracks.js').catch(() => ({}));
+export const CURRENT_CUP_EDITION = 3;
 export const GP_STAGE_CAP_SECONDS = 240;
 // New standalone circuits do not silently change a saved cup edition's route.
-export const STANDALONE_TRACKS = ['puerto', 'cata', 'choroni', 'chuao', 'tovar', 'galipan', 'maracaibo', 'margarita', 'sarisarinama', 'sabana', 'cosmos', 'merida', 'arrecife', 'volcan', 'nubes', 'dulce'];
+export const STANDALONE_TRACKS = [];
 
 const stage = (track, laps = 2, estimatedSeconds = 150) => ({
   track, laps, capSeconds: GP_STAGE_CAP_SECONDS, estimatedSeconds,
@@ -9,32 +12,19 @@ const stage = (track, laps = 2, estimatedSeconds = 150) => ({
 
 export const CUP_DEFINITIONS = [
   {
-    id: 'pana', name: 'Copa Pana', edition: CURRENT_CUP_EDITION, available: true,
+    id: 'pana', name: loc('Copa Pana'), edition: CURRENT_CUP_EDITION, available: true,
     stages: [
       stage('estadio', 2, 155),
-      stage('plaza', 2, 175),
       stage('llanos', 2, 160),
-      stage('bululu', 2, 145),
-    ],
-  },
-  {
-    id: 'aventura', name: 'Copa Aventura', edition: CURRENT_CUP_EDITION, available: true,
-    stages: [
-      stage('desierto', 2, 145),
-      stage('chichi', 1, 175),
-      stage('selva', 2, 185),
-      stage('paramo', 2, 155),
-    ],
-  },
-  {
-    id: 'agua', name: 'Copa del Agua', edition: CURRENT_CUP_EDITION, available: true,
-    stages: [
-      stage('salinas', 2, 205),
       stage('delta', 3, 165),
-      stage('cuevas', 2, 125),
-      stage('salto', 2, 180),
+      stage('galipan', 2, 155),
     ],
   },
+  // Extra cups from premium-tracks.js (empty in the public build).
+  ...PREMIUM_CUPS.map(cup => ({
+    ...cup, edition: CURRENT_CUP_EDITION, available: true,
+    stages: cup.stages.map(item => stage(item.track, item.laps, item.estimatedSeconds)),
+  })),
 ];
 
 export const LEGACY_CUP_ALIASES = Object.freeze({ mango: 'pana', arepa: 'aventura' });
@@ -77,6 +67,6 @@ export function validateCups(trackIds, { includeUnavailable = false } = {}) {
     if (!known.has(id)) errors.push(`unknown standalone track ${id}`);
     if (covered.includes(id)) errors.push(`${id}: both a cup and standalone track`);
   }
-  for (const id of known) if (!covered.includes(id) && !STANDALONE_TRACKS.includes(id)) errors.push(`${id}: no cup or standalone registration`);
+  for (const id of known) if (!covered.includes(id) && !STANDALONE_TRACKS.includes(id)) errors.push(`${id}: no cup or standalone registration`); // i18n-ignore: developer error
   return { errors, covered, standalone: [...STANDALONE_TRACKS] };
 }

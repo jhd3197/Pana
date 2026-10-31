@@ -13,6 +13,7 @@ import { campTent, bandageWrap } from '/engine/models/props/embuste.js';
 import { ruinPaving, ruinColumn, fallenColumn, stela, ruinRubble, brazier } from '/engine/models/props/ruins.js';
 import { expeditionTent, supplyPile, investigationTable, expeditionWatchtower } from '/engine/models/props/expedition-camp.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 const TIME = 30, WORK = 19, VOTE = 27;        // seconds: work until WORK, vote until VOTE, then the verdict
 // Stations are spaced to fit the complete roster.
@@ -44,10 +45,10 @@ function digSite(scene) {
 
 export default {
   id: 'embuste',
-  title: '¡Embuste!',
-  howto: 'Uno de los panas es una momia que finge trabajar. Gira tu malacate con Espacio y mira bien: la momia suelta arena. Al final, elige con ← → y vota con Espacio. Si te toca ser la momia, gira sin apuro: así casi no suelta arena. Pero si no giras, se nota.',
-  keys: [['Espacio', 'girar · votar'], ['← →', 'elegir a quién']],
-  touch: { action: '¡Dale!' },
+  title: locKey('¡Embuste!'),
+  howto: locKey('Uno de los panas es una momia que finge trabajar. Gira tu malacate con Espacio y mira bien: la momia suelta arena. Al final, elige con ← → y vota con Espacio. Si te toca ser la momia, gira sin apuro: así casi no suelta arena. Pero si no giras, se nota.'),
+  keys: [[locKey('Espacio'), locKey('girar · votar')], ['← →', locKey('elegir a quién')]],
+  touch: { action: locKey('¡Dale!') },
   icon: 'mummy',
   time: TIME,
 
@@ -82,7 +83,7 @@ export default {
       a.ring.rotation.x = -Math.PI / 2; a.ring.visible = false; scene.add(a.ring);
     });
     const me = ctx.auto ? null : actors[ctx.localIndex ?? 0];
-    if (me) me.bubble.say(me.mummy ? '¡Eres la momia! Gira despacito.' : 'Gira y vigila. ¿Quién suelta arena?', 2.6);
+    if (me) me.bubble.say(me.mummy ? loc('¡Eres la momia! Gira despacito.') : loc('Gira y vigila. ¿Quién suelta arena?'), 2.6);
 
     let clock = 0, verdict = null;
     const picks = actors.map(() => 0), lastXs = actors.map(() => 0);
@@ -131,7 +132,7 @@ export default {
     function cast(a, target) {
       if (a.vote != null || target == null) return;
       a.vote = target; actors[target].votes++;
-      a.bubble.say(pick(['¡Fue ' + actors[target].player.name + '!', 'Yo voto…', '¡Embuste!']), 1.2);
+      a.bubble.say(loc(pick([locKey('¡Fue {name}!'), locKey('Yo voto…'), locKey('¡Embuste!')]), { name: actors[target].player.name }), 1.2);
       sound.tone(330, 0, 0.1, 'square', 0.04);
     }
 
@@ -145,8 +146,8 @@ export default {
       }
       const m = actors[mummyAt];
       m.wrap = bandageWrap({ height: 1.3, radius: 0.45 }); m.wrap.position.set(m.x, 0, m.z); m.wrap.scale.y = 0.01; scene.add(m.wrap);
-      m.bubble.say(caught ? '¡Me descubrieron!' : '¡Era yo, la momia!', 2.4);
-      if (out && !caught) out.bubble.say('¡Yo no era!', 2);
+      m.bubble.say(caught ? loc('¡Me descubrieron!') : loc('¡Era yo, la momia!'), 2.4);
+      if (out && !caught) out.bubble.say(loc('¡Yo no era!'), 2);
       sound.horn(caught ? 'fiesta' : 'cucaracha');
     }
 
@@ -208,10 +209,10 @@ export default {
     // What you should be doing right now, for the runner's hint line.
     function hint() {
       if (!me || verdict) return null;
-      if (clock < WORK) return me.mummy ? { text: 'Eres la MOMIA: gira despacito. Si no giras, se nota.', tone: 'bad' } : { text: 'Gira tu malacate y mira quién suelta arena', tone: '' };
-      if (me.vote != null) return { text: `Votaste por ${actors[me.vote].player.name}`, tone: '' };
+      if (clock < WORK) return me.mummy ? { text: loc('Eres la MOMIA: gira despacito. Si no giras, se nota.'), tone: 'bad' } : { text: loc('Gira tu malacate y mira quién suelta arena'), tone: '' };
+      if (me.vote != null) return { text: loc('Votaste por {name}', { name: actors[me.vote].player.name }), tone: '' };
       const others = actors.filter(b => b !== me);
-      return { text: `¡A votar! ← → elige · Espacio vota por ${others[picks[me.i]].player.name}`, tone: 'go' };
+      return { text: loc('¡A votar! ← → elige · Espacio vota por {name}', { name: others[picks[me.i]].player.name }), tone: 'go' };
     }
 
     return {

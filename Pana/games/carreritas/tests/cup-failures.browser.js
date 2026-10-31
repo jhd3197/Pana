@@ -1,7 +1,7 @@
 // Real elapsed loading deadline, DNS recovery, spectators and withdrawal.
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
 const {chromium}=createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH||'playwright');
 const browser=await chromium.launch({headless:true}),origin=process.env.PANA_TEST_URL||'http://localhost:8461',errors=[];
 async function client(code,index){
@@ -17,18 +17,19 @@ async function client(code,index){
 const wait=(page,fn,arg,timeout=120000)=>page.waitForFunction(fn,arg,{timeout});
 try{
   const capacityCode='cap'+Math.random().toString(36).slice(2,8),seats=[];
-  for(let i=0;i<9;i++){
+  const cap=JSON.parse(await readFile(new URL('../game.json',import.meta.url))).players;
+  for(let i=0;i<=cap;i++){
     const context=await browser.newContext(),page=await context.newPage();
     await page.goto(`${origin}/studio/settings.html`);
     const result=await page.evaluate(async ({code,index})=>{
       try{const {joinRoom}=await import('/engine/net.js');window.__seat=await joinRoom('carreritas',{code,name:`Seat ${index}`,protocol:2});return {joined:true};}
       catch(error){return {joined:false,full:!!error.full,message:error.message,code:error.code};}
     },{code:capacityCode,index:i});
-    if(i<8)assert.equal(result.joined,true,JSON.stringify(result));else {assert.equal(result.joined,false);assert.equal(result.full,true,JSON.stringify(result));}
+    if(i<cap)assert.equal(result.joined,true,JSON.stringify(result));else {assert.equal(result.joined,false);assert.equal(result.full,true,JSON.stringify(result));}
     seats.push(context);
   }
   for(const context of seats)await context.close();
-  console.log('Eight-member room capacity rejects the ninth independent session');
+  console.log(`${cap}-member room capacity rejects the next independent session`);
   if(process.env.PANA_CAPACITY_ONLY){await browser.close();process.exit(0);}
   const code='fault'+Math.random().toString(36).slice(2,8),host=await client(code,0),guest=await client(code,1);
   await wait(host,()=>getNet().state.players.length===2);
@@ -63,8 +64,8 @@ try{
   const ledger=await host.evaluate(()=>getNet().cup.ledger),session=await host.evaluate(()=>getNet().cup.sessionId);
   assert.equal(ledger.find(r=>r.stage===2&&r.id===guestId).classification,'retired');
   assert.equal(ledger.find(r=>r.stage===3&&r.id===guestId).classification,'dns');
-  await control.evaluate(()=>{getNet().lobby();getNet().mode('agua');getNet().start();});
-  await wait(spectator,old=>getNet().cup?.sessionId!==old&&getNet().cup?.cupId==='agua',session);
+  await control.evaluate(()=>{getNet().lobby();getNet().mode('pana');getNet().start();});
+  await wait(spectator,old=>getNet().cup?.sessionId!==old&&getNet().cup?.cupId==='pana',session);
   const fresh=await spectator.evaluate(()=>({cup:getNet().cup,poses:getNet().poseMemo.size}));
   assert.equal(fresh.cup.ledger.length,0);assert.ok(fresh.cup.entrants.some(e=>e.id===spectatorId));
   assert.deepEqual(errors,[]);await mkdir('art/grand-prix',{recursive:true});await writeFile('art/grand-prix/failure-ledger.json',JSON.stringify({first,second,ledger,fresh:fresh.cup},null,2));

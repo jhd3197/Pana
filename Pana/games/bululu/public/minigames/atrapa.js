@@ -11,6 +11,7 @@ import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { supplyCrate } from '/engine/models/props/expedition-camp.js';
 import { buntingLine } from '/engine/models/props/fiesta.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 const LANE_Z = 3;            // where the panas stand
 const BASKET_Z = LANE_Z + 0.85;
@@ -63,9 +64,9 @@ function yard(scene) {
 
 export default {
   id: 'atrapa',
-  title: '¡Atrapa los mangos!',
-  howto: 'Muévete y atrapa los mangos con tu cesta. Los de oro valen 3. ¡Ojo con los cocos!',
-  keys: [['A D / ← →', 'moverte']],
+  title: locKey('¡Atrapa los mangos!'),
+  howto: locKey('Muévete y atrapa los mangos con tu cesta. Los de oro valen 3. ¡Ojo con los cocos!'),
+  keys: [['A D / ← →', locKey('moverte')]],
   touch: { action: null },
   icon: 'mango',
   time: 30,
@@ -74,7 +75,7 @@ export default {
     const scene = new THREE.Scene();
     const stage=sunnyStage(scene);
     yard(scene);
-    const sign = woodSign(['ENTRE MÁS', 'MANGOS', '¡MEJOR!'], { w: 4.6, h: 3.4 });
+    const sign = woodSign(['ENTRE MÁS', 'MANGOS', '¡MEJOR!'], { w: 4.6, h: 3.4 });   // i18n-ignore: signage painted in the world
     sign.position.set(13.5, 0, -2);
     sign.rotation.y = -0.4;
     scene.add(sign);
@@ -225,7 +226,7 @@ export default {
             if (f.kind === 'coco') {
               a.stun = 1.3;
               a.streak = 0;
-              a.bubble.say(pick(['¡COCO!', '¡Ay, mi cabeza!', '¡Pum!']), 1);
+              a.bubble.say(loc(pick([locKey('¡COCO!'), locKey('¡Ay, mi cabeza!'), locKey('¡Pum!')])), 1);
               sound.bonk(0.9);
               puffs.spawn(p.clone(), { color: 0x8a6a4a, count: 5, spread: 0.8, size: 0.6 });
             } else {
@@ -234,7 +235,7 @@ export default {
               a.streak = Math.min(8, (a.streak || 0) + 1);
               a.streakT = 2.4;
               a.catchPop = 0.22;
-              if (f.kind === 'gold') a.bubble.say('¡DE ORO!', 0.8);
+              if (f.kind === 'gold') a.bubble.say(loc('¡DE ORO!'), 0.8);
               else if (a.streak >= 3) a.bubble.say(`×${a.streak}!`, 0.65);
               if (a.player.human || f.kind === 'gold') sound.pickup(a.streak - 1);
               puffs.spawn(p.clone(), { color: f.kind === 'gold' ? 0xffd23f : 0xffae2b, count: 3, spread: 0.5, size: 0.4, rise: 1.5, life: 0.5 });

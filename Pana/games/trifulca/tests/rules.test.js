@@ -373,3 +373,23 @@ test('dodge prompt waits until its safe window covers the heavy hit',()=>{
  assert.equal(dodgeCue({act:'trompon',at:.05,landed:false}),true);
  assert.equal(dodgeCue({act:'trompon',at:.2,landed:true}),false);
 });
+
+test('Otra noche returns to the lobby, where the host picks the next arena', () => {
+  const game = new Trifulca(9); game.configure({ arena: 'calle', rivales: 2 });
+  game.addPlayer(1, 'Ana'); game.addPlayer(2, 'Bruno'); game.start();
+  assert.ok(game.players.some(p => p.bot)); game.phase = 'finished';
+  // The old direct restart is closed: no replay of the same arena from the results.
+  assert.equal(game.start(), false); assert.equal(game.phase, 'finished');
+  assert.equal(game.configure({ arena: 'mercado' }), false, 'the arena only changes in the lobby');
+  assert.ok(game.toLobby()); assert.equal(game.phase, 'lobby'); assert.equal(game.toLobby(), false);
+  assert.deepEqual(game.players.map(p => p.id), [1, 2], 'the panas stay, the bots leave');
+  assert.deepEqual(game.bodies, []); assert.equal(game.arenaNow, null);
+  assert.ok(game.configure({ arena: 'mercado' })); game.start();
+  assert.equal(game.phase, 'intro'); assert.equal(game.arena, arenaOf('mercado'));
+});
+
+test('leaving the tutorial goes back to the lobby too', () => {
+  const game = new Trifulca(3); game.addPlayer(1, 'Ana'); game.startTutorial(1);
+  assert.ok(game.toLobby()); assert.equal(game.phase, 'lobby'); assert.equal(game.tutorial, null);
+  assert.ok(game.players.every(p => !p.bot));
+});

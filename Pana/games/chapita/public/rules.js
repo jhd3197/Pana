@@ -5,8 +5,10 @@
 // height; where the chapita lands is the hit, and runners move on their own.
 // The host calls advance(dt) for bots and timers; everything else is accept().
 import { draw, clamp } from '/engine/random.js';
+import { locKey } from '../../../engine/i18n.js';
 import { defaultOptions, roomOptions } from './options.js';
 import { PITCHES, PITCH_KINDS, CAPS, ROWS, FIELDERS, pitchTarget, arrivalRow, hitVelocity, traceHit } from './field.js';
+import { chooseJugada, jugadaSeconds, pitchFlavor, beaned } from './jugadas.js';
 
 export const SEATS = 8;
 export const TEAM_SIZE = 4;
@@ -15,26 +17,28 @@ export const DERBY_PITCHES = 10;
 export const SWING_WINDOW = .18;     // seconds either side of the arrival
 export const CATCH_WINDOW = .16;
 export const PITCH_SECONDS = 15;     // a pana's time to pick a pitch
-export const BARRIOS = ['23 de Enero', 'Los Frailes', 'Catia', 'Lídice', 'Ruperto Lugo'];
+export const BARRIOS = ['23 de Enero', 'Los Frailes', 'Catia', 'Lídice', 'Ruperto Lugo'];   // i18n-ignore: place names
 // Barrio apodos for the bots, on the back of their franela.
-export const BOT_NAMES = ['El Flaco', 'Chigüire', 'Cabezón', 'Gocho', 'Catire', 'Tripa', 'Pelúo', 'Cachete'];
-export const ABUELO = 'El Abuelo';
+export const BOT_NAMES = ['El Flaco', 'Chigüire', 'Cabezón', 'Gocho', 'Catire', 'Tripa', 'Pelúo', 'Cachete'];   // i18n-ignore: nicknames
+export const ABUELO = 'El Abuelo';   // i18n-ignore: a character's name
 export const HOUSE_RULES = {
-  carro: 'Carro que pasa = tiempo',
-  azotea: 'El que la tire a la azotea, sale',
-  ventana: 'Ventana = out',
-  zurdos: 'Zurdos batean doble',
+  carro: locKey('Carro que pasa = tiempo'),
+  azotea: locKey('El que la tire a la azotea, sale'),
+  ventana: locKey('Ventana = out'),
+  zurdos: locKey('Zurdos batean doble'),
 };
 export const TITLES = [
-  ['hr', 'Cuarto bate', 'más jonrones'],
-  ['k', 'Brazo de oro', 'más ponches como pitcher'],
-  ['catches', 'Manos de seda', 'más atrapadas'],
-  ['chapazos', 'Tuyuyo', 'más chapazos en la cara'],
-  ['shortOuts', 'Ni a la acera', 'más outs por batazos cortos'],
-  ['comebacks', 'Willy Mays', 'la mejor remontada'],
+  ['hr', locKey('Cuarto bate'), locKey('más jonrones')],
+  ['k', locKey('Brazo de oro'), locKey('más ponches como pitcher')],
+  ['catches', locKey('Manos de seda'), locKey('más atrapadas')],
+  ['chapazos', locKey('Tuyuyo'), locKey('más chapazos en la cara')],
+  ['shortOuts', locKey('Ni a la acera'), locKey('más outs por batazos cortos')],
+  ['comebacks', 'Willy Mays', locKey('la mejor remontada')],
 ];
 const HIT_BASES = { sencillo: 1, wall: 1, car: 2, post: 3, jonron: 4 };
-const STYLE_TEXT = { vieja: 'Vieja escuela', nueva: 'Nueva escuela', abuelo: 'Leyenda del barrio' };
+// Text in state is a Spanish source (locKey) plus vars; each screen shows it
+// through loc() in its own language.
+const STYLE_TEXT = { vieja: locKey('Vieja escuela'), nueva: locKey('Nueva escuela'), abuelo: locKey('Leyenda del barrio') };
 
 const stats = () => ({ hr: 0, hits: 0, runs: 0, k: 0, catches: 0, chapazos: 0, shortOuts: 0, comebacks: 0, strikeouts: 0 });
 const bot = (seat) => ({ seat, id: null, name: BOT_NAMES[seat], avatar: {}, team: seat % 2, zurdo: false,
@@ -53,7 +57,7 @@ export class ChapitaGame {
     this.teams = [{ name: BARRIOS[0], runs: 0, hits: 0, line: [] }, { name: BARRIOS[1], runs: 0, hits: 0, line: [] }];
     Object.assign(this, { phase: 'lobby', clock: 0, inning: 1, half: 0, outs: 0, strikes: 0, balls: 0, bases: [null, null, null],
       lineup: [0, 0], batter: null, pitcher: null, fielders: [], pitch: null, swing: null, botSwing: null, hit: null,
-      result: null, deadline: 0, holdUntil: 0, hold: null, holdNext: null, rules: [], derby: null, willy: false,
+      result: null, shown: 0, deadline: 0, holdUntil: 0, hold: null, holdNext: null, rules: [], derby: null, willy: false,
       event: null, winner: null, titles: [], round: 0, pitches: 0, lastRuns: 0, revision: 0, ledger: {} });
   }
 
@@ -72,7 +76,7 @@ export class ChapitaGame {
     const p = this.players.find(p => p.id === id) || this.players.find(p => p.id === null);
     if (!p || (p.id === id && p.name === name && JSON.stringify(p.avatar) === JSON.stringify(avatar))) return false;
     if (p.id !== id) p.zurdo = false;
-    Object.assign(p, { id, name: String(name || 'Pana').slice(0, 18), avatar, style: null, skill: .7 }); this.revision++; return true;
+    Object.assign(p, { id, name: String(name || 'Pana').slice(0, 18), avatar, style: null, skill: .7 }); this.revision++; return true;   // i18n-ignore: a name
   }
   removePlayer(id) {
     const p = this.players.find(p => p.id === id);
@@ -126,9 +130,10 @@ export class ChapitaGame {
     Object.assign(this, { batter: seat, strikes: 0, balls: 0 });
     const p = this.players[seat], slot = this.derby ? -1 : this.lineup[this.battingTeam];
     this.willy = !this.derby && p.atBats.length === 2 && p.atBats.every(a => a === 'k');
-    if (this.willy) this.say('willy', `¡No te hagas el Willy Mays, ${p.name}!`, seat);
-    else if (slot === 3) this.say('cuarto', `¡Cuarto bate! ${p.name} al palo`, seat);
-    else this.say('batter', `Al bate: ${p.name}`, seat);
+    const vars = { name: p.name };
+    if (this.willy) this.say('willy', locKey('¡No te hagas el Willy Mays, {name}!'), seat, vars);
+    else if (slot === 3) this.say('cuarto', locKey('¡Cuarto bate! {name} al palo'), seat, vars);
+    else this.say('batter', locKey('Al bate: {name}'), seat, vars);
   }
 
   // A new pitch: the pitcher's clock, a passing car (house rule) and the
@@ -140,7 +145,7 @@ export class ChapitaGame {
     this.hold = null; this.holdUntil = 0;
     if (this.holdNext) { this.hold = 'senora'; this.holdUntil = this.clock + 5; this.holdNext = null; }
     else if (this.rules.includes('carro') && draw(this) < .14) {
-      this.hold = 'carro'; this.holdUntil = this.clock + 3.4; this.say('tiempo', '¡Carro! ¡Tiempo, tiempo!');
+      this.hold = 'carro'; this.holdUntil = this.clock + 3.4; this.say('tiempo', locKey('¡Carro! ¡Tiempo, tiempo!'));
     }
     if (human) this.deadline = Math.max(this.deadline, this.holdUntil + 6);
   }
@@ -155,7 +160,7 @@ export class ChapitaGame {
       miss: [gauss(this) * c.control, gauss(this) * c.control],
       wobble: { a: c.wobble * (.6 + draw(this) * .6), f: 2.2 + draw(this) * 2.6, ph: draw(this) * Math.PI * 2, tilt: draw(this) * Math.PI },
       time: PITCHES[choice.kind].time + (cap === 'doblada' ? (draw(this) - .5) * .1 : 0), at: this.clock };
-    pitch.target = pitchTarget(pitch); pitch.arrives = arrivalRow(pitch.target);
+    pitch.target = pitchTarget(pitch); pitch.arrives = arrivalRow(pitch.target); pitch.flavor = pitchFlavor(pitch, this.strikes);
     this.pitch = pitch; this.phase = 'flight'; this.hold = null;
     if (this.players[this.batter].id === null) this.botSwing = this.botBat();
     this.revision++; return true;
@@ -176,14 +181,15 @@ export class ChapitaGame {
     if (this.phase !== 'flight') return false;
     const pitch = this.pitch, p = this.players[this.batter];
     this.swing = swing ? { height: swing.height, t: swing.t } : null;
+    if (beaned(pitch, p.zurdo)) return this.hitByPitch();
     if (!swing) {
       if (pitch.arrives) return this.strike('looking');
       this.balls++; if (this.balls >= BALLS) return this.walk();
-      return this.show('ball', '¡Bola!', 1);
+      return this.show('ball', locKey('¡Bola!'), 1, false, this.jugada(pitch.cap === 'doblada' ? 'ball-doblada' : 'ball'));
     }
     const w = this.window(), dt = swing.t - pitch.time, rowGap = pitch.arrives ? Math.abs(ROWS.indexOf(swing.height) - ROWS.indexOf(pitch.arrives)) : 9;
     if (Math.abs(dt) > w || rowGap > 1) return this.strike(pitch.kind === 'cae' && swing.height !== 'bajo' ? 'drop' : 'swinging');
-    if (rowGap === 1) return Math.abs(dt) < w * .55 ? this.foul('¡Foul! La rozó') : this.strike('swinging');
+    if (rowGap === 1) return Math.abs(dt) < w * .55 ? this.foul(locKey('¡Foul! La rozó')) : this.strike('swinging');
     const q = 1 - Math.abs(dt) / w, pull = p.zurdo ? 1 : -1;
     const dir = (dt < 0 ? pull : -pull) * (Math.abs(dt) / w) * .62 + (draw(this) - .5) * .18;
     const popup = draw(this) < .1;
@@ -194,30 +200,44 @@ export class ChapitaGame {
     const trace = traceHit(hit, fielders);
     hit.end = { kind: trace.kind, t: trace.t, point: trace.point };
     hit.chance = trace.chance ? { ...trace.chance, seat: fielders[trace.chance.fielder].seat } : null;
-    hit.caught = null; hit.chapazo = false;
+    hit.caught = null; hit.chapazo = false; hit.after = null;
+    hit.jugada = q < .25 ? this.jugada('weak-contact') : null;
     if (hit.chance && this.players[hit.chance.seat].id === null) hit.botCatch = this.botCatch(hit.chance);
-    this.hit = hit; this.phase = 'hit'; this.say('contact', q > .85 ? '¡Palo!' : '¡Le pegó!', this.batter);
+    this.hit = hit; this.phase = 'hit'; this.say('contact', q > .85 ? locKey('¡Palo!') : locKey('¡Le pegó!'), this.batter);
     this.revision++; return true;
   }
 
   strike(how) {
     const p = this.players[this.batter];
     this.strikes++;
-    if (this.strikes < STRIKES) return this.show('strike', how === 'looking' ? '¡Strike mirando!' : how === 'drop' ? '¡Me agarró fuera de base!' : '¡Abanicó! Strike', 1);
+    const look = how === 'looking' ? 'looking' : 'swinging';
+    if (this.strikes < STRIKES) return this.show('strike', how === 'looking' ? locKey('¡Strike mirando!') : how === 'drop' ? locKey('¡Me agarró fuera de base!') : locKey('¡Abanicó! Strike'), 1, false, this.jugada(`strike-${look}`));
     if (this.pitcher !== null) this.players[this.pitcher].stats.k++;
     p.stats.strikeouts++;
-    const excuse = p.id === null && draw(this) < .5 ? ' «Le podía pegar, pero no sabía lanzarla»' : '';
-    return this.endAtBat('k', 'out', `¡Ponchado! No llevas aura.${excuse}`, 1.9);
+    const text = p.id === null && draw(this) < .5 ? locKey('¡Ponchado! No llevas aura. «Le podía pegar, pero no sabía lanzarla»') : locKey('¡Ponchado! No llevas aura.');
+    return this.endAtBat('k', 'out', text, 1.9, this.jugada(`strikeout-${look}`));
   }
 
-  foul(text = '¡Foul!') {
+  foul(text = locKey('¡Foul!'), jugada = null) {
     if (this.strikes < STRIKES - 1) this.strikes++;
-    return this.show('foul', text, 1.1);
+    return this.show('foul', text, 1.1, false, jugada);
   }
+
+  // A pitch high and inside: a chapazo to the batter, who walks to first.
+  hitByPitch() {
+    const p = this.players[this.batter];
+    p.tuyuyo = true; p.stats.chapazos++;
+    if (this.derby) return this.show('hbp', locKey('¡Chapazo! A {name} le salió un tuyuyo'), 2, false, 'bean', { name: p.name });
+    this.moveRunners(0, true);
+    return this.endAtBat('walk', 'hbp', locKey('¡Chapazo! A {name} le salió un tuyuyo · camina a primera'), 2, 'bean', { name: p.name });
+  }
+
+  // The host's pick for this moment (jugadas.js); null when nothing special happens.
+  jugada(situation) { return chooseJugada(this.seed, this.pitches * 4 + this.shown, situation); }
 
   walk() {
     this.moveRunners(0, true);
-    return this.endAtBat('walk', 'walk', 'Base por bolas: camina a primera', 1.6);
+    return this.endAtBat('walk', 'walk', locKey('Base por bolas: camina a primera'), 1.6);
   }
 
   // The batted chapita has finished: a catch, a chapazo or wherever it fell.
@@ -225,36 +245,37 @@ export class ChapitaGame {
     const hit = this.hit, p = this.players[this.batter];
     if (hit.caught) {
       this.players[hit.chance.seat].stats.catches++;
-      return this.endAtBat('out', 'caught', `¡Atrapada! ${this.players[hit.chance.seat].name} con manos de seda`, 2);
+      return this.endAtBat('out', 'caught', locKey('¡Atrapada! {name} con manos de seda'), 2, null, { name: this.players[hit.chance.seat].name });
     }
-    if (hit.chapazo) return this.safeHit(1, `¡Chapazo! A ${this.players[hit.chance.seat].name} le salió un tuyuyo`, 'chapazo');
-    const kind = hit.end.kind;
+    if (hit.chapazo) return this.safeHit(1, locKey('¡Chapazo! A {name} le salió un tuyuyo'), 'chapazo', null, { name: this.players[hit.chance.seat].name });
+    const kind = hit.end.kind, situation = kind === 'foul' && hit.end.point.y <= .01 ? 'foul-ground' : kind;
     if (this.derby) {
-      if (kind === 'jonron') { p.stats.hr++; return this.show('jonron', '¡La sacaste de jonrón!', 2.4); }
-      return this.show(kind === 'foul' ? 'foul' : 'derby-miss', kind === 'short' ? '¡Ni a la acera llegó!' : kind === 'foul' ? '¡Foul!' : 'Se quedó en el campo', 1.3);
+      if (kind === 'jonron') { p.stats.hr++; return this.show('jonron', locKey('¡La sacaste de jonrón!'), 2.4, false, this.jugada('jonron')); }
+      return this.show(kind === 'foul' ? 'foul' : 'derby-miss', kind === 'short' ? locKey('¡Ni a la acera llegó!') : kind === 'foul' ? locKey('¡Foul!') : locKey('Se quedó en el campo'), 1.3, false, this.jugada(situation));
     }
-    if (kind === 'foul') return this.foul();
-    if (kind === 'short') { p.stats.shortOuts++; return this.endAtBat('out', 'short', '¡Ni a la acera llegó!', 1.9); }
+    if (kind === 'foul') return this.foul(locKey('¡Foul!'), this.jugada(situation));
+    if (kind === 'short') { p.stats.shortOuts++; return this.endAtBat('out', 'short', locKey('¡Ni a la acera llegó!'), 1.9, this.jugada('short')); }
     if (kind === 'window') {
       this.holdNext = 'senora';
-      if (this.rules.includes('ventana')) return this.endAtBat('out', 'window', '¡La ventana de la señora! Ventana = out', 2.4);
-      return this.show('window', '¡La ventana de la señora! Ahí viene gritando…', 2.4);
+      if (this.rules.includes('ventana')) return this.endAtBat('out', 'window', locKey('¡La ventana de la señora! Ventana = out'), 2.4, 'window');
+      return this.show('window', locKey('¡La ventana de la señora! Ahí viene gritando…'), 2.4, false, 'window');
     }
-    if (kind === 'jonron' && this.rules.includes('azotea')) return this.endAtBat('out', 'azotea', '¡A la azotea! El que la tire a la azotea, sale', 2.2);
+    if (kind === 'jonron' && this.rules.includes('azotea')) return this.endAtBat('out', 'azotea', locKey('¡A la azotea! El que la tire a la azotea, sale'), 2.2, this.jugada('azotea'));
     let bases = HIT_BASES[kind];
     if (bases === 1 && p.zurdo && this.rules.includes('zurdos')) bases = 2;
-    const text = { sencillo: 'Sencillo: pasó la acera', wall: 'Sencillo de pared', car: '¡Doble! Le dio al carro', post: '¡Triple! ¡Al poste de luz!', jonron: '¡La sacaste de jonrón!' }[kind];
-    return this.safeHit(bases, bases === 2 && kind !== 'car' ? '¡Doble! Los zurdos batean doble' : text, kind);
+    const text = { sencillo: locKey('Sencillo: pasó la acera'), wall: locKey('Sencillo de pared'), car: locKey('¡Doble! Le dio al carro'),
+      post: locKey('¡Triple! ¡Al poste de luz!'), jonron: locKey('¡La sacaste de jonrón!') }[kind];
+    return this.safeHit(bases, bases === 2 && kind !== 'car' ? locKey('¡Doble! Los zurdos batean doble') : text, kind, this.jugada(kind));
   }
 
-  safeHit(bases, text, kind) {
+  safeHit(bases, text, kind, jugada = null, vars = null) {
     const p = this.players[this.batter];
     p.stats.hits++; this.teams[this.battingTeam].hits++;
     if (bases === 4) p.stats.hr++;
     if (p.atBats.filter(a => a === 'k').length >= 2) p.stats.comebacks++;
     if (kind === 'chapazo') { const f = this.players[this.hit.chance.seat]; f.tuyuyo = true; f.stats.chapazos++; }
     this.moveRunners(bases);
-    return this.endAtBat('hit', kind, text, bases === 4 ? 3 : 2);
+    return this.endAtBat('hit', kind, text, bases === 4 ? 3 : 2, jugada, vars);
   }
 
   // Virtual bases: everyone moves on their own, like a scorecard.
@@ -275,26 +296,29 @@ export class ChapitaGame {
     this.lastRuns = runs.length;
   }
 
-  // The at-bat ends: record it, count the out and show the result.
-  endAtBat(atBat, kind, text, seconds) {
+  // The at-bat ends: record it, count the out and show the result. The runs
+  // that came in travel as a number; each screen words them (hud.js).
+  endAtBat(atBat, kind, text, seconds, jugada = null, vars = null) {
     const p = this.players[this.batter];
     if (atBat !== 'walk') p.atBats.push(atBat === 'k' ? 'k' : atBat === 'out' ? 'out' : 'hit');
     if (atBat === 'k' || atBat === 'out') this.outs++;
-    if (this.derby) { this.strikes = this.balls = 0; return this.show(kind, text, seconds); }
+    if (this.derby) { this.strikes = this.balls = 0; return this.show(kind, text, seconds, false, jugada, vars); }
     this.lineup[this.battingTeam] = (this.lineup[this.battingTeam] + 1) % TEAM_SIZE;
-    this.show(kind, text + (this.lastRuns > 0 && atBat !== 'out' ? ` · ${this.lastRuns === 1 ? 'entra una carrera' : `entran ${this.lastRuns}`}` : ''), seconds, true);
+    this.show(kind, text, seconds, true, jugada, vars, this.lastRuns > 0 && atBat !== 'out' ? this.lastRuns : 0);
     this.lastRuns = 0;
     return true;
   }
 
-  show(kind, text, seconds, atBatOver = false) {
+  // text: a Spanish source whose {placeholders} come from vars; runs > 0
+  // adds the runs that came in on screen.
+  show(kind, text, seconds, atBatOver = false, jugada = null, vars = null, runs = 0) {
     if (this.derby) { this.derby.left--; atBatOver = this.derby.left <= 0; }
-    this.result = { kind, text, until: this.clock + seconds, over: atBatOver };
-    this.phase = 'result'; this.say(kind, text, this.batter);
+    this.result = { n: ++this.shown, kind, text, vars, runs, until: this.clock + jugadaSeconds(jugada, seconds), over: atBatOver, jugada };
+    this.phase = 'result'; this.say(kind, text, this.batter, vars, runs);
     this.revision++; return true;
   }
 
-  say(kind, text, seat = null) { this.event = { n: (this.event?.n || 0) + 1, kind, text, seat }; }
+  say(kind, text, seat = null, vars = null, runs = 0) { this.event = { n: (this.event?.n || 0) + 1, kind, text, vars, runs, seat }; }
 
   // After a result: the next pitch, the next batter, a new half or the end.
   next() {
@@ -310,8 +334,10 @@ export class ChapitaGame {
     if (this.walkOff()) return this.finish();
     if (this.outs >= OUTS) {
       if (result.kind !== 'cambio') {
-        this.result = { kind: 'cambio', text: this.half ? `Fin de la ${this.inning}ª entrada` : '¡Tres outs! Cambio de bando', until: this.clock + 2.4, over: true };
-        this.say('cambio', this.result.text); return;
+        const jugada = this.jugada('cambio');
+        const text = this.half ? locKey('Fin de la {inning}ª entrada') : locKey('¡Tres outs! Cambio de bando'), vars = { inning: this.inning };
+        this.result = { n: ++this.shown, kind: 'cambio', text, vars, runs: 0, until: this.clock + jugadaSeconds(jugada, 2.4), over: true, jugada };
+        this.say('cambio', text, null, vars); return;
       }
       if (this.half === 1) for (const p of this.players) p.tuyuyo = false;
       if (this.gameOver()) return this.finish();
@@ -344,7 +370,7 @@ export class ChapitaGame {
       const best = Math.max(...this.players.map(p => p.stats[stat]));
       if (best > 0) { const p = this.players.find(p => p.stats[stat] === best); this.titles.push({ stat, title, why, seat: p.seat, value: best }); }
     }
-    this.say('final', this.winner === null ? '¡Empate! Se juega otra' : '¡Se acabó la caimanera!');
+    this.say('final', this.winner === null ? locKey('¡Empate! Se juega otra') : locKey('¡Se acabó la caimanera!'));
     this.revision++;
   }
 
@@ -382,7 +408,8 @@ export class ChapitaGame {
     if (miss <= CATCH_WINDOW) hit.caught = true;
     else { hit.caught = false; hit.chapazo = miss < .45 && chance.speed > 11; }
     if (hit.caught || hit.chapazo) hit.end = { kind: hit.caught ? 'caught' : 'chapazo', t: chance.t, point: chance.point };
-    if (hit.chapazo) this.say('chapazo', '¡Chapazo! «¡Te lo dijera el tuerto Nelson!»', chance.seat);
+    hit.after = hit.caught ? 'catch' : hit.chapazo ? 'bean' : null;
+    if (hit.chapazo) this.say('chapazo', locKey('¡Chapazo! «¡Te lo dijera el tuerto Nelson!»'), chance.seat);
     this.revision++; return true;
   }
 

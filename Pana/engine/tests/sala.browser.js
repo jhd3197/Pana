@@ -8,8 +8,19 @@ try {
     const host=await openGame(browser,game,{name:'Ana',room:code,query:'debug&manual'});await prepared(host);
     const guest=await openGame(browser,game,{name:'Luis',room:code,query:'debug&manual'});await prepared(guest);
     await host.waitForFunction(()=>document.querySelectorAll('.pk-game-lobby-player').length===2);
-    assert.equal(await host.locator('#pana-lobby-roster>*').count(),8);
+    assert.equal(await host.locator('#pana-lobby-roster>*').count(),game==='carreritas'?12:8);
     assert.equal(await host.locator('.sala-player-kit').count(),2);
+    for(const [width,height] of [[1024,768],[1280,800],[1440,900],[1920,1080]]) {
+      await host.setViewportSize({width,height});
+      const fit=await host.evaluate(()=>{
+        const lobby=document.querySelector('.pk-game-lobby'),edge=sel=>document.querySelector(sel).getBoundingClientRect().right-innerWidth;
+        const sideways=[lobby,...lobby.querySelectorAll('*')].filter(el=>el.scrollWidth>el.clientWidth+1&&(/auto|scroll/.test(getComputedStyle(el).overflowX)||el.matches('.pk-game-lobby-layout,.pk-game-lobby-roster,.pk-game-lobby-settings'))).map(el=>String(el.className));
+        return {sideways,page:document.documentElement.scrollWidth-innerWidth,settings:edge('.pk-game-lobby-settings'),code:edge('.pk-game-lobby-code')};
+      });
+      assert.deepEqual(fit.sideways,[],`${game} lobby has no sideways scrollbar at ${width}px`);
+      assert.ok(fit.page<=0&&fit.settings<=0.5&&fit.code<=0,`${game} lobby fits ${width}px: ${JSON.stringify(fit)}`);
+    }
+    await host.setViewportSize({width:1280,height:800});
     await guest.locator('.pk-game-lobby-player.is-own').click();
     await host.waitForFunction(()=>[...document.querySelectorAll('.pk-game-lobby-state')].some(n=>n.textContent==='Esperando'));
     await host.locator('#start').click();assert.ok(await host.locator('#pana-lobby-shell').isVisible(),'unready pana blocks start');

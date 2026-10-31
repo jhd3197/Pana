@@ -1,19 +1,43 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
-import { COLORS, RING, SAFE, rotateCell, cellFor } from './rules.js';
+import { COLORS, RING, STAR_YARD, rotateCell, cellFor, ludoTrack, starMetrics, armAngle } from './rules.js';
+import { finishBoard, finishPawn } from './studio-finish.js';
 
 export const STEP = .36;
-export const boardPoint = (seat, progress, piece) => cellFor(seat, progress, piece).map(v => (v - 7) * STEP);
+export const boardPoint = (seat, progress, piece, seats = 4) => cellFor(seat, progress, piece, seats).map(v => (v - 7) * STEP);
+// Half the playing board, and how much the shared table grows to hold it.
+export const boardRadius = seats => seats === 4 ? 2.83 : starMetrics(seats).radius * STEP;
+export const tableScale = seats => seats === 4 ? 1 : (boardRadius(seats) + .3) / 3;
 const material = color => new THREE.MeshStandardMaterial({ color, roughness: .55 });
 function add(group, geometry, mat, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(geometry, mat); m.position.set(x, y, z);
   m.castShadow = m.receiveShadow = true; group.add(m); return m;
 }
 function finish(group) { group.userData.dispose = () => disposeModel(group); return group; }
+// One ring square, turned to its arm; starts are coloured, safe squares framed.
+function ringTile(group, index, [x, z], turn, seats, cream, ink) {
+  const start = index % 13 === 0, mat = start ? material(COLORS[Math.floor(index/13)]) : cream;
+  const px = (x-7)*STEP, pz = (z-7)*STEP;
+  add(group,new THREE.BoxGeometry(.34,.035,.34),ink,px,.12,pz).rotation.y = turn;
+  add(group,new THREE.BoxGeometry(.315,.038,.315),mat,px,.128,pz).rotation.y = turn;
+  if (!ludoTrack(seats).safe.includes(index)) return;
+  // A double contrasting frame stays visible around occupied safe cells.
+  const frame = new THREE.Group(); frame.name = `safe-cell-${index}`;
+  frame.position.set(px, .154, pz); frame.rotation.y = turn; group.add(frame);
+  for (const [extent, thickness, mat] of [[.16, .02, ink], [.14, .014, cream]]) {
+    for (const side of [-1, 1]) {
+      add(frame,new THREE.BoxGeometry(extent*2,.008,thickness),mat,0,0,side*extent);
+      add(frame,new THREE.BoxGeometry(thickness,.008,extent*2),mat,side*extent,0,0);
+    }
+  }
+  const ring = add(group,new THREE.TorusGeometry(.09,.018,6,24),start ? cream : ink,px,.16,pz); ring.rotation.x = -Math.PI/2;
+}
 // Origin at the underside; the playing surface is +0.12 m, forward is +Z.
-export function createLudoBoard() {
-  const group = new THREE.Group(); group.name = 'Tablero de Ludo';
+// Four seats: the classic cross. Five or six: a round star board.
+export function createLudoBoard({ seats = 4 } = {}) {
+  if (seats !== 4) return createStarBoard(seats);
+  const group = new THREE.Group(); group.name = 'Tablero de Ludo'; // i18n-ignore: object name for Studio
   const cream = material('#f3e9d7'), ink = material('#65544a');
   add(group, new RoundedBoxGeometry(5.65, .12, 5.65, 3, .07), material('#86522f'), 0, .02);
   add(group, new THREE.BoxGeometry(5.42, .035, 5.42), cream, 0, .095);
@@ -21,11 +45,7 @@ export function createLudoBoard() {
     const color = material(COLORS[seat]), [x,z] = rotateCell([2.5,11.5], seat).map(v => (v-7)*STEP);
     add(group, new RoundedBoxGeometry(2.06,.045,2.06,2,.1), color,x,.12,z);
     add(group, new RoundedBoxGeometry(1.63,.025,1.63,2,.12), cream,x,.15,z);
-    for (let piece = 0; piece < 4; piece++) {
-      const [px,pz] = boardPoint(seat,-1,piece);
-      add(group,new THREE.CylinderGeometry(.23,.23,.02,32),color,px,.175,pz);
-      add(group,new THREE.CylinderGeometry(.175,.175,.025,32),cream,px,.19,pz);
-    }
+    yardSpots(group, seat, 4, color, cream);
     for (let progress = 51; progress <= 55; progress++) {
       const [px,pz] = boardPoint(seat,progress);
       add(group,new THREE.BoxGeometry(.33,.035,.33),color,px,.14,pz);
@@ -34,24 +54,46 @@ export function createLudoBoard() {
     const triangle = add(group,new THREE.ShapeGeometry(shape),color,0,.16,0);
     triangle.rotation.set(-Math.PI/2,0,Math.PI-seat*Math.PI/2);
   }
-  RING.forEach(([x,z],index) => {
-    const start = index % 13 === 0, mat = start ? material(COLORS[Math.floor(index/13)]) : cream;
-    const px = (x-7)*STEP, pz = (z-7)*STEP;
-    add(group,new THREE.BoxGeometry(.34,.035,.34),ink,px,.12,pz);
-    add(group,new THREE.BoxGeometry(.315,.038,.315),mat,px,.128,pz);
-    if (SAFE.includes(index)) {
-      // A double contrasting frame stays visible around occupied safe cells.
-      const frame = new THREE.Group(); frame.name = `safe-cell-${index}`;
-      frame.position.set(px, .154, pz); group.add(frame);
-      for (const [extent, thickness, mat] of [[.16, .02, ink], [.14, .014, cream]]) {
-        for (const side of [-1, 1]) {
-          add(frame,new THREE.BoxGeometry(extent*2,.008,thickness),mat,0,0,side*extent);
-          add(frame,new THREE.BoxGeometry(thickness,.008,extent*2),mat,side*extent,0,0);
-        }
-      }
-      const ring = add(group,new THREE.TorusGeometry(.09,.018,6,24),start ? cream : ink,px,.16,pz); ring.rotation.x = -Math.PI/2;
+  RING.forEach((cell,index) => ringTile(group, index, cell, 0, 4, cream, ink));
+  finishBoard(group);
+  return finish(group);
+}
+function yardSpots(group, seat, seats, color, cream) {
+  for (let piece = 0; piece < 4; piece++) {
+    const [px,pz] = boardPoint(seat,-1,piece,seats);
+    add(group,new THREE.CylinderGeometry(.23,.23,.02,32),color,px,.175,pz);
+    add(group,new THREE.CylinderGeometry(.175,.175,.025,32),cream,px,.19,pz);
+  }
+}
+function createStarBoard(seats) {
+  const group = new THREE.Group(); group.name = `Tablero de Ludo (${seats})`; // i18n-ignore: object name for Studio
+  const cream = material('#f3e9d7'), ink = material('#65544a'), { corner } = starMetrics(seats), { lap, ring, cells } = ludoTrack(seats);
+  const radius = boardRadius(seats), half = Math.PI / seats;
+  add(group, new THREE.CylinderGeometry(radius+.13, radius+.13, .12, 120), material('#86522f'), 0, .02);
+  add(group, new THREE.CylinderGeometry(radius, radius, .035, 120), cream, 0, .095);
+  for (let seat = 0; seat < seats; seat++) {
+    const color = material(COLORS[seat]), angle = armAngle(seats, seat);
+    // The home wedge: from the centre to the two corners around this arm.
+    const [ax, az] = [-Math.sin(angle-half), Math.cos(angle-half)].map(v => v*corner*STEP);
+    const [bx, bz] = [-Math.sin(angle+half), Math.cos(angle+half)].map(v => v*corner*STEP);
+    const wedge = new THREE.BufferGeometry();
+    wedge.setAttribute('position', new THREE.Float32BufferAttribute([0,0,0, bx,0,bz, ax,0,az], 3));
+    wedge.setAttribute('normal', new THREE.Float32BufferAttribute([0,1,0, 0,1,0, 0,1,0], 3));
+    wedge.setAttribute('uv', new THREE.Float32BufferAttribute([.5,.5, 1,0, 0,0], 2));
+    const wedgeMaterial = material(COLORS[seat]); wedgeMaterial.side = THREE.DoubleSide;
+    add(group, wedge, wedgeMaterial, 0, .16, 0);
+    for (let progress = lap+1; progress <= lap+5; progress++) {
+      const [px,pz] = boardPoint(seat,progress,0,seats);
+      add(group,new THREE.BoxGeometry(.33,.035,.33),color,px,.14,pz).rotation.y = -angle;
     }
-  });
+    const spots = [0, 1, 2, 3].map(piece => boardPoint(seat, -1, piece, seats));
+    const [yx, yz] = [0, 1].map(axis => spots.reduce((sum, p) => sum + p[axis], 0) / 4);
+    add(group, new THREE.CylinderGeometry(STAR_YARD*STEP,STAR_YARD*STEP,.045,64), color, yx, .12, yz).userData.role = 'yard';
+    add(group, new THREE.CylinderGeometry(STAR_YARD*STEP-.13,STAR_YARD*STEP-.13,.025,64), cream, yx, .15, yz);
+    yardSpots(group, seat, seats, color, cream);
+  }
+  cells.forEach((cell, index) => ringTile(group, index, cell, -armAngle(seats, Math.floor((index + 8) % ring / 13)), seats, cream, ink));
+  finishBoard(group);
   return finish(group);
 }
 export function createLudoPawn({ seat = 0, number = 1 } = {}) {
@@ -66,7 +108,7 @@ export function createLudoPawn({ seat = 0, number = 1 } = {}) {
   const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;
   const badge=add(group,new THREE.CircleGeometry(.085,24),new THREE.MeshBasicMaterial({map:texture,transparent:true}),0,.421);badge.rotation.x=-Math.PI/2;
   const halo=add(group,new THREE.TorusGeometry(.19,.025,8,32),material('#ffc629'),0,.018);halo.rotation.x=-Math.PI/2;halo.visible=false;
-  group.userData.halo=halo; return finish(group);
+  group.userData.halo=halo; finishPawn(group,seat*4+number); return finish(group);
 }
 function dieTexture(value) {
   const c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d');ctx.fillStyle='#fff6e2';ctx.fillRect(0,0,128,128);ctx.fillStyle='#302435';
@@ -75,7 +117,7 @@ function dieTexture(value) {
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 export function createLudoDie() {
-  const group=new THREE.Group();group.name='Dado de Ludo';
-  add(group,new THREE.BoxGeometry(.43,.43,.43),[3,4,1,6,2,5].map(v=>new THREE.MeshStandardMaterial({map:dieTexture(v),roughness:.45})),0,.215);
+  const group=new THREE.Group();group.name='Dado de Ludo'; // i18n-ignore: object name for Studio
+  add(group,new RoundedBoxGeometry(.43,.43,.43,3,.045),[3,4,1,6,2,5].map(v=>new THREE.MeshPhysicalMaterial({map:dieTexture(v),roughness:.35,clearcoat:1,clearcoatRoughness:.2})),0,.215);
   return finish(group);
 }

@@ -9,7 +9,7 @@ Pana/                    ← repo root
 ├── package.json         ← npm workspace root
 ├── docs/
 │   ├── ARCHITECTURE.md  ← request flow, multiplayer model, WS protocol
-│   ├── DEPLOYMENT.md    ← local dev + going live on pana.sh
+│   ├── DEPLOYMENT.md    ← local development and self-hosting
 │   ├── plans/           ← numbered implementation plans (NN_name.md)
 │   └── knowledge/       ← field notes written by whoever learned something
 └── Pana/                ← the app

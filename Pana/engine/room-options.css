@@ -1,4 +1,5 @@
 .pk-room-primary { display: grid; gap: 20px; }
+.pk-room-field[hidden], .pk-room-more[hidden] { display: none !important; }
 .pk-room-field { min-width: 0; margin: 0; padding: 0; border: 0; }
 .pk-room-field legend { padding: 0; margin-bottom: 12px; color: var(--pk-text); font: 900 17px var(--pk-sans); }
 .pk-room-field .pk-seg { display: flex; gap: 3px; flex-wrap: wrap; padding: 5px; border-radius: 15px; background: var(--pk-purple); }

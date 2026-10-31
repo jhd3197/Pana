@@ -11,15 +11,16 @@ import { instancePlacements } from '/engine/models/core/static-batch.js';
 import { sunnyStage, pick } from './stage.js';
 import { riverWater, riverBanks, canoeActors, drawCanoe } from './river-stage.js';
 import { raudalSim, RAUDAL } from './river-sims.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 const CHANNEL = 5.4, LANE = 1.55;
 
 
 export default {
   id: 'raudal',
-  title: '¡Raudal!',
-  howto: 'La corriente te lleva. Cambia de carril con A y D para esquivar las piedras y agarrar mangos. Antes de cada salto, Espacio: ¡salta el raudal!',
-  keys: [['A D / ← →', 'cambiar de carril'], ['Espacio', 'saltar el raudal']],
+  title: locKey('¡Raudal!'),
+  howto: locKey('La corriente te lleva. Cambia de carril con A y D para esquivar las piedras y agarrar mangos. Antes de cada salto, Espacio: ¡salta el raudal!'),
+  keys: [['A D / ← →', locKey('cambiar de carril')], [locKey('Espacio'), locKey('saltar el raudal')]],
   icon: 'mango',
   time: RAUDAL.time,
 
@@ -37,8 +38,8 @@ export default {
     const walls = [], rocks = [];
     for (let s = -10; s < end; s += 2.4) for (let c = 0; c <= count; c++) walls.push({ x: centre(c) - CHANNEL / 2, y: -.15, z: -s, rot: s, scale: c % count ? .38 : .55 });
     for (const row of sim.pattern) if (!row.ledge) for (let c = 0; c < count; c++) for (const l of row.rocks) rocks.push({ x: laneX(c, l), y: -.2, z: -row.s, rot: row.s * 3 + c, scale: .34 });
-    instancePlacements(scene, lajaRock({ seed: 5, radius: 2 }), walls, { name: 'Muros de laja' });
-    instancePlacements(scene, lajaRock({ seed: 9, radius: 2 }), rocks, { name: 'Piedras del raudal' });
+    instancePlacements(scene, lajaRock({ seed: 5, radius: 2 }), walls, { name: 'Muros de laja' });   // i18n-ignore: object names
+    instancePlacements(scene, lajaRock({ seed: 9, radius: 2 }), rocks, { name: 'Piedras del raudal' });   // i18n-ignore: object names
     const foam = new THREE.MeshStandardMaterial({ color: 0xf4f8f2, roughness: .4, transparent: true, opacity: .85 });
     for (const row of sim.pattern) if (row.ledge) {
       const lip = new THREE.Mesh(new THREE.BoxGeometry(count * CHANNEL, .18, 1.4), foam); lip.position.set(0, .05, -row.s); scene.add(lip);
@@ -75,9 +76,9 @@ export default {
       sim.update(dt, inputs);
       for (const a of actors) {
         const c = sim.canoes[a.i], was = seen[a.i], at = new THREE.Vector3(laneX(a.i, c.x), .4, -sim.s), me = humans.has(a.i);
-        if (c.hits > was.hits) { a.bubble.say(pick(['¡Ay, la piedra!', '¡Pum!', '¡Mi curiara!']), .8); puffs.spawn(at, { color: 0xe8efe8, count: 6, spread: 1, size: .6 }); if (me) sound.boing(); }
-        if (c.jumps > was.jumps) { if (random() < .5) a.bubble.say('¡Salto!', .6); puffs.spawn(at, { color: 0xffffff, count: 8, spread: 1.4, size: .7, rise: 1.4 }); if (me) sound.tone(760, 0, .1, 'triangle', .06); }
-        if (c.splashes > was.splashes) { a.bubble.say(pick(['¡Splash!', '¡Me mojé!']), .7); puffs.spawn(at, { color: 0xffffff, count: 10, spread: 1.6, size: .8 }); if (me) sound.plop(); }
+        if (c.hits > was.hits) { a.bubble.say(loc(pick([locKey('¡Ay, la piedra!'), locKey('¡Pum!'), locKey('¡Mi curiara!')])), .8); puffs.spawn(at, { color: 0xe8efe8, count: 6, spread: 1, size: .6 }); if (me) sound.boing(); }
+        if (c.jumps > was.jumps) { if (random() < .5) a.bubble.say(loc('¡Salto!'), .6); puffs.spawn(at, { color: 0xffffff, count: 8, spread: 1.4, size: .7, rise: 1.4 }); if (me) sound.tone(760, 0, .1, 'triangle', .06); }
+        if (c.splashes > was.splashes) { a.bubble.say(loc(pick([locKey('¡Splash!'), locKey('¡Me mojé!')])), .7); puffs.spawn(at, { color: 0xffffff, count: 10, spread: 1.6, size: .8 }); if (me) sound.plop(); }
         if (c.score > was.score && c.jumps === was.jumps && me) sound.pickup();
         Object.assign(was, { hits: c.hits, jumps: c.jumps, splashes: c.splashes, score: c.score });
       }
@@ -92,10 +93,10 @@ export default {
     function hint() {
       if (!me) return null;
       const c = sim.canoes[me.i], soon = sim.pattern.filter(r => r.s > sim.s && r.s - sim.s < RAUDAL.speed * 1.1);
-      if (c.stun > 0) return { text: '¡Pum! Te pegaste con una piedra', tone: 'bad' };
-      if (soon.some(r => r.ledge)) return { text: '¡Raudal! Salta con Espacio justo antes', tone: 'go' };
-      if (soon.some(r => !r.ledge && r.rocks.includes(c.lane))) return { text: '¡Piedra en tu carril! Cámbiate con A o D', tone: 'bad' };
-      return { text: 'Agarra los mangos y esquiva las piedras', tone: '' };
+      if (c.stun > 0) return { text: loc('¡Pum! Te pegaste con una piedra'), tone: 'bad' };
+      if (soon.some(r => r.ledge)) return { text: loc('¡Raudal! Salta con Espacio justo antes'), tone: 'go' };
+      if (soon.some(r => !r.ledge && r.rocks.includes(c.lane))) return { text: loc('¡Piedra en tu carril! Cámbiate con A o D'), tone: 'bad' };
+      return { text: loc('Agarra los mangos y esquiva las piedras'), tone: '' };
     }
     return { scene, camera, update, outro, actors, hint, scores: sim.scores, sim,
       stats: () => ({ hits: sim.canoes.map(c => c.hits), jumps: sim.canoes.map(c => c.jumps), splashes: sim.canoes.map(c => c.splashes) }) };

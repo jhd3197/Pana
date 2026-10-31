@@ -20,11 +20,13 @@
 // fillBots() and InputBuffer. The room's cap comes from game.json `players`
 // (colyseus.js), so a room never sets maxClients itself.
 
+import crypto from 'node:crypto';
 import { Room, CloseCode, ServerError } from '@colyseus/core';
 import { schema, t } from '@colyseus/schema';
 import { normalizeAvatar, randomAvatar } from '../../engine/avatar.js';
 
-export const MAX_MEMBERS = 8;
+// The largest room any game.json may ask for (Carreritas' twelve-car grid).
+export const MAX_MEMBERS = 12;
 export const RECONNECT_SECONDS = 20;
 // onCreate failures travel over HTTP matchmaking. Colyseus 0.18's Node
 // adapter treats this as an HTTP status; a WebSocket close code becomes 404.
@@ -33,9 +35,16 @@ export const ROOM_FULL = 409;
 // i.e. during the party's move. Later they join like anyone else, so a game
 // already running never hands over to a host without its state.
 export const LEAD_WINDOW_MS = 15000;
+// With PANA_LEAD_SECRET set (a party gateway in front), `lead` must be this
+// token, which only the gateway can make; without it any `lead` counts.
+export const leadToken = (secret, game, code) => crypto.createHmac('sha256', secret).update(`${game}:${code}`).digest('hex').slice(0, 32);
+const isLead = (room, lead, secret = process.env.PANA_LEAD_SECRET) =>
+  secret ? typeof lead === 'string' && lead === leadToken(secret, room.roomName, room.code) : !!lead;
 
 export const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16) || 'pana';
-export const cleanCode = (s) => String(s ?? '').replace(/[^a-z0-9-]/gi, '').slice(0, 24);
+export const cleanCode = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24);
+// A device's rejoin key (engine/net.js). Server-side only: never put it in room state.
+export const cleanKey = (s) => /^[a-z0-9-]{8,64}$/.test(String(s ?? '')) ? String(s) : '';
 export const avatarJson = (a) => {
   try { return JSON.stringify(normalizeAvatar(a && typeof a === 'object' ? a : {})).slice(0, 2048); } catch { return '{}'; }
 };
@@ -81,6 +90,16 @@ export function roomState(fields = {}, memberClass = Member, name = 'PanaState')
   return schema({ host: t.string().default(''), players: t.map(memberClass), ...fields }, name);
 }
 
+// One line per room event on stdout (the hosted gateway keeps it in its log):
+// "[room] carreritas:kcsvnm join seat=3 name=Neeu lead=0 members=3/3".
+// PANA_ROOM_LOG=0 silences it.
+export function roomLog(room, event, details = {}) {
+  if (process.env.PANA_ROOM_LOG === '0') return;
+  const fields = Object.entries(details).filter(([, v]) => v !== undefined && v !== '')
+    .map(([k, v]) => `${k}=${typeof v === 'string' && /\s/.test(v) ? JSON.stringify(v) : v}`);
+  console.log(['[room]', `${room.roomName}:${room.code || room.roomId}`, event, ...fields].join(' '));
+}
+
 // One live room per game and code in this process. joinOrCreate would
 // otherwise open a second room under the same code once the first is full.
 const open = new Map();
@@ -93,11 +112,13 @@ export class PanaRoom extends Room {
   onCreate(options = {}) {
     this.code = cleanCode(options.code);
     const key = `${this.roomName}:${this.code}`;
-    if (this.code && open.has(key)) throw new ServerError(ROOM_FULL, 'full');
+    if (this.code && open.has(key)) { roomLog(this, 'refused', { reason: 'code-taken' }); throw new ServerError(ROOM_FULL, 'full'); }
     if (this.code) { open.set(key, this.roomId); this.openKey = key; }
     this.lead = '';
     this.createdAt = Date.now();
     this.nextSeat = 1;
+    this.peak = 0;
+    roomLog(this, 'create', { id: this.roomId });
     this.onMessage('me', (client, m) => {
       const p = this.state.players.get(client.sessionId);
       if (!p || !m || typeof m !== 'object') return;
@@ -115,7 +136,10 @@ export class PanaRoom extends Room {
     this.updateMetadata();
   }
 
-  onDispose() { this.releaseCode(); }
+  onDispose() {
+    roomLog(this, 'dispose', { lived: `${Math.round((Date.now() - this.createdAt) / 1000)}s`, peak: this.peak });
+    this.releaseCode();
+  }
 
   releaseCode() {
     if (this.openKey && open.get(this.openKey) === this.roomId) open.delete(this.openKey);
@@ -145,17 +169,25 @@ export class PanaRoom extends Room {
     const member = this.createMember(client, options);
     this.state.players.set(client.sessionId, member);
     // The party's Pana Mayor hosts, even when a guest's tab got here first.
-    if (options.lead && !this.lead && Date.now() - this.createdAt < LEAD_WINDOW_MS) {
+    if (isLead(this, options.lead) && !this.lead && Date.now() - this.createdAt < LEAD_WINDOW_MS) {
       this.lead = client.sessionId;
       this.setHost(client.sessionId);
     } else if (!this.state.host) this.setHost(client.sessionId);
     this.joined?.(client, member, options);
+    this.peak = Math.max(this.peak, this.state.players.size);
+    roomLog(this, 'join', { seat: member.seat, name: member.name, lead: options.lead ? 1 : 0, host: this.state.host === client.sessionId ? 1 : 0, ...this.counts() });
     this.updateMetadata();
+  }
+
+  counts() {
+    const all = [...this.state.players.values()];
+    return { members: `${all.filter(p => p.connected).length}/${all.length}` };
   }
 
   onDrop(client, code) {
     const member = this.state.players.get(client.sessionId);
     if (member) member.connected = false;
+    roomLog(this, 'drop', { seat: member?.seat, code, ...this.counts() });
     // Whatever the host runs must keep running while their tab reconnects.
     if (this.state.host === client.sessionId) this.setHost(this.nextHost(client.sessionId));
     this.dropped?.(client, member);
@@ -166,13 +198,15 @@ export class PanaRoom extends Room {
   onReconnect(client) {
     const member = this.state.players.get(client.sessionId);
     if (member) member.connected = true;
+    roomLog(this, 'reconnect', { seat: member?.seat, ...this.counts() });
     if (!this.state.host) this.setHost(client.sessionId);
     this.returned?.(client, member);
   }
 
-  onLeave(client) {
+  onLeave(client, code) {
     const id = client.sessionId, member = this.state.players.get(id);
     this.state.players.delete(id);
+    roomLog(this, 'leave', { seat: member?.seat, code, ...this.counts() });
     if (this.lead === id) this.lead = '';
     this.left?.(client, member);
     if (this.state.host === id || !this.state.players.has(this.state.host)) this.setHost(this.nextHost(id));
@@ -198,8 +232,12 @@ export class PanaRoom extends Room {
 
   setHost(id) {
     const changed = this.state.host !== (id || '');
+    const from = this.state.players.get(this.state.host)?.seat;
     this.state.host = id || '';
-    if (changed) this.hostChanged?.(this.state.host);
+    if (changed) {
+      if (this.createdAt) roomLog(this, 'host', { from, to: this.state.players.get(this.state.host)?.seat ?? 'none' });
+      this.hostChanged?.(this.state.host);
+    }
   }
 
   memberBySeat(seat) {

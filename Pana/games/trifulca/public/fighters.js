@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { createAccessories } from '/engine/models/characters/pana/accessories.js';
+import { loc } from '/engine/i18n.js';
 import { boxingGlove, CORNER_COLORS, HELMET_COLORS } from './set.js';
 import { T } from './fight-rules.js';
 import { rhythm } from './crowd-life.js';
@@ -52,8 +53,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   helmet.color('hat', 'casco', 'stripe', seed % HELMET_COLORS.length === 0 ? '#e8443a' : '#ffffff');
   let ownHeadwear = character.wardrobe.headwear, hatsShown = ownHats.map(o => o.visible);
   // A ¡! over a pana winding up a trompón: the cue to dodge.
-  const warn = nameTag('¡OJO!', { me: true }); warn.scale.set(.7, .175, 1); warn.position.y = 2.95; warn.visible = false; root.add(warn);
-  const tag = name ? nameTag(me ? `${name} · tú` : name, { me }) : null;
+  const warn = nameTag(loc('¡OJO!'), { me: true }); warn.scale.set(.7, .175, 1); warn.position.y = 2.95; warn.visible = false; root.add(warn);
+  const tag = name ? nameTag(me ? loc('{name} · tú', { name }) : name, { me }) : null;
   if (tag) { tag.position.y = 2.6; root.add(tag); }
   let tagShown = true;
   let corner = null, wobble = 0, wobbleV = 0, sway = 0, swayV = 0, spin = 0, time = 0, shove = 0, cheer = 0, cheerWas = 0, twist = 0;

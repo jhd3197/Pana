@@ -12,6 +12,7 @@ import { disposeModel } from '/engine/models/props/game-table.js';
 import { createStopTable, createLetterWheel, createNotebook, createPencil, createPlasticChair, createSlangWall } from './studio-set.js';
 import { SEATS, lettersFor } from './rules.js';
 import { SEAT_COLORS, BOT_LOOKS } from './seats.js';
+import { loc } from '/engine/i18n.js';
 
 export { SEAT_COLORS };
 
@@ -38,7 +39,7 @@ export function createStopScene(canvas) {
     return { seat, a, out, forward, right, chair, notebook, pencil, rest, restQuat, character: null, key: '', mood: 'idle', moodTime: 0, expression: '' };
   });
   const labels = document.getElementById('world-labels');
-  const tags = seats.map(() => { const el = document.createElement('div'); el.className = 'world-label'; labels?.append(el); return el; });
+  const tags = seats.map(() => { const el = document.createElement('div'); el.className = 'world-label'; el.translate = false; labels?.append(el); return el; });
   const bubbles = createSeatBubbles(labels || document.body, SEATS);
   const wide = new THREE.Box3(new THREE.Vector3(-4.4, 0, -4.4), new THREE.Vector3(4.4, 2.6, 4.4));
   const table = new THREE.Box3(new THREE.Vector3(-3.6, .9, -3.6), new THREE.Vector3(3.6, 2.7, 3.6));
@@ -50,7 +51,8 @@ export function createStopScene(canvas) {
   // wheel short of its letter.
   const spin = { angle: 0, from: 0, to: 0, t: -1, start: 0, letter: null, press: 0 };
 
-  function syncCharacter(slot, p) {
+  function syncCharacter(slot, p, empty) {
+    if (empty) { slot.character?.dispose(); slot.character = null; slot.key = 'empty'; return; }
     const look = normalizeAvatar(p.id === null ? BOT_LOOKS[slot.seat] : p.avatar), key = JSON.stringify(look);
     if (slot.key === key) return;
     slot.character?.dispose(); slot.character = buildCharacter(look, { seated: true }); slot.key = key; slot.expression = '';
@@ -67,7 +69,7 @@ export function createStopScene(canvas) {
     if (phase === 'basta') return p.seat === state.stopper ? 'done' : 'panic';
     if (phase === 'collect') return 'down';
     if (phase === 'review' && r) {
-      const item = r.items[p.seat], group = item?.group !== null ? r.groups[item.group] : null;
+      const item = r.items.find(i => i.seat === p.seat), group = item && item.group !== null ? r.groups[item.group] : null;
       if (r.stage === 'vote') {
         if (group) return 'plead';
         const votes = r.groups.map(g => g.votes[p.seat]).filter(v => v !== undefined);
@@ -85,7 +87,7 @@ export function createStopScene(canvas) {
     const previous = current; current = state; meId = me;
     const seatNow = state.players.findIndex(p => p.id !== null && p.id === me);
     for (const p of state.players) {
-      const slot = seats[p.seat]; syncCharacter(slot, p);
+      const slot = seats[p.seat]; syncCharacter(slot, p, p.id === null && state.options?.withBots === false);
       const mood = moodOf(state, p);
       if (mood !== slot.mood) { slot.mood = mood; slot.moodTime = 0; }
       if (state.phase === 'basta' && previous?.phase === 'write' && p.seat === state.stopper) { slot.mood = 'slam'; slot.moodTime = 0; }
@@ -101,8 +103,8 @@ export function createStopScene(canvas) {
       spin.to = base + Math.ceil((spin.angle - base) / turn) * turn + turn * (state.phase === 'letter' ? 3 : 0);
       spin.t = state.phase === 'letter' ? 0 : 1; spin.start = performance.now();
     }
-    wheel.userData.setHub(state.phase === 'spin' || !state.letter || state.phase === 'lobby' ? '¡PARA!' : state.letter, state.phase === 'spin' || !state.letter || state.phase === 'lobby' ? 'para' : 'letter');
-    for (const b of state.barks || []) if (b.id > lastBark) { lastBark = b.id; if (previous) bubbles.say(b.seat, b.text, 2.4); }
+    wheel.userData.setHub(state.phase === 'spin' || !state.letter || state.phase === 'lobby' ? loc('¡PARA!') : state.letter, state.phase === 'spin' || !state.letter || state.phase === 'lobby' ? 'para' : 'letter');
+    for (const b of state.barks || []) if (b.id > lastBark) { lastBark = b.id; if (previous) bubbles.say(b.seat, loc(b.text), 2.4); }
   }
 
   function poseArms(slot, dt) {
@@ -181,7 +183,7 @@ export function createStopScene(canvas) {
     wheel.userData.setAngle(spin.angle); wheel.userData.tick(time, dt);
     spin.press = Math.max(0, spin.press - dt * 3); wheel.userData.press(Math.sin(spin.press * Math.PI));
     for (const slot of seats) {
-      const c = slot.character; if (!c) continue;
+      const c = slot.character; if (!c) { if (tags[slot.seat]) tags[slot.seat].hidden = true; continue; }
       slot.moodTime += dt; c.update(dt, {}); poseArms(slot, dt); placePencil(slot);
       const p = current?.players[slot.seat], el = tags[slot.seat];
       projected.copy(c.group.position); projected.y += 2.1; projected.project(camera);
@@ -207,7 +209,7 @@ export function createStopScene(canvas) {
 function tagText(state, p) {
   const n = state.categories.length;
   if (['write', 'basta'].includes(state.phase)) return `${p.name} · ${p.filled}/${n}`;
-  if (state.phase === 'review' && state.review?.items) { const item = state.review.items[p.seat]; return item?.points ? `${p.name} · +${item.points}` : p.name; }
+  if (state.phase === 'review' && state.review?.items) { const item = state.review.items.find(i => i.seat === p.seat); return item?.points ? `${p.name} · +${item.points}` : p.name; }
   if (['tally', 'finished'].includes(state.phase)) return `${p.name} · ${p.total}`;
   return p.name;
 }

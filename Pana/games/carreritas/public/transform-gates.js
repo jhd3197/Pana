@@ -34,6 +34,7 @@ import { syncGhostAppearance } from './racer-render.js';
 import { cardStandIn } from './driver-cards.js';
 import { isGhost, recordImpact } from './recovery-rules.js';
 import { gateRuns, keepAfloat, bumpObstacle, inWake } from './course-rules.js';
+import { loc } from '/engine/i18n.js';
 
 export { gateRuns };
 
@@ -160,8 +161,8 @@ export function createTransformGates({ race, sound, track }) {
     if (!c.isPlayer) return;
     sound.whoosh();
     race.shake = Math.min(1.2, (race.shake || 0) + (entering ? 0.4 : 0.3));
-    shout(entering ? '¡Modo avioneta!' : '¡Aterrizaje!');
-    if (entering) { race.slowMo.trigger(); statCount('carreritas.metamorfosis', 1); } else sound.turbo();
+    shout(entering ? loc('¡Modo avioneta!') : loc('¡Aterrizaje!'));
+    if (entering) { race.slowMo.trigger(); statCount('carreritas.metamorfosis', 1); } else race.vsfx.boost();
   }
 
   // Hitting the water: a crown of droplets, two side curtains of spray and
@@ -183,7 +184,7 @@ export function createTransformGates({ race, sound, track }) {
     if (c.isPlayer) {
       sound.plop(); sound.whoosh();
       race.shake = Math.min(1.2, (race.shake || 0) + (entering ? 0.6 : 0.35));
-      shout(entering ? '¡Modo lancha!' : "¡Pa' tierra!");
+      shout(entering ? loc('¡Modo lancha!') : loc("¡Pa' tierra!"));
       if (entering) {
         race.slowMo.trigger();
         statCount('carreritas.metamorfosis', 1);
@@ -221,7 +222,7 @@ export function createTransformGates({ race, sound, track }) {
     if (speed < BUMP_HARD || isGhost(c)) return;
     crown(c, 0.5);
     c.drift = 0; c.driftT = 0;
-    if (c.isPlayer) { sound.bonk(speed / 10); race.shake = Math.min(1, (race.shake || 0) + 0.25); }
+    if (c.isPlayer) { race.vsfx.crash(speed / 10, 'wall'); race.shake = Math.min(1, (race.shake || 0) + 0.25); }
     recordImpact(c, race.clock);
   }
 

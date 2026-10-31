@@ -1,18 +1,20 @@
 import { createPitch, throwBall, stepPitch, moving, measure, botShot, distance, copy, STEP } from '/engine/play/bolas-criollas.js';
+import { locKey } from '../../../engine/i18n.js';
 import { validCourtArena } from '/engine/worlds/arena-layouts.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '/engine/play/difficulty.js';
 import { canMoveSeats, swapSeats } from '../../../engine/play/seat-rules.js';
 import { criollasOptions } from './options.js';
 import { createStarter, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 export { STEP, copy };
-export const TEAM_NAMES = ['Rojos', 'Verdes'];
+// Source text: shown with loc() on each client.
+export const TEAM_NAMES = [locKey('Rojos'), locKey('Verdes')];
 const BOT_NAMES = ['Cheo', 'Yuli', 'Nico', 'Lola', 'Tito', 'Nina'];
 export function botPlayer(slot) {
   return { id: null, name: BOT_NAMES[slot], avatar: { outfit: 'deportivo', outfitColor: slot % 2 ? '#299e72' : '#ed5949' } };
 }
 export function createGame() {
   return { phase: 'lobby', mapId: 'plaza', difficulty: DEFAULT_DIFFICULTY, local: false, players: Array.from({ length: 6 }, (_, i) => botPlayer(i)), pitch: createPitch(),
-    target: 12, ballsPerPlayer: 4, scores: [0, 0], remaining: Array(6).fill(4), turn: 0, lastSlots: [4, 5],
+    target: 12, ballsPerPlayer: 4, turnSeconds: 60, scores: [0, 0], remaining: Array(6).fill(4), turn: 0, lastSlots: [4, 5],
     hand: 0, starter: 0, revision: 0, shots: 0, elapsed: 0, botTime: 0, result: null,
     // ¿Quién empieza? before the first hand: a coin, cara for the Rojos.
     opener: 'cacho', opening: null, lastLoser: null };
@@ -100,9 +102,11 @@ export function step(g) {
     if (changed) g.revision++;
     return changed;
   }
-  if (g.phase === 'aiming' && g.players[g.turn].id === null) {
-    g.botTime += STEP;
-    if (g.botTime >= 1.1) return shoot(g, botThrow(g));
+  // Bots throw after a beat; a pana who idles past turnSeconds gets the bot's
+  // throw, so one idle tab never freezes the match (local play waits).
+  if (g.phase === 'aiming') {
+    const limit = g.players[g.turn].id === null ? 1.1 : !g.local && g.turnSeconds;
+    if (limit) { g.botTime += STEP; if (g.botTime >= limit) return shoot(g, botThrow(g)); }
   }
   if (g.phase !== 'rolling') return false;
   g.elapsed += STEP; stepPitch(g.pitch);

@@ -21,6 +21,7 @@
 // padLook (engine/play/first-person.js uses it).
 
 import { getSettings, onSettings, inputAxis } from './settings.js';
+import { loc } from './i18n.js';
 export const NAMES = ['a', 'b', 'x', 'y', 'lb', 'rb', 'lt', 'rt', 'view', 'start', 'ls', 'rs', 'up', 'down', 'left', 'right'];
 const DIRS = ['up', 'down', 'left', 'right'];
 export const MOVES = {
@@ -44,7 +45,6 @@ export function padControls(options = {}) {
   setup = { native: false, keys: {}, ...options };
   publishInput(true);
 }
-export const padSetup = () => setup;
 
 let detected=typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches?'touch':'keyboard',lastPointer=detected,padId='',connected=false;
 const inputListeners=new Set();
@@ -62,8 +62,10 @@ function publishInput(force=false){
   }
 }
 function activate(device){if(detected!==device){detected=device;publishInput();}}
-const FAMILIES={playstation:{A:'Cruz',B:'Círculo',X:'Cuadrado',Y:'Triángulo',LB:'L1',RB:'R1',LT:'L2',RT:'R2',Start:'Options',View:'Share'},nintendo:{A:'B',B:'A',X:'Y',Y:'X',LB:'L',RB:'R',LT:'ZL',RT:'ZR',Start:'Más',View:'Menos'}};
-export function formatPadLabel(text,family=inputState().family){return text.replace(/\b(LB|RB|LT|RT|Start|View|A|B|X|Y)\b/g,key=>FAMILIES[family]?.[key]??key);}
+const FAMILIES={playstation:{A:loc('Cruz'),B:loc('Círculo'),X:loc('Cuadrado'),Y:loc('Triángulo'),LB:'L1',RB:'R1',LT:'L2',RT:'R2',Start:'Options',View:'Share'},nintendo:{A:'B',B:'A',X:'Y',Y:'X',LB:'L',RB:'R',LT:'ZL',RT:'ZR',Start:loc('Más'),View:loc('Menos')}};
+// Spanish names of the pad's parts, as games write them in their controls.
+const PARTS={'Stick izq.':loc('Stick izq.'),'Stick der.':loc('Stick der.'),Cruceta:loc('Cruceta')};
+export function formatPadLabel(text,family=inputState().family){return text.replace(/\b(LB|RB|LT|RT|Start|View|A|B|X|Y)\b/g,key=>FAMILIES[family]?.[key]??key).replace(/Stick izq\.|Stick der\.|Cruceta/g,part=>PARTS[part]);}
 // Actuators can outlive a page. Cancel explicitly when focus or navigation leaves it.
 export function stopVibration(){
   for(const pad of globalThis.navigator?.getGamepads?.() || []){
@@ -72,7 +74,7 @@ export function stopVibration(){
   }
 }
 export async function testVibration(){
-  const pad=firstPad(),actuator=pad?.vibrationActuator??pad?.hapticActuators?.[0];
+  const pad=activePad(),actuator=pad?.vibrationActuator??pad?.hapticActuators?.[0];
   if(!actuator)return false;
   try{if(actuator.playEffect)await actuator.playEffect('dual-rumble',{duration:140,strongMagnitude:.25,weakMagnitude:.4});else if(actuator.pulse)await actuator.pulse(.4,140);else return false;return true;}catch{return false;}
 }
@@ -88,7 +90,30 @@ export function readPad(pad, settings=getSettings()) {
   const stick = (x, y, kind) => ({x:inputAxis(x,settings,kind),y:inputAxis(y,settings,kind)});
   return { held, left: stick(ax[0] || 0, ax[1] || 0,'move'), right: stick(ax[2] || 0, ax[3] || 0,'look') };
 }
-export const firstPad = () => [...(globalThis.navigator?.getGamepads?.() || [])].find(p => p && p.connected !== false && p.buttons?.length);
+// Windows lists more than controllers: headsets, wheels, virtual pads, an
+// RGB hub. Slot 0 is often one of those, so the pad in use is the last one a
+// player touched (a fresh press, or a stick away from where it rested),
+// else the one just connected, else the first with the standard layout.
+const usable = p => !!p && p.connected !== false && !!p.buttons?.length;
+const seen = new Map();   // index → { id, rest axes, buttons held last look }
+let activeIndex = -1;
+function touched(p) {
+  const was = seen.get(p.index), held = p.buttons.map(pressedOf);
+  if (!was || was.id !== p.id) { seen.set(p.index, { id: p.id, rest: [...(p.axes || [])], held }); return false; }
+  const hit = held.some((h, i) => h && !was.held[i]) || (p.axes || []).some((v, i) => Math.abs(v - (was.rest[i] ?? 0)) > .5);
+  was.held = held;
+  return hit;
+}
+export function padList() {
+  const all = [...(globalThis.navigator?.getGamepads?.() || [])].filter(usable);
+  return [...all.filter(p => p.mapping === 'standard'), ...all.filter(p => p.mapping !== 'standard')];
+}
+export function activePad() {
+  const all = padList(), standard = all.filter(p => p.mapping === 'standard');
+  // A jittery device without the standard layout never takes over from a real controller.
+  for (const p of standard.length ? standard : all) if (touched(p)) { activeIndex = p.index; break; }
+  return all.find(p => p.index === activeIndex) || all[0];
+}
 
 // The keys a pad frame holds down during play, as a set of codes.
 export function playKeys(pad, { move, keys = {}, buttons } = {}) {
@@ -198,7 +223,10 @@ function menuBack(scope) {
   (targets(scope).find(n => n.matches('.pana-close')) || [...document.querySelectorAll('[data-pad-back]')].find(shown))?.click();
 }
 function menuTab(scope, step) {
-  const tabs = [...scope.querySelectorAll('[role=tab]')].filter(shown);
+  // The innermost row of tabs on screen wins: inside Ajustes, LB / RB walk
+  // the category's own tabs; elsewhere the menu's.
+  const rows = [...scope.querySelectorAll('[role=tablist]')].map(list => [...list.querySelectorAll('[role=tab]')].filter(shown)).filter(row => row.length > 1);
+  const tabs = rows.at(-1) ?? [...scope.querySelectorAll('[role=tab]')].filter(shown);
   if (!tabs.length) return;
   const i = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
   const next = tabs[(Math.max(0, i) + step + tabs.length) % tabs.length];
@@ -232,7 +260,7 @@ export function padLook(fn) { lookers.add(fn); return () => lookers.delete(fn); 
 
 let before = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false,promptNode=null;
 function showPrompts(scope){
-  if(!promptNode){promptNode=document.createElement('div');promptNode.className='pana-pad-prompts';promptNode.setAttribute('aria-label','Controles del mando');document.body.append(promptNode);}
+  if(!promptNode){promptNode=document.createElement('div');promptNode.className='pana-pad-prompts';promptNode.setAttribute('aria-label',loc('Controles del mando'));document.body.append(promptNode);}
   const state=inputState();promptNode.hidden=!!scope||state.device!=='gamepad'||!getSettings().hints;
   const signature=JSON.stringify([padHelp(),state.family]);if(promptNode.dataset.signature===signature)return;promptNode.dataset.signature=signature;
   promptNode.replaceChildren(...padHelp().map(([key,label])=>{const row=document.createElement('span'),cap=document.createElement('kbd');cap.dataset.padKey='';cap.textContent=formatPadLabel(key);row.append(cap,document.createTextNode(label));return row;}));
@@ -254,7 +282,7 @@ function toast(text) {
 }
 
 function menu(scope, pad, now, edge, hud) {
-  const held = pad.held, raw=firstPad(), nav=readPad(raw,{...getSettings(),padMoveSensitivity:1,padCurve:'lineal'});
+  const held = pad.held, raw=activePad(), nav=readPad(raw,{...getSettings(),padMoveSensitivity:1,padCurve:'lineal'});
   const x = nav.left.x || (held.right - held.left), y = nav.left.y || (held.down - held.up);
   // A new menu on screen gets the focus on its main button, and keeps
   // following it (a start button enabled late) until the player moves.
@@ -272,11 +300,21 @@ function menu(scope, pad, now, edge, hud) {
   if (edge('b')) menuBack(scope);
   if (edge('lb')) menuTab(scope, -1);
   if (edge('rb')) menuTab(scope, 1);
+  if (edge('lt')) menuPages(scope, -1);
+  if (edge('rt')) menuPages(scope, 1);
+}
+// LT / RT step through a menu's pages ([data-pad-pages], e.g. Ajustes' categories).
+function menuPages(scope, step) {
+  const pages = [...(scope.querySelector('[data-pad-pages]')?.children || [])].filter(shown);
+  if (pages.length < 2) return;
+  const i = pages.findIndex(p => p.getAttribute('aria-current') === 'true');
+  const next = pages[(Math.max(0, i) + step + pages.length) % pages.length];
+  next.click(); focusTarget(next);
 }
 
 function frame(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
-  const raw=firstPad(),pad = readPad(raw);
+  const raw=activePad(),pad = readPad(raw);
   if (!pad) { release(); before = null; running = false;connected=false;padId='';activate(lastPointer);publishInput(true);if(promptNode)promptNode.hidden=true;return; }
   if(!connected||padId!==(raw.id||'')){connected=true;padId=raw.id||'';publishInput(true);}
   if(suspended||document.hidden){release();before=null;requestAnimationFrame(frame);return;}
@@ -333,32 +371,38 @@ function start() {
 }
 if (globalThis.document) {
   onSettings(()=>publishInput(true));
-  addEventListener('gamepadconnected', () => {
-    const pad=firstPad(); connected=!!pad;padId=pad?.id||'';
-    toast('Mando conectado');activate('gamepad');publishInput(true);start();
+  addEventListener('gamepadconnected', e => {
+    // A controller just paired is the one wanted; another device announcing
+    // itself only takes over when nothing is in use yet.
+    const added=e.gamepad;if(usable(added)&&(added.mapping==='standard'||activeIndex<0))activeIndex=added.index;
+    const pad=activePad(); connected=!!pad;padId=pad?.id||'';
+    toast(loc('Mando conectado'));activate('gamepad');publishInput(true);start();
   });
-  addEventListener('gamepaddisconnected', () => { if (!firstPad()) toast('Mando desconectado'); });
+  addEventListener('gamepaddisconnected', e => {
+    seen.delete(e.gamepad?.index);if(e.gamepad?.index===activeIndex)activeIndex=-1;
+    if (!activePad()) toast(loc('Mando desconectado'));
+  });
   addEventListener('blur', ()=>{suspended=true;release();stopVibration();});
   addEventListener('pagehide', stopVibration);
   document.addEventListener('visibilitychange', ()=>{if(document.hidden)stopVibration();});
-  addEventListener('focus', ()=>{suspended=false;if(firstPad())start();});
+  addEventListener('focus', ()=>{suspended=false;if(activePad())start();});
   // The mouse takes over from the pad's highlight.
   addEventListener('pointerdown', e => { if (e.isTrusted) {clearMark();lastPointer=e.pointerType==='touch'?'touch':'keyboard';activate(lastPointer);} }, true);
   // Hovering is not a device choice: controllers and desktop overlays can
   // generate mouse motion. A real click or key press switches back explicitly.
   addEventListener('keydown', e=>{if(e.isTrusted&&!e.repeat){clearMark();lastPointer='keyboard';activate('keyboard');}},true);
   // A pad connected before the page loaded is listed once the page sees a press.
-  if (firstPad()) start();
+  if (activePad()) start();
 }
 
 // "Mando" lines for the Controles tab: [[buttons, what it does], …].
 const LABELS = { a: 'A', b: 'B', x: 'X', y: 'Y', lb: 'LB', rb: 'RB', lt: 'LT', rt: 'RT', view: 'View', start: 'Start', ls: 'L3', rs: 'R3', up: 'Cruceta ↑', down: 'Cruceta ↓', left: 'Cruceta ←', right: 'Cruceta →' };
 export function padHelp(options = setup) {
   if (!options) return [];
-  if (options.help || options.native) return [...(options.help || []), ['Start', 'Menú']];
+  if (options.help || options.native) return [...(options.help || []), ['Start', loc('Menú')]];
   const lines = [];
-  if (options.move) lines.push(['Stick izq. / Cruceta', options.moveLabel || 'Moverte']);
-  if (options.buttons) lines.push(['Cruceta + A', 'Elegir los botones de la pantalla']);
+  if (options.move) lines.push(['Stick izq. / Cruceta', options.moveLabel || loc('Moverte')]);
+  if (options.buttons) lines.push(['Cruceta + A', loc('Elegir los botones de la pantalla')]);
   const byLabel = new Map();
   for (const [name, entry] of Object.entries(options.keys || {})) {
     if (!Array.isArray(entry) || !entry[1] || (options.buttons && name === 'a')) continue;
@@ -366,7 +410,7 @@ export function padHelp(options = setup) {
   }
   for (const [label, names] of byLabel) lines.push([names.join(' / '), label]);
   if (options.look) lines.push(['Stick der.', options.look]);
-  if (options.cursor) lines.push(['Stick der. + RT', typeof options.cursor === 'string' ? options.cursor : 'Apuntar y tocar']);
-  lines.push(['Start', 'Menú']);
+  if (options.cursor) lines.push(['Stick der. + RT', typeof options.cursor === 'string' ? options.cursor : loc('Apuntar y tocar')]);
+  lines.push(['Start', loc('Menú')]);
   return lines;
 }

@@ -11,6 +11,7 @@ import { DRIFT_MIN_SPEED, DRIFT_BOOST, DRIFT_LEVELS, HOP_SPEED, DRIFT_EXIT_TIME,
 import { wrapAngle } from './rules.js';
 import { advanceLap, isOpenEdge, offCourse, stuckStep, OPEN_MARGIN } from './course-rules.js';
 import { isGhost, recordImpact } from './recovery-rules.js';
+import { loc } from '/engine/i18n.js';
 
 export const G = 30;   // cartoon gravity: snappy jumps
 
@@ -77,7 +78,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
       c.drift = Math.sign(input.steer); c.driftT = 0;
       c.driftExitT = 0;
       c.driftLane = Math.max(-T.HW * 0.3, Math.min(T.HW * 0.3, offsetOf(c.x, c.z, c.y)));
-      if (c.isPlayer) sound.skid(0.8);
+      if (c.isPlayer) race.vsfx.skid(0.8);
     }
     if (c.drift && (!held || c.vf < DRIFT_MIN_SPEED * 0.75 || c.spin > 0)) {
       // Letting go pays the charged turbo; a spin-out or stall loses it.
@@ -85,7 +86,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
       if (!held && level && c.spin <= 0) {
         c.boost = Math.max(c.boost, DRIFT_BOOST[level] * t.driftBoost);
         c.tireHeat = (c.tireHeat || 0) + HEAT_PER_LEVEL * level;   // hot tyres charge the next drift slower
-        if (c.isPlayer) sound.turbo();
+        if (c.isPlayer) race.vsfx.boost();
         if (c.isPlayer && level === DRIFT_LEVELS.length) race.purpleRelease?.(c);   // max charge: slow-mo punch
       }
       if (!held && c.spin <= 0) c.driftExitT = DRIFT_EXIT_TIME;
@@ -103,7 +104,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
       else if (input.throttle < 0) {
         if (c.isPlayer && vf > 12 && (!c.skidT || race.clock - c.skidT > 0.38)) {
           c.skidT = race.clock;
-          sound.skid(0.6);
+          race.vsfx.skid(0.6);
         }
         vf -= (vf > 0 ? t.accel * 2.2 * (.75+.25*grip) : acceleration * 0.6) * dt;
       }
@@ -151,7 +152,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
           // Held purple too long: the tyres burn, the charge is gone and the car scrubs speed.
           vf *= BURN_SCRUB; vr *= BURN_SCRUB;
           c.drift = 0; c.driftT = 0; c.driftLvl = 0; c.burnT = 0.9; c.burnLock = true;
-          if (c.isPlayer) { sound.skid(1); shout('¡Se quemaron los cauchos!'); }
+          if (c.isPlayer) { race.vsfx.skid(1); shout(loc('¡Se quemaron los cauchos!')); }
         }
       }
       c.h += turn * dt;
@@ -218,7 +219,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
             if (bonus) {
               c.boost = Math.max(c.boost, bonus);
               say(c, LINES.trick, 0.9);
-              if (c.isPlayer) sound.turbo();
+              if (c.isPlayer) race.vsfx.boost();
             }
             c.trick = false;
           }
@@ -230,7 +231,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
         } else {
           // cartoon bounce that sets the car back on its wheels
           c.trick = false; c.hopping = false; c.drift = 0; c.driftT = 0;
-          sound.bonk(1.2);
+          race.vsfx.crash(1.2, 'car');
           race.puffs.spawn(new THREE.Vector3(c.x, g + 0.3, c.z), { color: 0xe0b07a, count: 7, spread: 2.5, rise: 0.8 });
           c.vy = 7.5;
           const flight = 2 * c.vy / G;
@@ -268,7 +269,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
         c.vz -= 1.4 * vn * nz * side;
         if (vn > 9 && !isGhost(c)) {
           c.drift = 0; c.driftT = 0;   // a hard wall hit throws the drift away
-          sound.bonk(vn / 10);
+          race.vsfx.crash(vn / 10, 'wall');
           race.glow.impact(c, vn, Math.sign((-nx * Math.cos(c.h) + nz * Math.sin(c.h)) * side));   // sparks on the side that hit
           say(c, LINES.wall, 0.8);
           c.vy = Math.max(c.vy, 4);

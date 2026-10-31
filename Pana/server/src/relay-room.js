@@ -7,6 +7,10 @@
 
 import { PanaRoom, roomState } from './room-kit.js';
 
+// Guests send inputs, actions and hellos; only the host's snapshots are big.
+// Without a cap one guest's 256 KB broadcasts reach everyone, seven times over.
+export const GUEST_BYTES = 32 * 1024;
+
 const RelayState = roomState({}, undefined, 'RelayState');
 
 export default class RelayRoom extends PanaRoom {
@@ -17,6 +21,7 @@ export default class RelayRoom extends PanaRoom {
     this.onMessage('relay', (client, v) => {
       const member = this.state.players.get(client.sessionId);
       if (!member || !v || typeof v !== 'object') return;
+      if (client.sessionId !== this.state.host && JSON.stringify(v).length > GUEST_BYTES) return;
       const message = { id: member.seat, v };
       if (v.dest == null) { this.broadcast('relay', message, { except: client }); return; }
       const to = v.dest === 'host' ? this.state.host : this.memberBySeat(v.dest)[0];

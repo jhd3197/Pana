@@ -23,6 +23,11 @@
     <p class="pk-copy" data-room-description>Sale una letra, todos escriben en secreto y el primero que llena todo grita ¡STOP!. Después viene lo mejor: revisar y votar si «Hormiga» es un color.</p>
     <ol id="roster" class="pk-roster" aria-label="Puestos de la mesa" data-room-description></ol>
     <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
+    <div id="pack-pick" class="pack-pick" data-room-primary>
+      <span class="pk-eyebrow">Categorías</span>
+      <div class="sala-map pack-nav"><button type="button" data-pack-step="-1" aria-label="Paquete anterior"></button><b id="pack-name" aria-live="polite"></b><button type="button" data-pack-step="1" aria-label="Paquete siguiente"></button></div>
+      <p id="pack-note" class="pack-note"></p>
+    </div>
     <div id="room-options"></div>
     <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
   </section>
@@ -57,7 +62,14 @@
     <p id="event" class="event" role="status"></p>
   </main>
   <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Jugar en local</button></div>
-  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">CALABAZA, CALABAZA</span><h2 id="result-title" class="pk-title"></h2><p class="pk-copy">Cada quien para su casa… o otra partida.</p><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra partida</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
+  <dialog id="libreta" class="pk-room-dialog libreta-dialog" aria-labelledby="libreta-title">
+    <div class="pk-room-heading"><div><p class="pk-eyebrow">Categorías</p><h2 id="libreta-title" class="pk-title"></h2></div><p id="libreta-notice" class="pk-copy"></p><button id="libreta-close" class="pk-btn pk-room-close" type="button" aria-label="Cerrar categorías"></button></div>
+    <p id="libreta-pack-note" class="pk-copy"></p>
+    <ul id="libreta-list" class="libreta-list" aria-label="Categorías de este paquete"></ul>
+    <section class="libreta-own" aria-labelledby="libreta-own-title"><h3 id="libreta-own-title" class="pk-heading">Tus categorías</h3><p id="libreta-own-note" class="pk-copy"></p><div id="libreta-inputs" class="libreta-inputs"></div></section>
+    <div class="pk-room-footer"><span></span><button id="libreta-done" class="pk-btn pk-btn--primary pk-btn--lg" type="button">Listo</button></div>
+  </dialog>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">CALABAZA, CALABAZA</span><h2 id="result-title" class="pk-title"></h2><p class="pk-copy">Cada quien para su casa… o otra partida.</p><ol id="result-roster" class="pk-roster"></ol><div class="recap-box" hidden><h3 class="pk-eyebrow">Lo mejor de la noche</h3><ol id="recap" class="recap"></ol></div><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra partida</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
   <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">Preparando la libreta</h2><p>Sacando las sillas a la plaza…</p></div></div>
   <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
 </body>

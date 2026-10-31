@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ServerError } from '@colyseus/core';
-import { PanaRoom, roomState, ROOM_FULL, InputBuffer, fillBots, memberAvatar, BOT_SEAT } from '../src/room-kit.js';
-import { cappedRoom } from '../src/colyseus.js';
-import RelayRoom from '../src/relay-room.js';
+import { PanaRoom, roomState, ROOM_FULL, InputBuffer, fillBots, memberAvatar, BOT_SEAT, leadToken, MAX_MEMBERS } from '../src/room-kit.js';
+import { cappedRoom, createLimiter, clientAddress } from '../src/colyseus.js';
+import RelayRoom, { GUEST_BYTES } from '../src/relay-room.js';
 import { serveStatic, MIME } from '../src/static.js';
 import { createTestRoom } from './harness.js';
 
@@ -39,6 +39,22 @@ test('the first arrival hosts, the lead takes over while the room is new, a drop
   t.room.onDispose();
 });
 
+test('every room event leaves one log line: create, join, drop, reconnect, host, leave, dispose', () => {
+  const lines = [], log = console.log;
+  console.log = (...args) => lines.push(args.join(' '));
+  try {
+    const t = createTestRoom(PlainRoom, { code: 'log-1' });
+    const a = t.join('a', { name: 'Ana', lead: true }), b = t.join('b', { name: 'Bruno Díaz' });
+    t.drop(a.client); t.reconnect(a.client); t.leave(b.client);
+    t.room.onDispose();
+  } finally { console.log = log; }
+  const events = lines.filter(l => l.startsWith('[room] test:log-1')).map(l => l.split(' ')[2]);
+  assert.deepEqual(events, ['create', 'host', 'join', 'join', 'drop', 'host', 'reconnect', 'leave', 'host', 'dispose']);
+  assert.ok(lines.some(l => /join seat=1 name=Ana lead=1 host=1 members=1\/1/.test(l)), lines.join(String.fromCharCode(10)));
+  assert.ok(lines.some(l => l.includes('name="Bruno Díaz"')), 'names with spaces stay one field');
+  assert.ok(lines.some(l => /host from=1 to=2/.test(l)));
+});
+
 test('a second room under the same code is refused until the first is gone', () => {
   const first = createTestRoom(PlainRoom, { code: 'dup-1' });
   assert.throws(() => createTestRoom(PlainRoom, { code: 'dup-1' }), e => e instanceof ServerError && e.code === ROOM_FULL);
@@ -61,8 +77,9 @@ test('a room that fails while creating releases its code and handler errors are 
 
 test('game.json players is the room cap', () => {
   assert.equal(new (cappedRoom(RelayRoom, 4))().maxClients, 4);
-  assert.equal(new (cappedRoom(RelayRoom, 20))().maxClients, 8);
-  assert.equal(new (cappedRoom(RelayRoom, undefined))().maxClients, 8);
+  assert.equal(new (cappedRoom(RelayRoom, 20))().maxClients, MAX_MEMBERS);
+  assert.equal(new (cappedRoom(RelayRoom, 8))().maxClients, 8);
+  assert.equal(new (cappedRoom(RelayRoom, undefined))().maxClients, MAX_MEMBERS);
 });
 
 test('room helpers: input expiry, bot seats, safe avatars', () => {
@@ -144,4 +161,39 @@ test('every file Pana serves has a content type', () => {
   walk(path.join(app, 'engine'), true);
   walk(games, false);
   assert.deepEqual([...missing], []);
+});
+
+test('matchmaking is limited per address; local requests and proxies are handled', () => {
+  const allow = createLimiter({ burst: 3, perMinute: 6 });
+  assert.deepEqual([1, 2, 3, 4].map(() => allow('1.2.3.4', 0)), [true, true, true, false]);
+  assert.equal(allow('5.6.7.8', 0), true, 'another address has its own bucket');
+  assert.equal(allow('1.2.3.4', 10_000), true, 'one more every ten seconds at six a minute');
+  const req = (peer, headers = {}) => ({ socket: { remoteAddress: peer }, headers });
+  assert.equal(clientAddress(req('127.0.0.1'), ''), null, 'this machine is not limited');
+  assert.equal(clientAddress(req('203.0.113.9'), ''), '203.0.113.9');
+  assert.equal(clientAddress(req('127.0.0.1', { 'cf-connecting-ip': '198.51.100.2' }), 'CF-Connecting-IP'), '198.51.100.2');
+  assert.equal(clientAddress(req('127.0.0.1', { 'x-forwarded-for': '10.0.0.1, 198.51.100.3' }), 'X-Forwarded-For'), '198.51.100.3');
+});
+
+test("the relay drops a guest's oversized message but carries the host's", () => {
+  const t = createTestRoom(RelayRoom, { code: 'relay-cap' });
+  const host = t.join('host'), guest = t.join('guest');
+  const big = { kind: 'snapshot', blob: 'x'.repeat(GUEST_BYTES) };
+  t.send(guest.client, 'relay', big);
+  t.send(guest.client, 'relay', { kind: 'hello' });
+  t.send(host.client, 'relay', big);
+  assert.deepEqual(t.broadcasts.map(b => [b.msg.id, b.msg.v.kind]), [[2, 'hello'], [1, 'snapshot']]);
+  t.room.onDispose();
+});
+
+test("with PANA_LEAD_SECRET only the gateway's token makes a lead", () => {
+  process.env.PANA_LEAD_SECRET = 'test-secret';
+  try {
+    const t = createTestRoom(PlainRoom, { code: 'lead-token' }, { name: 'domino' });
+    t.join('guest'); t.join('faker', { lead: '1' });
+    assert.equal(t.room.state.host, 'guest', 'lead=1 alone is ignored');
+    t.join('mayor', { lead: leadToken('test-secret', 'domino', 'lead-token') });
+    assert.equal(t.room.state.host, 'mayor');
+    t.room.onDispose();
+  } finally { delete process.env.PANA_LEAD_SECRET; }
 });

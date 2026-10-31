@@ -7,10 +7,11 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
+import { loc } from '/engine/i18n.js';
 
 export const STOP_RED = '#e5383b';
 export const PAPER = '#fffaf0';
-export const WHEEL_LETTERS = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
+export const WHEEL_LETTERS = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split(''); // i18n-ignore: letters
 const SECTOR_COLORS = ['#ff4b4b', '#ffc629', '#2ad1b2', '#3d7bf2', '#ff8a3d', '#9b5de5', '#6bbf59', '#ff6fae', '#00b4d8'];
 const DISPLAY = '"Luckiest Guy", "Nunito", system-ui, sans-serif';
 
@@ -101,7 +102,7 @@ export function createLetterWheel({ radius = 1.05 } = {}) {
   const flag = part(pointer, new THREE.ExtrudeGeometry(arrow, { depth: .05, bevelEnabled: true, bevelSize: .015, bevelThickness: .015, bevelSegments: 2 }), mat('#ffc629', { roughness: .35 }), 0, .1, .04);
   flag.rotation.x = -Math.PI / 2;
   // The hub: a mushroom button; its face says ¡PARA! or shows the letter.
-  const hubFace = paintedTexture(512, 512, (ctx, w, h, text = '¡PARA!', mode = 'para') => {
+  const hubFace = paintedTexture(512, 512, (ctx, w, h, text = loc('¡PARA!'), mode = 'para') => {
     const c = w / 2;
     ctx.fillStyle = mode === 'letter' ? '#ffffff' : STOP_RED; ctx.beginPath(); ctx.arc(c, c, c, 0, Math.PI * 2); ctx.fill();
     ctx.lineWidth = 22; ctx.strokeStyle = mode === 'letter' ? STOP_RED : '#ffffff'; ctx.beginPath(); ctx.arc(c, c, c - 24, 0, Math.PI * 2); ctx.stroke();
@@ -109,7 +110,7 @@ export function createLetterWheel({ radius = 1.05 } = {}) {
     ctx.font = `${mode === 'letter' ? 330 : 128}px ${DISPLAY}`;
     ctx.fillStyle = mode === 'letter' ? STOP_RED : '#ffffff'; ctx.fillText(text, c, c + (mode === 'letter' ? 26 : 12));
   });
-  let hubArgs = ['¡PARA!', 'para']; hubFace.paint(...hubArgs); afterFonts(() => hubFace.paint(...hubArgs));
+  let hubArgs = [loc('¡PARA!'), 'para']; hubFace.paint(...hubArgs); afterFonts(() => hubFace.paint(...hubArgs));
   const hub = new THREE.Group(); hub.position.y = .2; group.add(hub);
   part(hub, new THREE.CylinderGeometry(.3, .34, .14, 32), mat('#ffffff', { roughness: .4 }), 0, .02, 0);
   const cap = part(hub, new THREE.CylinderGeometry(.28, .3, .1, 32), mat(STOP_RED, { roughness: .3 }), 0, .13, 0);
@@ -156,7 +157,7 @@ export function createNotebook({ cover = '#3d7bf2' } = {}) {
       for (let x = 86; x < 86 + len; x += 14) ctx.lineTo(x + 7, y - 9 + ((x + i * 7) % 3) * 3), ctx.lineTo(x + 14, y);
       ctx.stroke();
     }
-    if (total && filled >= total) { ctx.font = `64px ${DISPLAY}`; ctx.fillStyle = STOP_RED; ctx.save(); ctx.translate(w - 120, h - 60); ctx.rotate(-.25); ctx.fillText('¡LISTO!', -80, 0); ctx.restore(); }
+    if (total && filled >= total) { ctx.font = `64px ${DISPLAY}`; ctx.fillStyle = STOP_RED; ctx.save(); ctx.translate(w - 120, h - 60); ctx.rotate(-.25); ctx.fillText(loc('¡LISTO!'), -80, 0); ctx.restore(); }
   });
   const left = page(0), right = page(1); left.paint(); right.paint();
   part(group, new RoundedBoxGeometry(.96, .03, .66, 2, .012), mat(cover, { roughness: .6 }), 0, .015, 0);
@@ -192,7 +193,7 @@ export { plasticChair as createPlasticChair } from '/engine/models/props/barrio.
 
 // The reel's purple wall covered in painted slang words, 14 × 4 m, painted
 // face toward +Z.
-export const SLANG_WALL_WORDS = ['CAMBUR', 'COTUFA', 'CHAMO', 'RASCAO', 'PANA', 'CHÉVERE', 'BURDA', 'LADILLA', 'GUAYOYO', 'ÑAPA', 'PEROL', 'JEVA', 'CHIMBO', 'PAVOSO', 'COROTO', 'GAFO', 'BOCHINCHE', 'PICHIRRE'];
+export const SLANG_WALL_WORDS = ['CAMBUR', 'COTUFA', 'CHAMO', 'RASCAO', 'PANA', 'CHÉVERE', 'BURDA', 'LADILLA', 'GUAYOYO', 'ÑAPA', 'PEROL', 'JEVA', 'CHIMBO', 'PAVOSO', 'COROTO', 'GAFO', 'BOCHINCHE', 'PICHIRRE']; // i18n-ignore: slang painted on the wall
 export function createSlangWall({ width = 14, height = 4, words = SLANG_WALL_WORDS } = {}) {
   const group = new THREE.Group(); group.name = 'Muro de palabras';
   const colors = ['#ffc629', '#2ad1b2', '#ff6fae', '#ffffff', '#ff8a3d', '#6bdc5a', '#7fd4ff'];

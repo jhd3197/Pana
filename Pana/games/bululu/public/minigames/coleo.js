@@ -13,6 +13,7 @@ import { ranchFence } from '/engine/models/props/ranch.js';
 import { moriche } from '/engine/models/vegetation/moriche.js';
 import { savannaGrass } from '/engine/models/vegetation/savanna-grass.js';
 import { sunnyStage, rand, pick } from './stage.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 const TIME = 40;
 const MANGA = 4.4;                 // riders and bull stay within ±MANGA
@@ -25,10 +26,10 @@ const COATS = ['bay', 'palomino', 'grey', 'bay'];
 
 export default {
   id: 'coleo',
-  title: '¡Coleo!',
-  howto: 'Ponte justo detrás del toro y jálale la cola para tumbarlo. Cada toro tumbado es un punto. Si jalas al aire, tu caballo tropieza.',
-  keys: [['A D / ← →', 'moverte'], ['Espacio', 'jalar la cola']],
-  touch: { action: 'Jalar' },
+  title: locKey('¡Coleo!'),
+  howto: locKey('Ponte justo detrás del toro y jálale la cola para tumbarlo. Cada toro tumbado es un punto. Si jalas al aire, tu caballo tropieza.'),
+  keys: [['A D / ← →', locKey('moverte')], [locKey('Espacio'), locKey('jalar la cola')]],
+  touch: { action: locKey('Jalar') },
   icon: 'bull',
   time: TIME,
 
@@ -126,7 +127,7 @@ export default {
       stats.grabs++;
       if (inReach(a)) {
         a.score += 1;
-        a.bubble.say(pick(['¡COLEAO!', '¡Tumbao!', '¡Eso es!']), 1);
+        a.bubble.say(loc(pick([locKey('¡COLEAO!'), locKey('¡Tumbao!'), locKey('¡Eso es!')])), 1);
         sound.bonk(1);
         if (human(a)) sound.pickup();
         bull.state = 'tumble';
@@ -137,7 +138,7 @@ export default {
       } else {
         stats.misses++;
         a.stumble = 0.6;
-        a.bubble.say(pick(['¡Fallé!', '¡Epa!', '¡Ay, mi caballo!']), 0.8);
+        a.bubble.say(loc(pick([locKey('¡Fallé!'), locKey('¡Epa!'), locKey('¡Ay, mi caballo!')])), 0.8);
         sound.boing();
         puffs.spawn(new THREE.Vector3(a.x, 0.5, zOf(a.s)), { color: 0xc49a64, count: 5, spread: 1, size: 0.7 });
       }
@@ -302,12 +303,12 @@ export default {
     const me = actors[ctx.localIndex ?? ctx.players.findIndex((p) => p.human && !ctx.auto)];
     function hint() {
       if (!me || !bull) return null;
-      if (me.stumble > 0) return { text: '¡Te revolcaste! Ya te levantas', tone: 'bad' };
-      if (inReach(me)) return { text: '¡JALA LA COLA AHORA!', tone: 'go' };
+      if (me.stumble > 0) return { text: loc('¡Te revolcaste! Ya te levantas'), tone: 'bad' };
+      if (inReach(me)) return { text: loc('¡JALA LA COLA AHORA!'), tone: 'go' };
       const gap = gapOf(me);
-      if (gap <= REACH.near) return { text: 'Muy encima del toro: frena un poquito', tone: '' };
-      if (gap >= REACH.far) return { text: 'Acércate al toro', tone: '' };
-      return { text: 'Ponte justo detrás de la cola', tone: '' };
+      if (gap <= REACH.near) return { text: loc('Muy encima del toro: frena un poquito'), tone: '' };
+      if (gap >= REACH.far) return { text: loc('Acércate al toro'), tone: '' };
+      return { text: loc('Ponte justo detrás de la cola'), tone: '' };
     }
     return { scene, camera, update, outro, actors, hint, scores: () => actors.map((a) => a.score), stats: () => ({ ...stats, reachTime: +stats.reachTime.toFixed(1) }) };
   },

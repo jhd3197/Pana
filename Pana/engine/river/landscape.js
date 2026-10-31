@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 // World dressing around a river course (Curiara, Lancha). Every shape comes
 // from the shared model library; this file only decides where things stand.
 // The river (river.js) is the ground truth: nothing is planted in the water a

@@ -1,5 +1,6 @@
 import { LiveRoom } from '/engine/live-room.js';
 import { Rueda, cleanInput } from './rules.js';
+import { loc } from '/engine/i18n.js';
 
 // Host simulation on the shared live room (engine/live-room.js). The host
 // steps the rueda with everyone's latest counters and publishes each tick; a
@@ -18,7 +19,7 @@ export class TamborRoom extends LiveRoom {
     this.game.now = this.clock();
     for (const m of this.members.values()) this.game.addPlayer(m.id, m.name, m.id === this.id ? this.avatar : m.avatar || {});
     this.publish();
-    if (previous != null) this.onNotice('Cambió el anfitrión. La rueda sigue.');
+    if (previous != null) this.onNotice(loc('Cambió el anfitrión. La rueda sigue.'));
   }
   memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar || {}); this.publish(); } }
   memberHello(id, m) { this.memberJoined(m); }
@@ -41,5 +42,5 @@ export class TamborRoom extends LiveRoom {
     }
     super.tick(dt, input, paused);
   }
-  practice() { this.state = { ...new Rueda().snapshot(), options: { ...this.state.options } }; super.practice('Rueda local · tú y los bots'); }
+  practice() { this.state = { ...new Rueda().snapshot(), options: { ...this.state.options } }; super.practice(loc('Rueda local · tú y los bots')); }
 }

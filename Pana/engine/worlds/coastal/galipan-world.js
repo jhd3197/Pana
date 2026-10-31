@@ -1,6 +1,8 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import { extendTerrain } from './world-horizon.js';
 import * as THREE from 'three';
+import { canvasTexture } from '../../models/core/primitives.js';
 import { coastalVegetation } from './coastal-vegetation.js';
 import { MAP, noise } from './galipan-layout.js';
 
@@ -28,13 +30,7 @@ export function createWorld(scene, layout, roadDistance) {
   const CITY = MAP.city, CL = MAP.cliff;
 
   /* ---------------- textures ---------------- */
-  const canvasTex = (w, h, draw, srgb = true) => {
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    draw(c.getContext('2d'), w, h);
-    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
-    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  };
+  const canvasTex = (w, h, draw, srgb = true) => canvasTexture(w, h, draw, { srgb });
   const glowTex = canvasTex(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.18, 'rgba(255,255,255,0.75)'); g.addColorStop(0.45, 'rgba(255,255,255,0.18)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
   const poolTex = canvasTex(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,0.9)'); g.addColorStop(0.5, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
   const cloudTex = canvasTex(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.45, 'rgba(255,255,255,0.6)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });

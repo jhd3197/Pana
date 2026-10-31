@@ -22,7 +22,7 @@ export function createRaceHud(doc = document) {
     let li = rows.get(c);
     if (!li) {
       li = doc.createElement('li');
-      li.innerHTML = `<b></b><i></i><span>${esc(c.name)}</span><em class="delta"></em>`;
+      li.innerHTML = `<b></b><i></i><span translate="no">${esc(c.name)}</span><em class="delta"></em>`;
       li.style.setProperty('--c', c.def.color);
       board.append(li);
       rows.set(c, li);

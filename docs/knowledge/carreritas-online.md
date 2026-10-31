@@ -20,9 +20,11 @@ are less than 15 seconds apart. Warming an offline garage does not load the
 Colyseus SDK; a later cold CDN fetch can otherwise exhaust the deliberate party
 leader window and test a different scenario from the one intended.
 
-Aguacero sends one `cloud` effect with a unique ID, timestamp and at most seven
-target/delay/duration records. Keep this below the room's 512-character effect
-limit. Delayed recipients subtract elapsed server-clock time before scheduling;
+Aguacero sends one `cloud` effect with a unique ID, timestamp and one
+target/delay/duration record per rival: up to eleven on a twelve-car grid,
+delays rounded to centiseconds. Keep this below the room's 1,024-character
+effect limit (it was 512 for eight cars); a full twelve-car wave is about
+500 characters. Delayed recipients subtract elapsed server-clock time before scheduling;
 duplicate IDs are bounded to a 64-entry cache, reset with the item system.
 Chancleta damage is still decided exclusively by its victim's client, and its
 `hit` relay ends the same projectile on other screens.
@@ -103,3 +105,16 @@ are decided by the owning client (`items.js` `remote*`/`emit`). Shared limits
 and pose packing live in `public/online-rules.js`, imported by both sides.
 Prove changes with `tests/online.browser.js` (two real clients). See
 `docs/knowledge/carreritas-online.md`.
+
+## Languages over the wire
+
+Speech bubbles travel: `say()` in game.js sends its text as a `say` fx, so
+the bark tables (`LINES` in game.js and items.js, hazard `line`s) hold
+`locKey()` Spanish and the bubble runs `loc()` where it is drawn, on the
+sender and in `remote-cars.js`. Room notices (`state.notice`, `toLobby()`)
+are `locKey()` text the lobby passes through `loc()`. Every public module
+the room imports (today `car-`, `track-`, `wheel-` and
+`tracks/water-track-definitions.js`, `parts.js`, `shop.js`,
+`cup-definitions.js`) imports `engine/i18n.js` by relative path: a
+`/engine/...` import breaks the server. Car, vessel, rival and track names
+stay Spanish.

@@ -2,21 +2,25 @@
 // rules.js shuffles the four on the board. Pure data: new reels add questions
 // here and nothing else changes. PACKS groups the categories for the room's
 // "Tema" option.
+// i18n-ignore-file: trivia questions and answers stay Spanish (they are
+// narrated); category names are locKey() text, translated where shown.
+import { locKey } from '../../../engine/i18n.js';
+
 export const CATEGORIES = {
-  frases: 'Frases',
-  origen: '¿De dónde viene?',
-  lugares: 'Lugares',
-  musica: 'Música',
-  beisbol: 'Béisbol y juegos de calle',
-  comida: 'Comida',
-  historia: 'Historia de Venezuela',
-  naturaleza: 'Naturaleza venezolana',
-  ciencia: 'Ciencia',
-  geografia: 'Geografía',
-  pasado: 'Historia universal',
-  deportes: 'Deportes',
-  animales: 'Animales',
-  arte: 'Arte y entretenimiento',
+  frases: locKey('Frases'),
+  origen: locKey('¿De dónde viene?'),
+  lugares: locKey('Lugares'),
+  musica: locKey('Música'),
+  beisbol: locKey('Béisbol y juegos de calle'),
+  comida: locKey('Comida'),
+  historia: locKey('Historia de Venezuela'),
+  naturaleza: locKey('Naturaleza venezolana'),
+  ciencia: locKey('Ciencia'),
+  geografia: locKey('Geografía'),
+  pasado: locKey('Historia universal'),
+  deportes: locKey('Deportes'),
+  animales: locKey('Animales'),
+  arte: locKey('Arte y entretenimiento'),
 };
 
 const VENEZUELA = ['frases', 'origen', 'lugares', 'musica', 'beisbol', 'comida', 'historia', 'naturaleza'];

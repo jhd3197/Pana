@@ -1,5 +1,6 @@
 import { TableRoom } from '/engine/table-room.js';
 import { StopGame } from './rules.js';
+import { loc } from '/engine/i18n.js';
 
 // Host simulation on the shared table room (engine/table-room.js): empty
 // chairs are bots, the host runs the clock, and sheets stay off the wire
@@ -7,8 +8,8 @@ import { StopGame } from './rules.js';
 export class StopRoom extends TableRoom {
   constructor(options) {
     super({ ...options, game: 'stop', protocol: 'stop-v1',
-      texts: { connecting: 'Conectando con la mesa…', practice: 'Mesa local · tú y siete bots', handoff: 'Cambió el anfitrión. La libreta sigue.' } }, {
-      fresh: prev => ({ ...new StopGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}) }),
+      texts: { connecting: loc('Conectando con la mesa…'), practice: loc('Mesa local · tú y siete bots'), handoff: loc('Cambió el anfitrión. La libreta sigue.') } }, {
+      fresh: prev => ({ ...new StopGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}), ...(Array.isArray(prev?.custom) ? { custom: [...prev.custom] } : {}) }),
       restore: (state, members) => StopGame.restore(state, members),
       snapshot: (game) => game.snapshot(),
       accept: (game, id, data, hostId) => game.accept(id, data, hostId),

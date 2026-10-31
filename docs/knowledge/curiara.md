@@ -25,7 +25,9 @@ river. Two formats: **Todos contra todos** (8 canoes, one pana each) and
 - Shared with Lancha in `/engine/river/`: `scene.js` terrain and per-tramo
   water, `landscape.js` the dressing, `water-fx.js` pooled ripples/spray and
   the chorro, whitewater and remolino sheets, `guide.js` the guide on the
-  water, `minimap.js` the HUD map. `public/network.js` is the host room.
+  water, `minimap.js` the HUD map, `hud.js` the shouts, flash, shake,
+  countdown and leaderboard (Galope uses its board and countdown too).
+  `public/network.js` is the host room.
 - Models: `/engine/models/vehicles/curiara.js` (`createCanoe`: the shared
   `riverCanoe()` with one or two seated panas and animated paddles),
   `/engine/models/props/amazonas.js` (laja, igapó trunk, churuata, moriche

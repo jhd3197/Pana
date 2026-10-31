@@ -9,6 +9,7 @@ import { raceGrass } from './tracks/grass-field.js';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
 import { backgroundForest } from './tracks/background-forest.js';
 import { roadShoulders } from './tracks/road-shoulders.js';
+import { loc } from '/engine/i18n.js';
 
 // ---------- geometry backends ----------
 // The original stadium oval, kept verbatim so lap logic never regresses.
@@ -318,7 +319,7 @@ function buildGround(T, pal) {
     const x = gp.getX(i), z = gp.getZ(i);
     gp.setY(i, T.terrainAt(x, z));
   }
-  ground = ground.toNonIndexed();
+  if (ground.index) ground = ground.toNonIndexed();
   const colors = [];
   const base = new THREE.Color(pal.ground);
   for (let i = 0; i < ground.attributes.position.count; i += 3) {
@@ -507,18 +508,18 @@ export function makeTrack(def) {
       // The environment owns its animation; don't also tick its children.
       if (environment.update) T.animated.push({ userData: { tick: environment.update } });
     } else group.add(buildGround(T, def.palette));
-    yield 'Preparando la carretera…';
+    yield loc('Preparando la carretera…');
     group.userData.groundAt = T.terrainAt;
     if (def.island) group.add(buildIsland(T, def.island));
     if (!def.authoredRoad) group.add(roadShoulders(T), buildRibbon(T, def.palette));
     kit.startLine(group, T);
-    yield 'Colocando las defensas…';
+    yield loc('Colocando las defensas…');
     if (def.walls !== false) kit.tireWall(group, T);
     if (def.fence) kit.fenceRing(group, T, def.fence);
     if (def.chevrons !== false) kit.chevrons(group, T);
     kit.buildRamps(group, T);
     for (const sc of T.shortcuts) group.add(kit.plankRoad(T, sc));
-    yield 'Terminando el paisaje…';
+    yield loc('Terminando el paisaje…');
     // Shared environments are attached first; only collect track-owned ticks.
     const scenery = new THREE.Group();
     scenery.name = 'track-scenery';

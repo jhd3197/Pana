@@ -11,6 +11,18 @@ known stages and now rejects any circuit missing from both the cup stages and
 the standalone list, or registered in both. Existing cup routes and profile
 migration remain unchanged.
 
+The public build ships one cup, Copa Pana (Estadio, Llanos, Delta 3 laps, Galipán), and `STANDALONE_TRACKS` is empty. The other 24 circuits and six cups (Aventura, Agua, Costa, Cumbre, Relámpago, Fantasía) live in the private pana.sh repo as a Docker build-time overlay (`overlay/pana/...`) that adds `premium-tracks.js` exports (`PREMIUM_TRACKS`, `PREMIUM_CUPS`, `PREMIUM_MODES`, `PREMIUM_MUSIC`); without it the game falls back to the public cup. The notes below describe the full catalog; `npm
+run new-track` still appends new circuits there until they join a cup. The
+four later cups are Costa (Cata, Choroní, Chuao 3 laps, Margarita), Cumbre
+(Tovar, Galipán, Mérida, Volcán 1 lap), Relámpago (Puerto 1 lap, Maracaibo,
+Gran Sabana, Sarisariñama) and Fantasía (Arrecife, Dulce, Nubes, Cosmos 1
+lap); every other stage runs 2 laps. One-seed balance sweeps put every
+eight-car stage under the 240-second cap on all difficulties (slowest: Puerto
+on Easy, 225 s); Chuao takes 3 laps because two laps ended in under 90
+seconds. `estimatedSeconds` are the Normal means, so each cup runs 10–11
+minutes. The cups tab lists them in one scrolling column: two columns at
+1440 px wrapped every title and route name.
+
 ## Phase 00 baseline
 
 Source revision: `3448e6d` plus the pre-existing, unrelated root package edits.
@@ -182,7 +194,7 @@ three championship finishers.
 ## Phase 05 — server-owned online championship lifecycle
 
 `server/room.js` (`CarreritasRoom`) owns the authoritative Grand Prix session when
-`state.mode` is an available cup (`pana`, `aventura` or `agua`). Before starting, the
+`state.mode` is an available cup (any id in `CUPS`). Before starting, the
 host can select `mode` and `difficulty` (`facil`, `normal`, `dificil`); track
 selection messages are ignored while a cup mode is active because the cup's
 first stage (`cup.stages[0]`) determines the initial track and lap count.
@@ -198,7 +210,11 @@ first stage (`cup.stages[0]`) determines the initial track and lap count.
   `this.cupSession` via `createCupSession()`. `openCupStage()` sets `state.track`
   and `state.laps` from `cupDef.stages[stageIndex]`, clamps pose laps to
   `state.laps + 1`, and uses `stage.capSeconds` for finish validation and the
-  stage timer.
+  stage timer. A `finish` (cup or quick race) also needs the car's pose lap at
+  `state.laps` or more, and a time no shorter than `(now - state.startAt)` less
+  `FINISH_SLACK_S` (5 s). Net races time from `net.now() - startAt`, so an
+  honest finish always clears it; a test that reports a finish must first send
+  a last-lap pose (`finish()` in `cup-room.test.js`).
 - **Timeouts, host handoff & intermission**: Unready humans after
   `GP_LOAD_TIMEOUT_MS` (60 s) are marked `dns` while ready humans race; if no
   human is ready, `toLobby()` abandons the cup with a Spanish notice. Host

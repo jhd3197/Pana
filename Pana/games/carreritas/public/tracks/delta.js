@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import { WATER_TRACKS } from './water-track-definitions.js';
 import { ROUTE, roadHeight, lagoonWaterAt } from './delta-layout.js';
 import { deltaWorld } from './delta-world.js';

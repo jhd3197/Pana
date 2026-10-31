@@ -1,5 +1,29 @@
 # Shared game UI: pause menu and settings
 
+## Settings vocabulary and ownership
+
+Use `engine/room-option-fields.js` for optional bot participation (`Jugar con`,
+`Solo panas` / `Panas y bots`) and bot skill (`Nivel de bots`, `Fácil`, `Normal`,
+`Difícil`). Keep existing serialized values; labels do not change balance.
+Pacing is `Velocidad de bots`, not difficulty. Fixed tables/teams keep their
+required seats; do not offer Solo panas unless the rules support empty seats.
+World difficulty and combined aim-assistance/bot difficulty remain `Dificultad`.
+Use `Modo` for rule variants and explicit `Tiempo por turno/pregunta/ronda`
+labels for clocks. Domain-specific phases can name the phase instead.
+
+`visibleWhen: { optionId: [allowedValues] }` hides irrelevant room fields and
+excludes them from the advanced count, without erasing their saved choice.
+Hosts still own changes; visibility is presentation, not authority or validation.
+Bot filling in Galope/Curiara is part of the options snapshot, so guests and a
+replacement host inherit it. Lancha/Parapente migrate legacy `rivals: 'none'`
+to separate participation and normal skill on restore/configuration.
+
+`Mis ajustes` contains personal controls, audio, image and camera. Shared rules
+belong only in `Ajustes de la sala`; `Restablecer sala` resets those rules.
+Billar/Criollas difficulty is shared (it also changes aim assistance), while
+Dominó's camera belongs in the personal game page. New scaffolds use the same
+vocabulary; do not add fake bot controls to a scaffold without bot rules.
+
 ## Illustrated loading lobbies and portraits
 
 Games with the shared `.pk-lobby` load `engine/game-entry.js` using
@@ -66,6 +90,11 @@ hud.append(menu.createButton({ id: 'menu' }));      // "Menú Esc"
 
 Put the menu button somewhere visible on touch screens: phones have no Esc.
 
+A table game that keeps fx.js off its first load passes `lazySound()` from
+`engine/lazy-sound.js` instead of `sound`: menu clicks, volume and music
+settings reach fx.js once it arrives. A hand-written stub without
+`clickDown`/`clickUp` leaves the menu silent.
+
 Room codes and invite links come from `/engine/invite.js`: `roomFromUrl() ||
 newRoomCode()` for the code, `inviteUrl(code)` for the link to share. An invite carries
 only `?room=`; never the sender's name, `debug`, `manual` or `lead` (an invitee must
@@ -86,16 +115,36 @@ setting can hide them.
 
 The menu occupies the viewport, keeping native dialog focus containment and
 each game's `onOpen` / `onClose` behavior. `settings-workspace.js` loads only
-when Ajustes opens. It moves the existing audio, image and game option nodes
-into categories, preserving IDs and handlers. `/ajustes.html` exposes the same
+when Ajustes opens and builds the page from data: `catalog()` lists every
+category, tab and row (choice, range or toggle) against `settings.js` keys,
+and game options against their own `get`/`set`. `/ajustes.html` shows the same
 workspace outside a game. Personal settings never change room rules.
 
-Device instructions and tuning share one category per device, initially the
-active device. There is no separate Controls tab or input landing page.
-Controller deadzone, movement and look sensitivity remain visible; other tuning and
-manual hint overrides live in disclosures. The live monitor appears only in
-Mando and names the connected hardware, even while a mouse adjusts it.
-Legacy `open('controls')` calls route to Ajustes.
+Layout: full screen on the striped purple backdrop, an icon rail flush
+with the left edge (`.pana-settings-nav`, labels as hover tips; a labelled
+row below 900 px), tabs inside each category with Q / E caps either side
+(Q and E switch tabs anywhere in Ajustes; on a pad LB / RB walk the
+innermost tab row and LT / RT the rail, `[data-pad-pages]`), one row per
+setting, and a detail panel that explains the row under the pointer or the
+focus. Choices are cyclers: the arrows step, and the pips are the options
+themselves (`role=radio`, `data-value`), so tests, a pad and screen readers
+keep working. A teal dot marks a value changed from `DEFAULTS` (on the row
+and its rail icon). **Restablecer pestaña** resets only the tab on screen.
+Previews are real or absent: the stick response comes from `inputAxis`, the
+Mando monitor reads the connected pad, and Imagen measures the running
+scene with `engine/perf.js`. Nothing is estimated.
+
+**Idioma** (globe icon) sets `language`: `auto` (the browser's) or a code from
+`LANGUAGES` in `engine/i18n.js`. A new language applies on the next load: the
+hub and `/ajustes.html` reload at once (`game: false` from `createGameMenu`
+with `pause: false`), a game shows a "Recargar ahora" note in the detail panel
+because reloading restarts the match. See `pana-i18n.md`.
+
+Inside a game, each device category opens on **Cómo se juega** (that
+device's controls and the game's tips), then its tuning tabs and **Ayudas**
+(hint device and visibility). The hub has no help tabs. The category
+initially shown follows the active device. Legacy `open('controls')` calls
+route to Ajustes.
 
 `pana:settings` stores independent `mouseSensitivity`, `mouseVertical`,
 `mouseInvertY`, `touchSensitivity`, `touchInvertY`, `padDeadzone`,
@@ -328,9 +377,13 @@ focus containment and return, input blocking, invite links and `M`.
 ## Shared reference sala
 
 Every game uses `engine/sala.js`/`sala.css` after scene preparation.
-Carreritas and Pepazo additionally provide workshop metadata.
+Carreritas, Pepazo and ¡Stop! additionally provide workshop metadata.
 Their original lobby exposes `panaSala.read()` with connection state, summary,
 real members and kit ratings; `openKit` opens the existing workshop/armory.
+`image` sets the sala picture (`null` keeps the launcher art) and `startLabel`
+the start button's text, including its "… en local" form. A member without a
+`kit` gets no kit line, so ¡Stop! passes `players: []` and its "Categorías"
+button as the kit. On phones (≤ 480 px) the start button takes its own row.
 The shared shell still owns membership, readiness, invite links and the start
 barrier. Clicking your own card uses that same readiness action; empty cards
 copy the room link. Carreritas opens its existing room connection before copying
@@ -353,3 +406,10 @@ Controller menu links cancel rumble before navigating instead of starting a
 new pulse after the click. Buttons still respect the vibration preference.
 Actuator reset also runs on blur, pagehide and hidden visibility so feedback
 cannot linger after leaving the page.
+
+## In-game navigation plates
+
+The menu, invite and sound button factories attach `.pana-hud-button`. Its
+angled background lives in a pseudo-element: text, hit areas and keyboard focus
+stay upright. Games retain positioning and can apply the same class to adjacent
+HUD controls. Keep the shared style in `engine/ui.css`, not per-game copies.

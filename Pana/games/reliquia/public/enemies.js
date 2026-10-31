@@ -5,6 +5,7 @@
 // ceiling until a pana walks under and their bite slows; cuaimas lie coiled
 // by the loot, strike and poison, but never leave home for long.
 import { clamp } from '../../../engine/random.js';
+import { locKey } from '../../../engine/i18n.js';
 import { floorOf } from './deck.js';
 import { distance } from './layout.js';
 
@@ -82,9 +83,9 @@ export function updateEnemies(g, dt) {
     if (g.time - e.born < 1) continue;
     const target = targetFor(g, e);
     // A spider waits on the ceiling until someone walks under it.
-    if (e.hanging) { if (target && distance(target, e) < 4.5) { e.hanging = false; e.cooldown = .6; g.event('spider', '¡Cayó una araña del techo!', { enemy: e.id }); } continue; }
+    if (e.hanging) { if (target && distance(target, e) < 4.5) { e.hanging = false; e.cooldown = .6; g.event('spider', locKey('¡Cayó una araña del techo!'), { enemy: e.id }); } continue; }
     if (!e.awake) {
-      if (target && distance(target, e) < (e.kind === 'jaguar' ? 7 : 10)) { e.awake = true; g.event('boss', e.kind === 'jaguar' ? '¡El jaguar de oro despertó!' : 'El guardián del sol se levanta.', { enemy: e.id, boss: e.kind }); }
+      if (target && distance(target, e) < (e.kind === 'jaguar' ? 7 : 10)) { e.awake = true; g.event('boss', e.kind === 'jaguar' ? locKey('¡El jaguar de oro despertó!') : locKey('El guardián del sol se levanta.'), { enemy: e.id, boss: e.kind }); }
       else continue;
     }
     e.lit = lightOn(g, e);
@@ -92,7 +93,7 @@ export function updateEnemies(g, dt) {
     if (k.light === 'freeze' && e.lit === 'beam') { e.windup = 0; e.frozen = true; continue; }
     e.frozen = false;
     if (k.light === 'daze' && e.lit === 'beam' && e.immune <= 0 && e.mode !== 'leap') {
-      e.stun = 1.6; e.immune = 6; e.mode = 'prowl'; g.event('daze', '¡El farol encandiló al jaguar!', { enemy: e.id }); continue;
+      e.stun = 1.6; e.immune = 6; e.mode = 'prowl'; g.event('daze', locKey('¡El farol encandiló al jaguar!'), { enemy: e.id }); continue;
     }
     const speed = k.speed * s.speed * (1 + .08 * tier) * (e.lit === 'dark' && k.light === 'freeze' ? 1.35 : 1) * (k.light === 'slow' && e.lit === 'beam' ? .5 : 1);
     const damage = k.damage * s.damage * (1 + .1 * tier) * (.75 + .15 * (g.level || 1));

@@ -15,25 +15,34 @@
 // The lists below use one compact line format so they stay easy to grow:
 //   Word/Variant/Variant #crude #duda #oreo @REELID = explanation
 // Entries are separated by newlines or ';'. Tags and explanation are optional.
+// i18n-ignore-file: the words are Spanish content; category labels are locKey()
+// text that games translate where they show them.
+import { locKey } from '../i18n.js';
 
 export const SABER_CATEGORIES = {
-  nombre: { label: 'Nombre', short: 'Nombre' },
-  apellido: { label: 'Apellido', short: 'Apellido' },
-  pais: { label: 'País', short: 'País' },
-  ciudad: { label: 'Ciudad', short: 'Ciudad' },
-  animal: { label: 'Animal', short: 'Animal' },
-  fruta: { label: 'Fruta', short: 'Fruta' },
-  color: { label: 'Color', short: 'Color' },
-  cosa: { label: 'Cosa', short: 'Cosa' },
-  estado: { label: 'Estado de Venezuela', short: 'Estado' },
-  comida: { label: 'Comida criolla', short: 'Comida' },
-  palabra: { label: 'Palabra venezolana', short: 'Palabra' },
-  dicho: { label: 'Dicho', short: 'Dicho' },
-  pelotero: { label: 'Pelotero venezolano', short: 'Pelotero' },
-  musica: { label: 'Cantante o canción venezolana', short: 'Música' },
-  lugar: { label: 'Lugar de Venezuela', short: 'Lugar' },
-  marca: { label: 'Marca', short: 'Marca' },
-  carinoso: { label: 'Insulto cariñoso', short: 'Cariñoso' },
+  nombre: { label: locKey('Nombre'), short: locKey('Nombre') },
+  apellido: { label: locKey('Apellido'), short: locKey('Apellido') },
+  pais: { label: locKey('País'), short: locKey('País') },
+  ciudad: { label: locKey('Ciudad'), short: locKey('Ciudad') },
+  animal: { label: locKey('Animal'), short: locKey('Animal') },
+  fruta: { label: locKey('Fruta'), short: locKey('Fruta') },
+  color: { label: locKey('Color'), short: locKey('Color') },
+  cosa: { label: locKey('Cosa'), short: locKey('Cosa') },
+  estado: { label: locKey('Estado de Venezuela'), short: locKey('Estado') },
+  comida: { label: locKey('Comida criolla'), short: locKey('Comida') },
+  palabra: { label: locKey('Palabra venezolana'), short: locKey('Palabra') },
+  dicho: { label: locKey('Dicho'), short: locKey('Dicho') },
+  pelotero: { label: locKey('Pelotero venezolano'), short: locKey('Pelotero') },
+  musica: { label: locKey('Cantante o canción venezolana'), short: locKey('Música') },
+  lugar: { label: locKey('Lugar de Venezuela'), short: locKey('Lugar') },
+  marca: { label: locKey('Marca'), short: locKey('Marca') },
+  carinoso: { label: locKey('Insulto cariñoso'), short: locKey('Cariñoso') },
+  profesion: { label: locKey('Profesión u oficio'), short: locKey('Profesión') },
+  deporte: { label: locKey('Deporte'), short: locKey('Deporte') },
+  cuerpo: { label: locKey('Parte del cuerpo'), short: locKey('Cuerpo') },
+  casa: { label: locKey('Cosa de la casa'), short: locKey('Casa') },
+  planta: { label: locKey('Flor o planta'), short: locKey('Planta') },
+  pelicula: { label: locKey('Película o serie'), short: locKey('Película') },
 };
 
 const REEL = 'C4B9Vk6L9kK';
@@ -515,6 +524,151 @@ Sapo = chismoso; Sifrino = presumido; Sinvergüenza
 Tracalero = tramposo; Tarúpido = tarado y estúpido a la vez; Tuki = llamativo
 Vivo = aprovechado
 Zángano = flojo, vividor; Zoquete = torpe; Zamuro = aprovechado
+`,
+  profesion: `
+Abogado/Abogada; Actor/Actriz; Agricultor/Agricultora; Albañil; Arquitecto/Arquitecta; Astronauta; Azafata; Alfarero/Alfarera; Árbitro/Árbitra; Artesano/Artesana; Administrador/Administradora
+Bombero/Bombera; Barbero/Barbera; Bailarín/Bailarina; Banquero/Banquera; Biólogo/Bióloga; Bibliotecario/Bibliotecaria; Buhonero/Buhonera = vendedor ambulante en la calle; Boxeador/Boxeadora; Barrendero/Barrendera
+Carpintero/Carpintera; Cajero/Cajera; Cantante; Carnicero/Carnicera; Cartero/Cartera; Chef; Chofer = el que maneja; Cirujano/Cirujana; Cocinero/Cocinera; Contador/Contadora; Costurero/Costurera; Cerrajero/Cerrajera; Científico/Científica
+Dentista = el odontólogo; Diseñador/Diseñadora; Doctor/Doctora; Detective; Director/Directora; Docente; Dibujante
+Electricista; Enfermero/Enfermera; Escritor/Escritora; Escultor/Escultora; Estilista; Economista; Entrenador/Entrenadora; Empresario/Empresaria
+Farmacéutico/Farmacéutica; Fotógrafo/Fotógrafa; Florista; Fontanero/Fontanera = el plomero; Físico/Física; Futbolista; Fiscal; Fisioterapeuta
+Ganadero/Ganadera; Geólogo/Geóloga; Gerente; Guía; Guardia; Guitarrista; Granjero/Granjera
+Herrero/Herrera; Historiador/Historiadora; Heladero/Heladera; Hojalatero/Hojalatera
+Ingeniero/Ingeniera; Instructor/Instructora; Investigador/Investigadora; Intérprete; Ilustrador/Ilustradora; Informático/Informática
+Jardinero/Jardinera; Joyero/Joyera; Juez/Jueza; Jinete
+Kinesiólogo/Kinesióloga
+Locutor/Locutora; Lavandero/Lavandera; Leñador/Leñadora; Librero/Librera; Lechero/Lechera; Latonero/Latonera = el que endereza la lata de los carros; Lingüista
+Médico/Médica; Mecánico/Mecánica; Maestro/Maestra; Mesonero/Mesonera = el que atiende las mesas; Marinero/Marinera; Mototaxista = te lleva en moto por unos bolívares; Músico/Música; Modelo; Minero/Minera; Militar; Mago/Maga; Manicurista; Masajista
+Notario/Notaria; Nutricionista; Niñero/Niñera; Neurólogo/Neuróloga; Novelista; Navegante
+Obrero/Obrera; Odontólogo/Odontóloga; Oculista; Óptico/Óptica; Oficinista; Orfebre; Oftalmólogo/Oftalmóloga
+Panadero/Panadera; Peluquero/Peluquera; Pescador/Pescadora; Piloto; Pintor/Pintora; Plomero/Plomera; Policía; Periodista; Profesor/Profesora; Psicólogo/Psicóloga; Payaso/Payasa; Pediatra; Programador/Programadora; Portero/Portera; Pastelero/Pastelera
+Químico/Química; Quiropráctico/Quiropráctica; Quesero/Quesera; Quincallero/Quincallera = el dueño de la quincalla
+Recepcionista; Reportero/Reportera; Repartidor/Repartidora; Relojero/Relojera; Radiólogo/Radióloga; Redactor/Redactora; Repostero/Repostera
+Sastre; Secretario/Secretaria; Soldado; Salvavidas; Sacerdote; Soldador/Soldadora; Sociólogo/Socióloga; Supervisor/Supervisora
+Taxista; Torero/Torera; Traductor/Traductora; Técnico/Técnica; Tapicero/Tapicera; Topógrafo/Topógrafa; Tornero/Tornera; Tatuador/Tatuadora
+Urólogo/Uróloga; Urbanista; Ujier
+Veterinario/Veterinaria; Vendedor/Vendedora; Vigilante; Violinista; Vidriero/Vidriera
+Yesero/Yesera
+Zapatero/Zapatera; Zoólogo/Zoóloga; Zootecnista
+`,
+  deporte: `
+Atletismo; Ajedrez; Automovilismo; Alpinismo; Arquería/Tiro con arco; Aikido
+Béisbol/Pelota = el deporte rey de Venezuela; Básquet/Baloncesto/Básquetbol; Boxeo; Bolas criollas = se lanzan las bolas lo más cerca del mingo; Bádminton; Balonmano; Billar; Boliche; Buceo
+Ciclismo; Coleo/Toros coleados = deporte llanero, se tumba al toro por la cola; Canotaje; Críquet; Curling; Clavados; Capoeira
+Dominó #duda = juego de mesa, ¿será deporte?; Dardos; Decatlón; Duatlón
+Esgrima; Equitación; Escalada; Esquí; Esquí acuático
+Fútbol; Fútbol sala/Futsal; Frontón; Fútbol americano; Fisicoculturismo
+Gimnasia; Golf; Gimnasia rítmica; Gimnasia artística
+Hockey; Halterofilia/Pesas; Hípica; Hapkido
+Judo/Yudo; Jabalina; Jiu-jitsu; Jai alai
+Karate; Kárting; Kickboxing; Kitesurf; Kayak; Kung fu
+Lucha libre; Lucha grecorromana; Lacrosse; Lanzamiento de disco
+Motocross; Maratón; Montañismo; Motociclismo; Muay thai
+Natación; Nado sincronizado
+Orientación
+Pádel; Patinaje; Ping-pong/Tenis de mesa; Paracaidismo; Pesca; Polo; Pentatlón; Parapente
+Rugby; Remo; Rápel; Racquetbol; Rafting
+Surf; Sóftbol; Squash; Salto alto; Salto de longitud; Snowboard; Sumo; Senderismo
+Tenis; Taekwondo; Tiro; Triatlón; Trote
+Voleibol/Vóley; Vela; Vóley de playa
+Waterpolo; Wakeboard
+Yoga #duda = ¿ejercicio o deporte?
+`,
+  cuerpo: `
+Abdomen; Axila; Antebrazo; Arteria; Amígdala; Apéndice; Aorta
+Brazo; Boca; Barriga; Barbilla; Bíceps; Bazo; Bronquio
+Codo; Cabeza; Cara; Cadera; Ceja; Cerebro; Cintura; Corazón; Costilla; Cuello; Columna; Cráneo; Cachete = la mejilla; Canilla = la espinilla; Clavícula
+Diente; Dedo; Diafragma; Duodeno
+Espalda; Estómago; Esófago; Encía; Esternón; Espinilla; Empeine
+Frente; Falange; Fémur; Faringe
+Garganta; Glúteo; Glándula
+Hombro; Hueso; Hígado; Húmero
+Intestino; Iris; Índice; Ingle
+Labio; Lengua; Lóbulo; Laringe
+Mano; Muñeca; Muslo; Mejilla; Mentón; Muela; Músculo; Mandíbula; Médula; Meñique; Mollera = la parte blandita de la cabeza del bebé
+Nariz; Nuca; Nalga; Nudillo; Nervio; Neurona
+Ojo; Oreja; Oído; Ombligo; Omóplato
+Pie; Pierna; Pecho; Pelo; Pestaña; Párpado; Pulmón; Pantorrilla; Paladar; Pómulo; Pulgar; Páncreas; Piel
+Quijada
+Rodilla; Riñón; Rótula; Retina
+Seno; Sien; Sangre; Sobaco = la axila
+Tobillo; Talón; Tórax; Tímpano; Tendón; Tráquea; Tibia; Tripa
+Uña; Úvula; Útero
+Vena; Vejiga; Vértebra; Vesícula
+Yema = la puntica del dedo; Yugular
+`,
+  casa: `
+Almohada; Alfombra; Armario; Aspiradora; Abanico; Arepera = la maquinita de hacer arepas; Aire acondicionado; Azucarero
+Budare = la plancha redonda para las arepas; Bañera; Bombillo; Batidora; Bacinilla = la vasija de noche; Basurero; Bandeja; Baúl
+Cama; Chinchorro = la hamaca tejida; Cocina; Cortina; Cuchara; Cuchillo; Cafetera; Colchón; Clóset = el armario; Cobija; Cojín; Colador; Congelador; Cucharón; Cuadro; Coleto = el trapo de limpiar el piso
+Ducha; Despertador; Destapador; Delantal
+Escoba; Espejo; Escalera; Estufa; Esponja; Exprimidor; Enchufe; Estante
+Fregadero; Florero; Freidora; Fogón
+Gabinete; Grifo; Gavetero = la cómoda de gavetas; Gaveta = el cajón; Gancho = el colgador de la ropa
+Horno; Hamaca; Hielera; Hervidor
+Inodoro = la poceta; Interruptor; Individual = el mantelito de cada puesto
+Jabonera; Jarra; Jarrón; Jabón
+Licuadora; Lámpara; Lavadora; Lavaplatos; Litera; Lavamanos
+Mesa; Mueble = el sofá; Microondas; Mantel; Mecedora; Mesa de noche; Matamoscas; Matero = la maceta
+Nevera = el refrigerador
+Olla; Olla de presión
+Poceta = el inodoro; Plato; Puerta; Plancha; Perchero; Persiana; Pipote = el tambor de la basura; Pocillo = la taza chiquita del café; Ponchera = la palangana; Pote; Papelera
+Refrigerador; Reloj; Repisa; Radio; Rallador; Rodillo
+Sartén; Silla; Sofá; Sábana; Secadora; Servilleta; Salero; Sillón
+Tostadora; Taza; Televisor; Toalla; Tenedor; Tobo = el balde; Termo; Tetera; Tapete; Tabla de planchar
+Ventilador; Vaso; Ventana; Vela; Vajilla
+Zapatera = el mueble de los zapatos
+`,
+  planta: `
+Araguaney = el árbol nacional de Venezuela; Acacia; Azucena; Amapola; Apamate = árbol de flores rosadas; Abedul; Albahaca; Almendro; Anturio; Azalea
+Bucare = árbol de flores rojas que da sombra al café; Bambú; Begonia; Buganvilla; Baobab; Bromelia
+Cayena = el hibisco; Cactus; Caoba; Ceiba; Clavel; Cedro; Cují = árbol espinoso de Lara y Falcón; Cardón = cactus grandote de Paraguaná; Crisantemo; Ciprés; Caña de azúcar; Cacao
+Dalia; Diente de león; Dracena
+Eucalipto; Enredadera; Encina; Eneldo
+Frailejón = planta peludita de los páramos andinos; Ficus; Flamboyán = árbol de flores rojas encendidas; Fresno; Fucsia
+Girasol; Gardenia; Geranio; Guayacán; Gladiolo; Grama = el césped
+Helecho; Hiedra; Hortensia; Hierbabuena/Yerbabuena; Higuera
+Iris
+Jazmín; Jacaranda; Junco; Jengibre
+Lirio; Laurel; Lavanda; Loto; Limonero
+Margarita; Mangle; Manzanilla; Menta; Moriche = la palma de los llanos; Musgo; Magnolia; Mastranto = hierba olorosa del llano
+Nardo; Narciso; Nogal; Nenúfar
+Orquídea/Flor de mayo = la flor nacional de Venezuela; Olivo; Orégano; Ortiga; Olmo
+Palmera; Pino; Petunia; Pasto; Peonía; Pensamiento; Palma real
+Rosa; Romero; Roble; Ruda
+Samán = el árbol gigante que da sombra en los llanos; Sábila/Zábila = el aloe; Sauce; Suculenta; Secuoya
+Tulipán; Trinitaria = la buganvilla; Tabaco; Toronjil; Trébol; Tuna = el nopal
+Violeta; Verbena; Vid
+Yuca; Yagrumo = árbol de hojas plateadas por debajo
+Zinnia; Zarza
+`,
+  pelicula: `
+Avatar; Aladdín; Alien; Avengers; Azul y no tan rosa = película venezolana de Miguel Ferrari; Annabelle; Amélie; Aquaman
+Batman; Bambi; Breaking Bad; Buscando a Nemo; Blancanieves; Bob Esponja; Bohemian Rhapsody; Bichos
+Coco; Cars; Cenicienta; Cazafantasmas; Chucky; Casablanca; Click; Corazón valiente; Crepúsculo; Cristal = telenovela venezolana
+Dumbo; Duro de matar; Deadpool; Dexter; Drácula; Desde allá = película venezolana, León de Oro en Venecia; Dragon Ball
+El Rey León; El Padrino; E.T.; El Chavo del 8; Encanto; El Señor de los Anillos; El Exorcista; El Libertador = película venezolana sobre Bolívar; Enredados/Rapunzel
+Frozen; Forrest Gump; Friends; Flash; Free Willy
+Gladiador; Godzilla; Grease; Guardianes de la galaxia; Gremlins; Garfield
+Harry Potter; Hulk; Hércules; Hermano = película venezolana de fútbol en el barrio; Halloween; Hotel Transylvania
+Intensamente; Iron Man; Interestelar; Indiana Jones; It
+Jumanji; Joker; Jurassic Park/Parque Jurásico; Juego de tronos/Game of Thrones; Juego del calamar/El juego del calamar
+King Kong; Kung Fu Panda; Karate Kid
+La Sirenita; La Bella y la Bestia; Los Simpson; La casa de papel; Lilo y Stitch; Los Increíbles; La era de hielo; Luca; Lo que el viento se llevó; La rosa de Guadalupe
+Matrix; Madagascar; Mulán; Moana; Mi villano favorito; Mary Poppins; Monsters Inc.; Mad Max; Mujercitas; Misión imposible; Merlina/Wednesday
+Narnia; Narcos; Náufrago; Nosferatu
+Oppenheimer; Oliver Twist; Orgullo y prejuicio
+Pinocho; Peter Pan; Piratas del Caribe; Pocahontas; Psicosis; Pulp Fiction; Pantera Negra; Parásitos; Papita, maní, tostón = comedia venezolana de caraquistas y magallaneros; Pelo malo = película venezolana; Por estas calles = telenovela venezolana
+Quo vadis
+Rocky; Rambo; Ratatouille; Rápido y furioso; Robocop
+Shrek; Spider-Man/Hombre Araña; Superman; Star Wars/La guerra de las galaxias; Scream; Stranger Things; Secuestro express = película venezolana
+Titanic; Toy Story; Tarzán; Tiburón; Terminator; Thor; Tom y Jerry
+Up; Un jefe en pañales; Una noche en el museo
+Volver al futuro; Valiente; Viernes 13; Venom
+Wall-E; Wonder Woman; Willy Wonka
+X-Men
+Yo, robot; Yo antes de ti
+Zootopia; Zombieland
 `,
 };
 

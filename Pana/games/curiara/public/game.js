@@ -7,7 +7,8 @@ import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound, pulseSpeedLines, setSpeedLines } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
-import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
+import { inviteUrl } from '/engine/invite.js';
+import { roomCode } from '/engine/game-shell.js';
 import { holdButton } from '/engine/touch.js';
 import { bindRenderer, pixelRatio } from '/engine/settings.js';
 import { RiverRoom } from './network.js';
@@ -21,35 +22,37 @@ import { addLandscape } from '/engine/river/landscape.js';
 import { createRiverFX } from '/engine/river/water-fx.js';
 import { createRiverGuide } from '/engine/river/guide.js';
 import { createRiverMinimap } from '/engine/river/minimap.js';
+import { createRaceHud } from '/engine/river/hud.js';
 import { createMusic } from '/engine/music.js';
 import { createToast } from '/engine/hud.js';
+import { loc, locn, formatList } from '/engine/i18n.js';
 
 let RIVER=DEFAULT_RIVER;
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search), avatar = loadAvatar(), name = loadName();
 const showNotice = createToast($('notice'), { ms: 3000 });
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 let format = FORMATS[store.get('curiara:format')] ? store.get('curiara:format') : 'todos';
-const code = roomFromUrl() || newRoomCode(); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
+const code = roomCode();
 const keys = new Set(), touch = new Set(), canoes = new Map(), touchButtons = [];
-let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastCountdown = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
+let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
 const room = new RiverRoom({ code, name, avatar, onState: s => { state = s; snapshotAt = performance.now(); }, onStatus: (message, error = false) => { $('connection').textContent = message; $('practice').classList.toggle('hidden', !error); if (error) showNotice(message); } });
 state = room.state;
 const crewRoster = createLobbyRoster($('seats'), { onMove: (from, to) => room.moveSeat(from, to) });
 
-const roomOptions=createRoomOptions($('room-options'),{title:'Curiara',fields:FIELDS,change:patch=>{if(patch.crew){format=patch.crew;store.set('curiara:format',format);}room.configure(patch);},reset:()=>{$('bots').checked=true;room.configure(cleanOptions());}});
+const roomOptions=createRoomOptions($('room-options'),{title:'Curiara',fields:FIELDS,change:patch=>{if(patch.crew){format=patch.crew;store.set('curiara:format',format);}room.configure(patch);},reset:()=>{room.configure(cleanOptions());}});
 for(const button of document.querySelectorAll('[data-room-option=crew]'))button.dataset.format=button.dataset.value;
 // Strokes keep the pana's own clock; the host maps them onto race time.
 const strokes = [], local = { seq: 0, last: null, side: 0, splash: 0, streak: 0, mash: 0 };
 const clock = () => performance.now() / 1000;
 function clearInput() { keys.clear(); for (const b of touchButtons) b.release(); touch.clear(); }
-const menu = createGameMenu({ pad: { move: 'wasd', moveLabel: '↑ remo automático, ← → timón, ↓ ciar', keys: { lb: ['KeyA', 'Remar a la izquierda'], lt: ['KeyA', 'Remar a la izquierda'], rb: ['KeyD', 'Remar a la derecha'], rt: ['KeyD', 'Remar a la derecha'], a: ['Space', '¡Salpicón!'] } }, title: 'Curiara', sound, orientation: 'libre', note: () => room.members.size > 1 ? 'La carrera sigue mientras abres el menú.' : 'La carrera está en pausa.',
-  controls: [['W / ↑ sostenido', 'Remo automático; A y D llevan el timón'], ['A / ←', 'Remar a la izquierda'], ['D / →', 'Remar a la derecha'], ['A D A D', 'Alternar: recto y a toda'], ['D D / A A', 'Mismo lado: girar al lado contrario'], ['S / ↓', 'Ciar: frenar; con A o D, pivotar'], ['Espacio', '¡Salpicón! a la curiara de al lado'], ['M', 'Sonido'], ['Esc', 'Menú']],
-  tips: ['¿Te cuesta el ritmo? Sostén W: la curiara rema sola y tú solo giras con A y D.', 'Machacar las teclas frena la curiara. Con calma se va más rápido.', 'Sigue las flechas doradas en el agua: marcan el chorro y esquivan los caimanes.', 'Rema justo cuando el anillo pasa por la zona dorada: ¡Remazo!', 'En Parejas, la proa rema y la popa lleva el timón (A/D sostenido), cía y lanza el salpicón. Si la popa toca A o D justo con la remada: ¡Ahora!'],
-  invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: 'Abrir carrera local', run: () => goLocal() }],
+const menu = createGameMenu({ pad: { move: 'wasd', moveLabel: loc('↑ remo automático, ← → timón, ↓ ciar'), keys: { lb: ['KeyA', loc('Remar a la izquierda')], lt: ['KeyA', loc('Remar a la izquierda')], rb: ['KeyD', loc('Remar a la derecha')], rt: ['KeyD', loc('Remar a la derecha')], a: ['Space', loc('¡Salpicón!')] } }, title: 'Curiara', sound, orientation: 'libre', note: () => room.members.size > 1 ? loc('La carrera sigue mientras abres el menú.') : loc('La carrera está en pausa.'),
+  controls: [['W / ↑ sostenido', loc('Remo automático; A y D llevan el timón')], ['A / ←', loc('Remar a la izquierda')], ['D / →', loc('Remar a la derecha')], ['A D A D', loc('Alternar: recto y a toda')], ['D D / A A', loc('Mismo lado: girar al lado contrario')], ['S / ↓', loc('Ciar: frenar; con A o D, pivotar')], ['Espacio', loc('¡Salpicón! a la curiara de al lado')], ['M', loc('Sonido')], ['Esc', loc('Menú')]],
+  tips: [loc('¿Te cuesta el ritmo? Sostén W: la curiara rema sola y tú solo giras con A y D.'), loc('Machacar las teclas frena la curiara. Con calma se va más rápido.'), loc('Sigue las flechas doradas en el agua: marcan el chorro y esquivan los caimanes.'), loc('Rema justo cuando el anillo pasa por la zona dorada: ¡Remazo!'), loc('En Parejas, la proa rema y la popa lleva el timón (A/D sostenido), cía y lanza el salpicón. Si la popa toca A o D justo con la remada: ¡Ahora!')],
+  invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: loc('Abrir carrera local'), run: () => goLocal() }],
   onOpen() { paused = true; clearInput(); if (room.members.size <= 1) music.pause(); }, onClose() { paused = false; music.resume(); } });
 const navButton = 'pk-btn pk-btn--sm game-menu-button';
-$('game-nav').append(menu.createInviteButton({ id: 'invite', label: 'Invitar', className: navButton }), menu.createSoundButton({ id: 'sound', className: navButton }), menu.createButton({ id: 'menu', className: navButton }));
-$('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', label: 'Invitar panas', className: 'pk-btn' }));
+$('game-nav').append(menu.createInviteButton({ id: 'invite', label: loc('Invitar'), className: navButton }), menu.createSoundButton({ id: 'sound', className: navButton }), menu.createButton({ id: 'menu', className: navButton }));
+$('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', label: loc('Invitar panas'), className: 'pk-btn' }));
 $('room-code').textContent = code.toUpperCase();
 const coarse = matchMedia('(pointer:coarse)').matches, music = createMusic(sound);
 function unlock() { try { sound.unlock(); } catch { /* audio blocked */ } }
@@ -59,8 +62,7 @@ function goLocal() { room.practice(); $('practice').classList.add('hidden'); }
 const myBoat = () => state.boats.find(b => b.crew.some(c => c.id === room.id));
 const myRole = () => { const b = myBoat(); if (!b) return 'solo'; return b.crew.length === 1 ? 'solo' : b.crew.find(c => c.id === room.id).seat ? 'popa' : 'proa'; };
 
-let callTimer = 0;
-function call(text, kind = '') { const e = $('call'); e.textContent = text; e.className = `call ${kind}`; e.classList.remove('hidden'); void e.offsetWidth; callTimer = .9; }
+const hud = createRaceHud(sound), { call } = hud;
 function tock(power) { sound.tone(1180, 0, .045, 'triangle', .07 * power); sound.tone(590, .01, .07, 'sine', .08 * power); }
 // `at` is the input event's own timestamp, so a slow frame never bends the rhythm.
 function stroke(side, at) {
@@ -76,8 +78,8 @@ function stroke(side, at) {
   if (role !== 'popa' && !keys.has('KeyS') && !keys.has('ArrowDown') && !touch.has('back')) {
     const gap = local.last == null ? Infinity : t - local.last, g = state.options.paddling==='tap'?{quality:'bueno'}:grade(gap, gap !== Infinity && side === local.side);
     local.streak = g.quality === 'remazo' ? local.streak + 1 : g.quality === 'chapoteo' || g.quality === 'arranque' ? 0 : local.streak;
-    if (g.quality === 'remazo') { tock(1); sound.whoosh(); pulseSpeedLines(220, 0.55); call(local.streak >= 3 ? `¡Remazo ×${local.streak}!` : '¡Remazo!'); }
-    else if (g.quality === 'chapoteo') { sound.sweep(900, 300, .12, 'triangle', .05); call(++local.mash % 3 ? '¡Chapoteo!' : '¡Más calma!', 'is-soft'); }
+    if (g.quality === 'remazo') { tock(1); sound.whoosh(); pulseSpeedLines(220, 0.55); call(local.streak >= 3 ? loc('¡Remazo ×{n}!', { n: local.streak }) : loc('¡Remazo!')); }
+    else if (g.quality === 'chapoteo') { sound.sweep(900, 300, .12, 'triangle', .05); call(++local.mash % 3 ? loc('¡Chapoteo!') : loc('¡Más calma!'), 'is-soft'); }
     else sound.tone(420, 0, .05, 'triangle', .04);
   }
   local.last = t; local.side = side;
@@ -111,13 +113,13 @@ function drawSeats() {
   const pairs = FORMATS[state.format].seats === 2, capacity = FORMATS[state.format].boats * FORMATS[state.format].seats;
   const people = state.players.filter(p => !p.bot).length;
   $('seats').hidden = !pairs;
-  $('format-copy').textContent = people > capacity ? `Hay ${people} panas y ${capacity} puestos. Elige más curiaras para dar la salida.` : pairs ? `${FORMATS[state.format].boats} curiaras de dos panas: la proa rema, la popa lleva el timón. Elige tu puesto.` : 'Una curiara por pana. Ocho curiaras en el agua.';
+  $('format-copy').textContent = people > capacity ? loc('Hay {people} panas y {capacity} puestos. Elige más curiaras para dar la salida.', { people, capacity }) : pairs ? loc('{boats} curiaras de dos panas: la proa rema, la popa lleva el timón. Elige tu puesto.', { boats: FORMATS[state.format].boats }) : loc('Una curiara por pana. Ocho curiaras en el agua.');
   for (const b of document.querySelectorAll('[data-format]')) { b.setAttribute('aria-pressed', String(b.dataset.format === state.format)); b.disabled = !room.isHost || !room.connected; }
   if (!pairs) return;
-  crewRoster.update(crewGrid(state.players, state.format).map((crew, boat) => ({ id: boat, title: `Curiara ${boat + 1}`, color: COLORS[boat], seats: crew.map((player, pos) => ({ key: boat * 2 + pos, player, label: pos ? 'Popa · timón' : 'Proa · remo' })) })),
+  crewRoster.update(crewGrid(state.players, state.format).map((crew, boat) => ({ id: boat, title: `Curiara ${boat + 1}`, color: COLORS[boat], seats: crew.map((player, pos) => ({ key: boat * 2 + pos, player, label: pos ? loc('Popa · timón') : loc('Proa · remo') })) })),
     { ownId: room.id, hostId: room.hostId, enabled: room.connected && ['lobby', 'finished'].includes(state.phase), canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
 }
-$('start').onclick = $('again').onclick = () => { unlock(); room.start($('bots').checked); };
+$('start').onclick = $('again').onclick = () => { unlock(); room.start(); };
 $('practice').onclick = () => goLocal();
 
 await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 30)));
@@ -167,101 +169,91 @@ function drawRing(own, t) {
   }
   const sweet = since >= PADDLE.sweet[0] && since <= PADDLE.sweet[1];
   key.classList.toggle('is-sweet', sweet);
-  const next = popa ? '¡Ya!' : local.side < 0 ? (coarse ? 'Der.' : 'D') : (coarse ? 'Izq.' : 'A');
+  const next = popa ? loc('¡Ya!') : local.side < 0 ? (coarse ? loc('Der.') : 'D') : (coarse ? loc('Izq.') : 'A');
   if (key.textContent !== next) key.textContent = next;
 }
 function tipText(b) {
-  if (!b) return 'Corres en la próxima.';
-  if (b.finish !== null) return '¡En la churuata! Esperando a tus panas.';
-  if (b.capsized > 0) return '¡Volcaste! Nadando de vuelta a la curiara…';
-  if (b.sprayed > 0) return '¡Salpicón! No ves nada, sigue remando.';
+  if (!b) return loc('Corres en la próxima.');
+  if (b.finish !== null) return loc('¡En la churuata! Esperando a tus panas.');
+  if (b.capsized > 0) return loc('¡Volcaste! Nadando de vuelta a la curiara…');
+  if (b.sprayed > 0) return loc('¡Salpicón! No ves nada, sigue remando.');
   const caiman = RIVER.caimanesAt(state.time).find(c => c.s > b.s && c.s < b.s + 30 && Math.abs(c.offset - (b.offset || 0)) < 7);
-  if (caiman && state.options.items) return '¡Caimán cruzando adelante! Sigue las flechas doradas para esquivarlo.';
-  if (b.paddle?.quality === 'chapoteo' && myRole() !== 'popa') return 'Machacar frena la curiara. Alterna A y D con calma, o sostén W y rema solo.';
-  if (autoHeld() && myRole() !== 'popa') return 'Remo automático: A y D llevan el timón. Con ritmo propio vas más rápido.';
-  if(state.options.paddling==='tap'&&myRole()!=='popa')return 'Toca A y D para remar. Cada toque vale igual; evita machacar las teclas.';
-  if (myRole() === 'popa') return 'Sostén A o D para el timón. Toca justo con la remada: ¡Ahora!';
-  if (b.whirl > .15) return '¡Remolino! Rema fuerte hacia afuera. Por el borde, la corriente te lleva.';
-  if (b.boost > 0) return '¡La estela de las toninas te empuja!';
-  if (b.eddy > .3) return 'Remanso: el agua te frena. Rema hacia el chorro.';
+  if (caiman && state.options.items) return loc('¡Caimán cruzando adelante! Sigue las flechas doradas para esquivarlo.');
+  if (b.paddle?.quality === 'chapoteo' && myRole() !== 'popa') return loc('Machacar frena la curiara. Alterna A y D con calma, o sostén W y rema solo.');
+  if (autoHeld() && myRole() !== 'popa') return loc('Remo automático: A y D llevan el timón. Con ritmo propio vas más rápido.');
+  if(state.options.paddling==='tap'&&myRole()!=='popa')return loc('Toca A y D para remar. Cada toque vale igual; evita machacar las teclas.');
+  if (myRole() === 'popa') return loc('Sostén A o D para el timón. Toca justo con la remada: ¡Ahora!');
+  if (b.whirl > .15) return loc('¡Remolino! Rema fuerte hacia afuera. Por el borde, la corriente te lleva.');
+  if (b.boost > 0) return loc('¡La estela de las toninas te empuja!');
+  if (b.eddy > .3) return loc('Remanso: el agua te frena. Rema hacia el chorro.');
   const drop = RIVER.drops.find(d => b.s > d.s - d.span - 40 && b.s < d.s - d.span + 2);
-  if (drop) return 'Raudal adelante: elige carril. El rápido cae de golpe; ¡llega recto!';
-  if (b.channel === 'branch') return 'Atajo del igapó: corto, lento y lleno de troncos.';
-  if (b.tip > 60) return 'Endereza la curiara: rema recto para calmarla.';
-  return 'Alterna A y D en la zona dorada del anillo, o sostén W y rema solo.';
+  if (drop) return loc('Raudal adelante: elige carril. El rápido cae de golpe; ¡llega recto!');
+  if (b.channel === 'branch') return loc('Atajo del igapó: corto, lento y lleno de troncos.');
+  if (b.tip > 60) return loc('Endereza la curiara: rema recto para calmarla.');
+  return loc('Alterna A y D en la zona dorada del anillo, o sostén W y rema solo.');
 }
 // What just happened to this pana's canoe, from the snapshot's counters.
-let seen = null, lastPhoto = null;
-function flash() { const e = $('flash'); e.classList.remove('is-on'); void e.offsetWidth; e.classList.add('is-on'); sound.tone(1600, 0, .05, 'square', .05); }
+let seen = null;
 function events(own) {
   if (!own) return;
   const now = { caps: own.capsizes, bitten: own.bitten || 0, drops: own.drops || 0, toninas: own.toninas || 0, sprayed: own.splashedAt || 0, soaked: own.soaked || 0, bumps: own.bumps || 0, syncs: own.paddle?.syncs || 0 };
   if (seen) {
-    if (now.caps > seen.caps) { call('¡Volcaste!', 'is-soft'); sound.sweep(500, 90, .5, 'sine', .14); shake = .5; shakePower = .5; }
-    else if (now.bitten > seen.bitten) { call('¡Un babo!'); sound.bonk(1); shake = .35; shakePower = .4; }
-    else if (now.drops > seen.drops) { call(own.tip > 60 ? '¡Uy, casi!' : '¡Raudal!', 'is-teal'); sound.plop(); shake = .4; shakePower = .35; }
-    else if (now.sprayed > seen.sprayed) { call('¡Salpicón!', 'is-soft'); sound.splat?.(); }
-    else if (now.soaked > seen.soaked) { call('¡Te mojé!', 'is-teal'); sound.splat?.(); }
-    else if (now.toninas > seen.toninas) { call('¡Toninas!', 'is-teal'); sound.sweep(600, 1100, .3, 'sine', .07); }
-    else if (now.syncs > seen.syncs && myRole() !== 'solo') { call('¡Ahora!', 'is-teal'); tock(.8); }
-    if (now.bumps > seen.bumps) { shake = Math.max(shake, .2); shakePower = Math.max(shakePower, .2); sound.bonk(.5); }
+    if (now.caps > seen.caps) { call(loc('¡Volcaste!'), 'is-soft'); sound.sweep(500, 90, .5, 'sine', .14); hud.shake(.5); }
+    else if (now.bitten > seen.bitten) { call(loc('¡Un babo!')); sound.bonk(1); hud.shake(.35, .4); }
+    else if (now.drops > seen.drops) { call(own.tip > 60 ? loc('¡Uy, casi!') : loc('¡Raudal!'), 'is-teal'); sound.plop(); hud.shake(.4, .35); }
+    else if (now.sprayed > seen.sprayed) { call(loc('¡Salpicón!'), 'is-soft'); sound.splat?.(); }
+    else if (now.soaked > seen.soaked) { call(loc('¡Te mojé!'), 'is-teal'); sound.splat?.(); }
+    else if (now.toninas > seen.toninas) { call(loc('¡Toninas!'), 'is-teal'); sound.sweep(600, 1100, .3, 'sine', .07); }
+    else if (now.syncs > seen.syncs && myRole() !== 'solo') { call(loc('¡Ahora!'), 'is-teal'); tock(.8); }
+    if (now.bumps > seen.bumps) { hud.shake(.2); sound.bonk(.5); }
   }
   seen = now;
 }
-function crewName(b) { return b.crew.filter(c => !c.empty).map(c => c.name).join(' y '); }
+function crewName(b) { return formatList(b.crew.filter(c => !c.empty).map(c => c.name)); }
 function updateUI() {
   applyRiverOptions();
   roomOptions.update(state.options||cleanOptions(),room.isHost&&room.connected&&state.phase==='lobby');
-  $('bots').disabled = !room.connected || !room.isHost;
   const lobby = state.phase === 'lobby', done = state.phase === 'finished', playing = !lobby && !done;
   document.body.classList.toggle('in-lobby', lobby); $('lobby').classList.toggle('hidden', !lobby); $('hud').classList.toggle('hidden', !playing); $('results').classList.toggle('hidden', !done);
-  $('start').disabled = !room.connected || !room.isHost || !ready || state.players.filter(p=>!p.bot).length>FORMATS[state.format].boats*FORMATS[state.format].seats; $('start').firstChild.textContent = !room.connected ? 'Conectando… ' : room.isHost ? '¡Al agua! ' : 'Esperando al anfitrión… ';
-  $('again').disabled = !room.connected || !room.isHost; $('again').firstChild.textContent = room.isHost ? 'Otra carrera ' : 'Esperando al anfitrión… ';
+  $('start').disabled = !room.connected || !room.isHost || !ready || state.players.filter(p=>!p.bot).length>FORMATS[state.format].boats*FORMATS[state.format].seats; $('start').firstChild.textContent = (!room.connected ? loc('Conectando…') : room.isHost ? loc('¡Al agua!') : loc('Esperando al anfitrión…')) + ' ';
+  $('again').disabled = !room.connected || !room.isHost; $('again').firstChild.textContent = (room.isHost ? loc('Otra carrera') : loc('Esperando al anfitrión…')) + ' ';
   if (lobby) drawSeats();
   const own = myBoat(), ordered = standings(state), place = own ? ordered.indexOf(own) + 1 : 0, role = myRole();
-  $('place').textContent = place || '—'; $('field-size').textContent = `de ${ordered.length}`;
+  $('place').textContent = place || '—'; $('field-size').textContent = loc('de {n}', { n: ordered.length });
   $('timer').textContent = formatTime(own?.finish ?? state.time);
   $('left').textContent = `${Math.max(0, Math.round(RIVER.LENGTH - (own?.progress || 0)))} m`;
-  $('sector').textContent = own ? RIVER.sector(own.s) : 'Mirando';
+  $('sector').textContent = own ? RIVER.sector(own.s) : loc('Mirando');
   $('speed').textContent = own ? Math.round(Math.hypot(own.gx || 0, own.gz || 0) * 3.6) : 0;
   const tip = own?.tip || 0;
   $('tip-fill').style.width = `${own?.capsized > 0 ? 100 : tip}%`;
   $('tip-fill').parentElement.className = `pk-bar tip-bar${own?.capsized > 0 || tip > 80 ? ' is-danger' : tip > 55 ? ' is-warn' : ''}`;
-  $('tip-label').textContent = own?.capsized > 0 ? '¡Volcó!' : tip > 80 ? '¡Cuidado!' : tip > 45 ? 'se mece' : 'firme';
+  $('tip-label').textContent = own?.capsized > 0 ? loc('¡Volcó!') : tip > 80 ? loc('¡Cuidado!') : tip > 45 ? loc('se mece') : loc('firme');
   $('paddle-tip').textContent = tipText(own);
-  $('role').classList.toggle('hidden', role === 'solo'); $('role').textContent = role === 'popa' ? 'Popa · timón' : 'Proa · remo';
-  const loaded = state.options.items && own && own.splashCd <= 0; $('splash-state').textContent = !state.options.items ? 'Sin objetos' : loaded ? 'Salpicón listo' : `Salpicón ${Math.ceil(own?.splashCd || 0)} s`; $('splash-state').classList.toggle('is-ready', !!loaded);
+  $('role').classList.toggle('hidden', role === 'solo'); $('role').textContent = role === 'popa' ? loc('Popa · timón') : loc('Proa · remo');
+  const loaded = state.options.items && own && own.splashCd <= 0; $('splash-state').textContent = !state.options.items ? loc('Sin objetos') : loaded ? loc('Salpicón listo') : loc('Salpicón {s} s', { s: Math.ceil(own?.splashCd || 0) }); $('splash-state').classList.toggle('is-ready', !!loaded);
   document.querySelector('[data-input="splash"]').disabled=!state.options.items;
   $('keys-hint').classList.toggle('hidden', role === 'popa'); $('helm-hint').classList.toggle('hidden', role !== 'popa');
   $('spray').classList.toggle('is-on', (own?.sprayed || 0) > 0);
-  $('leaderboard').replaceChildren(...ordered.slice(0, 8).map((b, i) => {
-    const li = document.createElement('li'); li.className = b === own ? 'pk-row is-me' : 'pk-row';
-    const n = document.createElement('b'); n.className = 'pk-row-n'; n.textContent = i + 1;
-    const dot = document.createElement('i'); dot.className = 'boat-dot'; dot.style.setProperty('--boat', b.color);
-    const span = document.createElement('span'); span.className = 'row-name'; span.textContent = crewName(b) + (b === own ? ' · tú' : '');
-    const end = document.createElement('span'); end.className = 'pk-row-end'; end.textContent = b.finish !== null ? formatTime(b.finish) : b.capsized > 0 ? 'volcó' : '';
-    li.append(n, dot, span, end); return li;
-  }));
-  const count = state.phase === 'countdown' ? String(Math.max(1, Math.ceil(state.countdown))) : state.phase === 'racing' && state.time < .75 ? '¡REMA!' : '';
-  $('countdown').classList.toggle('hidden', !count); $('countdown').textContent = count;
-  if (count && count !== lastCountdown) { sound.tone(count === '¡REMA!' ? 740 : 370, 0, .12, 'triangle', .06); lastCountdown = count; }
+  hud.leaderboard(ordered.map(b => ({ me: b === own, color: b.color, name: b === own ? loc('{name} · tú', { name: crewName(b) }) : crewName(b),
+    end: b.finish !== null ? formatTime(b.finish) : b.capsized > 0 ? loc('volcó') : '' })));
+  hud.countdown(state, loc('¡REMA!'));
   if (state.raceId !== lastRace) { lastRace = state.raceId; cameraReady = false; clearInput(); local.last = null; local.side = 0; local.streak = 0; fx.reset(); seen = null; }
   if (playing) events(own);
   if (done && (lastPhase !== state.phase || $('result-board').childElementCount !== ordered.length)) {
-    $('result-title').textContent = place === 1 ? (role === 'solo' ? '¡Ganaste, pana!' : '¡Ganaron, panas!') : own?.finish != null ? '¡Llegaste, pana!' : '¡Se cerró la carrera!';
-    $('result-copy').textContent = own?.finish != null ? `${place}.º lugar · ${formatTime(own.finish)} · ${own.remazos} remazos · ${own.capsizes} ${own.capsizes === 1 ? 'vuelta' : 'vueltas'} de campana` : 'La próxima es tuya. Rema en ritmo y busca el chorro.';
-    fillRoster($('result-board'), ordered.map((b, i) => ({ rank: i + 1, name: crewName(b) + (b.crew.every(c => c.bot || c.empty) ? ' · del río' : ''), detail: `${b.remazos} remazos${b.capsizes ? ` · volcó ${b.capsizes}` : ''}`, end: b.finish === null ? 'Sin llegar' : formatTime(b.finish), me: b === own })));
+    $('result-title').textContent = place === 1 ? (role === 'solo' ? loc('¡Ganaste, pana!') : loc('¡Ganaron, panas!')) : own?.finish != null ? loc('¡Llegaste, pana!') : loc('¡Se cerró la carrera!');
+    $('result-copy').textContent = own?.finish != null ? loc('{place}.º lugar · {time} · {remazos} remazos · {flips}', { place, time: formatTime(own.finish), remazos: own.remazos, flips: locn(own.capsizes, '{n} vuelta de campana', '{n} vueltas de campana') }) : loc('La próxima es tuya. Rema en ritmo y busca el chorro.');
+    fillRoster($('result-board'), ordered.map((b, i) => ({ rank: i + 1, name: b.crew.every(c => c.bot || c.empty) ? loc('{name} · del río', { name: crewName(b) }) : crewName(b), detail: b.capsizes ? loc('{remazos} remazos · volcó {n}', { remazos: b.remazos, n: b.capsizes }) : loc('{n} remazos', { n: b.remazos }), end: b.finish === null ? loc('Sin llegar') : formatTime(b.finish), me: b === own })));
     if (lastPhase !== state.phase) sound.tone(660, 0, .25, 'triangle', .08);
   }
   if (state.phase === 'racing' && !music.playing && !paused) music.play('curiara-amazonas', { fallback: 'amazonas' });
   if (state.phase !== 'racing' && state.phase !== 'countdown' && music.playing) music.stop();
   const lead = ordered[0];
   music.setTempo(state.slowmo > 0 ? .6 : lead && RIVER.LENGTH - lead.progress < 120 ? 1.14 : 1);
-  if (state.photo && state.photo.at !== lastPhoto) { lastPhoto = state.photo.at; call('¡Foto finish!', 'is-teal'); flash(); }
+  hud.photoFinish(state);
   lastPhase = state.phase; minimap.draw(state.boats, own);
 }
 ensureCanoes(); ready = true; $('loading').classList.add('hidden'); room.connect(); updateUI();
-const look = new THREE.Vector3(), cameraGoal = new THREE.Vector3(), target = new THREE.Vector3(); let cameraReady = false, elapsed = 0, camH = 0, shake = 0, shakePower = 0;
+const look = new THREE.Vector3(), cameraGoal = new THREE.Vector3(), target = new THREE.Vector3(); let cameraReady = false, elapsed = 0, camH = 0;
 const frameClock = new THREE.Timer().reset();
 function frame() {
   if (disposed) return;
@@ -303,13 +295,12 @@ function frame() {
   }
   if (own?.boost > 0) setSpeedLines(0.75);
   // Raudal landings and bumps shake the camera a little.
-  if (shake > 0) { shake = Math.max(0, shake - dt); const k = shake * shakePower; camera.position.x += (Math.random() - .5) * k; camera.position.y += (Math.random() - .5) * k; }
+  hud.step(dt, camera);
   sun.position.set(q.x - 40, q.y + 70, q.z + 30); sun.target.position.copy(q); sun.target.updateMatrixWorld();
   tickWind(elapsed, 0.9);
   world.world.update(elapsed, dt); world.world.cull(camera); world.world.race(state, t); world.sky.update(elapsed);
   fx.update(elapsed, boats.filter(b => b.id !== 'preview'), canoes, q, t);
   guide.update(RIVER, own && canoes.get(own.id) ? { ...own, x: canoes.get(own.id).group.position.x, z: canoes.get(own.id).group.position.z, h: canoes.get(own.id).group.rotation.y } : null, t, { on: state.options.guide && state.phase === 'racing', clock: elapsed });
-  if (callTimer > 0) { callTimer -= dt; if (callTimer <= 0) $('call').classList.add('hidden'); }
   const steady = state.options.paddling === 'tap' || (autoHeld() && myRole() !== 'popa');
   $('ring').classList.toggle('hidden', steady);
   if (steady) $('next-key').textContent = autoHeld() ? 'W' : 'A / D';
@@ -328,6 +319,5 @@ if (params.has('debug')) window.curiara = { room, get state() { return state; },
   step(seconds, controls) { for (let t = 0; t < seconds; t += .05) room.tick(.05, controls ? controls() : input()); updateUI(); },
   place(id, s, offset = 0) { const b = room.game.boatOf(id), q = RIVER.at(s, offset); Object.assign(b, { x: q.x, z: q.z, h: q.h, s, progress: s, checkpoint: RIVER.gates.filter(g => g <= s).length, v: 0, lat: 0, w: 0, y: RIVER.levelAt(s, offset), vy: 0, air: 0, tip: 0, capsized: 0, grace: 0, channel: 'main' }); room.publish(); } };
 window.addEventListener('pagehide', () => { disposed = true; clearInterval(simulation); music.stop(); crewRoster.dispose(); roomOptions.dispose();room.dispose(); guide.dispose(); for (const c of canoes.values()) c.dispose(); world.world.dispose();fx.dispose(); world.sky.dispose(); unbind?.(); renderer.dispose(); }, { once: true });
-window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 
 await prepareScene(world);

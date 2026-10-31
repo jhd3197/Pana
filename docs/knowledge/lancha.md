@@ -18,7 +18,7 @@ read `curiara.md` for the river itself.
   keys (`throttle`, `steer`, `back`) plus a `turbo` press counter; a quiet
   guest lets go of the keys but keeps its counter.
 - `public/game.js`: wiring, chase camera, HUD, motor drone (`sound.startEngine`).
-- Shared: `/engine/river/{scene,landscape,water-fx,guide,minimap}.js` and the
+- Shared: `/engine/river/{scene,landscape,water-fx,guide,minimap,hud}.js` and the
   model `/engine/models/vehicles/lancha.js` (`createLancha`, Studio
   `racing-lancha`). The water FX throw a rooster tail behind any boat with
   `throttle > .2`.

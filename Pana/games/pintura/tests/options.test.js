@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Arena } from '../public/rules.js';
-const game = options => { const g = new Arena('plaza', 'normal', { toughness: 1, ...options }); for (let id = 1; id <= 4; id++) g.add(id, { name: `Pana ${id}` }); g.start(); return g; };
+const game = options => { const g = new Arena('plaza', 'normal', { toughness: 1, ...options }); for (let id = 1; id <= 4; id++) g.add(id, { name: `Pana ${id}` }); g.start(); g.go(); return g; };
 function shoot(g, a, b) { Object.assign(a, { x: -3, z: -4, shield: 0, cooldown: 0 }); Object.assign(b, { x: 3, z: -4, shield: 0 }); g.step(.05, new Map([[a.id, { ax: 1, az: 0, fire: true }]])); for (let i = 0; i < 5; i++) g.step(.05); }
 test('teams prevent friendly hits unless enabled; finite lives eliminate and sticky paint slows respawns', () => {
   const g = game({ mode: 'teams', lives: 1, paint: 'sticky' }), [a, b, c] = g.players;
@@ -36,7 +36,7 @@ test('team cards preserve eight stable positions through swaps, disconnects, sta
  assert.equal(g.players.find(p=>p.id===2).team,0);assert.equal(g.players.find(p=>p.id===1).team,1);
  assert.equal(g.moveSeat(1,2,5,1),true);const order=g.players.map(p=>[p.id,p.seat,p.team]);
  assert(g.start());assert.deepEqual(g.players.map(p=>[p.id,p.seat,p.team]),order);assert.equal(g.moveSeat(2,0,1,1),false);
- g.phase='finished';assert(g.start());assert.deepEqual(g.players.map(p=>[p.id,p.seat,p.team]),order);
+ g.phase='finished';assert(g.toLobby());assert(g.start());assert.deepEqual(g.players.map(p=>[p.id,p.seat,p.team]),order);
  const old=g.players[7];old.connected=false;g.add(9,{name:'Nueva'});g.add(8,{name:'Vuelve'});
  assert.equal(old.connected,false,'a full round does not duplicate an occupied seat');assert.equal(new Set(g.players.filter(p=>p.connected).map(p=>p.seat)).size,8);
 });

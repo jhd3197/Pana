@@ -9,6 +9,7 @@ import { POSE_HZ, FLAG, DRIFT_SHIFT, packPose } from './online-rules.js';
 import { wrapAngle } from './rules.js';
 import { RESCUE_GHOST_TIME } from './recovery-rules.js';
 import { RESCUE_TIME } from './course-rules.js';
+import { loc } from '/engine/i18n.js';
 
 // link(): the online race link (null offline); popPart and lines are game.js's.
 export function createRemoteCars({ race, link, popPart, lines: LINES }) {
@@ -107,12 +108,12 @@ export function createRemoteCars({ race, link, popPart, lines: LINES }) {
     else if (kind === 'hit') race.items.remoteHit(c, d);
     else if (kind === 'slip') race.items.remoteSlip(d);
     else if (kind === 'cloud') race.items.remoteCloud(d);
-    else if (kind === 'rescue' && c.remote) { c.rescueT = RESCUE_TIME; c.bubble.say(pick(LINES.rescue), 1.3); }
+    else if (kind === 'rescue' && c.remote) { c.rescueT = RESCUE_TIME; c.bubble.say(loc(pick(LINES.rescue)), 1.3); }
     else if (kind === 'honk' && c.honkT <= 0) {
       c.honkT = sound.horn(c.def.horn);
       c.bubble.say(LINES.honk[c.def.horn], c.honkT + 0.2);
       c.heave.v += 5;
-    } else if (kind === 'say') c.bubble.say(String(d.text ?? '').slice(0, 40), Math.min(3, Number(d.time) || 1.2));
+    } else if (kind === 'say') c.bubble.say(loc(String(d.text ?? '')).slice(0, 40), Math.min(3, Number(d.time) || 1.2));
   }
 
   return { sendPoses, resumePose, applyRemote, onNetPose, onNetFx, racerById };

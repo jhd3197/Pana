@@ -51,7 +51,7 @@ export class SkidMarks {
   lay(c, dt) {
     c.markT = (c.markT || 0) - dt;
     if (!c.drift || !c.onGround || c.boat || c.plane || Math.abs(c.vf) < DRIFT_MIN_SPEED * 0.75) return;   // a lancha leaves wake, not rubber
-    const low = getSettings().quality === 'baja';
+    const low = getSettings().detail === 'baja';
     if (c.markT > 0) return;
     c.markT = low ? MARK_GAP * 2 : MARK_GAP;
     if (!c.isPlayer && !c.human) {

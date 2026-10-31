@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { keyOf, readPad, playKeys, padHelp } from '/engine/gamepad.js';
+import { keyOf, readPad, playKeys, padHelp, activePad, padList } from '/engine/gamepad.js';
 
 // A "standard" pad with these buttons held and these stick positions.
 function pad(held = [], axes = [0, 0, 0, 0]) {
@@ -37,4 +37,23 @@ test('the Controles tab lists each action once with all its buttons', () => {
   const rows = padHelp({ move: 'wasd', keys: { rt: ['KeyW', 'Acelerar'], a: ['KeyW', 'Acelerar'], x: 'KeyQ' } });
   assert.deepEqual(rows, [['Stick izq. / Cruceta', 'Moverte'], ['RT / A', 'Acelerar'], ['Start', 'Menú']]);
   assert.deepEqual(padHelp({ native: true, help: [['A', 'Golpe']] }), [['A', 'Golpe'], ['Start', 'Menú']]);
+});
+
+test('the controller in use wins over other devices Windows lists first', () => {
+  const device = (index, id, mapping, axes = [0, 0, 0, 0]) => ({ index, id, mapping, connected: true, axes,
+    buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) });
+  const hub = device(0, 'SV507 (Vendor: 2006)', '', [-1, .3]), xbox = device(1, 'Xbox Wireless Controller', 'standard');
+  const sony = device(2, 'DualSense Wireless Controller', 'standard');
+  const real = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { getGamepads: () => [hub, xbox, null, sony] } });
+  try {
+    assert.equal(activePad().id, xbox.id, 'a standard pad before the device in slot 0');
+    hub.buttons[0] = { pressed: true, value: 1 }; hub.axes = [1, 1];
+    assert.equal(activePad().id, xbox.id, 'the other device cannot take over');
+    sony.buttons[0] = { pressed: true, value: 1 };
+    assert.equal(activePad().id, sony.id, 'the pad pressed last is the one in use');
+    assert.deepEqual(padList().map(p => p.index), [1, 2, 0]);
+  } finally {
+    if (real) Object.defineProperty(globalThis, 'navigator', real); else delete globalThis.navigator;
+  }
 });

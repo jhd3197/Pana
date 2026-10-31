@@ -10,8 +10,10 @@
 // bot-rules.js the bots.
 import { draw, clamp, seedOf } from '/engine/random.js';
 import { defaultOptions, roomOptions } from './options.js';
-import { arenaOf, newBody, control, presses, stepBodies, edge, crowdSpot, scorecard, setAct, addMareo, knockDown, inRing, facing, CORNERS, MAREO_CALMA } from './fight-rules.js';
+import { locKey } from '../../../engine/i18n.js';
+import { arenaOf, newBody, control, presses, stepBodies, edge, crowdSpot, scorecard, setAct, addMareo, knockDown, inRing, facing, CORNERS, MAREO_CALMA, BODY_GAP } from './fight-rules.js';
 import { botInput } from './bot-rules.js';
+import { returnToLobby } from '../../../engine/play/round-lobby.js';
 
 // Alone, ganador se queda is a ladder: you against five rivals, each one
 // tougher (bot level), and three losses end the night.
@@ -27,11 +29,12 @@ export const CROWD_GAP = 1.15;
 const clampCrowd = (a) => Math.abs(a) < CROWD_GAP ? Math.sign(a || 1) * CROWD_GAP : a;
 export const INTRO = 6.5, AFTER = 7, START_DOLITAS = 50, STAKE = 10, BOT_SEAT = 1000, MAX_EVENTS = 40;
 export const PAY = { win: 10, ko: 6, streak: 3, mano: 3, shove: 2, calma: 4, agua: 1, title: 15 };
-export const BOT_NAMES = ['Cheo', 'Lola', 'Toño', 'Nena', 'Pepe', 'Mari', 'Coco', 'Cuqui'];
-export const NICKS = ['El Trompa', 'La Metralla', 'El Ciclón', 'Puño de Mango', 'El Chamo Bravo', 'La Chancleta', 'El Huracán',
-  'Quijada de Hierro', 'El Tumbacocos', 'La Pimienta', 'El Pelúo', 'Cabeza de Coco', 'El Rayo del Llano', 'La Avispa'];
-export const FROM = ['de Maracaibo', 'de Catia', 'de Petare', 'de Barquisimeto', 'de Valencia', 'de Maturín', 'de Puerto La Cruz',
-  'de Mérida', 'de Coro', 'de Cumaná', 'de San Félix', 'de La Guaira', 'de Barinas', 'de Margarita'];
+// Names, ring nicknames and hometowns are names: they stay Spanish.
+export const BOT_NAMES = ['Cheo', 'Lola', 'Toño', 'Nena', 'Pepe', 'Mari', 'Coco', 'Cuqui']; // i18n-ignore
+export const NICKS = ['El Trompa', 'La Metralla', 'El Ciclón', 'Puño de Mango', 'El Chamo Bravo', 'La Chancleta', 'El Huracán', // i18n-ignore
+  'Quijada de Hierro', 'El Tumbacocos', 'La Pimienta', 'El Pelúo', 'Cabeza de Coco', 'El Rayo del Llano', 'La Avispa']; // i18n-ignore
+export const FROM = ['de Maracaibo', 'de Catia', 'de Petare', 'de Barquisimeto', 'de Valencia', 'de Maturín', 'de Puerto La Cruz', // i18n-ignore
+  'de Mérida', 'de Coro', 'de Cumaná', 'de San Félix', 'de La Guaira', 'de Barinas', 'de Margarita']; // i18n-ignore
 // Things lying around in a trifulca libre: a swing hits harder, a throw flies.
 export const PROPS = ['silla', 'caja', 'casco', 'chancleta'];
 export const THROW = { speed: 9.5, range: 7, mareo: 22, push: 5, radius: .55 };
@@ -61,6 +64,12 @@ export class Trifulca {
   snapshot() { return JSON.parse(JSON.stringify(this)); }
   configure(patch) { const next = this.phase === 'lobby' && roomOptions(this.options, patch); if (!next) return false; this.options = next; return true; }
   get arena() { return arenaOf(this.arenaNow || this.options.arena); }
+  // "Otra noche" and leaving the tutorial: back to the lobby, where the host
+  // picks the next arena. The night's results stay until the next start.
+  toLobby() {
+    return returnToLobby(this, { from: this.tutorial ? [this.phase] : ['finished'],
+      reset: g => Object.assign(g, { tutorial: null, bodies: [], props: [], fight: null, arenaNow: null, time: 0 }) });
+  }
   get mode() { return this.options.modo; }
 
   // A new host continues from the last snapshot without the panas who left.
@@ -118,7 +127,9 @@ export class Trifulca {
     return humans <= 1 ? 3 : humans === 2 ? 0 : humans < 4 ? 1 : 0;
   }
 
+  // A finished night goes through toLobby() first, so the next arena is a choice.
   start(withBots = true) {
+    if (this.phase === 'finished') return false;
     this.players = this.players.filter(p => !p.bot);
     const humans = this.players.length;
     for (let i = 0, n = withBots ? this.botCount(humans) : 0; i < n || this.players.length < 2; i++) {
@@ -198,7 +209,7 @@ export class Trifulca {
     const me = this.player(id); if (!me) return false;
     this.players = this.players.filter(p => !p.bot);
     const profe = this.addPlayer(BOT_SEAT, 'Profe Cheo', {}, true);
-    profe.nick = 'El Profe'; profe.level = 0;
+    profe.nick = 'El Profe'; profe.level = 0; // i18n-ignore
     for (const p of this.players) Object.assign(p, { dolitas: START_DOLITAS, stats: stats(), bet: null, carry: 0, last: {} });
     const arena = this.arena;
     this.bodies = [newBody(id, 'red', arena), newBody(profe.id, 'blue', arena)];
@@ -343,11 +354,12 @@ export class Trifulca {
       if (press.a && this.tag(b)) press.a = 0;
       control(b, move, press, (e) => this.emitFight(e));
     }
-    const kos = stepBodies(this.bodies, arena, dt, moves, (e) => this.fightEvent(e));
     // One on one the fight stays on a line across the camera, like a fighting
     // game: a sidestep (W/S, a dodge) moves off it and the line pulls you back.
+    // Pulled before the step, so the bodies' push apart has the last word.
     const duel = this.bodies.filter(inRing);
     if (duel.length === 2) for (const b of duel) if (b.act !== 'dodge') b.z -= b.z * Math.min(1, dt * 2.2);
+    const kos = stepBodies(this.bodies, arena, dt, moves, (e) => this.fightEvent(e));
     this.stepProps(dt, arena);
     for (const p of crowd()) this.crowdStep(p, moves.get(p.id), pressed.get(p.id), dt, arena);
     if (this.phase !== 'fight') return;   // a ¡cálmate! ended it
@@ -504,7 +516,7 @@ export class Trifulca {
     // Clinch: too long hugging without a clean hit and the ref splits them.
     if (ring.length !== 2) return;
     const [a, b] = ring, d = Math.hypot(a.x - b.x, a.z - b.z);
-    f.close = d < 1.05 ? f.close + dt : 0;
+    f.close = d < BODY_GAP + .2 ? f.close + dt : 0;
     if (f.close > 2.6) {
       f.close = 0;
       const nx = (b.x - a.x) / (d || 1), nz = (b.z - a.z) / (d || 1);
@@ -619,7 +631,7 @@ export class Trifulca {
     const lead = this.player(winners[0]);
     let belt = this.mode !== 'torneo' && !!lead && lead.stats.streak === 3;
     const final = this.mode === 'torneo' && this.fight?.stage === 'final';
-    if (final && lead) { belt = true; lead.dolitas += PAY.title; payouts.push({ id: lead.id, amount: PAY.title, why: 'cinturón' }); }
+    if (final && lead) { belt = true; lead.dolitas += PAY.title; payouts.push({ id: lead.id, amount: PAY.title, why: 'cinturón' }); } // i18n-ignore: an id
     this.result = { winner: winners[0] ?? null, loser: losers[0] ?? null, winners, losers, team, how, by, cards, payouts, belt, final, streak: lead?.stats.streak || 0 };
     this.phase = 'after'; this.time = AFTER;
     for (const b of this.bodies) {
@@ -674,12 +686,13 @@ export function titlesFor(players) {
     return top && top.v >= min ? top.p.id : null;
   };
   const list = [
-    ['campeon', 'El campeón del barrio', best(p => p.stats.best)],
-    ['vidrio', 'El de la quijada de vidrio', best(p => p.stats.caidas)],
-    ['caballero', 'El caballero', best(p => p.stats.skipped ? 0 : p.stats.manos)],
-    ['apostador', 'El apostador', best(p => p.stats.betWon)],
-    ['pacificador', 'El pacificador', best(p => p.stats.calmas * 3 + p.stats.shoves)],
-    ['contodo', 'El que se fue con todo', best(p => p.stats.trompones + p.stats.throws)],
+    // Titles are locKey() source; the HUD shows them through loc().
+    ['campeon', locKey('El campeón del barrio'), best(p => p.stats.best)],
+    ['vidrio', locKey('El de la quijada de vidrio'), best(p => p.stats.caidas)],
+    ['caballero', locKey('El caballero'), best(p => p.stats.skipped ? 0 : p.stats.manos)],
+    ['apostador', locKey('El apostador'), best(p => p.stats.betWon)],
+    ['pacificador', locKey('El pacificador'), best(p => p.stats.calmas * 3 + p.stats.shoves)],
+    ['contodo', locKey('El que se fue con todo'), best(p => p.stats.trompones + p.stats.throws)],
   ];
   return list.filter(([, , id]) => id != null).map(([key, title, id]) => ({ key, title, id }));
 }

@@ -7,6 +7,7 @@ import { M, box, mesh, tube } from '/engine/models/core/primitives.js';
 import { crate, planter, cooler, barrel } from '/engine/models/props/plaza.js';
 import { food, kitchenStation, kitchenSign, corn, cheese, sink } from '/engine/models/props/kitchen.js';
 import { STATIONS, PREP_TIME, BURN_TIME, recipe } from './rules.js';
+import { loc } from '/engine/i18n.js';
 
 const foodCache = new Map();
 export function mealModel(id, stage = 'cooked', plated = true) {
@@ -52,7 +53,8 @@ export function createKitchenScene({ labelsRoot = document.getElementById('stati
     const sack = mesh(new THREE.CylinderGeometry(0.42, 0.55, 1.2, 7), M('#f2dbaf'), x, 0.6, z); set.add(sack);
     const flour = kitchenSign('HARINA', 0.8, '#b49363'); flour.position.set(x, 0.8, z + 0.49); set.add(flour);
   }
-  const chalk = kitchenSign('MÁS PANAS · MÁS SABOR', 4, '#344e50'); chalk.position.set(10, 1.5, 11.6); chalk.rotation.y = -0.3; set.add(chalk);
+  const chalk = kitchenSign('MÁS PANAS · MÁS SABOR', 4, '#344e50'); // i18n-ignore: signage painted in the world
+  chalk.position.set(10, 1.5, 11.6); chalk.rotation.y = -0.3; set.add(chalk);
   scene.add(bake(set));
   // Lobby-only cooks show the new shared rig and dishes before the turn opens.
   const demo = new THREE.Group(), demoChefs = [];
@@ -98,13 +100,13 @@ export function createKitchenScene({ labelsRoot = document.getElementById('stati
           m.scale.setScalar((0.6 + age * 2.5) * (data.fire ? 1.8 : 1)); m.material.color.set(data.fire ? '#49424b' : '#fff8e9'); m.material.opacity = (1 - age) * (data.fire ? 0.8 : 0.42);
         });
         let label = '', progress = 0, ready = false;
-        if (data.fire) label = '¡FUEGO! · E × 2';
+        if (data.fire) label = loc('¡FUEGO! · E × 2');
         else if (data.item && (def.type === 'prep' || def.type === 'stove')) {
           const max = def.type === 'prep' ? PREP_TIME : recipe(data.item.recipe).cook;
           ready = data.progress >= max; progress = Math.min(1, data.progress / max);
-          label = ready ? def.type === 'stove' ? `¡Listo! ${Math.ceil(max + (state.options?.fire === 'fast' ? 5 : BURN_TIME) - data.progress)}s` : '¡Preparado!' : def.type === 'stove' ? 'Cocinando…' : 'Preparando…';
-        } else if (nearest?.id === def.id) label = def.label;
-        else if (def.type === 'supply') label = def.label;
+          label = ready ? def.type === 'stove' ? loc('¡Listo! {n}s', { n: Math.ceil(max + (state.options?.fire === 'fast' ? 5 : BURN_TIME) - data.progress) }) : loc('¡Preparado!') : def.type === 'stove' ? loc('Cocinando…') : loc('Preparando…');
+        } else if (nearest?.id === def.id) label = loc(def.label);
+        else if (def.type === 'supply') label = loc(def.label);
         if (showLabels && label) {
           v.tag.className = `station-tag${data.fire ? ' fire' : ready ? ' ready' : ''}`;
           v.tag.innerHTML = `${label}${progress ? `<div class="meter"><i style="width:${progress * 100}%"></i></div>` : ''}`;

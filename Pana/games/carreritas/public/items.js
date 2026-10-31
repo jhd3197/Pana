@@ -10,6 +10,7 @@ import { isGhost } from './recovery-rules.js';
 import { makeRocket, makeChancleta, makeShield, makeTrap, ITEM_ICONS } from './item-art.js';
 import { loseCoins } from './drive-rules.js';
 import { rng } from '../../../engine/random.js';
+import { MAX_RACERS } from './online-rules.js';
 
 // Coins move, spin and hide through plain Object3D proxies, exactly as when
 // each was a mesh; their pieces draw as one InstancedMesh per part. Forty
@@ -34,24 +35,25 @@ export function proxyInstances(scene, model, proxies) {
   return { sync, dispose: () => parts.forEach(({ im }) => { im.removeFromParent(); im.dispose(); }) };
 }
 import { itemWeights, drawItem, pickupEligibility, incomingThreat, reactToThreat, reactionDelay, MAJOR_RECOVERY, isMajor } from './item-rules.js';
+import { loc, locn, locKey } from '/engine/i18n.js';
 
 const sparkTarget = new THREE.Vector3();   // scratch: sparks fly to their car every step
 
 export const ITEMS = {
-  mango: { icon: SVG.mango, name: 'Mango', rarity: 'blue' },
-  mango3: { icon: SVG.mango, name: 'Mata de mango', n: 3, rarity: 'purple' },
-  jugo: { icon: SVG.juice, name: 'Jugo de mango', rarity: 'blue' },
+  mango: { icon: SVG.mango, name: loc('Mango'), rarity: 'blue' },
+  mango3: { icon: SVG.mango, name: loc('Mata de mango'), n: 3, rarity: 'purple' },
+  jugo: { icon: SVG.juice, name: loc('Jugo de mango'), rarity: 'blue' },
   concha: {
     icon: '<svg viewBox="0 0 40 40" width="1em" height="1em"><path d="M20 6c-4 6-14 10-14 22 4-4 8-6 12-6-3 4-4 8-3 12 2-5 5-8 9-9 2 3 5 5 10 6-2-5-2-10-5-13 2-5 0-9-9-12z" fill="#ffae2b" stroke="#16161a" stroke-width="2.5" stroke-linejoin="round"/><path d="M20 6c-2 5-6 8-9 12" fill="none" stroke="#7cc242" stroke-width="3" stroke-linecap="round"/><path d="M29 16c1 3 0 5-2 6" fill="none" stroke="#e8452c" stroke-width="3" stroke-linecap="round"/></svg>',
-    name: 'Concha de mango',
+    name: loc('Concha de mango'),
     rarity: 'blue',
   },
-  jugo3: { icon: SVG.juice, name: 'Jarra de jugo', n: 3, rarity: 'gold' },
-  cohete: { icon: ITEM_ICONS.cohete, name: 'Cohete', rarity: 'purple' },
-  chancleta: { icon: ITEM_ICONS.chancleta, name: 'La chancleta', rarity: 'gold' },
-  totuma: { icon: ITEM_ICONS.totuma, name: 'Totuma protectora', rarity: 'purple' },
-  trampa: { icon: ITEM_ICONS.trampa, name: 'Caja trampa', rarity: 'purple' },
-  aguacero: { icon: ITEM_ICONS.aguacero, name: 'Aguacero', rarity: 'gold' },
+  jugo3: { icon: SVG.juice, name: loc('Jarra de jugo'), n: 3, rarity: 'gold' },
+  cohete: { icon: ITEM_ICONS.cohete, name: loc('Cohete'), rarity: 'purple' },
+  chancleta: { icon: ITEM_ICONS.chancleta, name: loc('La chancleta'), rarity: 'gold' },
+  totuma: { icon: ITEM_ICONS.totuma, name: loc('Totuma protectora'), rarity: 'purple' },
+  trampa: { icon: ITEM_ICONS.trampa, name: loc('Caja trampa'), rarity: 'purple' },
+  aguacero: { icon: ITEM_ICONS.aguacero, name: loc('Aguacero'), rarity: 'gold' },
 };
 
 const BOX_RESPAWN = 2.5;
@@ -63,18 +65,18 @@ export const SHIELD_TIME = 10;
 export const CLOUD_TIME = 5;
 
 const LINES = {
-  throw: ['¡Toma tu mango!', '¡Mangazo!', '¡Ahí va!'],
-  hit: ['¡Me cayó un mango!', '¡Qué mango!', '¡Pegajoso!', '¡Ñooo!'],
-  jugo: ['¡Jugo de mango!', '¡Qué rico!', '¡Recargado!'],
-  peel: ['¡Me resbalé!', '¡Epa!', '¡Uyyy!'],
-  drop: ['¡Cuidado atrás!', '¡Jejeje!'],
-  rocket: ['¡Cohetazo!', '¡Ahí te va el cohete!'],
-  chancla: ['¡La chancleta!', '¡Vente pa’ acá!', '¡Ya vas a ver!'],
-  chanclaHit: ['¡La chancleta de mi mamá!', '¡Ayyy, la chancla!'],
-  shield: ['¡Con mi totuma!', '¡Protegido!'],
-  saved: ['¡La totuma me salvó!', '¡Ja, no me pegó!'],
-  boom: ['¡Era una trampa!', '¡BUM!', '¡Esa caja era chimba!'],
-  rain: ['¡Se largó el aguacero!', '¡Me mojé!', '¡Qué palo de agua!'],
+  throw: [locKey('¡Toma tu mango!'), locKey('¡Mangazo!'), locKey('¡Ahí va!')],
+  hit: [locKey('¡Me cayó un mango!'), locKey('¡Qué mango!'), locKey('¡Pegajoso!'), locKey('¡Ñooo!')],
+  jugo: [locKey('¡Jugo de mango!'), locKey('¡Qué rico!'), locKey('¡Recargado!')],
+  peel: [locKey('¡Me resbalé!'), locKey('¡Epa!'), locKey('¡Uyyy!')],
+  drop: [locKey('¡Cuidado atrás!'), locKey('¡Jejeje!')],
+  rocket: [locKey('¡Cohetazo!'), locKey('¡Ahí te va el cohete!')],
+  chancla: [locKey('¡La chancleta!'), locKey('¡Vente pa’ acá!'), locKey('¡Ya vas a ver!')],
+  chanclaHit: [locKey('¡La chancleta de mi mamá!'), locKey('¡Ayyy, la chancla!')],
+  shield: [locKey('¡Con mi totuma!'), locKey('¡Protegido!')],
+  saved: [locKey('¡La totuma me salvó!'), locKey('¡Ja, no me pegó!')],
+  boom: [locKey('¡Era una trampa!'), locKey('¡BUM!'), locKey('¡Esa caja era chimba!')],
+  rain: [locKey('¡Se largó el aguacero!'), locKey('¡Me mojé!'), locKey('¡Qué palo de agua!')],
 };
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -224,8 +226,9 @@ export function createItems(hooks) {
   const byId = (id) => hooks.byId?.(id);
   const previous = new Map();
   const pickupHistory = new Map(), reactions = new Map(), majorUntil = new Map(), majorSeen = new Set();
-  const itemSeed = hooks.itemSeed ?? Math.floor(Math.random() * 0x100000000);
-  let itemRandom = rng(itemSeed), raceTime = 0;
+  // A fresh stream each race, so a rematch on the same track rolls new items.
+  const itemStream = () => rng(Math.floor(Math.random() * 0x100000000));
+  let itemRandom = itemStream(), raceTime = 0;
   let t = 0, seq = 0;
   const gone = new Set();   // projectile ids already burst here, so a late remote hit doesn't splat twice
   const emit = (kind, c, data) => hooks.emit?.(kind, c, data);
@@ -234,7 +237,7 @@ export function createItems(hooks) {
 
   function clear() {
     pickupHistory.clear(); reactions.clear(); majorUntil.clear(); majorSeen.clear();
-    itemRandom = rng(itemSeed); raceTime = 0;
+    itemRandom = itemStream(); raceTime = 0;
     rainQueue = []; rainSeen.clear();
     for (const entry of [...flying, ...peels, ...sparks]) entry.m.removeFromParent();
     for (const m of [...held.values(), ...shields.values()]) m.removeFromParent();
@@ -283,7 +286,7 @@ export function createItems(hooks) {
     const kind = item.kind, h = c.h + (direction < 0 ? Math.PI : 0);
     const fx = Math.sin(h), fz = Math.cos(h);
     const juiced = isJuiced(c);
-    if (juiced && c.isPlayer) feedback(c, '¡Objeto potenciado con 10 monedas!', 1.2);
+    if (juiced && c.isPlayer) feedback(c, loc('¡Objeto potenciado con 10 monedas!'), 1.2);
     if (isMango(item)) {
       const m = mango.clone();
       const speed = 34 + (juiced ? 12 : 0) + Math.max(0, c.vf * direction);
@@ -297,7 +300,7 @@ export function createItems(hooks) {
       flying.push({ id, kind: 'mango', m, owner: c, h, speed, travel, vy: 3.5, t: 0, spin: rand(8, 14), seek: juiced ? 34 : 22 });
       emit('throw', c, { id, kind: 'mango', x: m.position.x, y: m.position.y, z: m.position.z, h, speed, travel, seek: juiced ? 34 : 22 });
       sound.whoosh();
-      feedback(c, direction < 0 ? '¡Mango hacia atrás!' : '¡Ahí va ese mango!');
+      feedback(c, direction < 0 ? loc('¡Mango hacia atrás!') : loc('¡Ahí va ese mango!'));
       if (Math.random() < 0.5) hooks.say(c, LINES.throw, 0.9);
     } else if (kind === 'cohete') {
       // Locks on to the racer just ahead (or just behind, fired backward).
@@ -313,7 +316,7 @@ export function createItems(hooks) {
       flying.push({ id, kind: 'cohete', m, owner: c, h, speed, travel, vy: 0, t: 0, target });
       emit('throw', c, { id, kind: 'cohete', x: m.position.x, y: m.position.y, z: m.position.z, h, speed, travel, target: target?.netId });
       sound.sweep(300, 1400, 0.5, 'sawtooth', 0.08);
-      feedback(c, target ? `¡Cohete tras ${target.isPlayer ? 'ti' : target.name}!` : '¡Cohete!');
+      feedback(c, target ? (target.isPlayer ? loc('¡Cohete tras ti!') : loc('¡Cohete tras {name}!', { name: target.name })) : loc('¡Cohete!'));
       hooks.say(c, LINES.rocket, 0.9);
     } else if (kind === 'chancleta') {
       // Flies high along the circuit and drops on whoever leads.
@@ -327,7 +330,7 @@ export function createItems(hooks) {
       flying.push({ id, kind: 'chancleta', m, owner: c, h: c.h, speed: 110, travel: 1, vy: 0, t: 0, target, s, spin: 9 });
       emit('throw', c, { id, kind: 'chancleta', x: c.x, y: c.y + 6, z: c.z, h: c.h, speed: 110, travel: 1, target: target.netId, s });
       sound.sweep(1200, 400, 0.6, 'triangle', 0.12);
-      feedback(c, `¡La chancleta va por ${target.isPlayer ? 'ti' : target.name}!`, 1.6);
+      feedback(c, (target.isPlayer ? loc('¡La chancleta va por ti!') : loc('¡La chancleta va por {name}!', { name: target.name })), 1.6);
       hooks.say(c, LINES.chancla, 1.1);
     } else if (kind === 'totuma') {
       c.shield = juiced ? SHIELD_TIME * 1.6 : SHIELD_TIME;
@@ -340,12 +343,12 @@ export function createItems(hooks) {
       const wave = rainWave(hooks.standings(), c, time);
       const victims = wave.map(w => w.target), id = nextId(c);
       rainQueue.push(...wave);
-      emit('cloud', c, { id, at: hooks.now?.(), wave: wave.map(w => ({ id: w.target.netId, delay: w.delay, time: w.time })) });
+      emit('cloud', c, { id, at: hooks.now?.(), wave: wave.map(w => ({ id: w.target.netId, delay: Math.round(w.delay * 100) / 100, time: w.time })) });
       sound.sweep(220, 90, 0.9, 'sawtooth', 0.06);
-      feedback(c, victims.length ? `¡Aguacero sobre ${victims.length} ${victims.length === 1 ? 'rival' : 'rivales'}!` : 'Nadie más en la pista: llovió en vano');
+      feedback(c, victims.length ? locn(victims.length, '¡Aguacero sobre {n} rival!', '¡Aguacero sobre {n} rivales!') : loc('Nadie más en la pista: llovió en vano'));
     } else if (kind === 'jugo' || kind === 'jugo3') {
       c.boost = Math.max(c.boost, juiced ? 3.2 : 2.2);
-      sound.turbo();
+      hooks.vsfx.boost();
       hooks.say(c, LINES.jugo, 1);
       puffs.spawn(new THREE.Vector3(c.x, c.y + 0.6, c.z), { color: 0xffae2b, count: 6, spread: 1.4 });
     } else if (kind === 'trampa') {
@@ -358,7 +361,7 @@ export function createItems(hooks) {
       peels.push({ id, kind: 'trampa', m, owner: c, safe: 1, t: 0, radius: juiced ? 2.8 : 2.2 });
       emit('peel', c, { id, kind: 'trampa', x: m.position.x, y: m.position.y, z: m.position.z, r: m.rotation.y, juiced });
       sound.plop();
-      feedback(c, direction < 0 ? '¡Caja trampa detrás!' : '¡Caja trampa adelante!');
+      feedback(c, direction < 0 ? loc('¡Caja trampa detrás!') : loc('¡Caja trampa adelante!'));
     } else if (kind === 'concha') {
       const m = peel.clone();
       m.position.set(c.x + fx * 3.4, groundAt(c.x + fx * 3.4, c.z + fz * 3.4,c.y) + 0.15, c.z + fz * 3.4);
@@ -369,7 +372,7 @@ export function createItems(hooks) {
       if (juiced) m.scale.multiplyScalar(1.4);
       emit('peel', c, { id, kind: 'concha', x: m.position.x, y: m.position.y, z: m.position.z, r: m.rotation.y, juiced });
       sound.plop();
-      feedback(c, direction < 0 ? '¡Concha detrás!' : '¡Concha adelante!');
+      feedback(c, direction < 0 ? loc('¡Concha detrás!') : loc('¡Concha adelante!'));
     }
     consumeItem(c);
     return true;
@@ -390,13 +393,13 @@ export function createItems(hooks) {
   // inventories never diverge.
   function rainOn(v, time) {
     if (v.done || v.dns || v.retired || isGhost(v)) return;
-    if (majorProtected(v)) { feedback(v, '¡Un respiro del aguacero!'); return; }
+    if (majorProtected(v)) { feedback(v, loc('¡Un respiro del aguacero!')); return; }
     majorUntil.set(v, raceTime + MAJOR_RECOVERY);
     v.cloud = Math.max(v.cloud || 0, time);
     if (v.remote) return;
     hooks.say(v, LINES.rain, 1);
     const lost = dropItem(v);
-    if (lost) feedback(v, `¡Se mojó y se cayó: ${ITEMS[lost]?.name ?? 'tu ítem'}!`, 1.8);
+    if (lost) feedback(v, loc('¡Se mojó y se cayó: {item}!', { item: ITEMS[lost]?.name ?? loc('tu ítem') }), 1.8);
   }
 
   // Resolve protection on the victim's client. Concurrent launches from other
@@ -409,7 +412,7 @@ export function createItems(hooks) {
   function shielded(c, pos) {
     if (!(c.shield > 0)) return false;
     c.shield = 0;
-    feedback(c, '¡La totuma te salvó!');
+    feedback(c, loc('¡La totuma te salvó!'));
     hooks.say(c, LINES.saved, 1);
     puffs.spawn(pos, { color: 0xffd36b, count: 10, spread: 2.6, size: 0.5, life: 0.5 });
     if (c.isPlayer) { sound.tone(990, 0, 0.08, 'triangle', 0.1); sound.tone(660, 0.07, 0.14, 'triangle', 0.08); }
@@ -439,8 +442,8 @@ export function createItems(hooks) {
     if (shielded(c, pos)) return true;
     if (!canBlock(c)) return false;
     consumeItem(c);
-    feedback(c, '¡Bloqueaste un mangazo!');
-    hooks.say(c, '¡Mango salvador!', 1);
+    feedback(c, loc('¡Bloqueaste un mangazo!'));
+    hooks.say(c, locKey('¡Mango salvador!'), 1);
     puffs.spawn(pos, { color: 0xfff0ac, count: 8, spread: 2.2, size: 0.5, life: 0.45 });
     if (c.isPlayer) {
       sound.tone(880, 0, 0.08, 'triangle', 0.1);
@@ -564,7 +567,7 @@ export function createItems(hooks) {
     const elapsed = Number.isFinite(d.at) && hooks.now ? Math.max(0, (hooks.now() - d.at) / 1000) : 0;
     // Legacy clouds remain readable while all players refresh to the new client.
     const wave = Array.isArray(d.wave) ? d.wave : (d.ids || []).map(id => ({ id, delay: 0, time: d.time }));
-    for (const w of wave.slice(0, 8)) {
+    for (const w of wave.slice(0, MAX_RACERS - 1)) {
       const target = byId(w.id), delay = Math.max(0, Math.min(15, Number(w.delay) || 0));
       const time = Math.max(0, Math.min(8, Number(w.time) || CLOUD_TIME) - Math.max(0, elapsed - delay));
       if (target && time > 0) rainQueue.push({ target, delay: Math.max(0, delay - elapsed), time });
@@ -601,7 +604,7 @@ export function createItems(hooks) {
     fragments.burst(crate.pieces, { velocity: new THREE.Vector3(0, 5, 0), power: 11 });
     hooks.explode?.(pos);
     if (sound.explode) sound.explode(1.4);
-    else sound.bonk(1.4);
+    else hooks.vsfx.crash(1.4, 'car');
   }
 
   function update(dt, cars, racing) {
@@ -719,12 +722,12 @@ export function createItems(hooks) {
         if (b.down > 0 || !touches(b, 2.2)) continue;
         // A full inventory leaves the supply crate for another racer.
         if (!c.inventory.includes(null)) {
-          if (c.isPlayer && !c.itemMessageT) feedback(c, 'Dos objetos: usa uno para abrir otra caja');
+          if (c.isPlayer && !c.itemMessageT) feedback(c, loc('Dos objetos: usa uno para abrir otra caja'));
           continue;
         }
         give(c, order, b);
         breakCrate(b, c);
-        if (c.isPlayer) sound.bonk(0.4);
+        if (c.isPlayer) hooks.vsfx.crash(0.4, 'bump');
       }
 
       for (const coin of coins) {
@@ -752,7 +755,7 @@ export function createItems(hooks) {
         const fwd = dx * Math.sin(p.h) + dz * Math.cos(p.h);
         const side = dx * Math.cos(p.h) - dz * Math.sin(p.h);
         if (Math.abs(fwd) < p.l / 2 && Math.abs(side) < p.w / 2 + 0.6 && Math.abs(c.y-(p.terrain?groundAt(c.x,c.z,p.y):p.y))<2) {
-          if (c.boost < 0.5) {sound.turbo();p.flash=1;padHit.value.set(p.x,p.z,t);}
+          if (c.boost < 0.5) {hooks.vsfx.boost();p.flash=1;padHit.value.set(p.x,p.z,t);}
           c.boost = Math.max(c.boost, 1.2);
         }
       }
@@ -834,7 +837,7 @@ export function createItems(hooks) {
         // A held mango can stop a mango, not a rocket or a chancleta.
         const recovered = f.kind === 'chancleta' && majorProtected(c);
         const blocked = recovered || (f.kind === 'mango' ? block(c, pos) : shielded(c, pos));
-        if (recovered) feedback(c, '¡Un respiro de la chancleta!');
+        if (recovered) feedback(c, loc('¡Un respiro de la chancleta!'));
         if (!blocked) {
           if (f.kind === 'chancleta') majorUntil.set(c, raceTime + MAJOR_RECOVERY);
           const side = Math.sign((pos.x - c.x) * -Math.cos(c.h) + (pos.z - c.z) * Math.sin(c.h)) || 1;

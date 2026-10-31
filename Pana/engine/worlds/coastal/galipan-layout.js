@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 import { clamp, lerp } from '/engine/random.js';
 import { fairRoute, fairHeights } from './coastal-road.js';
 import * as THREE from 'three';

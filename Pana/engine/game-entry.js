@@ -1,14 +1,17 @@
 // A light illustrated lobby paints before importing the game's full module graph.
 // Controls/settings remain the game's existing DOM, and membership stays in net.js.
 import { loadAvatar, loadName } from './avatar.js';
-import { cachedPortrait } from './portrait-cache.js';
+import { portraitImg } from './lobby-roster.js';
 import { icon } from './icons.js';
 import { inviteUrl, roomFromUrl } from './invite.js';
 import { finalizeRoomOptions } from './room-options.js';
 import { showCover } from './loading-cover.js';
 // Controllers work the lobby from the first paint; play keys come with the game.
 import './gamepad.js';
-
+import { loc, formatList } from './i18n.js';
+// Games free their scene on pagehide; a page the browser restores from its
+// back/forward cache would come back frozen, so it loads fresh instead.
+addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 const tag = document.querySelector('script[data-pana-entry]');
 const game = location.pathname.match(/\/g\/([^/]+)/)?.[1];
 const original = document.querySelector('.pk-lobby');
@@ -17,23 +20,23 @@ let link, loaded = false, failed = false, ready = true, signature = '';
 let maxPlayers = 8, sala = null;
 // Every game shares Carreritas' side settings and player cards.
 const docked = [];
-const root = el('section', 'pk-game-lobby'); root.id = 'pana-lobby-shell'; root.setAttribute('aria-label', 'Sala del juego');
+const root = el('section', 'pk-game-lobby'); root.id = 'pana-lobby-shell'; root.setAttribute('aria-label', loc('Sala del juego'));
 root.style.setProperty('--lobby-image', `url("/images/launcher/${game}.jpg")`);
 // The game's art covers the page until the game has loaded, the room has
 // answered and the lobby sits in its final layout: then it fades out whole.
 const gameName = document.title.split(/[·—]/)[0].trim();
-const cover = showCover({ title: gameName, image: `/images/launcher/${game}.jpg`, text: 'Preparando la sala…' });
+const cover = showCover({ title: gameName, image: `/images/launcher/${game}.jpg`, text: loc('Preparando la sala…') });
 let revealed = false, shellHidden = false;
-const head = el('header', 'pk-game-lobby-head'), back = el('a', 'pk-btn', ' Juegos'); back.prepend(icon('chevronLeft')); back.href = '/'; back.dataset.padBack = '';
-const title = el('h1', 'pk-title', document.title.split(/[·—]/)[0].trim());
-const invite = el('button', 'pk-btn pk-btn--teal', 'Copiar link'); invite.type = 'button'; invite.id = 'pana-lobby-invite';
+const head = el('header', 'pk-game-lobby-head'), back = el('a', 'pk-btn', ' ' + loc('Juegos')); back.prepend(icon('chevronLeft')); back.href = '/'; back.dataset.padBack = '';
+const title = el('h1', 'pk-title', document.title.split(/[·—]/)[0].trim()); title.translate = false;
+const invite = el('button', 'pk-btn pk-btn--teal', loc('Copiar link')); invite.type = 'button'; invite.id = 'pana-lobby-invite';
 const roomCode = el('b', 'pk-game-lobby-code');
-const roomDetails = el('div', 'pk-game-lobby-room-details'); roomDetails.append(el('span', 'pk-eyebrow', 'Código de sala'), roomCode);
+const roomDetails = el('div', 'pk-game-lobby-room-details'); roomDetails.append(el('span', 'pk-eyebrow', loc('Código de sala')), roomCode);
 const roomBox = el('div', 'pk-game-lobby-room'); roomBox.append(roomDetails, invite); head.append(back, title, roomBox);
 const layout = el('div', 'pk-game-lobby-layout'), rosterBox = el('section', 'pk-game-lobby-roster');
-const rosterLabel = el('h2', 'pk-eyebrow', 'Panas en la sala'), roster = el('div', 'pk-game-lobby-players'); roster.id = 'pana-lobby-roster';
+const rosterLabel = el('h2', 'pk-eyebrow', loc('Panas en la sala')), roster = el('div', 'pk-game-lobby-players'); roster.id = 'pana-lobby-roster';
 rosterBox.append(rosterLabel, roster);
-const settings = el('section', 'pk-game-lobby-settings'); settings.append(el('h2', 'pk-eyebrow', 'Ajustes de la sala'));
+const settings = el('section', 'pk-game-lobby-settings'); settings.append(el('h2', 'pk-eyebrow', loc('Ajustes de la sala')));
 if (original) { original.inert = true; settings.append(original); }
 // Games supply their authoritative team/seat model to the same card renderer.
 // The entry shell only docks those controls; it never assigns players itself.
@@ -49,54 +52,43 @@ function dockSeats() {
   showSeats();
 }
 layout.append(rosterBox, settings);
-const footer = el('footer', 'pk-game-lobby-foot'), status = el('p', 'pk-copy', 'Cargando el juego en segundo plano…'); status.id = 'pana-lobby-status'; status.setAttribute('role', 'status');
-const readyButton = el('button', 'pk-btn pk-btn--primary', 'Preparando…'); readyButton.id = 'pana-lobby-ready'; readyButton.disabled = true;
-const change = el('a', 'pk-btn', 'Cambiar pana'); change.href = '/#mi-pana';
+const footer = el('footer', 'pk-game-lobby-foot'), status = el('p', 'pk-copy', loc('Cargando el juego en segundo plano…')); status.id = 'pana-lobby-status'; status.setAttribute('role', 'status');
+const readyButton = el('button', 'pk-btn pk-btn--primary', loc('Preparando…')); readyButton.id = 'pana-lobby-ready'; readyButton.disabled = true;
+const change = el('a', 'pk-btn', loc('Cambiar pana')); change.href = '/#mi-pana';
 footer.append(status, change, readyButton); root.append(head, layout, footer); document.body.append(root); document.body.classList.add('pana-in-lobby');
 const actionTray = el('div', 'pk-game-lobby-actions'); footer.append(actionTray, readyButton);
 window.PANA_LOBBY_LOADING = true;
 document.addEventListener('pana:load-stage', e => { if (!failed) { status.textContent = e.detail; cover.say(e.detail); } });
 
-function portraitFor(person) {
-  let avatar = person.avatar || loadAvatar();
-  if (typeof avatar === 'string') { try { avatar = JSON.parse(avatar); } catch { avatar = {}; } }
-  const img = el('img'); img.alt = ''; const cached = cachedPortrait(avatar);
-  if (cached) img.src = cached;
-  if (!cached) {
-    img.hidden = true;
-    // Snapshot after the game is ready, so portrait rendering never delays game preparation.
-    const make = () => import('./portrait.js').then(m => m.portrait(avatar)).then(src => { img.src = src; img.hidden = false; }).catch(() => {});
-    if (loaded) make(); else document.addEventListener('pana:game-prepared', make, { once: true });
-  }
-  return img;
-}
+const portraitFor = person => portraitImg(person.avatar || loadAvatar());
 function renderRoster() {
   const players = link?.state.players.filter(p => p.connected !== false) || [{ id: 'local', name: loadName(), avatar: loadAvatar(), lobbyReady: ready, assetsReady: loaded }];
   const key = JSON.stringify(players.map(p => [p.id, p.name, p.avatar, p.lobbyReady, p.assetsReady])) + link?.state.host + loaded + (sala?.signature() || '');
-  roomCode.textContent = (link?.code || roomFromUrl() || 'En local').toUpperCase();
+  roomCode.textContent = (link?.code || roomFromUrl() || loc('En local')).toUpperCase();
   invite.disabled = !link && !roomFromUrl() && !original?.panaSala?.ensureRoom;
   if (key === signature) return; signature = key;
-  rosterLabel.textContent = `Panas en la sala · ${players.length} / ${maxPlayers}`;
+  rosterLabel.textContent = loc('Panas en la sala · {n} / {max}', { n: players.length, max: maxPlayers });
   roster.dataset.capacity = maxPlayers;
   roster.replaceChildren();
   for (const p of players) {
     const mine = p.id === (link?.id || 'local'), host = p.id === link?.state.host || !link;
     const card = el(mine ? 'button' : 'article', 'pk-game-lobby-player' + (host ? ' is-host' : ''));
-    if (host) card.append(el('span', 'pk-game-lobby-host', 'Anfitrión'));
-    card.append(portraitFor(p), el('b', '', p.name + (mine ? ' (tú)' : '')));
-    card.append(el('span', 'pk-game-lobby-state' + (p.assetsReady && p.lobbyReady ? ' is-ready' : ''), !p.assetsReady ? 'Cargando' : p.lobbyReady ? 'Listo' : 'Esperando'));
-    if (mine) { card.type = 'button'; card.classList.add('is-own'); card.setAttribute('aria-label', `${p.name}: cambiar listo`); card.setAttribute('aria-pressed', String(p.lobbyReady)); card.onclick = () => readyButton.click(); card.disabled = !loaded; }
+    if (host) card.append(el('span', 'pk-game-lobby-host', loc('Anfitrión')));
+    const name = el('b', '', mine ? loc('{name} (tú)', { name: p.name }) : p.name); name.translate = false;
+    card.append(portraitFor(p), name);
+    card.append(el('span', 'pk-game-lobby-state' + (p.assetsReady && p.lobbyReady ? ' is-ready' : ''), !p.assetsReady ? loc('Cargando') : p.lobbyReady ? loc('Listo') : loc('Esperando')));
+    if (mine) { card.type = 'button'; card.classList.add('is-own'); card.setAttribute('aria-label', loc('{name}: cambiar listo', { name: p.name })); card.setAttribute('aria-pressed', String(p.lobbyReady)); card.onclick = () => readyButton.click(); card.disabled = !loaded; }
     sala?.decorate(card, p, mine);
     roster.append(card);
   }
   for (let i = players.length; i < maxPlayers; i++) {
-    const empty = el('button', 'pk-game-lobby-empty', 'Invitar pana'); empty.type = 'button'; empty.prepend(icon('plus')); empty.addEventListener('click', () => invite.click()); empty.disabled = invite.disabled; roster.append(empty);
+    const empty = el('button', 'pk-game-lobby-empty', loc('Invitar pana')); empty.type = 'button'; empty.prepend(icon('plus')); empty.addEventListener('click', () => invite.click()); empty.disabled = invite.disabled; roster.append(empty);
   }
 }
 invite.addEventListener('click', async () => {
-  if (!link && original?.panaSala?.ensureRoom) { invite.disabled = true; await original.panaSala.ensureRoom(); invite.disabled = false; if (!link) { status.textContent = 'No pudimos abrir la sala. Reintenta cuando vuelva la conexión.'; return; } }
-  try { await navigator.clipboard.writeText(inviteUrl(link?.code || roomFromUrl())); invite.textContent = '¡Copiado!'; }
-  catch { status.textContent = 'Comparte el código de sala: ' + roomCode.textContent; }
+  if (!link && original?.panaSala?.ensureRoom) { invite.disabled = true; await original.panaSala.ensureRoom(); invite.disabled = false; if (!link) { status.textContent = loc('No pudimos abrir la sala. Reintenta cuando vuelva la conexión.'); return; } }
+  try { await navigator.clipboard.writeText(inviteUrl(link?.code || roomFromUrl())); invite.textContent = loc('¡Copiado!'); }
+  catch { status.textContent = loc('Comparte el código de sala: {code}', { code: roomCode.textContent }); }
 });
 readyButton.addEventListener('click', () => { ready = !ready; link?.send('lobby-ready', { ready }); updateReady(); renderRoster(); });
 function updateReady() {
@@ -104,10 +96,10 @@ function updateReady() {
   root.dataset.host = String(!link || link.isHost);
   readyButton.hidden = loaded && ready && (!link || link.isHost);
   readyButton.disabled = !loaded;
-  readyButton.textContent = !loaded ? 'Preparando…' : ready ? 'Listo · esperar' : '¡Estoy listo!';
+  readyButton.textContent = !loaded ? loc('Preparando…') : ready ? loc('Listo · esperar') : loc('¡Estoy listo!');
   readyButton.setAttribute('aria-pressed', String(ready));
   const waiting = link?.state.players.filter(p => p.id !== link.id && p.connected !== false && (!p.assetsReady || !p.lobbyReady)) || [];
-  if (loaded) status.textContent = !ready ? 'Avísales cuando estés listo.' : waiting.length ? `Esperando a ${waiting.map(p => p.name).join(', ')}.` : link && !link.isHost ? 'Todo preparado. El anfitrión inicia la partida.' : 'Todo preparado. Elige los ajustes y comienza la partida.';
+  if (loaded) status.textContent = !ready ? loc('Avísales cuando estés listo.') : waiting.length ? loc('Esperando a {names}.', { names: formatList(waiting.map(p => p.name)) }) : link && !link.isHost ? loc('Todo preparado. El anfitrión inicia la partida.') : loc('Todo preparado. Elige los ajustes y comienza la partida.');
 }
 document.addEventListener('pana:room-link', e => {
   link = e.detail; signature = '';
@@ -125,7 +117,7 @@ root.addEventListener('click', e => {
   const waiting = !offline && link?.state.players.some(p => p.connected !== false && (!p.assetsReady || !p.lobbyReady));
   if (!loaded || !ready || (!['practice', 'versus'].includes(control.id) && waiting)) {
     e.preventDefault(); e.stopImmediatePropagation();
-    status.textContent = loaded ? 'Falta que todos los panas estén listos.' : 'El juego todavía se está preparando.';
+    status.textContent = loaded ? loc('Falta que todos los panas estén listos.') : loc('El juego todavía se está preparando.');
   }
 }, true);
 // Some games also start from Space/Enter on the document. Apply the same
@@ -140,7 +132,7 @@ window.addEventListener('keydown', e => {
   if (e.target.closest('input, textarea, select, dialog, [contenteditable]')) return;
   if (!loaded || !ready || link?.state.players.some(p => p.connected !== false && (!p.assetsReady || !p.lobbyReady))) {
     e.preventDefault(); e.stopImmediatePropagation();
-    status.textContent = loaded ? 'Falta que todos los panas estén listos.' : 'El juego todavía se está preparando.';
+    status.textContent = loaded ? loc('Falta que todos los panas estén listos.') : loc('El juego todavía se está preparando.');
   }
 }, true);
 // The shared lobby song plays while the lobby shows, once a tap has unlocked
@@ -163,7 +155,7 @@ function visibility() {
   if (!loaded || !original) return;
   const hidden = original.hidden || original.classList.contains('hidden') || original.style.display === 'none';
   // Lobby to game and back: a short cover instead of the page swapping under the player.
-  if (revealed && hidden !== shellHidden) showCover({ title: gameName, image: `/images/launcher/${game}.jpg`, text: hidden ? '¡A jugar!' : 'De vuelta a la sala…' }).done();
+  if (revealed && hidden !== shellHidden) showCover({ title: gameName, image: `/images/launcher/${game}.jpg`, text: hidden ? loc('¡A jugar!') : loc('De vuelta a la sala…') }).done();
   shellHidden = hidden;
   root.hidden = hidden;
   lobbySong();
@@ -209,7 +201,7 @@ try {
   // A room link (with everyone in it) lands soon after; wait a moment for it
   // so the roster does not fill in after the lobby shows.
   if (roomFromUrl() && !link) {
-    cover.say('Entrando a la sala…');
+    cover.say(loc('Entrando a la sala…'));
     await new Promise(resolve => { document.addEventListener('pana:room-link', resolve, { once: true }); setTimeout(resolve, 5000); });
     await new Promise(resolve => setTimeout(resolve, 150));
   }
@@ -217,6 +209,6 @@ try {
   cover.done();
 } catch (error) {
   failed = true; console.error('Game preparation failed', error);
-  status.textContent = 'No pudimos preparar el juego. Comprueba la conexión e inténtalo otra vez.';
+  status.textContent = loc('No pudimos preparar el juego. Comprueba la conexión e inténtalo otra vez.');
   cover.fail(status.textContent, () => location.reload());
 }

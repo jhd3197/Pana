@@ -59,3 +59,12 @@ marks a visited stock build even when normalization removes empty parts.
 These preferences live in this browser's `carreritas:profile`, not an account
 cloud save. Shop browser coverage buys a kit, creates a distinct stock kit,
 returns to each body, reloads, and closes/reopens the page in the same browser.
+
+The balance lives in Pana's shared mango wallet (`engine/mangos.js`, key
+`pana:mangos`), so other games can pay into it. `wallet.coins` mirrors it:
+the profile store sets it from the wallet on load and writes it back on
+save. A device with no shared wallet yet adopts the coins its profile
+held, once. A payout in another tab arrives as a storage event; the store
+updates `wallet.coins` before the taller re-reads it, so a stale page cannot
+save the old balance over it. The rescue vulture loads lazily to keep the
+first load within its module budget.

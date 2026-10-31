@@ -1,17 +1,20 @@
+import { botParticipation } from '../../../engine/room-option-fields.js';
 import { normalizeRoomOptions } from '../../../engine/room-options-rules.js';
 import { LENGTH, JUMPS, at, angle, wrap } from './course.js';
+import { loc } from '../../../engine/i18n.js';
 
 const field = (id, label, choices, value = choices[0][0], advanced = false) => ({ id, label, choices, default: value, advanced });
 export const FIELDS = [
-  field('course', 'Recorrido', [['llanos', 'Llanos'], ['morichal', 'Morichal · inverso']]),
-  field('jumps', 'Saltos', [['normal', 'Normales'], ['crazy', 'Locos']]),
-  field('laps', 'Vueltas', [[2, '2'], [3, '3']]),
-  field('horse', 'Caballo', [['random', 'Al azar'], ['chosen', 'Elegido']], 'chosen', true),
-  field('obstacles', 'Obstáculos', [['few', 'Pocos'], ['normal', 'Normal'], ['many', 'Muchos']], 'normal', true),
-  field('shortcuts', 'Atajos', [[true, 'Sí'], [false, 'No']], false, true),
-  field('weather', 'Clima', [['sun', 'Sol'], ['rain', 'Lluvia'], ['storm', 'Tormenta']], 'sun', true),
-  field('jumpHelp', 'Ayuda de salto', [[true, 'Sí'], [false, 'No']], false, true),
-  field('drafting', 'Rebufo', [[true, 'Sí'], [false, 'No']], false, true),
+  botParticipation(),
+  field('course', loc('Recorrido'), [['llanos', 'Llanos'], ['morichal', loc('Morichal · inverso')]]),
+  field('jumps', loc('Saltos'), [['normal', loc('Normales')], ['crazy', loc('Locos')]]),
+  field('laps', loc('Vueltas'), [[2, '2'], [3, '3']]),
+  field('horse', loc('Caballo'), [['random', loc('Al azar')], ['chosen', loc('Elegido')]], 'chosen', true),
+  field('obstacles', loc('Obstáculos'), [['few', loc('Pocos')], ['normal', loc('Normal')], ['many', loc('Muchos')]], 'normal', true),
+  field('shortcuts', loc('Atajos'), [[true, loc('Sí')], [false, loc('No')]], false, true),
+  field('weather', loc('Clima'), [['sun', loc('Sol')], ['rain', loc('Lluvia')], ['storm', loc('Tormenta')]], 'sun', true),
+  field('jumpHelp', loc('Ayuda de salto'), [[true, loc('Sí')], [false, loc('No')]], false, true),
+  field('drafting', loc('Rebufo'), [[true, loc('Sí')], [false, loc('No')]], false, true),
 ];
 export function cleanOptions(raw = {}) {
   return normalizeRoomOptions(FIELDS, raw);

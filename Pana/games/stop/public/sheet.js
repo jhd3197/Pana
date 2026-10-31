@@ -1,8 +1,9 @@
 // Your own page of the libreta: one box per category, written in pencil.
 // The answers live only here until pencils-down; game.js sends them with
 // ¡STOP! or when the host asks for the sheets. Enter jumps to the next box.
-import { categoryLabel, categoryShort, letterOf } from '/engine/play/saber-match.js';
-import { MAX_ANSWER } from './rules.js';
+import { letterOf } from '/engine/play/saber-match.js';
+import { labelText as categoryLabel, shortText as categoryShort } from './categories.js';
+import { MAX_ANSWER, tooShort } from './rules.js';
 
 export function createSheet(root, { onProgress, onStop }) {
   const rows = root.querySelector('#sheet-rows'), stopButton = root.querySelector('#stop');
@@ -10,11 +11,12 @@ export function createSheet(root, { onProgress, onStop }) {
 
   const filled = () => inputs.filter(input => input.value.trim()).length;
   const values = () => inputs.map(input => input.value.trim().slice(0, MAX_ANSWER));
-  const full = () => inputs.length > 0 && filled() === inputs.length;
+  // ¡STOP! waits for real answers: a lone letter only fills the box.
+  const full = () => inputs.length > 0 && inputs.every(input => !tooShort(input.value));
 
   function mark(input) {
     const text = input.value.trim();
-    input.closest('li').classList.toggle('is-off', !!text && letterOf(text) !== letter);
+    input.closest('li').classList.toggle('is-off', !!text && (letterOf(text) !== letter || tooShort(text)));
     input.closest('li').classList.toggle('is-filled', !!text);
   }
   function changed() {
@@ -30,10 +32,14 @@ export function createSheet(root, { onProgress, onStop }) {
       const li = document.createElement('li'); li.className = 'sheet-row';
       const margin = Object.assign(document.createElement('span'), { className: 'row-letter', textContent: letter });
       margin.setAttribute('aria-hidden', 'true');
-      const label = Object.assign(document.createElement('label'), { className: 'row-cat', htmlFor: `box-${i}` });
+      const label = Object.assign(document.createElement('label'), { className: 'row-cat', htmlFor: `box-${i}`, translate: false });
       label.append(Object.assign(document.createElement('span'), { className: 'row-cat-long', textContent: categoryLabel(cat) }),
         Object.assign(document.createElement('span'), { className: 'row-cat-short', textContent: categoryShort(cat) }));
-      const input = Object.assign(document.createElement('input'), { id: `box-${i}`, type: 'text', maxLength: MAX_ANSWER, autocomplete: 'off', spellcheck: false, placeholder: `${letter}…` });
+      // Chrome ignores autocomplete="off" on boxes labelled Nombre, País or
+      // Ciudad and covers the sheet with saved addresses; a token it doesn't
+      // know turns that off.
+      const input = Object.assign(document.createElement('input'), { id: `box-${i}`, name: `stop-${i}`, type: 'text', maxLength: MAX_ANSWER, autocomplete: 'stop-answer', spellcheck: false, placeholder: `${letter}…` });
+      for (const [k, v] of [['data-form-type', 'other'], ['data-lpignore', 'true'], ['data-1p-ignore', '']]) input.setAttribute(k, v);
       input.setAttribute('autocapitalize', 'words'); input.setAttribute('autocorrect', 'off');
       input.setAttribute('enterkeyhint', i === state.categories.length - 1 ? 'done' : 'next');
       input.dataset.box = String(i);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, rack, acceptAction, step, finishShot, canPlace, remaining, legalTarget, aimGuide, predictShot, botShot, botPlacement, stepPoolStarter, BOT_ID, RADIUS } from '../public/rules.js';
+import { createGame, rack, acceptAction, step, finishShot, canPlace, remaining, legalTarget, aimGuide, predictShot, botShot, botPlacement, stepPoolStarter, BOT_ID, RADIUS, messageText } from '../public/rules.js';
 import { starterResult } from '../../../engine/play/quien-empieza-rules.js';
 
 // The table's seat order breaks (no cachos), so seat 0 breaks.
@@ -37,7 +37,7 @@ test('a match opens with the cachos: the highest die breaks; later racks keep th
   for (let i = 0; i < 400 && s.phase === 'starter'; i++) stepPoolStarter(s, .1);
   const { order, rolls } = starterResult(s.starter);
   assert.equal(s.phase, 'aiming'); assert.equal(s.turn, order[0]); assert.equal(s.breaker, order[0] % 2);
-  assert.match(s.message, new RegExp(`Rompe ${s.players[order[0]].name} con ${rolls[order[0]]}`));
+  assert.match(messageText(s.message), new RegExp(`Rompe ${s.players[order[0]].name} con ${rolls[order[0]]}`));
   s.players[3].id = 44; s.options.bestOf = 3; outcome(s, { first: 8, eligible: true, pocketed: [8] }); assert.equal(s.result.matchFinished, false);
   assert.ok(acceptAction(s, 11, { action: 'start', revision: s.revision }, 11)); assert.equal(s.phase, 'aiming', 'the next rack needs no cachos');
 });
@@ -45,7 +45,7 @@ test('room option: revancha lets the losing team break, al azar starts at once',
   const s = game(); s.options.starter = 'revancha'; outcome(s, { pocketed: [8] }); assert.equal(s.result.team, 1);
   assert.ok(action(s, 'start', {}, 11)); assert.equal(s.phase, 'aiming'); assert.equal(s.turn, 0, 'two seats: the loser leads and nobody throws');
   const r = createGame(); r.players[0].id = 11; r.players[1].id = 22; r.options.starter = 'azar';
-  assert.ok(acceptAction(r, 11, { action: 'start', revision: 0 }, 11)); assert.equal(r.phase, 'aiming'); assert.match(r.message, /^Orden al azar: ¡Rompe/);
+  assert.ok(acceptAction(r, 11, { action: 'start', revision: 0 }, 11)); assert.equal(r.phase, 'aiming'); assert.match(messageText(r.message), /^Orden al azar: ¡Rompe/);
   const bot = createGame(false, { bot: true }); bot.players[0].id = 11;
   assert.ok(acceptAction(bot, 11, { action: 'start', revision: 0 }, 11)); assert.equal(bot.phase, 'starter');
   acceptAction(bot, 11, { action: 'starter', cacho: 'slam', power: .5 }, 11);

@@ -24,6 +24,26 @@ export function cappedRoom(RoomClass, players) {
   const cap = Math.max(1, Math.min(MAX_MEMBERS, Number(players) || MAX_MEMBERS));
   return class extends RoomClass { maxClients = cap; };
 }
+// Matchmaking per client address: `burst` requests at once, then `perMinute`.
+// Every joinOrCreate with a new code makes a room, so a loop of them is the
+// cheapest way to load the server. Behind a proxy, PANA_CLIENT_IP_HEADER names
+// the header that carries the visitor's address (the socket is the proxy's);
+// without one, this machine's own requests (dev, the browser suites) are free.
+export function createLimiter({ burst = 20, perMinute = 20, max = 10000 } = {}) {
+  const buckets = new Map();
+  return (key, now = Date.now()) => {
+    const [tokens, then] = buckets.get(key) ?? [burst, now];
+    const left = Math.min(burst, tokens + (now - then) * perMinute / 60000);
+    if (buckets.size >= max && !buckets.has(key)) buckets.clear();
+    buckets.set(key, [left >= 1 ? left - 1 : left, now]);
+    return left >= 1;
+  };
+}
+export function clientAddress(req, header = process.env.PANA_CLIENT_IP_HEADER) {
+  if (header) return String(req.headers[header.toLowerCase()] || '').split(',').pop().trim() || 'unknown';
+  const peer = req.socket?.remoteAddress || 'unknown';
+  return /^(127\.|::1$|::ffff:127\.)/.test(peer) ? null : peer;
+}
 export const isColyseusPath = (url) => url === PREFIX || url.startsWith(PREFIX + '/') || url.startsWith(PREFIX + '?');
 
 export async function attachColyseus(server) {
@@ -44,9 +64,15 @@ export async function attachColyseus(server) {
   await matchMaker.accept();
 
   const middleware = createNodeMatchmakingMiddleware();
+  const allow = createLimiter();
   // The matchmaking middleware expects /matchmake/:method/:room at the root.
   function handle(req, res) {
     req.url = req.url.slice(PREFIX.length) || '/';
+    const address = req.url.startsWith('/matchmake/') && req.method === 'POST' ? clientAddress(req) : null;
+    if (address !== null && !allow(address)) {
+      res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '10' });
+      return res.end(JSON.stringify({ code: 429, error: 'too many rooms, wait a moment' }));
+    }
     middleware(req, res, () => {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'not found' }));

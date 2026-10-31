@@ -6,10 +6,11 @@
 //   const page = await openGame(browser, 'domino', { name: 'Ana', room: 'qa-1' });
 //
 // Rules (AGENTS.md, "Checks"): wait on state (prepared, revision, phase, an event
-// id), never on wall-clock time; force low quality; compare positions and heights
+// id), never on wall-clock time; force low quality with the frame-rate guard off; compare positions and heights
 // with a tolerance.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 export const base = process.env.PANA_TEST_URL || process.env.PANA_QA_URL || 'http://localhost:8461';
@@ -32,7 +33,7 @@ export function launch(options = {}) {
 
 // Absolute path for screenshots, independent of the directory the suite ran from.
 export function qaDir(metaUrl) {
-  const dir = path.join(path.dirname(new URL(metaUrl).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', 'qa');
+  const dir = path.join(path.dirname(fileURLToPath(metaUrl)), '..', 'qa');
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -44,7 +45,7 @@ export async function openGame(browser, game, { name = 'Pana', avatar, room, mob
   await context.addInitScript(({ name, avatar }) => {
     localStorage.setItem('pana:name', name);
     if (avatar) localStorage.setItem('pana:avatar', JSON.stringify(avatar));
-    localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'baja' }));
+    localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'baja', autoScale: false }));
   }, { name, avatar });
   const page = await context.newPage();
   page.errors = [];

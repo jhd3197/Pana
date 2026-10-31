@@ -7,6 +7,7 @@ import { config } from './config.js';
 import { handleApi } from './api.js';
 import { serveStatic } from './static.js';
 import { isColyseusPath } from './colyseus.js';
+import { servePackedAsset } from './packed-assets.js';
 
 function gamePublicDir(game) {
   if (!/^[a-z0-9-]+$/.test(game)) return null;
@@ -16,8 +17,10 @@ function gamePublicDir(game) {
 
 export function createRequestHandler(startedAt, colyseus) {
   return (req, res) => {
-    const url = new URL(req.url, 'http://localhost');
+    let url;
+    try { url = new URL(req.url, 'http://localhost'); } catch { return res.writeHead(400).end('bad request'); }
     const pathname = url.pathname;
+    if (servePackedAsset(res, pathname)) return;
 
     if (isColyseusPath(pathname) && colyseus.handle) return colyseus.handle(req, res);
 
@@ -31,6 +34,20 @@ export function createRequestHandler(startedAt, colyseus) {
       const baseDir = game && gamePublicDir(game);
       if (!baseDir) {
         res.writeHead(404).end('unknown game');
+        return;
+      }
+      if (game === 'qqsmp' && parts[0] === 'audio' && parts.at(-1)?.endsWith('.mp3')) {
+        // Lazy and game-specific: no voice download is needed to start Pana.
+        import('../../games/qqsmp/server/audio-pack.js').then(async ({ audioDirectory }) => {
+          const name = parts.length === 2 ? parts[1] : '';
+          const directory = await audioDirectory(name);
+          if (!directory) return res.writeHead(404).end('not found');
+          serveStatic(res, directory, name);
+        }).catch(error => {
+          console.warn('QQSMP voice pack:', error.message);
+          if (!res.headersSent) res.writeHead(503, { 'Cache-Control': 'no-store', 'Retry-After': '30' }).end('voice unavailable');
+          else res.destroy();
+        });
         return;
       }
       return serveStatic(res, baseDir, parts.join('/') || 'index.html');

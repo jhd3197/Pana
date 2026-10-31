@@ -53,7 +53,7 @@ export const glowColor = kind => ITEMS[kind].artifact ? treasure.ARTIFACT_AURA[k
 
 export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {}) {
   const L = layoutFor(seed, depth), run = L.run, floors = run.floors;
-  const group = new THREE.Group(); group.name = 'Reliquia · La mina del sol';
+  const group = new THREE.Group(); group.name = 'Reliquia · La mina del sol'; // i18n-ignore: scene graph name
   const owned = new Set(), animated = [], floorsBuilt = new Map();
   const halo = glowTexture(), haloMaterials = new Map();
   const haloMaterial = color => { if (!haloMaterials.has(color)) haloMaterials.set(color, new THREE.SpriteMaterial({ map: halo, color, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending })); return haloMaterials.get(color); };
@@ -214,7 +214,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
   };
 
   // ---------- Items ----------
-  const itemRoot = new THREE.Group(); itemRoot.name = 'Botín'; group.add(itemRoot);
+  const itemRoot = new THREE.Group(); itemRoot.name = 'Botín'; group.add(itemRoot); // i18n-ignore: scene graph name
   const items = new Map();
   function syncItems(state, viewer) {
     const seen = new Set(), vf = viewer ? floorOf(viewer.x) : 0;

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Poker, evaluate, compare, settle, shuffle, tablePlayers } from '../public/rules.js';
+import { Poker, evaluate, compare, settle, shuffle, tablePlayers, messageText } from '../public/rules.js';
 import { starterResult } from '../../../engine/play/quien-empieza-rules.js';
 const c = (rank, suit = 0) => suit * 13 + rank - 2;
 const cards = (ranks, suits) => ranks.map((r, i) => c(r, suits?.[i] ?? i % 4));
@@ -100,16 +100,46 @@ test('a match opens with the cachos: the highest takes the dealer button, later 
   assert.equal(g.phase, 'preflop'); assert.equal(g.view(1).starter, null);
   const { order } = starterResult(g.starter), first = [1, 2, 3][order[0]];
   if (first !== 3) assert.equal(g.players[g.dealer].id, first, 'the cacho winner deals');
-  assert.match(g.message, /reparte con un [1-6]/);
+  assert.match(messageText(g.message), /reparte con un [1-6]/);
   while (g.phase !== 'finished') g.act(g.turn, 'fold');
   assert.ok(g.start()); assert.equal(g.phase, 'preflop', 'the next hand deals straight away');
 });
 test('room options: al azar deals at once; revancha gives the button to whoever busted first', () => {
   const g = new Poker(); g.configure({ starter: 'azar' }); g.add(1, { name: 'A' }); g.add(2, { name: 'B' });
-  g.start(); assert.equal(g.phase, 'preflop'); assert.match(g.message, /^Orden al azar: /);
+  g.start(); assert.equal(g.phase, 'preflop'); assert.match(messageText(g.message), /^Orden al azar: /);
   g.act(g.turn, 'raise', 1000); g.act(g.turn, 'call');
   assert.equal(g.phase, 'finished'); const loser = g.players.find(p => p.chips === 0)?.id;
   if (loser === undefined) return; // a split pot busts nobody
   g.setup(); assert.equal(g.lastPlace, loser);
   g.options.starter = 'revancha'; g.start(); assert.equal(g.phase, 'preflop'); assert.equal(g.players[g.dealer].id, loser);
+});
+
+test("a name never claims a dropped pana's stack; their own device does", () => {
+  const g = new Poker();
+  g.add(1, { name: 'Ana', avatar: {}, bot: false, key: 'device-ana-1' }); g.add(2, { name: 'Beto', avatar: {}, bot: false, key: 'device-beto-1' });
+  g.players[0].chips = 140; g.drop(1);
+  g.add(3, { name: 'Ana', avatar: {}, bot: false, key: 'device-other' });
+  assert.equal(g.players.find(p => p.id === 3).chips, g.options.stack, 'same name, other device: a fresh stack');
+  assert.equal(g.players.find(p => p.id === 1).chips, 140);
+  g.add(4, { name: 'Ana', avatar: {}, bot: false });
+  assert.equal(g.players.find(p => p.id === 4).chips, g.options.stack, 'no key: a name cannot claim a keyed chair');
+  g.add(5, { name: 'Ana', avatar: {}, bot: false, key: 'device-ana-1' });
+  assert.equal(g.players.find(p => p.id === 5).chips, 140, 'her own device gets her stack back');
+  assert.ok(g.view(2).players.every(p => !('key' in p)), 'keys never reach a view');
+});
+
+test('leaving and coming back keeps your stack instead of a fresh one', () => {
+  const g = table(3), ana = g.players.find(p => p.id === 1);
+  ana.chips = 140;
+  g.drop(1); g.add(9, { name: 'Pana 1', avatar: {}, bot: false });
+  assert.equal(g.players.find(p => p.id === 9).chips, 140, 'chair still listed: the stack moves to the new seat');
+  assert.equal(ana.chips, 0);
+  const bruno = g.players.find(p => p.id === 2); bruno.chips = 0;
+  g.drop(2); g.prune(p => p.connected);
+  g.add(12, { name: ' pana 2 ', avatar: {}, bot: false });
+  assert.equal(g.players.find(p => p.id === 12).chips, 0, 'a busted pana does not refill by rejoining');
+  g.add(13, { name: 'Nueva', avatar: {}, bot: false });
+  assert.equal(g.players.find(p => p.id === 13).chips, g.options.stack, 'a new name starts with the table stack');
+  g.configure({ stack: g.options.stack * 2 });
+  assert.deepEqual(g.banked, {});
 });

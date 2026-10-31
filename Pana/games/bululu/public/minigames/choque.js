@@ -9,6 +9,7 @@ import { M, mesh } from '/engine/models/core/primitives.js';
 import { CAR_BUILDERS } from '/engine/models/vehicles/cars.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { sunnyStage, rand, pick } from './stage.js';
+import { loc, locKey } from '/engine/i18n.js';
 
 const TIME = 45;
 const R = 12, INNER = 8, WEDGES = 12;   // platform radius, the part that never falls, outer pieces
@@ -41,10 +42,10 @@ function wedge(k, material) {
 
 export default {
   id: 'choque',
-  title: '¡Choque de carritos!',
-  howto: 'Empuja a los demás carritos al agua. Cada uno que tumbes es un punto. Al final, el borde de la tarima se cae… ¡quédate en el centro!',
-  keys: [['WASD / flechas', 'manejar'], ['Espacio', 'turbo']],
-  touch: { action: 'Turbo' },
+  title: locKey('¡Choque de carritos!'),
+  howto: locKey('Empuja a los demás carritos al agua. Cada uno que tumbes es un punto. Al final, el borde de la tarima se cae… ¡quédate en el centro!'),
+  keys: [[locKey('WASD / flechas'), locKey('manejar')], [locKey('Espacio'), locKey('turbo')]],
+  touch: { action: locKey('Turbo') },
   icon: 'car',
   time: TIME,
   input: '2d',
@@ -152,9 +153,9 @@ export default {
       const by = a.hit && clock - a.hit.t < CREDIT ? a.hit.by : null;
       if (by) {
         by.score += 1;
-        by.bubble.say(pick(['¡Al agua!', '¡Chao!', '¡Pa\' fuera!']), 1);
+        by.bubble.say(loc(pick([locKey('¡Al agua!'), locKey('¡Chao!'), locKey('¡Pa\' fuera!')])), 1);
         if (human(by)) sound.pickup();
-      } else a.bubble.say(pick(['¡Me caí solito!', '¡Upa!']), 1);
+      } else a.bubble.say(loc(pick([locKey('¡Me caí solito!'), locKey('¡Upa!')])), 1);
       sound.slip();
     }
 
@@ -339,10 +340,10 @@ export default {
     function hint() {
       if (!me) return null;
       const soon = TIME - CRUMBLE - clock;
-      if (me.falling) return { text: '¡Al agua! Vuelves enseguida', tone: 'bad' };
-      if (soon > 0 && soon < 4) return { text: `¡El borde se cae en ${Math.ceil(soon)}! Vete al centro`, tone: 'bad' };
-      const turbo = me.cool > 0 ? `Turbo en ${Math.ceil(me.cool)} s` : 'Turbo listo (Espacio)';
-      return { text: clock >= TIME - CRUMBLE ? `El borde se está cayendo · ${turbo}` : `Empuja a los demás fuera · ${turbo}`, tone: me.cool > 0 ? '' : 'ok' };
+      if (me.falling) return { text: loc('¡Al agua! Vuelves enseguida'), tone: 'bad' };
+      if (soon > 0 && soon < 4) return { text: loc('¡El borde se cae en {n}! Vete al centro', { n: Math.ceil(soon) }), tone: 'bad' };
+      const turbo = me.cool > 0 ? loc('Turbo en {n} s', { n: Math.ceil(me.cool) }) : loc('Turbo listo (Espacio)');
+      return { text: clock >= TIME - CRUMBLE ? loc('El borde se está cayendo · {turbo}', { turbo }) : loc('Empuja a los demás fuera · {turbo}', { turbo }), tone: me.cool > 0 ? '' : 'ok' };
     }
     return { scene, camera, update, outro, actors, hint, scores: () => actors.map((a) => a.score) };
   },

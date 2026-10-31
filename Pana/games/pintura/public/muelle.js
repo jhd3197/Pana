@@ -19,7 +19,7 @@ const YARD = [[-40, -24, 3], [-40, -10, 4], [-40, 4, 2], [-40, 18, 3], [-46, -17
 // MUELLE_COVERS[variant]; every visible stack, crane leg and stall is built from those rows.
 export function createMuelle(variant = 0) {
   const group = new THREE.Group(), statics = new THREE.Group(), animated = [], cameraBounds = [], materials = new Map(), r = rng(220106);
-  group.name = 'Muelle de La Guaira'; group.userData.mapId = 'muelle';
+  group.name = 'Muelle de La Guaira'; group.userData.mapId = 'muelle'; // i18n-ignore: scene object name
   const material = color => { if (!materials.has(color)) materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: .9 })); return materials.get(color); };
   const box = (w, h, d, color, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material(color)); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; statics.add(m); return m; };
   const put = (object, x, z, angle = 0, y = 0) => { object.position.set(x, y, z); object.rotation.y = angle; statics.add(object); return object; };

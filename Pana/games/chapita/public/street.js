@@ -14,7 +14,11 @@ import { randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { BASES, FIELD } from './field.js';
-import { createStreetGround, createBlockCourt, createSenoraWindow, createChainFence, createBleachers, createSuperbloque } from './studio-set.js';
+import { createStreetGround, createBlockCourt, createSenoraWindow, createChainFence, createBleachers, createSuperbloque, createAlcantarilla } from './studio-set.js';
+
+// Where the jugadas happen: the storm drain by the right curb and the door
+// a pana runs home through when the señora calls them to eat.
+export const DRAIN = { x: 2.9, z: -3.2 }, DOOR = { x: -4.3, z: 2.2 };
 
 const COLORS = [0xf2a65a, 0x7cc6a4, 0xf28bb0, 0xffd166, 0x8ecae6, 0xe76f51, 0xb5a1e0, 0xf4e285];
 const wallZ = -FIELD.wall;
@@ -46,7 +50,7 @@ function parkedCar(id, seed) {
 
 // One field; the scene adds the panas, the señora included, at field.senora.
 export function createField(map = 'calle') {
-  const group = new THREE.Group(); group.name = map === 'cancha' ? 'La cancha del bloque' : 'La calle del barrio';
+  const group = new THREE.Group(); group.name = map === 'cancha' ? 'La cancha del bloque' : 'La calle del barrio';   // i18n-ignore: object name
   const animated = [], random = rng(map === 'cancha' ? 77 : 41);
   const window = FIELD.window, windowX = (window.x0 + window.x1) / 2;
   if (map === 'cancha') buildCourt(group, animated, random); else buildStreet(group, animated, random);
@@ -58,23 +62,36 @@ export function createField(map = 'calle') {
   placed(group, car.root, (c.x0 + c.x1) / 2, -(c.d0 + c.d1) / 2, Math.PI / 2);
   placed(group, streetlightPole(), FIELD.post.x, -FIELD.post.d, Math.PI);
   const win = createSenoraWindow(); win.position.set(windowX, window.y0 - 1.35, wallZ + .02); group.add(win);
+  placed(group, createAlcantarilla(), DRAIN.x, DRAIN.z, 0, .005);
   // Superbloques on the hills behind, the Caracas skyline of the reel.
   [[-34, -78, .2], [6, -92, -.1], [42, -74, -.35], [-62, -48, .9], [64, -40, -1]].forEach(([x, z, a], i) => {
     placed(group, createSuperbloque({ floors: 10 + i % 3 * 2 }), x, z, a, 4 + i % 2 * 3);
   });
-  // Numbered physical markers make the virtual runner stations readable.
+  // A chalk diamond on the street: home → 1st → 2nd → 3rd → home, the bases
+  // as square bags turned on their corner, each with its number beside it.
+  const chalk = new THREE.MeshBasicMaterial({ color: '#fffaf0', transparent: true, opacity: .8, depthWrite: false });
+  const diamond = new THREE.Group(); diamond.name = 'Diamante de tiza'; group.add(diamond);   // i18n-ignore: object name
+  const corners = [{ x: 0, z: 0 }, ...BASES, { x: 0, z: 0 }];
+  for (let i = 0; i < 4; i++) {
+    const a = corners[i], b = corners[i + 1], length = Math.hypot(b.x - a.x, b.z - a.z);
+    const line = new THREE.Mesh(new THREE.PlaneGeometry(.09, length), chalk);
+    line.rotation.set(-Math.PI / 2, 0, Math.atan2(b.x - a.x, -(b.z - a.z)) * -1);
+    line.position.set((a.x + b.x) / 2, .045, (a.z + b.z) / 2); line.renderOrder = 1; diamond.add(line);
+  }
   const bases = BASES.map((spot, i) => {
-    const marker = new THREE.Mesh(new THREE.BoxGeometry(.95, .08, .95), new THREE.MeshStandardMaterial({ color: '#fffaf0', roughness: 1 }));
-    marker.name = `base-${i + 1}`; marker.position.set(spot.x, .09, spot.z); group.add(marker);
+    const marker = new THREE.Mesh(new THREE.BoxGeometry(.62, .06, .62), new THREE.MeshStandardMaterial({ color: '#fffaf0', roughness: 1 }));
+    marker.name = `base-${i + 1}`; marker.position.set(spot.x, spot.y + .03, spot.z); marker.rotation.y = Math.PI / 4; group.add(marker);
     const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
-    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#0e0b24'; ctx.font = 'bold 92px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(i + 1), 64, 68);
+    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fffaf0'; ctx.strokeStyle = '#0e0b24'; ctx.lineWidth = 12; ctx.font = 'bold 92px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.strokeText(String(i + 1), 64, 68); ctx.fillText(String(i + 1), 64, 68);
     const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(.8, .8), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }));
-    label.rotation.x = -Math.PI / 2; label.position.y = .045; marker.add(label);
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(.75, .75), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }));
+    // The number sits on the street just inside the diamond, read from behind the plate.
+    label.rotation.x = -Math.PI / 2; label.position.set(spot.x * .7, .05, spot.z + (i === 1 ? 1.15 : .3)); label.renderOrder = 1; diamond.add(label);
     return marker;
   });
   return {
-    group, animated, bases,
+    group, animated, bases, diamond,
     senora: { x: windowX, z: wallZ + .4, y: .25 },
     update(t) { for (const a of animated) a(t); },
     dispose() {

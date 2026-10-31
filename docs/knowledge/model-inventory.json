@@ -1,8 +1,8 @@
 {
-  "date": "2026-10-24",
+  "date": "2026-10-30",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 565,
+    "catalog": 619,
     "categories": {
       "Fauna": 25,
       "Vegetación": 50,
@@ -10,12 +10,12 @@
       "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 153,
+      "Objetos": 204,
       "Emblemas": 9,
       "Pueblo": 34,
       "Páramo": 10,
       "Selva": 14,
-      "Costa": 29,
+      "Costa": 32,
       "Ruinas": 26,
       "Mina": 30,
       "Cementerio": 30,
@@ -3458,6 +3458,46 @@
       "status": "in-use"
     },
     {
+      "id": "paint-lejana",
+      "name": "La Lejana",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "sniper"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-bazuca",
+      "name": "La Bazuca",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "bazooka"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-cohete-bazuca",
+      "name": "Cohete de La Bazuca",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintRocket",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
       "id": "paint-acolchado",
       "name": "El Acolchado",
       "category": "Objetos",
@@ -3479,6 +3519,34 @@
         "¡Pintura!"
       ],
       "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "team-canopy",
+      "name": "Toldo de equipo",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball.js",
+      "factory": "teamCanopy",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "color": "#29c5cd"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "sandbag-wall",
+      "name": "Sacos de arena",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball.js",
+      "factory": "sandbagWall",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "w": 4
+      },
       "status": "in-use"
     },
     {
@@ -3876,6 +3944,39 @@
       "factory": "portCrane",
       "usedBy": [
         "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "yard-gantry",
+      "name": "Grúa pórtico del patio",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/port-crane.js",
+      "factory": "yardGantry",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "steel-shed",
+      "name": "Galpón de acero",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/port-cargo.js",
+      "factory": "steelShed",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "oil-drum",
+      "name": "Tambor de aceite",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/port-cargo.js",
+      "factory": "oilDrum",
+      "usedBy": [
+        "Pepazo"
       ],
       "status": "in-use"
     },
@@ -7169,6 +7270,300 @@
       "status": "in-use"
     },
     {
+      "id": "ludo-highfive",
+      "name": "Ludo · Chócala",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "highfive"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-slip",
+      "name": "Ludo · Resbalón",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "slip"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-rollbarrel",
+      "name": "Ludo · Rodar",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "rollbarrel"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-moonwalk",
+      "name": "Ludo · Moonwalk",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "moonwalk"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-spring",
+      "name": "Ludo · Resorte",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "spring"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-dodge",
+      "name": "Ludo · Esquivar",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "dodge"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-piggy",
+      "name": "Ludo · Caballito",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "piggy"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-umbrella",
+      "name": "Ludo · Paraguas",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "umbrella"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-tunnel",
+      "name": "Ludo · Túnel",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "tunnel"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-gum",
+      "name": "Ludo · Chicle",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMotionPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "style": "gum"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-intro",
+      "name": "Ludo · Inicio de partida",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "intro"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-turn",
+      "name": "Ludo · Tu turno",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "turn"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-suspense",
+      "name": "Ludo · Dado en suspenso",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "suspense"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-safe",
+      "name": "Ludo · Casilla segura",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "safe"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-block",
+      "name": "Ludo · Bloqueo",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "block"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-leap",
+      "name": "Ludo · Salto de rana",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "leap"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-sprint",
+      "name": "Ludo · Recta final",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "sprint"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-nearmiss",
+      "name": "Ludo · ¡Casi!",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "nearmiss"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-nomoves",
+      "name": "Ludo · Sin movimientos",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "nomoves"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-sleep",
+      "name": "Ludo · A dormir",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "sleep"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-podium",
+      "name": "Ludo · Podio",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/studio-preview.js",
+      "factory": "createLudoMomentPreview",
+      "usedBy": [
+        "Ludo"
+      ],
+      "previewOptions": {
+        "kind": "podium"
+      },
+      "status": "in-use"
+    },
+    {
       "id": "qqsmp-stage",
       "name": "Tarima del concurso",
       "category": "Objetos",
@@ -7618,6 +8013,380 @@
       "status": "in-use"
     },
     {
+      "id": "chapita-palo-partido",
+      "name": "Palo partido",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createPaloPartido",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "kind": "escoba"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-pelota",
+      "name": "Pelota",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createPelota",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-bate",
+      "name": "Bate de madera",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createBate",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-perro",
+      "name": "Perro callejero",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createPerro",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-alcantarilla",
+      "name": "Alcantarilla",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createAlcantarilla",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-periodico",
+      "name": "Periódico El Barrio",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createPeriodico",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-bola-de-paja",
+      "name": "Bola de paja",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createBolaDePaja",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-hit",
+      "name": "Chapita · Lanzar y batear",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "hit"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-swing",
+      "name": "Chapita · Solo batear",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "swing"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-miss",
+      "name": "Chapita · Swing fallido",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "miss"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-helicopter",
+      "name": "Chapita · Helicóptero",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "helicopter"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-pitch",
+      "name": "Chapita · Solo lanzar",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "pitch"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-argue",
+      "name": "Chapita · Discusión",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "argue"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-slip",
+      "name": "Chapita · Palo zafado",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "slip"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-boomerang",
+      "name": "Chapita · Bumerán",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "boomerang"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-bean",
+      "name": "Chapita · Chapazo",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "bean"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-window",
+      "name": "Chapita · La ventana",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "window"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-catch",
+      "name": "Chapita · Atrapada",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "catch"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-broken",
+      "name": "Chapita · Palo partido",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "broken"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-home",
+      "name": "Chapita · Jonrón",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "home"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-dog",
+      "name": "Chapita · El perro",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "dog"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-roof",
+      "name": "Chapita · Pa'l techo",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "roof"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-drain",
+      "name": "Chapita · Alcantarilla",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "drain"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-pinball",
+      "name": "Chapita · Pinball",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "pinball"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-grandpa",
+      "name": "Chapita · El abuelo",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "grandpa"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-car",
+      "name": "Chapita · ¡Carro!",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "car"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-dinner",
+      "name": "Chapita · ¡A comer!",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "dinner"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-jugada-dance",
+      "name": "Chapita · Celebración",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-preview.js",
+      "factory": "createChapitaJugadaPreview",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "jugada": "dance"
+      },
+      "status": "in-use"
+    },
+    {
       "id": "trifulca-guante",
       "name": "Guante de boxeo",
       "category": "Objetos",
@@ -7770,7 +8539,7 @@
       "anchor": "function summitTerminal",
       "where": "Páramo",
       "note": "Upper/lower terminals; separate from the catalog heritage cable-car station.",
-      "line": 5
+      "line": 6
     },
     {
       "name": "Aerial cable system and cabins",
@@ -7778,7 +8547,7 @@
       "anchor": "function aerialLift",
       "where": "Páramo",
       "note": "Six moving cabins, two cable curves; parameterized scene assembly.",
-      "line": 19
+      "line": 20
     },
     {
       "name": "Cable support tower",
@@ -7786,7 +8555,7 @@
       "anchor": "function cableTower",
       "where": "Páramo",
       "note": "Terrain-dependent support height.",
-      "line": 39
+      "line": 40
     },
     {
       "name": "Diving school",
@@ -7794,7 +8563,7 @@
       "anchor": "function divingSchool",
       "where": "Chi Chi",
       "note": "Facade, dive tanks and diver flag.",
-      "line": 46
+      "line": 47
     },
     {
       "name": "Coastal fort",
@@ -7802,7 +8571,7 @@
       "anchor": "function coastalFort",
       "where": "Chi Chi",
       "note": "Lookout landmark on the mountain coast.",
-      "line": 63
+      "line": 64
     },
     {
       "name": "Maracaibo-inspired bridge",
@@ -7810,7 +8579,7 @@
       "anchor": "function maracaiboBridge",
       "where": "Plaza circuit",
       "note": "Full driving bridge; use its actual road deck when previewing.",
-      "line": 75
+      "line": 76
     },
     {
       "name": "Grandstand",
@@ -7818,7 +8587,7 @@
       "anchor": "function grandstand",
       "where": "Estadio",
       "note": "Eight stands with different dimensions/colors, covering the infield and outer sectors.",
-      "line": 95
+      "line": 96
     },
     {
       "name": "Canal villa",
@@ -7826,7 +8595,7 @@
       "anchor": "function canalVilla",
       "where": "Plaza circuit",
       "note": "Waterfront houses and balconies.",
-      "line": 109
+      "line": 110
     },
     {
       "name": "Small rowboat (older)",
@@ -7834,7 +8603,7 @@
       "anchor": "function rowboat",
       "where": "Selva; Llanos",
       "note": "Two active river boats. Keep shallow-water footprint when upgrading.",
-      "line": 450
+      "line": 459
     },
     {
       "name": "Canal/dive-village boat",
@@ -7842,7 +8611,7 @@
       "anchor": "function boat",
       "where": "Plaza circuit; Chi Chi",
       "note": "Cabin option; different builder from the coast peñero and island sailboats.",
-      "line": 108
+      "line": 109
     },
     {
       "name": "Faceted boulder",
@@ -7850,7 +8619,7 @@
       "anchor": "function boulder",
       "where": "Páramo; Chi Chi; Desierto",
       "note": "Instanced geological scatter, separate from props.rock.",
-      "line": 118
+      "line": 119
     },
     {
       "name": "Catch basket",
@@ -7858,7 +8627,7 @@
       "anchor": "function basket",
       "where": "Atrapa los mangos",
       "note": "Held by players; needs a standalone preview adapter.",
-      "line": 22
+      "line": 23
     },
     {
       "name": "Coconut",
@@ -7866,7 +8635,7 @@
       "anchor": "function coconut",
       "where": "Atrapa los mangos",
       "note": "Falling hazard with three dark eyes.",
-      "line": 34
+      "line": 35
     },
     {
       "name": "Board die",
@@ -7914,7 +8683,7 @@
       "anchor": "function makePeel",
       "where": "Carreritas item use",
       "note": "Three peel strips and seed; not the whole mango.",
-      "line": 64
+      "line": 88
     },
     {
       "name": "Kitchen sign",
@@ -7930,7 +8699,7 @@
       "anchor": "const fridge =",
       "where": "Cocina",
       "note": "Shelves with tomatoes, milk cartons and shared cheese. Assembly includes its food dressing.",
-      "line": 30
+      "line": 31
     },
     {
       "name": "Condiment bottles and flour sacks",
@@ -7938,7 +8707,7 @@
       "anchor": "Small working-kitchen details",
       "where": "Cocina",
       "note": "Counter and floor dressing made inline; two prop types grouped as one set.",
-      "line": 44
+      "line": 45
     }
   ],
   "assemblies": [
@@ -7972,7 +8741,7 @@
       "anchor": "function addLandscape",
       "where": "Galope; Studio map",
       "note": "Hato gathering places, bank-connected canoe landing, moriche groves, green/dry grass, shore-only reeds and continuous far plain. All 13 new models have individual Studio previews.",
-      "line": 15
+      "line": 16
     },
     {
       "name": "Selva pyramid",
@@ -8004,7 +8773,7 @@
       "anchor": "function waterfall",
       "where": "Selva",
       "note": "Active older waterfall; separate from waterfallRocks in Chi Chi.",
-      "line": 296
+      "line": 305
     },
     {
       "name": "Pond and river wrappers",
@@ -8012,7 +8781,7 @@
       "anchor": "function waterPond",
       "where": "Selva",
       "note": "waterPond/waterRibbon wrap the shared water surface.",
-      "line": 286
+      "line": 295
     },
     {
       "name": "Country grass tufts",
@@ -8052,7 +8821,7 @@
       "anchor": "fisherman",
       "where": "Llanos",
       "note": "Dock planks and supports; capybaras now use shared wildlife.",
-      "line": 122
+      "line": 126
     },
     {
       "name": "Generic race edges",
@@ -8060,7 +8829,7 @@
       "anchor": "function edges",
       "where": "Multiple Carreritas circuits",
       "note": "Steel, timber and kerb variants, generated along the route.",
-      "line": 82
+      "line": 83
     },
     {
       "name": "Chevrons/start line/sector signs/ramps",
@@ -8076,7 +8845,7 @@
       "anchor": "function terrain",
       "where": "Carreritas",
       "note": "Terrain, sea and stream generators; each map supplies shape and palette.",
-      "line": 30
+      "line": 31
     },
     {
       "name": "Water surface system",
@@ -8140,7 +8909,7 @@
       "anchor": "Low jetties",
       "where": "Bululú circuit",
       "note": "Inline harbor planks and pilings.",
-      "line": 113
+      "line": 114
     },
     {
       "name": "Plaza streets, gardens and mirador",
@@ -8180,7 +8949,7 @@
       "anchor": "function llanosLandscape",
       "where": "Llanos",
       "note": "Four pastures, repeated ranch fences, harvest bales, morichal palms and distant ceiba groves. Existing animals retain their space.",
-      "line": 9
+      "line": 10
     },
     {
       "name": "Stadium venue grounds",
@@ -8188,7 +8957,7 @@
       "anchor": "function stadiumGrounds",
       "where": "Estadio",
       "note": "Entrance, perimeter, concourse, planted parking and infields. Parked copies reuse real garage vehicles with no driver.",
-      "line": 10
+      "line": 11
     },
     {
       "name": "Football pitch and goals",
@@ -8196,7 +8965,7 @@
       "anchor": "for(let i=0;i<10;i++)fixed.add",
       "where": "Estadio",
       "note": "Pitch stripes, markings and two goal frames.",
-      "line": 32
+      "line": 33
     },
     {
       "name": "Pit garages",
@@ -8204,7 +8973,7 @@
       "anchor": "Pit garages",
       "where": "Estadio",
       "note": "Eight inline garage blocks and numbered signs.",
-      "line": 55
+      "line": 56
     },
     {
       "name": "Floodlights and scoreboard",
@@ -8212,7 +8981,7 @@
       "anchor": "const score=",
       "where": "Estadio",
       "note": "Two inline landmark families.",
-      "line": 73
+      "line": 74
     },
     {
       "name": "Basketball court and banners",
@@ -8220,7 +8989,7 @@
       "anchor": "community half-court",
       "where": "Estadio",
       "note": "Court and sponsor panels; shared hoops already cataloged.",
-      "line": 87
+      "line": 88
     },
     {
       "name": "Chi Chi retaining walls and river bridges",
@@ -8252,7 +9021,7 @@
       "anchor": "// raft:",
       "where": "No te caigas",
       "note": "Player platforms, floats, central post, rotating obstacle and sandbars.",
-      "line": 47
+      "line": 48
     },
     {
       "name": "Minigame wave surface",
@@ -8260,7 +9029,7 @@
       "anchor": "const seaGeo",
       "where": "No te caigas",
       "note": "Older deformed plane, separate from the shared water shader.",
-      "line": 40
+      "line": 41
     },
     {
       "name": "Boost pad",
@@ -8268,7 +9037,7 @@
       "anchor": "function padTexture",
       "where": "Carreritas",
       "note": "Animated ground marker, separate from collectible item models.",
-      "line": 88
+      "line": 112
     },
     {
       "name": "Puffs, debris and speech bubbles",
@@ -8276,7 +9045,7 @@
       "anchor": "export class Puffs",
       "where": "Bululú; Carreritas",
       "note": "Particle/sprite effects, not scenery inventory counts.",
-      "line": 375
+      "line": 395
     },
     {
       "name": "Crate fragment bursts",
@@ -8292,7 +9061,7 @@
       "anchor": "const effects =",
       "where": "Cocina",
       "note": "Cooking state effects; recipes also have raw/prepared/cooked/burned variants.",
-      "line": 68
+      "line": 70
     },
     {
       "name": "Thermal steam and water details",
@@ -8318,7 +9087,7 @@
       "anchor": "function windmill",
       "where": "No current production callsite",
       "note": "Current Llanos uses ranch-props.waterWindmill.",
-      "line": 377
+      "line": 386
     },
     {
       "name": "Old arepa stand",
@@ -8326,7 +9095,7 @@
       "anchor": "function arepaStand",
       "where": "No current production callsite",
       "note": "Current maps use streetFoodKiosk.",
-      "line": 407
+      "line": 416
     },
     {
       "name": "Generic dock",
@@ -8334,7 +9103,7 @@
       "anchor": "function dock",
       "where": "No current production callsite",
       "note": "Maps now build docks against their shore/deck.",
-      "line": 437
+      "line": 446
     },
     {
       "name": "Generic sailboat",
@@ -8342,7 +9111,7 @@
       "anchor": "function sailboat",
       "where": "No current production callsite",
       "note": "No production caller; internally uses rowboat, which remains active.",
-      "line": 462
+      "line": 471
     },
     {
       "name": "Generic plank/rope bridge",
@@ -8350,7 +9119,7 @@
       "anchor": "function bridge",
       "where": "No current production callsite",
       "note": "Active crossings have road-specific decks or newer shared factories.",
-      "line": 321
+      "line": 330
     },
     {
       "name": "Distant mountain ring",
@@ -8358,7 +9127,7 @@
       "anchor": "function distantMountains",
       "where": "No current production callsite",
       "note": "Current maps use their own terrain or island-landscape.",
-      "line": 481
+      "line": 490
     },
     {
       "name": "Old route landscape scatter",
@@ -8366,7 +9135,7 @@
       "anchor": "function routeLandscape",
       "where": "No current production callsite",
       "note": "Current worlds supply habitat-specific planting.",
-      "line": 525
+      "line": 534
     },
     {
       "name": "Tire-wall generator",

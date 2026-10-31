@@ -1,3 +1,4 @@
+// i18n-ignore-file: track, sector and place names, world signage and shaders stay Spanish.
 import * as THREE from 'three';
 import { rng } from '/engine/models/core/primitives.js';
 

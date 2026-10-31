@@ -17,8 +17,8 @@ async function advance(host, humans) {
  const state = await host.evaluate(()=>dominoDebug.room.state);
  if(state.phase!=='playing')return false;
  const player = state.players[state.turn], human=humans.get(player.id);
- if(player.id===null){await host.evaluate(()=>dominoDebug.room.tick(2));}
- else {
+ // Bots play on the server; a pana's move goes through their own client.
+ if(player.id!==null){
   assert.ok(human,'missing human client');
   await human.waitForFunction(rev=>dominoDebug.room.state.revision>=rev,state.revision);
   const move=await human.evaluate(()=>dominoDebug.chooseMove(dominoDebug.room.state));
@@ -27,7 +27,7 @@ async function advance(host, humans) {
    if(await human.locator('#end-actions').isVisible())await human.locator(`#play-${move.end}`).click();
   }else await human.locator('#pass').click();
  }
- await host.waitForFunction(rev=>dominoDebug.room.state.revision>rev,state.revision);
+ await host.waitForFunction(rev=>dominoDebug.room.state.revision>rev,state.revision,{timeout:30000});
  return true;
 }
 try {
@@ -38,11 +38,10 @@ try {
  assert.equal(await b.locator('#start').isDisabled(),true);
  assert.equal(await a.evaluate(()=>dominoDebug.world.characters[0].group.userData.characterVersion),'studio-v1');
  await a.screenshot({path:'art/domino/desktop-lobby.png'}); check('four actual shared characters, table and chairs load in 3D');
- await a.evaluate(()=>{ const room=dominoDebug.room, state=structuredClone(room.state);state.scores[0]+=999;room.send({kind:'snapshot',state}); });
- await b.waitForFunction(()=>dominoDebug.room.auditFailures>0 && !dominoDebug.room.recovering);
- assert.deepEqual(await b.evaluate(()=>dominoDebug.room.state.scores),[0,0]);
- check('guest refuses a forged host score and verifies recovery over the real room');
  await a.locator('#start').click(); await b.waitForFunction(()=>dominoDebug.room.state.phase==='playing');
+ const hidden=await b.evaluate(()=>{const {state,seat}=dominoDebug.room;return state.players.every(p=>p.seat===seat?p.hand.every(t=>t.id):p.hand.every(t=>t.id===null))&&state.rng===undefined;});
+ assert.ok(hidden,'a guest holds only its own tiles');
+ check('the server deals: each pana receives only their own hand');
  const humans=new Map([[await a.evaluate(()=>dominoDebug.room.id),a],[await b.evaluate(()=>dominoDebug.room.id),b]]);
  for(let i=0;i<10;i++)if(!await advance(a,humans))break;
  const chain=await a.evaluate(()=>dominoDebug.room.state.chain);
@@ -54,7 +53,7 @@ try {
  await a.close(); await b.waitForFunction(()=>dominoDebug.room.isHost);
  assert.deepEqual(await b.evaluate(()=>dominoDebug.room.state.scores),before.scores);
  assert.equal(await b.evaluate(()=>dominoDebug.room.state.round),before.round);
- assert.ok(await b.evaluate(()=>dominoDebug.room.state.chain.length)>=before.chain.length); check('host migration preserves deal, score and round');
+ assert.ok(await b.evaluate(()=>dominoDebug.room.state.chain.length)>=before.chain.length); check('the table keeps its deal, score and round when the host leaves');
  await b.locator('#menu').click(); const revision=await b.evaluate(()=>dominoDebug.room.state.revision); await b.waitForTimeout(1400);
  assert.equal(await b.evaluate(()=>dominoDebug.room.state.revision),revision);
  await b.locator('#pana-resume').click();check('shared menu pauses bots when playing alone');

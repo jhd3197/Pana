@@ -41,11 +41,11 @@ test('a new track is registered at every point and gets loadable stubs', () => {
     applyPlan(root, changes);
 
     assert.match(read(root, PATHS.definitions), /\{id:'morrocoy', name:'Cayo d\\'Agua', blurb:'Cayos y manglares\.'\},\r?\n\];/);
-    assert.equal(read(root, PATHS.cups).match(/STANDALONE_TRACKS = \[([^\]]*)\]/)[1], `${standaloneBefore}, 'morrocoy'`);
+    assert.equal(read(root, PATHS.cups).match(/STANDALONE_TRACKS = \[([^\]]*)\]/)[1], standaloneBefore.trim() ? `${standaloneBefore}, 'morrocoy'` : `'morrocoy'`);
     assert.match(read(root, PATHS.maps), /assert\.deepEqual\(ids, \[[^\]]*, 'morrocoy'\]\)/);
     const music = read(root, PATHS.music);
     assert.match(music, /TRACK_STYLE = \{ morrocoy: 'calipso', /);
-    assert.match(music, /,morrocoy:'bululu'\}\)\[trackId\]/);
+    assert.match(music, /SONG_REMAP = \{ morrocoy: 'bululu', /);
     const after = read(root, PATHS.readme).match(/Toy-car racing on ([a-z-]+) circuits/)[1];
     assert.equal(wordNumber(after), wordNumber(before) + 1);
 
@@ -70,7 +70,7 @@ test('bad ids, styles, songs and existing tracks are refused', () => {
     assert.throws(() => planTrack(root, { id: 'nuevo' }), /--name/);
     assert.throws(() => planTrack(root, { id: 'nuevo', name: 'X', style: 'reggaeton' }), /--style/);
     assert.throws(() => planTrack(root, { id: 'nuevo', name: 'X', song: 'nada' }), /no recorded song/);
-    assert.throws(() => planTrack(root, { id: 'sabana', name: 'X' }), /already/);
-    assert.throws(() => planTrack(root, { id: 'salto', name: 'X' }), /water-track-definitions/);
+    assert.throws(() => planTrack(root, { id: 'estadio', name: 'X' }), /already/);
+    assert.throws(() => planTrack(root, { id: 'delta', name: 'X' }), /water-track-definitions/);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });

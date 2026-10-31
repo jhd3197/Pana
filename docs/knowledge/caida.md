@@ -58,6 +58,13 @@ table, captured cards and announced ranks; it never consults hidden hands.
 Oldest connected peer validates actions and publishes full snapshots. Empty
 seats become bots; late arrivals inherit bot hands; excess visitors spectate.
 Host migration preserves the RNG, stock, scores, hands and sequence ledger.
+
+History entries carry Spanish source text (`locKey`) plus `vars`, the card
+and, on score events, `label` (the reason as source parts). Clients render
+them with `eventText`, `reasonText` and `cardName` from `rules.js`; never put
+`loc()` output in a log entry, since the host may play in English. `reason`
+stays the joined Spanish text because the barks match canto names. The
+protocol is `caida-v4` since this shape change.
 The menu pauses bots when solo; multiplayer continues while a menu is open.
 Disconnected clients may explicitly open an offline local table.
 

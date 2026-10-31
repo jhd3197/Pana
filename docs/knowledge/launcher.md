@@ -26,6 +26,10 @@ lazily, so a test scrolls a tile into view before decoding it.
 
 ## Art and rendering
 
+Large launcher illustrations are served from their game's release asset pack at
+the same URLs. Small card images remain in Git. Restore originals before editing
+and republish the pack after exporting; see `asset-packs.md`.
+
 Header, content and card rail use `--pk-page-width` / `--pk-page-gutter` from
 the kit; hosted social pages use the same values. Do not combine a larger
 `max-width` with an inherited smaller `width` on the header. The creator paints
@@ -118,24 +122,10 @@ lets it restore room controls correctly after a party exit. A hosting integratio
 may add store navigation through the normal navigation/actions slots; there is
 no storefront, wallet, account or payment implementation in open-source Pana.
 
-The private **pana.sh** gateway owns party membership, authorization and sockets.
-It hides the private-room/code buttons for party members, makes the Mayor launch
-the group, and requires a server-confirmed leave before a guest plays separately.
-It also guards direct guest game-page requests and strips forged guest `lead`
-parameters. These behavior changes require deploying the private gateway too;
-updating only this repository changes the launcher but not party authorization.
-The hosted gateway also requires a signed-in session for launcher illustrations;
-anonymous `/images/launcher/*` requests return 404 even when the files are deployed.
-
 ## Proof
 
 `npm run test:browser -- launcher` checks illustrations, filters, names, settings,
 private rooms, room codes, mobile width and canceled hosting intents.
-The private gateway's `gateway/tests/launcher-party.browser.mjs` uses two actual
-authenticated browser contexts, live party sockets and real Pana game rooms.
-It covers cancel/confirmed/failed exits, modified clicks, guest authorization,
-leader launches, portrait bubbles, hidden room buttons and leadership transfer.
-
 Carreritas removes `lead` from its address immediately after passing it into
 `joinRace`. Verify the original navigation request and actual game host controls,
 not the final address bar, when testing party handoffs into that game.

@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { prepareImpostors } from '/engine/models/core/impostor.js';
 import { getSettings } from '/engine/settings.js';
+import { loc } from '/engine/i18n.js';
 const prepared = new WeakMap();
 
 export async function prepareRace(renderer, scene, cameras, step) {
@@ -11,7 +12,7 @@ export async function prepareRace(renderer, scene, cameras, step) {
   const warmed = prepared.get(renderer);
   // Bake impostor atlases (distant trees, rival panas) first so they upload
   // like any texture. Rápida bakes 128 px views: under half the memory.
-  prepareImpostors(renderer, { tile: getSettings().quality === 'baja' ? 128 : undefined });
+  prepareImpostors(renderer, { tile: getSettings().detail === 'baja' ? 128 : undefined });
   const textures = new Set(), objects = [];
   scene.updateMatrixWorld(true);
   const frusta = cameras.map(view => {
@@ -37,20 +38,20 @@ export async function prepareRace(renderer, scene, cameras, step) {
       Object.values(material.uniforms || {}).forEach(uniform => take(uniform.value));
     }
   });
-  if (!await step('Preparando las texturas…', 0.82)) return false;
+  if (!await step(loc('Preparando las texturas…'), 0.82)) return false;
   await Promise.allSettled([...textures].filter(t => t.image instanceof HTMLImageElement).map(t => t.image.decode()));
-  if (!await step('Subiendo las texturas…', 0.82)) return false;
+  if (!await step(loc('Subiendo las texturas…'), 0.82)) return false;
   let uploaded = 0, uploadStart = performance.now();
   for (const texture of textures) {
     // An unavailable image keeps Three's fallback rather than blocking entry.
     if (!(texture.image instanceof HTMLImageElement) || texture.image.naturalWidth) renderer.initTexture(texture);
     uploaded++;
     if (performance.now() - uploadStart >= 6) {
-      if (!await step(`Preparando las texturas… ${uploaded}/${textures.size}`, 0.82 + 0.04 * uploaded / textures.size)) return false;
+      if (!await step(loc('Preparando las texturas… {n}/{total}', { n: uploaded, total: textures.size }), 0.82 + 0.04 * uploaded / textures.size)) return false;
       uploadStart = performance.now();
     }
   }
-  if (!await step('Preparando los gráficos…', 0.87)) return false;
+  if (!await step(loc('Preparando los gráficos…'), 0.87)) return false;
   await renderer.compileAsync(scene, camera);
   // Warm both starting views and their shadow casters. Compiling every shader
   // above is cheap compared with uploading an entire distant forest up front.
@@ -60,7 +61,7 @@ export async function prepareRace(renderer, scene, cameras, step) {
   const pending = objects.filter(o => needed(o) && warmed.get(o) !== signature(o));
   const batch = 48, scissor = new THREE.Vector4();
   for (let start = 0; start < pending.length; start += batch) {
-    if (!await step('Preparando el paisaje…', 0.89 + 0.09 * start / pending.length)) return false;
+    if (!await step(loc('Preparando el paisaje…'), 0.89 + 0.09 * start / pending.length)) return false;
     const slice = new Set(pending.slice(start, start + batch));
     const state = objects.map(o => [o.layers.mask, o.frustumCulled]);
     const scissorTest = renderer.getScissorTest(); renderer.getScissor(scissor);
@@ -84,7 +85,7 @@ export async function prepareRace(renderer, scene, cameras, step) {
     // All scene/renderer state is restored BEFORE yielding: cancellation can
     // dispose racers or start another load at the next step.
   }
-  if (!await step('Todo listo. ¡A correr!', 0.99)) return false;
+  if (!await step(loc('Todo listo. ¡A correr!'), 0.99)) return false;
   renderer.shadowMap.needsUpdate = true;
   shadowLights.forEach(s => { s.needsUpdate = true; });
   renderer.render(scene, camera);

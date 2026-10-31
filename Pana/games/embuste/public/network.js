@@ -11,6 +11,7 @@ import { joinRoom, leadFromUrl } from '/engine/net.js';
 import { Night, cleanInput, debugNight, MAX_PLAYERS, QUICK } from './rules.js';
 import { Brains, BOT_NAMES } from './bots.js';
 import { randomAvatar } from '/engine/avatar.js';
+import { loc, locn } from '/engine/i18n.js';
 
 class Emitter {
   constructor() { this.handlers = {}; }
@@ -26,18 +27,18 @@ export class OnlineNight extends Emitter {
   }
 
   async connect() {
-    this.emit('status', 'Buscando a tus panas…');
+    this.emit('status', loc('Buscando a tus panas…'));
     try {
       this.link = await joinRoom('embuste', { code: this.code, lead: leadFromUrl(), name: this.name, avatar: this.avatar, quick: this.quick });
     } catch (error) {
-      this.emit('status', error.full ? 'Sala llena. Abre otra noche desde Pana.' : 'Sin conexión. Puedes practicar en este navegador.', true);
+      this.emit('status', error.full ? loc('Sala llena. Abre otra noche desde Pana.') : loc('Sin conexión. Puedes practicar en este navegador.'), true);
       return false;
     }
     this.connected = true;
     this.link.on('state', (s) => this.refresh(s));
     this.link.on('view', (view) => this.emit('view', view));
     this.link.on('status', (text, error) => { this.connected = !error; this.emit('status', text || this.statusText(), !!error); });
-    this.link.on('left', () => { this.connected = false; this.emit('status', 'Se cortó la conexión. Puedes practicar en este navegador.', true); });
+    this.link.on('left', () => { this.connected = false; this.emit('status', loc('Se cortó la conexión. Puedes practicar en este navegador.'), true); });
     this.refresh(this.link.state);
     return true;
   }
@@ -56,7 +57,7 @@ export class OnlineNight extends Emitter {
 
   statusText() {
     const n = this.lobby.players.length;
-    return `Sala ${this.code} · ${n} pana${n === 1 ? '' : 's'}`;
+    return locn(n, 'Sala {code} · {n} pana', 'Sala {code} · {n} panas', { code: this.code });
   }
 
   input(i) { this.link?.send('input', cleanInput(i)); }
@@ -83,7 +84,7 @@ export class PracticeNight extends Emitter {
 
   connect() {
     this.emit('lobby', this.lobby);
-    this.emit('status', 'Práctica en este navegador · bots en el campamento');
+    this.emit('status', loc('Práctica en este navegador · bots en el campamento'));
     // Real elapsed time in 50 ms steps: a busy page still runs the night at speed.
     let last = performance.now();
     this.timer = setInterval(() => {

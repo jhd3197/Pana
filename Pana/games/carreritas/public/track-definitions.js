@@ -1,40 +1,15 @@
 // Lightweight metadata. Constructors stay in tracks/<id>.js.
+// The four public circuits: one Copa Pana. Every other circuit comes from
+// premium-tracks.js, an empty hook here that the pana.sh overlay fills.
+import { loc } from '../../../engine/i18n.js';
 import { WATER_TRACKS } from './tracks/water-track-definitions.js';
+const { PREMIUM_TRACKS = [] } = await import('./premium-tracks.js').catch(() => ({}));
 export const TRACK_DEFINITIONS = [
-  { id:'estadio',name:'El Estadio',
-  blurb:'Un gran premio técnico: frenadas, chicanas, horquillas y la recta de las tribunas.', },
-  { id:'desierto',name:'Pana Desierto',
-  blurb:'De Pana Gas a las dunas: sube al cañón de los dos arcos y baja hasta el pozo del oasis.', },
-  { id:'llanos',name:'Los Llanos',
-  blurb:'Corre entre hatos y potreros, cruza los puentes del estero y vuelve por el morichal y la arepera.', },
-  { id:'chichi',name:'Chi Chi',
-  blurb:'De las termas entre nubes al pueblo de buceo: curvas de montaña, bosque húmedo, playa y una larga subida junto al río.', },
-  { id:'selva',name:'Pana Selva',
-  blurb:'Sube por la cueva del jaguar hasta la meseta de las flores, baja por la cornisa, cruza el vado y el río de los mangles entre ceibas y ruinas.', },
-  { id:'paramo',name:'Pana Páramo',
-  blurb:'Sube entre frailejones, enlaza las horquillas de la laguna y corona el teleférico.', },
-  { id: 'plaza', name: 'Plaza Pana',
-  blurb: 'Del casco histórico a Casas Botes: cruza el gran puente del lago y vuelve por el mirador.', },
-  { id:'bululu',name:'Isla Bululú',
-  blurb:'Los Roques entre cayos y lagunas: la marea invade los bordes de la lengua de arena. Busca el centro seco.', },
+  { id:'estadio',name:'El Estadio', // i18n-ignore: track names stay Spanish
+  blurb:loc('Un gran premio técnico: frenadas, chicanas, horquillas y la recta de las tribunas.'), },
+  { id:'llanos',name:'Los Llanos', // i18n-ignore: track names stay Spanish
+  blurb:loc('Corre entre hatos y potreros, cruza los puentes del estero y vuelve por el morichal y la arepera.'), },
   ...WATER_TRACKS,
-  { id:'puerto',name:'Puerto',defaultLaps:1,
-  blurb:'Una vuelta de aventura: tres grúas, calles del puerto, subida de barro, baluartes de San Carlos, salto y túnel bajo el agua.' },
-  {id:'cata', name:'Bahía de Cata', blurb:'Baja entre montañas, cruza el cocotal y corre por el banco de arena hasta la isla.'},
-  {id:'choroni', name:'Choroní', blurb:'Curvas de montaña, bosque nublado, Puerto Colombia y Playa Grande.',
-    // the river spills over the east-bank road: cars run it as lanchas (transform-gates.js)
-    transformGates:[{from:.905,to:.975}]},
-  {id:'chuao', kitPieces:['car','boat'], name:'Chuao · La quebrada', blurb:'Del cacaotal al pueblo: sube al salto y baja con tu carro por la quebrada.'},
-  {id:'tovar', name:'Colonia Tovar', blurb:'Sube entre hortensias y pinos, métete en la neblina y cruza el pueblo alemán y el mercado de fresas.'},
-  {id:'galipan', kitPieces:['car','air'], name:'Galipán de noche', blurb:'Sube de noche por la montaña entre chalets iluminados y asómate al mirador con Caracas brillando abajo.'},
-  {id:'maracaibo', name:'Maracaibo · El puente', blurb:'Cruza el puente sobre el lago, pasa los palafitos, el casco de colores y La Chinita bajo los relámpagos del Catatumbo.'},
-  {id:'margarita', kitPieces:['car','boat'], name:'Isla Margarita', blurb:'Del castillo de Pampatar a Playa El Agua, por los manglares de La Restinga hasta Juan Griego.'},
-  {id:'sarisarinama', name:'Sarisariñama', blurb:'Baja en espiral por la sima del tepuy, cruza las cuevas por debajo y sube a la luz por la otra.'},
-  {id:'sabana', name:'Gran Sabana', blurb:'Corre por la sabana con los tepuyes al fondo, pasa la Quebrada de Jaspe y el Salto Kama antes del aguacero.'},
-  {id:'cosmos', name:'Cosmos', defaultLaps:1, blurb:'De la base lunar a los anillos de Araguaney y el túnel del cosmos.'},
-  {id:'merida', kitPieces:['car','boat'], name:'Mérida', blurb:'Del pueblo andino al teleférico: curvas de montaña y una travesía por la laguna.'},
-  {id:'arrecife', name:'Arrecife', blurb:'Corre bajo el mar entre corales, un galeón y las luces de la fosa.'},
-  {id:'volcan', name:'Volcán', defaultLaps:1, blurb:'Sube al cráter entre ceniza, puentes de basalto y ríos de lava.'},
-  {id:'nubes', name:'Nubes', blurb:'Salta de isla en isla por puentes colgantes y una carretera de arcoíris.'},
-  {id:'dulce', name:'Dulce', blurb:'Una vuelta entre quesillo, chocolate, caramelos y montañas de merengue.'},
+  {id:'galipan', kitPieces:['car','air'], name:'Galipán de noche', blurb:loc('Sube de noche por la montaña entre chalets iluminados y asómate al mirador con Caracas brillando abajo.')}, // i18n-ignore: track names stay Spanish
+  ...PREMIUM_TRACKS,
 ];

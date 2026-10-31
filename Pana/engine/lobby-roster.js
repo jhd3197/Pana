@@ -1,28 +1,27 @@
 import { cachedPortrait } from './portrait-cache.js';
 import { icon } from './icons.js';
+import { loc } from './i18n.js';
+// A pana's lobby picture: the cached image at once, or a fresh portrait once
+// the game is prepared (rendering one never delays the game's own loading).
+export function portraitImg(avatar, className = '') {
+  if (typeof avatar === 'string') { try { avatar = JSON.parse(avatar); } catch { avatar = {}; } }
+  const img = document.createElement('img'); img.className = className; img.alt = '';
+  const cached = cachedPortrait(avatar);
+  if (cached) { img.src = cached; return img; }
+  img.hidden = true;
+  const make = () => import('./portrait.js').then(m => m.portrait(avatar)).then(src => { img.src = src; img.hidden = false; }).catch(() => {});
+  if (window.PANA_PREPARED) make(); else document.addEventListener('pana:game-prepared', make, { once: true });
+  return img;
+}
 const node = (tag, cls, text) => { const el = document.createElement(tag); el.className = cls; if (text != null) el.textContent = text; return el; };
 
 // Seat keys belong to the game, not DOM order or member IDs.
 export function createLobbyRoster(container, { onMove }) {
   container.classList.add('pk-lobby-team-roster'); container.dataset.panaRoster = '';
-  let groups = [], options = {}, selected = null, selectedPlayerId, signature = '', disposed = false;
-  const portraits = new Map();
+  let groups = [], options = {}, selected = null, selectedPlayerId, signature = '';
   function portrait(player) {
     const member = options.members?.find(m => m.id === player.id || m.seat === player.id);
-    let avatar = player.avatar || member?.avatar || {};
-    if (typeof avatar === 'string') { try { avatar = JSON.parse(avatar); } catch { avatar = {}; } }
-    const key = JSON.stringify(avatar), img = node('img', 'pk-roster-portrait'); img.alt = '';
-    const cached = cachedPortrait(avatar); if (cached) img.src = cached;
-    else {
-      img.hidden = true;
-      const make = () => {
-        if (disposed) return;
-        if (!portraits.has(key)) portraits.set(key, import('./portrait.js').then(m => m.portrait(avatar)));
-        portraits.get(key).then(src => { if (img.isConnected) { img.src = src; img.hidden = false; } }).catch(() => {});
-      };
-      if (window.PANA_PREPARED) make(); else document.addEventListener('pana:game-prepared', make, { once: true });
-    }
-    return img;
+    return portraitImg(player.avatar || member?.avatar || {}, 'pk-roster-portrait');
   }
   function button(text, action, key, disabled = false) {
     const el = node('button', 'pk-roster-action', text); el.type = 'button'; el.disabled = disabled;
@@ -43,10 +42,10 @@ export function createLobbyRoster(container, { onMove }) {
       const inGroup = group.seats.some(s => s.player?.id != null && s.player.id === options.ownId);
       const header = node('div', 'pk-roster-heading');
       header.append(node('h3', '', group.title), node('span', 'pk-roster-count', `${group.seats.filter(s => s.player?.id != null && !s.player.bot).length} / ${group.seats.length}`));
-      if (inGroup && groups.length > 1) header.append(node('span', 'pk-roster-own', 'Tu equipo'));
+      if (inGroup && groups.length > 1) header.append(node('span', 'pk-roster-own', loc('Tu equipo')));
       if (!inGroup && groups.length > 1 && own) {
         const target = group.seats.find(s => !s.player || s.player.id == null || s.player.bot) || group.seats[0];
-        if (target) header.append(button('Cambiarme aquí', () => { if (options.enabled) onMove(own.key, target.key); }, null, !options.enabled));
+        if (target) header.append(button(loc('Cambiarme aquí'), () => { if (options.enabled) onMove(own.key, target.key); }, null, !options.enabled));
       }
       section.append(header);
       const cards = node('div', 'pk-roster-cards'); cards.style.setProperty('--roster-seats', Math.min(group.seats.length, 3));
@@ -56,17 +55,17 @@ export function createLobbyRoster(container, { onMove }) {
         card.dataset.rosterSeat = String(seat.key);
         if (seat.label) card.append(node('span', 'pk-roster-status', seat.label));
         if (occupied) {
-          if (p.id != null && p.id === options.hostId) card.append(node('span', 'pk-roster-host', 'Anfitrión'));
+          if (p.id != null && p.id === options.hostId) card.append(node('span', 'pk-roster-host', loc('Anfitrión')));
           const member = options.members?.find(m => m.id === p.id || m.seat === p.id);
-          const status = p.bot ? 'CPU' : member && 'assetsReady' in member ? !member.assetsReady ? 'Cargando' : member.lobbyReady ? 'Listo' : 'Esperando' : 'En la sala';
-          card.append(portrait(p), node('strong', 'pk-roster-name', `${p.name}${mine ? ' (tú)' : ''}`), node('span', 'pk-roster-status', status));
-          if (!mine || selected != null) card.append(button(selected != null ? 'Mover aquí' : 'Cambiar', () => move(seat.key), seat.key, !options.enabled || source == null || source === seat.key));
+          const status = p.bot ? 'CPU' : member && 'assetsReady' in member ? !member.assetsReady ? loc('Cargando') : member.lobbyReady ? loc('Listo') : loc('Esperando') : loc('En la sala');
+          card.append(portrait(p), node('strong', 'pk-roster-name', mine ? loc('{name} (tú)', { name: p.name }) : p.name), node('span', 'pk-roster-status', status));
+          if (!mine || selected != null) card.append(button(selected != null ? loc('Mover aquí') : loc('Cambiar'), () => move(seat.key), seat.key, !options.enabled || source == null || source === seat.key));
           if (options.canArrange) {
-            const pick = button(selected === seat.key ? 'Cancelar' : 'Organizar', () => { selected = selected === seat.key ? null : seat.key; selectedPlayerId = p.id; render(); }, null, !options.enabled);
+            const pick = button(selected === seat.key ? loc('Cancelar') : loc('Organizar'), () => { selected = selected === seat.key ? null : seat.key; selectedPlayerId = p.id; render(); }, null, !options.enabled);
             pick.dataset.rosterSelect = String(seat.key); pick.setAttribute('aria-pressed', String(selected === seat.key)); card.append(pick);
           }
         } else {
-          card.append(icon('plus'), node('strong', 'pk-roster-name', 'Puesto libre'), button(selected != null ? 'Mover aquí' : 'Unirme aquí', () => move(seat.key), seat.key, !options.enabled || source == null));
+          card.append(icon('plus'), node('strong', 'pk-roster-name', loc('Puesto libre')), button(selected != null ? loc('Mover aquí') : loc('Unirme aquí'), () => move(seat.key), seat.key, !options.enabled || source == null));
         }
         cards.append(card);
       }
@@ -83,6 +82,6 @@ export function createLobbyRoster(container, { onMove }) {
       groups = nextGroups; options = nextOptions;
       if (signature === next) return; signature = next; render();
     },
-    dispose() { disposed = true; container.replaceChildren(); portraits.clear(); },
+    dispose() { container.replaceChildren(); },
   };
 }

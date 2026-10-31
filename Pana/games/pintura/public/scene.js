@@ -1,15 +1,17 @@
 import { createKnockout } from './knockout.js';
-import { createPaintKit, createPaintVest } from '/engine/models/props/paintball-kit.js';
-import { FINISHES } from './armory-data.js';
+import { createPaintKit, createPaintVest, createPaintRocket } from '/engine/models/props/paintball-kit.js';
+import { FINISHES, kitStats } from './armory-data.js';
+import { createViewmodel, recoilOf } from './viewmodel.js';
 import { createArenaEnvironment } from '/engine/worlds/arenas.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { createMuelle } from './muelle.js';
 import { createNoche } from './noche.js';
+import { createTerminal } from './terminal.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
-import { bindRenderer, shadowSize } from '/engine/settings.js';
+import { bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { house, church } from '/engine/models/props/plaza-buildings.js';
 import { crate, barrel, marketStall, streetLamp } from '/engine/models/props/plaza.js';
@@ -21,24 +23,34 @@ import { splatTexture, pavingTexture } from '/engine/models/props/paintball.js';
 import { rng } from '/engine/random.js';
 import { WARM_DAY, PALETTE, BUNTING } from '/engine/worlds/look.js';
 import { Puffs } from '/engine/fx.js';
-import { SIZE, SPREAD, coverFor } from './rules.js';
+import { createBlastFx } from '/engine/play/blast-fx.js';
+import { createRecoil, shakeAt } from '/engine/play/recoil.js';
+import { createScope } from '/engine/play/scope.js';
+import { traceRay } from '/engine/play/projectile.js';
+import { SIZE, SPREAD, coverFor, boundsFor } from './rules.js';
 
 // First person: the camera sits at the pana's eyes and the marker is held in view.
 const EYE = 1.55, LOOK_UP = .55, LOOK_DOWN = -.7;
+// Muzzle flash size per marker, and how big each kind of explosion is drawn.
+const FLASH = { rocket: 1.7, bazooka: 2.2, sniper: 1.5, scatter: 1.3, rapid: .75 };
+const BOOM_SIZE = { bazooka: 1.25, rocket: 1, pinita: .9, chispita: .8, pegajosa: .6 };
 
 export function createScene(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); const unbind = bindRenderer(renderer, 1.5);
+  const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true })); const unbind = bindRenderer(renderer, 1.5);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene(); scene.background = new THREE.Color(WARM_DAY.background); scene.fog = new THREE.Fog(WARM_DAY.background, 90, 190);
   const sky = createSky(WARM_DAY.sky); scene.add(sky.mesh);
   const camera = new THREE.PerspectiveCamera(72, 1, .05, 220), target = new THREE.Vector3(), destination = new THREE.Vector3(); scene.add(camera);
-  let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, kick = 0, shake = 0, sprintFov = 0, lastAmmo = 12;
+  let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, sprintFov = 0, lastFired = 0, aiming = false;
+  // The view's own kick, climb and shake (shots, hits, explosions) and the scope's zoom.
+  const feel = createRecoil(), scope = createScope({ zoom: 1.2 }), seenBooms = new Set();
   const hemi = new THREE.HemisphereLight(WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5); scene.add(hemi);
   const sun = new THREE.DirectionalLight(WARM_DAY.sun.color, 3.2); sun.position.set(-15, 35, 16); sun.castShadow = true; scene.add(sun.target);
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 80 }); sun.shadow.mapSize.setScalar(shadowSize(2048)); sun.shadow.normalBias = .03; scene.add(sun);
-  // Maps may bring their own light (the night field); everything else plays in the warm day.
-  const DAY = { background: WARM_DAY.background, fog: [90, 190], hemi: [WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5], sun: [WARM_DAY.sun.color, 3.2], exposure: 1.05, sky: true, glow: false };
+  // Maps may bring their own light (the night field) or a longer view (El Puerto); the
+  // rest of the warm day fills in whatever a map leaves out.
+  const DAY = { background: WARM_DAY.background, fog: [90, 190], far: 220, hemi: [WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5], sun: [WARM_DAY.sun.color, 3.2], exposure: 1.05, sky: true, glow: false };
   // At night a headlamp follows the camera and paint glows: balls carry a halo, splats shine.
   const headlamp = new THREE.SpotLight('#fff1d6', 60, 30, .42, .6, 1.3); headlamp.visible = false; headlamp.position.set(0, .1, 0); headlamp.target.position.set(0, -.6, -10); camera.add(headlamp, headlamp.target);
   const halo = glowTexture(), halos = new Map();
@@ -48,7 +60,7 @@ export function createScene(canvas) {
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sun.color.set(look.sun[0]); sun.intensity = look.sun[1]; renderer.toneMappingExposure = look.exposure;
-    sky.mesh.visible = look.sky !== false; glow = !!look.glow; headlamp.visible = glow;
+    sky.mesh.visible = look.sky !== false; glow = !!look.glow; headlamp.visible = glow; camera.far = look.far;
   }
   const defaultCourt = new THREE.Group(); scene.add(defaultCourt);
   let environment = null, mapId = ''; scene.userData.mapId = mapId;
@@ -86,7 +98,7 @@ export function createScene(canvas) {
   function place(model, x, z, angle = 0) { model.position.set(x * SPREAD, 0, z * SPREAD); model.rotation.y = angle; scenery.add(model); cameraBounds.push(new THREE.Box3().setFromObject(model)); }
   const colors = [0xe3ad54, 0x5c9da7, 0xe79874, 0x8ba776];
   for (let i = 0; i < 4; i++) {
-    const x = [-18, -10.5, 10.5, 18][i]; place(house({ w: 7, h: 7 + i % 2, seed: i, color: colors[i], label: ['CAFÉ COCO', 'BUENA GENTE', 'LA BODEGUITA', 'MÁS PANAS'][i] }), x, -27);
+    const x = [-18, -10.5, 10.5, 18][i]; place(house({ w: 7, h: 7 + i % 2, seed: i, color: colors[i], label: ['CAFÉ COCO', 'BUENA GENTE', 'LA BODEGUITA', 'MÁS PANAS'][i] }), x, -27); // i18n-ignore: world signage
     for (const side of [-1, 1]) place(house({ w: 7, h: 6 + i % 2, seed: i + 4, color: colors[(i + 1) % 4] }), side * 28, -15 + i * 9, -side * Math.PI / 2);
   }
   place(church(), 0, -28);
@@ -146,12 +158,12 @@ export function createScene(canvas) {
     environment?.dispose(); environment = null; crates?.dispose(); crates = null; mapId = id; variant = layout; scene.userData.mapId = id;
     defaultCourt.visible = id === 'plaza'; cameraBounds.length = 0;
     if (id === 'plaza') { crates = plazaCover(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...defaultCameraBounds, ...crates.bounds); }
-    else { environment = id === 'muelle' ? createMuelle(layout) : id === 'noche' ? createNoche(layout) : createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) }); scene.add(environment.group); cameraBounds.push(...environment.cameraBounds); }
-    light(environment?.lighting || DAY);
+    else { environment = id === 'muelle' ? createMuelle(layout) : id === 'noche' ? createNoche(layout) : id === 'terminal' ? createTerminal(layout) : createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) }); scene.add(environment.group); cameraBounds.push(...environment.cameraBounds); }
+    light({ ...DAY, ...environment?.lighting });
     initialized = false;
   }
   // Paint bursts: impacts, knockouts. Stains are glossy blobs stuck to a pana's body.
-  const puffs = new Puffs(scene), stainGeo = new THREE.SphereGeometry(.12, 10, 8), glossy = new Map();
+  const puffs = new Puffs(scene), blasts = createBlastFx(scene, puffs), stainGeo = new THREE.SphereGeometry(.12, 10, 8), glossy = new Map();
   const gloss = color => { if (!glossy.has(color)) glossy.set(color, new THREE.MeshStandardMaterial({ color, roughness: .25 })); return glossy.get(color); };
   function syncStains(avatar, p) {
     const stains = p.stains || [];
@@ -163,18 +175,21 @@ export function createScene(canvas) {
     }
     avatar.stains.forEach((blob, i) => { blob.material = gloss(stains[i]); });
   }
-  const ballGeo = new THREE.SphereGeometry(.16, 8, 6), splatGeo = new THREE.PlaneGeometry(1.25, 1.25), ringGeo = new THREE.RingGeometry(.75, .86, 32);
+  const ballGeo = new THREE.SphereGeometry(.07, 8, 6), streakGeo = new THREE.CylinderGeometry(.035, .006, 1, 6, 1, true).rotateX(Math.PI / 2), splatGeo = new THREE.PlaneGeometry(1.25, 1.25), ringGeo = new THREE.RingGeometry(.75, .86, 32);
   const aim = new THREE.Mesh(new THREE.RingGeometry(.25, .32, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide })); aim.rotation.x = -Math.PI / 2; aim.position.y = .05; scene.add(aim);
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.1), mouse = new THREE.Vector2(), point = new THREE.Vector3();
   const frontRay = new THREE.Ray(), front = new THREE.Vector3(), hit = new THREE.Vector3();
   function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) renderer.setSize(w, h, false); }
   // The marker held in first person, rebuilt when the pana's paint colour changes.
   const modelOptions = p => ({...p.kit, weapon:p.weapon, color:FINISHES.find(f=>f.id===p.kit?.finish)?.color || p.color});
-  let held = null, heldColor = '';
+  let held = null, heldColor = ''; const viewmodel = createViewmodel();
   function holdMarker(p) {
     const key=JSON.stringify(modelOptions(p)); if(heldColor===key) return;
-    held?.removeFromParent(); held?.userData.dispose(); heldColor = key;
+    held?.removeFromParent(); held?.userData.dispose(); held?.userData.flash?.geometry.dispose(); held?.userData.flash?.material.dispose(); heldColor = key;
     held = createPaintKit(modelOptions(p)); held.scale.setScalar(.3); held.traverse(o => { o.castShadow = false; }); camera.add(held);
+    // A flash of paint-gas at the muzzle for the first frames after each shot.
+    const flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    flash.position.set(0, { sniper: .17, bazooka: .24 }[p.weapon] ?? .3, held.userData.tip + .12); flash.visible = false; held.add(flash); held.userData.flash = flash; viewmodel.reset();
   }
   // Paint that stopped against cover splats on that face, not on the paving.
   function stick(mesh, s, cover) {
@@ -220,11 +235,11 @@ export function createScene(canvas) {
         avatar.group.rotation.order = 'YXZ'; avatars.set(p.id, avatar);
       }
       // A pepazo makes the pana flinch; the last one bursts paint and topples them.
-      if ((p.paint || 0) > avatar.paint) { avatar.flinch = 1; avatar.stagger(.8, Math.atan2(p.impact?.z || 0, p.impact?.x || 1) - Math.atan2(p.ax,p.az)); if (p.id === id) shake = Math.max(shake, .8); }
+      if ((p.paint || 0) > avatar.paint) { avatar.flinch = 1; avatar.stagger(.8, Math.atan2(p.impact?.z || 0, p.impact?.x || 1) - Math.atan2(p.ax,p.az)); if (p.id === id) feel.shake(.8); }
       avatar.paint = p.paint || 0;
       const down = p.respawn > 0 || p.eliminated;
       if (down && avatar.out === 0) {
-        avatar.out = 1e-6; avatar.knockout = createKnockout(avatar, p.impact || {x: -p.ax, z: -p.az}, coverFor(state.mapId, state.variant || 0)); if (p.id === id) shake = 1.2;
+        avatar.out = 1e-6; avatar.knockout = createKnockout(avatar, p.impact || {x: -p.ax, z: -p.az}, coverFor(state.mapId, state.variant || 0)); if (p.id === id) feel.shake(1.2);
         const color = p.stains?.at(-1) || p.color;
         puffs.spawn({ x: avatar.group.position.x, y: 1, z: avatar.group.position.z }, { color, count: 14, spread: 1, size: .7, rise: 2.4, life: .9 });
       }
@@ -239,11 +254,12 @@ export function createScene(canvas) {
       avatar.ring.material.color.set(p.color);
       const falling = down && avatar.out < 2.2;
       avatar.group.visible = p.connected && (!down || falling) && !(first && p.id === id);
-      if (Math.hypot(avatar.group.position.x - p.x, avatar.group.position.z - p.z) > 6) avatar.group.position.set(p.x, 0, p.z);
-      else avatar.group.position.lerp(new THREE.Vector3(p.x, 0, p.z), 1 - Math.exp(-dt * 20));
+      const air = p.jumpHeight || 0;
+      if (Math.hypot(avatar.group.position.x - p.x, avatar.group.position.z - p.z) > 6) avatar.group.position.set(p.x, air, p.z);
+      else avatar.group.position.lerp(new THREE.Vector3(p.x, air, p.z), 1 - Math.exp(-dt * 20));
       avatar.flinch = Math.max(0, avatar.flinch - dt * 5);
       avatar.group.rotation.set(-avatar.flinch * .35, Math.atan2(p.ax, p.az), 0);
-      avatar.group.position.y = 0; avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = !down && (p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0);
+      avatar.ring.position.y = .05 - avatar.group.position.y; avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = !down && (p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0);
       avatar.marker.visible = !down; avatar.vest.visible = !down && p.kit?.armor === 'padded';
       if (falling && avatar.knockout) { avatar.group.rotation.set(0, Math.atan2(p.ax,p.az), 0); avatar.knockout.update(dt); }
       else avatar.update(dt, { walk: p.walk, run: p.walk });
@@ -254,27 +270,32 @@ export function createScene(canvas) {
       const body = avatars.get(id).group.position;
       lift += ((down ? 3.2 : 0) - lift) * (1 - Math.exp(-dt * 4));
       sway += ((me.walk && !down ? 1 : 0) - sway) * (1 - Math.exp(-dt * 8)); bob += dt * (me.sprint ? 13 : 9) * sway;
-      if (state.phase === 'playing' && me.ammo < lastAmmo) kick = 1;
-      kick = Math.max(0, kick - dt * 6); lastAmmo = me.ammo;
-      // Sprinting widens the view a little.
+      // Every shot kicks, even a point-blank one whose ball never reaches a snapshot.
+      if (state.phase === 'playing' && me.fired > lastFired) feel.fire(recoilOf(me.weapon));
+      lastFired = me.fired; const jolt = feel.update(dt);
+      // Sprinting widens the view a little; aiming narrows it (La Lejana's scope a lot).
+      const stats = kitStats(me.kit, state.options);
       sprintFov += ((me.sprint ? 7 : 0) - sprintFov) * (1 - Math.exp(-dt * 6));
-      camera.fov = (mobile ? 80 : 72) + sprintFov;
-      camera.position.set(body.x, EYE + lift + Math.abs(Math.sin(bob)) * .05 * sway, body.z);
-      shake = Math.max(0, shake - dt * 3);
-      const jolt = shake * shake * .05;
-      camera.rotation.set(pitch - lift * .22 + kick * .03 + (Math.random() - .5) * jolt, yaw + (Math.random() - .5) * jolt, Math.sin(bob) * .008 * sway + (Math.random() - .5) * jolt, 'YXZ');
+      scope.setZoom(stats.scope || 1.2); scope.update(dt, aiming && !down && !me.sprint && !(me.reload > 0) && state.phase === 'playing');
+      camera.fov = scope.fov((mobile ? 80 : 72) + sprintFov);
+      camera.position.set(body.x, EYE + lift + body.y + Math.abs(Math.sin(bob)) * .05 * sway, body.z);
+      camera.rotation.set(pitch - lift * .22 + jolt.pitch, yaw + jolt.yaw, Math.sin(bob) * .008 * sway + jolt.roll, 'YXZ');
       // Pull the marker in when the pana stands against cover, so it never pokes through.
       camera.updateMatrixWorld(); camera.getWorldDirection(front); front.y = 0; front.normalize(); frontRay.set(camera.position, front);
       let clearance = 2;
       for (const bounds of cameraBounds) if (frontRay.intersectBox(bounds, hit)) clearance = Math.min(clearance, hit.distanceTo(camera.position));
-      holdMarker(me); held.visible = !down;
-      held.position.set(.2 + Math.sin(bob) * .012 * sway, -.25 + Math.abs(Math.cos(bob)) * .01 * sway - kick * .01, -.34 + kick * .05 + Math.max(0, .6 - clearance));
-      held.rotation.set(kick * .14, Math.PI, 0);
-      held.userData.hands?.forEach((hand,i)=>{hand.position.z=(me.shots%2===i ? kick*.13 : 0);});
+      // Through a scope the marker leaves the view; the overlay (game.js) takes its place.
+      holdMarker(me); held.visible = !down && !scope.scoped;
+      const shot = viewmodel.update(dt, { held, weapon: me.weapon, fired: me.fired || 0, reload: me.reload, reloadTime: stats.reload, sprint: me.sprint, bob, sway, down, air: me.jumpHeight, push: Math.max(0, .6 - clearance), aim: scope.amount });
+      const flash = held.userData.flash; flash.visible = held.visible && shot.flash > .05; flash.material.opacity = shot.flash;
+      if (shot.shot) flash.rotation.z = Math.random() * Math.PI;
+      flash.scale.setScalar((FLASH[me.weapon] || .9) * (1.15 - shot.flash * .3) * (.9 + (me.fired % 3) * .1));
       camera.clearViewOffset();
     } else {
-      if (held) held.visible = false;
-      destination.set(lobby ? 0 : THREE.MathUtils.clamp((me?.x || 0) * .4, -10, 10), .8, lobby ? -1 : THREE.MathUtils.clamp((me?.z || 0) * .4, -9, 9));
+      if (held) held.visible = false; scope.reset();
+      // The overview follows the pana a little; on a long court it follows further.
+      const court = boundsFor(state.mapId), reach = court.x > court.z ? .8 : .4;
+      destination.set(lobby ? 0 : THREE.MathUtils.clamp((me?.x || 0) * reach, 17 - court.x, court.x - 17), .8, lobby ? -1 : THREE.MathUtils.clamp((me?.z || 0) * .4, 18 - court.z, court.z - 18));
       if (!initialized) { target.copy(destination); initialized = true; } else target.lerp(destination, 1 - Math.exp(-dt * 5));
       camera.fov = mobile ? 64 : 54;
       camera.position.copy(target).add(new THREE.Vector3(lobby ? 18 : 0, lobby ? 34 : mobile ? 38 : 34, lobby ? 48 : mobile ? 40 : 46)); camera.lookAt(target);
@@ -282,16 +303,34 @@ export function createScene(canvas) {
     }
     camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     sun.position.set(camera.position.x - 15, 35, camera.position.z + 16); sun.target.position.set(camera.position.x, 0, camera.position.z);
+    const flying = new Set();
     for (const b of state.balls) {
-      let mesh = ballMeshes.get(b.id);
+      let mesh = ballMeshes.get(b.id); flying.add(b.id);
+      if (!mesh && b.kind === 'bazooka') { mesh = createPaintRocket({ color: b.color }); mesh.scale.setScalar(1.8); scene.add(mesh); ballMeshes.set(b.id, mesh); }
       if (!mesh) {
         mesh = new THREE.Mesh(ballGeo, glow ? new THREE.MeshBasicMaterial({ color: b.color }) : material(b.color)); scene.add(mesh); ballMeshes.set(b.id, mesh);
         // Unlit balls with a halo read as tracers in the dark.
+        // At 85 m/s a ball jumps 4 m per snapshot: a streak the length of that step joins the dots into one line.
+        if (!b.rocket) { const streak = new THREE.Mesh(streakGeo, new THREE.MeshBasicMaterial({ color: b.color, transparent: true, opacity: .6, depthWrite: false })); streak.scale.z = Math.hypot(b.vx, b.vz) * .05; streak.position.z = -streak.scale.z / 2; mesh.add(streak); mesh.userData.streak = streak; }
         if (glow) { const trail = new THREE.Sprite(haloMaterial(b.color)); trail.scale.setScalar(1.1); mesh.add(trail); }
       }
-      mesh.position.set(b.x, 1.1, b.z); mesh.scale.setScalar(b.rocket ? 3 : 1);
+      // Rockets fly between 50 ms snapshots along their velocity, so a slow one glides instead of stepping.
+      const seen = mesh.userData.seen;
+      if (!seen || seen.x !== b.x || seen.z !== b.z) mesh.userData.seen = { x: b.x, z: b.z, t: 0 }; else seen.t += dt;
+      const ahead = b.rocket ? Math.min(.06, mesh.userData.seen.t) : 0;
+      mesh.position.set(b.x + b.vx * ahead, 1.1, b.z + b.vz * ahead); mesh.rotation.y = Math.atan2(b.vx, b.vz);
+      if (b.kind !== 'bazooka') mesh.scale.setScalar(b.rocket ? 6.9 : 1);
+      if (b.rocket) blasts.trail(b.id, mesh.position.clone().addScaledVector(new THREE.Vector3(b.vx, 0, b.vz).normalize(), -.55), dt);
     }
-    for (const [id, mesh] of ballMeshes) if (!state.balls.some(b => b.id === id)) { mesh.removeFromParent(); if (mesh.material.isMeshBasicMaterial) mesh.material.dispose(); ballMeshes.delete(id); }
+    blasts.keep(flying);
+    for (const [id, mesh] of ballMeshes) if (!flying.has(id)) { mesh.removeFromParent(); mesh.userData.dispose?.(); mesh.userData.streak?.material.dispose(); if (mesh.material?.isMeshBasicMaterial) mesh.material.dispose(); ballMeshes.delete(id); }
+    // Explosions: a flash, a fireball, smoke, and a shake for whoever stands close.
+    for (const boom of state.booms || []) {
+      if (seenBooms.has(boom.id)) continue; seenBooms.add(boom.id);
+      const size = BOOM_SIZE[boom.kind] || .8; blasts.boom({ x: boom.x, z: boom.z, size, color: boom.color });
+      if (me && first) feel.shake(shakeAt(Math.hypot(me.x - boom.x, me.z - boom.z), size));
+    }
+    if (seenBooms.size > 64) for (const n of seenBooms) if (!(state.booms || []).some(b => b.id === n)) seenBooms.delete(n);
     for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id, s.pattern)); stick(mesh, s, coverFor(state.mapId, state.variant || 0)); scene.add(mesh); splats.set(s.id, mesh); if (s.life > 8.6) puffs.spawn({ x: s.x, y: mesh.position.y > .5 ? mesh.position.y : 1.1, z: s.z }, { color: s.color, count: 3, spread: .3, size: .28, rise: .8, life: .35 }); } mesh.scale.setScalar(Math.min(1, s.life)*(s.radius || 1)); }
     for (const [id, mesh] of splats) if (!state.splats.some(s => s.id === id)) { mesh.removeFromParent(); splats.delete(id); }
     const projectiles=[...(state.grenades||[]).map(g=>({...g,grenade:true})),...(state.puddles||[])];
@@ -301,18 +340,34 @@ export function createScene(canvas) {
     }
     for(const [id,o] of kitObjects) if(!projectiles.some(g=>g.id===id)) {o.removeFromParent();o.geometry.dispose();o.material.dispose();kitObjects.delete(id);}
     aim.visible = !lobby && !first && !!aimPoint; if (aimPoint) aim.position.set(aimPoint.x, .07, aimPoint.z);
-    puffs.update(dt); elapsed += dt; sky.update(elapsed); renderer.render(scene, camera);
+    blasts.update(dt); puffs.update(dt); elapsed += dt; sky.update(elapsed); renderer.render(scene, camera);
   }
-  return { renderer, scene, camera, avatars, draw,
+  return { renderer, scene, camera, avatars, draw, setMap,
     setView(value) { cameraView = value; initialized = false; },
     get view() { return cameraView; },
     get yaw() { return yaw; },
-    look(yawDelta, pitchDelta = 0) { yaw += yawDelta; pitch = THREE.MathUtils.clamp(pitch + pitchDelta, LOOK_DOWN, LOOK_UP); },
+    // Right mouse, F or the Mira button: held aim, shared by the scope and the server's steadier shot.
+    setAim(on) { aiming = !!on; },
+    get scope() { return scope; },
+    // A rifle's tracer: from the muzzle (your marker in first person) to the first cover or pana it meets.
+    tracer(p, state, mine) {
+      const reach = kitStats(p.kit, state.options), range = reach.speed * reach.life, cover = coverFor(state.mapId, state.variant || 0);
+      const targets = state.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated);
+      // The round itself when it is in the snapshot (a hip shot wanders off the aim), else the aim.
+      const ball = state.balls.filter(b => b.owner === p.id && b.kind === 'sniper').at(-1), speed = ball ? Math.hypot(ball.vx, ball.vz) : 0;
+      const dx = speed ? ball.vx / speed : p.ax, dz = speed ? ball.vz / speed : p.az;
+      const length = traceRay(p.x, p.z, dx, dz, range, { boxes: cover, targets, padding: .12 });
+      const from = mine && held?.visible ? held.userData.flash.getWorldPosition(new THREE.Vector3()) : mine ? camera.localToWorld(new THREE.Vector3(.1, -.13, -.35)) : new THREE.Vector3(p.x + p.ax * .7, 1.25, p.z + p.az * .7);
+      blasts.tracer(from, new THREE.Vector3(p.x + dx * length, 1.15, p.z + dz * length), '#fff6d8', mine ? .012 : .025);
+    },
+    // A puff of paint at a marker's muzzle.
+  muzzle(p) { puffs.spawn({ x: p.x + p.ax * .6, y: 1.15, z: p.z + p.az * .6 }, { color: p.color, count: 4, spread: .22, size: .22, rise: .3, life: .16 }); },
+  look(yawDelta, pitchDelta = 0) { yaw += yawDelta; pitch = THREE.MathUtils.clamp(pitch + pitchDelta, LOOK_DOWN, LOOK_UP); },
     // Where the crosshair points on the court (shots fly level).
     forward() { return { x: -Math.sin(yaw), z: -Math.cos(yaw) }; },
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { unbind(); puffs.clear(); halos.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { unbind(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }

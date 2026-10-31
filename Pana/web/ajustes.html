@@ -13,7 +13,8 @@
   <script type="module">
     import { createGameMenu } from '/engine/ui.js';
     import { padControls } from '/engine/gamepad.js';
-    const menu = createGameMenu({ title: 'Pana · Ajustes', pause: false, hotkey: false, onClose: () => location.assign('/') });
+    import { loc } from '/engine/i18n.js';
+    const menu = createGameMenu({ title: loc('Pana · Ajustes'), pause: false, hotkey: false, onClose: () => location.assign('/') });
     padControls({ playing: () => false });
     menu.open('settings');
   </script>

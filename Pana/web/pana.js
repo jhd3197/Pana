@@ -5,16 +5,17 @@
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { COLORS, FURS, OPTIONS, loadAvatar, randomAvatar, saveAvatar } from '/engine/avatar.js';
+import { loc } from '/engine/i18n.js';
 import { savePortrait } from '/engine/portrait-cache.js';
 
 // colorless: option ids where the color swatches don't apply
 const TABS = [
-  { key: 'fur', label: 'Pelaje', colors: FURS },
-  { key: 'hat', label: 'Gorro', options: OPTIONS.hat, colorKey: 'hatColor', colors: COLORS, colorless: ['none', 'corona'] },
-  { key: 'glasses', label: 'Lentes', options: OPTIONS.glasses },
-  { key: 'outfit', label: 'Ropa', options: OPTIONS.outfit, colorKey: 'outfitColor', colors: COLORS, colorless: ['nada'] },
-  { key: 'face', label: 'Cara', options: OPTIONS.face },
-  { key: 'extra', label: 'Extra', options: OPTIONS.extra },
+  { key: 'fur', label: loc('Pelaje'), colors: FURS },
+  { key: 'hat', label: loc('Gorro'), options: OPTIONS.hat, colorKey: 'hatColor', colors: COLORS, colorless: ['none', 'corona'] },
+  { key: 'glasses', label: loc('Lentes'), options: OPTIONS.glasses },
+  { key: 'outfit', label: loc('Ropa'), options: OPTIONS.outfit, colorKey: 'outfitColor', colors: COLORS, colorless: ['nada'] },
+  { key: 'face', label: loc('Cara'), options: OPTIONS.face },
+  { key: 'extra', label: loc('Extra'), options: OPTIONS.extra },
 ];
 
 let avatar = loadAvatar();

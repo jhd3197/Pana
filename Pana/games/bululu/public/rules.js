@@ -2,7 +2,7 @@
 // game.js plays them out with tokens, dice and toasts; tests/rules.test.js checks them.
 
 export const COLORS = ['#ff4b4b', '#3d7bf2', '#ffc629', '#2fbf4a', '#ad70ec', '#ff8e3d'];
-export const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'Chuchú', 'La Nena'];
+export const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'Chuchú', 'La Nena'];   // i18n-ignore: names
 export const START_COINS = 10;
 export const PRICE = 20;            // one Mango de oro at the stand
 export const DOUBLES_BONUS = 5;

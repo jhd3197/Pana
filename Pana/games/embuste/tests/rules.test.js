@@ -127,6 +127,11 @@ test('everyone gets a task list, mummies too (to pretend)', () => {
   assert.equal(g.bar().total, TASKS_EACH * 5, 'only the five panas fill the bar');
 });
 
+test('an action name that is not an action is ignored, not thrown', () => {
+  const g = night(5, 4), p = panas(g)[0];
+  for (const action of ['constructor', 'toString', '__proto__']) assert.equal(g.act(p.seat, action, {}), false, action);
+});
+
 test('a task counts once, at its station, after its least time', () => {
   const g = night(5, 4), p = panas(g)[0];
   give(p, 'agua', 'radio');

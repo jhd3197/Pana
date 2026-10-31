@@ -27,6 +27,12 @@ test('a link to another game is not a dependency; why() shows the chain to one',
   assert.equal(chain.at(-1), 'Pana/engine/net.js');
 });
 
+test("Studio routes reach Studio's page, and a template path its whole folder", () => {
+  const studio = fp.files('Pana/web/studio/tests/house-maker.browser.js');
+  for (const f of ['Pana/web/studio.html', 'Pana/web/studio/house-maker.js']) assert.ok(studio.includes(f), f);
+  assert.ok(fp.files('Pana/games/bululu/tests/minigames-online.browser.mjs').includes('Pana/games/bululu/public/minigames/coleo.js'));
+});
+
 test('fingerprints are stable, and differ by suite and by variant', () => {
   const a = fp('Pana/games/domino/tests/browser.mjs');
   assert.equal(createFingerprinter(repo)('Pana/games/domino/tests/browser.mjs'), a);

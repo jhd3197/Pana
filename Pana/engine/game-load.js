@@ -1,7 +1,8 @@
+import { loc } from './i18n.js';
 // Actual preparation work, shared by each game's entry point. No timer-based completion.
 export async function prepareScene({ renderer, scene, camera }) {
   if (!renderer || !scene || !camera) throw new Error('La escena todavía no está preparada.');
-  document.dispatchEvent(new CustomEvent('pana:load-stage', { detail: 'Preparando las texturas…' }));
+  document.dispatchEvent(new CustomEvent('pana:load-stage', { detail: loc('Preparando las texturas…') }));
   const images = new Set();
   scene.traverse(object => {
     for (const material of [object.material].flat().filter(Boolean)) {
@@ -10,7 +11,7 @@ export async function prepareScene({ renderer, scene, camera }) {
   });
   // A broken image falls back to Three.js's own upload; it must not block the game.
   await Promise.allSettled([...images].map(image => image.decode()));
-  document.dispatchEvent(new CustomEvent('pana:load-stage', { detail: 'Preparando los gráficos…' }));
+  document.dispatchEvent(new CustomEvent('pana:load-stage', { detail: loc('Preparando los gráficos…') }));
   await renderer.compileAsync(scene, camera);
   // Keep the real render once, so preparing a second scene never wraps it twice.
   const render = renderer.panaRender ??= renderer.render.bind(renderer);
@@ -19,5 +20,5 @@ export async function prepareScene({ renderer, scene, camera }) {
     // Game simulation/networking continue; the illustrated lobby needs no live world render.
     renderer.render = (...args) => { if (!document.body.classList.contains('pana-in-lobby')) return render(...args); };
   }
-  document.dispatchEvent(new CustomEvent('pana:load-stage', { detail: 'Juego preparado' }));
+  document.dispatchEvent(new CustomEvent('pana:load-stage', { detail: loc('Juego preparado') }));
 }

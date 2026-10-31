@@ -58,7 +58,7 @@ try {
     await page.screenshot({path:`${output}/${metrics[i].id}.png`});
   }
   const placements=[];
-  for(const id of ['track-bululu','isla']){
+  for(const id of ['isla']){
     const record=await page.evaluate(async id=>{
       const {THREE,preview,ASSETS,stage,check}=proof;
       let model,board;

@@ -2,17 +2,19 @@ import * as THREE from 'three';
 import { createBolasWorld } from '/engine/worlds/bolas-world.js';
 import { previewThrow } from '/engine/play/bolas-criollas.js';
 import { difficultyInfo } from '/engine/play/difficulty.js';
-import { bindRenderer, pixelRatio } from '/engine/settings.js';
+import { bindRenderer, pixelRatio, rendererOptions } from '/engine/settings.js';
 import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { TEAM_NAMES } from './rules.js';
+import { loc } from '/engine/i18n.js';
 import { createAimMarker } from './aim-marker.js';
 
 // 'calce' stands behind the thrower looking down the court; 'arriba' looks
 // straight down; 'cancha' is the wide side view.
-export const VIEWS = [['calce', 'Detrás del lanzador'], ['arriba', 'Desde arriba'], ['cancha', 'Vista de la cancha']];
+export const VIEWS = [['calce', loc('Detrás del lanzador')], ['arriba', loc('Desde arriba')], ['cancha', loc('Vista de la cancha')]];
+const teamNames = () => TEAM_NAMES.map(name => loc(name));
 
 export function createScene(canvas) {
-  const world = createBolasWorld(), renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const world = createBolasWorld(), renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true }));
   renderer.setPixelRatio(pixelRatio(1.5)); renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
@@ -25,7 +27,7 @@ export function createScene(canvas) {
   const unbind = bindRenderer(renderer, 1.5, { fit: 'canvas' });
   const observer = new ResizeObserver(resize); observer.observe(canvas); resize();
   // ¿Quién empieza?: a coin flipped between the two benches decides who throws the mingo.
-  const opening = createStarterStage({ root: world.scene, camera: world.camera, canvas, scale: 1.1, names: TEAM_NAMES,
+  const opening = createStarterStage({ root: world.scene, camera: world.camera, canvas, scale: 1.1, names: teamNames(),
     spot: team => ({ position: [team ? 3.2 : -3.2, 0, 5.5], out: [team ? 1 : -1, 0] }) });
   let openingRevision = -1;
   return { ...world, renderer,
@@ -49,7 +51,7 @@ export function createScene(canvas) {
       const lobby = state.phase === 'lobby', mode = lobby ? 'cancha' : view;
       world.view(mode, { aspect: size.w / size.h, dt, focus: rolling && !rolling.out ? rolling : null,
         lift: lobby || mode === 'arriba' ? 0 : Math.min(70, size.h * .09), width: size.w, height: size.h });
-      if (state.revision !== openingRevision) { openingRevision = state.revision; opening.update(state.phase === 'opening' ? state.opening : null, { names: TEAM_NAMES }); }
+      if (state.revision !== openingRevision) { openingRevision = state.revision; opening.update(state.phase === 'opening' ? state.opening : null, { names: teamNames() }); }
       opening.frame(dt);
       renderer.render(world.scene, world.camera);
     },

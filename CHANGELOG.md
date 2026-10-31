@@ -8,6 +8,271 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Ludo un 1 también da otra tirada.** Si sacas un 1 y mueves, vuelves a
+  tirar como con un 6, hasta tres tiradas extra seguidas; viene activado y el
+  anfitrión lo puede apagar en las opciones de la sala.
+- **Al terminar, "Otra ronda" vuelve a la sala y el anfitrión elige el próximo mapa.**
+  En Pepazo, Trifulca ("Otra noche") y Escondidas ("Otra partida") ya no se
+  repite el mismo mapa sin querer: todos vuelven a la sala con sus puestos y
+  opciones, el anfitrión cambia el mapa o la arena y arranca cuando quiera.
+
+- **Pepazo estrena La Lejana y La Bazuca, y todas las marcadoras pegan más duro.**
+  La Lejana es una francotiradora de 70 m que pinta dos pepazos por tiro, con
+  mira telescópica (clic derecho, F o el botón Mira) que acerca la vista y
+  frena la puntería; La Bazuca lanza un cohete lento con estela de humo que
+  saca de una si pega directo. Todas las marcadoras tienen ahora más retroceso,
+  fogonazo, temblor de cámara y disparos con más cuerpo, y las explosiones
+  suenan y se ven de verdad.
+
+- **En Bochinche ahora se ve cuál es tu pana.** Tu luchador lleva un borde dorado que respira suave y una flechita encima de la cabeza que se ve aunque algo lo tape; los demás panas y los bots se quedan como siempre.
+
+- **Carreritas vuelve al sonido de motor de antes.** El motor nuevo con marchas no gustó, así que los carros suenan otra vez como antes; los cauchos, el turbo y los choques nuevos se quedan.
+
+- **El motor tiene un mapa de lo que comparten los juegos, y quien programa lo mira primero.**
+  `docs/SHARED-ENGINE.md` dice qué hace cada pieza, dónde vive, cómo se usa y qué
+  juegos la usan, con un diagrama y la lista de lo que falta por migrar; `AGENTS.md`
+  y `CLAUDE.md` piden consultarlo antes de crear una mecánica y sumar ahí lo nuevo.
+- **Pepazo estrena marcador: la carrera arriba, tus pepas abajo y un mapa redondo.**
+  Arriba van tú, el reloj y el rival más cercano (o tu equipo contra el otro),
+  con la meta debajo; abajo a la izquierda tu aguante, tu resistencia y la
+  granada, y abajo a la derecha las pepas que te quedan con el nombre de la
+  marcadora. Al recargar o quedarte sin pepas sale una barra bajo la mira, una
+  flecha coral te señala de dónde te pintaron, la racha se ve desde la segunda
+  pintada y el panel de eliminación toma el color de quien te sacó.
+- **Cada marcadora de Pepazo se ve distinta y se mueve en primera persona.**
+  La Chispa, El Trueno, Las Gemelas y El Cohetón tienen cada una su silueta; al
+  mirar se balancean, patean al disparar, bajan al correr y se recargan con su
+  propia animación.
+- **Pepazo suena: cada marcadora dispara distinto y se oyen golpes, recargas y saltos.**
+  Salpicaduras al caer, un quejido cuando te pintan, clic al quedarte sin pepas,
+  recarga, aterrizaje y el pitido de la cuenta regresiva, todo con la biblioteca
+  de sonidos compartida.
+- **Mi pana estrena vestidor: m?s claro, con menos texto y con la tienda a un toque.**
+  El editor ahora es de pantalla completa con el toldo rojo y blanco de la
+  tienda y el garaje, un pana grande sobre su tarima y colores c?lidos en vez
+  del morado oscuro. Casi sin p?rrafos: pesta?as con ?conos, fichas m?s grandes
+  y etiquetas cortas; todo sigue ah? (conjuntos, Girar, poses, ?Sorpr?ndeme!,
+  Reiniciar, C?digo y Guardar para jugar). Las prendas de pago que a?n no son
+  tuyas salen bloqueadas con candado y precio, y tocarlas te lleva a la tienda
+  con esa prenda elegida; los conjuntos listos y ?Sorpr?ndeme! solo usan lo que
+  ya tienes.
+- **Reliquia y Pepazo ahora se oyen caminar, correr y saltar.**
+  Cada paso suena según el piso y el ritmo sale de qué tan rápido vas, correr
+  suena más fuerte y apurado, y al saltar y caer se oye el despegue y el golpe
+  en el suelo. El movimiento de los dos juegos ahora sale del mismo controlador
+  del motor, así que se sienten igual y no cambia cómo se mueven.
+
+- **Mi pana vuelve a abrir en un par de segundos, con un vestidor de fondo.**
+  Volver al editor ya no tarda cinco a ocho segundos: el ajuste del cuerpo del
+  chef (lo que más tardaba) se guarda en el navegador y solo se calcula la
+  primera vez. La pantalla de carga ahora muestra a tu pana en un vestidor, y la
+  página pide de antemano el editor y Three.js.
+
+- **Carreritas suena a coche de verdad.**
+  El motor ahora sube de revoluciones, cambia de marcha y baja el pie con su
+  propio sonido (compacto, deportivo, camioneta, buseta, escarabajo), las gomas
+  chillan en el asfalto y crujen en la tierra, y el turbo y los choques suenan
+  más gordos. Todo sale del mismo sonido compartido del motor del juego.
+
+- **La sala ya no se corre de lado: sin barra horizontal y con los ajustes completos.**
+  En pantallas de unos mil píxeles, la rejilla de ocho jugadores de Pepazo mostraba una barra
+  horizontal y recortaba los ajustes y el selector de mapa. Ahora la rejilla y el panel caben enteros
+  en todas las salas, y solo se desplazan de arriba abajo cuando hace falta.
+- **Pepazo dispara de verdad: bolas chicas, rápidas y con respuesta clara.**
+  Las bolas de pintura son más pequeñas y vuelan casi como un rayo, con una
+  estela para seguirlas, y la Chispa dispara cinco veces por segundo. Cada tiro
+  suena con chasquido, destello, retroceso y bocanada de pintura, y cada
+  pintada se oye y se ve en la mira. Un anillo en la mira y una barra en el
+  marcador muestran la recarga, con un clic al terminar. Los bots apuntan con
+  un pequeño retraso para no ser más certeros que antes.
+- **Pepazo tiene salto: Espacio, o el botón Saltar en el móvil.**
+  El salto es el de Reliquia, ahora compartido en el motor. Durante la carga y
+  la cuenta regresiva no se puede saltar. Disparar pasa de Espacio a Enter (o
+  clic, o el gatillo del mando); el botón A del mando salta.
+- **Carreritas pública ahora es una vitrina: cuatro pistas y una Copa Pana.**
+  El Estadio, Los Llanos, el Delta y Galipán de noche forman la Copa Pana
+  para mostrar carros, botes y aviones; los otros 24 circuitos y seis copas
+  pasaron al servidor privado. La copa tiene una edición nueva, así que el
+  progreso de copas anterior empieza de cero.
+
+- **Carreritas ya corre con hasta doce carros en la pista.**
+  Nueva opción «Parrilla» (Normal o 12 carros): los bots llenan los puestos
+  vacíos en carreras y copas, solo o en la sala online, que ahora recibe
+  hasta doce panas; con ocho o menos todo corre igual que antes.
+- **Pepazo espera a todos antes de arrancar la ronda.**
+  Hay pantalla de carga y, cuando todos cargaron, una cuenta 3-2-1: hasta el
+  ¡YA! nadie se mueve, dispara ni recibe disparos. Ahora apareces lejos de
+  tus rivales, y El Puerto es el mapa por defecto.
+- **En Trifulca los peleadores ya no se meten uno dentro del otro.**
+  Cada pana guarda su espacio en el ring y se separa suave si queda
+  encima del otro; los golpes, el empujón y el agarre empujan igual que antes.
+- **Ludo ahora se juega de cuatro a seis panas.**
+  El anfitrión elige 4, 5 o 6 jugadores en la sala; con cinco o seis la mesa
+  crece y trae un tablero redondo en estrella, con Morado y Naranja, y los
+  puestos vacíos los juegan bots.
+- **Pepazo estrena El Puerto: dos bases frente a frente en un patio de contenedores.**
+  Una cancha de 116 m con el galpón en el medio, grúas pórtico y barcos en
+  el muelle; cada ronda trae Pasillos, Fortaleza o Laberinto, y los bots
+  ya cruzan el patio a buscarte aunque no te vean.
+- **En Dominó nadie puede ver tus fichas.**
+  El servidor reparte y juega los bots; a cada pana solo le llegan sus
+  propias fichas, y las de los demás quedan boca abajo hasta que se cierra la mano.
+- **Un pana que se queda quieto ya no congela Ludo ni Bolas Criollas.**
+  Con «Tiempo por turno» (60 s por defecto) el bot juega por quien se fue;
+  en Billar, si tu rival se va a mitad de mesa, el anfitrión vuelve a la
+  sala desde el menú.
+- **En Póquer nadie se queda con tus fichas usando tu nombre.**
+  Si se te cae la conexión, solo tu propio navegador recupera tu pila.
+- **La revancha en la misma pista de Carreritas trae cajas distintas.**
+  Antes cada carrera repetía la misma secuencia de objetos.
+- **Volver a un juego con el botón Atrás ya no lo deja congelado.**
+  La página se vuelve a cargar sola; y los menús de Billar, Caída y Dominó
+  ya suenan al tocarlos y respetan el volumen de la música.
+- **Las carreras online de Carreritas ya no aceptan tiempos inventados.**
+  El servidor solo da por terminada la carrera de un carro que llegó a su
+  última vuelta y con un tiempo que cuadra con su propio reloj.
+- **Escribir el código de sala en mayúsculas ya te lleva con tus panas.**
+  La sala muestra el código en mayúsculas; antes, copiarlo así en «Tengo un
+  código» abría una sala vacía aparte.
+- **Carreritas tiene cuatro copas nuevas: Costa, Cumbre, Relámpago y Fantasía.**
+  Las dieciséis pistas sueltas ahora también se corren como campeonato de
+  cuatro carreras, con su trofeo; la lista de copas baja con scroll.
+- **Bochinche tiene trece panas, cada uno con su poder en K, y un HUD nuevo.**
+  El Trueno, La Medusa, El Silbón y diez más pelean con su disfraz y sus
+  accesorios sobre tu propio pana. Placas con el daño en grande, vidas en
+  bolitas, ¡Fuera! y cuenta regresiva a pantalla completa, y tres diseños
+  del HUD en el menú (Clásico, Esquinas, Mínimo). Elige tu pana y su traje
+  desde la sala (se recuerda para la próxima), y al final hay podio, tabla
+  de KOs, caídas y daño, y premios como Pegada de oro.
+- **Las peleas de Bochinche pagan mangos que gastas en el taller de Carreritas.**
+  Ganas por puesto, por cada KO y por cada premio; los mangos ahora son de
+  todo Pana, y tu saldo de Carreritas pasa tal cual.
+- **Pana habla inglés: elige el idioma en Ajustes > Idioma.**
+  El hub, las salas, los menús y todos los juegos salen en inglés si tu
+  navegador está en inglés o si lo eliges; cada pana de una sala ve su propio
+  idioma. Los nombres de los juegos, los dichos y las preguntas siguen en
+  español. Para quien desarrolla: el texto pasa por `loc()` y
+  `npm run i18n -- check` avisa de lo que falta traducir.
+- **Stop trae paquetes de categorías, preguntas pa' reírse y categorías propias.**
+  Elige entre once paquetes con flechas (Pa' los chamos, Geografía, Pa' reírse,
+  Confiesa, Inventa…), escribe hasta tres categorías tuyas, junta Ciudad,
+  estado o país en una casilla, y al final mira «Lo mejor de la noche».
+- **Carreritas recuerda tu carro también al volver a una sala con tus panas.**
+  Antes, entrar por el enlace de la sala te ponía El Chamo; y el acabado
+  Camuflaje vuelve a pintar toda la carrocería, no solo el alerón.
+- **Ajustes tiene cara nueva: categorías a un lado, una fila por ajuste y la explicación al lado.**
+  Las flechas cambian cada opción, un punto verde marca lo que tocaste, y el
+  panel muestra la curva del stick, el mando en vivo o lo que cuesta la imagen.
+- **Ajustes > Imagen ahora separa resolución, sombras, detalle, límite de FPS y suavizado.**
+  Nítida, Equilibrada y Rápida siguen como punto de partida; puedes ver
+  FPS y tiempo de cuadro en pantalla, apagar el ajuste automático, y en
+  partida la página avisa cuando un cambio necesita recargar. Parapente
+  ya respeta la resolución elegida.
+- **Para quien desarrolla: `npm run perf -- <juego>` mide cualquier juego por calidad.**
+  Con `--tiers` mide cada ajuste por separado y con `--base` compara contra
+  otro commit; los ajustes también van en el enlace (`?pana-shadows=off&pana-stats`).
+- **Stop estrena categorías Variadas: profesión, deporte, cuerpo, casa, planta y película.**
+  Más de 750 palabras nuevas que el juego reconoce solo, Mezcla reparte de
+  los tres grupos, y «Pedro Pérez» o «Verde manzana» ya cuentan.
+- **En Póquer, si te sales y vuelves, recuperas tus fichas.**
+  Volver con el mismo nombre te devuelve tu pila; salirse ya no regala una
+  pila nueva de 1.000 a quien iba perdiendo.
+- **Colonia Tovar y Sarisariñama corren más livianos.**
+  La niebla, el mar de nubes y la brisa se dibujan de una vez y el paisaje
+  se recorta por zonas: Tovar pinta la mitad de triángulos y ya no se traba.
+- **Stop recuerda las palabras que la mesa aceptó y deja elegir las letras.**
+  Lo que se votó que sí cuenta solo en la próxima partida, las letras no se
+  repiten entre partidas de la misma sala, y Letras: Fáciles, Normales o Todas.
+- **En Stop una sola letra ya no cuenta, y tras ¡STOP! hay 5 segundos.**
+  «P», «P.» o «Ppp» salen en rojo sin votación y no dejan gritar ¡STOP!;
+  los demás tienen 5 s para cerrar la palabra, y Chrome no tapa la hoja.
+- **El servidor cuenta lo que pasa en cada sala, para que los anfitriones vean qué falló.**
+  Una línea por sala creada, pana que entra, se cae, vuelve o se va, cambio de
+  anfitrión y cierre; `PANA_ROOM_LOG=0` la apaga.
+- **¡Stop! se juega solo entre panas: apaga los bots desde el lobby.**
+  Con «Jugar con: Solo panas» las sillas vacías quedan vacías: nadie más gira
+  la rueda, escribe, vota ni sale en la tabla.
+- **El Mango de oro siempre trae cuatro opciones y la narración no se corta.**
+  Una pregunta sin exactamente cuatro respuestas distintas nunca llega al
+  tablero, un audio que falla salta al siguiente en vez de callar el resto,
+  y la respuesta correcta ya no viaja a los invitados antes de revelarla.
+- **El mando que conectas es el que juega, aunque el PC tenga otros aparatos.**
+  Un mando Bluetooth recién emparejado toma el control, y luego manda el
+  último mando que tocaste; audífonos, hubs o volantes ya no se lo roban.
+- **Batear en Chapita ya no es suerte: un aro en el plato te marca el momento.**
+  Otro aro se cierra y se pone verde cuando llega la chapita, con tres tics
+  de ritmo, el palo busca la altura solo (W/S si quieres elegirla) y cada
+  swing te dice si fuiste temprano o tarde. Las bases forman un diamante de
+  tiza con la segunda en la acera, los corredores dan la vuelta por las
+  bases y los swings suenan a palo de verdad.
+
+- **Chapita se llena de jugadas locas: el perro, el abuelo, la alcantarilla y más.**
+  Veinte animaciones del estudio salen de jugadas reales (jonrón con bat
+  flip, ¡PONCHAO!, la ventana con ¡CORRAN!, pinball contra el poste, ¡A
+  comer!), con letras de cómic, sonidos y tomas de cámara. Un lanzamiento
+  alto y pegado es un chapazo que te manda a primera; la opción «Pelota y
+  bate» cambia el equipo, y Studio muestra cada jugada en bucle.
+
+- **Ludo centra sus fichas y suena con efectos grabados.**
+  Los saltos, vuelos y golpes usan muestras acreditadas en el paquete del
+  juego; la nube de lluvia deja espacio para el mensaje y las fichas.
+
+- **Ludo deja terminar cada jugada antes de anunciar el siguiente turno.**
+  Los dados, movimientos y capturas tienen pausas legibles; al llegar tu
+  turno, un foco ilumina tu esquina y oscurece el resto de la mesa.
+
+- **Los ajustes usan los mismos nombres en todos los juegos.**
+  «Jugar con» distingue «Solo panas» de «Panas y bots»; el nivel de bots
+  usa Fácil, Normal y Difícil. Galope y Curiara comparten esa elección con
+  la sala, Lancha y Parapente la separan del nivel, y los ajustes personales
+  quedan separados de las reglas del anfitrión. Los tiempos indican qué miden.
+
+- **Los panas de QQSMP piensan, celebran y se equivocan con nuevas animaciones.**
+  Veintitrés variantes alternan bailes, lágrimas de alegría, mortales,
+  berrinches y más; el concurso suma botones, accesorios, confeti y escenas
+  cómicas, con efectos de sonido y respeto por el movimiento reducido.
+
+- **QQSMP permite jugar solo con panas y ajusta las tarjetas de la sala.**
+  Elige «Solo panas» para quitar los bots; los puestos vacíos no votan ni
+  puntúan, y las tarjetas caben sin la barra de desplazamiento horizontal.
+
+- **QQSMP suena a concurso con redobles, suspense y fanfarrias originales.**
+  Cada pregunta, cuenta atrás, acierto, fallo y victoria tiene su sonido;
+  los efectos bajan de volumen mientras habla el animador.
+
+- **QQSMP revela la respuesta al votar el último pana y la anuncia en voz alta.**
+  Puedes corregir tu elección mientras falte alguien; al completar los votos,
+  el animador dice la letra y la respuesta correcta sin esperar el reloj.
+
+- **QQSMP lee las opciones y permite cambiar o cancelar tu respuesta.**
+  Escucha cada letra y respuesta en el orden de la pantalla; puedes corregir
+  tu elección hasta que termine el tiempo, con el bono de tu última respuesta.
+
+- **Ludo usa los veintiún momentos del estudio con efectos de sonido.**
+  Turnos, suspense, escudos, salto de rana, recta final, reacciones y podio
+  se suman a los diez movimientos del camino, con sonido y vistas en Studio.
+
+- **Los botones de menú e invitación comparten el nuevo estilo del HUD.**
+  Placas inclinadas y atajos legibles en todos los juegos, también en los
+  controles de vista y detalles de Ludo.
+
+- **Ludo deja ver el dado antes de mover y acerca la mesa.**
+  Fichas compartidas más grandes, un HUD con pistas de cada jugada y detalles
+  de los panas al mantener Shift o tocar «Ver panas».
+
+- **Ludo estrena las fichas con caritas y los movimientos del estudio.**
+  Tablero texturizado, fichas brillantes, dado redondeado y diez animaciones
+  del camino en las partidas y en Studio, sin cambiar las reglas del dado.
+
+- **Las imágenes grandes se distribuyen en paquetes separados por juego.**
+  Pana verifica y guarda cada paquete al necesitarlo; los iconos y miniaturas
+  siguen en Git, sin cambiar las ilustraciones ni sus direcciones.
+
+- **QQSMP lee las preguntas en español y te da más tiempo para responder.**
+  Voz grabada para cada pregunta, 30 segundos por defecto y opción de 45;
+  las revanchas recorren el banco antes de repetir preguntas.
+  Las grabaciones se descargan como un paquete aparte y no ocupan el historial de Git.
+
 ## 0.7.0 - 2026-10-24
 
 - **Los panas y los escenarios se preparan más rápido al entrar a jugar.**

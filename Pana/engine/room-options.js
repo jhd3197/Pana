@@ -1,5 +1,6 @@
 import { icon } from './icons.js';
-
+import { isRoomFieldVisible } from './room-option-fields.js';
+import { loc, locn } from './i18n.js';
 const panels = new WeakMap();
 
 // Existing map/camera/help controls keep their handlers and authoritative state.
@@ -15,15 +16,15 @@ export function createRoomOptions(container, { title, fields, change, reset }) {
   const make = (tag, cls, text) => { const n = document.createElement(tag); n.className = cls; if (text != null) n.textContent = text; return n; };
   const primary = make('div', 'pk-room-primary');
   const more = make('button', 'pk-room-more'); more.type = 'button'; more.id = 'pana-room-more';
-  const count = make('small', ''); more.append(icon('gear'), make('span', '', 'Más ajustes'), count, icon('chevronRight'));
+  const count = make('small', ''); more.append(icon('gear'), make('span', '', loc('Más ajustes')), count, icon('chevronRight'));
   const dialog = make('dialog', 'pk-room-dialog'); dialog.id = 'pana-room-dialog'; dialog.setAttribute('aria-labelledby', 'pana-room-title');
   const heading = make('div', 'pk-room-heading'), names = make('div', '');
   const name = make('h2', 'pk-title', title); name.id = 'pana-room-title';
-  names.append(make('p', 'pk-eyebrow', 'Más ajustes'), name);
-  const notice = make('p', 'pk-copy'), close = make('button', 'pk-btn pk-room-close'); close.type = 'button'; close.setAttribute('aria-label', 'Cerrar ajustes'); close.append(icon('close'));
+  names.append(make('p', 'pk-eyebrow', loc('Más ajustes')), name);
+  const notice = make('p', 'pk-copy'), close = make('button', 'pk-btn pk-room-close'); close.type = 'button'; close.setAttribute('aria-label', loc('Cerrar ajustes')); close.append(icon('close'));
   heading.append(names, notice, close);
   const grid = make('div', 'pk-room-grid'), extras = make('div', 'pk-room-extras'), foot = make('div', 'pk-room-footer');
-  const restore = make('button', 'pk-btn', 'Restablecer'), done = make('button', 'pk-btn pk-btn--primary pk-btn--lg', 'Listo');
+  const restore = make('button', 'pk-btn', loc('Restablecer sala')), done = make('button', 'pk-btn pk-btn--primary pk-btn--lg', loc('Listo'));
   restore.type = done.type = 'button'; restore.id = 'pana-room-reset'; done.id = 'pana-room-done';
   foot.append(restore, done); dialog.append(heading, grid, extras, foot); document.body.append(dialog);
   container.append(primary, more);
@@ -41,9 +42,11 @@ export function createRoomOptions(container, { title, fields, change, reset }) {
   });
   const advanced = fields.filter(f => f.advanced); more.hidden = !advanced.length;
   function updateCount() {
-    const changed = advanced.filter(f => values[f.id] !== f.default).length;
-    count.textContent = changed ? `${changed} ${changed === 1 ? 'cambio' : 'cambios'}` : `${advanced.length + extraCount} opciones`;
-    more.hidden = !advanced.length && !extras.children.length;
+    const applicable = advanced.filter(f => isRoomFieldVisible(f, values));
+    const changed = applicable.filter(f => values[f.id] !== f.default).length;
+    const total = applicable.length + extraCount;
+    count.textContent = changed ? locn(changed, '{n} cambio', '{n} cambios') : locn(total, '{n} opción', '{n} opciones');
+    more.hidden = !applicable.length && !extras.children.length;
   }
   panels.set(container, { adopt(lobby) {
     for (const node of lobby.querySelectorAll('[data-room-primary]')) primary.prepend(node);
@@ -80,11 +83,12 @@ export function createRoomOptions(container, { title, fields, change, reset }) {
     update(next, mayEdit) {
       values = next; enabled = mayEdit;
       updateCount();
-      notice.textContent = enabled ? 'Tus panas ven los cambios al momento.' : 'El anfitrión elige los ajustes de la sala.';
+      notice.textContent = enabled ? loc('Tus panas ven los cambios al momento.') : loc('El anfitrión elige los ajustes de la sala.');
       restore.disabled = !enabled;
       for (const { field, group, buttons } of controls) {
+        group.hidden = !isRoomFieldVisible(field, values);
         group.classList.toggle('is-changed', values[field.id] !== field.default);
-        for (const { button, value } of buttons) { button.disabled = !enabled; button.setAttribute('aria-pressed', String(values[field.id] === value)); }
+        for (const { button, value } of buttons) { button.disabled = !enabled || group.hidden; button.setAttribute('aria-pressed', String(values[field.id] === value)); }
       }
     },
     dispose() { panels.delete(container); dialog.remove(); primary.remove(); more.remove(); },

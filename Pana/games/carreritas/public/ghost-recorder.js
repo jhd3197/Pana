@@ -95,10 +95,15 @@ export function createGhostRecorder({ storage = safeStorage(), hz = POSE_HZ } = 
 // Shipped ghosts: public/ghosts/<trackId>.json, the same shape plus who drove
 // it ({ by, car, avatar }). The first ask starts a quiet fetch and returns
 // null; later asks get the cached ghost (or null when the track has none).
+// Only tracks listed here are fetched, so a race never asks for a file that
+// isn't there (each one was a 404 in the hosted error log).
+export const SHIPPED_GHOSTS = new Set([]);
 const shipped = new Map();
-export function devGhost(trackId, load = (url) => fetch(url).then(r => r.ok ? r.json() : null)) {
+const fetchGhost = (url) => fetch(url).then(r => r.ok ? r.json() : null);
+export function devGhost(trackId, load = SHIPPED_GHOSTS.has(trackId) ? fetchGhost : null) {
   if (!shipped.has(trackId)) {
     shipped.set(trackId, null);
+    if (!load) return null;
     Promise.resolve().then(() => load(new URL(`./ghosts/${trackId}.json`, import.meta.url).href)).then(ghost => {
       const ok = loadGhost(trackId, { getItem: () => JSON.stringify(ghost) });
       if (ok) shipped.set(trackId, { ...ok, by: String(ghost.by || 'dev').slice(0, 32), car: ghost.car, avatar: ghost.avatar });

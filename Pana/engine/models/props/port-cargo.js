@@ -60,6 +60,49 @@ export function transitWarehouse() {
   return paintFinish(g, 'transit-warehouse');
 }
 
+// Open steel shed: red columns, a corrugated gable roof and a grated mezzanine
+// over the north half (-Z). Columns stand at x = ±w/2, ±w/6 on z = ±d/2, and the
+// mezzanine's two posts at x = ±w/6 just inside its south edge, so a map can
+// fit its collision to them. Ground origin.
+export function steelShed({ w = 18, d = 14, roof = 9.5, deck = 5.18, mezzanine = [-7, -.6] } = {}) {
+  const g = new THREE.Group(), red = M(0xe8402a, { metalness: .3, roughness: .5 }), yellow = M(0xf2c12e, { metalness: .3, roughness: .5 });
+  const sheet = M(0xe8e4dc, { metalness: .25, roughness: .55, side: THREE.DoubleSide }), grate = M(0x5a6068, { metalness: .4, roughness: .7 }), dark = M(0x2a2e34);
+  const xs = [-w / 2, -w / 6, w / 6, w / 2];
+  for (const x of xs) {
+    for (const z of [-d / 2, d / 2]) g.add(box(.45, roof, .45, red, x, roof / 2, z));
+    // A truss across the bay at every column line.
+    g.add(box(.3, .4, d + .4, red, x, roof, 0));
+    for (const s of [-1, 1]) g.add(tube([x, roof, s * d / 2], [x, roof + 1.6, 0], .1, red));
+  }
+  for (const z of [-d / 2, d / 2]) g.add(box(w + .4, .4, .3, red, 0, roof, z));
+  g.add(box(w + .6, .3, .3, red, 0, roof + 1.6, 0));
+  // Corrugated roof: ribs pressed into both slopes.
+  const slope = Math.atan2(1.6, d / 2), run = Math.hypot(d / 2, 1.6) + 1.1;
+  for (const s of [-1, 1]) {
+    const pitch = new THREE.Group(); pitch.position.set(0, roof + .85, s * (run / 2 - .3)); pitch.rotation.x = s * slope; g.add(pitch);
+    pitch.add(box(w + 2, .08, run, sheet, 0, 0, 0));
+    for (let x = -w / 2 - .8; x <= w / 2 + .8; x += .5) pitch.add(box(.12, .06, run, sheet, x, .06, 0));
+  }
+  // Mezzanine deck, its edge beam, railing and the two posts under it.
+  const [z0, z1] = mezzanine, depth = z1 - z0, mid = (z0 + z1) / 2;
+  g.add(box(w, .12, depth, grate, 0, deck - .06, mid), box(w, .3, .2, red, 0, deck - .27, z1 - .1));
+  for (let x = -w / 2 + .4; x < w / 2; x += .45) g.add(box(.05, .05, depth - .1, dark, x, deck + .01, mid));
+  for (const x of [-w / 6, w / 6]) g.add(box(.3, deck - .3, .3, red, x, (deck - .3) / 2, z1 - .2));
+  g.add(box(w, .08, .08, yellow, 0, deck + 1.05, z1), box(w, .06, .06, yellow, 0, deck + .55, z1));
+  for (let x = -w / 2; x <= w / 2 + .01; x += w / 9) g.add(box(.07, 1.05, .07, yellow, x, deck + .52, z1));
+  for (const x of [-w / 2, w / 2]) g.add(box(.08, .08, depth, yellow, x, deck + 1.05, mid));
+  return paintFinish(g, 'steel-shed');
+}
+
+// Steel oil drum with two rolled hoops and a bung on the lid. Ground origin.
+export function oilDrum({ color = 0x2f7cf0 } = {}) {
+  const g = new THREE.Group(), paint = M(color, { metalness: .35, roughness: .45 }), rim = M(new THREE.Color(color).multiplyScalar(.7).getHex(), { metalness: .4, roughness: .4 });
+  g.add(mesh(new THREE.CylinderGeometry(.29, .29, .88, 16), paint, 0, .44, 0));
+  for (const y of [.03, .3, .58, .87]) g.add(mesh(new THREE.TorusGeometry(.29, .022, 6, 16), rim, 0, y, 0).rotateX(Math.PI / 2));
+  g.add(mesh(new THREE.CylinderGeometry(.04, .04, .03, 8), rim, .15, .89, .05));
+  return paintFinish(g, 'oil-drum');
+}
+
 export function portBollard() {
   const g = new THREE.Group(), steel = M(0x344b50), yellow = M(0xe4b64b);
   g.add(box(1.3, .16, 1.3, steel, 0, .08, 0), mesh(new THREE.CylinderGeometry(.35, .48, .85, 10), yellow, 0, .58, 0), box(1.2, .25, .65, steel, 0, 1.1, 0));

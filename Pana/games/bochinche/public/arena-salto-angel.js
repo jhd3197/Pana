@@ -2,9 +2,10 @@ import { scarletMacaw } from '/engine/models/fauna/birds/scarlet-macaw.js';
 import { fern } from '/engine/models/vegetation/fern.js';
 import { heliconia } from '/engine/models/vegetation/heliconia.js';
 import { treeFern } from '/engine/models/vegetation/selva-palms.js';
-import { createAssetPlacement } from './arena-assets.js';
+import { createAssetPlacement, PI, TAU, V3, col, clamp, lerp, sstep, stageRandom, ih, noise2, fbm } from './arena-assets.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import * as THREE from 'three';
+import { canvasTexture } from '/engine/models/core/primitives.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 export function createArena(parent, renderer, camera) {
 const ownedTextures=[];
@@ -13,7 +14,7 @@ const scene = new THREE.Group(); scene.scale.setScalar(.42); parent.add(scene);
 scene.fog = parent.fog;
 const small = true;
 const STAGE = {
-  name: 'Salto Ángel',
+  name: 'Salto Ángel', // i18n-ignore: place name
   seed: 20261029,
   main: { x: [-21, 21], y: 0, depth: 15, ledges: true },
   soft: [
@@ -32,15 +33,8 @@ const STAGE = {
 };
 
 /* ---------------- basics ---------------- */
-const PI = Math.PI, TAU = PI * 2, V3 = (x, y, z) => new THREE.Vector3(x, y, z), col = c => new THREE.Color(c);
-const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;
-const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
-let seed = STAGE.seed; const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-const rr = (a, b) => a + rand() * (b - a), pick = a => a[(rand() * a.length) | 0];
-const ih = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
-const noise2 = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf); return lerp(lerp(ih(xi, yi), ih(xi + 1, yi), u), lerp(ih(xi, yi + 1), ih(xi + 1, yi + 1), u), v); };
-const fbm = (x, y, o = 4) => { let s = 0, a = 0.5, f = 1; for (let k = 0; k < o; k++) { s += a * noise2(x * f, y * f); f *= 2.03; a *= 0.5; } return s / (1 - Math.pow(0.5, o)); };
-const canvasTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); ownedTextures.push(t); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
+const { rand, rr, pick } = stageRandom(STAGE.seed);
+const canvasTex = (w, h, draw) => canvasTexture(w, h, draw, { owned: ownedTextures });
 const softTex = canvasTex(128, 128, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.4, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
 
 /* ---------------- light and sky (driven by the time of day) ---------------- */
@@ -167,7 +161,7 @@ for (const s of [-1, 1]) {
 }
 // a carved wooden sign at the back: the falls' Pemón name
 {
-  const t = canvasTex(512, 96, (c, w, h) => { c.fillStyle = '#7a4a28'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 3) { c.fillStyle = `rgba(40,20,8,${(0.05 + 0.08 * Math.abs(Math.sin(y * 0.3))).toFixed(2)})`; c.fillRect(0, y, w, 2); } c.font = '800 52px "Baloo 2", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#3a200c'; c.fillText('KEREPAKUPAI MERÚ', w / 2 + 2, h / 2 + 4); c.fillStyle = '#f2d8a8'; c.fillText('KEREPAKUPAI MERÚ', w / 2, h / 2 + 2); });
+  const t = canvasTex(512, 96, (c, w, h) => { c.fillStyle = '#7a4a28'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 3) { c.fillStyle = `rgba(40,20,8,${(0.05 + 0.08 * Math.abs(Math.sin(y * 0.3))).toFixed(2)})`; c.fillRect(0, y, w, 2); } c.font = '800 52px "Baloo 2", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#3a200c'; c.fillText('KEREPAKUPAI MERÚ', w / 2 + 2, h / 2 + 4); c.fillStyle = '#f2d8a8'; c.fillText('KEREPAKUPAI MERÚ', w / 2, h / 2 + 2); }); // i18n-ignore: signage painted in the world
   const sign = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.2, 0.2), [0, 0, 0, 0].map(() => new THREE.MeshStandardMaterial({ color: '#6a3a1a' })).concat([new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }), new THREE.MeshStandardMaterial({ color: '#6a3a1a' })]));
   sign.position.set(-7.5, 1.9, -halfD + 1.0); sign.castShadow = true; stage.add(sign);
   for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.4, 6), new THREE.MeshStandardMaterial({ color: '#5a3a20' })); p.position.set(-7.5 + s * 2.8, 1.2, -halfD + 0.95); stage.add(p); }

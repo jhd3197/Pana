@@ -6,6 +6,29 @@ const base = process.env.PANA_TEST_URL || 'http://localhost:8461', code = `paint
 const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
 const out = 'Pana/games/pintura/qa'; await mkdir(out, { recursive: true });
 const wait = (p, fn, arg, timeout = 60000) => p.waitForFunction(fn, arg, { timeout });
+const mine = 'pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id)';
+async function walk(p, key, until) { await p.keyboard.down(key); await wait(p, `${mine}.${until}`); await p.keyboard.up(key); }
+// Spawns are drawn per round. From any plaza spawn: out to the clear lane past
+// |24| round the court, along it to its south side (z < -25.5), then to x. Keys
+// move along world axes (the overview, or first person facing yaw 0).
+// edge: x is a wall to press against (the court ends near |26.4|), so walk on until past it;
+// otherwise x only needs to be near.
+async function toSouthLane(p, x, edge = false) {
+  const at = () => p.evaluate(`(({ x, z }) => ({ x, z }))(${mine})`);
+  let me = await at();
+  if (Math.abs(me.z) >= Math.abs(me.x)) await walk(p, me.z < 0 ? 'w' : 's', me.z < 0 ? 'z < -24' : 'z > 24');
+  else await walk(p, me.x < 0 ? 'a' : 'd', me.x < 0 ? 'x < -24' : 'x > 24');
+  me = await at();
+  if (me.z > -24) {
+    // From the far x side, the lane itself leads south; from the north, cross to x's side first.
+    if (Math.abs(me.x) < 24 || Math.sign(me.x) === Math.sign(x)) await walk(p, x < 0 ? 'a' : 'd', x < 0 ? 'x < -24.5' : 'x > 24.5');
+    await walk(p, 'w', 'z < -25.5');
+  }
+  me = await at();
+  if (edge) { if (x > 0 ? me.x <= x : me.x >= x) await walk(p, x > 0 ? 'd' : 'a', x > 0 ? `x > ${x}` : `x < ${x}`); }
+  else if (Math.abs(me.x - x) > 1) await walk(p, me.x < x ? 'd' : 'a', me.x < x ? `x > ${x}` : `x < ${x}`);
+  await walk(p, 'w', 'z < -25.5');
+}
 async function open(name, room = code, mobile = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1 });
   await context.addInitScript(name => { localStorage.setItem('pana:name', name); localStorage.setItem('pana:settings', JSON.stringify({ sound: false, quality: 'baja' })); localStorage.setItem('pana:avatar', JSON.stringify({ outfit: 'hoodie', outfitColor: '#3775cc', hat: 'gorra' })); }, name);
@@ -34,7 +57,11 @@ try {
   await b.locator('#armory-close').click();
   const guestId=await b.evaluate(()=>pinturaDebug.room.id);
   await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && p.kit.attachments.length===2 && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
+  // The routes below walk the plaza's outer lane; El Puerto is the default map.
+  await a.evaluate(() => pinturaDebug.room.selectMap('plaza')); await wait(b, () => pinturaDebug.room.state.mapId === 'plaza');
   await a.screenshot({ path: `${out}/lobby.png` }); await a.locator('#start').click(); await wait(b, () => pinturaDebug.room.state.phase === 'playing');
+  // Both clients load the court, then the room counts 3-2-1: input only counts after ¡YA!
+  await wait(b, () => { const s = pinturaDebug.room.state; return !s.loading && !s.countdown; });
   assert.equal(await a.evaluate(() => pinturaDebug.world.view), 'primera');
   await b.evaluate(()=>pinturaDebug.room.selectKit({weapon:'rapid',armor:'wind'}));
   await b.locator('#world').focus();await b.keyboard.press('g');
@@ -47,20 +74,18 @@ try {
   await b.locator('#menu').click(); await b.locator('#pana-tab-settings').click();
   await b.locator('.pana-settings-nav button', { hasText: 'Pepazo' }).click();
   await b.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await b.keyboard.press('Escape');
-  const mine = 'pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id)';
-  await b.locator('#world').focus();
-  await b.keyboard.down('d'); await wait(b, `${mine}.x > 26`); await b.keyboard.up('d');
-  await b.keyboard.down('w'); await wait(b, `${mine}.z < -25.5`); await b.keyboard.up('w');
+  await b.locator('#world').focus(); await toSouthLane(b, 26, true);
   await wait(b, `!${mine}.walk`);
-  await a.locator('#world').focus(); await a.evaluate(() => pinturaDebug.world.look(-pinturaDebug.world.yaw));
-  await a.keyboard.down('w'); await wait(a, `${mine}.z < -25.5`); await a.keyboard.up('w');
+  await a.locator('#world').focus(); await a.evaluate(() => pinturaDebug.world.look(-pinturaDebug.world.yaw)); await toSouthLane(a, -10);
   const guest = await b.evaluate(() => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id));
   await wait(a, id => { const g = pinturaDebug.room.state.players.find(p => p.id === id); return g.x > 26 && g.z < -25.5; }, guest.id);
   await a.evaluate(id => { const { room, world } = pinturaDebug, me = room.state.players.find(p => p.id === room.id), g = room.state.players.find(p => p.id === id); world.look(Math.atan2(-(g.x - me.x), -(g.z - me.z)) - world.yaw); }, guest.id);
-  await a.keyboard.down(' ');
+  // Space hops (server-side), up and back down, before the duel.
+  await a.keyboard.press(' '); await wait(a, `${mine}.jumpHeight > .2`); await wait(a, `${mine}.jumpHeight === 0`);
+  await a.keyboard.down('Enter');
   // The first confirmed hit raises the feat toast (¡Pintaste a…!, then ¡Doble!/¡Triple pintada!).
   await wait(a, () => /Pintaste|pintada/.test(document.getElementById('toast').textContent));
-  await wait(a, `${mine}.score > 0`); await a.keyboard.up(' ');
+  await wait(a, `${mine}.score > 0`); await a.keyboard.up('Enter');
   await wait(b, `${mine}.hits > 0`);
   await wait(a, id => !!pinturaDebug.world.avatars.get(id)?.knockout, guest.id);
   assert.equal(await a.evaluate(id => pinturaDebug.world.avatars.get(id).knockout.physics.points.every(p => Number.isFinite(p.x+p.y+p.z)), guest.id), true);
@@ -77,12 +102,16 @@ try {
   // The real round clock or a player reaching ten ends this without a debug server mutation.
   await wait(b, () => pinturaDebug.room.state.phase === 'finished', undefined, 210000); await wait(c, () => pinturaDebug.room.state.phase === 'finished');
   const scores = await b.evaluate(() => pinturaDebug.room.state.players.map(p => [p.id, p.score])); assert.deepEqual(await c.evaluate(() => pinturaDebug.room.state.players.map(p => [p.id, p.score])), scores);
-  await b.screenshot({ path: `${out}/results.png` }); await b.locator('#again').click(); await wait(c, () => pinturaDebug.room.state.round === 2 && pinturaDebug.room.state.phase === 'playing');
-  console.log('ok: real round end agrees across clients and the new host starts a clean rematch');
+  await b.screenshot({ path: `${out}/results.png` }); await b.locator('#again').click(); await wait(c, () => pinturaDebug.room.state.phase === 'lobby');
+  // Back in the lobby the host picks the next map, and the next round plays it.
+  assert.ok(await b.locator('#map-choice').isEnabled());
+  await b.evaluate(() => pinturaDebug.room.selectMap('muelle')); await wait(c, () => pinturaDebug.room.state.mapId === 'muelle');
+  await b.locator('#start').click(); await wait(c, () => pinturaDebug.room.state.round === 2 && pinturaDebug.room.state.phase === 'playing' && pinturaDebug.room.state.mapId === 'muelle');
+  console.log('ok: real round end agrees across clients, Otra ronda returns to the lobby and the next map is the host\'s pick');
   await b.close(); await c.close();
   }
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` }); await m.locator('#practice').tap();
-  await wait(m, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing'); assert.ok(await m.locator('#fire').isVisible());
+  await wait(m, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing' && !pinturaDebug.room.state.loading && !pinturaDebug.room.state.countdown); assert.ok(await m.locator('#fire').isVisible());
   // A bot's hit would respawn the pana elsewhere mid-check: shield it while touch movement is measured.
   await wait(m, () => pinturaDebug.room.game.players[0].respawn === 0);
   await m.evaluate(() => { pinturaDebug.room.game.players[0].shield = 30; });

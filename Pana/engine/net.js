@@ -9,9 +9,11 @@
 //   a game's room extends it with its own rules. See docs/knowledge/pana-net.md.
 
 import { normalizeAvatar } from './avatar.js';
-
+import { loc, locn } from './i18n.js';
 const SDK = 'https://cdn.jsdelivr.net/npm/@colyseus/sdk@0.18.5/dist/colyseus.js';
 export const ROOM_FULL = 409;
+// The server keeps a dropped seat this long (room-kit RECONNECT_SECONDS is 20).
+const RESEAT_MS = 22000;
 
 let sdk;
 function loadSdk() {
@@ -26,8 +28,19 @@ function loadSdk() {
   return sdk;
 }
 
-// ?lead=1: this player is a pana.sh party's Pana Mayor and hosts the room.
-export const leadFromUrl = () => new URLSearchParams(location.search).has('lead');
+// ?lead=…: this player is a party's Pana Mayor and hosts the room (the server
+// checks the gateway's token when it has PANA_LEAD_SECRET); '' when absent.
+export const leadFromUrl = () => new URLSearchParams(location.search).get('lead') ?? '';
+
+// This device's private rejoin key: a game that hands back what a pana left
+// behind (Póquer's stack) matches on it, never on a public name.
+function deviceKey() {
+  try {
+    let key = localStorage.getItem('pana:device');
+    if (!/^[a-z0-9-]{8,64}$/.test(key || '')) localStorage.setItem('pana:device', key = crypto.randomUUID());
+    return key;
+  } catch { return deviceKey.memory ??= crypto.randomUUID(); }
+}
 
 const parseAvatar = (json) => { try { return normalizeAvatar(JSON.parse(json || '{}')); } catch { return normalizeAvatar({}); } };
 const isFull = (error) => error?.code === ROOM_FULL || error?.code === 4009 || /full|lleno|locked/i.test(String(error?.message));
@@ -47,7 +60,7 @@ export async function joinRoom(game, { resume = true, ...options }) {
     try { room = await client.reconnect(token); } catch { room = null; }
   }
   try {
-    room ??= await client.joinOrCreate(game, { ...options, lead: !!options.lead, lobbyLoading: !!window.PANA_LOBBY_LOADING });
+    room ??= await client.joinOrCreate(game, { ...options, lead: options.lead || '', lobbyLoading: !!window.PANA_LOBBY_LOADING, rejoin: deviceKey() });
   } catch (error) {
     if (isFull(error)) error.full = true;
     throw error;
@@ -78,7 +91,7 @@ export class RoomLink {
     });
     room.onMessage('pong', (m) => this.pong(m));
     room.onMessage('*', (type, message) => { if (type !== 'pong') this.emit(type, message); });
-    room.onDrop?.(() => this.emit('status', 'Se perdió la conexión. Reconectando…', true));
+    room.onDrop?.(() => this.emit('status', loc('Se perdió la conexión. Reconectando…'), true));
     room.onReconnect?.(() => { this.saveToken(); this.emit('status', '', false); this.sync(); });
     room.onLeave((code) => {
       this.left = true;
@@ -180,10 +193,10 @@ export class RoomLink {
 // ---------------------------------------------------------------------------
 const HELLO_RESERVED = new Set(['game', 'kind', 'avatar', 'id', 'name', '__proto__', 'constructor', 'prototype']);
 const TEXTS = {
-  connecting: 'Conectando con tus panas…',
-  full: 'Sala llena. Puedes jugar en local.',
-  lost: 'Se cortó la conexión. Reconectando…',
-  offline: 'Sin conexión. Puedes jugar en local.',
+  connecting: loc('Conectando con tus panas…'),
+  full: loc('Sala llena. Puedes jugar en local.'),
+  lost: loc('Se cortó la conexión. Reconectando…'),
+  offline: loc('Sin conexión. Puedes jugar en local.'),
 };
 
 export class HostRoom {
@@ -209,7 +222,7 @@ export class HostRoom {
       link = await joinRoom(this.roomType, { code: this.code, lead: leadFromUrl(), name: this.name, avatar: this.avatar, resume: false });
     } catch (error) {
       if (this.stopped || this.offline) return;
-      if (error.full) { this.stopped = true; this.onStatus(this.texts.full, true); return; }
+      if (error.full) return this.full();
       return this.retryLater();
     }
     if (this.stopped || this.offline) { link.leave(); return; }
@@ -238,6 +251,19 @@ export class HostRoom {
       if (code !== 4000) this.retryLater();
     });
     if (link.state.players.length) this.sync(link.state);
+  }
+
+  // Full. A tab that was already in the room rejoins as a new member while
+  // the server still holds its dropped seat: wait that out, then try again.
+  full() {
+    if (this.link && ++this.attempts <= 3) {
+      this.connected = false;
+      this.onStatus(this.texts.lost, true);
+      this.retry = setTimeout(() => this.connect(), RESEAT_MS);
+      return;
+    }
+    this.stopped = true;
+    this.onStatus(this.texts.full, true);
   }
 
   retryLater() {
@@ -296,7 +322,7 @@ export class HostRoom {
   status() {
     if (this.offline) return;
     const n = this.members.size;
-    this.onStatus(this.statusText?.() ?? `Sala ${this.code} · ${n} pana${n === 1 ? '' : 's'} conectado${n === 1 ? '' : 's'}`);
+    this.onStatus(this.statusText?.() ?? locn(n, 'Sala {code} · {n} pana conectado', 'Sala {code} · {n} panas conectados', { code: this.code }));
   }
 
   // dest: 'host' for what only the host reads (inputs, actions), a seat for one

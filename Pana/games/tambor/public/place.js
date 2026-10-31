@@ -1,3 +1,4 @@
+// i18n-ignore-file: place names and world signage stay Spanish.
 // Where the rueda plays: the beach by the pink shack in the sun, or the
 // malecón at night under string lights. Everything placed here comes from the
 // shared model library (engine/models) or the tambor set (rueda-set.js).

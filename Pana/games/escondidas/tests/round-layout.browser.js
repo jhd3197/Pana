@@ -51,7 +51,7 @@ try {
   const first = await layout(host);
   assert.notEqual(first.seed, lobby.seed); assert.notDeepEqual(first.props, lobby.props);
   assert.deepEqual(first, await layout(guest));
-  assert.equal(await host.evaluate(() => hunt.state.events.at(-1).text.includes('45 segundos')), true);
+  assert.equal(await host.evaluate(() => hunt.state.events.at(-1).vars?.n === 45), true);
   const position = await host.evaluate(() => { const p = hunt.state.players.find(p => p.id === hunt.room.id); return [p.x, p.z]; });
   await host.keyboard.down('d'); await host.waitForTimeout(500); await host.keyboard.up('d');
   assert.deepEqual(await host.evaluate(() => { const p = hunt.state.players.find(p => p.id === hunt.room.id); return [p.x, p.z]; }), position);

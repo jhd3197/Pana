@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 import * as THREE from 'three';
 import { palm } from '../models/vegetation/palm.js';
 import { parkBench, streetFoodKiosk } from '../models/props/pueblo.js';

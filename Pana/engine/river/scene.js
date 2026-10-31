@@ -1,3 +1,4 @@
+// i18n-ignore-file: world signage and scene object names stay Spanish.
 // The river world (Curiara, Lancha): terrain and water built from river.js,
 // plus lights and sky.
 // Scenery dressing lives in landscape.js; this file owns only the ground truth
@@ -6,7 +7,7 @@ import * as THREE from 'three';
 import { createSky } from '/engine/worlds/sky.js';
 import { waterSurface, waterAnimator } from '/engine/models/effects/water-surface.js';
 import { smooth } from './river.js';
-import { shadowSize } from '/engine/settings.js';
+import { shadowSize, rendererOptions } from '/engine/settings.js';
 
 export const DAYLIGHT = { horizon: 0xc9dccf, skyTop: 0x3f8fc4, cloudCover: .46, skySeed: 31, hemiSky: 0xe6f4ff, hemiGround: 0x4a6a3a, hemiInt: 1.45, sun: 0xfff0d2, sunInt: 2.4, fog: [90, 1100] };
 
@@ -116,7 +117,7 @@ export function createRiverWorld(river, { dress } = {}) {
 }
 
 export function createRaceScene(canvas, river, options = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true }));
   renderer.setClearColor(DAYLIGHT.horizon); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
   // A longer course can push the fog out with `def.fog`.

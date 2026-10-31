@@ -21,7 +21,7 @@ const TUBES = ['#2f7dff', '#ff8a2e', '#36c46a'];
 export function createNoche(variant = 0) {
   const group = new THREE.Group(), statics = new THREE.Group(), cameraBounds = [], lights = [], r = rng(260119);
   let flicker = null;
-  group.name = 'Cancha de Noche'; group.userData.mapId = 'noche';
+  group.name = 'Cancha de Noche'; group.userData.mapId = 'noche'; // i18n-ignore: scene object name
   const size = NOCHE_SIZE, span = size * 2;
   const flat = (w, d, color, x, z, y = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, .2, d), new THREE.MeshStandardMaterial({ color, roughness: 1 })); m.position.set(x, y - .1, z); m.receiveShadow = true; statics.add(m); return m; };
   const put = (object, x, z, angle = 0) => { object.position.set(x, 0, z); object.rotation.y = angle; statics.add(object); return object; };

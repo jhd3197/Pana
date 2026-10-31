@@ -70,6 +70,12 @@ Event payloads must not use `id` or `kind` (those are the event's own);
 `emit` puts its own fields last so a payload can't shadow them. Use `spot`,
 `sabotage`, `seat`.
 
+Languages: task, sabotage, zone and hiding-spot names and the quick
+phrases stay Spanish keys in `rules.js`/`layout.js` (the server sends them
+as they are); screens pass them through `loc()`. A chat line is shown
+translated only when it equals one of `PHRASES`; typed text and names keep
+`translate = false`.
+
 ## Files
 
 `layout.js` zones, stations, vents, hides, fix spots, collision, sight lines

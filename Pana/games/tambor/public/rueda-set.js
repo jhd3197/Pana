@@ -1,3 +1,4 @@
+// i18n-ignore-file: model names and world signage stay Spanish.
 // The tambor set for La Rueda de Tambor: the culo e' puya drums, the long
 // drum on its fork, the charrasca, the maracas, the caracol, the pink beach
 // shack, the pañuelo, the "violín" cloud that follows a sweaty dancer and the

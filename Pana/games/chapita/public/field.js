@@ -4,27 +4,31 @@
 // from behind the plate, y is up, d is how far out from the plate (the 3D
 // scene puts d on -Z). The plate is at d = 0, the pitcher at d = 10.5.
 import { clamp } from '/engine/random.js';
+import { locKey } from '../../../engine/i18n.js';
 
-// Virtual runner stations along the sidewalk; shared by markers and panas.
-export const BASES = [{ x: 2.5, z: -3.5 }, { x: 2.5, z: -6.8 }, { x: 2.5, z: -10 }];
+// The runner stations: a chalk diamond with home at the plate, 1st and 3rd
+// just inside the curbs and 2nd up on the acera behind the pitcher (scene z,
+// not d; y is the surface it sits on). Still virtual: runners move base to
+// base on the scorecard; markers and panas share these.
+export const BASES = [{ x: 2.85, z: -6, y: .03 }, { x: 0, z: -12, y: .15 }, { x: -2.85, z: -6, y: .03 }];
 
 export const RELEASE = { x: 0, y: 1.55, d: 10.5 };
 export const ROWS = ['alto', 'medio', 'bajo'];
 export const ROW_Y = [1.42, 1.0, 0.6];
 export const COL_X = [-.38, 0, .38];
-export const HEIGHT_TEXT = { alto: 'Alto', medio: 'Medio', bajo: 'Bajo' };
+export const HEIGHT_TEXT = { alto: locKey('Alto'), medio: locKey('Medio'), bajo: locKey('Bajo') };
 
 // Each pitch: flight time (s), the late break (x, y) and the name on screen.
 export const PITCHES = {
-  planea: { time: 1.2, label: 'Planea', breakX: 0, breakY: .36, sag: .22 },
-  cae: { time: .86, label: 'Cae de golpe', breakX: 0, breakY: -.46, sag: 0 },
-  curva: { time: .98, label: 'Curva', breakX: .55, breakY: -.08, sag: .05 },
+  planea: { time: 1.2, label: locKey('Planea'), breakX: 0, breakY: .36, sag: .22 },
+  cae: { time: .86, label: locKey('Cae de golpe'), breakX: 0, breakY: -.46, sag: 0 },
+  curva: { time: .98, label: locKey('Curva'), breakX: .55, breakY: -.08, sag: .05 },
 };
 export const PITCH_KINDS = Object.keys(PITCHES);
 // The cap: a flat one floats true; a bent one wobbles and is hard to aim.
 export const CAPS = {
-  plana: { label: 'Plana', wobble: .035, control: .025 },
-  doblada: { label: 'Doblada', wobble: .12, control: .085 },
+  plana: { label: locKey('Plana'), wobble: .035, control: .025 },
+  doblada: { label: locKey('Doblada'), wobble: .12, control: .085 },
 };
 
 // The street, in metres. The near street ends at the sidewalk (la acera);
@@ -45,9 +49,9 @@ export const FIELD = {
 // Where the fielders stand on the street: close to the sidewalk, mid street
 // and deep by the houses.
 export const FIELDERS = [
-  { id: 'acera', label: 'la acera', x: -2.4, d: 15.4 },
-  { id: 'calle', label: 'media calle', x: 2.9, d: 18.4 },
-  { id: 'fondo', label: 'el fondo', x: -.6, d: 22.4 },
+  { id: 'acera', label: locKey('la acera'), x: -2.4, d: 15.4 },
+  { id: 'calle', label: locKey('media calle'), x: 2.9, d: 18.4 },
+  { id: 'fondo', label: locKey('el fondo'), x: -.6, d: 22.4 },
 ];
 export const REACH = { r: 1.55, y0: .25, y1: 2.6 };
 

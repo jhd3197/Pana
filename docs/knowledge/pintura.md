@@ -117,6 +117,39 @@ cached per glow state, so switching maps never reuses a lit one in the dark.
 The map holds six spotlights and one point light under the tower; keep the
 count low, every lit material pays for each one.
 
+## El Puerto
+
+Pepazo-only base-to-base map (`terminal` in `PAINT_ARENAS`, player name El
+Puerto; `puerto` is already Puerto Coco). It is the only rectangular court:
+`boundsFor(id)` gives `{ x, z }` half-extents (58 × 32 here, square elsewhere)
+and every fence test in `rules.js` goes through it; `sizeFor` is the larger
+one, for whatever frames the whole court. Even spawns are the west (orange)
+base, odd the east, so team seats and the two flag homes land in their own
+base. `public/terminal-layout.js` lists only the west half of each yard
+(Pasillos, Fortaleza, Laberinto) and mirrors it, so both teams always get the
+same map. Container sizes match the library `shippingContainer` (2.65 m per
+level, box = length + .3), so models and collision agree. Base barrels and
+ammo piles join a yard only where they keep the 2.4 m passages.
+
+The owner's prototype also had a playable second floor (container roofs,
+catwalks, the shed's mezzanine) and cranes that move containers between
+rounds. Pepazo simulates a flat court, so towers are just taller cover and
+the mezzanine is overhead scenery with no stairs.
+
+`public/terminal.js` returns `lighting: { fog, far }`: `scene.js` merges a
+map's partial lighting over `DAY`, and `far` sets the camera's far plane so
+the other base stays visible 104 m away. The quay sits at z = 80, well south
+of the fence: at z = 48 the "Ver la cancha" camera flew through the
+ship-to-shore crane booms. On a court wider than it is deep, the overview
+follows the pana at 0.8× instead of 0.4×.
+
+Bots out of sight of a rival more than 12 m away walk a 1 m navigation grid
+(`navGrid`, cached per map and layout) along a breadth-first distance field
+from the target, refreshed at most twice a second (`Arena.route`). Flag
+bots use the same route. Without it a bot circles in its own base forever on
+this court; the rules test proves a lone bot reaches an idle pana within 30 s
+on every layout.
+
 ## Look
 
 The plaza court (fence, paving, bunting and pueblo spread with `SIZE`/`SPREAD`) follows the paint-battle brand board: `engine/worlds/look.js`
@@ -138,6 +171,55 @@ stationary pana an Experto bot scores more than a Fácil one (rules test).
 The phone browser check measures movement along `room.current` (the input
 the pad sent), not a direction captured before the first frame set the yaw.
 
+## HUD, viewmodel and sound
+
+- `hud-model.js` is the pure arithmetic (race rows, the 12-ball pepas row, low
+  ammo, the angle a hit came from, the clock) and is unit tested in Node, so it
+  imports nothing but `locKey`. `combat-hud.js` draws it into the `#hud` ids
+  that `game.js` already reads; `hud-banderin.css` is the look (Banderín:
+  night chips and yellow plates skewed 10deg with hard ink shadows, sized from
+  `--u`, 1px of a 1600x900 screen). `minimap.js` is a round map in the same style.
+- The one knockout line lives in the killfeed (yours in yellow, the one that took
+  you out with a coral bar), so `combat.duplicate()` keeps the bottom pill quiet
+  for those two messages. Team scores are in the race row, not the pill.
+- `viewmodel.js` poses the first-person marker (sway, recoil, reload, sprint
+  lowering) from the player fields; the marker models are in
+  `engine/models/props/paintball-kit.js`, one silhouette per marker.
+- Sound goes through the shared library (`engine/sfx.js`) via the `sounds.js`
+  facade; steps come from `engine/play/footsteps.js`. See `shared-sfx.md` and
+  `shared-player.md`.
+
+## La Lejana, La Bazuca and gun feel
+
+- Markers carry `damage` (pepazos per hit, default 1). La Lejana paints 2, so it
+  knocks out in two hits at Aguante 3 or 4 and one on El Cortaviento.
+  `Arena.hit(victim, owner, color, impact, damage)` clamps paint at the
+  victim's toughness; La Bazuca's `direct` rocket passes `Infinity`.
+- Aim is an input flag (`aim`, right mouse, F, LT, or the Mira toggle on
+  phones). The server only honours it for a marker with `scope`: the shot uses
+  `aimSpread` (0) instead of the hip `spread` (.1 rad), the walk halves and
+  sprint is off. Clients zoom with `engine/play/scope.js` (3.5× for La Lejana,
+  1.2× for the rest), slow the look by the same factor and hide the held marker
+  past `scoped`; the overlay is `createScopeOverlay`.
+- La Bazuca is a ball with `rocket`, `direct` and `kind: 'bazooka'`: 14 m/s for 3 s
+  (42 m), one loaded plus two spare (`reserve`), 3.8 s reload, no sprint. A
+  direct hit knocks out; the 1.4 m splash then paints one pepazo on panas
+  beside it. Every blast (rockets, grenades) also pushes a `booms` entry
+  (0.6 s) into the view; clients turn new ids into `sfx.boom`, the blast-fx
+  fireball and a distance-scaled shake. Rockets glide between snapshots along
+  their velocity (at most 60 ms ahead) and leave a smoke trail.
+- Reserve rockets live in `kitStats().reserve` (El Cohetón 3, La Bazuca 2; the
+  hopper adds one) and are a per-life resource: a weapon switch never refills
+  them (armory test). Switching to a rocket marker mid-life keeps at most the
+  ball count already loaded, and nothing after firing; spawn with it from the
+  armory to carry all of them.
+- Feel: each marker's `RECOIL` row in `viewmodel.js` has `back/rot/decay` for
+  the held model and `cam/shake` for the view (`engine/play/recoil.js`). Muzzle
+  flashes size per marker (`FLASH` in `scene.js`) and turn randomly per shot.
+  La Lejana draws a tracer from the muzzle to the first cover or pana
+  (`traceRay`).
+- Bots keep the default kit; they never use the new markers.
+
 ## Notes for agents
 
 Keep simulation in pure rules and room authorization on the server. Never add
@@ -146,10 +228,18 @@ Online matches continue through the shared menu; local practice pauses.
 
 ## Shared map selection
 
-Puerto Coco, Hato del Sol, Ruinas del Mango, Muelle de La Guaira and Cancha de Noche are available in the lobby.
+Puerto Coco, Hato del Sol, Ruinas del Mango, Muelle de La Guaira, Cancha de Noche and El Puerto are available in the lobby.
 The host chooses the setting; the selected map follows snapshots, practice,
 late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
 layout variants, collision, table clearance, lifecycle and verification.
+
+"Otra ronda" on the results sends the host message `lobby` (`Arena.toLobby`,
+`engine/play/round-lobby.js`): the room goes back to the lobby, keeping seats,
+teams, options and the round count (so the next court still rotates its layout),
+and the host picks the next map there. `start()` only runs from the lobby, so a
+finished round can never replay its map by accident. Online the bots leave and
+the next start refills them; practice keeps its bots (`toLobby({ keepBots: true })`)
+because its start adds none.
 
 
 ## Room options and team play

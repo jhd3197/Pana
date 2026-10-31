@@ -23,6 +23,10 @@ host selection, reconnection and invitations.
 - 1,000 or 5,000 initial chips; small/big blinds 10/20 or 50/100. With
   recompras enabled, zero stacks refill to that buy-in on the next hand.
   With recompras disabled, busted players watch and do not receive cards. One human receives three bots; two or more humans play without bots.
+- Leaving never refills a stack. A pana who rejoins (a new connection id) is
+  matched by name: they take the chips of their disconnected chair, or of
+  `banked` once `prune()` cleared that chair at the next deal. Changing the
+  buy-in in the lobby resets `banked`.
 - A raise amount means the player's total contribution in this street.
 - Track the last full raise separately from the current bet. A short all-in
   adds pending calls but does not automatically reopen raising. `actedAt`
@@ -78,6 +82,12 @@ during a hand. Only filtered `view()` data is published after setup or swaps.
 Never send a complete game snapshot to a client, even the host. Keep the deck
 inside the rules instance on the server. Only reveal live showdown hands.
 Do not replace side-pot accounting with an equal split of the entire pot.
+
+`message` is a list of `{ text, vars, keys }` Spanish source sentences, a
+seat's `action` a source key with its amount in `actionN`, and `handName` a
+`HANDS` key; clients show them with `messageText`, `loc(action, { n })` and
+`loc(handName, { $ctx: 'mano' })`. Hand names use the `mano` context because
+"Póquer" is also the game's name.
 
 ## Prototype room options
 

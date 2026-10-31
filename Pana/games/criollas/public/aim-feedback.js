@@ -1,4 +1,5 @@
 import { COURT, landing, flightPath } from '../../../engine/play/bolas-criollas.js';
+import { locKey } from '../../../engine/i18n.js';
 
 // Normal predicts an unobstructed roll; Fácil supplies the simulated path.
 export function aimFeedback(shot, guide, preview = null) {
@@ -24,5 +25,5 @@ export function aimFeedback(shot, guide, preview = null) {
   return { path: visible ? rollPath : [from, { x: from.x + dx * reach, z: from.z + dz * reach }],
     flight: visible ? flight : [], touchdown,
     end: path.at(-1), out, visible, range: path.reduce((sum, p, i) => i ? sum + Math.hypot(p.x - path[i - 1].x, p.z - path[i - 1].z) : 0, 0),
-    label: out ? 'FUERA DE CANCHA' : full ? 'AQUÍ FRENA' : 'FRENA SIN CHOQUES' };
+    label: out ? locKey('FUERA DE CANCHA') : full ? locKey('AQUÍ FRENA') : locKey('FRENA SIN CHOQUES') };
 }

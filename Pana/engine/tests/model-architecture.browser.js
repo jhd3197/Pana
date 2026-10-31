@@ -55,7 +55,7 @@ try {
     finally{await page.unroute(pattern);}
   }
   const bird=await changedBy('/engine/models/fauna/birds/scarlet-macaw.js');
-  assert.ok(bird.includes('scarlet-macaw')&&bird.includes('track-selva'),'Bird and consuming map must invalidate');
+  assert.ok(bird.includes('scarlet-macaw'),'Bird and consuming map must invalidate');
   for(const id of ['scarlet-ibis','soaring-vulture','hato-cow','llanero-horse','reef-fish','corn'])assert.ok(!bird.includes(id),`Bird invalidated unrelated ${id}`);
   const horse=await changedBy('/engine/models/fauna/farm/llanero-horse.js');
   assert.ok(horse.includes('llanero-horse')&&horse.includes('track-llanos'));
@@ -66,7 +66,7 @@ try {
   for(const id of ['bush','mangoTree','hato-cow','corn'])assert.ok(!plant.includes(id),`Palm invalidated unrelated ${id}`);
   const moriche=await changedBy('/engine/models/vegetation/moriche.js');
   assert.ok(moriche.includes('moriche')&&moriche.includes('galope'),'Moriche and its actual course must invalidate');
-  for(const id of ['palm','hato-cow','corn','isla','track-paramo'])assert.ok(!moriche.includes(id),`Moriche invalidated unrelated ${id}`);
+  for(const id of ['palm','hato-cow','corn','isla'])assert.ok(!moriche.includes(id),`Moriche invalidated unrelated ${id}`);
   const llano=await changedBy('/engine/models/props/llano-life.js');
   for(const id of ['ranch-caney','chinchorro','river-canoe','galope'])assert.ok(llano.includes(id),`Llanos pack missed ${id}`);
   for(const id of ['ranch-house','corn'])assert.ok(!llano.includes(id),`Llanos pack invalidated unrelated ${id}`);

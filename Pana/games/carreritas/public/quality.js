@@ -1,17 +1,22 @@
 // Rendering only: no quality option changes racers, surfaces or network cadence.
 export const RACE_QUALITY = {
-  alta: { detail: 2, shadows: true, shadowSize: 2048, rain: 1400 },
-  media: { detail: 1, shadows: true, shadowSize: 1024, rain: 700 },
-  baja: { detail: 0, shadows: false, shadowSize: 512, rain: 280 },
+  alta: { detail: 2, rain: 1400 },
+  media: { detail: 1, rain: 700 },
+  baja: { detail: 0, rain: 280 },
 };
+// Sun shadow edge per shadow setting. Races drop the sun's shadow from Bajas
+// down: across a whole circuit a 512² map shows little and still costs a pass.
+export const RACE_SHADOWS = { alta: 2048, media: 1024, baja: 0, off: 0 };
 
-export function applyRaceQuality(renderer, race, quality) {
-  const q = RACE_QUALITY[quality] || RACE_QUALITY.alta;
-  renderer.shadowMap.enabled = q.shadows;
+// `settings` is the shared settings ({ detail, shadows }) or one tier for both.
+export function applyRaceQuality(renderer, race, settings) {
+  const { detail = 'alta', shadows = detail } = typeof settings === 'string' ? { detail: settings } : settings || {};
+  const q = RACE_QUALITY[detail] || RACE_QUALITY.alta, size = RACE_SHADOWS[shadows] ?? 2048;
+  renderer.shadowMap.enabled = size > 0;
   const shadow = race.sun?.shadow;
-  if (shadow && shadow.mapSize.x !== q.shadowSize) {
+  if (shadow && size && shadow.mapSize.x !== size) {
     shadow.map?.dispose(); shadow.map = null;
-    shadow.mapSize.set(q.shadowSize,q.shadowSize);
+    shadow.mapSize.set(size, size);
     shadow.needsUpdate = true;
   }
   race.rain?.lines.geometry.setDrawRange(0,q.rain*2);

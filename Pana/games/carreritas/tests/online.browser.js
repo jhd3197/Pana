@@ -39,6 +39,8 @@ try {
   // Guest first: the party leader still hosts when they arrive.
   const guest = await player('Guest');
   const host = await player('Leader');
+  // The leader picks a car before the room exists: the join must carry it.
+  await chooseCar(host, 2);
   // The SDK loads only on joining, so an offline garage warmup cannot prevent
   // a cold CDN request from exceeding the room's 15-second leader window.
   // Hold the real leader matchmaking request until the guest has joined.
@@ -62,11 +64,12 @@ try {
   assert.equal(h.isHost, true, 'the lead=1 player hosts');
   assert.equal(g.isHost, false);
   assert.equal(g.players.find(p => p.id === h.id).name, 'Leader');
+  assert.equal(h.players.find(p => p.id === h.id).car, 2, 'the car picked before joining reaches the room');
   step('lobby: both panas listed, the leader hosts');
 
   // Guest's car pick reaches the room; host's track pick reaches the guest.
   await menuClick(host, '#t-next');
-  await until(guest, () => getNet().state.track === 'desierto');
+  await until(guest, () => getNet().state.track === 'llanos');
   await chooseCar(guest, 1);
   await until(host, (id) => getNet().state.players.find(p => p.id === id)?.car === 1, g.id);
   assert.equal(await guest.evaluate(() => document.getElementById('track-name').textContent), 'Pana Desierto');
