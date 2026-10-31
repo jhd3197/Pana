@@ -15,7 +15,7 @@ Written by whoever learned the lesson, human or AI, for whoever comes next.
 | Hub and launcher | `launcher.md` |
 | Shared UI and look | `pana-kit.md` (kit, results, icons, colours, touch), `pana-ui.md` (menu, settings, invites); NPC barks come from `Pana/engine/play/frases.js` (dichos by mood, seeded `pickLine`, `crude` lines opt-in) and show in `engine/play/seat-bubbles.js` |
 | Languages (Idioma) | `pana-i18n.md` (`loc()`, locale files, multiplayer text, what stays Spanish, `npm run i18n`) |
-| Sound and music | `fx.md` (SFX voice budget), `shared-sfx.md` (steps, shots, impacts, UI, vehicle motor and tyres), `music.md` (songs) |
+| Sound and music | `fx.md` (SFX voice budget), `shared-sfx.md` (steps, shots, impacts, UI, vehicle motor and tyres), `shared-player.md` (walker, jump, footsteps), `music.md` (songs) |
 | Large images and textures | `asset-packs.md` (per-game release ZIPs, cache, editing and publishing) |
 | Online rooms | `pana-net.md` (room kit, `TableRoom`, `LiveRoom`), `carreritas-online.md` |
 | Who starts a table game | `quien-empieza.md` (the shared cacho mini game, its room option and flavours) |

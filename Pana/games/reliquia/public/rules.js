@@ -9,7 +9,8 @@ import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from '.
 import { spawnEnemy, updateEnemies, holds } from './enemies.js';
 import { createDirector, updateDirector, random } from './director.js';
 import { clamp } from '../../../engine/random.js';
-import { stepJump, resetJump } from '../../../engine/play/jump.js';
+import { resetJump } from '../../../engine/play/jump.js';
+import { stepWalker } from '../../../engine/play/walker.js';
 import { pickLine } from '../../../engine/play/frases.js';
 import { locKey } from '../../../engine/i18n.js';
 
@@ -29,22 +30,18 @@ export function stepExplorer(p, input, dt, world) {
   if (Number.isFinite(input.h)) p.h = input.h;
   if (Number.isFinite(input.pitch)) p.pitch = clamp(input.pitch, -1.2, 1.2);
   if (p.grip != null || p.push != null || p.draggedBy != null || p.riding || p.downed || p.spectator) { resetJump(p, input); if (!p.riding) p.y = L.groundAt(p.x,p.z); p.moving = false; return; }
-  let ix = Number.isFinite(input.x) ? clamp(input.x, -1, 1) : 0, iz = Number.isFinite(input.z) ? clamp(input.z, -1, 1) : 0;
-  if (p.reversed > 0) { ix = -ix; iz = -iz; }
-  const length = Math.hypot(ix, iz), ux = length > 1 ? ix / length : ix, uz = length > 1 ? iz / length : iz;
-  const sprint = input.sprint && p.stamina > .05 && length > .1;
-  p.stamina = clamp(p.stamina + (sprint ? -dt / 3 : dt / 4), 0, 1);
-  let speed = sprint ? 6.6 : 4.6;
-  if (holds(p, 'sandals')) speed *= 1.55;
-  if (p.drag != null) speed *= .55;
-  if (p.slow > 0) speed *= .6;
-  if (p.stun > 0) speed = 0;
-  if (holds(p, 'sandals')) { const k = Math.min(1, dt * 2.2); p.vx += (ux * speed - p.vx) * k; p.vz += (uz * speed - p.vz) * k; }
-  else { p.vx = ux * speed; p.vz = uz * speed; }
-  L.moveBody(p, p.vx * dt, p.vz * dt, world, .42);
-  stepJump(p, input, dt, { gravity: GRAVITY, blocked: !(p.stun <= 0) });
-  p.y = L.groundAt(p.x, p.z) + p.jumpHeight;
-  p.moving = Math.hypot(p.vx, p.vz) > .4;
+  // Sandals speed you up but you slide; a rope drags, a slow curse and a stun hold you back.
+  const sandals = holds(p, 'sandals'), pace = base => {
+    let speed = base;
+    if (sandals) speed *= 1.55;
+    if (p.drag != null) speed *= .55;
+    if (p.slow > 0) speed *= .6;
+    return p.stun > 0 ? 0 : speed;
+  };
+  p.moving = stepWalker(p, input, dt, {
+    walk: pace(4.6), run: pace(6.6), minStamina: .05, deadzone: .1, reversed: p.reversed > 0, inertia: sandals ? 2.2 : 0, velocity: p,
+    move: (q, dx, dz) => L.moveBody(q, dx, dz, world, .42), jump: { gravity: GRAVITY, blocked: !(p.stun <= 0) }, ground: q => L.groundAt(q.x, q.z),
+  }).moving;
 }
 
 // What E does right now: whatever the crosshair points at. Every target is a

@@ -9,7 +9,8 @@ import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/play/diffic
 import { clamp } from '../../../engine/random.js';
 import { pickSpawn } from './spawn-picker.js';
 import { locKey } from '../../../engine/i18n.js';
-import { stepJump, resetJump, jumpCount } from '../../../engine/play/jump.js';
+import { resetJump, jumpCount } from '../../../engine/play/jump.js';
+import { stepWalker, axisMove } from '../../../engine/play/walker.js';
 
 // Pepazo plays a 54 m court: every map's cover spreads 1.5× from the centre and
 // an outer ring of barricades keeps the long perimeter lanes from staying open.
@@ -266,12 +267,9 @@ export class Arena {
       p.grenadeHeld=input.grenade;
       p.ax = input.ax; p.az = input.az;
       // Shift sprints 45% faster for up to three seconds; sprinting holds fire.
-      const sprinting = stats.sprint && input.sprint && !input.fire && p.stamina > 0 && !!(input.x || input.z);
-      p.stamina = clamp(p.stamina + (sprinting ? -dt / 3 : dt / 5), 0, 1); p.sprint = sprinting;
-      const speed = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (sprinting ? 1.45 : 1), x = p.x + input.x * speed * dt, z = p.z + input.z * speed * dt;
-      if (!blocked(x, p.z, RADIUS, this.mapId, this.variant)) p.x = x; if (!blocked(p.x, z, RADIUS, this.mapId, this.variant)) p.z = z;
+      const walk = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1);
+      const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire, regen: 5, move: axisMove((x, z) => blocked(x, z, RADIUS, this.mapId, this.variant)) }).sprinting; p.sprint = sprinting;
       p.walk = !!(input.x || input.z);
-      stepJump(p, input, dt);
       if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < stats.magazine && (stats.id !== 'rocket' || p.reserve > 0)) p.reload = stats.reload;
       if (input.fire && !sprinting && !p.cooldown && !p.reload && p.ammo > 0) {
         p.ammo--; p.shots++; p.fired++; p.cooldown=stats.cadence; p.shield=0;

@@ -11,6 +11,8 @@ import { createToast } from '/engine/hud.js';
 import { elapsedClock } from '/engine/live-room.js';
 import { createLookControls } from '/engine/play/first-person.js';
 import { pressJump } from '/engine/play/jump.js';
+import { createFootsteps } from '/engine/play/footsteps.js';
+import { sfx as sfxLib } from '/engine/sfx.js';
 import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { Expedition, BARKS, interaction } from './rules.js';
 import { ExpeditionRoom } from './network.js';
@@ -30,6 +32,7 @@ const canvas = $('world'), view = createView(canvas), hud = createHud(), ambienc
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
 let jumpPress = 0;
+const feet = createFootsteps();   // steps by distance walked, plus take-off and landing
 function jump(){if(playing())jumpPress=pressJump(jumpPress);}
 function clearInput() { keys.clear(); touch.clear(); }
 const solo = () => room.offline || room.members.size === 1;
@@ -62,7 +65,7 @@ const room = new ExpeditionRoom({ code, name, avatar, onState: receive, onNotice
 });
 const optionsUI = createRoomOptions($('room-options'), { title: 'Reliquia', fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
 // A guest draws its own explorer where it predicts it, not a round trip behind.
-const me = () => { const p = state.players.find(p => p.id === room.id); const predicted = room.predicted; return predicted && p ? { ...p, x: predicted.x, z: predicted.z, y: predicted.y, vx: predicted.vx, vz: predicted.vz, moving: predicted.moving, stamina: predicted.stamina } : p; };
+const me = () => { const p = state.players.find(p => p.id === room.id); const predicted = room.predicted; return predicted && p ? { ...p, x: predicted.x, z: predicted.z, y: predicted.y, vx: predicted.vx, vz: predicted.vz, moving: predicted.moving, stamina: predicted.stamina, jumpHeight: predicted.jumpHeight ?? p.jumpHeight } : p; };
 const looking = createLookControls(canvas, { enabled: () => playing(), look: (yaw, pitch) => view.look(yaw, pitch),
   press(event) { sound.unlock(); if (event.button === 0) act('use', { hand: 0 }); if (event.button === 2) act('use', { hand: 1 }); },
   unlocked: () => { if (state.phase === 'playing') menu.open('game'); } });
@@ -192,6 +195,8 @@ function frame(now) {
   // Keep the eyes on your pana after the run ends; never draw your own body.
   view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
   ambience.update(state, p, view.heading, dt);
+  if (p && state.phase === 'playing' && !p.downed && !p.spectator) { const speed = p.moving ? Math.hypot(p.vx, p.vz) : 0; feet.update(dt, { speed, height: p.jumpHeight || 0, sprint: speed > 5.4, surface: floorOf(p.x) ? 'stone' : 'dirt', volume: .8 }, sfxLib); }
+  else feet.reset();
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }
