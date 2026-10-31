@@ -317,6 +317,7 @@ race.debris = new Debris(race.scene);
 const lazyRace = (key, stub, load, make) => { race[key] = stub; return load.then(m => { race[key] = make(m); return m; }); };
 let driftFx = null;
 import('./drift-fx.js').then(m => { driftFx = m; });
+lazyRace('vsfx', { skid() {}, boost() {}, crash() {} }, import('/engine/vehicle-audio.js'), m => m.vehicleSfx);   // skid, boost and crash one-shots from the shared vehicle audio
 lazyRace('water', { update() {}, stop() {} }, import('./water-ambience.js'), m => m.createWaterAmbience(sound));   // river and sea sound
 lazyRace('skidMarks', { lay() {}, update() {}, clear() {} }, import('./skid-marks.js'), m => new m.SkidMarks(race.scene, { focus: () => race.player }));
 lazyRace('slowMo', { update() {}, trigger() {}, scale: 1, punch: 0 }, import('./slow-mo.js'), m => m.createSlowMo());
@@ -567,7 +568,7 @@ function finishTrack() {
   ghostIO?.devGhost(T.id);   // start fetching the track's shipped ghost, if any
   applyPalette(T.def.palette);
   race.items = createItems({
-    scene: race.trackGroup, puffs: race.puffs, sound, G, track: T, rain: race.rain,
+    scene: race.trackGroup, puffs: race.puffs, sound, G, track: T, rain: race.rain, get vsfx() { return race.vsfx; },
     crash: (c, power, side) => crash(c, power, side),
     explode: (pos) => {
       race.shockwaves.explode(pos, { radius: 4.8, scorch: true });
@@ -846,7 +847,6 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('loading-tip-icon').innerHTML = tip[0];
   $('loading-tip').textContent = tip[1];
   $('play').disabled = true;
-  sound.stopEngine();
   music.stop();
   race.water.stop();
   const step = async (label, progress) => {
@@ -1021,7 +1021,6 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     $('race').classList.remove('hidden');
     $('result').classList.add('hidden');
     garage.controls.enabled = false;
-    sound.startEngine();
     acc = 0;
     clock.reset();
     mode = 'race';
@@ -1060,7 +1059,6 @@ function toGarage() {
   $('play').disabled = false;
   race.state = 'off';
   clearRace();
-  sound.stopEngine();
   music.stop();
   race.water.stop();
   $('race').classList.add('hidden');
@@ -1116,7 +1114,6 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
     paused = true;
     music.pause();
     race.water.stop(); race.audio.update(null, 0, false);   // no screech under the pause menu
-    if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
   },
   onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.reset(); },
 });
@@ -1403,7 +1400,7 @@ function hitHazard(c, power, side, hz) {
   crash(c, power, side);
   c.vx *= -0.3; c.vz *= -0.3;
   say(c, pick(race.hazards.lines(hz)), 1.1);
-  sound.bonk(power / 10);
+  race.vsfx.crash(power / 10, 'wall');
 }
 
 // "¡YA!": the player's timing decides a turbo or a stall; rivals sometimes
@@ -1416,7 +1413,7 @@ function launchGrid() {
     const timing = c.isPlayer && !AUTO ? startBoost(race.throttleAt) : Math.random() < 0.35 ? startBoost(1.3) : startBoost(2.2);
     if (timing.boost) {
       c.boost = Math.max(c.boost, timing.boost);
-      if (c.isPlayer) { sound.turbo(); say(c, LINES.rocket, 1); }
+      if (c.isPlayer) { race.vsfx.boost(); say(c, LINES.rocket, 1); }
     }
     if (timing.stall) { c.stall = timing.stall; say(c, LINES.stall, 1); }
   }
@@ -1433,7 +1430,7 @@ function slipstreams(dt) {
     if (c.draft >= DRAFT_TIME) {
       c.draft = 0;
       c.boost = Math.max(c.boost, DRAFT_BOOST * (c.tune.draftBoost ?? 1));
-      if (c.isPlayer) { sound.turbo(); c.itemMessage = loc('¡Rebufo!'); c.itemMessageT = 1; }
+      if (c.isPlayer) { race.vsfx.boost(); c.itemMessage = loc('¡Rebufo!'); c.itemMessageT = 1; }
     }
   }
 }
@@ -1448,7 +1445,7 @@ function collidePair(a, b) {
   if (isGhost(a) || isGhost(b) || a.done || b.done || a.dns || b.dns || a.retired || b.retired) return;
   const hit = resolveContact(a, b);
   if (hit?.kind === 'crash') {
-    sound.bonk(hit.speed / 8);
+    race.vsfx.crash(hit.speed / 8, 'car');
     for (const [c, contact] of [[a, hit.a], [b, hit.b]]) if (contact.hit) {
       c.heave.v -= Math.min(2, contact.power * 0.15);
       c.drift = 0; c.driftT = 0;
@@ -1456,7 +1453,7 @@ function collidePair(a, b) {
       recordImpact(c, race.clock);
     }
   } else if (hit?.kind === 'bump') {
-    sound.bonk(0.4);
+    race.vsfx.crash(0.4, 'bump');
   }
 }
 
@@ -1618,7 +1615,6 @@ function presentRace(dt) {
   race.sky.update(race.clock, T.def.palette?.daylight ?? 1);
   tickWind(race.clock, T?.def.rain ? 1.45 : 1);
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
-  sound.setEngine(race.player.vf);
   race.audio.update(race.player, dt, race.state === 'go' && !paused);
   race.water.update(T,race.player.x,race.player.z);
 

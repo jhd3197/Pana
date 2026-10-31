@@ -13,6 +13,13 @@ becomes the GitHub release's notes.
   chef (lo que más tardaba) se guarda en el navegador y solo se calcula la
   primera vez. La pantalla de carga ahora muestra a tu pana en un vestidor, y la
   página pide de antemano el editor y Three.js.
+
+- **Carreritas suena a coche de verdad.**
+  El motor ahora sube de revoluciones, cambia de marcha y baja el pie con su
+  propio sonido (compacto, deportivo, camioneta, buseta, escarabajo), las gomas
+  chillan en el asfalto y crujen en la tierra, y el turbo y los choques suenan
+  más gordos. Todo sale del mismo sonido compartido del motor del juego.
+
 - **Pepazo dispara de verdad: bolas chicas, rápidas y con respuesta clara.**
   Las bolas de pintura son más pequeñas y vuelan casi como un rayo, con una
   estela para seguirlas, y la Chispa dispara cinco veces por segundo. Cada tiro
