@@ -8,6 +8,16 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Mi pana estrena vestidor: m?s claro, con menos texto y con la tienda a un toque.**
+  El editor ahora es de pantalla completa con el toldo rojo y blanco de la
+  tienda y el garaje, un pana grande sobre su tarima y colores c?lidos en vez
+  del morado oscuro. Casi sin p?rrafos: pesta?as con ?conos, fichas m?s grandes
+  y etiquetas cortas; todo sigue ah? (conjuntos, Girar, poses, ?Sorpr?ndeme!,
+  Reiniciar, C?digo y Guardar para jugar). Las prendas de pago que a?n no son
+  tuyas salen bloqueadas con candado y precio, y tocarlas te lleva a la tienda
+  con esa prenda elegida; los conjuntos listos y ?Sorpr?ndeme! solo usan lo que
+  ya tienes.
+
 - **Mi pana vuelve a abrir en un par de segundos, con un vestidor de fondo.**
   Volver al editor ya no tarda cinco a ocho segundos: el ajuste del cuerpo del
   chef (lo que más tardaba) se guarda en el navegador y solo se calcula la
