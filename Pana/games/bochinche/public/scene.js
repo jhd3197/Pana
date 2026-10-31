@@ -16,6 +16,7 @@ import { dressArena } from './arena.js';
 import { createImpactEffects } from './impact-effects.js';
 import { animateFighter } from './fighter-animation.js';
 import { getFighterDefinition } from './combat/roster.js';
+import { createLocalOutline, createLocalMarker } from '/engine/play/local-outline.js';
 const SCALE = .014, COLORS = SEAT_COLORS;
 export function createBochincheScene(canvas, { practice = false } = {}) {
   const stage = createTableWorld(canvas, { fit: 'window', arena: false, sky: false, background: '#c8e3df', fog: [48, 115], sun: { box: 23, far: 90 } });
@@ -51,17 +52,17 @@ export function createBochincheScene(canvas, { practice = false } = {}) {
     : arenaId!=='verdant-grove' ? new THREE.Box3(new THREE.Vector3(-10.5,-.5,-1),new THREE.Vector3(10.5,8,1))
     : new THREE.Box3(new THREE.Vector3(-7,-.5,-1),new THREE.Vector3(7,5,1));
   const framed = baseBounds();
-  function update(state) {
+  function update(state, localId) {
     setArena(state.fight?.stage.id ?? state.options?.stage ?? 'verdant-grove',state.round);
     fightTime=(state.fight?.frame??0)/60;
     effects.update(state); poder.update(state); fighters=state.fight?.fighters??[];
     const live = new Set();
     state.players.forEach((p, slot) => {
       live.add(p.id);
-      const look = normalizeAvatar(playerCostume(p, slot)), key = JSON.stringify(look) + p.pana;
+      const look = normalizeAvatar(playerCostume(p, slot)), key = JSON.stringify(look) + p.pana + (p.id === localId);
       let e = panas.get(p.id);
       if (e?.key !== key) {
-        if (e) { e.props.dispose(); e.character.dispose(); disposeModel(e.root); e.root.removeFromParent(); disposeModel(e.slash); }
+        if (e) { e.outline?.dispose(); e.marker?.dispose(); e.props.dispose(); e.character.dispose(); disposeModel(e.root); e.root.removeFromParent(); disposeModel(e.slash); }
         const root = new THREE.Group(), character = buildCharacter(look), props = createPanaProps(character, panaById(p.pana).props); root.add(character.group); own.add(root);
         const shield = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), new THREE.MeshStandardMaterial({ color: COLORS[slot], transparent: true, opacity: .3, roughness: .15, depthWrite: false }));
         const ring = new THREE.Mesh(new THREE.TorusGeometry(.6,.045,6,32), new THREE.MeshBasicMaterial({color:COLORS[slot]})); ring.rotation.x=-Math.PI/2;
@@ -70,13 +71,14 @@ export function createBochincheScene(canvas, { practice = false } = {}) {
         const slash = new THREE.Mesh(new THREE.RingGeometry(.65,.83,28,1,0,Math.PI*1.2), new THREE.MeshBasicMaterial({color:COLORS[slot],side:THREE.DoubleSide,transparent:true,opacity:.8,depthWrite:false}));
         slash.visible=false;own.add(slash);
         e = { root, character, props, shield, ring, held, slash, key, initialized: false, poseTime: 0 }; panas.set(p.id,e);
+        if (p.id === localId) { e.outline = createLocalOutline(character.group); e.marker = createLocalMarker(); root.add(e.marker.group); }
       }
       e.target = state.fight?.fighters[slot] ?? { position:{x: -270+slot*540/Math.max(1,state.players.length-1), y:47}, size:{width:65,height:94}, facing:slot===0?1:-1, state:'idle', velocity:{x:0,y:0}, grounded:true, stocks:3 };
       e.slot = slot; e.poseTime = 0;
       e.held.visible=!!e.target.heldItem;
       if (e.target.heldItem) { const map=itemTexture(e.target.heldItem.kind); if(e.held.material.map!==map){e.held.material.map=map;e.held.material.needsUpdate=true;} }
     });
-    for (const [id,e] of panas) if (!live.has(id)) { e.props.dispose(); e.character.dispose(); disposeModel(e.root); e.root.removeFromParent(); disposeModel(e.slash); panas.delete(id); }
+    for (const [id,e] of panas) if (!live.has(id)) { e.outline?.dispose(); e.marker?.dispose(); e.props.dispose(); e.character.dispose(); disposeModel(e.root); e.root.removeFromParent(); disposeModel(e.slash); panas.delete(id); }
     const entities = [...(state.fight?.items ?? []).map(o=>({...o,key:'item-'+o.id,item:true})), ...(state.fight?.projectiles ?? []).filter(o=>!POWER_PROJECTILES.has(o.kind)).map(o=>({...o,key:'shot-'+o.id}))];
     const shown = new Set();
     for (const o of entities) {
@@ -99,7 +101,8 @@ export function createBochincheScene(canvas, { practice = false } = {}) {
       e.held.position.set(f.facing*.55,f.size.height*SCALE*.55,.15);
       e.root.visible=f.state!=='ko' && (f.stocks>0);
       e.poseTime=Math.min(.05,e.poseTime+dt);
-      animateFighter(e,f,dt,time); e.props.update(dt,time);
+      animateFighter(e,f,dt,time); e.props.update(dt,time); e.outline?.update(dt);
+      if (e.marker) { e.marker.group.visible=e.root.visible; e.marker.group.position.y=f.size.height*SCALE*1.2; e.marker.update(dt); }
       const guarding=f.state==='shield';
       e.shield.visible=guarding; e.shield.position.y=f.size.height*SCALE*.5;
       e.shield.scale.setScalar(f.size.height*SCALE*(.55+.15*(f.shield/(f.maxShield||1))));
@@ -134,6 +137,6 @@ export function createBochincheScene(canvas, { practice = false } = {}) {
     const r=canvas.getBoundingClientRect(),x=(probe.x+1)/2*r.width+r.left,y=(1-probe.y)/2*r.height+r.top;
     return {x,y,inside:probe.z<1&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom,width:r.width,height:r.height};
   }
-  function dispose() { poder.dispose(); authored?.dispose(); panas.forEach(e=>{e.props.dispose();e.character.dispose();}); disposeModel(own); textures.forEach(t=>t.dispose()); stage.dispose(); }
+  function dispose() { poder.dispose(); authored?.dispose(); panas.forEach(e=>{e.outline?.dispose();e.marker?.dispose();e.props.dispose();e.character.dispose();}); disposeModel(own); textures.forEach(t=>t.dispose()); stage.dispose(); }
   return {renderer,scene,camera,update,frame,dispose,effects,screenOf};
 }
