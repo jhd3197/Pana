@@ -163,9 +163,11 @@ Used by: Pepazo (the first-person camera and the viewmodel kick).
 size, color })` (flash, fireball, shock ring, smoke, paint and embers),
 `trail(id, at, dt)` (smoke behind anything flying), `tracer(from, to)` (a bright
 line that fades) and `update(dt)`. Visual only; when and where come from the
-game's state. Sound is `sfx.boom(size)`.
+game's state. Sound is `sfx.boom(size)`. `boom({ ground })` sets the shock
+ring's height (default .08, the floor); a side-view game passes the impact's.
 
-Used by: Pepazo (La Bazuca and El Cohetón rockets, grenades, La Lejana's tracer).
+Used by: Pepazo (La Bazuca and El Cohetón rockets, grenades, La Lejana's tracer),
+Capis a Pintazos (the paint bazooka's blast).
 
 ## Sound
 
@@ -174,7 +176,8 @@ Used by: Pepazo (La Bazuca and El Cohetón rockets, grenades, La Lejana's tracer
 `engine/sfx.js`. One synthesised library, no audio files, on the same WebAudio
 context and voice budget as `fx.js`: `step(surface)`, `jump`, `land`, `shot(kind)`,
 `impact`, `splat`, `boom(size)`, `hitConfirm`, `hurt`, `reload(kind)`, `reloaded`, `dry`,
-`swap`, `swish`, `tick`, `confirm`, `back`, `count`, `go`. Shots include `sniper` and
+`swap`, `swish`, `tick`, `confirm`, `back`, `count`, `go`, `boing`, `squeak`,
+`splash(size)`, `chime`, `sting(win)`. Shots include `sniper` and
 `bazooka`; reloads include `bolt`. Building blocks: `burst`
 (filtered noise) and `pitch` (tone). A game asks for what a sound is, never how it
 is built.
@@ -184,7 +187,8 @@ import { sfx } from '/engine/sfx.js';
 sfx.shot('scatter'); sfx.step('grass', { sprint: true, foot: 1 });
 ```
 
-Used by: Pepazo, Reliquia (steps, jump, landing). Notes: `docs/knowledge/shared-sfx.md`.
+Used by: Pepazo, Reliquia (steps, jump, landing), Capis a Pintazos (bazooka,
+boom, splat, boing, squeak, splash, chime, tick, sting). Notes: `docs/knowledge/shared-sfx.md`.
 
 ### Vehicle audio
 
