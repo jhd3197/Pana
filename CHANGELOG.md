@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.8.0 - 2026-10-31
+
 - **En Ludo un 1 también da otra tirada.** Si sacas un 1 y mueves, vuelves a
   tirar como con un 6, hasta tres tiradas extra seguidas; viene activado y el
   anfitrión lo puede apagar en las opciones de la sala.
