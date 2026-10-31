@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La sala ya no se corre de lado: sin barra horizontal y con los ajustes completos.**
+  En pantallas de unos mil píxeles, la rejilla de ocho jugadores de Pepazo mostraba una barra
+  horizontal y recortaba los ajustes y el selector de mapa. Ahora la rejilla y el panel caben enteros
+  en todas las salas, y solo se desplazan de arriba abajo cuando hace falta.
 - **Pepazo dispara de verdad: bolas chicas, rápidas y con respuesta clara.**
   Las bolas de pintura son más pequeñas y vuelan casi como un rayo, con una
   estela para seguirlas, y la Chispa dispara cinco veces por segundo. Cada tiro

@@ -30,10 +30,24 @@
 }
 /* Keep the action row clear when personal controls extend the player roster. */
 @media(min-width:801px) {
-  .pana-sala .pk-game-lobby-layout { overflow: hidden; align-items: stretch; padding: 8px; margin: -8px; }
-  .pana-sala .pk-game-lobby-roster { overflow: auto; min-height: 0; padding: 8px; margin: -8px; }
-  .pana-sala .pk-game-lobby-settings { max-height: 100%; overflow: auto; }
+  /* The skewed cards and the skewed settings panel lean outside their boxes (about 4.4% of their height on
+     each side). Leave that much room, and scroll only up and down, so no sideways scrollbar and no clipping. */
+  .pana-sala { --sala-lean: min(calc((100dvh - 270px) * .045 + 6px), 56px); padding-inline: max(clamp(20px,2.5vw,40px), var(--sala-lean)); }
+  .pana-sala .pk-game-lobby-layout { overflow: hidden; align-items: stretch; padding: 12px var(--sala-lean); margin: -12px calc(-1 * var(--sala-lean)); }
+  .pana-sala .pk-game-lobby-roster { overflow-x: hidden; overflow-y: auto; min-height: 0; padding: 12px; margin: -12px; }
+  .pana-sala .pk-game-lobby-settings { max-height: 100%; overflow-x: hidden; overflow-y: auto; }
 }
 @media(max-width:800px) {
   .pana-sala .pk-game-lobby-layout { flex-direction: column; }
+}
+
+/* The map picker (label, arrows, name) needs about 306px, more than a narrow settings column has once a scrollbar
+   takes its share: it pushed the panel sideways and clipped the right arrow. Let it shrink, and stack the label
+   above the arrows when the column is narrow. */
+.prototype-sala .pk-game-lobby-settings { container-type: inline-size; }
+.prototype-sala .pk-map-picker { grid-template-columns: 100px minmax(0,1fr); }
+.sala-map { min-width: 0; }
+.sala-map > b { min-width: 0; overflow-wrap: anywhere; }
+@media(min-width:801px) {
+  @container (max-width: 330px) { .prototype-sala .pk-map-picker { grid-template-columns: minmax(0,1fr); gap: 6px; } }
 }
