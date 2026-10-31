@@ -2,7 +2,7 @@
 
 Audited 2026-10-30. Generated from the real Studio registry plus a reviewed source ledger.
 
-**622 Studio resources**, including **25 Fauna entries**, **50 vegetation entries**, **32 vehicles** and **43 maps**. **142 resources are preview-only.** The separate ledger identifies **30 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**634 Studio resources**, including **25 Fauna entries**, **50 vegetation entries**, **32 vehicles** and **43 maps**. **142 resources are preview-only.** The separate ledger identifies **30 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -578,7 +578,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Racimo de cristales · crystal-cluster | Preview only | [crystals.js](../../Pana/engine/models/props/crystals.js) | crystalCluster |
 | Cristales del arcoíris · crystal-garden | Preview only | [crystals.js](../../Pana/engine/models/props/crystals.js) | crystalGarden |
 
-### Objetos (204)
+### Objetos (216)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -657,6 +657,18 @@ The following list is generated, not manually copied. “In use” is the catalo
 | El Cohetón · paint-coheton | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
 | La Lejana · paint-lejana | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
 | La Bazuca · paint-bazuca | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Metra · paint-metra | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Licuadora · paint-licuadora | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La China · paint-china | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| El Tambor · paint-tambor | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Corneta · paint-corneta | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Fumigadora · paint-fumigadora | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| El Llanero · paint-llanero | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Pulga · paint-pulga | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Parrandera · paint-parrandera | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| El Tuqueque · paint-tuqueque | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| El Zamuro · paint-zamuro | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Culebrona · paint-culebrona | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
 | Cohete de La Bazuca · paint-cohete-bazuca | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintRocket |
 | El Acolchado · paint-acolchado | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintVest |
 | Marcadora de pintura · paint-marker | ¡Pintura! | [paintball.js](../../Pana/engine/models/props/paintball.js) | createPaintMarker |

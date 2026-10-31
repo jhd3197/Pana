@@ -29,7 +29,8 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   tints the coat and clothes by `paint` %. The six are built once and reused for
   every match (a pana costs ~100 ms to build).
 - **La Bazuca** is Pepazo's (`engine/models/props/paintball-kit.js`),
-  `bakePaintKit` once per team colour (about 4 draws) and `.clone()`d into each
+  `bakePaintKit` once per team colour (one draw per folded finish, at most 6;
+  the browser suite checks it) and `.clone()`d into each
   capi. It is a child of the capi's root, not of the body, so it stays exactly in
   the side plane while the body turns 22° towards the camera (`TURN_IN`) to show
   the face. It pivots at `RULES.shoulder` (0.9 above the feet), scaled ×0.6 and
@@ -147,8 +148,8 @@ All from `engine/sfx.js`, no music: `shot('bazuca')`, `boom`, `splat`,
 - The six studio panas are the frame's main cost: about 40 draws each. The
   whole-map lobby view went from 135 to 408 draws and 136 k to 380 k triangles
   (CPU submit 2.7 → 6.2 ms, GPU 0.14 → 0.56 ms at Nítida, 2560 × 1600 on a
-  desktop) when the capybara model gave way to them. The launchers are ~4 draws
-  each. A lower-detail pana for far views would win most of that back.
+  desktop) when the capybara model gave way to them. The launchers are at most 6
+  draws each. A lower-detail pana for far views would win most of that back.
 
 ## Proof
 

@@ -2,7 +2,7 @@
   "date": "2026-10-30",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 619,
+    "catalog": 631,
     "categories": {
       "Fauna": 25,
       "Vegetación": 50,
@@ -10,7 +10,7 @@
       "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 204,
+      "Objetos": 216,
       "Emblemas": 9,
       "Pueblo": 34,
       "Páramo": 10,
@@ -3482,6 +3482,174 @@
       ],
       "previewOptions": {
         "weapon": "bazooka"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-metra",
+      "name": "La Metra",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "smg"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-licuadora",
+      "name": "La Licuadora",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "minigun"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-china",
+      "name": "La China",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "slingshot"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-tambor",
+      "name": "El Tambor",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "revolver"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-corneta",
+      "name": "La Corneta",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "blunderbuss"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-fumigadora",
+      "name": "La Fumigadora",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "sprayer"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-llanero",
+      "name": "El Llanero",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "sixshooter"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-pulga",
+      "name": "La Pulga",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "pdw"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-parrandera",
+      "name": "La Parrandera",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "carbine"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-tuqueque",
+      "name": "El Tuqueque",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "bullpup"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-zamuro",
+      "name": "El Zamuro",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "marksman"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-culebrona",
+      "name": "La Culebrona",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "lmg"
       },
       "status": "in-use"
     },

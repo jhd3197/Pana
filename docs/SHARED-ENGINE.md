@@ -193,15 +193,44 @@ Capis a Pintazos (the paint bazooka's blast).
 ### Paint markers, La Bazuca and its rocket
 
 `engine/models/props/paintball-kit.js` (Three.js). `createPaintKit({ weapon, color,
-attachments, charm, pattern })` builds a marker (`pistol scatter rapid rocket
-sniper bazooka`): origin at the grip, +Z down the barrel, `userData.tip` the
-muzzle's z, `userData.sight` the sight line. `PAINT_KIT_BORE[weapon]` is the
-barrel axis height. `bakePaintKit(options)` is the same marker batched into a
-few draws (one per finish), with `tip`, `sight` and `bore`; `.clone()` shares it,
-so a scene holding six launchers in third person pays for one.
+attachments, charm, pattern, camo })` builds one of eighteen markers (`pistol
+scatter rapid rocket sniper bazooka smg minigun slingshot revolver blunderbuss
+sprayer sixshooter pdw carbine bullpup marksman lmg`; an unknown id draws La
+Chispa) or a Studio melee piece: origin at the grip, +Z down the barrel,
+`userData.tip` the muzzle's z, `userData.sight` the sight line (`sightX` its
+sideways offset for side-mounted sights), `userData.bore` the barrel axis
+height, `userData.optic` the Mira kind when one is fitted, `userData.class`,
+`userData.spin` (a group to turn when firing: La Licuadora, the revolvers).
+Attachments `barrel hopper stock optic` sit on each marker's own mounts.
+`PAINT_KIT_BORE[weapon]` is the barrel axis height for all eighteen.
+`bakePaintKit(options)` is the same marker batched into a few draws (finishes
+folded to matte, glossy and metal, one draw each), with `tip`, `sight`,
+`sightX`, `optic` and `bore`; `.clone()` shares it, so a scene holding six
+launchers in third person pays for one.
 `createPaintRocket({ color })` is La Bazuca's round in flight (+Z the nose).
 `createPaintGrenade({ color })` is Pepazo's paint grenade (about 30 cm, upright,
 origin at its centre; `userData.light` is the fuse lamp's material to blink).
+
+Camo is in the model and inert: only `camo: '<preset id>'` (`PAINT_CAMOS`:
+selva, medanos, bolivar, caracas, caribe, jaguar, llanero, rumba, tricolor,
+pepazo) turns it on; free colour objects are ignored. It is a shader hook on the
+painted body (`applyCamo`, patterns in `CAMO_PATTERNS`) reading a `camoPos`
+attribute baked in model space, so it wraps every part without UVs. All camo
+materials share one program (`customProgramCacheKey` is the fixed
+`'pana-camo'`; colours and pattern are uniforms set per material), and
+`engine/models/core/static-batch.js` keeps `camoPos` through a bake. No game
+passes `camo` yet.
+
+The data behind it is `engine/play/paint-arsenal.js` (no Three.js, safe in
+rules and on the server): `PAINT_WEAPONS` (id → name, menu order),
+`PAINT_MELEE`, `PAINT_CLASSES` (eight marker classes plus granadas and melee;
+nickname and kind through `loc()`), `classOf(id)`, `PAINT_MOUNTS` (which
+attachments each model has a mount for), `PAINT_OPTICS` (the Mira kind each
+model draws: dot, holo, laser, scope, pin) and `PAINT_KIT_BORE`. The kit
+re-exports all of it. Pepazo's `armory-data.js` builds its markers, attachment
+rules and optic tuning from it; `games/pintura/tests/paint-kit.browser.js`
+builds every marker with every allowed attachment set and keeps the model and
+the table in agreement.
 
 ```js
 const launcher = bakePaintKit({ weapon: 'bazooka', color }), held = launcher.clone();
