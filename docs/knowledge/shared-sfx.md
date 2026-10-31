@@ -13,7 +13,7 @@ sound by what it is, never by how it is built.
 | `engine/vehicle-revs.js` | The pure half: `PROFILES` and `stepRevs` (gearbox, shift cut, rev slew). Unit-tested in Node. |
 
 Surfaces for `step`: `concrete stone tile wood metal dirt grass sand water`.
-Shots: `pistol scatter rapid rocket sniper bazooka pellet zap`. Each gun shot
+Shots: `pistol scatter rapid rocket sniper bazooka pellet minigun spray zap`. Each gun shot
 has a low sine "punch" under it (`punch` in `sfx.js`), felt more than heard.
 Reloads follow the weapon: `hopper` (pistol, rapid), `pump` (scatter), `tube`
 (rocket, bazooka), `bolt` (sniper), `magazine`. `boom(size)` is an explosion:

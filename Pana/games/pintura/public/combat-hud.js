@@ -1,19 +1,21 @@
 import { loc, locn } from '/engine/i18n.js';
 import { icon } from '/engine/icons.js';
-import { kitStats, MARKERS } from './armory-data.js';
+import { kitStats, MARKERS, CLASSES, ATTACHMENTS, OPTICS } from './armory-data.js';
 import { TARGET } from './rules.js';
 import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES } from './hud-model.js';
 
 // Pepazo's Banderín HUD: the race to the goal, your aguante and pepas, the reload
 // prompt, your streak and the arrow that points at whoever painted you. game.js hands
 // it the room state each render; hud-model.js holds the arithmetic, hud-banderin.css the look.
+// Under the pepas: the marker's name and class, and an icon per fitted part.
+const PART_ICON = { barrel: 'kitBarrel', hopper: 'kitHopper', stock: 'kitStock', optic: 'kitOptic' };
 export function createCombatHud(doc = document) {
   const $ = id => doc.getElementById(id), body = doc.body;
   const set = (el, text) => { if (el.textContent !== text) el.textContent = text; };
   const pulse = name => { body.classList.remove(name); void body.offsetWidth; body.classList.add(name); };
   const team = t => t ? loc('Turquesa') : loc('Naranja');
   const side = (kind, label, color, translate) => { set($(`${kind}-label`), label); $(`${kind}-label`).translate = translate; $(`${kind}-dot`).style.setProperty('--c', color || 'var(--pk-text)'); };
-  let balls = 0;
+  let balls = 0, parts = '';
 
   return {
     // Fed every render, in the lobby too (the HUD is hidden there).
@@ -36,7 +38,13 @@ export function createCombatHud(doc = document) {
       set($('ammo-n'), String(ammo)); set($('ammo-max'), `/ ${stats.magazine}${stats.reserve != null ? ` +${me?.reserve ?? stats.reserve}` : ''}`); set($('pepas-label'), loc('Pepas'));
       $('hop').classList.toggle('low', lowAmmo(ammo, stats.magazine));
       const lives = Math.max(0, (state.options?.lives || 0) - (me?.hits || 0));
-      set($('ammo'), [MARKERS.find(m => m.id === me?.weapon)?.name || MARKERS[0].name, state.options?.lives && locn(lives, '{n} vida', '{n} vidas')].filter(Boolean).join(' · '));
+      const marker = MARKERS.find(m => m.id === me?.weapon) || MARKERS[0], group = CLASSES.find(c => c.id === marker.class);
+      set($('ammo'), [marker.name, group && loc(group.kind), state.options?.lives && locn(lives, '{n} vida', '{n} vidas')].filter(Boolean).join(' · '));
+      const fitted = (me?.kit?.attachments || []).filter(Boolean);
+      if (parts !== fitted.join()) {
+        parts = fitted.join();
+        $('wpn-kit').replaceChildren(...fitted.map(id => { const el = doc.createElement('i'); el.append(icon(PART_ICON[id])); el.title = id === 'optic' && stats.optic ? loc(OPTICS[stats.optic].name) : loc(ATTACHMENTS.find(a => a.id === id)?.name || ''); return el; }));
+      }
 
       const reloading = me?.reload > 0, empty = !!me && ammo <= 0 && !reloading && !me.respawn && !me.eliminated;
       $('reload-prompt').hidden = !(reloading || empty); $('reload-prompt').classList.toggle('empty', empty);

@@ -105,3 +105,7 @@ body.counting #hud .countdown { color: var(--pk-yellow); -webkit-text-stroke: ca
   #hud .reload-prompt { top: 46%; }
 }
 @media (max-height: 520px) { #hud { --top: 64px; } #hud .race { top: 10px; } #hud .streak, #hud .pepas, #hud .gear { display: none; } #hud .mypl { bottom: 130px; } #hud .hop { bottom: 126px; } #hud .minimap { width: 96px; height: 96px; } }
+
+/* The fitted parts under the marker name: one small icon each (barrel, hopper, stock, Mira). */
+#hud .wpn-kit { display: flex; gap: calc(4 * var(--u)); color: var(--pk-yellow); font-size: calc(16 * var(--u)); }
+#hud .wpn-kit:empty { display: none; }

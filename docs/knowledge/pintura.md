@@ -188,12 +188,24 @@ the pad sent), not a direction captured before the first frame set the yaw.
 - The one knockout line lives in the killfeed (yours in yellow, the one that took
   you out with a coral bar), so `combat.duplicate()` keeps the bottom pill quiet
   for those two messages. Team scores are in the race row, not the pill.
+- Under the pepas the hopper plate shows the marker's name and class kind
+  (`La Metra · Subfusiles`) and one icon per fitted part (`kitBarrel`,
+  `kitHopper`, `kitStock`, `kitOptic` in `engine/icons.js`; the Mira's title
+  names its kind).
 - `viewmodel.js` poses the first-person marker (sway, recoil, reload, sprint
   lowering) from the player fields; the marker models are in
-  `engine/models/props/paintball-kit.js`, one silhouette per marker.
+  `engine/models/props/paintball-kit.js`, one silhouette per marker. Aiming
+  slides a side-mounted Mira (`userData.sightX`: El Zamuro, La Bazuca, La
+  Fumigadora) to the centre, and `userData.spin` (La Licuadora's barrels, the
+  revolvers' cylinders) turns on every shot. `RECOIL` has rows for the markers
+  that need their own kick; the rest kick like their class (`CLASS_RECOIL`).
 - Sound goes through the shared library (`engine/sfx.js`) via the `sounds.js`
   facade; steps come from `engine/play/footsteps.js`. See `shared-sfx.md` and
-  `shared-player.md`.
+  `shared-player.md`. The six first markers plus La China and La Fumigadora
+  have their own shot; the rest sound like their class (`shotKind`: pistolas
+  `pistol`, subfusiles and fusiles `smg`, ametralladoras `minigun`, escopetas
+  `shotgun`, francotiradores `sniper`, lanzadores `launcher`), and reloads go
+  the same way (`reloadKind`: hopper, magazine, pump, bolt, tube).
 
 ## La Lejana, La Bazuca and gun feel
 
@@ -202,11 +214,14 @@ the pad sent), not a direction captured before the first frame set the yaw.
   `Arena.hit(victim, owner, color, impact, damage)` clamps paint at the
   victim's toughness; La Bazuca's `direct` rocket passes `Infinity`.
 - Aim is an input flag (`aim`, right mouse, F, LT, or the Mira toggle on
-  phones). The server only honours it for a marker with `scope`: the shot uses
-  `aimSpread` (0) instead of the hip `spread` (.1 rad), the walk halves and
-  sprint is off. Clients zoom with `engine/play/scope.js` (3.5× for La Lejana,
-  1.2× for the rest), slow the look by the same factor and hide the held marker
-  past `scoped`; the overlay is `createScopeOverlay`.
+  phones). The server honours it when `kitStats().aims`: a marker with its own
+  `scope` (La Lejana, El Zamuro) or any marker wearing a Mira. Then the shot uses
+  `aimSpread` instead of the hip `spread`, the walk halves and sprint is off.
+  Clients zoom with `engine/play/scope.js` to `kitStats().zoom` (3.5× La Lejana,
+  4.55× with its long-range Mira, 2.2× El Zamuro, the Mira's zoom, else 1.2×),
+  slow the look by the zoom and by the Mira's `sens` (`world.sensitivity()`),
+  and hide the held marker past `scoped` (zoom over 1.5); the overlay is
+  `createScopeOverlay`.
 - La Bazuca is a ball with `rocket`, `direct` and `kind: 'bazooka'`: 14 m/s for 3 s
   (42 m), one loaded plus two spare (`reserve`), 3.8 s reload, no sprint. A
   direct hit knocks out; the 1.4 m splash then paints one pepazo on panas
@@ -221,10 +236,15 @@ the pad sent), not a direction captured before the first frame set the yaw.
   armory to carry all of them.
 - Feel: each marker's `RECOIL` row in `viewmodel.js` has `back/rot/decay` for
   the held model and `cam/shake` for the view (`engine/play/recoil.js`). Muzzle
-  flashes size per marker (`FLASH` in `scene.js`) and turn randomly per shot.
-  La Lejana draws a tracer from the muzzle to the first cover or pana
-  (`traceRay`).
-- Bots keep the default kit; they never use the new markers.
+  flashes sit on the barrel axis just past the muzzle of every marker
+  (`userData.bore`, `userData.tip`), size per marker or class (`flashSize` in
+  `scene.js`) and turn randomly per shot. Scoped markers (La Lejana, El Zamuro)
+  draw a tracer from the muzzle to the first cover or pana (`traceRay`) and
+  their knockouts are called `¡Francotirador!`.
+- Third-person markers are `bakePaintKit` batches (a few draws each), and ball
+  streaks share one material per colour: La Licuadora and La Fumigadora put
+  twenty balls a second in the air.
+- Bots keep the default kit; they never use the other markers.
 
 ## Notes for agents
 
@@ -259,9 +279,13 @@ the surviving player/team wins even if its hit count is lower. Disconnecting
 alone does not end an otherwise live round. The server alone validates settings
 and accepts them only outside a running round.
 
-Pistols fire every 0.25 seconds; the automatic marker every 0.13 seconds; the
-scatter marker sends three shorter-range balls every 0.75 seconds. Keyboard
-1/2/3 or the shared pause menu selects the marker; pistol-only rooms override
+A marker fires on a 50 ms tick, so its real interval is its `cadence` rounded
+up to whole ticks (`shotInterval`): La Chispa 0.25 s, Las Gemelas 0.2 s, El
+Trueno's three balls every 0.75 s. Keys 1–9 pick the first nine markers in menu
+order (`PAINT_WEAPONS`), Z/X (or [ and ]) step to the previous/next marker in
+class order (`WEAPON_CYCLE`, wrapping; Q/E already turn the view), the gamepad's
+Y is X, phones have previous/next arrow buttons beside Mira, and the shared pause menu lists all
+eighteen. All of it goes through `armory.setWeapon`; pistol-only rooms override
 that input. Fast reload is 0.55 seconds instead of 1.3. Sticky paint slows the
 victim for seven seconds including the respawn wait. Friendly hits can consume
 a life when enabled but never award points.
@@ -276,19 +300,28 @@ Team and flag lobbies show the shared avatar roster, with four orange and four t
 
 ## Armory and composed combat kits
 
-`armory-data.js` is the shared, pure source for six markers, two attachment
-slots, one armor slot, three grenades and cosmetics. `kitStats` composes real
-tradeoffs and still honors pistol-only, fast-reload and room toughness options.
+`armory-data.js` is the shared, pure source for eighteen markers, three
+attachment slots, one armor slot, three grenades and cosmetics. `kitStats`
+composes real tradeoffs and still honors pistol-only, fast-reload and room
+toughness options. Marker names, classes, mounts, Mira kinds and bores come
+from `engine/play/paint-arsenal.js` (no Three.js), the same table the models
+are built from.
 
 Attachment slots are positional: `kit.attachments` is always
-`[slot 0, slot 1]`, each an id or `null`, so every consumer filters nulls.
-`cleanKit` reads up to two entries as slot positions (old saved dense kits land
-in slots 0 and 1), packs a longer list, allowlists, dedupes and applies
-`canAttach`. `setSlot(kit, i, id|null)` fills or clears one slot and moves a
-part already in the other slot; `changeWeapon` returns the new kit plus the
-parts that no longer fit. `ATTACHMENT_RULES` lists what each marker takes:
-everything, except no light stock on La Lejana (it has its own) or La Bazuca
-(shoulder tube). Per-weapon mount points will read the same table. A barrel on
+`[slot 0, slot 1, slot 2]`, each an id or `null`, so every consumer filters
+nulls. `cleanKit` reads up to three entries as slot positions (old saved kits of
+one or two land in the first slots), packs a longer list, allowlists, dedupes
+and applies `canAttach`. `setSlot(kit, i, id|null)` fills or clears one slot and
+moves a part already in another slot; `changeWeapon` returns the new kit plus
+the parts that no longer fit. `ATTACHMENT_RULES` is built from the model's
+mounts (`PAINT_MOUNTS`): a muzzle for the barrel, a feed for the hopper, a stock
+mount (launchers take sliding rods) and a rail or bracket for the Mira. In the
+new kit every marker has all four, at four separate places on the model (La
+Lejana's stock swaps its wooden one for a skeleton, La Bazuca takes rods), so
+any three parts fit together and three slots are safe; the fourth part stays in
+the box. A marker without a mount simply leaves it out of `PAINT_MOUNTS`: the
+armory greys that part out with "no tiene dónde montarlo" and a swap drops it
+(unit tested with a mount removed). A barrel on
 a marker that already flies straight (spread 0: Chispa, Cohetón, Bazuca) adds
 12% shot speed instead of tightening spread, so range and the precision row's
 m/s both move; on the others it tightens spread and adds 12% flight time.
@@ -306,18 +339,24 @@ Rocket splash and grenade blasts apply at most one hit per victim and respect
 cover, teams and spawn protection. Respawn restores one grenade. Sticky pools
 expire and slow opponents. Grenade flight and blasts: see "Grenades" below.
 
-`armory.js` previews the actual marker and own pana, with hover comparisons for
-range, spread, cadence, capacity, reload, mobility and toughness. Its Probar
+`armory.js` previews the actual marker (with its parts) and own pana, with hover
+comparisons for range, damage, paint per second (`dpsOf`), spread (aimed spread
+and zoom when it aims), the real fire rate, capacity, reload, mobility and
+toughness. The marker picker comes by class: a chip per class with markers
+(nickname over kind, `CLASSES`; granadas and melee have none so they get no
+chip), then that class's markers, each card with its pepazos/s, range and
+magazine. The header shows the class under the name. Its Probar
 range runs an independent `Arena` against a target, using the same rules as the
 server. It never spends ammo or emits shots into the multiplayer room.
-`paintball-kit.js` supplies the four visible marker meshes, cosmetic finishes,
+`paintball-kit.js` supplies the eighteen marker models, cosmetic finishes,
 attachments and padded vest to both preview and gameplay. Studio registers
 those same models. Paint pattern changes are cosmetic and never change hits.
 
-The two-client browser proof picks a guest kit slot by slot (slot 2 first,
-clearing slot 1 leaves slot 2), checks the stock coming off La Bazuca, verifies
-the host receives each kit, checks grenade consumption, rejects and announces a
-mid-round armor change, checks a number-key swap reaches the saved kit, then
+The two-client browser proof picks the marker through its class chip, fills a
+guest kit slot by slot (slot 2 first, clearing slot 1 leaves slots 2 and 3),
+fits La Bazuca's Mira in slot 3 (it names Holográfica), verifies the host
+receives each kit, checks grenade consumption, rejects and announces a
+mid-round armor change, checks number keys (7 is La Metra) and Z/X reach the saved kit, then
 proves real shooting, respawn, host departure and rematch. Mobile
 controls put reload and grenade beside a tall fire button without overflowing.
 
@@ -325,7 +364,7 @@ controls put reload and grenade beside a tall fire button without overflowing.
 
 `kitRating` in `armory-data.js` reads `kitStats` with current room options.
 It returns 100 + 700 times a weighted sum of bounded 0–1 components: range
-15%, precision 10%, sustained pellet rate including reload 20%, magazine plus
+15%, precision 10%, sustained paint rate (pellets × damage) including reload 20%, magazine plus
 reserve 10%, reload speed 10%, mobility 15%, toughness 15%, weapon spread-area
 coverage 2.5% and grenade radius × centre damage per fuse second 2.5%. It is a build summary,
 not a player rank or combat modifier; special utility such as sticky pools is
@@ -337,6 +376,109 @@ rules refresh an open armory. Finishes, charms and patterns do not affect it.
 Unit tests cover bounds, cosmetics, attachments, armor, grenades and rule
 overrides; the two-client sala test checks that a guest's changed rating reaches
 the host and matches the armory.
+
+## Mira (optic)
+
+The fourth attachment. Each marker's model carries one kind (`PAINT_OPTICS`, the
+model sets `userData.optic` when fitted) and `OPTICS` in `armory-data.js` tunes it:
+
+| Kind | Markers | zoom | aimSpread × | sens | Why |
+|---|---|---|---|---|---|
+| `dot` red dot | La Chispa, La Licuadora, La Fumigadora, El Llanero, La Pulga, El Zamuro, La Culebrona | 1.35 | .75 | .9 | small, quick: a little closer, a little steadier |
+| `holo` holographic | El Trueno, El Cohetón, La Bazuca, La Metra, El Tambor, La Parrandera, El Tuqueque | 1.5 | .7 | .85 | the mid-range sight: more zoom, steadier |
+| `laser` under-barrel | Las Gemelas | 1.1 | .8 | 1 | also tightens hip fire (`hipSpread` .85): twins are fired from the hip |
+| `scope` telescopic | La Lejana, La Corneta | 2.4 | .5 | .75 | La Lejana multiplies its own 3.5× by 1.3 (4.55×) instead |
+| `pin` pin sight | La China | 1.2 | .6 | .95 | three pins to judge a slow stone's drop |
+
+`kitStats` applies the Mira last, so it steadies whatever spread the other parts
+left: `aimSpread = (aimSpread ?? spread) × aimSpread`, `zoom` as above, `sens`
+for game.js's look while aiming (blended in with the aim, on top of the zoom's
+own slowdown), −2% mobility. Fitting one sets `aims`, so the server honours the
+aim flag for that marker (halved walk, no sprint while aiming). La Corneta's
+brass scope zooms past 1.5, so it gets the scope overlay like a rifle; that is
+the model's sight, kept as a joke with a real cost (−2% mobility for a
+shotgun that cannot reach 12 m).
+
+## Balancing
+
+Eighteen markers in eight classes (`PAINT_CLASSES`). The rules: a role
+triangle (close, mid, long); more paint per second costs mobility, accuracy or
+reload; pellet weapons fly short; rifles are fast, straight, scoped and slow to
+fire; launchers carry splash, weight and a per-life reserve; the specials are
+gimmicks. Damage under one pepazo soaks (`Arena.hit`): the victim adds it to
+`soak` and a pepazo lands, with its hit event, once a whole one has soaked in;
+four quiet seconds wash the soak off with the stain, respawn clears it.
+
+`tests/balance.test.js` holds every marker (bare and with every allowed set of
+parts) inside its class envelope, keeps paint/s × range under 360 (nothing
+kills fast and far at once), checks the trade-offs above, that `shotInterval`
+is the arena's real rate, and that `kitRating` stays a 100–800 integer for every
+marker, part set, armour and grenade.
+
+| Class | pepazos/s | range m |
+|---|---|---|
+| pistolas | 3–5 | 30–60 |
+| subfusiles | 5–10 | 20–36 |
+| fusiles | 4–7 | 45–70 |
+| ametralladoras | 5–10 | 30–60 |
+| escopetas | 3–5.5 | 8–20 |
+| francotiradores | 1.2–2.5 | 55–80 |
+| lanzadores | 0.8–2.5 | 25–50 |
+| especiales | 1–4 | 8–50 |
+
+Columns: damage per ball (× pellets); the real interval between shots; DPS =
+damage × pellets / interval with every ball landing (a direct rocket counts as
+a knockout, 3); TTK-ish = (hits for the default 3-pepazo aguante − 1) ×
+interval, ignoring reloads (single-shot launchers are much slower in practice);
+range = speed × life; mobility (heavy: no sprint); magazine (+ reserve) /
+reload; hip spread (→ aimed); native scope; kit nivel with the default kit.
+
+| Marker | Class | Damage | Interval | DPS | TTK-ish | Range | Speed | Mobility | Mag / reload | Spread | Scope | Nivel |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| La Chispa (pistol) | pistolas | 1 | 0.25 s | 4.00 | 0.50 s | 51 m | 85 m/s | 100% | 12 / 1.3 s | 0 |  | 575 |
+| Las Gemelas (rapid) | pistolas | 1 | 0.20 s | 5.00 | 0.40 s | 37 m | 85 m/s | 100% | 18 / 2.4 s | 0.045 |  | 541 |
+| El Llanero (sixshooter) | pistolas | 2 | 0.45 s | 4.44 | 0.45 s | 52 m | 95 m/s | 100% | 6 / 2.2 s | 0.012 |  | 534 |
+| La Metra (smg) | subfusiles | 1 | 0.10 s | 10.00 | 0.20 s | 29 m | 80 m/s | 100% | 30 / 2.4 s | 0.09 |  | 587 |
+| La Pulga (pdw) | subfusiles | 1 | 0.15 s | 6.67 | 0.30 s | 26 m | 78 m/s | 108% | 22 / 1.5 s | 0.06 |  | 596 |
+| La Parrandera (carbine) | fusiles | 1 | 0.15 s | 6.67 | 0.30 s | 48 m | 95 m/s | 96% | 24 / 2 s | 0.03 |  | 602 |
+| El Tuqueque (bullpup) | fusiles | 1 | 0.20 s | 5.00 | 0.40 s | 61 m | 105 m/s | 94% | 20 / 2.4 s | 0.022 |  | 584 |
+| La Licuadora (minigun) | ametralladoras | 0.5 | 0.05 s | 10.00 | 0.25 s | 31 m | 75 m/s | 68% heavy | 90 / 4.4 s | 0.13 |  | 512 |
+| La Culebrona (lmg) | ametralladoras | 1 | 0.15 s | 6.67 | 0.30 s | 45 m | 90 m/s | 80% | 50 / 3.6 s | 0.05 |  | 578 |
+| El Trueno (scatter) | escopetas | 1 × 3 | 0.75 s | 4.00 | 0 s | 17 m | 85 m/s | 93% | 8 / 1.8 s | 0.18 |  | 450 |
+| La Corneta (blunderbuss) | escopetas | 1 × 5 | 1.00 s | 5.00 | 0 s | 12 m | 70 m/s | 92% | 3 / 2.2 s | 0.28 |  | 399 |
+| La Lejana (sniper) | francotiradores | 2 | 1.25 s | 1.60 | 1.25 s | 70 m | 140 m/s | 90% | 4 / 2.6 s | 0.1 → 0 | 3.5× | 493 |
+| El Zamuro (marksman) | francotiradores | 1 | 0.50 s | 2.00 | 1.00 s | 62 m | 120 m/s | 92% | 8 / 2.3 s | 0.06 → 0.006 | 2.2× | 509 |
+| El Cohetón (rocket) | lanzadores | 1 (splash 4.5 m) | 1.00 s | 1.00 | 2.00 s | 43 m | 18 m/s | 63% heavy | 1+3 / 3.2 s | 0 |  | 418 |
+| La Bazuca (bazooka) | lanzadores | direct K.O. (splash 1.4 m) | 1.20 s | 2.50 | 0 s | 42 m | 14 m/s | 70% heavy | 1+2 / 3.8 s | 0 |  | 408 |
+| El Tambor (revolver) | lanzadores | 1 (splash 2.2 m) | 0.60 s | 1.67 | 1.20 s | 31 m | 24 m/s | 80% heavy | 6+6 / 3.4 s | 0.02 |  | 433 |
+| La China (slingshot) | especiales | 0.5 | 0.40 s | 1.25 | 2.00 s | 42 m | 60 m/s | 110% | 40 / 0.8 s | 0 |  | 570 |
+| La Fumigadora (sprayer) | especiales | 0.2 | 0.05 s | 4.00 | 0.70 s | 12 m | 32 m/s | 95% | 120 / 3 s | 0.05 |  | 485 |
+
+Why each one sits where it does:
+
+- The six first markers keep their stats; the tick rounding (`shotInterval`) is
+  what they always fired at.
+- Pistolas are the mobile baseline (100%, 4–5 pepazos/s, ~50 m). El Llanero
+  trades rate for two pepazos a shot: two hits knock out, six shots, long reload.
+- Subfusiles own the close range: La Metra's 10/s pays with the widest
+  automatic spread (.09 rad) and 29 m; La Pulga is the lightest marker (108%)
+  with the quickest reload and the shortest reach.
+- Fusiles are the mid-range all-rounders: La Parrandera trades reach (48 m) for
+  rate, El Tuqueque the reverse (61 m, 5/s). Both were trimmed to stay under the
+  paint × range budget with a barrel.
+- Ametralladoras sustain: La Licuadora sprays twenty half-pepazo balls a second
+  (soak) with the loosest spread, 68% mobility, no sprint and a 4.4 s reload;
+  La Culebrona is steadier and reaches 45 m but moves at 80%.
+- Escopetas one-shot up close if every pellet lands and die past 12–17 m. La
+  Corneta's five pellets fan across ±.28 rad (`pellets` of any count spread
+  evenly), three shots a magazine.
+- Francotiradores are fast, straight and scoped, and fire slowly; El Zamuro is
+  the quicker 2.2× marksman marker, one pepazo a shot.
+- Lanzadores carry splash, weight (no sprint) and a per-life reserve. El
+  Tambor fires six small-splash grenades (2.2 m) at mid range with six spare.
+- Especiales: La China never really runs out (40 stones, 0.8 s reload, 110%
+  mobility) but two stones make one pepazo; La Fumigadora is a slow 12 m stream
+  of fifth-of-a-pepazo drops from a 120 tank.
 
 ## Grenades
 

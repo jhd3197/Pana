@@ -4,8 +4,8 @@ import { Arena, cleanInput, grenadeStart, grenadeFlight, TICK, THROW } from '../
 import { cleanKit, kitStats, MARKERS, GRENADES, grenadeDef } from '../public/armory-data.js';
 import { traceLob } from '../../../engine/play/lob.js';
 const arena=kit=>{const a=new Arena('plaza');a.add(1,{name:'Ana'});a.add(2,{name:'Bea'});a.selectKit(1,kit);a.start();a.go();Object.assign(a.players[0],{x:-22,z:-22,shield:0});Object.assign(a.players[1],{x:-22,z:-15,shield:0});return a;};
-test('kits sanitize identifiers and cap two distinct attachments',()=>{
- assert.deepEqual(cleanKit({weapon:'hacked',attachments:['barrel','barrel','bad','hopper','stock']}).attachments,['barrel','hopper']);
+test('kits sanitize identifiers and cap three distinct attachments',()=>{
+ assert.deepEqual(cleanKit({weapon:'hacked',attachments:['barrel','barrel','bad','hopper','stock','optic']}).attachments,['barrel','hopper','stock']);
  assert.equal(cleanKit(null).weapon,'pistol');assert.equal(cleanInput({grenade:'true',weapon:'bad'}).grenade,false);
  for(const w of MARKERS){const base=kitStats({weapon:w.id}),barrel=kitStats({weapon:w.id,attachments:['barrel']}),hopper=kitStats({weapon:w.id,attachments:['hopper']});assert.ok(barrel.mobility<base.mobility);assert.ok(hopper.reload>base.reload);}
  assert.equal(kitStats({weapon:'rocket',armor:'wind',attachments:['stock']}).sprint,false);
