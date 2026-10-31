@@ -105,6 +105,11 @@ The host chooses the setting; the selected map follows snapshots, practice,
 late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
 layout variants, collision, table clearance, lifecycle and verification.
 
+Between rounds (`results`) "Siguiente ronda" keeps the match on its map. A
+finished match's "Otra partida" sends the `lobby` action instead (`HuntRound.toLobby`,
+handled by `LiveRoom`): scores and rounds start over in the lobby and the host
+may pick another map. `start()` refuses a finished match.
+
 ## Bigger maps
 
 `layout.js` `mapData(id)` plays every map 1.5× larger (`SPREAD`) with each map's

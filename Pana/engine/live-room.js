@@ -12,6 +12,8 @@
 //   const clock = elapsedClock();
 //   setInterval(() => room.tick(clock(), input(), paused), 50);
 //
+// A game with toLobby() answers the host's 'lobby' action without a handle()
+// line (engine/play/round-lobby.js).
 // Subclass hooks: cleanInput(raw), handle(id, data), message(id, data) for any
 // other kind, expire(id, input) for an input older than inputTtl (default: drop
 // it), ownInput(input) for the host's own, inputMessage(input) and
@@ -66,7 +68,7 @@ export class LiveRoom extends HostRoom {
     } else if (data.kind === 'action') {
       // Actions arrive once each: a repeated or older seq is a resend.
       if (!this.isHost || !Number.isSafeInteger(data.seq) || data.seq <= (this.lastAction.get(id) || 0)) return;
-      this.lastAction.set(id, data.seq); this.handle?.(id, data);
+      this.lastAction.set(id, data.seq); this.dispatch(id, data);
     } else if (data.kind === 'notice') {
       if (id === this.hostId && data.to === this.id) this.onNotice(data.text);
     } else this.message?.(id, data);
@@ -89,8 +91,18 @@ export class LiveRoom extends HostRoom {
   action(action, extra = {}) {
     if (!this.connected) { if (this.texts.waiting) this.onNotice(this.texts.waiting); return false; }
     const data = { kind: 'action', seq: ++this.seq, action, ...extra };
-    if (this.isHost) { this.lastAction.set(this.id, data.seq); this.handle?.(this.id, data); } else this.send(data, 'host');
+    if (this.isHost) { this.lastAction.set(this.id, data.seq); this.dispatch(this.id, data); } else this.send(data, 'host');
     return true;
+  }
+
+  // A game with toLobby() (engine/play/round-lobby.js) gets the host's 'lobby'
+  // action here: the results screen takes everyone back to pick the next map.
+  dispatch(id, data) {
+    if (data.action === 'lobby' && typeof this.game?.toLobby === 'function') {
+      if (id === this.hostId && this.game.toLobby()) this.publish();
+      return;
+    }
+    this.handle?.(id, data);
   }
 
   publish() {

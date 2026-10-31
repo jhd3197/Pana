@@ -11,6 +11,7 @@ import { pickSpawn } from './spawn-picker.js';
 import { locKey } from '../../../engine/i18n.js';
 import { resetJump, jumpCount } from '../../../engine/play/jump.js';
 import { stepWalker, axisMove } from '../../../engine/play/walker.js';
+import { returnToLobby } from '../../../engine/play/round-lobby.js';
 import { segmentBox, launch, sweep } from '../../../engine/play/projectile.js';
 export { segmentBox };
 
@@ -145,8 +146,18 @@ export class Arena {
     p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p); return p;
   }
+  // "Otra ronda": back to the lobby so the host can pick the next map. The
+  // round count stays, so the next court still rotates its layout.
+  toLobby({ keepBots = false } = {}) {
+    return returnToLobby(this, { keepBots, reset: g => {
+      Object.assign(g, { survivors: null, loading: 0, countdown: 0, time: g.options.duration, balls: [], splats: [], grenades: [], puddles: [], booms: [], flags: [], teamScores: [0, 0] }); g.ready = new Set();
+      g.players.forEach((p, i) => Object.assign(p, spawnsFor(g.mapId)[i % 8], { respawn: 0, eliminated: false }));
+      g.say(locKey('La cancha está lista.'));
+    } });
+  }
+  // Only from the lobby: a finished round goes through toLobby() first.
   start() {
-    if (this.phase === 'playing' || !this.canStart()) return false;
+    if (this.phase !== 'lobby' || !this.canStart()) return false;
     this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = []; this.grenades = []; this.puddles = []; this.booms = [];
     this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }));
     this.players.forEach(p => this.refill(p));

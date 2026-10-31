@@ -102,8 +102,12 @@ try {
   // The real round clock or a player reaching ten ends this without a debug server mutation.
   await wait(b, () => pinturaDebug.room.state.phase === 'finished', undefined, 210000); await wait(c, () => pinturaDebug.room.state.phase === 'finished');
   const scores = await b.evaluate(() => pinturaDebug.room.state.players.map(p => [p.id, p.score])); assert.deepEqual(await c.evaluate(() => pinturaDebug.room.state.players.map(p => [p.id, p.score])), scores);
-  await b.screenshot({ path: `${out}/results.png` }); await b.locator('#again').click(); await wait(c, () => pinturaDebug.room.state.round === 2 && pinturaDebug.room.state.phase === 'playing');
-  console.log('ok: real round end agrees across clients and the new host starts a clean rematch');
+  await b.screenshot({ path: `${out}/results.png` }); await b.locator('#again').click(); await wait(c, () => pinturaDebug.room.state.phase === 'lobby');
+  // Back in the lobby the host picks the next map, and the next round plays it.
+  assert.ok(await b.locator('#map-choice').isEnabled());
+  await b.evaluate(() => pinturaDebug.room.selectMap('muelle')); await wait(c, () => pinturaDebug.room.state.mapId === 'muelle');
+  await b.locator('#start').click(); await wait(c, () => pinturaDebug.room.state.round === 2 && pinturaDebug.room.state.phase === 'playing' && pinturaDebug.room.state.mapId === 'muelle');
+  console.log('ok: real round end agrees across clients, Otra ronda returns to the lobby and the next map is the host\'s pick');
   await b.close(); await c.close();
   }
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` }); await m.locator('#practice').tap();

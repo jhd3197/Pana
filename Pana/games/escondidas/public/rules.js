@@ -3,6 +3,7 @@ import { propDefinition } from '/engine/models/props/plaza-definitions.js';
 import { huntLayout, nextLayoutSeed } from './layout.js';
 import { validArena, arenaInfo } from '../../../engine/worlds/arena-layouts.js';
 import { locKey } from '../../../engine/i18n.js';
+import { returnToLobby } from '../../../engine/play/round-lobby.js';
 
 export const HIDE_TIMES = Object.freeze([15, 20, 30, 45, 60]);
 export const RULES = Object.freeze({ changes: 3, hideSeconds: 30, huntSeconds: 180, rounds: 4, checkRange: 3.5, aimRange: 7, checkCooldown: 1.6 });
@@ -79,10 +80,18 @@ export class HuntRound {
     this.events.push({ id: ++this.revision, text, ...(vars ? { vars } : {}), ...(found ? { found } : {}) });
     this.events = this.events.slice(-4);
   }
+  // "Otra partida": a finished match goes back to the lobby, where the host
+  // picks the next map. Scores and rounds start over there.
+  toLobby() {
+    return returnToLobby(this, { reset: g => {
+      Object.assign(g, { round: 0, seeker: null, seekers: [], winner: null, hint: null, remaining: 0 });
+      for (const p of g.players) Object.assign(p, g.layout.safeSpot(-4, 13), { score: 0, prop: null, caught: false, spectator: false, moving: false, suspicion: 0, cooldown: 0, h: Math.PI });
+    } });
+  }
+  // From the lobby, or between rounds of a match ('results').
   start(hostId, preference = 'hide') {
-    if (!['lobby', 'results', 'finished'].includes(this.phase)) return false;
+    if (!['lobby', 'results'].includes(this.phase)) return false;
     this.layoutSeed = nextLayoutSeed(this.layoutSeed);
-    if (this.phase === 'finished') { this.round = 0; for (const p of this.players) p.score = 0; }
     const botScores = new Map(this.players.filter(p => p.bot).map(p => [p.id, p.score]));
     this.players = this.players.filter(p => !p.bot);
     const names = ['Coco', 'Mango', 'Pepita'];

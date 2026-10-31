@@ -233,6 +233,14 @@ The host chooses the setting; the selected map follows snapshots, practice,
 late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
 layout variants, collision, table clearance, lifecycle and verification.
 
+"Otra ronda" on the results sends the host message `lobby` (`Arena.toLobby`,
+`engine/play/round-lobby.js`): the room goes back to the lobby, keeping seats,
+teams, options and the round count (so the next court still rotates its layout),
+and the host picks the next map there. `start()` only runs from the lobby, so a
+finished round can never replay its map by accident. Online the bots leave and
+the next start refills them; practice keeps its bots (`toLobby({ keepBots: true })`)
+because its start adds none.
+
 
 ## Room options and team play
 

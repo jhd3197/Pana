@@ -54,6 +54,9 @@ wins and the titles are handed out.
   de caballero and titles. `bot-rules.js` holds the bots. Pure; tested by
   `tests/rules.test.js`.
 - `public/network.js`: the live room; the host runs the night at 20 Hz.
+  "Otra noche" sends `lobby` (`Trifulca.toLobby`, answered by `LiveRoom`): the
+  night returns to the lobby, where the host may change the arena and mode;
+  `start()` refuses a finished night. Leaving the tutorial uses the same path.
 - `public/scene.js`: stage, panas, NPC neighbours, the ref, the TV camera and
   the replay. `fighters.js` poses a pana (fighters wear the wardrobe's kart
   helmet, and every jab, trompón, block, taunt and win picks one of a few

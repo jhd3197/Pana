@@ -106,10 +106,14 @@ try {
     if (i < 3) await b.locator('#next').click();
   }
   assert.equal(await b.evaluate(() => hunt.state.phase), 'finished');
+  // A finished match returns to the lobby; the host may pick another map there.
   await b.locator('#next').click();
-  assert.equal(await b.evaluate(() => hunt.state.round), 1);
+  await b.waitForFunction(() => hunt.state.phase === 'lobby');
   assert.equal(await b.evaluate(() => hunt.state.players.every(p => p.score === 0)), true);
-  check('complete match and replay reset scores and changes');
+  await b.evaluate(() => hunt.room.action('map', { mapId: 'puerto' })); await b.waitForFunction(() => hunt.state.mapId === 'puerto');
+  await b.locator('#start').click();
+  await b.waitForFunction(() => hunt.state.round === 1 && hunt.state.mapId === 'puerto');
+  check('complete match returns to the lobby, a new map is picked and scores start over');
   await b.evaluate(() => hunt.room.cut());
   await b.waitForFunction(() => !hunt.room.connected); await b.locator('#practice').click();
   await b.waitForFunction(() => hunt.room.offline && hunt.state.phase === 'lobby');
