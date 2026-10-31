@@ -102,7 +102,7 @@ const motor = createMotor(sound, { profile: 'muscle', topSpeed: 42 });
 motor.update(dt, { speed, boost });
 ```
 
-Used by: Carreritas (via `drift-audio.js`, which only maps a car to a profile).
+Used by: Carreritas (tyres, boost, crash, via `drift-audio.js`). Carreritas' car motor is the older `sound.startEngine` putt-putt in `engine/fx.js`, which sounded better to players than `createMotor`; `createMotor` has no user right now.
 
 ### `fx.js` sound, particles and bubbles
 

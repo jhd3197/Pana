@@ -847,7 +847,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('loading-tip-icon').innerHTML = tip[0];
   $('loading-tip').textContent = tip[1];
   $('play').disabled = true;
-  music.stop();
+  sound.stopEngine(); music.stop();
   race.water.stop();
   const step = async (label, progress) => {
     $('loading-status').textContent = label;
@@ -1021,6 +1021,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     $('race').classList.remove('hidden');
     $('result').classList.add('hidden');
     garage.controls.enabled = false;
+    sound.startEngine();
     acc = 0;
     clock.reset();
     mode = 'race';
@@ -1059,7 +1060,7 @@ function toGarage() {
   $('play').disabled = false;
   race.state = 'off';
   clearRace();
-  music.stop();
+  sound.stopEngine(); music.stop();
   race.water.stop();
   $('race').classList.add('hidden');
   $('garage').classList.remove('hidden');
@@ -1114,6 +1115,7 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
     paused = true;
     music.pause();
     race.water.stop(); race.audio.update(null, 0, false);   // no screech under the pause menu
+    if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
   },
   onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.reset(); },
 });
@@ -1615,6 +1617,7 @@ function presentRace(dt) {
   race.sky.update(race.clock, T.def.palette?.daylight ?? 1);
   tickWind(race.clock, T?.def.rain ? 1.45 : 1);
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
+  sound.setEngine(race.player.vf);
   race.audio.update(race.player, dt, race.state === 'go' && !paused);
   race.water.update(T,race.player.x,race.player.z);
 

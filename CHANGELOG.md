@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas vuelve al sonido de motor de antes.** El motor nuevo con marchas no gustó, así que los carros suenan otra vez como antes; los cauchos, el turbo y los choques nuevos se quedan.
+
 - **El motor tiene un mapa de lo que comparten los juegos, y quien programa lo mira primero.**
   `docs/SHARED-ENGINE.md` dice qué hace cada pieza, dónde vive, cómo se usa y qué
   juegos la usan, con un diagrama y la lista de lo que falta por migrar; `AGENTS.md`
