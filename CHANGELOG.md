@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Ludo un 1 también da otra tirada.** Si sacas un 1 y mueves, vuelves a
+  tirar como con un 6, hasta tres tiradas extra seguidas; viene activado y el
+  anfitrión lo puede apagar en las opciones de la sala.
+
 - **Pepazo estrena La Lejana y La Bazuca, y todas las marcadoras pegan más duro.**
   La Lejana es una francotiradora de 70 m que pinta dos pepazos por tiro, con
   mira telescópica (clic derecho, F o el botón Mira) que acerca la vista y

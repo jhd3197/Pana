@@ -19,7 +19,13 @@ export const RING = [
   [14,8],[13,8],[12,8],[11,8],[10,8],[9,8],
   [8,9],[8,10],[8,11],[8,12],[8,13],[8,14],[7,14],[6,14],
 ];
-export const seatCount = seats => SEAT_CHOICES.includes(seats) ? seats : 4;
+// extraRolls counts the re-rolls a seat has earned this turn (6s, 1s and
+// captures alike) and resets when the turn passes. A 1 only earns another roll
+// while the streak is under EXTRA_ONE_CAP, so 1s (or 1s mixed with 6s) cannot
+// chain forever. 6s never read it: their limit stays the threeSixes option.
+export const EXTRA_ONE_CAP = 3;
+export const extraOnOne = options => options?.extraOnOne !== false;
+export const seatCount =seats => SEAT_CHOICES.includes(seats) ? seats : 4;
 export const seatsOf = state => state.players.length;
 // Every seat owns 13 ring cells; its start and start + 8 are safe.
 const tracks = new Map();
@@ -112,7 +118,7 @@ export class LudoGame {
     this.options = { ...defaultLudoOptions(), seats };
     this.players = Array.from({ length: seats }, (_, seat) => botSeat(seat));
     this.phase = 'lobby'; this.turn = 0; this.die = 0; this.lastDie = 0;
-    this.sixes = 0; this.winner = null; this.revision = 0; this.round = 0;
+    this.sixes = 0; this.extraRolls = 0; this.winner = null; this.revision = 0; this.round = 0;
     this.starter = null; this.lastPlace = null; this.toss = { seat: 0, power: .5 };
     this.resetCounters(); this.autoMove = null;
     this.turnPause = null;
@@ -161,7 +167,7 @@ export class LudoGame {
     this.turnPause = null;
     this.phase = 'starter'; this.turn = 0; this.die = 0; this.lastDie = 0;
     this.resetCounters(); this.autoMove = null;
-    this.sixes = 0; this.winner = null; this.round++; this.revision++;
+    this.sixes = 0; this.extraRolls = 0; this.winner = null; this.round++; this.revision++;
     // Its own seed, so the match's dice stream is the same with or without the cachos.
     this.starter = createStarter({ seats: this.players.map(p => p.seat), need: 'first', seed: (this.rng ^ Math.imul(this.round, 0x9e3779b1)) >>> 0, option: this.options.starter, last: this.lastPlace });
     this.event = [line(locKey('¿Quién empieza? Sacude el cacho: el dado más alto sale primero.'))];
@@ -178,12 +184,14 @@ export class LudoGame {
   }
   begin() {
     const { order, rolls } = starterResult(this.starter), first = order[0], p = this.players[first];
-    this.phase = 'playing'; this.turn = first; this.sixes = 0;
+    this.phase = 'playing'; this.turn = first; this.sixes = 0; this.extraRolls = 0;
     const how = this.starter.note, roll = rolls[first], vars = { how, name: p.name, roll };
     const opening = how ? roll ? locKey('{how}: ¡Empieza {name} con {roll}!') : locKey('{how}: ¡Empieza {name}!') : roll ? locKey('¡Empieza {name} con {roll}!') : locKey('¡Empieza {name}!');
     this.event = [line(opening, vars), line(this.options.entry === 'six' ? locKey('Saca un seis para salir.') : locKey('Con uno o seis puedes salir.'))];
   }
-  nextTurn() { this.turn = (this.turn + 1) % this.players.length; this.die = 0; this.sixes = 0; }
+  nextTurn() { this.turn = (this.turn + 1) % this.players.length; this.die = 0; this.sixes = 0; this.extraRolls = 0; }
+  // Same turn, a fresh roll; old snapshots carry no streak, so it counts from 0.
+  rollAgain() { this.die = 0; this.extraRolls = (this.extraRolls ?? 0) + 1; }
   // power only changes how the die flies on screen; bots throw with a varied arm.
   roll(power) {
     if (this.phase !== 'playing' || this.die) return false;
@@ -206,7 +214,7 @@ export class LudoGame {
     if (this.sixes === 3 && this.options.threeSixes) { this.event.push(line(locKey('Tres seis seguidos: pierde el turno.'))); this.nextTurn(); }
     else if (!legalMoves(this).length) {
       this.event.push(line(locKey('Sin movimientos.')));
-      if (this.die === 6) this.die = 0; else this.nextTurn();
+      if (this.die === 6) this.rollAgain(); else this.nextTurn();
     }
     if (!this.die) this.turnPause = {seat:this.toss.seat, kind:'roll', remaining:automaticMoveDelay(this.toss.power)};
     const moves = legalMoves(this);
@@ -259,7 +267,7 @@ export class LudoGame {
     this.event = [line(next === home ? locKey('{name} llevó una ficha a casa.') : from < 0 ? locKey('{name} sacó una ficha.') : locKey('{name} movió la ficha {n}.'), { name: p.name, n: piece + 1 })];
     if (captured) this.event.push(line(locKey('Capturó {n}.'), { n: captured }));
     if (p.pieces.every(v => v === home)) { this.phase = 'finished'; this.winner = this.turn; this.die = 0; this.lastPlace = ranking(this.players).at(-1).seat; }
-    else if (this.die === 6 || captured && this.options.captureBonus) { this.die = 0; this.event.push(line(locKey('Vuelve a tirar.'))); }
+    else if (this.die === 6 || captured && this.options.captureBonus || this.die === 1 && extraOnOne(this.options) && (this.extraRolls ?? 0) < EXTRA_ONE_CAP) { this.rollAgain(); this.event.push(line(locKey('Vuelve a tirar.'))); }
     else this.nextTurn();
     this.revision++; return true;
   }

@@ -28,7 +28,7 @@ try{
   await a.locator('[data-room-option="captureBonus"][data-value="true"]').click();
   await a.locator('[data-room-option="threeSixes"][data-value="false"]').click();
   await b.waitForFunction(()=>ludoDebug.room.state.options.threeSixes===false);
-  assert.deepEqual(await b.evaluate(()=>ludoDebug.room.state.options),{seats:4,entry:'one-six',captureBonus:true,threeSixes:false,assistedEntry:true,turnSeconds:60,starter:'cacho'});
+  assert.deepEqual(await b.evaluate(()=>ludoDebug.room.state.options),{seats:4,entry:'one-six',extraOnOne:true,captureBonus:true,threeSixes:false,assistedEntry:true,turnSeconds:60,starter:'cacho'});
   await b.locator('#pana-room-more').click();
   assert.ok(await b.locator('[data-room-option="captureBonus"][data-value="false"]').isDisabled());
   await b.locator('#pana-room-done').click();
