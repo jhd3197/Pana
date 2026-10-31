@@ -31,36 +31,11 @@ dist/voice-packs/
 
 # Large runtime assets distributed in per-game release packs
 /dist/asset-packs/
-/Pana/games/carreritas/public/images/menu/arrecife.webp
-/Pana/games/carreritas/public/images/menu/bululu.webp
-/Pana/games/carreritas/public/images/menu/cata.webp
-/Pana/games/carreritas/public/images/menu/chichi.webp
-/Pana/games/carreritas/public/images/menu/choroni.webp
-/Pana/games/carreritas/public/images/menu/chuao.webp
-/Pana/games/carreritas/public/images/menu/cosmos.webp
-/Pana/games/carreritas/public/images/menu/cuevas.webp
 /Pana/games/carreritas/public/images/menu/delta.webp
-/Pana/games/carreritas/public/images/menu/desierto.webp
-/Pana/games/carreritas/public/images/menu/dulce.webp
 /Pana/games/carreritas/public/images/menu/estadio.webp
 /Pana/games/carreritas/public/images/menu/galipan.webp
 /Pana/games/carreritas/public/images/menu/llanos.webp
-/Pana/games/carreritas/public/images/menu/maracaibo.webp
-/Pana/games/carreritas/public/images/menu/margarita.webp
-/Pana/games/carreritas/public/images/menu/merida.webp
-/Pana/games/carreritas/public/images/menu/nubes.webp
-/Pana/games/carreritas/public/images/menu/paramo.webp
-/Pana/games/carreritas/public/images/menu/plaza.webp
-/Pana/games/carreritas/public/images/menu/puerto.webp
 /Pana/games/carreritas/public/images/menu/raceMaster.webp
-/Pana/games/carreritas/public/images/menu/sabana-preview.jpg
-/Pana/games/carreritas/public/images/menu/sabana.webp
-/Pana/games/carreritas/public/images/menu/salinas.webp
-/Pana/games/carreritas/public/images/menu/salto.webp
-/Pana/games/carreritas/public/images/menu/sarisarinama.webp
-/Pana/games/carreritas/public/images/menu/selva.webp
-/Pana/games/carreritas/public/images/menu/tovar.webp
-/Pana/games/carreritas/public/images/menu/volcan.webp
 /Pana/games/ludo/public/audio/hop.mp3
 /Pana/games/ludo/public/audio/splat.mp3
 /Pana/games/ludo/public/audio/squish.mp3

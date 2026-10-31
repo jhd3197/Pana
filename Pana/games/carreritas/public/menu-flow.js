@@ -3,13 +3,14 @@ import { ICONS } from '/engine/icons.js';
 import { setMenuImage, trackArt } from './menu-art.js';
 import { trackPieces, vesselById, carNivel } from './parts.js';
 import { CUPS, cupById } from './cup-definitions.js';
+import { PREMIUM_MODES } from './premium-tracks.js';
 import { loc, locn } from '/engine/i18n.js';
 
 // The room gathers in the shared lobby (engine/game-entry.js); the host's
 // start takes everyone to Copa and Taller, and ¡Vámonos! on Taller races.
 const STEPS = ['track', 'car'];
 const LABELS = [loc('Pista'), loc('Taller')];
-const MODES = { race: [loc('Una carrera'), loc('La pista que tú quieras'), 'estadio'], pana: [loc('Copa Pana'), loc('4 pistas · de la ciudad al mar'), 'plaza'], aventura: [loc('Copa Aventura'), loc('4 pistas · descubre lo salvaje'), 'selva'], agua: [loc('Copa del Agua'), loc('4 pistas · salta, cruza, derrapa'), 'salto'], costa: [loc('Copa Costa'), loc('4 pistas · de playa en playa'), 'margarita'], cumbre: [loc('Copa Cumbre'), loc('4 pistas · sube a lo más alto'), 'merida'], relampago: [loc('Copa Relámpago'), loc('4 pistas · del lago al tepuy'), 'sabana'], fantasia: [loc('Copa Fantasía'), loc('4 pistas · del mar al espacio'), 'cosmos'], battle: [loc('Globos'), loc('Aguanta hasta el final'), 'bululu'] };
+const MODES = { race: [loc('Una carrera'), loc('La pista que tú quieras'), 'estadio'], pana: [loc('Copa Pana'), loc('4 pistas · del estadio al cielo'), 'estadio'], ...PREMIUM_MODES, battle: [loc('Globos'), loc('Aguanta hasta el final'), 'delta'] };
 
 // The flow only arranges existing controls. Race setup and room authority stay in game.js.
 // start(): the lobby's start was pressed; back(): Atrás on Copa, back to the lobby.
