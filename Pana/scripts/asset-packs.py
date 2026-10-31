@@ -39,6 +39,7 @@ def placement(name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--game', help='Rebuild only this pack; retain other catalog entries')
+    parser.add_argument('--no-new-audio', action='store_true', help='Do not enrol audio missing from the catalog (tracked audio keeps shipping from git)')
     args = parser.parse_args()
     catalog = json.loads(CATALOG.read_text()) if CATALOG.exists() else {}
     enrolled = {'Pana/' + name for pack in catalog.values() for name in pack['entries']}
@@ -50,6 +51,8 @@ def main():
         if name in enrolled and not source.is_file() and (not args.game or group[0] == args.game):
             raise SystemExit('Missing packed originals. Run: node Pana/scripts/asset-packs.js --restore ' + group[0])
         if source.suffix.lower() not in EXTENSIONS or not source.is_file():
+            continue
+        if args.no_new_audio and name not in enrolled and source.suffix.lower() in AUDIO:
             continue
         if not group or (source.stat().st_size < 100 * 1024 and name not in enrolled and source.suffix.lower() not in AUDIO):
             continue
