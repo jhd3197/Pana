@@ -26,10 +26,11 @@ export function createShotCharge({ ready, revision, change = () => {}, shoot, mi
     get active() { return !!charge; },
     get source() { return charge?.source ?? null; },
     get started() { return charge?.started ?? null; },
+    get power() { return charge?.power ?? null; },
     valid: () => !!charge && ready() && charge.revision === revision(),
     update(now = performance.now()) {
-      if (!charge) return;
-      charge.power = Math.max(min, shotPower(now - charge.started)); change(charge.power);
+      if (!charge) return null;
+      charge.power = Math.max(min, shotPower(now - charge.started)); change(charge.power); return charge.power;
     },
     begin(source, extra = {}) {
       if (charge || !ready()) return false;

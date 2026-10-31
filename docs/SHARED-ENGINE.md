@@ -132,6 +132,27 @@ const { hit, victim } = stepFlight(ball, dt, { wind, solid: (x, y) => solidAt(ma
 
 Used by: Capis a Pintazos (La Bazuca de pintura, its aim preview and the bot).
 
+### Thrown lobs in a 3D court (bounce, roll, blast falloff)
+
+`engine/play/lob.js` (pure, renderer-free). `lobVelocity(ax, az, elevation, speed)`,
+`stepLob(g, dt, { boxes, bounds, restitution, friction, roll, sticky })` (gravity;
+floor and box-top bounces; box sides taller than the throw and the court's edge
+reflect it; it rolls to `resting`; fast throws are sub-stepped so nothing
+tunnels), `traceLob(start, opts, { dt, time, out, land })` (the whole throw into
+reused points: where it lands first, its peak and where it is when the fuse
+ends; `land` waits for touchdown), `groundAt`, `touched`, `falloff(distance,
+radius)` (1 inside 40%, down to 0.35 at the edge) and `solveLob(reach, distance,
+{ pitches })` (pitch and 0..1 power for a distance: bots, auto-aim). Boxes are
+cover `{ x, z, w, d, h }`, the same as `projectile.js`.
+
+```js
+import { stepLob, traceLob } from '../../../engine/play/lob.js'; // relative: rules.js also loads on the server
+stepLob(grenade, dt, { boxes: cover, bounds: { x: 27, z: 27 }, restitution: .4 });
+const end = traceLob(start, opts, { dt: TICK, time: fuse, out: points, land: true }); // preview = server
+```
+
+Used by: Pepazo (grenades: the server flight, the aim arc, bots and the armory range).
+
 ### Scope and aim zoom
 
 `engine/play/scope.js`. `createScope({ zoom })` eases a 0..1 aim blend in and out
@@ -179,6 +200,8 @@ barrel axis height. `bakePaintKit(options)` is the same marker batched into a
 few draws (one per finish), with `tip`, `sight` and `bore`; `.clone()` shares it,
 so a scene holding six launchers in third person pays for one.
 `createPaintRocket({ color })` is La Bazuca's round in flight (+Z the nose).
+`createPaintGrenade({ color })` is Pepazo's paint grenade (about 30 cm, upright,
+origin at its centre; `userData.light` is the fuse lamp's material to blink).
 
 ```js
 const launcher = bakePaintKit({ weapon: 'bazooka', color }), held = launcher.clone();
@@ -301,7 +324,7 @@ See candidates.
 | River HUD, minimap, guide | `engine/river/hud.js`, `minimap.js`, `guide.js` | Curiara, Lancha (`river/hud` also Galope) |
 | Combat HUD (Banderín style: race, pepas, hit arrow, KO plate) | `games/pintura/public/combat-hud.js`, `hud-model.js`, `hud-banderin.css` | Pepazo only (game-local) |
 | Minimap | one per game | Bululú, Carreritas, Curiara, Embuste, Escondidas, Galope, Lancha, Pepazo, Reliquia each draw their own (Curiara and Lancha share `river/minimap`) |
-| Shot charge and aim guide | `engine/play/shot-charge.js`, `aim-guide.js` | Billar, Bululú, Capis a Pintazos, Criollas (charge); Billar, Capis a Pintazos (dashed arc), Criollas (guide) |
+| Shot charge and aim guide (`guideRibbon` strips, `guideBeads` for an arc in the air, `guideRing` for a landing or blast ring) | `engine/play/shot-charge.js`, `aim-guide.js` | Billar, Bululú, Capis a Pintazos, Criollas, Pepazo (charge: the grenade throw); Billar, Capis a Pintazos (dashed arc), Criollas (guide), Pepazo (grenade arc, ground strip and blast ring) |
 
 ## Player, look and rewards
 
