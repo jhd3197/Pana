@@ -3,7 +3,8 @@ import { ICONS } from '/engine/icons.js';
 import { setMenuImage, trackArt } from './menu-art.js';
 import { trackPieces, vesselById, carNivel } from './parts.js';
 import { CUPS, cupById } from './cup-definitions.js';
-import { PREMIUM_MODES } from './premium-tracks.js';
+// Absent or empty in the public build; the pana.sh overlay fills it.
+const { PREMIUM_MODES = {} } = await import('./premium-tracks.js').catch(() => ({}));
 import { loc, locn } from '/engine/i18n.js';
 
 // The room gathers in the shared lobby (engine/game-entry.js); the host's
@@ -57,6 +58,8 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
   const vehicleChips = document.createElement('div'); vehicleChips.className = 'track-vehicles'; sections.querySelector('.circuit-caption').append(vehicleChips);
   $('mode-pick').className = 'format-picker';
   for (const button of $('mode-pick').querySelectorAll('button')) {
+    // The page lists every cup; the public build only has the cups PREMIUM_MODES leaves in.
+    if (!MODES[button.dataset.mode]) { button.remove(); continue; }
     const [title, subtitle, id] = MODES[button.dataset.mode];
     const label = document.createElement('span');
     label.innerHTML = `<b>${title}</b><small>${subtitle}</small>`;

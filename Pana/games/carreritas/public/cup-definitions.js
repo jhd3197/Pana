@@ -1,5 +1,6 @@
 import { loc } from '../../../engine/i18n.js';
-import { PREMIUM_CUPS } from './premium-tracks.js';
+// Absent or empty in the public build; the pana.sh overlay fills it.
+const { PREMIUM_CUPS = [] } = await import('./premium-tracks.js').catch(() => ({}));
 export const CURRENT_CUP_EDITION = 3;
 export const GP_STAGE_CAP_SECONDS = 240;
 // New standalone circuits do not silently change a saved cup edition's route.

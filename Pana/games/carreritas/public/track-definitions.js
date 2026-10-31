@@ -3,7 +3,7 @@
 // premium-tracks.js, an empty hook here that the pana.sh overlay fills.
 import { loc } from '../../../engine/i18n.js';
 import { WATER_TRACKS } from './tracks/water-track-definitions.js';
-import { PREMIUM_TRACKS } from './premium-tracks.js';
+const { PREMIUM_TRACKS = [] } = await import('./premium-tracks.js').catch(() => ({}));
 export const TRACK_DEFINITIONS = [
   { id:'estadio',name:'El Estadio', // i18n-ignore: track names stay Spanish
   blurb:loc('Un gran premio técnico: frenadas, chicanas, horquillas y la recta de las tribunas.'), },
