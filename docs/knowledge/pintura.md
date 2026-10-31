@@ -189,6 +189,37 @@ the pad sent), not a direction captured before the first frame set the yaw.
   facade; steps come from `engine/play/footsteps.js`. See `shared-sfx.md` and
   `shared-player.md`.
 
+## La Lejana, La Bazuca and gun feel
+
+- Markers carry `damage` (pepazos per hit, default 1). La Lejana paints 2, so it
+  knocks out in two hits at Aguante 3 or 4 and one on El Cortaviento.
+  `Arena.hit(victim, owner, color, impact, damage)` clamps paint at the
+  victim's toughness; La Bazuca's `direct` rocket passes `Infinity`.
+- Aim is an input flag (`aim`, right mouse, F, LT, or the Mira toggle on
+  phones). The server only honours it for a marker with `scope`: the shot uses
+  `aimSpread` (0) instead of the hip `spread` (.1 rad), the walk halves and
+  sprint is off. Clients zoom with `engine/play/scope.js` (3.5× for La Lejana,
+  1.2× for the rest), slow the look by the same factor and hide the held marker
+  past `scoped`; the overlay is `createScopeOverlay`.
+- La Bazuca is a ball with `rocket`, `direct` and `kind: 'bazooka'`: 14 m/s for 3 s
+  (42 m), one loaded plus two spare (`reserve`), 3.8 s reload, no sprint. A
+  direct hit knocks out; the 1.4 m splash then paints one pepazo on panas
+  beside it. Every blast (rockets, grenades) also pushes a `booms` entry
+  (0.6 s) into the view; clients turn new ids into `sfx.boom`, the blast-fx
+  fireball and a distance-scaled shake. Rockets glide between snapshots along
+  their velocity (at most 60 ms ahead) and leave a smoke trail.
+- Reserve rockets live in `kitStats().reserve` (El Cohetón 3, La Bazuca 2; the
+  hopper adds one) and are a per-life resource: a weapon switch never refills
+  them (armory test). Switching to a rocket marker mid-life keeps at most the
+  ball count already loaded, and nothing after firing; spawn with it from the
+  armory to carry all of them.
+- Feel: each marker's `RECOIL` row in `viewmodel.js` has `back/rot/decay` for
+  the held model and `cam/shake` for the view (`engine/play/recoil.js`). Muzzle
+  flashes size per marker (`FLASH` in `scene.js`) and turn randomly per shot.
+  La Lejana draws a tracer from the muzzle to the first cover or pana
+  (`traceRay`).
+- Bots keep the default kit; they never use the new markers.
+
 ## Notes for agents
 
 Keep simulation in pure rules and room authorization on the server. Never add

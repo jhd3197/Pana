@@ -73,14 +73,67 @@ optional line-of-sight test. Nothing in it is about paint.
 Used by: Pepazo only. Promote to `engine/play/spawn-picker.js` when a second game
 needs it (see candidates).
 
+## Weapons and projectiles
+
+### Projectiles (level flight, swept collision)
+
+`engine/play/projectile.js`. Pure, so a server room and Node tests run the same
+flight: `launch(ax, az, speed, angle)`, `sweep(ball, dt, { boxes, targets, padding })`
+(the earliest cover box or round target along this step's segment, so a fast
+ball never tunnels), `segmentBox`, `segmentCircle`, `traceRay` (where a tracer
+line ends) and `flightTime`.
+
+```js
+import { launch, sweep } from '../../../engine/play/projectile.js'; // relative: rules.js also loads on the server
+const { t, victim, dx, dz } = sweep(ball, dt, { boxes: cover, targets: rivals, padding: .12 });
+```
+
+Used by: Pepazo (every ball and rocket, and the sniper tracer).
+
+### Scope and aim zoom
+
+`engine/play/scope.js`. `createScope({ zoom })` eases a 0..1 aim blend in and out
+and gives the narrowed `fov(base)`, the slower look `sensitivity()` and `scoped`
+(past which the held weapon hides). `createScopeOverlay(document)` is the
+full-screen scope picture (vignette, posts, hairlines, a lit dot). `scopedFov`
+and `lookScale` are the pure formulas.
+
+```js
+const scope = createScope({ zoom: 3.5 }); scope.update(dt, aiming);
+camera.fov = scope.fov(72); look(yaw * scope.sensitivity(), pitch * scope.sensitivity());
+```
+
+Used by: Pepazo (La Lejana scopes 3.5×, the other markers zoom 1.2×).
+
+### Recoil and camera shake
+
+`engine/play/recoil.js`. `createRecoil()`: `fire({ cam, shake })` kicks and climbs
+the view, `shake(amount)` trembles it (hits, explosions), `update(dt, { decay })`
+returns `{ kick, pitch, yaw, roll }` to add to the camera or a held model. No
+`Math.random`: the shake is a sum of sines, so tests are exact. `shakeAt(distance,
+power)` is how hard a blast that far away shakes you.
+
+Used by: Pepazo (the first-person camera and the viewmodel kick).
+
+### Explosions, smoke trails and tracers
+
+`engine/play/blast-fx.js` (Three.js). `createBlastFx(scene, puffs)`: `boom({ x, z,
+size, color })` (flash, fireball, shock ring, smoke, paint and embers),
+`trail(id, at, dt)` (smoke behind anything flying), `tracer(from, to)` (a bright
+line that fades) and `update(dt)`. Visual only; when and where come from the
+game's state. Sound is `sfx.boom(size)`.
+
+Used by: Pepazo (La Bazuca and El Cohetón rockets, grenades, La Lejana's tracer).
+
 ## Sound
 
 ### SFX library
 
 `engine/sfx.js`. One synthesised library, no audio files, on the same WebAudio
 context and voice budget as `fx.js`: `step(surface)`, `jump`, `land`, `shot(kind)`,
-`impact`, `splat`, `hitConfirm`, `hurt`, `reload(kind)`, `reloaded`, `dry`, `swap`,
-`swish`, `tick`, `confirm`, `back`, `count`, `go`. Building blocks: `burst`
+`impact`, `splat`, `boom(size)`, `hitConfirm`, `hurt`, `reload(kind)`, `reloaded`, `dry`,
+`swap`, `swish`, `tick`, `confirm`, `back`, `count`, `go`. Shots include `sniper` and
+`bazooka`; reloads include `bolt`. Building blocks: `burst`
 (filtered noise) and `pitch` (tone). A game asks for what a sound is, never how it
 is built.
 

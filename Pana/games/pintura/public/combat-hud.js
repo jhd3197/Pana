@@ -32,7 +32,8 @@ export function createCombatHud(doc = document) {
       const lit = pepas(ammo, stats.magazine);
       if (balls !== lit.total) { balls = lit.total; $('pepas').replaceChildren(...Array.from({ length: balls }, () => doc.createElement('i'))); }
       [...$('pepas').children].forEach((ball, i) => ball.classList.toggle('out', i >= lit.on));
-      set($('ammo-n'), String(ammo)); set($('ammo-max'), `/ ${stats.magazine}`); set($('pepas-label'), loc('Pepas'));
+      // Rocket markers carry spare rockets beyond the one loaded: shown as "+n".
+      set($('ammo-n'), String(ammo)); set($('ammo-max'), `/ ${stats.magazine}${stats.reserve != null ? ` +${me?.reserve ?? stats.reserve}` : ''}`); set($('pepas-label'), loc('Pepas'));
       $('hop').classList.toggle('low', lowAmmo(ammo, stats.magazine));
       const lives = Math.max(0, (state.options?.lives || 0) - (me?.hits || 0));
       set($('ammo'), [MARKERS.find(m => m.id === me?.weapon)?.name || MARKERS[0].name, state.options?.lives && locn(lives, '{n} vida', '{n} vidas')].filter(Boolean).join(' · '));

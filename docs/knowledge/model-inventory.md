@@ -2,7 +2,7 @@
 
 Audited 2026-10-30. Generated from the real Studio registry plus a reviewed source ledger.
 
-**619 Studio resources**, including **25 Fauna entries**, **50 vegetation entries**, **32 vehicles** and **43 maps**. **142 resources are preview-only.** The separate ledger identifies **30 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**622 Studio resources**, including **25 Fauna entries**, **50 vegetation entries**, **32 vehicles** and **43 maps**. **142 resources are preview-only.** The separate ledger identifies **30 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -655,6 +655,9 @@ The following list is generated, not manually copied. “In use” is the catalo
 | El Trueno · paint-trueno | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
 | Las Gemelas · paint-gemelas | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
 | El Cohetón · paint-coheton | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Lejana · paint-lejana | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Bazuca · paint-bazuca | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| Cohete de La Bazuca · paint-cohete-bazuca | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintRocket |
 | El Acolchado · paint-acolchado | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintVest |
 | Marcadora de pintura · paint-marker | ¡Pintura! | [paintball.js](../../Pana/engine/models/props/paintball.js) | createPaintMarker |
 | Toldo de equipo · team-canopy | Pepazo | [paintball.js](../../Pana/engine/models/props/paintball.js) | teamCanopy |
