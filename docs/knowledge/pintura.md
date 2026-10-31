@@ -67,6 +67,13 @@ Look input is `engine/play/first-person.js` (`createLookControls`), shared with 
 The default camera is first person (`primera`): the camera sits at eye height
 (1.55 m) over the smoothed avatar, the own avatar is hidden, and the marker is a
 camera child that kicks on each shot and pulls back when cover is in front.
+Every part of a pana (body, outfit, hat, vest, third-person marker, ring,
+stains, knockout pose) lives under `avatar.group`, so hiding that one group in
+`draw` hides the whole own body; keep new avatar parts under it. The browser
+suite asserts no own-body mesh renders in first person and the rival still
+sees it. A staged shot that puts the pana within about 1.5 m of a crate stack
+shows the crate's wood and coral band at the right screen edge: that is cover,
+not the own body (the plaza stack at x -11, z 21.5 sits next to x -14, z 22).
 Shots stay level: the server only receives `world.forward()` as the aim, so
 pitch is cosmetic and clamped. WASD is yaw-relative (`world.movement`); Q/E turn.
 The mouse uses pointer lock. Esc releases the lock before the page sees the
