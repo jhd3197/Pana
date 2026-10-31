@@ -29,6 +29,19 @@ async function toSouthLane(p, x, edge = false) {
   else if (Math.abs(me.x - x) > 1) await walk(p, me.x < x ? 'd' : 'a', me.x < x ? `x > ${x}` : `x < ${x}`);
   await walk(p, 'w', 'z < -25.5');
 }
+// Runs in the page: how many meshes of player id's pana render (every ancestor visible),
+// and which other rendered meshes (not the held marker) stand inside that pana's body
+// when this client watches through its eyes.
+function bodyInView(id) {
+  const { world, room } = pinturaDebug, avatar = world.avatars.get(id), seen = o => { for (let x = o; x; x = x.parent) if (!x.visible) return false; return true; };
+  let shown = 0; avatar.group.traverse(o => { if (o.isMesh && seen(o)) shown++; });
+  const inBody = [], me = room.state.players.find(p => p.id === id);
+  if (id === room.id && world.view === 'primera') world.scene.traverse(o => {
+    if (!o.isMesh || !seen(o)) return; for (let x = o; x; x = x.parent) if (x === world.camera || x === avatar.group) return;
+    const at = o.getWorldPosition(o.position.clone()); if (at.y > .3 && at.y < 2 && Math.hypot(at.x - me.x, at.z - me.z) < .6) inBody.push(o.name || o.type);
+  });
+  return { shown, inBody };
+}
 async function open(name, room = code, mobile = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1 });
   await context.addInitScript(name => { localStorage.setItem('pana:name', name); localStorage.setItem('pana:settings', JSON.stringify({ sound: false, quality: 'baja' })); localStorage.setItem('pana:avatar', JSON.stringify({ outfit: 'hoodie', outfitColor: '#3775cc', hat: 'gorra' })); }, name);
@@ -112,6 +125,12 @@ try {
   // Both clients load the court, then the room counts 3-2-1: input only counts after ¡YA!
   await wait(b, () => { const s = pinturaDebug.room.state; return !s.loading && !s.countdown; });
   assert.equal(await a.evaluate(() => pinturaDebug.world.view), 'primera');
+  // First person hides every part of the pana's own body (no mesh of it renders, and no
+  // stray mesh sits inside its body near the eye), while the other client still sees it.
+  const hostId = await a.evaluate(() => pinturaDebug.room.id);
+  await wait(a, () => pinturaDebug.world.camera.position.y > 1);
+  assert.deepEqual(await a.evaluate(bodyInView, hostId), { shown: 0, inBody: [] }, 'own body hidden in first person');
+  assert.ok((await b.evaluate(bodyInView, hostId)).shown > 5, 'the guest still sees the host');
   await b.evaluate(()=>pinturaDebug.room.selectKit({weapon:'rapid',armor:'wind'}));
   // A held throw: the guest looks up, holds G past 60% charge (the aim arc shows) and lets go.
   // The paint grenade leaves the hand on a real arc over the cover and blows more than 12 m away.
@@ -143,6 +162,9 @@ try {
   await b.locator('#menu').click(); await b.locator('#pana-tab-settings').click();
   await b.locator('.pana-settings-nav button', { hasText: 'Pepazo' }).click();
   await b.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await b.keyboard.press('Escape');
+  // Out of first person the guest's own pana shows again.
+  await wait(b, fn => new Function(`return (${fn})`)()(pinturaDebug.room.id).shown > 5, bodyInView.toString());
+  console.log('ok: first person hides the own pana (body, kit, vest, marker), the rival still sees it, the overview shows it again');
   await b.locator('#world').focus(); await toSouthLane(b, 26, true);
   await wait(b, `!${mine}.walk`);
   await a.locator('#world').focus(); await a.evaluate(() => pinturaDebug.world.look(-pinturaDebug.world.yaw)); await toSouthLane(a, -10);
