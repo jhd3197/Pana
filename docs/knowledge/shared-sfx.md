@@ -8,13 +8,17 @@ sound by what it is, never by how it is built.
 
 | Module | What it is |
 |---|---|
-| `engine/sfx.js` | `sfx.step(surface, {sprint, foot, volume})`, `jump`, `land`, `shot(kind)`, `impact(surface)`, `splat`, `hitConfirm`, `hurt`, `reload(kind, seconds)`, `reloaded`, `dry`, `swap`, `swish`, `tick`, `confirm`, `back`, `count(n)`, `go`. Also exports the two primitives `burst` (filtered noise that glides and decays) and `pitch` (a falling or rising thump) for building a new sound. |
+| `engine/sfx.js` | `sfx.step(surface, {sprint, foot, volume})`, `jump`, `land`, `shot(kind)`, `impact(surface)`, `splat`, `boom(size, {volume})`, `hitConfirm`, `hurt`, `reload(kind, seconds)`, `reloaded`, `dry`, `swap`, `swish`, `tick`, `confirm`, `back`, `count(n)`, `go`. Also exports the two primitives `burst` (filtered noise that glides and decays) and `pitch` (a falling or rising thump) for building a new sound. |
 | `engine/vehicle-audio.js` | `createMotor(sound, {profile, topSpeed})`, `createTyres(sound)`, `vehicleSfx.skid / boost / crash(power, kind)`. |
 | `engine/vehicle-revs.js` | The pure half: `PROFILES` and `stepRevs` (gearbox, shift cut, rev slew). Unit-tested in Node. |
 
 Surfaces for `step`: `concrete stone tile wood metal dirt grass sand water`.
-Shots: `pistol scatter rapid rocket pellet zap`. Reloads follow the weapon:
-`hopper` (pistol, rapid), `pump` (scatter), `tube` (rocket), `magazine`.
+Shots: `pistol scatter rapid rocket sniper bazooka pellet zap`. Each gun shot
+has a low sine "punch" under it (`punch` in `sfx.js`), felt more than heard.
+Reloads follow the weapon: `hopper` (pistol, rapid), `pump` (scatter), `tube`
+(rocket, bazooka), `bolt` (sniper), `magazine`. `boom(size)` is an explosion:
+crack, roar, a deep drop, debris and a long rumble; size ~.8 for a grenade, 1
+for a rocket, 1.25 for La Bazuca.
 Crash kinds: `wall car bump prop`.
 
 ## The motor
