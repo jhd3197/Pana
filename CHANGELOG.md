@@ -12,6 +12,10 @@ becomes the GitHub release's notes.
   La nueva opción Bots (Auto, 0, 1, 2, 3, 5 o 7) vale online y en práctica; Auto sigue
   igual que antes. El cuadro de ajustes de todos los juegos ahora es compacto,
   y en Pepazo "Cómo se juega" se abre dentro de los ajustes sin cerrarlos.
+- **Nuevo juego: Capis a Pintazos, artillería de pintura por turnos contra la máquina.**
+  Tres capis por equipo en la orilla del llano: camina, apunta, carga la bazuca
+  de pintura y mide el viento; cada pintazo abre un cráter, la tierra pintada
+  resbala y un capi pintado al 100 % o que cae al río queda fuera.
 
 ## 0.8.0 - 2026-10-31
 
