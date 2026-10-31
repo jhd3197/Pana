@@ -253,7 +253,7 @@ See candidates.
 | Map picker | `engine/play/map-picker.js` | Billar, Caída, Criollas, Dominó, Escondidas, Pepazo, Póquer |
 | Results → lobby (pick the next map) | `engine/play/round-lobby.js` (`returnToLobby`; LiveRoom's `lobby` action calls `game.toLobby()`) | Escondidas, Pepazo, Trifulca |
 | Difficulty picker | `engine/play/difficulty.js` | Billar, Criollas, Pepazo; Capis a Pintazos reads the levels for its bot and aim preview |
-| Room options (fields, rules, finalize) | `engine/room-options.js`, `room-options-rules.js`, `room-option-fields.js` | 23 games; fields in 13 |
+| Room options (fields, rules, finalize; compact "Más ajustes" grid, in-dialog help layer via `help: { controls, tips }`) | `engine/room-options.js`, `room-options.css`, `room-options-rules.js`, `room-option-fields.js` | 23 games; fields in 13; help layer in Pepazo |
 | Results screen | `engine/results.js` + `.pk-results` | 22 games (not Bululú, Embuste) |
 
 ## Rooms and netcode

@@ -11,6 +11,9 @@ export const FIELDS = [
   {"id": "friendlyFire", "label": loc("Fuego amigo"), "default": false, "choices": [[false, loc("No")], [true, loc("Sí")]], "advanced": true},
   {"id": "fastReload", "label": loc("Recarga"), "default": false, "choices": [[false, loc("Normal")], [true, loc("Rápida")]], "advanced": true},
   {"id": "flag", "label": loc("Bandera"), "default": false, "choices": [[false, loc("No")], [true, loc("Sí")]], "advanced": true},
+  // Auto keeps the classic rule: three bots for a pana alone, none with friends.
+  // A number is capped by the free seats (rules.js botCount), so 7 means "fill".
+  {"id": "bots", "label": loc("Bots"), "default": "auto", "choices": [["auto", loc("Auto")], [0, "0"], [1, "1"], [2, "2"], [3, "3"], [5, "5"], [7, "7"]], "advanced": true},
 ];
 export const DEFAULT_OPTIONS = optionDefaults(FIELDS);
 export const validOptions = patch => applyRoomOptions(FIELDS, DEFAULT_OPTIONS, patch) !== null;

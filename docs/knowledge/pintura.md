@@ -25,9 +25,15 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   from the centre (boxes 1.15× larger) plus an eight-piece outer `RING`.
   `sizeFor(mapId)` gives each court's half-width; Muelle uses 32. A rules test
   keeps ≥2.2 m between all cover, room around every spawn and one connected court.
-- A solo player starts with three bots; friends play without bots when two or
-  more humans start the round. Live friends can join mid-round;
-  when eight active slots are filled a joining friend replaces one bot.
+- The `bots` room option (Más ajustes: Auto / 0 / 1 / 2 / 3 / 5 / 7) sets how
+  many bots a round seats. Auto is the classic rule: three for a pana alone,
+  none when two or more humans start. A number is capped by the free seats
+  (`botCount`, `SEATS` 8), so 7 means "fill the court". `Arena.seatBots(make)`
+  runs at every start, on the server and in practice alike: old bots leave, new
+  ones take the smaller team's lowest free seat in team and flag rounds, so one
+  bot fixes a one-sided team start. A refused start leaves no bots in the lobby.
+  Live friends can join mid-round; when eight active slots are filled a joining
+  friend replaces one bot.
 - Touch steering uses `engine/touch.js`. Holding Pinta aims at the nearest
   visible opponent, excluding cover-obstructed and shielded opponents.
 
@@ -238,8 +244,9 @@ layout variants, collision, table clearance, lifecycle and verification.
 teams, options and the round count (so the next court still rotates its layout),
 and the host picks the next map there. `start()` only runs from the lobby, so a
 finished round can never replay its map by accident. Online the bots leave and
-the next start refills them; practice keeps its bots (`toLobby({ keepBots: true })`)
-because its start adds none.
+the next start refills them; practice keeps its bots on the lobby cards
+(`toLobby({ keepBots: true })`) and its start re-seats them from the `bots`
+option, so a changed count applies there too.
 
 
 ## Room options and team play

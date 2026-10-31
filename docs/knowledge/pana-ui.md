@@ -274,7 +274,7 @@ workspace is lazy too; neither adds to a game's static module budget.
 `engine/room-options.js` owns primary segmented choices and the prototype's
 “Más ajustes” native dialog. Each game supplies a pure field schema with `id`,
 `label`, `default`, typed `choices: [[value, label]]` and optional `advanced`.
-`createRoomOptions(container, { title, fields, change, reset })` calls `change`
+`createRoomOptions(container, { title, fields, change, reset, help })` calls `change`
 with a patch object, never a key/value pair. Load `room-options.css` with kit.css.
 Call `update(authoritativeValues, mayEdit)` from snapshots, and close the dialog
 when leaving the lobby. Guests can inspect options but cannot edit them.
@@ -287,8 +287,26 @@ fresh/practice state factories as well as migration snapshots.
 
 Escape closes this dialog without also opening the pause menu. Tab wraps among
 visible enabled buttons, inputs, selects and links; closing restores the
-trigger's focus. The two-column
-advanced panel becomes one scrollable column on phones. Shared entry docks
+trigger's focus.
+
+The dialog follows the lobby side panel's compact look: a one-row header (Más
+ajustes eyebrow, game title, host notice, close), one grid of equal cards with
+uppercase 11px labels and 34px segmented chips (3 columns from 900px, 2 from
+600px, 1 on phones; only the grid scrolls), then a thin footer: Restablecer
+sala, the adopted help buttons, Listo. Adopted `data-room-extra` nodes become
+cards of that grid after the schema fields (class `pk-room-card`); a team roster
+or a bare paragraph spans the whole row. Card copy is clamped (the difficulty
+note to one line, its full text in `title`). Keep choice labels short: chips
+wrap, but a card is about 280px wide on desktop.
+
+Pass `help: { controls, tips, title? }` (or a function returning it), the same
+arrays `createGameMenu` takes, and the adopted `#rules` button opens a "Cómo se
+juega" layer inside the dialog instead of leaving it: keys and tips, a Volver
+button, Escape returns to the settings first and closes the dialog second.
+Its click never reaches the game's own `#rules` handler. Touch players see only
+the tips when there are any. Games without `help` keep the old behaviour: the
+button closes the dialog and its own handler runs. Pepazo hoists its
+`controls`/`tips` into consts and passes them to both. Shared entry docks
 actual game start/practice controls in its footer so a long settings column
 cannot bury them. Six-player roster cards use three columns on desktop and two
 on phones. Table/live scaffolds include real validated example options.
@@ -302,8 +320,8 @@ authoritative update logic. After the game and scene initialize, entry calls
 | Hook | Destination |
 | --- | --- |
 | `data-room-primary` | Primary settings, before schema-generated choices |
-| `data-room-extra` | Más ajustes, after advanced schema choices |
-| `data-room-help` | Más ajustes; a help-button click closes it before the existing help handler runs |
+| `data-room-extra` | Más ajustes, a card in the grid after advanced schema choices |
+| `data-room-help` | Más ajustes footer; with `help` a button opens the in-dialog layer, without it a click closes the dialog before the existing help handler runs |
 | `data-pana-roster` | Left roster area; hides generic member cards while visible |
 | `data-room-personal` | Left roster area, for existing personal controls |
 

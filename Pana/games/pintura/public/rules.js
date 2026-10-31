@@ -21,6 +21,16 @@ export const SIZE = 27, SPREAD = 1.5, DURATION = 180, TARGET = 10, SPEED = 7, RA
 // A round holds still until every pana has loaded its court (or READY_TIMEOUT
 // seconds passed), then counts COUNTDOWN seconds down before anyone moves.
 export const READY_TIMEOUT = 8, COUNTDOWN = 3;
+// Eight seats (game.json `players`): people plus bots never pass it. Bot ids
+// start at BOT_ID so they never collide with member seats.
+export const SEATS = 8, BOT_ID = 1000, AUTO_BOTS = 3;
+// How many bots a round seats for `humans` connected panas. 'auto' is the
+// classic rule (AUTO_BOTS for a pana alone, none with friends); a number is
+// capped by the free seats so a full room never overflows.
+export function botCount(choice, humans, seats = SEATS) {
+  const want = Number.isInteger(choice) ? choice : humans <= 1 ? AUTO_BOTS : 0;
+  return Math.max(0, Math.min(want, seats - humans));
+}
 export const COLORS = ['#f28b42', '#29c5cd', '#d363a6', '#a1bd43', '#8d85df', '#f0c34c', '#ed615c', '#64b898'];
 const RING = [[11, 21.5, 3.6, 1.6, 2], [-11, -21.5, 3.6, 1.6, 2], [-11, 21.5, 3.6, 1.6, 1.8], [11, -21.5, 3.6, 1.6, 1.8],
   [21.5, -11, 1.6, 3.6, 2], [-21.5, 11, 1.6, 3.6, 2], [21.5, 11, 1.6, 3.6, 1.8], [-21.5, -11, 1.6, 3.6, 1.8]].map(([x, z, w, d, h]) => ({ x, z, w, d, h, height: h }));
@@ -134,10 +144,12 @@ export class Arena {
     if (this.phase === 'playing' || !validDifficulty(id)) return false;
     this.difficulty = id; return true;
   }
-  add(id, info) {
+  // `want` is a preferred free seat (seatBots balances teams with it).
+  add(id, info, want) {
     let p = this.players.find(p => p.id === id);
     const occupied = this.players.filter(other => other !== p && other.connected).map(other => other.seat);
-    const seat = p && !occupied.includes(p.seat) ? p.seat : Array.from({ length: 8 }, (_, i) => i).find(i => !occupied.includes(i));
+    const free = Array.from({ length: SEATS }, (_, i) => i).filter(i => !occupied.includes(i));
+    const seat = p && !occupied.includes(p.seat) ? p.seat : free.includes(want) ? want : free[0];
     if (seat === undefined) return null;
     const team = seat % 2, color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? team : seat];
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.
@@ -145,6 +157,22 @@ export class Arena {
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); return p; }
     p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p); return p;
+  }
+  // Seats this round's bots from the `bots` option: the old bots leave, then
+  // botCount() new ones join, each on the smaller team in team and flag
+  // rounds. `make(i)` gives bot i its name and avatar. Lobby only.
+  seatBots(make) {
+    if (this.phase !== 'lobby') return 0;
+    this.players = this.players.filter(p => !p.bot && p.connected);
+    const count = botCount(this.options.bots, this.players.length), teams = this.options.mode === 'teams' || this.options.flag;
+    for (let i = 0; i < count; i++) {
+      const people = this.players.filter(p => p.connected), taken = new Set(people.map(p => p.seat));
+      const free = Array.from({ length: SEATS }, (_, s) => s).filter(s => !taken.has(s));
+      const size = team => people.filter(p => p.team === team).length;
+      const team = size(0) === size(1) ? free[0] % 2 : size(0) < size(1) ? 0 : 1;
+      this.add(BOT_ID + i, { ...make(i), bot: true }, teams ? free.find(s => s % 2 === team) : free[0]);
+    }
+    return count;
   }
   // "Otra ronda": back to the lobby so the host can pick the next map. The
   // round count stays, so the next court still rotates its layout.
