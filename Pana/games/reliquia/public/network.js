@@ -1,5 +1,6 @@
 import { Expedition, stepExplorer, alive } from './rules.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
+import { jumpCount } from '/engine/play/jump.js';
 import { loc, locn } from '/engine/i18n.js';
 
 const ACTIONS = new Set(['use', 'throw', 'drop', 'drag', 'bark', 'interact']);
@@ -23,7 +24,7 @@ export class ExpeditionRoom extends LiveRoom {
     this.state = new Expedition().snapshot();
   }
   statusText() { return locn(this.members.size, 'Sala {code} · {n} pana', 'Sala {code} · {n} panas', { code: this.code }); }
-  cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), h: angle(raw?.h), pitch: Number.isFinite(raw?.pitch) ? Math.max(-1.2, Math.min(1.2, raw.pitch)) : 0, jump: Number.isInteger(raw?.jump) ? raw.jump & 255 : 0, hold: !!raw?.hold, sprint: !!raw?.sprint }; }
+  cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), h: angle(raw?.h), pitch: Number.isFinite(raw?.pitch) ? Math.max(-1.2, Math.min(1.2, raw.pitch)) : 0, jump: jumpCount(raw), hold: !!raw?.hold, sprint: !!raw?.sprint }; }
   ownInput(input) { return { ...this.cleanInput(input), jumpDelay: this.jumpDelay || 0 }; }
   tick(dt, input, paused = false) {
     // A background host may catch up a whole second. A newly received jump
