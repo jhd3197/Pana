@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En la armería de Pepazo la marcadora se ve sola, centrada y girando.**
+  Las marcadoras, accesorios, granadas y camuflajes se previsualizan sin tu
+  pana delante; tu pana solo aparece en Equipo, con el chaleco puesto, y en la
+  prueba de tiro.
+
 - **En Pepazo tu marcadora lleva camuflaje: seis lisos para todos y diez estampados que se ganan pintando o con mangos.**
   En la armería, Camuflaje muestra cada uno con su muestra y lo previsualiza en
   la marcadora. Selva, Médanos, Bolívar, Caracas y Jaguar se ganan pintando
