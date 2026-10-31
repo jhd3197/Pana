@@ -58,6 +58,9 @@ try {
   await b.locator('#open-armory').click();
   // Markers are picked by class: a chip per class, then its markers (only La Chispa's class shows first).
   await b.locator('[data-slot="weapon"]').click();
+  // The weapon preview is the gun alone: the pana stays out of it, the gun and its parents show.
+  const shows = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  await wait(b, `(${shows})(pinturaDebug.armory.preview) && !pinturaDebug.armory.body.visible`);
   assert.equal(await b.locator('#armory-choices [data-id="rocket"]').count(), 0);
   assert.equal(await b.locator('#armory-classes [data-class="granadas"]').count(), 0, 'a class without markers has no chip');
   await b.locator('#armory-classes [data-class="lanzadores"]').click();
@@ -95,7 +98,10 @@ try {
   assert.equal(await slotButton(0).locator('b').textContent(), 'Sin accesorio'); assert.equal(await slotButton(1).locator('b').textContent(), 'Tolva grande'); assert.equal(await slotButton(2).locator('b').textContent(), 'Mira');
   assert.deepEqual((await savedKit()).attachments, [null, 'hopper', 'optic']);
   await b.locator('[data-slot="armor"]').click();await b.locator('#armory-choices [data-id="padded"]').click();
+  // On armor the body is the point: the pana comes back wearing the vest.
+  await wait(b, () => pinturaDebug.armory.body.visible && pinturaDebug.armory.body.getObjectByName('El Acolchado')?.visible);
   await b.locator('#armory-parts-back').click();
+  await wait(b, () => !pinturaDebug.armory.body.visible);
   await b.locator('[data-slot="grenade"]').click();await b.locator('#armory-choices [data-id="pegajosa"]').click();
   await b.locator('#armory-close').click();
   await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && JSON.stringify(p.kit.attachments)==='[null,"hopper","optic"]' && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
@@ -106,6 +112,7 @@ try {
   await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-uva', guestId);
   assert.equal((await savedKit()).camo, 'liso-uva');
   assert.equal(await b.evaluate(() => pinturaDebug.armory.preview.userData.camo?.pattern), 'solid');
+  await wait(b, () => !pinturaDebug.armory.body.visible);
   assert.equal(await b.locator('#armory-choices input[type="color"]').count(), 0, 'no free colour picker');
   const locked = b.locator('#armory-choices .armory-camo[data-id="selva"]');
   assert.equal(await locked.getAttribute('data-state'), 'locked'); assert.match(await locked.textContent(), /pana\.sh/);

@@ -445,7 +445,11 @@ Rocket splash and grenade blasts apply at most one hit per victim and respect
 cover, teams and spawn protection. Respawn restores one grenade. Sticky pools
 expire and slow opponents. Grenade flight and blasts: see "Grenades" below.
 
-`armory.js` previews the actual marker (with its parts) and own pana, with hover
+`armory.js` previews the actual marker (with its parts) alone: it turns on a pivot,
+centred and scaled from its own bounding box so a pistol and La Bazuca fill the
+frame alike. The own pana (with El Acolchado when worn) only appears on the
+Equipo tab while choosing and during the range test, in a wider framing with the marker beside it
+(`withBody`/`frame`; `pinturaDebug.armory.body` is its group). Hover gives
 comparisons for range, damage, paint per second (`dpsOf`), spread (aimed spread
 and zoom when it aims), the real fire rate, capacity, reload, mobility and
 toughness. The marker picker comes by class: a chip per class with markers
