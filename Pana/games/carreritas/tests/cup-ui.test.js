@@ -39,7 +39,7 @@ test('cup presentation derives race points and rank movement from the ledger', (
 
 test('duration and next-stage copy include laps and an honest countdown', () => {
   assert.match(approximateCupText(cupById('pana')), /Duración aproximada: 11 min/);
-  assert.equal(nextStageText(cupById('pana'), session, 11.2, id => id === 'llanos' ? 'Los Llanos' : id),
-    'Siguiente: Los Llanos · 2 vueltas · continúa en 12 s');
+  assert.equal(nextStageText(cupById('pana'), session, 11.2, id => id === 'delta' ? 'Delta' : id),
+    'Siguiente: Delta · 3 vueltas · continúa en 12 s');
   assert.equal(nextStageText(cupById('pana'), { status: 'complete' }), 'Copa completada');
 });

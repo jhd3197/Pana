@@ -66,7 +66,7 @@ try {
     assert.equal(cup.again, n < 3 ? 'Siguiente pista' : 'Otra copa');
   }
   await page.screenshot({ path: join(output, 'modes-cup.png') });
-  assert.deepEqual(tracks, ['estadio', 'plaza', 'llanos', 'bululu']);
+  assert.deepEqual(tracks, ['estadio', 'llanos', 'delta', 'galipan']);
   assert.equal(new Set(rivals).size, 1, 'the same rivals race the whole cup');
   const trophy = await page.evaluate(() => JSON.parse(localStorage.getItem('carreritas:profile') || '{}').trophies.pana);
   assert.equal(trophy, 'oro', 'winning every race wins gold');

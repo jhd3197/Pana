@@ -11,7 +11,7 @@ known stages and now rejects any circuit missing from both the cup stages and
 the standalone list, or registered in both. Existing cup routes and profile
 migration remain unchanged.
 
-Seven cups now cover all 28 circuits and `STANDALONE_TRACKS` is empty; `npm
+The public build ships one cup, Copa Pana (Estadio, Llanos, Delta 3 laps, Galipán), and `STANDALONE_TRACKS` is empty. The other 24 circuits and six cups (Aventura, Agua, Costa, Cumbre, Relámpago, Fantasía) live in the private pana.sh repo as a Docker build-time overlay (`overlay/pana/...`) that adds `premium-tracks.js` exports (`PREMIUM_TRACKS`, `PREMIUM_CUPS`, `PREMIUM_MODES`, `PREMIUM_MUSIC`); without it the game falls back to the public cup. The notes below describe the full catalog; `npm
 run new-track` still appends new circuits there until they join a cup. The
 four later cups are Costa (Cata, Choroní, Chuao 3 laps, Margarita), Cumbre
 (Tovar, Galipán, Mérida, Volcán 1 lap), Relámpago (Puerto 1 lap, Maracaibo,

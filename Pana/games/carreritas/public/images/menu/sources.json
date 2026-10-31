@@ -2,30 +2,6 @@
   "note": "User-provided artwork. Original PNGs are preserved in the sibling pana-photos/generated folder. Map art is illustrative; track-map draws the actual playable route.",
   "images": [
     {
-      "file": "salinas.webp",
-      "source": "Pastel Salt Lagoon Racetrack.png",
-      "width": 960,
-      "bytes": 133448
-    },
-    {
-      "file": "salinas-thumb.webp",
-      "source": "Pastel Salt Lagoon Racetrack.png",
-      "width": 320,
-      "bytes": 22172
-    },
-    {
-      "file": "cuevas.webp",
-      "source": "Tropical Canyon Cave Racetrack.png",
-      "width": 960,
-      "bytes": 163656
-    },
-    {
-      "file": "cuevas-thumb.webp",
-      "source": "Tropical Canyon Cave Racetrack.png",
-      "width": 320,
-      "bytes": 29256
-    },
-    {
       "file": "delta.webp",
       "source": "Tropical Wetland River Delta Racetrack.png",
       "width": 960,
@@ -36,66 +12,6 @@
       "source": "Tropical Wetland River Delta Racetrack.png",
       "width": 320,
       "bytes": 29832
-    },
-    {
-      "file": "salto.webp",
-      "source": "Tropical Waterfall Racing Circuit.png",
-      "width": 960,
-      "bytes": 152232
-    },
-    {
-      "file": "salto-thumb.webp",
-      "source": "Tropical Waterfall Racing Circuit.png",
-      "width": 320,
-      "bytes": 28596
-    },
-    {
-      "file": "bululu.webp",
-      "source": "Tropical Island Racing Paradise.png",
-      "width": 960,
-      "bytes": 146748
-    },
-    {
-      "file": "bululu-thumb.webp",
-      "source": "Tropical Island Racing Paradise.png",
-      "width": 320,
-      "bytes": 24404
-    },
-    {
-      "file": "plaza.webp",
-      "source": "Colorful Coastal Town Racetrack Diorama.png",
-      "width": 960,
-      "bytes": 199244
-    },
-    {
-      "file": "plaza-thumb.webp",
-      "source": "Colorful Coastal Town Racetrack Diorama.png",
-      "width": 320,
-      "bytes": 34366
-    },
-    {
-      "file": "selva.webp",
-      "source": "Tropical Jungle Racing Island.png",
-      "width": 960,
-      "bytes": 193656
-    },
-    {
-      "file": "selva-thumb.webp",
-      "source": "Tropical Jungle Racing Island.png",
-      "width": 320,
-      "bytes": 31016
-    },
-    {
-      "file": "desierto.webp",
-      "source": "Desert Oasis Racing Map.png",
-      "width": 960,
-      "bytes": 120986
-    },
-    {
-      "file": "desierto-thumb.webp",
-      "source": "Desert Oasis Racing Map.png",
-      "width": 320,
-      "bytes": 22826
     },
     {
       "file": "llanos.webp",
@@ -110,30 +26,6 @@
       "bytes": 33544
     },
     {
-      "file": "paramo.webp",
-      "source": "Mountain Pass Cable Car Raceway.png",
-      "width": 960,
-      "bytes": 181920
-    },
-    {
-      "file": "paramo-thumb.webp",
-      "source": "Mountain Pass Cable Car Raceway.png",
-      "width": 320,
-      "bytes": 29770
-    },
-    {
-      "file": "chichi.webp",
-      "source": "Tropical Mountain Racing Island.png",
-      "width": 960,
-      "bytes": 181924
-    },
-    {
-      "file": "chichi-thumb.webp",
-      "source": "Tropical Mountain Racing Island.png",
-      "width": 320,
-      "bytes": 28342
-    },
-    {
       "file": "estadio.webp",
       "source": "Tropical Kart Racing Paradise.png",
       "width": 960,
@@ -144,72 +36,6 @@
       "source": "Tropical Kart Racing Paradise.png",
       "width": 320,
       "bytes": 28966
-    },
-    {
-      "file": "raceMaster.webp",
-      "source": "Mediterranean Capybara Street Race.png",
-      "width": 1600,
-      "bytes": 183300
-    },
-    {
-      "file": "puerto.webp",
-      "source": "Tropical Fortress Port Diorama.png",
-      "width": 960,
-      "bytes": 205124
-    },
-    {
-      "file": "puerto-thumb.webp",
-      "source": "Tropical Fortress Port Diorama.png",
-      "width": 320,
-      "bytes": 31024
-    },
-    {
-      "file": "cata.webp",
-      "source": "Bahía de Cata coastal switchbacks.png",
-      "width": 960,
-      "bytes": 223312
-    },
-    {
-      "file": "cata-thumb.webp",
-      "source": "Bahía de Cata coastal switchbacks.png",
-      "width": 320,
-      "bytes": 39454
-    },
-    {
-      "file": "choroni.webp",
-      "source": "Tropical Island Mountain Road Diorama.png",
-      "width": 960,
-      "bytes": 235790
-    },
-    {
-      "file": "choroni-thumb.webp",
-      "source": "Tropical Island Mountain Road Diorama.png",
-      "width": 320,
-      "bytes": 39620
-    },
-    {
-      "file": "chuao.webp",
-      "source": "Chuao La Quebrada_ Cacao Valley Run.png",
-      "width": 960,
-      "bytes": 255846
-    },
-    {
-      "file": "chuao-thumb.webp",
-      "source": "Chuao La Quebrada_ Cacao Valley Run.png",
-      "width": 320,
-      "bytes": 42574
-    },
-    {
-      "file": "tovar.webp",
-      "source": "Alpine Village Racetrack in Bloom.png",
-      "width": 960,
-      "bytes": 200268
-    },
-    {
-      "file": "tovar-thumb.webp",
-      "source": "Alpine Village Racetrack in Bloom.png",
-      "width": 320,
-      "bytes": 39100
     },
     {
       "file": "galipan.webp",
@@ -224,130 +50,10 @@
       "bytes": 28754
     },
     {
-      "file": "maracaibo.webp",
-      "source": "Neon Storm Over Coastal City.png",
-      "width": 960,
-      "bytes": 194048
-    },
-    {
-      "file": "maracaibo-thumb.webp",
-      "source": "Neon Storm Over Coastal City.png",
-      "width": 320,
-      "bytes": 33266
-    },
-    {
-      "file": "margarita.webp",
-      "source": "Tropical Island Resort Map.png",
-      "width": 960,
-      "bytes": 198328
-    },
-    {
-      "file": "margarita-thumb.webp",
-      "source": "Tropical Island Resort Map.png",
-      "width": 320,
-      "bytes": 35744
-    },
-    {
-      "file": "sarisarinama.webp",
-      "source": "Sarisariñama Twin Sinkhole Plateau.png",
-      "width": 960,
-      "bytes": 234686
-    },
-    {
-      "file": "sarisarinama-thumb.webp",
-      "source": "Sarisariñama Twin Sinkhole Plateau.png",
-      "width": 320,
-      "bytes": 39776
-    },
-    {
-      "file": "sabana.webp",
-      "source": "Savanna Tepui Rally Adventure.png",
-      "width": 960,
-      "bytes": 204398
-    },
-    {
-      "file": "sabana-thumb.webp",
-      "source": "Savanna Tepui Rally Adventure.png",
-      "width": 320,
-      "bytes": 37856
-    },
-    {
-      "file": "sabana-preview.jpg",
-      "source": "Savanna Tepui Rally Adventure.png",
-      "width": 960,
-      "bytes": 227801
-    },
-    {
-      "file": "cosmos.webp",
-      "source": "Cosmic Ringworld Kart Circuit.png",
-      "width": 960,
-      "bytes": 149924
-    },
-    {
-      "file": "cosmos-thumb.webp",
-      "source": "Cosmic Ringworld Kart Circuit.png",
-      "width": 320,
-      "bytes": 30308
-    },
-    {
-      "file": "merida.webp",
-      "source": "Alpine Village Mountain Roadscape.png",
-      "width": 960,
-      "bytes": 194752
-    },
-    {
-      "file": "merida-thumb.webp",
-      "source": "Alpine Village Mountain Roadscape.png",
-      "width": 320,
-      "bytes": 38016
-    },
-    {
-      "file": "arrecife.webp",
-      "source": "Underwater Reef Racetrack Adventure.png",
-      "width": 960,
-      "bytes": 148520
-    },
-    {
-      "file": "arrecife-thumb.webp",
-      "source": "Underwater Reef Racetrack Adventure.png",
-      "width": 320,
-      "bytes": 31300
-    },
-    {
-      "file": "volcan.webp",
-      "source": "Volcán_ Molten road at dusk.png",
-      "width": 960,
-      "bytes": 132540
-    },
-    {
-      "file": "volcan-thumb.webp",
-      "source": "Volcán_ Molten road at dusk.png",
-      "width": 320,
-      "bytes": 26654
-    },
-    {
-      "file": "nubes.webp",
-      "source": "Nubes floating island circuit.png",
-      "width": 960,
-      "bytes": 121052
-    },
-    {
-      "file": "nubes-thumb.webp",
-      "source": "Nubes floating island circuit.png",
-      "width": 320,
-      "bytes": 26406
-    },
-    {
-      "file": "dulce.webp",
-      "source": "Dulce Candy Circuit.png",
-      "width": 960,
-      "bytes": 157314
-    },
-    {
-      "file": "dulce-thumb.webp",
-      "source": "Dulce Candy Circuit.png",
-      "width": 320,
-      "bytes": 33068
+      "file": "raceMaster.webp",
+      "source": "Mediterranean Capybara Street Race.png",
+      "width": 1600,
+      "bytes": 183300
     }
   ]
 }

@@ -26,7 +26,7 @@ same room.
 | Game | What it is | Players |
 |---|---|---|
 | **Bochinche** | Six-player 3D platform fighter · stocks, items and CPU practice | 1–6 |
-| **Carreritas** | Toy-car racing on twenty-eight circuits, including Chuao’s downhill quebrada, Galipán at night, the Maracaibo bridge, Sarisariñama’s sinkhole caves, Cosmos, Mérida, Arrecife, Volcán, Nubes and Dulce, and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–12 online (bots fill a 12-car grid); local split screen |
+| **Carreritas** | Toy-car racing on four circuits (the stadium, Los Llanos, the Delta channels and Galipán at night) and one four-race Copa Pana by land, water and air, with items, coins and swappable wheels; the full 28-circuit Grand Prix runs on the private pana.sh server | 1–12 online (bots fill a 12-car grid); local split screen |
 | **Bululú** | Island or harbor party board, with a minigame every round | 1–6, bots fill seats |
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
 | **Pana Cocina** | Cooperative cooking shifts with configurable orders and kitchen rules | 1–8, bot helpers |

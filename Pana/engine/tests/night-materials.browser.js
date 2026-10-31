@@ -13,7 +13,7 @@ try {
   });
   await page.goto(`${base}/studio/settings.html`);
   await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><canvas></canvas>');
-  for (const id of ['track-galipan', 'track-maracaibo', 'track-tovar']) {
+  for (const id of ['track-galipan']) {
     const result = await page.evaluate(async id => {
       const THREE = await import('three');
       const { ASSETS } = await import('/studio/catalog.js');

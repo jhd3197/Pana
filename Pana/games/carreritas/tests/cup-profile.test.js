@@ -1,36 +1,45 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CUP_DEFINITIONS, CUPS, STANDALONE_TRACKS, cupById, cupDuration, validateCups } from '../public/cup-definitions.js';
+import { CUP_DEFINITIONS, CUPS, STANDALONE_TRACKS, canonicalCupId, cupById, cupDuration, validateCups } from '../public/cup-definitions.js';
+import { PREMIUM_CUPS } from '../public/premium-tracks.js';
 import {
   PROFILE_KEY, PROFILE_VERSION, claimReceipt, cleanSetup, createProfileStore,
   migrateProfile, receiptKey, recordCupTrophy, trophyCredits,
 } from '../public/cup-profile.js';
-import { TRACK_IDS } from '../public/online-rules.js';
+import { TRACK_IDS as ALL_TRACK_IDS } from '../public/online-rules.js';
+import { TRACK_DEFINITIONS } from '../public/track-definitions.js';
+// Private store circuits (premium-tracks.js) that join no cup are marked `premium`.
+const PREMIUM_IDS = TRACK_DEFINITIONS.filter(t => t.premium).map(t => t.id);
+const TRACK_IDS = ALL_TRACK_IDS.filter(id => !PREMIUM_IDS.includes(id));
 import { LEGACY_PROFILE_FIXTURES } from './cup-profile-fixtures.js';
 
+// The public build has one cup; the pana.sh overlay adds PREMIUM_CUPS. These tests hold in both.
+const hasCup = (id) => CUP_DEFINITIONS.some(cup => cup.id === id);
 const fixture = (id) => LEGACY_PROFILE_FIXTURES.find(item => item.id === id);
 
 test('available cups have four unique stages; every other circuit is explicitly standalone', () => {
-  assert.equal(CUPS.length, 7);
+  assert.equal(CUPS.length, 1 + PREMIUM_CUPS.length);
   const { errors, covered, standalone } = validateCups(TRACK_IDS);
   assert.deepEqual(errors, []);
   assert.deepEqual(standalone, STANDALONE_TRACKS);
   assert.deepEqual([...covered, ...standalone].sort(), [...TRACK_IDS].sort());
   assert.ok(validateCups([...TRACK_IDS, 'unregistered']).errors.some(e=>e.includes('unregistered')));
-  assert.ok(validateCups(TRACK_IDS.filter(id=>id!=='puerto')).errors.some(e=>e.includes('unknown track puerto')));
-  assert.equal(CUP_DEFINITIONS.find(cup => cup.id === 'agua').available, true);
-  assert.equal(cupById('agua').id, 'agua');
-  assert.equal(cupById('agua', { includeUnavailable: true }).stages.length, 4);
+  assert.ok(validateCups(TRACK_IDS.filter(id=>id!=='galipan')).errors.some(e=>e.includes('unknown track galipan')));
+  assert.equal(CUP_DEFINITIONS.find(cup => cup.id === 'pana').available, true);
+  assert.equal(cupById('pana').id, 'pana');
+  assert.equal(cupById('pana', { includeUnavailable: true }).stages.length, 4);
+  for (const cup of PREMIUM_CUPS) assert.equal(cupById(cup.id).id, cup.id, cup.id);
   assert.ok(cupDuration(CUPS[0]).minutes >= 10 && cupDuration(CUPS[0]).minutes <= 15);
 });
 
 test('legacy setup choices resolve only to their canonical successor cups', () => {
   assert.equal(cupById('mango').id, 'pana');
-  assert.equal(cupById('arepa').id, 'aventura');
+  assert.equal(canonicalCupId('arepa'), 'aventura');
+  assert.equal(cupById('arepa').id, hasCup('aventura') ? 'aventura' : 'pana', 'an absent successor cup falls back to the first cup');
   assert.equal(cleanSetup({ mode: 'mango', laps: 2 }).mode, 'pana');
-  assert.equal(cleanSetup({ mode: 'arepa', laps: 2 }).mode, 'aventura');
+  assert.equal(cleanSetup({ mode: 'arepa', laps: 2 }).mode, hasCup('aventura') ? 'aventura' : 'race');
   assert.equal(cleanSetup({ mode: 'battle', laps: 2 }).mode, 'battle');
-  assert.equal(cleanSetup({ mode: 'agua', laps: 2 }).mode, 'agua');
+  assert.equal(cleanSetup({ mode: 'agua', laps: 2 }).mode, hasCup('agua') ? 'agua' : 'race');
   assert.equal(cleanSetup({ mode: 'not-a-mode', laps: 2 }).mode, 'race');
 });
 
@@ -42,7 +51,8 @@ test('every legacy fixture preserves earnings and earns only earlier-edition cre
     for (const owned of item.wallet?.owned ?? []) assert.ok(profile.wallet.owned.includes(owned), `${item.id}: ${owned} preserved`);
     assert.deepEqual(profile.trophies, {}, `${item.id}: old route order is not a new-edition win`);
     for (const [oldId, trophy] of Object.entries(item.trophies)) {
-      const canonical = cupById(oldId).id;
+      const canonical = canonicalCupId(oldId);
+      if (!hasCup(canonical)) continue;
       assert.equal(profile.legacyTrophies[canonical].trophy, trophy);
       assert.equal(profile.legacyTrophies[canonical].source, oldId);
       assert.equal(profile.legacyTrophies[canonical].label, 'Edición anterior');
@@ -53,8 +63,7 @@ test('every legacy fixture preserves earnings and earns only earlier-edition cre
 
 test('old and new results share canonical cup identity and never downgrade', () => {
   const both = migrateProfile(fixture('both-legacy-cups'));
-  assert.deepEqual(trophyCredits(both), { pana: 'oro', aventura: 'bronce' });
-  assert.equal(Object.keys(trophyCredits(both)).length, 2);
+  assert.deepEqual(trophyCredits(both), hasCup('aventura') ? { pana: 'oro', aventura: 'bronce' } : { pana: 'oro' });
 
   const profile = migrateProfile(fixture('mango-bronze'));
   assert.equal(recordCupTrophy(profile, 'pana', 'plata'), true);

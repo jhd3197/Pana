@@ -39,7 +39,7 @@ try {
         speed:c.vf,distance:Math.hypot(c.x-x,c.z-z),x:c.x,z:c.z,h:c.h,limit:T.HW-1.6};
     }
     const counter=[];
-    for(const track of ['estadio','selva']) {
+    for(const track of ['estadio','galipan']) {
       toGarage();buildTrack(track);await startRace(0,'calle');race.state='go';
       T=getActiveTrack();c=race.player;
       heading=s=>{const p=T.pointAt(s),q=T.pointAt(s+.5);return Math.atan2(q.x-p.x,q.y-p.y);};

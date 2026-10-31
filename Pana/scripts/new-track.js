@@ -113,7 +113,7 @@ export function planTrack(root, { id, name, blurb, style = 'calipso', song }) {
   edit(PATHS.maps, text => appendToList(text, /assert\.deepEqual\(ids, \[([^\]]*)\]/, id, 'the maps suite id list'));
   edit(PATHS.music, text => {
     text = replaceOnce(text, /TRACK_STYLE = \{ /, `TRACK_STYLE = { ${id}: '${style}', `, 'TRACK_STYLE');
-    return replaceOnce(text, /\(\{([^}]*)\}\)\[trackId\]/, (all, items) => `({${items},${id}:'${song}'})[trackId]`, 'the songFor alias map');
+    return replaceOnce(text, /SONG_REMAP = \{ /, `SONG_REMAP = { ${id}: '${song}', `, 'SONG_REMAP');
   });
   edit(PATHS.readme, text => replaceOnce(text, /Toy-car racing on ([a-z-]+) circuits/, (all, word) => {
     const n = wordNumber(word);

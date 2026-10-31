@@ -86,7 +86,7 @@ try {
 
   // 4. Mud in La Selva: at full roughness barro keeps speed, calle bogs down.
   const mud = await page.evaluate(async () => {
-    toGarage(); buildTrack('selva');
+    toGarage(); buildTrack('llanos');
     const { roughnessAt } = await import('./offroad.js');
     const run = async wheelId => {
       await startRace(0, wheelId);

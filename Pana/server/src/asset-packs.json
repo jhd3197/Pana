@@ -52,65 +52,15 @@
     }
   },
   "carreritas": {
-    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/carreritas-17ed412c9943cf6d.zip",
-    "sha256": "17ed412c9943cf6d5d9349b39a70029db9efa975a31a9fd35cbdc2f1b32bb506",
-    "bytes": 5665210,
-    "files": 31,
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/carreritas-4faab53b546648f9.zip",
+    "sha256": "4faab53b546648f93410e566c4f276d4232b6494faa086df46ea001d094f38cd",
+    "bytes": 1103411,
+    "files": 6,
     "entries": {
-      "games/carreritas/public/images/menu/arrecife.webp": {
-        "url": "/g/carreritas/images/menu/arrecife.webp",
-        "bytes": 148520,
-        "sha256": "68bb16f90c6c28cf130536e6ef6cd06161f5fcfd0f5041f6f22c890f5a725cb2"
-      },
-      "games/carreritas/public/images/menu/bululu.webp": {
-        "url": "/g/carreritas/images/menu/bululu.webp",
-        "bytes": 146748,
-        "sha256": "18248749bba675a3e37009f20d6e1028210868427ff96602106924ef5f7df541"
-      },
-      "games/carreritas/public/images/menu/cata.webp": {
-        "url": "/g/carreritas/images/menu/cata.webp",
-        "bytes": 223312,
-        "sha256": "dece9f7e0a5d90e6bc08aa2500d6dc1c9c07ee088dc632bc273de908d899a673"
-      },
-      "games/carreritas/public/images/menu/chichi.webp": {
-        "url": "/g/carreritas/images/menu/chichi.webp",
-        "bytes": 181924,
-        "sha256": "101845bcfb11fb5edf1b9707680fa1630df78dcd1df0b3d31b49e3d28926fc80"
-      },
-      "games/carreritas/public/images/menu/choroni.webp": {
-        "url": "/g/carreritas/images/menu/choroni.webp",
-        "bytes": 235790,
-        "sha256": "d6b6e61241d0e5ae4222b2704d6d0c30a4822fe6506512ba086f020e3fb1c8c2"
-      },
-      "games/carreritas/public/images/menu/chuao.webp": {
-        "url": "/g/carreritas/images/menu/chuao.webp",
-        "bytes": 255846,
-        "sha256": "e7f01b34a6a0b4451abf6e8fb382bfe8b0163601107c8e4e9fb87bc19fbfd4a5"
-      },
-      "games/carreritas/public/images/menu/cosmos.webp": {
-        "url": "/g/carreritas/images/menu/cosmos.webp",
-        "bytes": 149924,
-        "sha256": "0f9fcbdef181df9a30d8ee500bf1084c90dbbbde86f54f224740af426941f7b1"
-      },
-      "games/carreritas/public/images/menu/cuevas.webp": {
-        "url": "/g/carreritas/images/menu/cuevas.webp",
-        "bytes": 163656,
-        "sha256": "d4be47af94072634ffe7da6666dc542f99da495194ec131e2310182e6a4fd9c3"
-      },
       "games/carreritas/public/images/menu/delta.webp": {
         "url": "/g/carreritas/images/menu/delta.webp",
         "bytes": 184886,
         "sha256": "1c838eefcb51f64b2c5b1e066a1df3838680808abb5eb9bfe8b893814c00f339"
-      },
-      "games/carreritas/public/images/menu/desierto.webp": {
-        "url": "/g/carreritas/images/menu/desierto.webp",
-        "bytes": 120986,
-        "sha256": "47aa7521e74374fcbf773b23bb5df0f48f3dec15259d89416bb8d3b3c2073dbf"
-      },
-      "games/carreritas/public/images/menu/dulce.webp": {
-        "url": "/g/carreritas/images/menu/dulce.webp",
-        "bytes": 157314,
-        "sha256": "399f44e71ff3f144aeca3f0439e5df655b569bb9637abb5dde3c68a66ac96945"
       },
       "games/carreritas/public/images/menu/estadio.webp": {
         "url": "/g/carreritas/images/menu/estadio.webp",
@@ -127,85 +77,10 @@
         "bytes": 230992,
         "sha256": "e3cc22104c66f317839cc320768a8f99f2127601a01ba72b74c178d843b752e4"
       },
-      "games/carreritas/public/images/menu/maracaibo.webp": {
-        "url": "/g/carreritas/images/menu/maracaibo.webp",
-        "bytes": 194048,
-        "sha256": "6cdcb16e4abf044ae82b8e4d13823692dc6b6cb8bec1ff9459e0b901157527b8"
-      },
-      "games/carreritas/public/images/menu/margarita.webp": {
-        "url": "/g/carreritas/images/menu/margarita.webp",
-        "bytes": 198328,
-        "sha256": "9777b027047fe06f9f02bbcafd1505228139d285e3b3cf631b1dba0a73a91508"
-      },
-      "games/carreritas/public/images/menu/merida.webp": {
-        "url": "/g/carreritas/images/menu/merida.webp",
-        "bytes": 194752,
-        "sha256": "7966ca3c8844458876c696a17483c117cf91272cadc3d8a8461cb1c808da1527"
-      },
-      "games/carreritas/public/images/menu/nubes.webp": {
-        "url": "/g/carreritas/images/menu/nubes.webp",
-        "bytes": 121052,
-        "sha256": "5fbdc0fd551d5018b108e1592b3a0bacfa514a37cbd75a83771b27b6f12cff4e"
-      },
-      "games/carreritas/public/images/menu/paramo.webp": {
-        "url": "/g/carreritas/images/menu/paramo.webp",
-        "bytes": 181920,
-        "sha256": "18fc517c6e1417b449fe786c84a49f363e2652ee13533820836502574d03c279"
-      },
-      "games/carreritas/public/images/menu/plaza.webp": {
-        "url": "/g/carreritas/images/menu/plaza.webp",
-        "bytes": 199244,
-        "sha256": "2b9bb6e178f9c1d415226f52c4548dd567238f166f505daf7918c456f87bb9e8"
-      },
-      "games/carreritas/public/images/menu/puerto.webp": {
-        "url": "/g/carreritas/images/menu/puerto.webp",
-        "bytes": 205124,
-        "sha256": "d4970c4a1262f09cf5d31fff448d3fe2e2b18c2bb27140cb62d1fd02a6198392"
-      },
       "games/carreritas/public/images/menu/raceMaster.webp": {
         "url": "/g/carreritas/images/menu/raceMaster.webp",
         "bytes": 183300,
         "sha256": "2df17343d25a9edad58e34ccfd6cbea9838e53c80a462a677cd3bc9f316c9d94"
-      },
-      "games/carreritas/public/images/menu/sabana-preview.jpg": {
-        "url": "/g/carreritas/images/menu/sabana-preview.jpg",
-        "bytes": 227801,
-        "sha256": "02761cb429be48718caa7127eca3ce4108c83f774cd118856283abe01369d91f"
-      },
-      "games/carreritas/public/images/menu/sabana.webp": {
-        "url": "/g/carreritas/images/menu/sabana.webp",
-        "bytes": 204398,
-        "sha256": "2b0942e25d441f7ed3c544aa0aa057523421db222a0674e461b622cf26e259c0"
-      },
-      "games/carreritas/public/images/menu/salinas.webp": {
-        "url": "/g/carreritas/images/menu/salinas.webp",
-        "bytes": 133448,
-        "sha256": "42eca991f3812f61c5d8245ab0e494ba244e33451bfd30850db1c13596c1c87b"
-      },
-      "games/carreritas/public/images/menu/salto.webp": {
-        "url": "/g/carreritas/images/menu/salto.webp",
-        "bytes": 152232,
-        "sha256": "014b6a13d88c29690f99599f8e65ac91e1b3a84f319b56701a58495b1ee2ea94"
-      },
-      "games/carreritas/public/images/menu/sarisarinama.webp": {
-        "url": "/g/carreritas/images/menu/sarisarinama.webp",
-        "bytes": 234686,
-        "sha256": "f8f6f35b9a5e3d2ec8cf39ed97f419b67c503b990399247b887890ec3141057f"
-      },
-      "games/carreritas/public/images/menu/selva.webp": {
-        "url": "/g/carreritas/images/menu/selva.webp",
-        "bytes": 193656,
-        "sha256": "900025654f1fa2988d5517ce75beafee49b276118ee6011d03dd98a0c90ed19a"
-      },
-      "games/carreritas/public/images/menu/tovar.webp": {
-        "url": "/g/carreritas/images/menu/tovar.webp",
-        "bytes": 200268,
-        "sha256": "71c1d92c38ceb9272a08edca0ee8107ff454b901209a9ea1e7487386d342ade9"
-      },
-      "games/carreritas/public/images/menu/volcan.webp": {
-        "url": "/g/carreritas/images/menu/volcan.webp",
-        "bytes": 132540,
-        "sha256": "18ba78ecdd832033c08aef1cb319e9bae44eec64d19fd3948bd79dc30ee99c18"
       },
       "web/images/launcher/carreritas.jpg": {
         "url": "/images/launcher/carreritas.jpg",

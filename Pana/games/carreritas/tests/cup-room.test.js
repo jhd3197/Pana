@@ -58,22 +58,22 @@ test('host-only cup and difficulty selection, protocol capability check, and sta
   assert.equal(room.state.difficulty, 'normal');
 
   // Guest cannot change mode or difficulty
-  send(guest, 'mode', { mode: 'aventura' });
+  send(guest, 'mode', { mode: 'pana' });
   send(guest, 'difficulty', { id: 'dificil' });
   assert.equal(room.state.mode, 'race');
   assert.equal(room.state.difficulty, 'normal');
 
-  // Host selects Copa Aventura (via legacy alias 'arepa' or canonical 'aventura') + dificil difficulty
-  send(host, 'mode', { mode: 'arepa' });
+  // Host selects Copa Pana (via legacy alias 'mango' or canonical 'pana') + dificil difficulty
+  send(host, 'mode', { mode: 'mango' });
   send(host, 'difficulty', { id: 'dificil' });
-  assert.equal(room.state.mode, 'aventura');
+  assert.equal(room.state.mode, 'pana');
   assert.equal(room.state.difficulty, 'dificil');
-  assert.equal(room.state.track, 'desierto');
+  assert.equal(room.state.track, 'estadio');
   assert.equal(room.state.laps, 2);
 
   // Track message is ignored while a cup mode is selected
   send(host, 'track', { id: 'estadio' });
-  assert.equal(room.state.track, 'desierto');
+  assert.equal(room.state.track, 'estadio');
 
   // If a legacy client (protocol 1) joins, starting a cup sets a notice instead of launching
   const { client: legacy } = join('legacy-3', { protocol: 1, name: 'Viejo' });
@@ -86,12 +86,12 @@ test('host-only cup and difficulty selection, protocol capability check, and sta
   send(host, 'start');
   assert.equal(room.state.phase, 'loading');
   assert.ok(room.cupSession);
-  assert.equal(room.cupSession.cupId, 'aventura');
+  assert.equal(room.cupSession.cupId, 'pana');
   assert.equal(room.cupSession.entrants.length, 8);
 });
 
 test('persistent 8-entrant roster, stage lap targets, stale packet rejection, and full 4-stage lifecycle', () => {
-  const { room, send, join, broadcasts, finish } = createTestRoom({ mode: 'aventura', difficulty: 'facil' });
+  const { room, send, join, broadcasts, finish } = createTestRoom({ mode: 'pana', difficulty: 'facil' });
   const { client: host } = join('host-1', { name: 'Ana', car: 0, wheel: 'calle' });
   const { client: guest } = join('guest-2', { name: 'Beto', car: 3, wheel: 'pista' });
 
@@ -100,8 +100,8 @@ test('persistent 8-entrant roster, stage lap targets, stale packet rejection, an
   const initialEntrants = room.cupSession.entrants.map(e => ({ id: e.id, skillSeed: e.skillSeed, car: e.loadout.car }));
   assert.equal(initialEntrants.length, 8);
 
-  const expectedTracks = ['desierto', 'chichi', 'selva', 'paramo'];
-  const expectedLaps = [2, 1, 2, 2];
+  const expectedTracks = ['estadio', 'llanos', 'delta', 'galipan'];
+  const expectedLaps = [2, 2, 3, 2];
 
   for (let stage = 0; stage < 4; stage++) {
     assert.equal(room.cupSession.stageIndex, stage);
@@ -327,15 +327,15 @@ test('late spectators stay outside locked roster and a new cup resets all race s
   assert.equal(room.state.players.get('spectator').loaded, false);
   room.toLobby();
   assert.equal(room.poses.size, 0); assert.equal(room.state.racers.size, 0);
-  send(host, 'mode', { mode: 'aventura' }); send(host, 'start');
+  send(host, 'mode', { mode: 'pana' }); send(host, 'start');
   assert.notEqual(room.cupSession.sessionId, sessionId);
   assert.ok(room.cupSession.entrants.some(e => e.id === 'spectator'));
   assert.equal(room.cupSession.ledger.length, 0);
-  assert.equal(room.state.track, 'desierto');
+  assert.equal(room.state.track, 'estadio');
 });
 
 test('appearance is validated, frozen for all stages and shared with every client', () => {
-  const {room,send,join}=createTestRoom({mode:'agua'});
+  const {room,send,join}=createTestRoom({mode:'pana'});
   const {client:host}=join('host',{cosmetics:{paint:'caribe',horn:'fiesta',flame:'hielo'}});
   join('guest',{cosmetics:{paint:'foreign',horn:7,flame:'foreign'}});send(host,'start');
   const saved=room.cupSession.entrants.find(e=>e.id==='host').loadout;

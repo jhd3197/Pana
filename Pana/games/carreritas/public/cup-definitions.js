@@ -1,5 +1,7 @@
 import { loc } from '../../../engine/i18n.js';
-export const CURRENT_CUP_EDITION = 2;
+// Absent or empty in the public build; the pana.sh overlay fills it.
+const { PREMIUM_CUPS = [] } = await import('./premium-tracks.js').catch(() => ({}));
+export const CURRENT_CUP_EDITION = 3;
 export const GP_STAGE_CAP_SECONDS = 240;
 // New standalone circuits do not silently change a saved cup edition's route.
 export const STANDALONE_TRACKS = [];
@@ -13,65 +15,16 @@ export const CUP_DEFINITIONS = [
     id: 'pana', name: loc('Copa Pana'), edition: CURRENT_CUP_EDITION, available: true,
     stages: [
       stage('estadio', 2, 155),
-      stage('plaza', 2, 175),
       stage('llanos', 2, 160),
-      stage('bululu', 2, 145),
-    ],
-  },
-  {
-    id: 'aventura', name: loc('Copa Aventura'), edition: CURRENT_CUP_EDITION, available: true,
-    stages: [
-      stage('desierto', 2, 145),
-      stage('chichi', 1, 175),
-      stage('selva', 2, 185),
-      stage('paramo', 2, 155),
-    ],
-  },
-  {
-    id: 'agua', name: loc('Copa del Agua'), edition: CURRENT_CUP_EDITION, available: true,
-    stages: [
-      stage('salinas', 2, 205),
       stage('delta', 3, 165),
-      stage('cuevas', 2, 125),
-      stage('salto', 2, 180),
-    ],
-  },
-  {
-    id: 'costa', name: loc('Copa Costa'), edition: CURRENT_CUP_EDITION, available: true,
-    stages: [
-      stage('cata', 2, 180),
-      stage('choroni', 2, 130),
-      stage('chuao', 3, 120),
-      stage('margarita', 2, 160),
-    ],
-  },
-  {
-    id: 'cumbre', name: loc('Copa Cumbre'), edition: CURRENT_CUP_EDITION, available: true,
-    stages: [
-      stage('tovar', 2, 135),
       stage('galipan', 2, 155),
-      stage('merida', 2, 185),
-      stage('volcan', 1, 135),
     ],
   },
-  {
-    id: 'relampago', name: loc('Copa Relámpago'), edition: CURRENT_CUP_EDITION, available: true,
-    stages: [
-      stage('puerto', 1, 185),
-      stage('maracaibo', 2, 120),
-      stage('sabana', 2, 110),
-      stage('sarisarinama', 2, 160),
-    ],
-  },
-  {
-    id: 'fantasia', name: loc('Copa Fantasía'), edition: CURRENT_CUP_EDITION, available: true,
-    stages: [
-      stage('arrecife', 2, 165),
-      stage('dulce', 2, 145),
-      stage('nubes', 2, 185),
-      stage('cosmos', 1, 125),
-    ],
-  },
+  // Extra cups from premium-tracks.js (empty in the public build).
+  ...PREMIUM_CUPS.map(cup => ({
+    ...cup, edition: CURRENT_CUP_EDITION, available: true,
+    stages: cup.stages.map(item => stage(item.track, item.laps, item.estimatedSeconds)),
+  })),
 ];
 
 export const LEGACY_CUP_ALIASES = Object.freeze({ mango: 'pana', arepa: 'aventura' });
