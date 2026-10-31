@@ -24,7 +24,7 @@ Written by whoever learned the lesson, human or AI, for whoever comes next.
 | Prop packs | `pueblo-paramo-props.md`, `llanos-desert-props.md`, `coastal-props.md`, `procedural-farm-animals.md`, `wildlife.md`, `map-asset-rollout.md` |
 | Carreritas | `carreritas.md` (start here), `carreritas-menu.md`, `carreritas-loadout.md`, `carreritas-driving.md`, `carreritas-grand-prix.md`, `carreritas-scenery.md`, `water-worlds.md`, `carreritas-tracks.md`, `carreritas-map-improvements.md`, `venezuela-circuits.md`, `puerto-circuit.md`, `aragua-circuits.md`, `reference-circuits.md`, `tovar-galipan-maracaibo.md`, `carreritas-road-polish.md`, `circuit-surroundings.md`, `carreritas-items.md`, `carreritas-wheels.md`, `carreritas-performance.md`, `carreritas-online.md` |
 | Bochinche platform fighter | `bochinche.md` |
-| Other games | `billar.md`, `bululu.md`, `caida.md`, `chapita.md`, `cocina.md`, `criollas.md`, `curiara.md`, `domino.md`, `embuste.md`, `escondidas.md`, `galope.md`, `lancha.md`, `ludo.md`, `parapente.md`, `pintura.md`, `poquer.md`, `qqsmp.md`, `reliquia.md`, `stop.md`, `tambor.md`, `trifulca.md` |
+| Other games | `billar.md`, `bululu.md`, `caida.md`, `capis.md`, `chapita.md`, `cocina.md`, `criollas.md`, `curiara.md`, `domino.md`, `embuste.md`, `escondidas.md`, `galope.md`, `lancha.md`, `ludo.md`, `parapente.md`, `pintura.md`, `poquer.md`, `qqsmp.md`, `reliquia.md`, `stop.md`, `tambor.md`, `trifulca.md` |
 
 Each area note ends with **Notes for agents**: the rules for that area that used
 to live in `AGENTS.md`.

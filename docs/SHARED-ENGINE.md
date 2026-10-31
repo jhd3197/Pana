@@ -41,7 +41,7 @@ survives a dropped packet), `jumpCount(input)`, `stepJump`, `resetJump`.
 input.jump = pressJump(input.jump);   // client, on the key edge
 ```
 
-Used by: Reliquia, Pepazo.
+Used by: Reliquia, Pepazo, Capis a Pintazos (the press counter, through `side-walker.js`).
 
 ### Footsteps, take-off and landing
 
@@ -155,7 +155,7 @@ returns `{ kick, pitch, yaw, roll }` to add to the camera or a held model. No
 `Math.random`: the shake is a sum of sines, so tests are exact. `shakeAt(distance,
 power)` is how hard a blast that far away shakes you.
 
-Used by: Pepazo (the first-person camera and the viewmodel kick).
+Used by: Pepazo (the first-person camera and the viewmodel kick), Capis a Pintazos (the side camera's kick and blast shake).
 
 ### Explosions, smoke trails and tracers
 
@@ -207,7 +207,7 @@ Used by: Carreritas (tyres, boost, crash, via `drift-audio.js`). Carreritas' car
 
 `engine/fx.js`. `sound` (the older shared effects and the one audio context),
 `Puffs`, `Shockwaves`, `Debris`, charge ring, speed lines, `popCounter`,
-`flyToCounter`, speech bubbles. Used by 20 games (all but Billar, Caída
+`flyToCounter`, speech bubbles. Used by 21 games (all but Billar, Caída
 and Dominó, which load it on first use through `engine/lazy-sound.js`).
 `engine/sfx.js` sits on top of it.
 
@@ -229,7 +229,7 @@ Sala layout). A game opts in by exporting `sceneReady` (a promise); the others
 go through `engine/game-load.js` (`prepareScene`: compile and render once before
 the cover lifts).
 
-Used by: game-entry and game-lobby in all 23 games; `sceneReady` in Bochinche,
+Used by: game-entry and game-lobby in all 24 games; `sceneReady` in Bochinche,
 Caída, Carreritas, Chapita, Dominó, Ludo, Parapente, QQSMP, Stop, Tambor,
 Trifulca; `game-load` in Billar, Bululú, Caída, Cocina, Criollas, Curiara,
 Dominó, Embuste, Escondidas, Galope, Lancha, Ludo, Pepazo, Póquer, Reliquia.
@@ -252,9 +252,9 @@ See candidates.
 | ¿Quién empieza? (roll-off for the first turn) | `engine/play/quien-empieza.js` + `-rules.js`, `play/roll-off.js` | Billar, Bululú, Caída, Criollas, Dominó, Ludo, Póquer |
 | Map picker | `engine/play/map-picker.js` | Billar, Caída, Criollas, Dominó, Escondidas, Pepazo, Póquer |
 | Results → lobby (pick the next map) | `engine/play/round-lobby.js` (`returnToLobby`; LiveRoom's `lobby` action calls `game.toLobby()`) | Escondidas, Pepazo, Trifulca |
-| Difficulty picker | `engine/play/difficulty.js` | Billar, Criollas, Pepazo |
-| Room options (fields, rules, finalize) | `engine/room-options.js`, `room-options-rules.js`, `room-option-fields.js` | 22 games; fields in 12 |
-| Results screen | `engine/results.js` + `.pk-results` | 21 games (not Bululú, Embuste) |
+| Difficulty picker | `engine/play/difficulty.js` | Billar, Criollas, Pepazo; Capis a Pintazos reads the levels for its bot and aim preview |
+| Room options (fields, rules, finalize) | `engine/room-options.js`, `room-options-rules.js`, `room-option-fields.js` | 23 games; fields in 13 |
+| Results screen | `engine/results.js` + `.pk-results` | 22 games (not Bululú, Embuste) |
 
 ## Rooms and netcode
 
@@ -264,37 +264,37 @@ See candidates.
 | Turn-based room | `engine/table-room.js` | Billar, Caída, Chapita, Criollas, Ludo, QQSMP, Stop |
 | Client prediction | `engine/predict.js` | Cocina, Escondidas, Galope, Reliquia |
 | Raw room and links | `engine/net.js` | Bululú, Carreritas, Dominó, Embuste, Pepazo, Póquer |
-| Shell (load, loops, teardown) | `engine/game-shell.js` (`bootGame`) | 16 games |
-| Invite links | `engine/invite.js` | all 23 |
-| Seeded random, noise | `engine/random.js` | 13 games |
+| Shell (load, loops, teardown) | `engine/game-shell.js` (`bootGame`) | 17 games |
+| Invite links | `engine/invite.js` | all 24 (Capis a Pintazos through game-entry only) |
+| Seeded random, noise | `engine/random.js` | 14 games |
 
 ## HUD and UI
 
 | Piece | Module | Used by |
 |---|---|---|
-| Look, fonts, `--pk-*` tokens | `engine/kit.css`, `engine/kit.js` | all 23 |
-| Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | ui: all 23; settings: 15 |
-| Icons | `engine/icons.js` | Billar, Bochinche, Bululú, Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
-| Toast | `engine/hud.js` (`createToast`) | Billar, Caída, Cocina, Criollas, Curiara, Dominó, Embuste, Escondidas, Lancha, Parapente, Reliquia |
-| Touch controls | `engine/touch.js` | 16 games |
+| Look, fonts, `--pk-*` tokens | `engine/kit.css`, `engine/kit.js` | all 24 |
+| Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | ui: all 24; settings: 16 |
+| Icons | `engine/icons.js` | Billar, Bochinche, Bululú, Capis a Pintazos (through room options), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
+| Toast | `engine/hud.js` (`createToast`) | Billar, Caída, Capis a Pintazos, Cocina, Criollas, Curiara, Dominó, Embuste, Escondidas, Lancha, Parapente, Reliquia |
+| Touch controls | `engine/touch.js` | 17 games |
 | Gamepad | `engine/gamepad.js` | Carreritas, Trifulca; `ui`, `first-person`, `settings` and `game-entry` read pads for every game |
 | River HUD, minimap, guide | `engine/river/hud.js`, `minimap.js`, `guide.js` | Curiara, Lancha (`river/hud` also Galope) |
 | Combat HUD (Banderín style: race, pepas, hit arrow, KO plate) | `games/pintura/public/combat-hud.js`, `hud-model.js`, `hud-banderin.css` | Pepazo only (game-local) |
 | Minimap | one per game | Bululú, Carreritas, Curiara, Embuste, Escondidas, Galope, Lancha, Pepazo, Reliquia each draw their own (Curiara and Lancha share `river/minimap`) |
-| Shot charge and aim guide | `engine/play/shot-charge.js`, `aim-guide.js` | Billar, Bululú, Criollas (charge); Billar, Criollas (guide) |
+| Shot charge and aim guide | `engine/play/shot-charge.js`, `aim-guide.js` | Billar, Bululú, Capis a Pintazos, Criollas (charge); Billar, Capis a Pintazos (dashed arc), Criollas (guide) |
 
 ## Player, look and rewards
 
 | Piece | Module | Used by |
 |---|---|---|
-| Saved name and appearance | `engine/avatar.js` | all 23 |
-| Pana model | `engine/models/characters/pana/avatar-model.js` | 18 games (not Curiara, Galope, Lancha, Parapente, Criollas) |
+| Saved name and appearance | `engine/avatar.js` | all 24 |
+| Pana model | `engine/models/characters/pana/avatar-model.js` | 19 games (not Curiara, Galope, Lancha, Parapente, Criollas) |
 | Portraits | `engine/portrait.js`, `portrait-cache.js` | Bochinche, Trifulca |
 | Wardrobe | `engine/wardrobe.js`, `wardrobe-preview.js` | Bochinche, Carreritas, Pepazo, Trifulca (the page also loads `wardrobe-preview` through `pana.sh`) |
 | Mangos (shared currency) | `engine/mangos.js` | Bochinche, Carreritas |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
-| Text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`) | all 23 |
-| Your own pana's outline and marker | `engine/play/local-outline.js` | Bochinche |
+| Text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`) | all 24 |
+| Your own pana's outline and marker | `engine/play/local-outline.js` | Bochinche; Capis a Pintazos (the marker only, over the capi whose turn it is) |
 
 ### Your own pana: outline and marker
 
@@ -348,7 +348,7 @@ collapsed into one node.
 flowchart LR
   classDef mod fill:#ffc629,stroke:#1c1230,color:#1c1230
   classDef game fill:#2ad1b2,stroke:#1c1230,color:#1c1230
-  ALL["all 23 games"]:::game
+  ALL["all 24 games"]:::game
   kit["kit, ui, avatar, i18n, invite, game-entry, game-lobby"]:::mod -->|used by| ALL
 
   walker["play/walker + jump"]:::mod -->|used by| reliquia:::game
@@ -362,7 +362,7 @@ flowchart LR
   fp -->|used by| reliquia
   fp -->|used by| pintura
 
-  fx["fx (sound, particles)"]:::mod -->|used by| G20["20 games"]:::game
+  fx["fx (sound, particles)"]:::mod -->|used by| G20["21 games"]:::game
   lobby["lobby-roster"]:::mod -->|used by| criollas:::game
   lobby -->|used by| curiara:::game
   lobby -->|used by| pintura
@@ -379,7 +379,7 @@ flowchart LR
   live["live-room"]:::mod -->|used by| LIVE["bochinche, cocina, curiara, escondidas, galope, lancha, parapente, reliquia, tambor, trifulca"]:::game
   table["table-room"]:::mod -->|used by| TURN["billar, caida, chapita, criollas, ludo, qqsmp, stop"]:::game
   predict["predict"]:::mod -->|used by| PRED["cocina, escondidas, galope, reliquia"]:::game
-  results["results"]:::mod -->|used by| R21["21 games"]:::game
+  results["results"]:::mod -->|used by| R21["22 games"]:::game
   mangos["mangos"]:::mod -->|used by| bochinche:::game
   mangos -->|used by| carreritas
   outline["play/local-outline"]:::mod -->|used by| bochinche
