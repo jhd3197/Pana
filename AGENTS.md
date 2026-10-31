@@ -8,6 +8,12 @@ touch.
 The app lives in `Pana/` (server, web, games, engine, scripts, tests). Docs are in
 `docs/`. Paths below are relative to `Pana/` unless they start with `docs/`.
 
+> **Before you build a mechanic** (movement, jump, footsteps, a sound, a countdown,
+> a spawn, a HUD piece, a lobby step), open `docs/SHARED-ENGINE.md`: if a row
+> already does it, use it. If you build something a second game could use, put it
+> in `engine/` (`engine/play/` for mechanics) and add its row to that map in the
+> same change.
+
 ## Every game is 3D
 
 - The playable view is a Three.js scene with a **perspective camera** and the
@@ -75,6 +81,9 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Icons | `engine/icons.js` (SVG); never emoji or symbol glyphs | pana-kit.md, "Icons and colours" |
 | Touch controls, orientation | `engine/touch.js` | pana-kit.md, "Touch controls" |
 | The player's pana | `engine/avatar.js`, `engine/models/characters/pana/avatar-model.js` | `docs/knowledge/character-reference.md` |
+| Walk, sprint, jump, footsteps on foot | `engine/play/walker.js`, `jump.js`, `footsteps.js` | `docs/knowledge/shared-player.md`; Reliquia and Pepazo use it |
+| Sound effects, vehicle engines | `engine/sfx.js`, `engine/vehicle-audio.js` | `docs/knowledge/shared-sfx.md`; no audio files |
+| Who uses which piece, and what is still local | `docs/SHARED-ENGINE.md` | read it first; keep it current |
 | Browser suites | `tests/browser-kit.js` (`launch`, `openGame`, `waitPrepared`, `waitFor`) | |
 
 Never write sockets, retries, member lists or host election in a game, a per-game
