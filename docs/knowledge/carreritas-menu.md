@@ -197,7 +197,7 @@ personal workshop without setting the room's garage flag; ordinary room
 updates must not dismiss it. The host's start still advances the whole room.
 
 Pistas uses Una carrera, Copas and Globos tabs backed by the existing setup
-handlers. All 22 circuits fit the desktop grid without an inner scroll. Cup
+handlers. The public circuits (four here, 28 with the private pana.sh overlay) fit the desktop grid without an inner scroll. Cup
 cards and previews use the four authoritative stages and earned trophy state.
 Vehicle dots and preview chips come from `trackPieces`, not guessed prototype
 metadata. Guests can inspect the choice but cannot change room configuration.

@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas pública ahora es una vitrina: cuatro pistas y una Copa Pana.**
+  El Estadio, Los Llanos, el Delta y Galipán de noche forman la Copa Pana
+  para mostrar carros, botes y aviones; los otros 24 circuitos y seis copas
+  pasaron al servidor privado. La copa tiene una edición nueva, así que el
+  progreso de copas anterior empieza de cero.
+
 - **Carreritas ya corre con hasta doce carros en la pista.**
   Nueva opción «Parrilla» (Normal o 12 carros): los bots llenan los puestos
   vacíos en carreras y copas, solo o en la sala online, que ahora recibe
