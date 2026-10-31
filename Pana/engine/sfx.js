@@ -184,8 +184,34 @@ const RELOAD = {
 };
 const RELOAD_FOR = { pistol: 'hopper', rapid: 'hopper', scatter: 'pump', rocket: 'tube', sniper: 'bolt', bazooka: 'tube' };
 
+// ---------- melee ----------
+// A close-range weapon by what it is made of: the air it cuts on the swing and the
+// sound of the blow. `wood` a bat's thud, `slap` a sandal, `squish` a wet paint
+// roller, `swish` a brush, `clang` a metal bucket, `rattle` a maraca's seeds.
+const SWINGS = {
+  wood: v => burst({ dur: .2, f0: 380, f1: 1500, q: 1.1, vol: .11 * v, priority: 1 }),
+  slap: v => burst({ dur: .13, f0: 900, f1: 2600, q: 1.3, vol: .08 * v, priority: 1 }),
+  squish: v => burst({ dur: .24, f0: 300, f1: 1100, q: .8, vol: .1 * v, priority: 1 }),
+  swish: v => { burst({ dur: .12, f0: 2400, f1: 5200, q: .9, vol: .07 * v, priority: 1 }); burst({ dur: .1, f0: 3000, q: 1, vol: .04 * v, delay: .04, priority: 0 }); },
+  clang: v => { burst({ dur: .28, f0: 260, f1: 900, q: 1, vol: .12 * v, priority: 1 }); pitch({ dur: .12, f0: 1300, f1: 1250, type: 'triangle', vol: .015 * v, delay: .05, priority: 0 }); },
+  rattle: v => { for (let i = 0; i < 4; i++) burst({ dur: .03, f0: rnd(4200, 6200), q: 2.5, vol: .05 * v, delay: i * .035, priority: 0 }); burst({ dur: .14, f0: 900, f1: 2200, q: 1, vol: .05 * v, priority: 1 }); },
+};
+const SMACKS = {
+  wood: v => { pitch({ dur: .14, f0: 150, f1: 55, vol: .22 * v, priority: 2 }); burst({ dur: .07, f0: 700, f1: 380, q: 1.6, vol: .16 * v, priority: 2 }); pitch({ dur: .06, f0: 420, f1: 260, type: 'triangle', vol: .08 * v, priority: 2 }); },
+  slap: v => { burst({ dur: .045, f0: 2600, f1: 1400, q: .7, vol: .26 * v, priority: 2 }); burst({ dur: .03, f0: 6000, type: 'highpass', vol: .1 * v, priority: 2 }); pitch({ dur: .05, f0: 260, f1: 140, vol: .1 * v, priority: 2 }); },
+  squish: v => { burst({ dur: .18, f0: 1200, f1: 380, q: 1.4, vol: .18 * v, priority: 2 }); pitch({ dur: .12, f0: 220, f1: 90, vol: .1 * v, priority: 2 }); for (let i = 0; i < 2; i++) burst({ dur: .05, f0: rnd(1500, 2300), q: 2.5, vol: .05 * v, delay: .07 + i * .05, priority: 0 }); },
+  swish: v => { burst({ dur: .08, f0: 3200, f1: 1800, q: 1, vol: .14 * v, priority: 2 }); burst({ dur: .07, f0: 1300, f1: 600, q: .9, vol: .1 * v, delay: .02, priority: 2 }); },
+  clang: v => { pitch({ dur: .45, f0: 640 * jit(.05), f1: 600, type: 'triangle', vol: .09 * v, priority: 2 }); pitch({ dur: .35, f0: 1510, f1: 1480, vol: .04 * v, priority: 2 }); burst({ dur: .05, f0: 3800, q: 3, vol: .14 * v, priority: 2 }); pitch({ dur: .12, f0: 120, f1: 60, vol: .16 * v, priority: 2 }); },
+  rattle: v => { for (let i = 0; i < 6; i++) burst({ dur: .03, f0: rnd(3800, 6400), q: 2.5, vol: .07 * v, delay: i * .028, priority: 1 }); pitch({ dur: .08, f0: 300, f1: 160, type: 'triangle', vol: .1 * v, priority: 2 }); },
+};
+
 // ---------- the library ----------
 export const sfx = {
+  // A melee swing cutting the air, and the blow landing (material: see SWINGS).
+  swing(material = 'wood', { volume = 1 } = {}) { if (!sound.ctx || sound.muted) return; (SWINGS[material] || SWINGS.wood)(clamp(volume, 0, 1.5)); },
+  smack(material = 'wood', { volume = 1 } = {}) { if (!sound.ctx || sound.muted) return; (SMACKS[material] || SMACKS.wood)(clamp(volume, 0, 1.5)); },
+  // Something small back in the hand: a quick rising pop.
+  pop(volume = 1) { pitch({ dur: .07, f0: 420, f1: 1100, type: 'triangle', vol: .08 * volume, priority: 2 }); burst({ dur: .03, f0: 2600, q: 2, vol: .05 * volume, delay: .03, priority: 1 }); },
   // One footfall. foot (0/1) alternates the pitch; sprint hits harder and quicker.
   step(surface = 'concrete', { sprint = false, volume = 1, foot = 0 } = {}) {
     if (!sound.ctx || sound.muted) return;

@@ -113,7 +113,37 @@ import { launch, sweep } from '../../../engine/play/projectile.js'; // relative:
 const { t, victim, dx, dz } = sweep(ball, dt, { boxes: cover, targets: rivals, padding: .12 });
 ```
 
-Used by: Pepazo (every ball and rocket, and the sniper tracer).
+Arcs in a 3D court: `sweepArc(ball, dt, { boxes, targets, radius, height, gravity })`
+sweeps one gravity step `{ x, y, z, vx, vy, vz }` as its chord against cover
+boxes with a height (a low crate is flown over), upright round targets and the
+ground (`hit`: 'cover' | 'target' | 'ground'), and `stepArc(ball, dt, gravity)`
+moves it on. `engine/play/melee.js` throws with them.
+
+Used by: Pepazo (every ball and rocket, the sniper tracer, the thrown chancla).
+
+### Melee weapons (one target per swing, throwable)
+
+`engine/play/melee.js` (pure, renderer-free). A weapon is data: `{ reach, arc,
+windup, recovery, damage, knockback, sweetSpot?, throwable? }`; `throwable` is
+`{ speed, lift, gravity, radius, damage, life, recall, returns: 'recall' | 'pickup' }`.
+`createMelee()` is the state (`phase` ready / windup / recover / away, counters
+`swings` and `throws`); `startSwing`, `stepMelee(state, def, dt)` (says
+`'strike'` the step the windup ends, `'return'` when a thrown weapon is back,
+`'ready'`), `swingHit(pose, targets, def, { boxes, radius })` (the ONE nearest
+target in reach and inside the facing cone with no cover between, plus the
+sweet-spot damage), `throwStart(state, def, pose)` (the projectile; the weapon
+leaves the hand), `stepThrown(flying, dt, { boxes, targets })` (gravity arc on
+`projectile.js`'s `sweepArc`), `readiness` (0..1 for a HUD bar), `recall`,
+`swingInterval` and `aimThrow(def, distance)` (the pitch that reaches a target:
+bots). Tests: `engine/tests/melee.test.js`.
+
+```js
+import { startSwing, stepMelee, swingHit, throwStart, stepThrown } from '../../../engine/play/melee.js'; // relative: rules.js also loads on the server
+if (input.fire) startSwing(p.melee, def);
+if (stepMelee(p.melee, def, dt) === 'strike') { const hit = swingHit(p, rivals, def, { boxes: cover }); if (hit) paint(hit.target, hit.damage); }
+```
+
+Used by: Pepazo (Los del pescozón: six melee weapons; La Chancleta's throw).
 
 ### Lobbed shots seen from the side (gravity and wind)
 

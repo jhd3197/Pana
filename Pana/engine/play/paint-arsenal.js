@@ -34,7 +34,10 @@ export const classOf = weapon => PAINT_CLASSES.find(c => c.weapons.includes(weap
 // different place on the model, so any three can be fitted together.
 // A marker without a mount leaves it out here and the armory greys that part out.
 const ALL = ['barrel', 'hopper', 'stock', 'optic'];
-export const PAINT_MOUNTS = Object.freeze(Object.fromEntries(Object.keys(PAINT_WEAPONS).map(id => [id, ALL])));
+// The melee set has its own three places instead: the grip for a tape wrap, the head
+// for paint drips and the pommel for a wrist strap.
+export const PAINT_MELEE_PARTS = Object.freeze(['tape', 'drip', 'strap']);
+export const PAINT_MOUNTS = Object.freeze(Object.fromEntries([...Object.keys(PAINT_WEAPONS).map(id => [id, ALL]), ...Object.keys(PAINT_MELEE).map(id => [id, PAINT_MELEE_PARTS])]));
 // The Mira each marker takes (the model draws that kind): `dot` a red dot, `holo` a
 // holographic box, `laser` an under-barrel laser, `scope` a magnifying scope
 // (La Lejana's long-range scope, La Corneta's brass one), `pin` La China's

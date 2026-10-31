@@ -53,3 +53,45 @@ export function traceRay(x, z, dx, dz, range, { boxes = [], targets = [], paddin
 
 // Seconds a projectile at `speed` needs to cover `distance`: how much a slow rocket must lead.
 export const flightTime = (distance, speed) => speed > 0 ? distance / speed : Infinity;
+
+// Arcs: a thrown object `{ x, y, z, vx, vy, vz }` falling under `gravity` (m/s²,
+// down). One step is swept as the straight chord between where it is and where
+// gravity puts it after `dt` (at ~20 m/s and 50 ms steps the chord sits within a
+// few millimetres of the parabola). Cover is a box `{ x, z, w, d, h }` standing
+// on the ground (`h` or `height`, else infinitely tall), so an arc can fly over a
+// low crate; targets are upright cylinders of `radius` from the ground up to
+// `height`; y ≤ 0 is the ground.
+//
+//   const r = sweepArc(sandal, dt, { boxes: cover, targets, radius: .55, height: 1.9, gravity: 9.8 });
+//   if (r.t <= 1) { ... r.victim (a target), or r.hit 'cover' | 'ground' }
+//   else stepArc(sandal, dt, 9.8);
+const top = o => o.h ?? o.height ?? Infinity;
+export function sweepArc(ball, dt, { boxes = [], targets = [], radius = .55, height = 1.9, gravity = 9.8, padding = 0 } = {}) {
+  const dx = ball.vx * dt, dz = ball.vz * dt, dy = ball.vy * dt - gravity * dt * dt / 2, y = ball.y;
+  let t = Infinity, victim = null, hit = null;
+  // The earliest t in [a, b] where the chord is at or under `ceiling` (it is linear in t).
+  const under = (a, b, ceiling) => {
+    const ya = y + dy * a, yb = y + dy * b;
+    if (ya <= ceiling) return a; if (yb > ceiling) return null;
+    return a + (b - a) * (ya - ceiling) / (ya - yb);
+  };
+  for (const o of boxes) {
+    const near = segmentBox(ball.x, ball.z, dx, dz, o, padding); if (near === null || near > 1) continue;
+    const exit = segmentBox(ball.x + dx, ball.z + dz, -dx, -dz, o, padding), far = exit === null ? 1 : Math.min(1, 1 - exit);
+    const at = under(near, Math.max(near, far), top(o)); if (at !== null && at < t) { t = at; victim = null; hit = 'cover'; }
+  }
+  for (const p of targets) {
+    const near = segmentCircle(ball.x, ball.z, dx, dz, p, radius); if (near === null) continue;
+    const exit = segmentCircle(ball.x + dx, ball.z + dz, -dx, -dz, p, radius), far = exit === null ? 1 : Math.min(1, 1 - exit);
+    const at = under(near, Math.max(near, far), height + (p.y || 0));
+    if (at !== null && at < t && y + dy * at >= (p.y || 0) - .1) { t = at; victim = p; hit = 'target'; }
+  }
+  if (y + dy <= 0) { const at = dy < 0 ? Math.max(0, y / -dy) : 0; if (at < t) { t = at; victim = null; hit = 'ground'; } }
+  return { t, victim, hit, dx, dy, dz };
+}
+// Moves an arc on by `dt` (or by the fraction `t` of the step) under `gravity`.
+export function stepArc(ball, dt, gravity = 9.8, t = 1) {
+  const s = dt * Math.min(1, t);
+  ball.x += ball.vx * s; ball.z += ball.vz * s; ball.y += ball.vy * s - gravity * s * s / 2; ball.vy -= gravity * s;
+  return ball;
+}

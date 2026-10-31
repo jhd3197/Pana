@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { segmentBox, segmentCircle, launch, sweep, traceRay, flightTime } from '../play/projectile.js';
+import { segmentBox, segmentCircle, launch, sweep, traceRay, flightTime, sweepArc, stepArc } from '../play/projectile.js';
 
 const crate = { x: 5, z: 0, w: .4, d: 2 };
 
@@ -34,4 +34,18 @@ test('a tracer ends at the first cover or at its range', () => {
   assert.ok(Math.abs(traceRay(0, 0, 1, 0, 60, { boxes: [crate] }) - 4.8) < 1e-9);
   assert.equal(traceRay(0, 0, 0, 1, 60, { boxes: [crate] }), 60);
   assert.equal(flightTime(42, 14), 3);
+});
+
+test('an arc falls under gravity, flies over low cover and stops on tall cover, a target or the ground', () => {
+  const ball = { x: 0, y: 2, z: 0, vx: 10, vy: 0, vz: 0 };
+  stepArc(ball, .5, 10); assert.ok(Math.abs(ball.x - 5) < 1e-9 && Math.abs(ball.y - .75) < 1e-9 && Math.abs(ball.vy + 5) < 1e-9);
+  const from = () => ({ x: 0, y: 1.5, z: 0, vx: 20, vy: 0, vz: 0 });
+  assert.ok(sweepArc(from(), .1, { boxes: [{ x: 1, z: 0, w: .2, d: 2, h: .5 }], gravity: 10 }).t > 1, 'over a low crate');
+  const wall = sweepArc(from(), .1, { boxes: [{ x: 1, z: 0, w: .2, d: 2, h: 3 }], gravity: 10 });
+  assert.equal(wall.hit, 'cover'); assert.ok(Math.abs(wall.t * wall.dx - .9) < 1e-9);
+  const pana = sweepArc(from(), .1, { targets: [{ x: 1.5, z: 0 }], radius: .5, gravity: 10 });
+  assert.equal(pana.hit, 'target'); assert.ok(Math.abs(pana.t * pana.dx - 1) < 1e-9);
+  assert.ok(sweepArc(from(), .1, { targets: [{ x: 1.5, z: 0 }], radius: .5, height: 1, gravity: 10 }).t > 1, 'over a short target');
+  const ground = sweepArc({ x: 0, y: .1, z: 0, vx: 1, vy: -2, vz: 0 }, .1, { gravity: 10 });
+  assert.equal(ground.hit, 'ground'); assert.ok(Math.abs(.1 + ground.dy * ground.t) < 1e-9);
 });
