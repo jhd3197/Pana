@@ -49,6 +49,8 @@
 #hud .stamina--full { opacity: .0; }
 #hud .gear { display: flex; align-items: center; gap: calc(4 * var(--u)); font: 900 var(--small) / 1 var(--pk-sans); color: var(--pk-muted); }
 #hud .gear[data-ready="true"] { color: var(--pk-yellow); }
+/* Charging a throw: the chip fills with the power (game.js sets --charge 0..1). */
+#hud .gear.charging { color: var(--pk-night); background: linear-gradient(90deg, var(--pk-yellow) calc(var(--charge, 0) * 100%), color-mix(in srgb, var(--pk-yellow) 25%, transparent) 0); padding: 0 calc(4 * var(--u)); }
 #hud .streak { position: fixed; z-index: 5; left: calc(28 * var(--u)); bottom: calc(148 * var(--u)); display: flex; align-items: center; gap: calc(8 * var(--u)); pointer-events: none; }
 #hud .streak small { padding: calc(4 * var(--u)) calc(10 * var(--u)) calc(3 * var(--u)); background: var(--pk-yellow); color: var(--ink); font: 900 max(11px, calc(13 * var(--u))) / 1 var(--pk-sans); letter-spacing: .08em; text-transform: uppercase; box-shadow: calc(3 * var(--u)) calc(3 * var(--u)) 0 var(--ink); transform: skewX(-10deg); }
 #hud .streak span { display: flex; gap: calc(4 * var(--u)); }

@@ -83,8 +83,17 @@ try {
   await wait(b, () => { const s = pinturaDebug.room.state; return !s.loading && !s.countdown; });
   assert.equal(await a.evaluate(() => pinturaDebug.world.view), 'primera');
   await b.evaluate(()=>pinturaDebug.room.selectKit({weapon:'rapid',armor:'wind'}));
-  await b.locator('#world').focus();await b.keyboard.press('g');
+  // A held throw: the guest looks up, holds G past 60% charge (the aim arc shows) and lets go.
+  // The paint grenade leaves the hand on a real arc over the cover and blows more than 12 m away.
+  await b.locator('#world').focus(); await b.evaluate(() => pinturaDebug.world.look(0, 1));
+  await b.keyboard.down('g'); await wait(b, () => pinturaDebug.grenade.power > .6);
+  await wait(b, () => pinturaDebug.world.scene.getObjectByName('Aim arc').visible && pinturaDebug.world.scene.getObjectByName('Aim ring').visible);
+  const thrownFrom = await b.evaluate(`(({ x, z }) => ({ x, z }))(${mine})`); await b.keyboard.up('g');
   await wait(a,id=>!pinturaDebug.room.state.players.find(p=>p.id===id).grenadeReady,guestId);
+  await wait(a, id => pinturaDebug.room.state.grenades.some(g => g.owner === id && g.y > 3), guestId);
+  const blast = await (await wait(a, () => pinturaDebug.room.state.splats.find(s => s.blast))).jsonValue();
+  assert.ok(Math.hypot(blast.x - thrownFrom.x, blast.z - thrownFrom.z) > 12, `grenade blew ${Math.hypot(blast.x - thrownFrom.x, blast.z - thrownFrom.z).toFixed(1)} m away`);
+  console.log('ok: a held-charge grenade lobs from the hand over the cover and blows more than 12 m away');
   assert.equal(await a.evaluate(id=>pinturaDebug.room.state.players.find(p=>p.id===id).kit.weapon,guestId),'rocket','mid-round kit edit is rejected');
   // The refusal is said, not swallowed.
   await wait(b, () => /plena ronda/.test(document.getElementById('toast').textContent));

@@ -8,6 +8,19 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Pepazo la granada se lanza de verdad: mantén G para cargarla y mira arriba para lanzarla lejos.**
+  Qué estaba mal: salía de los pies, siempre a ras del suelo a 12 m/s sin
+  importar hacia dónde miraras, con un saltito falso dibujado encima de una
+  burbuja de 22 cm; la mecha (1,1 s) la paraba a pocos metros y la explosión
+  pintaba igual en todo el radio y nada un paso más allá. Ahora sale de la mano
+  en un arco 3D según tu mirada (unos 12 m sin carga y 28 m a plena carga hasta
+  el primer bote), rebota en el piso, las barricadas y la cerca, y unos puntos
+  con un anillo muestran dónde va a pintar. Es una granada de pintura de tu
+  color que gira, pita y parpadea antes de reventar; pinta dos pepazos en el
+  centro y uno en el borde. La Chispita rebota y rebota, La Pegajosa se pega
+  donde cae, la Prueba de la armería sigue funcionando y los bots solo la
+  lanzan cuando el tiro les cae encima a un rival.
+
 - **En Pepazo cada accesorio queda en el espacio donde lo pusiste.**
   Tocas Accesorio 1 o 2 y eliges qué va ahí (o Ninguno); la armería avisa si
   una pieza no cabe en tu marcadora o si intentas cambiar el kit en plena ronda,

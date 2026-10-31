@@ -1,4 +1,4 @@
-import { cleanKit, kitStats, GRENADES, MARKERS } from './armory-data.js';
+import { cleanKit, kitStats, grenadeDef, MARKERS } from './armory-data.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/worlds/arena-layouts.js';
@@ -13,6 +13,7 @@ import { resetJump, jumpCount } from '../../../engine/play/jump.js';
 import { stepWalker, axisMove } from '../../../engine/play/walker.js';
 import { returnToLobby } from '../../../engine/play/round-lobby.js';
 import { segmentBox, launch, sweep } from '../../../engine/play/projectile.js';
+import { lobVelocity, stepLob, traceLob, touched, falloff, solveLob } from '../../../engine/play/lob.js';
 export { segmentBox };
 
 // Pepazo plays a 54 m court: every map's cover spreads 1.5× from the centre and
@@ -49,12 +50,18 @@ const PAINT_SPAWNS = ARENA_SPAWNS.map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }
 // stale (seconds) the rival's position is when it aims: paintballs fly 85 m/s, so
 // without that lag bots would rarely miss a strafing rival at range.
 export const BOT_SKILL = { facil: { wobble: .16, trigger: .45, reaction: .15 }, normal: { wobble: .07, trigger: -.2, reaction: .4 }, dificil: { wobble: .035, trigger: -.5, reaction: .5 }, experto: { wobble: .012, trigger: -.8, reaction: .6 } };
+// A thrown grenade leaves the hand 1.45 m up and 0.45 m ahead. Its elevation is
+// the look's pitch (clamped to the camera's own limits) plus `lift`, so a level
+// look still lobs at about 26 degrees. TICK is the simulation step, which the aim
+// preview and the bots' throw search also use, so they predict the server exactly.
+export const THROW = Object.freeze({ hand: 1.45, ahead: .45, lift: .45, down: -.7, up: .55 }), TICK = .05;
 export function cleanInput(input = {}) {
   if (!input || typeof input !== 'object') input = {};
   const num = n => Number.isFinite(n) ? clamp(n, -1, 1) : 0;
+  const pitch = Number.isFinite(input.pitch) ? clamp(input.pitch, THROW.down, THROW.up) : 0, charge = Number.isFinite(input.charge) ? clamp(input.charge, 0, 1) : 0;
   let x = num(input.x), z = num(input.z), length = Math.hypot(x, z); if (length > 1) { x /= length; z /= length; }
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
-  return { x, z, ax, az, weapon: MARKERS.some(m => m.id === input.weapon) ? input.weapon : null, fire: input.fire === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, jump: jumpCount(input) };
+  return { x, z, ax, az, weapon: MARKERS.some(m => m.id === input.weapon) ? input.weapon : null, fire: input.fire === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, pitch, charge, jump: jumpCount(input) };
 }
 export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : id === 'noche' ? NOCHE_SPAWNS : id === 'terminal' ? TERMINAL_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
 // Half-extents of each map's court. Most are square; El Puerto runs long between its two bases.
@@ -63,6 +70,21 @@ export const boundsFor = id => BOUNDS.get(id) || { x: SIZE, z: SIZE };
 // The larger half-extent, for whatever frames the whole court.
 export const sizeFor = id => { const { x, z } = boundsFor(id); return Math.max(x, z); };
 const outside = (id, x, z, margin = 0) => { const b = boundsFor(id); return Math.abs(x) > b.x - margin || Math.abs(z) > b.z - margin; };
+// Where and how fast pana p's grenade leaves the hand for a clean input
+// ({ ax, az, pitch, charge }): the server's throw, the aim preview and the bots
+// all start here. The hand never reaches through cover the pana stands against.
+export function grenadeStart(p, { ax = 0, az = -1, pitch = 0, charge = 0 }, kind, cover = []) {
+  const def = grenadeDef(kind), [slow, fast] = def.speed, length = Math.hypot(ax, az) || 1; ax /= length; az /= length;
+  let ahead = THROW.ahead;
+  for (const o of cover) { const t = segmentBox(p.x, p.z, ax * ahead, az * ahead, o, .15); if (t !== null) ahead = Math.min(ahead, Math.max(0, t * ahead - .02)); }
+  const elevation = clamp(pitch, THROW.down, THROW.up) + THROW.lift;
+  return { x: p.x + ax * ahead, y: THROW.hand + (p.jumpHeight || 0), z: p.z + az * ahead, ...lobVelocity(ax, az, elevation, slow + (fast - slow) * clamp(charge, 0, 1)) };
+}
+// The bounce rules of a grenade kind on map `mapId` (no map: open ground, for range sums).
+export function grenadeFlight(kind, cover = [], mapId = null) {
+  const def = grenadeDef(kind);
+  return { boxes: cover, bounds: mapId ? boundsFor(mapId) : null, restitution: def.restitution ?? .4, friction: def.friction ?? .7, roll: def.roll ?? 3, sticky: !!def.sticky };
+}
 // Every map has three fixed layouts and the round number picks one, so a rematch
 // plays a different court. Not random: everyone learns them.
 export const VARIANTS = 3;
@@ -208,7 +230,7 @@ export class Arena {
   // Skip the wait and the countdown: the armory's range and tests that only exercise play.
   go() { this.loading = this.countdown = 0; }
   freezeJumps(inputs) { for (const p of this.players) if (!p.bot) resetJump(p, inputs.get(p.id)); }
-  refill(p) { const stats=kitStats(p.kit,this.options); p.ammo=stats.magazine; p.reserve=stats.reserve ?? 0; p.weapon=stats.id; p.grenadeReady=true; p.grenadeHeld=false; p.shots=0; }
+  refill(p) { const stats=kitStats(p.kit,this.options); p.ammo=stats.magazine; p.reserve=stats.reserve ?? 0; p.weapon=stats.id; p.grenadeReady=true; p.grenadeHeld=false; p.lobAt=null; p.shots=0; }
   // Respawn protection: 1.5 s of shield (the ring blinks in the scene) so nobody is
   // painted on arrival; firing or throwing cancels it early.
   respawn(p) {
@@ -269,7 +291,37 @@ export class Arena {
       const step = d > 2 && this.route(p, tx, tz); if (step) ({ x, z } = step);
       else if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { const swap = x; x = -z; z = swap; }
     }
-    return cleanInput({ x, z, ax: aimX, az: aimZ, fire: clear && length < 34 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear });
+    const lob = this.botGrenade(p, q, clear);
+    return cleanInput({ x, z, ax: aimX, az: aimZ, fire: !lob && clear && length < 34 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear, ...lob });
+  }
+  // A throw from p that blows up at (tx, tz), solved with the server's own flight
+  // on open ground: { ax, az, pitch, charge, x, z } with where it would really blow
+  // (cover and the fence included), or null when no throw gets close.
+  aimGrenade(p, tx, tz) {
+    const def = grenadeDef(p.kit.grenade), dx = tx - p.x, dz = tz - p.z, distance = Math.hypot(dx, dz);
+    if (distance < .5) return null;
+    const ax = dx / distance, az = dz / distance, open = grenadeFlight(def.id), at = { x: 0, z: 0 }, path = { time: def.fuse, dt: TICK, out: [], land: true };
+    const reach = (pitch, charge) => traceLob(grenadeStart(at, { ax: 1, az: 0, pitch, charge }, def.id), open, path).x;
+    const shot = solveLob(reach, distance, { pitches: [0, -.2, -.4, -.55, -.7, .25, .5], tolerance: .5 });
+    if (!shot) return null;
+    const input = { ax, az, pitch: shot.pitch, charge: shot.power }, end = traceLob(grenadeStart(p, input, def.id, this.cover), grenadeFlight(def.id, this.cover, this.mapId), path);
+    return { ...input, x: end.x, z: end.z };
+  }
+  // Bots throw their grenade only at a rival 6–28 m away that they can see or
+  // that hides right behind cover, and only when the solved throw lands the blast
+  // on them. They look again every two seconds, never in the first three of a life.
+  botGrenade(p, q, clear) {
+    const now = DURATION - this.time;
+    if (!p.grenadeReady || !this.live) return null;
+    if (p.lobAt == null) { p.lobAt = now + 3; return null; }
+    if (now < p.lobAt) return null;
+    p.lobAt = now + 2;
+    const distance = Math.hypot(q.x - p.x, q.z - p.z), def = grenadeDef(p.kit.grenade);
+    const hiding = !clear && this.cover.some(o => Math.abs(q.x - o.x) < o.w / 2 + 2.5 && Math.abs(q.z - o.z) < o.d / 2 + 2.5);
+    if (distance < 6 || distance > 28 || !(clear || hiding)) return null;
+    const aim = this.aimGrenade(p, q.x, q.z);
+    if (!aim || Math.hypot(aim.x - q.x, aim.z - q.z) > def.radius * .6) return null;
+    return { ax: aim.ax, az: aim.az, pitch: aim.pitch, charge: aim.charge, grenade: true };
   }
   step(dt, inputs = new Map()) {
     if (this.phase !== 'playing') return; dt = clamp(dt, 0, .05);
@@ -334,31 +386,37 @@ export class Arena {
     if (eliminatedEnd) this.survivors = alive.map(p => p.id);
     if (this.time <= 0 || eliminatedEnd || (this.options.flag ? this.teamScores.some(s => s >= 3) : teams ? this.teamScores.some(s => s >= TARGET) : this.players.some(p => p.score >= TARGET))) { this.phase = 'finished'; this.balls = []; }
   }
+  // The grenade leaves the hand on release (its fuse starts then: a held grenade
+  // never cooks, so lag can never blow one up in a pana's hand).
   throwGrenade(p,input) {
     p.grenadeReady=false; p.shield=0;
-    const def=GRENADES.find(g=>g.id===p.kit.grenade);
-    this.grenades.push({id:++this.serial,owner:p.id,color:p.color,kind:def.id,x:p.x,z:p.z,vx:input.ax*12,vz:input.az*12,life:def.fuse,total:def.fuse,radius:def.radius,bounced:false});
+    const def=grenadeDef(p.kit.grenade);
+    this.grenades.push({id:++this.serial,owner:p.id,color:p.color,kind:def.id,...grenadeStart(p,input,def.id,this.cover),t:0,bounces:0,rolling:false,resting:false,life:def.fuse,total:def.fuse,radius:def.radius,damage:def.damage});
   }
-  blast(b,radius) {
+  // A blast paints everyone in `radius` it can see: `damage` pepazos inside 40% of
+  // the radius, fewer towards the edge (never under one). Cover lower than the
+  // blast does not shield; one hit per victim.
+  blast(b,radius,damage=1) {
     if(b.exploded) return; b.exploded=true;
-    const owner=this.players.find(p=>p.id===b.owner);
-    for(const p of this.players) if(p.id!==b.owner && p.connected && !p.respawn && !p.eliminated && !p.shield
-      && (this.options.friendlyFire || !this.sameTeam(p,owner)) && Math.hypot(p.x-b.x,p.z-b.z)<=radius
-      && !this.cover.some(o=>segmentBox(b.x,b.z,p.x-b.x,p.z-b.z,o,.01)!==null)) this.hit(p,owner,b.color,{ x:p.x-b.x, z:p.z-b.z, blast:true, weapon:b.kind });
-    this.splats.push({id:++this.serial,x:b.x,z:b.z,color:b.color,life:9,radius:Math.max(radius,1.6),pattern:'splat'});
-    // Clients turn each new boom into a flash, a fireball, smoke and a shake.
-    this.booms.push({id:++this.serial,x:b.x,z:b.z,kind:b.kind||'grenade',color:b.color,life:.6});
+    const owner=this.players.find(p=>p.id===b.owner), y=b.y||0;
+    for(const p of this.players) {
+      if(p.id===b.owner || !p.connected || p.respawn || p.eliminated || p.shield || (!this.options.friendlyFire && this.sameTeam(p,owner))) continue;
+      const share=falloff(Math.hypot(p.x-b.x,p.z-b.z,Math.max(0,y-1.8)),radius);
+      if(!share || this.cover.some(o=>(o.h ?? o.height ?? Infinity)>y && segmentBox(b.x,b.z,p.x-b.x,p.z-b.z,o,.01)!==null)) continue;
+      this.hit(p,owner,b.color,{ x:p.x-b.x, z:p.z-b.z, blast:true, weapon:b.kind },Math.max(1,Math.round(damage*share)));
+    }
+    this.splats.push({id:++this.serial,x:b.x,y,z:b.z,color:b.color,life:9,radius:Math.max(radius,1.6),blast:true,pattern:'splat'});
+    // Clients turn each new boom into a flash, a fireball, smoke and a shake sized by the radius.
+    this.booms.push({id:++this.serial,x:b.x,y,z:b.z,kind:b.kind||'grenade',color:b.color,radius,life:.6});
   }
   stepGrenades(dt) {
     for(const g of this.grenades) {
-      const dx=g.vx*dt,dz=g.vz*dt,wall=this.cover.some(o=>segmentBox(g.x,g.z,dx,dz,o,.15)!==null) || outside(this.mapId,g.x+dx,g.z+dz,.2);
-      if(wall) { if(g.kind==='chispita' && !g.bounced) { g.vx*=-.65;g.vz*=-.65;g.bounced=true; } else { g.vx=g.vz=0; } }
-      else { g.x+=dx;g.z+=dz; }
-      if(g.kind==='chispita' && !g.bounced && g.life<g.total/2) {g.bounced=true;g.vx*=.75;g.vz*=.75;}
-      g.life-=dt;
-      if(g.life<=0) { this.blast(g,g.radius); if(g.kind==='pegajosa') this.puddles.push({id:++this.serial,owner:g.owner,x:g.x,z:g.z,color:g.color,radius:3.3,life:5}); }
+      stepLob(g,dt,grenadeFlight(g.kind,this.cover,this.mapId));
+      g.life=Math.max(0,g.life-dt); g.late=(g.late||0)+(g.life?0:dt);
+      // A high lob still in its first flight when the fuse ends blows on touchdown, not in the air.
+      if(g.life<=1e-6 && (touched(g) || g.late>4)) { this.blast(g,g.radius,g.damage); const def=grenadeDef(g.kind); if(def.puddle) this.puddles.push({id:++this.serial,owner:g.owner,x:g.x,z:g.z,color:g.color,radius:def.puddle,life:5}); }
     }
-    this.grenades=this.grenades.filter(g=>g.life>0);
+    this.grenades=this.grenades.filter(g=>!g.exploded);
     for(const pool of this.puddles) {
       pool.life-=dt; const owner=this.players.find(p=>p.id===pool.owner);
       for(const p of this.players) if(p.id!==pool.owner && !this.sameTeam(p,owner) && !p.shield && Math.hypot(p.x-pool.x,p.z-pool.z)<pool.radius) p.slow=Math.max(p.slow,.2);

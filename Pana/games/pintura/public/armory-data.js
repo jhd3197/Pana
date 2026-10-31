@@ -23,11 +23,17 @@ export const ARMOR = [
  {id:'padded',name:'El Acolchado',blurb:locKey('+1 pepazo de aguante, −10% movilidad.'),mobility:.9,toughness:1}, // i18n-ignore: proper name
  {id:'wind',name:'El Cortaviento',blurb:locKey('+8% movilidad, −1 pepazo de aguante.'),mobility:1.08,toughness:-1}, // i18n-ignore: proper name
 ];
+// Thrown grenades (rules.js throwGrenade, engine/play/lob.js). `speed` is the launch
+// speed at no charge and full charge (m/s): from a level look that carries about
+// 12 m and 28 m before the first bounce. The fuse starts on release. `damage` is
+// the pepazos inside 40% of `radius`; it falls to a third at the edge (never
+// under one). `restitution`/`friction`/`roll` shape the bounces; `sticky` stops dead.
 export const GRENADES = [
- {id:'pinita',name:'La Piñita',blurb:locKey('Explosión de pintura: un pepazo por rival.'),radius:3.8,fuse:1.1}, // i18n-ignore: proper name
- {id:'pegajosa',name:'La Pegajosa',blurb:locKey('Salpica menos y deja un charco que frena rivales.'),radius:2.2,fuse:1.1}, // i18n-ignore: proper name
- {id:'chispita',name:'La Chispita',blurb:locKey('Rebota una vez antes de explotar.'),radius:3.3,fuse:1.6}, // i18n-ignore: proper name
+ {id:'pinita',name:'La Piñita',blurb:locKey('Explosión de pintura: dos pepazos en el centro, uno en el borde.'),radius:4.5,fuse:2.4,damage:2,speed:[11,18],restitution:.38,friction:.62,roll:3}, // i18n-ignore: proper name
+ {id:'pegajosa',name:'La Pegajosa',blurb:locKey('Se pega donde cae, salpica menos y deja un charco que frena rivales.'),radius:2.8,fuse:2.2,damage:1,speed:[11,18],sticky:true,puddle:3.3}, // i18n-ignore: proper name
+ {id:'chispita',name:'La Chispita',blurb:locKey('Rebota y rebota: llega más lejos y su mecha dura más.'),radius:3.6,fuse:2.8,damage:2,speed:[11,18],restitution:.6,friction:.72,roll:3.2}, // i18n-ignore: proper name
 ];
+export const grenadeDef = id => GRENADES.find(g=>g.id===id) || GRENADES[0];
 export const FINISHES = [{id:'factory',name:locKey('De fábrica'),color:null},{id:'caribe',name:'Caribe',color:'#29c5cd'},{id:'mango',name:'Mango',color:'#f28b42'},{id:'uva',name:'Uva',color:'#8d85df'}];
 export const CHARMS = [{id:'none',name:locKey('Sin llavero')},{id:'mango',name:'Manguito'},{id:'ball',name:locKey('Bola de pintura')}];
 export const PATTERNS = [{id:'splat',name:locKey('Salpicadura')},{id:'stripe',name:locKey('Rayas')},{id:'dots',name:locKey('Puntos')}];
@@ -89,6 +95,6 @@ export function kitRating(value={}, options={}) {
   +.20*unit(sustained/6)+.10*unit((s.magazine+(s.reserve||0))/26)
   +.10*unit(1-s.reload/4)+.15*unit(s.mobility/1.15)
   +.15*unit(s.toughness/6)+.025*unit(((s.splash||0)+s.pellets-1+(s.damage-1)*2+(s.direct?3:0))/5)
-  +.025*unit(grenade.radius/(grenade.fuse*4));
+  +.025*unit(grenade.radius*grenade.damage/(grenade.fuse*4));
  return Math.round(100+700*score);
 }

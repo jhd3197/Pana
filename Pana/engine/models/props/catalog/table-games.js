@@ -15,6 +15,7 @@ export default [
   ['paint-lejana', 'La Lejana', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'sniper' }],
   ['paint-bazuca', 'La Bazuca', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'bazooka' }],
   ['paint-cohete-bazuca', 'Cohete de La Bazuca', 'paintball-kit', 'createPaintRocket', 'Pepazo', {}],
+  ['paint-granada', 'Granada de pintura', 'paintball-kit', 'createPaintGrenade', 'Pepazo', { color: '#f28b42' }],
   ['paint-acolchado', 'El Acolchado', 'paintball-kit', 'createPaintVest', 'Pepazo', {}],
   ['paint-marker', 'Marcadora de pintura', 'paintball', 'createPaintMarker', '¡Pintura!', {}],
   ['team-canopy', 'Toldo de equipo', 'paintball', 'teamCanopy', 'Pepazo', { color: '#29c5cd' }],

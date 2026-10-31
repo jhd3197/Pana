@@ -149,6 +149,25 @@ export function createPaintRocket({color='#f28b42'}={}) {
  group.name='Cohete de La Bazuca';
  group.userData.dispose=dispose;return group;
 }
+// Pepazo's paint grenade, about 30 cm tall so it reads mid-flight: a round body in
+// the thrower's colour with a cream band, a dark cap, the spoon lever down one side,
+// the pin's ring and a small fuse lamp on top. `userData.light` is that lamp's
+// material: raise its emissiveIntensity to blink it.
+export function createPaintGrenade({color='#f28b42'}={}) {
+ const group=new THREE.Group(), {mat,put,cube,blob,dispose}=parts(group);
+ const paint=mat(color,{roughness:.35}),cream=mat('#f8e9c9'),dark=mat('#344847',{roughness:.55}),steel=mat('#a9bfc0',{metalness:.6,roughness:.3});
+ const lamp=mat('#ff4b4b',{emissive:'#ff2a1a',emissiveIntensity:0});
+ blob(.11,paint,0,0,0,1,1.12,1);
+ const band=put(new THREE.TorusGeometry(.111,.02,8,28),cream,0,0,0); band.rotation.x=Math.PI/2;
+ for(const y of [-.06,.06]) { const ring=put(new THREE.TorusGeometry(.094,.008,6,24),dark,0,y,0); ring.rotation.x=Math.PI/2; }
+ put(new THREE.CylinderGeometry(.045,.05,.05,14),dark,0,.135,0);
+ put(new THREE.CylinderGeometry(.022,.022,.02,10),steel,0,.168,0);
+ put(new THREE.SphereGeometry(.018,10,8),lamp,0,.182,0);
+ const lever=cube(.034,.15,.012,steel,.072,.08,0); lever.rotation.z=-.42;
+ const pin=put(new THREE.TorusGeometry(.03,.006,6,16),steel,-.075,.14,0); pin.rotation.y=Math.PI/2;
+ group.name='Granada de pintura';
+ group.userData.light=lamp; group.userData.dispose=dispose; return group;
+}
 export function createPaintVest() {
  const group=new THREE.Group(),material=new THREE.MeshStandardMaterial({color:'#344847',roughness:.85}),geometry=new THREE.BoxGeometry(.58,.55,.13);
  for(const z of [-.2,.2]) {const pad=new THREE.Mesh(geometry,material);pad.position.set(0,1.08,z);group.add(pad);}
