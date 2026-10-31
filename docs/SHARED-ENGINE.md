@@ -169,6 +169,25 @@ ring's height (default .08, the floor); a side-view game passes the impact's.
 Used by: Pepazo (La Bazuca and El Cohetón rockets, grenades, La Lejana's tracer),
 Capis a Pintazos (the paint bazooka's blast).
 
+### Paint markers, La Bazuca and its rocket
+
+`engine/models/props/paintball-kit.js` (Three.js). `createPaintKit({ weapon, color,
+attachments, charm, pattern })` builds a marker (`pistol scatter rapid rocket
+sniper bazooka`): origin at the grip, +Z down the barrel, `userData.tip` the
+muzzle's z, `userData.sight` the sight line. `PAINT_KIT_BORE[weapon]` is the
+barrel axis height. `bakePaintKit(options)` is the same marker batched into a
+few draws (one per finish), with `tip`, `sight` and `bore`; `.clone()` shares it,
+so a scene holding six launchers in third person pays for one.
+`createPaintRocket({ color })` is La Bazuca's round in flight (+Z the nose).
+
+```js
+const launcher = bakePaintKit({ weapon: 'bazooka', color }), held = launcher.clone();
+held.position.set(0, -launcher.userData.bore * s, 0);   // barrel axis through the pivot
+```
+
+Used by: Pepazo (every marker in first and third person, the in-flight rocket),
+Capis a Pintazos (La Bazuca in every capi's hands, batched; the rocket in flight).
+
 ## Sound
 
 ### SFX library

@@ -23,7 +23,8 @@ export const RULES = Object.freeze({
   paint: 50,           // paint on a direct hit; it falls off to a quarter at the edge
   knock: 13,           // knockback speed on a direct hit
   speed: 30,           // muzzle speed at full charge
-  muzzle: 1.1,         // the shell leaves this far from the capi's centre
+  shoulder: .9,        // La Bazuca rests on the shoulder this high above the feet: it pivots there
+  muzzle: 1.1,         // and the shell leaves its barrel this far from that pivot
   retreat: 3,          // seconds to walk away after the shot lands
   settleMax: 5,        // a turn never waits longer than this for sliding capis
   aimMin: -1.2, aimMax: 1.45, aimRate: 1.3,
@@ -39,9 +40,11 @@ export const center = c => ({ x: c.x, y: c.y + RULES.radius });
 export const activeCapy = m => m.capys.find(c => c.id === m.turn?.capy) || null;
 export const teamAlive = (m, team) => m.capys.filter(c => c.team === team && alive(c));
 
-// Where a shot aimed `angle` from capi `c` starts.
+// Where La Bazuca pivots on capi `c`'s shoulder; the scene holds the barrel there.
+export const shoulder = c => ({ x: c.x, y: c.y + RULES.shoulder });
+// Where a shot aimed `angle` from capi `c` starts: the visible barrel's tip.
 export function muzzle(c, angle = c.aim, facing = c.facing) {
-  const o = center(c);
+  const o = shoulder(c);
   return { x: o.x + Math.cos(angle) * facing * RULES.muzzle, y: o.y + Math.sin(angle) * RULES.muzzle };
 }
 

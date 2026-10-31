@@ -27,14 +27,38 @@ try {
   await waitFor(page, ({ x }) => { const m = capisDebug.match; return m.capys.find(c => c.id === m.turn.capy).x > x + .5; }, start);
   await page.keyboard.up('d');
 
-  // Calm the wind so the shell lands on the bank, then charge and release.
-  await page.evaluate(() => { capisDebug.match.wind = 0; });
+  // Every capi is a pana from the shared studio model with a team bandana,
+  // holding the shared La Bazuca (batched); only the capi on its turn raises it,
+  // and the shell will leave from the barrel tip you see.
+  const capis = await page.evaluate(() => capisDebug.world.inspect());
+  assert.equal(capis.length, 6);
+  for (const c of capis) {
+    assert.equal(c.model, 'studio-v1', `${c.id} uses the Pana avatar`);
+    assert.equal(c.launcher, 'La Bazuca', `${c.id} holds La Bazuca`);
+    assert.ok(c.held && c.draws <= 6, `${c.id}'s launcher is batched (${c.draws} draws)`);
+  }
+  assert.deepEqual([...new Set(capis.map(c => c.bandana))].length, 2, 'one bandana colour per team');
+  assert.deepEqual(capis.filter(c => c.raised).map(c => c.id), [await page.evaluate(() => capisDebug.match.turn.capy)]);
+  await page.keyboard.down('w');
+  await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).aim > .9);
+  await page.keyboard.up('w');
+  await waitFor(page, () => { const c = capisDebug.world.inspect().find(k => k.raised); return Math.hypot(c.tip.x - c.muzzle.x, c.tip.y - c.muzzle.y) < .03; });
+  if (shots) {
+    await page.evaluate(() => { capisDebug.world.closeUp = 8; });
+    await waitFor(page, () => { const m = capisDebug.match, c = m.capys.find(k => k.id === m.turn.capy); const p = capisDebug.world.camera.position; return Math.abs(p.x - c.x) < 1.5; });
+    await page.screenshot({ path: path.join(shots, 'capis-models-aim.png') });
+  }
+
+  // Back to the usual lob. Calm the wind so the shell lands on the bank, then charge and release.
+  await page.evaluate(() => { const m = capisDebug.match; m.capys.find(c => c.id === m.turn.capy).aim = .55; m.wind = 0; });
   const solid = () => capisDebug.match.mask.solid.reduce((a, b) => a + b, 0);
   const before = await page.evaluate(solid);
   await page.keyboard.down(' ');
   await waitFor(page, () => !document.getElementById('power-bar').hidden && parseInt(document.getElementById('power-value').textContent, 10) >= 55);
   await shot(page, 'charging');
+  if (shots) await page.screenshot({ path: path.join(shots, 'capis-models-charge.png') });
   await page.keyboard.up(' ');
+  await page.evaluate(() => { capisDebug.world.closeUp = 0; });
   await waitFor(page, () => capisDebug.match.shots === 1);
   await waitFor(page, () => capisDebug.match.phase === 'flight');
   await shot(page, 'flight');
@@ -52,6 +76,11 @@ try {
 
   // Finish it: the rivals are all painted; the turn ends and we win.
   await page.evaluate(() => { const m = capisDebug.match; m.capys.filter(c => c.team === 1).forEach(c => { c.paint = 100; c.out = 'paint'; }); if (m.phase === 'aim') m.turn.time = .01; });
+  if (shots) {
+    await waitFor(page, () => capisDebug.match.phase === 'finished');
+    await page.evaluate(() => { capisDebug.world.wide = true; });
+    await page.screenshot({ path: path.join(shots, 'capis-models-cheer.png') });
+  }
   await waitFor(page, () => capisDebug.match.phase === 'finished' && !document.getElementById('results').hidden);
   assert.equal(await page.evaluate(() => capisDebug.match.winner), 0);
   assert.match(await page.locator('#result-title').textContent(), /Ganaron/);
