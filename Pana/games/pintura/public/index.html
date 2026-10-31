@@ -4,7 +4,7 @@
   <meta name="theme-color" content="#f28b42"><meta name="description" content="Paintball gratis entre panas. Esquiva, apunta y pinta en una cancha 3D.">
   <title>Pepazo · Pana</title>
   <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css">
-  <link rel="stylesheet" href="/engine/room-options.css"><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./armory.css">
+  <link rel="stylesheet" href="/engine/room-options.css"><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./hud-banderin.css"><link rel="stylesheet" href="./armory.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
 </head><body class="in-lobby">
@@ -26,7 +26,13 @@
       <button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm" data-room-help>Cómo se juega</button>
     </div>
   </section>
-  <section id="hud" hidden aria-label="Marcador"><div class="score-panel pk-panel"><span class="pk-eyebrow">Pintadas</span><b id="score" class="pk-num">0 / 10</b><span id="position"></span></div><div class="timer-panel pk-panel"><b id="timer" class="pk-num">2:00</b><span id="ammo">12 / 12</span><span id="reload-bar" class="reload-bar" aria-hidden="true"></span><span id="aguante" class="aguante" role="img"></span><span id="stamina" class="stamina" aria-hidden="true"></span></div>
+  <section id="hud" hidden aria-label="Marcador">
+    <div id="race" class="race"><div class="race-row"><span class="tm tm--me"><i id="me-dot" aria-hidden="true"></i><span id="me-label"></span><b id="score">0</b></span><span id="clock" class="clock"><b id="timer">2:00</b></span><span class="tm tm--rival"><b id="rival-score">0</b><span id="rival-label"></span><i id="rival-dot" aria-hidden="true"></i></span></div><small id="position"></small></div>
+    <div id="streak" class="streak" hidden><small id="streak-label"></small><span id="streak-pips"></span></div>
+    <div class="mypl"><i id="swatch" class="swatch" aria-hidden="true"></i><div class="mypl-body"><b id="me-name" translate="no"></b><span id="aguante" class="aguante" role="img"></span><span id="stamina" class="stamina" aria-hidden="true"></span><span id="gear" class="gear"></span></div></div>
+    <div id="hop" class="hop"><div class="hop-n"><b id="ammo-n">12</b><small id="ammo-max">/ 12</small><span id="pepas-label"></span></div><span id="pepas" class="pepas" aria-hidden="true"></span><span id="ammo" class="wpn"></span></div>
+    <div id="reload-prompt" class="reload-prompt" hidden><span id="reload-bar" class="reload-bar" aria-hidden="true"></span><b id="reload-text"></b></div>
+    <i id="hit-dir" class="hit-dir" aria-hidden="true"></i>
     <p id="feed" class="feed pk-panel" aria-live="polite"></p><p id="respawn" class="respawn pk-banner" hidden></p>
     <div class="pk-hints" data-pana-hint>WASD caminar · Shift correr · Ratón mirar · Clic pintar · Tab tabla · Esc menú</div>
     <section id="scoreboard" class="scoreboard pk-panel" hidden aria-label="Tabla de la ronda"><span class="pk-eyebrow">Tabla</span><b id="board-title"></b><ol id="board-list" class="pk-roster"></ol></section>

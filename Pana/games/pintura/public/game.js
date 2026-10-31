@@ -16,6 +16,7 @@ import { sound } from '/engine/fx.js';
 import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
+import { createCombatHud } from './combat-hud.js';
 import { sfx, createSteps } from './sounds.js';
 import { pressJump } from '/engine/play/jump.js';
 import { createLookControls } from '/engine/play/first-person.js';
@@ -29,7 +30,7 @@ const $ = id => document.getElementById(id), code = roomCode();
 const params = new URLSearchParams(location.search);
 const held = new Set(), pads = []; let aim = null, firing = false, jumpPress = 0, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastKiller = '', wasReloading = false, lastDry = 0; const seenShots = new Map();
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
-const hitFeats = createHitFeats(createFeats($('toast')));
+const hitFeats = createHitFeats(createFeats($('toast'))), combat = createCombatHud(document);
 let weapon = 'pistol', queuedGrenade = false, lastWeapon = '';
 const steps = createSteps(), seenSplats = new Set();
 let cameraView = 'primera', pointerPosition = null;
@@ -141,6 +142,7 @@ function feedLine(e, state) {
   const line = e.distance >= 25 ? loc('{owner} pintó a {victim} · {distance} m · tiro largo', { distance: e.distance }) : loc('{owner} pintó a {victim} · {distance} m', { distance: e.distance });
   const parts = { owner: name(owner, loc('Un pana')), victim: name(victim, loc('un pana')) };
   item.append(...line.split(/(\{owner\}|\{victim\})/).filter(Boolean).map(piece => parts[piece.slice(1, -1)] || piece));
+  item.classList.toggle('me', e.owner === room.id); item.classList.toggle('out', e.victim === room.id);
   $('killfeed').prepend(item); while ($('killfeed').children.length > 4) $('killfeed').lastChild.remove();
   setTimeout(() => item.remove(), 6000);
 }
@@ -148,10 +150,11 @@ function announce(e, state) {
   const mine = e.owner === room.id, me = e.victim === room.id;
   if (e.type === 'out') feedLine(e, state);
   if (mine && e.type === 'hit') { sfx.hitTick(); flash('hitmark'); navigator.vibrate?.(18); hitFeats.hit(state.players.find(p => p.id === e.victim)?.name || loc('un pana')); }
-  if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); flash('scored'); callout(e, state); }
+  if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); flash('scored'); combat.streak(e.streak || 1); callout(e, state); }
   if (me) {
     document.body.style.setProperty('--paint-hurt', `${e.color}aa`); flash('painted');
-    if (e.type === 'out') { sfx.out(); lastKiller = { name: state.players.find(p => p.id === e.owner)?.name || loc('Un pana'), distance: e.distance }; } else sfx.hurt();
+    combat.hit(e, state, room.id, world.forward());
+    if (e.type === 'out') { const killer = state.players.find(p => p.id === e.owner); sfx.out(); combat.streak(0); lastKiller = { name: killer?.name || loc('Un pana'), distance: e.distance, color: killer?.color || '' }; } else sfx.hurt();
   }
 }
 // Hearing and seeing the court: every shot pops, flashes and puffs, quieter with distance.
@@ -167,12 +170,12 @@ function shots(state, me) {
     if (!(mine && first)) world.muzzle(p);
   }
 }
-// The crosshair ring and the HUD bar fill while the marker reloads or (slow markers) cools down.
 // A ball that lands splats: heard where it lands, quieter with distance.
 function splats(state, me) {
   for (const s of state.splats) { if (seenSplats.has(s.id)) continue; seenSplats.add(s.id); if (s.life > 8.6 && me) sfx.impact(.9 / (1 + Math.hypot(s.x - me.x, s.z - me.z) / 8)); }
   if (seenSplats.size > 400) for (const id of seenSplats) if (!state.splats.some(s => s.id === id)) seenSplats.delete(id);
 }
+// The crosshair ring and the HUD bar fill while the marker reloads or (slow markers) cools down.
 function cooldown(state, me) {
   const stats = kitStats(me?.kit, state.options), reloading = me?.reload > 0, cooling = !reloading && stats.cadence >= .4 && me?.cooldown > 0;
   const progress = reloading ? 1 - me.reload / stats.reload : cooling ? 1 - me.cooldown / stats.cadence : 1;
@@ -236,12 +239,9 @@ function render(state) {
   $('start').disabled = (!room.connected ? $('connection').dataset.failed !== 'true' : !room.isHost || missingTeam); $('start').textContent = !room.connected ? loc('Conectando…') : missingTeam ? loc('Falta un pana en el otro equipo') : room.isHost ? loc('¡A pepear!') : loc('El anfitrión inicia la ronda');
   $('invite').disabled = room.local || !room.connected; $('roster').textContent = state.players.filter(p => p.connected).map(p => p.name).join(' · ');
   const me = state.players.find(p => p.id === room.id), order = [...state.players].sort((a, b) => b.score - a.score || a.hits - b.hits);
-  $('score').textContent = `${me?.score || 0} / ${TARGET}`; $('position').textContent = loc('{rank} de {n} panas', { rank: Math.max(1, order.findIndex(p => p.id === room.id) + 1), n: state.players.length });
-  const seconds = Math.ceil(state.time); $('timer').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-  const lives = Math.max(0, (state.options?.lives || 0) - (me?.hits || 0));
-  $('ammo').textContent = me?.reload > 0 ? loc('Recargando {n} s', { n: me.reload.toFixed(1) }) : [`${me?.ammo ?? 12} / ${kitStats(me?.kit,state.options).magazine}`, MARKERS.find(m=>m.id===me?.weapon)?.name || MARKERS[0].name, state.options?.lives && locn(lives, '{n} vida', '{n} vidas')].filter(Boolean).join(' · ');
-  const feed = state.message ? loc(state.message, state.messageVars?.variant ? { ...state.messageVars, variant: loc(state.messageVars.variant).toLowerCase() } : state.messageVars || undefined) : '';
-  $('feed').textContent = state.options?.mode === 'teams' || state.options?.flag ? loc('{feed} · {score}', { feed, score: teamScore(state) }) : feed; $('respawn').hidden = !me?.respawn && !me?.eliminated;
+  combat.render(state, me, room.id);
+  const feed = state.message && !combat.duplicate(state.message) ? loc(state.message, state.messageVars?.variant ? { ...state.messageVars, variant: loc(state.messageVars.variant).toLowerCase() } : state.messageVars || undefined) : '';
+  $('feed').textContent = feed; $('respawn').hidden = !me?.respawn && !me?.eliminated; $('respawn').style.setProperty('--pc', lastKiller?.color || '');
   $('respawn').textContent = me?.eliminated ? lastKiller ? loc('{name} te pintó desde {distance} m · sin vidas, observando la ronda', lastKiller) : loc('¡Te pintaron! · sin vidas, observando la ronda')
     : lastKiller ? loc('{name} te pintó desde {distance} m · vuelves en {n}', { ...lastKiller, n: Math.ceil(me?.respawn || 0) }) : loc('¡Te pintaron! · vuelves en {n}', { n: Math.ceil(me?.respawn || 0) });
   // Events and balls are numbered per simulation: starting practice begins a new count.
@@ -255,7 +255,7 @@ function render(state) {
   if(state.phase==='playing' && $('armory').open) $('armory').close();
   $('stamina').style.setProperty('--left', String(me?.stamina ?? 1)); $('stamina').classList.toggle('stamina--full', (me?.stamina ?? 1) >= 1);
   if (!$('scoreboard').hidden) showBoard(true);
-  if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = loc('Cancha {court}', { court: loc(variantName(state.mapId, state.variant || 0)) }); hitFeats.reset(); }
+  if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = loc('Cancha {court}', { court: loc(variantName(state.mapId, state.variant || 0)) }); hitFeats.reset(); combat.reset(); }
   $('results').hidden = !finished;
   if (finished) {
     menu.close(); looking.release(); showBoard(false); const winners = order.filter(p => state.winners?.includes(p.id));

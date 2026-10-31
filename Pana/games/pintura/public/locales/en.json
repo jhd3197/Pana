@@ -19,7 +19,10 @@
   "¡Triple!": "Triple!",
   "¡Venganza!": "Revenge!",
   "{court} · ronda {round}": "{court} · round {round}",
-  "{feed} · {score}": "{feed} · {score}",
+  "Pepas": "Paintballs",
+  "Primero a {n}": "First to {n}",
+  "Primero a {n} banderas": "First to {n} flags",
+  "Sin pepas · R para recargar": "Out of paint · R to reload",
   "{n} pepazo": {
     "one": "{n} hit",
     "other": "{n} hits"
@@ -127,7 +130,6 @@
   "Pepazo · Pana": "Pepazo · Pana",
   "PEPAZO · TU KIT": "PEPAZO · YOUR KIT",
   "Pinta": "Paint",
-  "Pintadas": "Splats",
   "pintadas para ganar": "splats to win",
   "Pintadas recientes": "Recent splats",
   "por ronda": "per round",
