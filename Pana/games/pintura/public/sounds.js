@@ -10,6 +10,8 @@ export const sfx = {
   dry: lib.dry, reloaded: lib.reloaded, hurt: () => lib.hurt(), swap: lib.swap, go: lib.go,
   reload: (weapon, seconds) => lib.reload(weapon, seconds),
   impact: (volume = 1) => lib.impact('paint', { volume }),
+  // An explosion by what blew up: La Bazuca loudest, a sticky grenade softest.
+  boom: (kind, volume = 1) => lib.boom({ bazooka: 1.25, rocket: 1, pinita: .9, chispita: .8 }[kind] || .65, { volume }),
   hitTick: lib.hitConfirm,
   count: n => lib.count(n),
   knockout(long = false, streak = 1) {

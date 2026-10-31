@@ -58,3 +58,16 @@ test('idle breathing stays within a hand-width', () => {
   for (let i = 0; i < 600; i++) { vm.update(1 / 60, { ...base, held }); lo = Math.min(lo, held.position.y); hi = Math.max(hi, held.position.y); }
   assert.ok(hi - lo > .004 && hi - lo < .02);
 });
+
+test('the heavy new markers kick hardest: La Bazuca over La Lejana over El Trueno', () => {
+  assert.ok(recoilOf('bazooka').back > recoilOf('sniper').back && recoilOf('sniper').back > recoilOf('scatter').back);
+  assert.ok(recoilOf('bazooka').shake > recoilOf('pistol').shake && recoilOf('sniper').cam > recoilOf('rocket').cam);
+});
+
+test('aiming raises the marker to the middle of the view and steadies it', () => {
+  const vm = createViewmodel(), held = prop(); held.userData.sight = .37; settle(vm, held, { weapon: 'sniper' });
+  const hip = { x: held.position.x, y: held.position.y };
+  settle(vm, held, { weapon: 'sniper', aim: 1 });
+  assert.ok(Math.abs(held.position.x) < .01 && held.position.x < hip.x - .15);
+  assert.ok(Math.abs(held.position.y + .37 * .3 + .02) < .01, 'the scope sits on the line of sight');
+});

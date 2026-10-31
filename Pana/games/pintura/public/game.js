@@ -20,6 +20,7 @@ import { createCombatHud } from './combat-hud.js';
 import { sfx, createSteps } from './sounds.js';
 import { pressJump } from '/engine/play/jump.js';
 import { createLookControls } from '/engine/play/first-person.js';
+import { createScopeOverlay } from '/engine/play/scope.js';
 import { createFeats } from '/engine/feats.js';
 import { createHitFeats } from './feats.js';
 import { coverFor, TARGET, segmentBox, paintSeats, variantName } from './rules.js';
@@ -32,7 +33,9 @@ const held = new Set(), pads = []; let aim = null, firing = false, jumpPress = 0
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
 const hitFeats = createHitFeats(createFeats($('toast'))), combat = createCombatHud(document);
 let weapon = 'pistol', queuedGrenade = false, lastWeapon = '';
-const steps = createSteps(), seenSplats = new Set();
+// Aim: right mouse or F held, or the Mira button toggled on a phone. La Lejana scopes in.
+let mouseAim = false, touchAim = false; const aiming = () => mouseAim || touchAim || held.has('f');
+const steps = createSteps(), seenSplats = new Set(), seenBooms = new Set(), scopeView = createScopeOverlay(document);
 let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').dataset.failed = String(failed); $('connection').textContent = text; document.dispatchEvent(new Event('pana:sala-update')); $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
@@ -50,17 +53,18 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),
   notes: { facil: loc('Los bots fallan seguido y disparan menos.'), normal: loc('Bots con buena mano, pero se les va alguna.'), dificil: loc('Los bots apuntan fino y no sueltan el gatillo.'), experto: loc('Casi no fallan: muévete y cúbrete.') } });
-const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
+const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
  
   options: [{ id: 'weapon', label: loc('Marcadora (si la sala permite todas)'), choices: MARKERS.map(m=>[m.id,m.name]), get: () => weapon, set: value => { weapon = value; } },
     { id: 'view', label: loc('Cámara'), choices: [['primera', loc('Primera persona')], ['cancha', loc('Ver la cancha')]], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? loc('La práctica está en pausa.') : loc('La ronda online sigue mientras estás en el menú.'),
-  controls: [[loc('WASD / Flechas'), loc('Caminar hacia donde miras')], [loc('Ratón'), loc('Mirar y apuntar (haz clic en la cancha para capturarlo)')], [loc('Clic / Enter'), loc('Disparar pintura')], [loc('Espacio'), loc('Saltar')], ['Shift', loc('Correr (no puedes disparar corriendo)')], ['Tab', loc('Ver la tabla')], ['Q / E', loc('Girar sin ratón')], ['R', loc('Recargar')], ['1 / 2 / 3 / 4', loc('Chispa / Trueno / Gemelas / Cohetón')], ['G', loc('Lanzar granada')], ['M', loc('Sonido')], ['Esc', loc('Soltar el ratón y abrir el menú')]],
+  controls: [[loc('WASD / Flechas'), loc('Caminar hacia donde miras')], [loc('Ratón'), loc('Mirar y apuntar (haz clic en la cancha para capturarlo)')], [loc('Clic / Enter'), loc('Disparar pintura')], [loc('Clic derecho / F'), loc('Apuntar (La Lejana mira por la mira telescópica)')], [loc('Espacio'), loc('Saltar')], ['Shift', loc('Correr (no puedes disparar corriendo)')], ['Tab', loc('Ver la tabla')], ['Q / E', loc('Girar sin ratón')], ['R', loc('Recargar')], ['1 – 6', loc('Chispa / Trueno / Gemelas / Cohetón / Lejana / Bazuca')], ['G', loc('Lanzar granada')], ['M', loc('Sonido')], ['Esc', loc('Soltar el ratón y abrir el menú')]],
   tips: [loc('Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie. En bandera gana el equipo con tres capturas.'),
     loc('Las barricadas frenan las bolas. Tienes doce por carga; recargas con R o automáticamente al vaciarla.'),
     loc('Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.'),
     loc('En teléfono camina con las flechas y arrastra el dedo por la pantalla para mirar. Mantén Pinta: la mira se pega al rival visible que tengas delante.'),
     loc('El mapa de la esquina muestra a tu equipo y solo a los rivales que tienes a la vista.'),
+    loc('La Lejana pinta dos pepazos por tiro, pero sin la mira se desvía. El cohete de La Bazuca saca de una si pega directo: apunta adelante del rival.'),
     loc('Si estás solo, tres bots entran contigo. Con amigos la cancha es de ustedes. Puedes invitar hasta ocho panas.')],
   invite: () => inviteUrl(code), onOpen() { clearInput(); looking.release(); }, onClose() {}, canOpen: () => room.state.phase !== 'finished',
 });
@@ -69,16 +73,19 @@ $('room-code').textContent = loc('Sala {code}', { code }); $('rules').onclick = 
 $('grenade').onclick=()=>{if(active())queuedGrenade=true;};
 $('start').onclick = () => { sound.unlock(); if (!room.connected && $('connection').dataset.failed === 'true') room.practice(); else room.start(); }; $('again').onclick = () => room.start();
 for (const id of ['practice', 'fallback']) $(id).onclick = () => { menu.close(); $('recovery').hidden = true; room.practice(); };
-function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = queuedGrenade = false; pads.forEach(p => p.release()); room.input({ jump: jumpPress }); }
+function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = queuedGrenade = mouseAim = touchAim = false; $('aim').setAttribute('aria-pressed', 'false'); pads.forEach(p => p.release()); room.input({ jump: jumpPress }); }
 // Space or the Saltar button. The count rides every input, so frozen play (loading, the 3-2-1) spends it.
 function jump() { const s = room.state; if (active() && !s.loading && !s.countdown) jumpPress = pressJump(jumpPress); }
 function active() { return !$('armory').open && room.connected && room.state.phase === 'playing' && !menu.isOpen; }
 for (const [id, key] of [['up', 'w'], ['left', 'a'], ['down', 's'], ['right', 'd'], ['reload', 'r']]) pads.push(holdButton($(id), { down: () => { held.add(key); if (key === 'r') queuedReload = true; }, up: () => held.delete(key), paused: () => !active() }));
 pads.push(holdButton($('jump'), { down: jump, up: () => {}, paused: () => !active() }));
 pads.push(holdButton($('fire'), { down: () => { touchFire = queuedFire = true; sound.unlock(); }, up: () => { touchFire = false; }, paused: () => !active() }));
-const looking = createLookControls(canvas, { enabled: () => active() && cameraView === 'primera', look: (yaw, pitch) => world.look(yaw, pitch),
-  press(event) { sound.unlock(); if (event.button === 0) firing = queuedFire = true; },
-  release(event) { if (event.button === 0 || event.type === 'pointercancel') firing = false; },
+// A phone has one thumb for aim and fire, so Mira toggles instead of being held.
+pads.push(holdButton($('aim'), { down: () => { touchAim = !touchAim; $('aim').setAttribute('aria-pressed', String(touchAim)); }, up: () => {}, paused: () => !active() }));
+// Through a scope the look slows with the zoom, so a small drag still lands on target.
+const looking = createLookControls(canvas, { enabled: () => active() && cameraView === 'primera', look: (yaw, pitch) => { const k = world.scope.sensitivity(); world.look(yaw * k, pitch * k); },
+  press(event) { sound.unlock(); if (event.button === 0) firing = queuedFire = true; if (event.button === 2) mouseAim = true; },
+  release(event) { if (event.button === 0 || event.type === 'pointercancel') firing = false; if (event.button === 2 || event.type === 'pointercancel') mouseAim = false; },
   unlocked: () => menu.open('game') });
 // The overview keeps the plane-projected mouse aim.
 canvas.addEventListener('pointermove', event => { if (active() && cameraView === 'cancha') { pointerPosition = [event.clientX, event.clientY]; aim = world.point(...pointerPosition); } });
@@ -90,10 +97,10 @@ for (const type of ['pointerup', 'pointercancel']) canvas.addEventListener(type,
 addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 addEventListener('keydown', event => {
   if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a')) return;
-  const key = event.key.toLowerCase(); if (['1', '2', '3', '4'].includes(key)) weapon = ['pistol', 'scatter', 'rapid', 'rocket'][Number(key) - 1]; if (key === 'm') toggleMute();
+  const key = event.key.toLowerCase(), slot = Number(key); if (slot >= 1 && slot <= MARKERS.length) weapon = MARKERS[slot - 1].id; if (key === 'm') toggleMute();
   if (key === 'g' && active() && !event.repeat) queuedGrenade = true;
   if (key === 'tab') { event.preventDefault(); if (room.state.phase === 'playing') showBoard(true); }
-  if (['w', 'a', 's', 'd', 'q', 'e', 'r', ' ', 'enter', 'shift', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ' && !event.repeat) jump(); if (key === 'enter') queuedFire = true; if (key === 'r') queuedReload = true; } }
+  if (['w', 'a', 's', 'd', 'q', 'e', 'r', 'f', ' ', 'enter', 'shift', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ' && !event.repeat) jump(); if (key === 'enter') queuedFire = true; if (key === 'r') queuedReload = true; } }
 });
 addEventListener('keyup', event => { const key = event.key.toLowerCase(); held.delete(key); if (key === 'tab') showBoard(false); });
 // Hold Tab: everyone's knockouts, times painted and current streak.
@@ -123,14 +130,15 @@ function input() {
   if (fire && me.reload > 0 && performance.now() - lastDry > 450) { lastDry = performance.now(); sfx.dry(); }
   return { weapon, grenade:queuedGrenade, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
     Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))), sprint: held.has('shift'),
-    ax: ax / length, az: az / length, jump: jumpPress, fire, reload: queuedReload || held.has('r') };
+    ax: ax / length, az: az / length, jump: jumpPress, fire, aim: aiming() && cameraView === 'primera', reload: queuedReload || held.has('r') };
 }
 // A short CSS pulse: a hit marker on the crosshair or a paint flash when hit.
 function flash(name) { document.body.classList.remove(name); void document.body.offsetWidth; document.body.classList.add(name); }
 // Knockout callouts: the distance always, plus the moments worth shouting about.
 function callout(e, state) {
   const victim = state.players.find(p => p.id === e.victim)?.name || loc('un pana');
-  const title = e.revenge ? loc('¡Venganza!') : e.streak >= 5 ? loc('¡Imparable!') : e.streak === 4 ? loc('¡Cuádruple!') : e.streak === 3 ? loc('¡Triple!') : e.streak === 2 ? loc('¡Doble pepazo!') : loc('¡Pepazo!');
+  const title = e.revenge ? loc('¡Venganza!') : e.streak >= 5 ? loc('¡Imparable!') : e.streak === 4 ? loc('¡Cuádruple!') : e.streak === 3 ? loc('¡Triple!') : e.streak === 2 ? loc('¡Doble pepazo!')
+    : e.direct ? loc('¡Bazucazo!') : e.weapon === 'sniper' ? loc('¡Francotirador!') : loc('¡Pepazo!');
   $('callout-title').textContent = title; $('callout-detail').textContent = e.distance >= 25 ? loc('{victim} · {distance} m · ¡Tiro largo!', { victim, distance: e.distance }) : e.distance <= 4 ? loc('{victim} · {distance} m · ¡A quemarropa!', { victim, distance: e.distance }) : loc('{victim} · {distance} m', { victim, distance: e.distance });
   $('callout').classList.toggle('callout--long', e.distance >= 25); flash('called');
   clearTimeout(callout.timer); callout.timer = setTimeout(() => document.body.classList.remove('called'), 1900);
@@ -168,7 +176,16 @@ function shots(state, me) {
     sfx.shot(mine ? 1 : .7 / (1 + d / 7), p.weapon);
     if (mine) { flash('muzzle'); flash('kicked'); }
     if (!(mine && first)) world.muzzle(p);
+    if (p.weapon === 'sniper') world.tracer(p, state, mine && first);
   }
+}
+// Explosions are heard everywhere, quieter with distance; the scene draws and shakes them.
+function booms(state, me) {
+  for (const b of state.booms || []) {
+    if (seenBooms.has(b.id)) continue; seenBooms.add(b.id);
+    sfx.boom(b.kind, me ? 1.1 / (1 + Math.hypot(b.x - me.x, b.z - me.z) / 10) : .5);
+  }
+  if (seenBooms.size > 64) for (const id of seenBooms) if (!(state.booms || []).some(b => b.id === id)) seenBooms.delete(id);
 }
 // A ball that lands splats: heard where it lands, quieter with distance.
 function splats(state, me) {
@@ -250,7 +267,7 @@ function render(state) {
   const events = state.events || [];
   if (lastEvent === null) lastEvent = Math.max(0, ...events.map(e => e.n));
   for (const e of events) if (e.n > lastEvent) { lastEvent = e.n; if (state.phase === 'playing') announce(e, state); }
-  if (state.phase === 'playing') { shots(state, me); cooldown(state, me); splats(state, me); } else { seenShots.clear(); seenSplats.clear(); steps.reset(); lastWeapon = ''; wasReloading = false; document.body.classList.remove('reloading', 'cooling'); }
+  if (state.phase === 'playing') { shots(state, me); cooldown(state, me); splats(state, me); booms(state, me); } else { seenShots.clear(); seenSplats.clear(); seenBooms.clear(); steps.reset(); lastWeapon = ''; wasReloading = false; document.body.classList.remove('reloading', 'cooling'); }
   aguante(state, me); $('grenade').disabled=!me?.grenadeReady; $('grenade').textContent=me?.grenadeReady?loc('Granada'):loc('Sin granada');
   if(state.phase==='playing' && $('armory').open) $('armory').close();
   $('stamina').style.setProperty('--left', String(me?.stamina ?? 1)); $('stamina').classList.toggle('stamina--full', (me?.stamina ?? 1) >= 1);
@@ -275,10 +292,12 @@ function frame(now) {
   if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now;
   if (active()) world.look((Number(held.has('q')) - Number(held.has('e'))) * dt * 2.2);
   document.body.classList.toggle('first-person', cameraView === 'primera' && room.state.phase === 'playing');
-  armory.update(dt); world.draw(room.state, room.id, dt, aim); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward()); requestAnimationFrame(frame);
+  world.setAim(active() && aiming());
+  armory.update(dt); world.draw(room.state, room.id, dt, aim);
+  const scoped = world.scope.scoped; scopeView.set(scoped ? world.scope.amount : 0); document.body.classList.toggle('scoped', scoped); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); armory.dispose(); teamRoster.dispose(); looking.dispose(); room.dispose(); world.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.pinturaDebug = { room, world, menu, input };
 
 await prepareScene(world);

@@ -8,6 +8,14 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo estrena La Lejana y La Bazuca, y todas las marcadoras pegan más duro.**
+  La Lejana es una francotiradora de 70 m que pinta dos pepazos por tiro, con
+  mira telescópica (clic derecho, F o el botón Mira) que acerca la vista y
+  frena la puntería; La Bazuca lanza un cohete lento con estela de humo que
+  saca de una si pega directo. Todas las marcadoras tienen ahora más retroceso,
+  fogonazo, temblor de cámara y disparos con más cuerpo, y las explosiones
+  suenan y se ven de verdad.
+
 - **Carreritas vuelve al sonido de motor de antes.** El motor nuevo con marchas no gustó, así que los carros suenan otra vez como antes; los cauchos, el turbo y los choques nuevos se quedan.
 
 - **El motor tiene un mapa de lo que comparten los juegos, y quien programa lo mira primero.**
