@@ -15,6 +15,19 @@ if (account) {
   try { await account.ready; }
   catch { document.getElementById('loading').textContent = 'No pudimos cargar tus artículos. Recarga para intentar otra vez.'; throw new Error('Wardrobe account unavailable'); }
 }
+// Ownership: a paid piece the account does not own shows locked and is never equipped here (the gateway rejects it on save too).
+const LOCK = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="4" y="10" width="16" height="12" rx="3" fill="currentColor"/></svg>';
+const lockBadge = lock => `<span class="lock">${LOCK}${lock ? `<b>${lock.price}</b>${ICONS.mango}` : ''}</span>`;
+const lockOf = (slot, value) => (account?.locked && value !== undefined ? account.locked(slot, value) : null);
+const SLOTS = ['hat', 'glasses', 'face', 'top', 'print', 'neck', 'back'];
+const lockedIn = look => [...SLOTS.map(s => lockOf(s, look[s])), ...Object.keys(look.extras || {}).filter(k => look.extras[k]).map(k => lockOf('extras', k))].filter(Boolean);
+function unlocked(look) {
+  if (!account?.locked) return look;
+  const r = we(look);
+  for (const s of SLOTS) if (lockOf(s, r[s])) r[s] = ut[s];
+  for (const k of Object.keys(r.extras || {})) if (r.extras[k] && lockOf('extras', k)) r.extras[k] = false;
+  return r;
+}
 var Ht = [
     {
       id: "pelaje",
@@ -66,9 +79,9 @@ function initialLook() {
   const current = avatarToWardrobe(loadAvatar(), loadName());
   try {
     const draft = JSON.parse(sessionStorage.getItem(draftKey));
-    if (draft?.baseline === savedBaseline) return dt(draft.look);
+    if (draft?.baseline === savedBaseline) return dt(unlocked(dt(draft.look)));
   } catch { /* A disabled session store leaves the saved avatar intact. */ }
-  return current;
+  return dt(unlocked(current));
 }
 var X = initialLook(),
   Ve = [we(X)],
@@ -233,7 +246,7 @@ const roomEnvironment = new fo();
 const environment = Jo.fromScene(roomEnvironment, 0.04);
 Ce.environment = environment.texture; roomEnvironment.dispose(); Jo.dispose();
 Ce.environmentIntensity = 0.55;
-Ce.add(new ae.HemisphereLight("#d8d0ff", "#3b2a66", 0.9));
+Ce.add(new ae.HemisphereLight("#fff0d6", "#d9a066", 1));
 var st = new ae.DirectionalLight("#fff1dc", 2.3);
 st.position.set(3.5, 7, 5);
 st.castShadow = !0;
@@ -249,7 +262,7 @@ Object.assign(st.shadow.camera, {
 st.shadow.bias = -5e-4;
 st.shadow.normalBias = 0.02;
 Ce.add(st);
-var mo = new ae.DirectionalLight("#9fb4ff", 1.4);
+var mo = new ae.DirectionalLight("#cfe0ff", 1.1);
 mo.position.set(-4, 4, -5);
 Ce.add(mo);
 var Eo = new ae.DirectionalLight("#ffd2b0", 0.5);
@@ -260,7 +273,7 @@ Ce.add(tt);
 {
   let e = new ae.Mesh(
     new ae.CylinderGeometry(1.7, 1.8, 0.28, 72),
-    new ae.MeshStandardMaterial({ color: "#43308a", roughness: 0.6 }),
+    new ae.MeshStandardMaterial({ color: "#e39a52", roughness: 0.7 }),
   );
   ((e.position.y = -0.14), (e.receiveShadow = !0), tt.add(e));
   let t = new ae.Mesh(
@@ -412,7 +425,7 @@ var le = (e) => document.getElementById(e),
   To = "idle",
   Ot = () => Ht.find((e) => e.id === Be).view;
 function Re(e) {
-  ((X = dt(e)),
+  ((X = dt(unlocked(e))),
     Ve.splice(Ie + 1),
     Ve.push(we(X)),
     (Ie = Ve.length - 1),
@@ -433,13 +446,16 @@ function Ro(e, t, n, r = {}) {
   let s = r.selected ?? (e === "extras" ? X.extras[t] : X[e] === t);
   (c.setAttribute("aria-pressed", String(!!s)),
     r.disabled && ((c.disabled = !0), (c.title = r.disabled)));
-  let f = account?.label(e, t) || Le(e === "preset" ? "x" : e, t).badge;
+  let lk = e === "preset" ? null : lockOf(e, t), pl = e === "preset" ? lockedIn(bt(xt[t][1])) : [], f = lk ? null : Le(e === "preset" ? "x" : e, t).badge;
   return (
-    (c.innerHTML = `<span class="thumb"><img alt=""><span class="spin" aria-hidden="true"></span></span><span class="tlabel">${n}</span>${f ? `<span class="badge ${f === "Nuevo" ? "new" : "up"}">${f}</span>` : ""}${e === "extras" ? '<span class="check" aria-hidden="true"></span>' : ""}`),
+    (c.innerHTML = `<span class="thumb"><img alt=""><span class="spin" aria-hidden="true"></span></span><span class="tlabel">${n}</span>${lk ? lockBadge(lk) : pl.length ? lockBadge(null) : f ? `<span class="badge ${f === "Nuevo" ? "new" : "up"}">${f}</span>` : ""}${e === "extras" ? '<span class="check" aria-hidden="true"></span>' : ""}`),
+    lk && (c.classList.add("locked"), c.title = lk.name + " \u00B7 " + lk.price + " mangos", c.setAttribute("aria-label", n + ", " + lk.price + " mangos")),
+    pl.length && (c.classList.add("partlock"), c.title = pl.map(p => p.name).join(", ") + " \u00B7 bloqueado"),
     yo(c.querySelector("img"), r.view || Ot(), e, t),
     (c.onclick =
       r.onClick ||
       (() => {
+        if (lk) return void (location.href = lk.href);
         let b = we(X);
         (e === "extras" ? (b.extras[t] = !b.extras[t]) : (b[e] = t),
           e === "top" &&
@@ -462,7 +478,7 @@ function Ro(e, t, n, r = {}) {
 function Ye(e, t, n, r = {}) {
   let c = document.createElement("section");
   ((c.className = "block"),
-    (c.innerHTML = `<h3>${e}</h3>${r.hint ? `<p class="hint">${r.hint}</p>` : ""}`));
+    (c.innerHTML = `<h3>${e}</h3>`));
   let s = document.createElement("div");
   s.className = "grid";
   for (let [f, b] of n)
@@ -532,7 +548,7 @@ function on() {
     let n = document.createElement("section");
     ((n.className = "block"),
       (n.innerHTML =
-        '<h3>Color del pelaje</h3><p class="hint">Los tonos caramelo del pana original.</p><div class="furs"></div>'));
+        '<h3>Color del pelaje</h3><div class="furs"></div>'));
     let r = n.querySelector(".furs");
     for (let [c, s] of Nt) {
       let f = document.createElement("button");
@@ -555,9 +571,7 @@ function on() {
   if (Be === "cara") {
     (t(Ye("Expresi\xF3n", "face", ge.face)),
       t(
-        Ye("Detalles", "extras", ge.extras, {
-          hint: "Puedes poner varios a la vez.",
-        }),
+        Ye("Detalles", "extras", ge.extras),
       ));
     let n = ge.extras.filter(([r]) => X.extras[r] && Ge("extras", r).length);
     for (let [r, c] of n) t(et("extras", r, Ge("extras", r), c));
@@ -580,16 +594,12 @@ function on() {
             X.top === "chef" && r !== "none"
               ? "El delantal de chef no lleva estampado"
               : null,
-          hint:
-            X.top === "chef"
-              ? "El delantal de chef no lleva estampado."
-              : "Va en el pecho de la camisa que tengas puesta.",
         }),
       ),
       Ge("print", X.print).length && t(et("print", X.print, ["main"])));
     let n = document.createElement("label");
     ((n.className = "toggle"),
-      (n.innerHTML = `<input type="checkbox" id="wrist" ${X.wrist ? "checked" : ""}><span class="knob" aria-hidden="true"></span><span>Mu\xF1equeras <small>del color de la camisa</small></span>`),
+      (n.innerHTML = `<input type="checkbox" id="wrist" ${X.wrist ? "checked" : ""}><span class="knob" aria-hidden="true"></span><span>Mu\xF1equeras</span>`),
       (n.querySelector("input").onchange = (r) =>
         Re({ ...X, wrist: r.target.checked })),
       t(n));
@@ -599,9 +609,7 @@ function on() {
     Ge("neck", X.neck).length && t(et("neck", X.neck, Ge("neck", X.neck)))),
     Be === "espalda" &&
       (t(
-        Ye("Espalda", "back", ge.back, {
-          hint: 'Gira la c\xE1mara o usa "Espalda" para verlo mejor.',
-        }),
+        Ye("Espalda", "back", ge.back),
       ),
       Ge("back", X.back).length && t(et("back", X.back, Ge("back", X.back)))));
 }
@@ -699,7 +707,7 @@ function an() {
       view: "body",
       selected: !1,
       onClick: () => {
-        (Re(bt(n)), mt("body"));
+        (Re(bt(n)), mt("body"), lockedIn(bt(n)).length && nt("Sin " + lockedIn(bt(n)).map(p => p.name).join(", ") + " \u00B7 en la tienda"));
       },
       preview: () => bt(n),
     });
@@ -723,29 +731,26 @@ le("redo").onclick = () => {
   Ie < Ve.length - 1 && (Ie++, (X = we(Ve[Ie])), qe(X), at(), Mt());
 };
 var Ze = (e) => e[Math.floor(Math.random() * e.length)];
+const pick = (slot, list, none) => { const free = list.filter(([v]) => !lockOf(slot, v)); return free.length ? Ze(free)[0] : none; };
 le("random").onclick = () => {
   let e = we(ut);
-  ((e.name = X.name),
-    (e.fur = X.fur),
-    (e.hat = Math.random() < 0.8 ? Ze(ge.hat.slice(1))[0] : "none"),
-    (e.glasses = Math.random() < 0.6 ? Ze(ge.glasses.slice(1))[0] : "none"),
-    (e.top = Ze(ge.top.slice(0, 5))[0]),
-    (e.print =
-      e.top !== "chef" && Math.random() < 0.5
-        ? Ze(ge.print.slice(1))[0]
-        : "none"),
-    (e.neck = Math.random() < 0.55 ? Ze(ge.neck.slice(1))[0] : "none"),
-    (e.back = Math.random() < 0.4 ? Ze(ge.back.slice(1))[0] : "none"),
-    (e.face = Ze(ge.face)[0]));
-  for (let [n] of ge.extras) e.extras[n] = Math.random() < 0.18;
+  e.name = X.name; e.fur = X.fur;
+  e.hat = Math.random() < 0.8 ? pick("hat", ge.hat.slice(1), "none") : "none";
+  e.glasses = Math.random() < 0.6 ? pick("glasses", ge.glasses.slice(1), "none") : "none";
+  e.top = pick("top", ge.top.slice(0, 5), ut.top);
+  e.print = e.top !== "chef" && Math.random() < 0.5 ? pick("print", ge.print.slice(1), "none") : "none";
+  e.neck = Math.random() < 0.55 ? pick("neck", ge.neck.slice(1), "none") : "none";
+  e.back = Math.random() < 0.4 ? pick("back", ge.back.slice(1), "none") : "none";
+  e.face = pick("face", ge.face, ut.face);
+  for (let [n] of ge.extras) e.extras[n] = Math.random() < 0.18 && !lockOf("extras", n);
   e.wrist = Math.random() < 0.25;
   let t = () => Ze(Gt)[0];
-  ((e.colors[`top:${e.top}:main`] = t()),
-    (e.colors[`hat:${e.hat}:main`] = t()),
-    (e.colors[`neck:${e.neck}:main`] = t()),
-    (e.colors[`back:${e.back}:main`] = t()),
-    (e.colors[`print:${e.print}:main`] = t()),
-    Re(e));
+  e.colors[`top:${e.top}:main`] = t();
+  e.colors[`hat:${e.hat}:main`] = t();
+  e.colors[`neck:${e.neck}:main`] = t();
+  e.colors[`back:${e.back}:main`] = t();
+  e.colors[`print:${e.print}:main`] = t();
+  Re(e);
 };
 le("reset").onclick = () => Re({ ...we(ut), name: X.name });
 le("name").oninput = (e) => {
@@ -776,7 +781,7 @@ le("save").onclick = async () => {
       const { portrait } = await import('/engine/portrait.js');
       await portrait(avatar, { current: true });
     } catch { /* The saved wardrobe remains usable if a portrait cannot render. */ }
-    nt('Pana guardado. Ya puedes usarlo en todos los juegos.');
+    nt('Pana guardado. \u00A1A jugar!');
   } catch (error) { nt(error.message || 'No se pudo guardar. Intenta otra vez.'); }
   finally { button.disabled = false; button.textContent = 'Guardar para jugar'; }
 };
@@ -785,7 +790,7 @@ le("copy").onclick = async () => {
   le("codebox").value = e;
   try {
     (await navigator.clipboard.writeText(e),
-      nt("C\xF3digo copiado. Pégalo en este editor o pásaselo a un pana."));
+      nt("C\xF3digo copiado."));
   } catch {
     (le("codebox").select(), nt("Selecciona el c\xF3digo y c\xF3pialo."));
   }
@@ -897,6 +902,7 @@ window.panaEditor = {
   queue: Rt,
   PRESETS: xt,
   presetState: bt,
+  lock: lockOf,
   controls: ve,
   camera: Ue,
   get character() { return Te; },
@@ -918,8 +924,12 @@ document.getElementById('tabs').addEventListener('keydown', event => {
 const selectedItem = new URLSearchParams(location.search);
 const requestedSlot = selectedItem.get('slot'), requestedValue = selectedItem.get('item');
 if (Ft(requestedSlot, requestedValue)) {
-  Re(requestedSlot === 'extras' ? { ...X, extras: { ...X.extras, [requestedValue]: true } } : { ...X, [requestedSlot]: requestedValue });
-  const tab = { hat: 'cabeza', glasses: 'lentes', top: 'ropa', print: 'ropa', extras: 'cara', neck: 'cuello', back: 'espalda' }[requestedSlot];
+  const tab = { hat: 'cabeza', glasses: 'lentes', top: 'ropa', print: 'ropa', extras: 'cara', neck: 'cuello', back: 'espalda' }[requestedSlot], lock = lockOf(requestedSlot, requestedValue);
+  if (lock) {
+    // Not owned: it is tried on the pana (never equipped), with a way to the shop.
+    const bar = le('trybar'); bar.hidden = false; bar.href = lock.href; bar.innerHTML = `<span>${lock.name}</span><b>${lock.price}</b>${ICONS.mango}`;
+    qe(wo(X, requestedSlot, requestedValue));
+  } else Re(requestedSlot === 'extras' ? { ...X, extras: { ...X.extras, [requestedValue]: true } } : { ...X, [requestedSlot]: requestedValue });
   if (tab) window.panaEditor.setTab(tab);
 }
 

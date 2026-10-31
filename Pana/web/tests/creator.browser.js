@@ -62,6 +62,25 @@ try {
     assert.deepEqual(remote, saved);
   }
   await guest.close();
+  // Hosted account: a paid piece the account does not own is locked, never equipped, and leads to the shop.
+  const hosted = await browser.newPage(); hosted.on('pageerror', e => errors.push(e.message));
+  await hosted.addInitScript(() => {
+    const paid = { 'back:capa': ['wardrobe-back-capa', 240], 'back:cohete': ['wardrobe-back-cohete', 360], 'hat:casco': ['wardrobe-hat-casco', 180], 'extras:bigote': ['wardrobe-extras-bigote', 60] };
+    window.PanaWardrobe = { ready: Promise.resolve(), draftKey: 'test', save: async () => {}, describe() {}, label: () => null,
+      locked: (slot, value) => { const p = paid[slot + ':' + value]; return p ? { id: p[0], name: value, price: p[1], href: '/tienda?item=' + p[0] } : null; } };
+  });
+  await hosted.route('**/tienda**', route => route.fulfill({ contentType: 'text/html', body: '<title>tienda</title>' }));
+  await hosted.goto(base + '/personaje?slot=back&item=capa');
+  await hosted.waitForFunction(() => window.PANA_PREPARED, null, { timeout: 120000 });
+  assert.equal(await hosted.evaluate(() => panaEditor.state.back), 'none');
+  assert.equal(await hosted.locator('#trybar').getAttribute('href'), '/tienda?item=wardrobe-back-capa');
+  assert.equal(await hosted.locator('[data-slot="back"][data-item="capa"].locked').count(), 1);
+  assert.equal(await hosted.evaluate(() => { panaEditor.commit({ ...panaEditor.state, back: 'cohete', hat: 'casco', extras: { bigote: true } }); const s = panaEditor.state; return [s.back, s.hat, !!s.extras.bigote].join(); }), 'none,none,false');
+  assert.equal(await hosted.evaluate(() => { let bad = 0; for (let i = 0; i < 100; i++) { document.getElementById('random').click(); const s = panaEditor.state; bad += ['capa', 'cohete'].includes(s.back) + (s.hat === 'casco') + !!s.extras.bigote; } return bad; }), 0);
+  assert.equal(await hosted.evaluate(() => { document.querySelectorAll('#presets .tile')[panaEditor.PRESETS.findIndex(p => p[0] === 'Rey')].click(); return panaEditor.state.back; }), 'none');
+  await hosted.locator('[data-slot="back"][data-item="cohete"]').click();
+  await hosted.waitForURL('**/tienda?item=wardrobe-back-cohete');
+  await hosted.close();
   const failed = await browser.newPage();
   await failed.route('**/character/editor.js', route => route.abort());
   await failed.goto(base + '/personaje');
