@@ -1,0 +1,50 @@
+/* Capis a Pintazos: a full-window side view of the Llanos under the kit's HUD.
+   The game's own colours are named custom properties on this rule
+   (--pk-game matches game.json; --team-0/1 match TEAM_COLORS in rules.js). */
+body { --pk-game: #e8569b; --team-0: #e8569b; --team-1: #2ad1b2; --wind: #bfe9ff;
+  margin: 0; overflow: hidden; background: var(--pk-night); color: var(--pk-text); font-family: var(--pk-sans); }
+#world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.topbar { position: fixed; top: 16px; left: 20px; right: 20px; display: flex; align-items: center; justify-content: space-between; z-index: 4; pointer-events: none; }
+.topbar > * { pointer-events: auto; }
+#game-nav { display: flex; gap: 8px; }
+#lobby { position: fixed; left: 24px; top: 84px; bottom: 32px; width: min(340px, calc(100vw - 48px)); overflow-y: auto; }
+
+.turn-panel { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; padding: 8px 22px; min-width: 190px; z-index: 3; }
+.turn-panel .pk-num { font: 400 34px/1 var(--pk-display); color: var(--pk-yellow); }
+.turn-panel.is-rival .pk-num { color: var(--team-1); }
+.turn-panel.is-hurry .pk-num { color: var(--pk-coral); }
+#turn-note { font-size: 12px; min-height: 1em; }
+.wind-panel { position: fixed; right: 20px; top: 76px; display: grid; justify-items: center; gap: 4px; padding: 8px 14px; z-index: 3; }
+.wind-gauge { display: flex; align-items: center; gap: 8px; }
+/* JS sets the shaft's width (wind strength) and flips the whole arrow for a west wind. */
+.wind-arrow { display: flex; align-items: center; justify-content: center; width: 60px; height: 18px; }
+.wind-shaft { display: block; height: 4px; border-radius: 2px; background: var(--wind); }
+.wind-head { display: block; width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-left: 11px solid var(--wind); }
+.wind-arrow.is-calm .wind-head { opacity: .3; }
+.teams-panel { position: fixed; left: 20px; top: 76px; display: grid; gap: 10px; padding: 10px 12px; width: 190px; z-index: 3; }
+.team-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.team-list li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 12px; font-weight: 800; }
+.team-list li .pk-bar { grid-column: 1 / -1; height: 7px; }
+.team-list li.is-turn b { color: var(--pk-yellow); }
+.team-list li.is-out { opacity: .45; text-decoration: line-through; }
+#team-0 .pk-bar { --pk-bar-color: var(--team-1); }
+#team-1 .pk-bar { --pk-bar-color: var(--team-0); }
+.team-list .team-name { grid-column: 1 / -1; font: 400 14px var(--pk-display); letter-spacing: .02em; }
+#team-0 .team-name { color: var(--team-0); } #team-1 .team-name { color: var(--team-1); }
+
+.labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+.labels span { position: absolute; left: 0; top: 0; padding: 1px 7px; border-radius: 999px; background: rgba(0, 0, 0, .55); font: 800 11px var(--pk-sans); white-space: nowrap; }
+.labels span.team-0 { color: var(--team-0); } .labels span.team-1 { color: var(--team-1); }
+.hints { position: fixed; right: 20px; bottom: 18px; z-index: 3; }
+
+#touch { display: none; position: fixed; inset: auto 0 16px 0; padding: 0 16px; justify-content: space-between; align-items: end; z-index: 4; pointer-events: none; }
+#touch > * { pointer-events: auto; display: flex; gap: 10px; align-items: end; }
+.touch-act { flex-wrap: wrap; justify-content: end; max-width: 260px; }
+@media (pointer: coarse) { #touch { display: flex; } .hints { display: none; } .teams-panel { width: 150px; top: 70px; } }
+@media (max-height: 520px) {
+  .teams-panel { top: 64px; padding: 6px 10px; gap: 4px; width: 150px; }
+  .team-list { gap: 1px; } .team-list li { font-size: 11px; } .team-list li .pk-bar { height: 5px; }
+  .hints { display: none; } .turn-panel { padding: 4px 16px; } .turn-panel .pk-num { font-size: 26px; }
+  .wind-panel { top: 64px; padding: 4px 10px; }
+}
+@media (max-width: 640px) { .teams-panel { display: none; } .wind-panel { top: 84px; right: 10px; } .turn-panel { top: 64px; } }
