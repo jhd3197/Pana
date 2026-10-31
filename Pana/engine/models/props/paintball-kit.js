@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { bake } from '/engine/models/core/static-batch.js';
 // Toy sporting equipment, six silhouettes you can tell apart in one glance:
 // La Chispa a slim pistol with its gas tank, El Trueno a long double-barrelled
 // pump, Las Gemelas two drum-fed twins, El Cohetón a fat shoulder tube with a nose cone,
@@ -118,6 +119,20 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
  if(pattern==='dots') for(let i=0;i<3;i++) put(new THREE.SphereGeometry(.025,6,4),cream,.105,top-.13,i*.12);
  group.name={pistol:'La Chispa',scatter:'El Trueno',rapid:'Las Gemelas',rocket:'El Cohetón',sniper:'La Lejana',bazooka:'La Bazuca'}[weapon];
  group.userData.dispose=dispose;return group;
+}
+// The barrel's axis height above the grip, per marker: where a muzzle flash or
+// a shell leaves the barrel.
+export const PAINT_KIT_BORE={pistol:.17,scatter:.2,rapid:.15,rocket:.2,sniper:.17,bazooka:.24};
+// The same marker batched into a few draws (one per surface finish instead of
+// one per part), for scenes that show several held at once in third person.
+// Same look and the same `userData.tip`/`sight`, plus `bore`; geometry is new
+// and owned, so clones (`.clone()`) share it. `userData.dispose` frees it.
+export function bakePaintKit(options={}) {
+ const kit=createPaintKit(options), out=bake(kit,{tint:true});
+ out.name=kit.name; Object.assign(out.userData,{tip:kit.userData.tip,sight:kit.userData.sight,bore:PAINT_KIT_BORE[options.weapon||'pistol']});
+ const tinted=out.userData.tinted;
+ out.userData.dispose=()=>{out.traverse(o=>{if(o.isMesh)o.geometry.dispose();});tinted.forEach(m=>m.dispose());kit.userData.dispose();};
+ return out;
 }
 // La Bazuca's rocket in flight: painted body, coral warhead, four fins and a glowing
 // motor at the back. Centred, +Z is the nose; about 0.75 m long.
