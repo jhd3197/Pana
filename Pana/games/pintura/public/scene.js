@@ -1,6 +1,6 @@
 import { createKnockout } from './knockout.js';
-import { createPaintKit, createPaintVest, createPaintRocket } from '/engine/models/props/paintball-kit.js';
-import { FINISHES, kitStats } from './armory-data.js';
+import { createPaintKit, createPaintVest, createPaintRocket, createPaintGrenade } from '/engine/models/props/paintball-kit.js';
+import { FINISHES, kitStats, grenadeDef } from './armory-data.js';
 import { createViewmodel, recoilOf } from './viewmodel.js';
 import { createArenaEnvironment } from '/engine/worlds/arenas.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
@@ -27,13 +27,18 @@ import { createBlastFx } from '/engine/play/blast-fx.js';
 import { createRecoil, shakeAt } from '/engine/play/recoil.js';
 import { createScope } from '/engine/play/scope.js';
 import { traceRay } from '/engine/play/projectile.js';
-import { SIZE, SPREAD, coverFor, boundsFor } from './rules.js';
+import { traceLob, groundAt } from '/engine/play/lob.js';
+import { guideRibbon, guideBeads, guideRing } from '/engine/play/aim-guide.js';
+import { SIZE, SPREAD, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK } from './rules.js';
 
 // First person: the camera sits at the pana's eyes and the marker is held in view.
 const EYE = 1.55, LOOK_UP = .55, LOOK_DOWN = -.7;
-// Muzzle flash size per marker, and how big each kind of explosion is drawn.
+// Muzzle flash size per marker, and how big each rocket's explosion is drawn
+// (a grenade's comes from its radius, so the shock ring ends near the blast's edge).
 const FLASH = { rocket: 1.7, bazooka: 2.2, sniper: 1.5, scatter: 1.3, rapid: .75 };
-const BOOM_SIZE = { bazooka: 1.25, rocket: 1, pinita: .9, chispita: .8, pegajosa: .6 };
+const BOOM_SIZE = { bazooka: 1.25, rocket: 1 };
+// The overhand throw: the right arm winds up over the head and swings through in THROW_ARM seconds.
+const THROW_ARM = .45;
 
 export function createScene(canvas) {
   const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true })); const unbind = bindRenderer(renderer, 1.5);
@@ -211,7 +216,44 @@ export function createScene(canvas) {
     const cloth = new THREE.Mesh(new THREE.BoxGeometry(1.1, .65, .06), material(team ? '#29c5cd' : '#f28b42')); cloth.position.set(.55, 2.2, 0); root.add(cloth); scene.add(root); return root;
   });
   const bases = flags.map((_, team) => { const ring = new THREE.Mesh(new THREE.RingGeometry(1.7, 1.95, 32), material(team ? '#29c5cd' : '#f28b42')); ring.rotation.x = -Math.PI / 2; scene.add(ring); return ring; });
-  const kitObjects=new Map();
+  const kitObjects=new Map(), grenadeMeshes = new Map();
+  // Grenades in flight: the paint grenade tumbles, glides between 50 ms snapshots
+  // along its arc and blinks its lamp through the last half second of the fuse.
+  function drawGrenades(state, dt) {
+    const live = state.grenades || [], cover = coverFor(state.mapId, state.variant || 0);
+    for (const g of live) {
+      let o = grenadeMeshes.get(g.id);
+      if (!o) {
+        o = createPaintGrenade({ color: g.color }); o.rotation.order = 'YXZ'; o.traverse(m => { m.castShadow = true; });
+        o.userData.seen = { x: g.x, y: g.y, z: g.z, t: 0 }; o.userData.spin = 0; scene.add(o); grenadeMeshes.set(g.id, o);
+        const thrower = avatars.get(g.owner); if (thrower && (g.t || 0) < .2) thrower.throwing = THROW_ARM;
+      }
+      const seen = o.userData.seen;
+      if (seen.x !== g.x || seen.y !== g.y || seen.z !== g.z) { seen.x = g.x; seen.y = g.y; seen.z = g.z; seen.t = 0; } else seen.t += dt;
+      const ahead = g.resting ? 0 : Math.min(TICK, seen.t), speed = Math.hypot(g.vx, g.vz), x = g.x + g.vx * ahead, z = g.z + g.vz * ahead;
+      o.position.set(x, Math.max(groundAt(x, z, cover) + .12, g.y + (g.rolling ? 0 : g.vy * ahead - 4.9 * ahead * ahead)), z);
+      if (speed > .2) o.rotation.y = Math.atan2(g.vx, g.vz);
+      o.userData.spin += dt * (g.resting ? 0 : g.rolling ? speed / .12 : 10 + speed * .5); o.rotation.x = o.userData.spin;
+      o.userData.light.emissiveIntensity = g.life < .5 ? (Math.floor(elapsed * 14) % 2 ? 0 : 4) : g.life < 1.2 ? .5 : 0;
+    }
+    for (const [id, o] of grenadeMeshes) if (!live.some(g => g.id === id)) { o.removeFromParent(); o.userData.dispose(); grenadeMeshes.delete(id); }
+  }
+  // While G (or the touch button) charges: beads along the arc this throw would
+  // fly, its path on the ground and a ring the size of the blast where it would
+  // blow. Same start, flight and tick as the server, into reused points.
+  const arcBeads = guideBeads('#fff6d8', { count: 48 }), arcPath = guideRibbon('#fff6d8', .1, { segments: 72, opacity: .5 }), arcRing = guideRing('#fff6d8');
+  const arcPoints = [], arcResult = {}, arcOptions = { dt: TICK, time: 2, out: arcPoints, result: arcResult, land: true };
+  scene.add(arcBeads, arcPath, arcRing); let grenadeAim = null;
+  function aimGrenade(state, me) {
+    arcBeads.visible = arcPath.visible = arcRing.visible = false;
+    if (!grenadeAim || !me || !me.grenadeReady || me.respawn > 0 || me.eliminated || state.phase !== 'playing') return;
+    const def = grenadeDef(me.kit?.grenade), cover = coverFor(state.mapId, state.variant || 0);
+    arcOptions.time = def.fuse;
+    const r = traceLob(grenadeStart(me, grenadeAim, def.id, cover), grenadeFlight(def.id, cover, state.mapId), arcOptions);
+    arcBeads.userData.set(arcPoints, r.land >= 0 ? r.land + 1 : r.count);
+    arcPath.userData.set(arcPoints, .05, r.count);
+    arcRing.userData.set(r.x, groundAt(r.x, r.z, cover) + .06, r.z, def.radius);
+  }
   function draw(state, id, dt, aimPoint) {
     flags.forEach((root, i) => { const flag = state.flags?.[i]; root.visible = !!state.options?.flag && !!flag && state.phase === 'playing'; if (flag) root.position.set(flag.x, flag.carrier == null ? 0 : 2, flag.z); });
     bases.forEach((ring, i) => { const flag = state.flags?.[i]; ring.visible = flags[i].visible; if (flag) ring.position.set(flag.homeX, .035, flag.homeZ); });
@@ -263,6 +305,7 @@ export function createScene(canvas) {
       avatar.marker.visible = !down; avatar.vest.visible = !down && p.kit?.armor === 'padded';
       if (falling && avatar.knockout) { avatar.group.rotation.set(0, Math.atan2(p.ax,p.az), 0); avatar.knockout.update(dt); }
       else avatar.update(dt, { walk: p.walk, run: p.walk });
+      if (avatar.throwing > 0) { const k = 1 - avatar.throwing / THROW_ARM; avatar.armR.rotation.x = -3 + 2.5 * (1 - (1 - k) ** 2); avatar.throwing = down ? 0 : avatar.throwing - dt; }
     }
     for (const [id, avatar] of avatars) if (!state.players.some(p => p.id === id)) { avatar.marker.userData.dispose(); avatar.vest?.userData.dispose(); avatar.ring.removeFromParent(); avatar.ring.material.dispose(); avatar.stains.forEach(blob => blob.removeFromParent()); avatar.dispose(); avatars.delete(id); }
     camera.aspect = aspect;
@@ -327,18 +370,23 @@ export function createScene(canvas) {
     // Explosions: a flash, a fireball, smoke, and a shake for whoever stands close.
     for (const boom of state.booms || []) {
       if (seenBooms.has(boom.id)) continue; seenBooms.add(boom.id);
-      const size = BOOM_SIZE[boom.kind] || .8; blasts.boom({ x: boom.x, z: boom.z, size, color: boom.color });
+      const rocket = !!BOOM_SIZE[boom.kind], size = rocket ? BOOM_SIZE[boom.kind] : boom.radius ? boom.radius / 4.6 : .8;
+      blasts.boom({ x: boom.x, z: boom.z, size, color: boom.color, ...(rocket ? {} : { y: (boom.y || 0) + .5, ground: (boom.y || 0) + .08 }) });
       if (me && first) feel.shake(shakeAt(Math.hypot(me.x - boom.x, me.z - boom.z), size));
     }
     if (seenBooms.size > 64) for (const n of seenBooms) if (!(state.booms || []).some(b => b.id === n)) seenBooms.delete(n);
-    for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id, s.pattern)); stick(mesh, s, coverFor(state.mapId, state.variant || 0)); scene.add(mesh); splats.set(s.id, mesh); if (s.life > 8.6) puffs.spawn({ x: s.x, y: mesh.position.y > .5 ? mesh.position.y : 1.1, z: s.z }, { color: s.color, count: 3, spread: .3, size: .28, rise: .8, life: .35 }); } mesh.scale.setScalar(Math.min(1, s.life)*(s.radius || 1)); }
+    // A blast's splat lies flat where it blew (a crate top too) and covers its radius.
+    for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id, s.pattern)); if (s.blast) { mesh.rotation.set(-Math.PI / 2, 0, s.id * 1.7); mesh.position.set(s.x, (s.y || 0) + .05 + (s.id % 7) * .002, s.z); } else stick(mesh, s, coverFor(state.mapId, state.variant || 0)); scene.add(mesh); splats.set(s.id, mesh); if (s.life > 8.6) puffs.spawn({ x: s.x, y: mesh.position.y > .5 ? mesh.position.y : 1.1, z: s.z }, { color: s.color, count: 3, spread: .3, size: .28, rise: .8, life: .35 }); } mesh.scale.setScalar(Math.min(1, s.life) * (s.blast ? s.radius * 2 / 1.25 : s.radius || 1)); }
     for (const [id, mesh] of splats) if (!state.splats.some(s => s.id === id)) { mesh.removeFromParent(); splats.delete(id); }
-    const projectiles=[...(state.grenades||[]).map(g=>({...g,grenade:true})),...(state.puddles||[])];
-    for(const g of projectiles) {
-      let o=kitObjects.get(g.id); if(!o) {o=new THREE.Mesh(g.grenade ? new THREE.SphereGeometry(.22,10,8) : new THREE.CircleGeometry(g.radius,32),new THREE.MeshBasicMaterial({color:g.color,transparent:!g.grenade,opacity:g.grenade?1:.45,side:THREE.DoubleSide}));kitObjects.set(g.id,o);scene.add(o);}
-      o.position.set(g.x,g.grenade ? .25+Math.abs(Math.sin((1-g.life/g.total)*Math.PI*(g.kind==='chispita'?2:1)))*1.5 : .07,g.z); if(!g.grenade)o.rotation.x=-Math.PI/2;
+    // Sticky puddles: a flat translucent pool.
+    const puddles=state.puddles||[];
+    for(const g of puddles) {
+      let o=kitObjects.get(g.id); if(!o) {o=new THREE.Mesh(new THREE.CircleGeometry(g.radius,32),new THREE.MeshBasicMaterial({color:g.color,transparent:true,opacity:.45,side:THREE.DoubleSide}));o.rotation.x=-Math.PI/2;kitObjects.set(g.id,o);scene.add(o);}
+      o.position.set(g.x,.07,g.z);
     }
-    for(const [id,o] of kitObjects) if(!projectiles.some(g=>g.id===id)) {o.removeFromParent();o.geometry.dispose();o.material.dispose();kitObjects.delete(id);}
+    for(const [id,o] of kitObjects) if(!puddles.some(g=>g.id===id)) {o.removeFromParent();o.geometry.dispose();o.material.dispose();kitObjects.delete(id);}
+    drawGrenades(state, dt);
+    aimGrenade(state, me);
     aim.visible = !lobby && !first && !!aimPoint; if (aimPoint) aim.position.set(aimPoint.x, .07, aimPoint.z);
     blasts.update(dt); puffs.update(dt); elapsed += dt; sky.update(elapsed); renderer.render(scene, camera);
   }
@@ -346,6 +394,10 @@ export function createScene(canvas) {
     setView(value) { cameraView = value; initialized = false; },
     get view() { return cameraView; },
     get yaw() { return yaw; },
+    // The look's pitch: a grenade throw lobs higher when you look up.
+    get pitch() { return pitch; },
+    // The grenade being charged ({ ax, az, pitch, charge }, as game.js will send it), or null: draws the aim arc.
+    aimGrenade(aim) { grenadeAim = aim; },
     // Right mouse, F or the Mira button: held aim, shared by the scope and the server's steadier shot.
     setAim(on) { aiming = !!on; },
     get scope() { return scope; },
@@ -368,6 +420,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { unbind(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { unbind(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }

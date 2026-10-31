@@ -304,7 +304,7 @@ lobby also sends the kit, and mid-round the server takes it from
 Swaps keep reload debt and never refill limited rocket reserve.
 Rocket splash and grenade blasts apply at most one hit per victim and respect
 cover, teams and spawn protection. Respawn restores one grenade. Sticky pools
-expire and slow opponents; Chispita bounces before its fuse expires.
+expire and slow opponents. Grenade flight and blasts: see "Grenades" below.
 
 `armory.js` previews the actual marker and own pana, with hover comparisons for
 range, spread, cadence, capacity, reload, mobility and toughness. Its Probar
@@ -327,7 +327,7 @@ controls put reload and grenade beside a tall fire button without overflowing.
 It returns 100 + 700 times a weighted sum of bounded 0–1 components: range
 15%, precision 10%, sustained pellet rate including reload 20%, magazine plus
 reserve 10%, reload speed 10%, mobility 15%, toughness 15%, weapon spread-area
-coverage 2.5% and grenade radius per fuse second 2.5%. It is a build summary,
+coverage 2.5% and grenade radius × centre damage per fuse second 2.5%. It is a build summary,
 not a player rank or combat modifier; special utility such as sticky pools is
 still explained on the grenade card rather than presented as extra damage.
 
@@ -337,6 +337,60 @@ rules refresh an open armory. Finishes, charms and patterns do not affect it.
 Unit tests cover bounds, cosmetics, attachments, armor, grenades and rule
 overrides; the two-client sala test checks that a guest's changed rating reaches
 the host and matches the armory.
+
+## Grenades
+
+What was wrong before the rework: `throwGrenade` spawned the grenade at the
+pana's feet with a flat 12 m/s velocity along the aim and no pitch at all;
+`stepGrenades` slid it in 2D and stopped it dead at the first wall (Chispita
+reversed once, or "bounced" by slowing at half fuse); `scene.js` faked height
+with a sine hop over a 0.22 m unlit sphere; the 1.1 s fuse capped every throw
+near 13 m; and `blast` painted one pepazo anywhere inside the radius and
+nothing past it.
+
+Now the throw is a real 3D lob through `engine/play/lob.js`:
+
+- Input: release G (or the Granada touch button) after holding it. The charge is
+  `engine/play/shot-charge.js` (one second up, one down, never locked at max) and
+  rides three inputs as `charge` with the look's `pitch`. `cleanInput` keeps
+  only finite numbers: pitch clamps to the camera's limits (−0.7..0.55 rad),
+  charge to 0..1. Respawning, eliminated or frozen panas never throw.
+- Launch (`grenadeStart`, shared by the server, the preview and the bots): 1.45 m
+  up and 0.45 m ahead (less when cover is in the way), elevation = pitch + 0.45
+  rad, speed `speed[0]`..`speed[1]` (11..18 m/s) by charge. Gravity 9.81.
+- Range from a level look on open ground, to the first bounce: 12.3 m at no
+  charge, 28.8 m at full (rules test, ±1.5 m). Looking up lobs higher and
+  further; a full-charge throw at 0.55 rad peaks 13 m up.
+- The fuse starts on release (no cooking: the server only sees the release, so a
+  lagging hold can never blow up in the hand). Pinita 2.4 s, Pegajosa 2.2 s,
+  Chispita 2.8 s. A lob still in its first flight when the fuse ends blows on
+  touchdown instead of in the air (`touched`, at most 4 s late).
+- Bounces: floor and box tops with `restitution`/`friction`, box sides taller
+  than the grenade and the fence reflect it, then it rolls (`roll`) to rest.
+  Pinita (.38/.62) hops a few metres; Chispita (.6/.72, rolls longer) travels
+  about 10 m past its first bounce; Pegajosa is `sticky` and stops where it lands
+  (on a crate top too) and leaves its 3.3 m puddle.
+- Blast (`blast(b, radius, damage)`): `falloff` is 1 inside 40% of the radius and
+  falls to 0.35 at the edge; pepazos = max(1, round(damage × falloff)), so
+  Pinita (4.5 m, damage 2) paints two within ~2.8 m and one to the edge; rockets
+  (damage 1) are unchanged. Cover lower than the blast's height does not shield.
+  The splat is flat at the blast's height and as wide as the radius; the boom's
+  shock ring is sized `radius / 4.6`.
+- Preview: while charging, `scene.aimGrenade` runs `traceLob` from the same
+  start with `TICK` (0.05 s, the server step) into reused points: beads along
+  the arc (`guideBeads`), a ground strip (`guideRibbon`) and a blast-size ring
+  (`guideRing`) where it will blow. A rules test proves the predicted blast point
+  equals the server's to 1e-9.
+- Look and sound: `createPaintGrenade` (Studio `paint-granada`) in the
+  thrower's colour tumbles in flight, glides between snapshots, and its lamp
+  blinks through the last 0.5 s. The thrower's right arm swings overhand
+  (`armR.rotation.x`, 0.45 s, after the avatar update). `sounds.js` adds the pin
+  (charge start, own client only), whoosh, clink per bounce and fuse beeps.
+- Bots (`botGrenade`): a rival 6–28 m away that is visible or within 2.5 m of
+  cover; `aimGrenade` solves pitch and charge with `solveLob` on open ground,
+  then traces the real throw and only throws if the blast lands within 60% of
+  the radius. They check every 2 s, never in the first 3 s of a life. The
+  armory's Probar range uses the same `aimGrenade` for its grenade button.
 
 ## Directional knockout physics
 
