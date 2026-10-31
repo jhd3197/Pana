@@ -2,7 +2,8 @@
 // Marker, vest and grenade names are proper names and stay Spanish; generic
 // names and blurbs are locKey() and shown with loc() (armory.js).
 import { locKey } from '../../../engine/i18n.js';
-import { PAINT_WEAPONS, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, classOf } from '../../../engine/play/paint-arsenal.js';
+import { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, classOf } from '../../../engine/play/paint-arsenal.js';
+import { meleeDef } from '../../../engine/play/melee.js';
 // The simulation step (rules.js TICK). A marker fires on a tick, so its real
 // interval is its `cadence` rounded up to whole ticks: see shotInterval.
 const STEP = .05;
@@ -47,21 +48,52 @@ export const MARKERS = [
  // La Culebrona: belt-fed; long magazine, steady at 45 m, slow to move and reload.
  marker('lmg', locKey('Cincuenta bolas de cinta, estable a 45 m. Pesada para moverse y recargar.'), { magazine:50, reload:3.6, cadence:.12, mobility:.8, spread:.05, speed:90, life:.5 }),
 ];
+// Los del pescozón: six close-range weapons on engine/play/melee.js (one person per
+// swing, no ammo). reach in metres, arc the cone's half-angle, windup/recovery in
+// seconds, damage in pepazos (a big stack: see "Melee" in docs/knowledge/pintura.md),
+// knockback in metres, stun in seconds slowed, mobility like a marker's.
+// La Chancleta alone is `throwable`: it flies, hits and comes back to the hand.
+const melee = (id, blurb, stats) => ({ id, name: PAINT_MELEE[id], class: 'melee', blurb, melee: true, pellets: 1, knockback: 0, stun: 0, ...stats });
+export const MELEE = [
+ melee('bat', locKey('Largo y contundente: tres pepazos por batazo y cuatro si pega con la punta.'), { reach:2.4, arc:.55, windup:.25, recovery:.5, damage:3, knockback:.8, mobility:1.08, sweetSpot:{ from:.75, bonus:1 } }),
+ melee('sandal', locKey('Corta y certera: tres pepazos de cerca. Clic derecho o V la lanza en arco; vuelve a tu mano a los 2,5 s.'), { reach:1.8, arc:.6, windup:.15, recovery:.55, damage:3, knockback:.4, mobility:1.12,
+  throwable:{ speed:20, lift:.15, gravity:9.8, radius:.3, damage:3, life:2.5, recall:2.5, returns:'recall' } }),
+ melee('roller', locKey('Barre ancho: dos pepazos a quien tengas delante, aunque esté de lado.'), { reach:2.2, arc:1, windup:.2, recovery:.4, damage:2, knockback:.5, mobility:1.06 }),
+ melee('brush', locKey('La más rápida: un pepazo por brochazo, tres brochazos por segundo.'), { reach:1.8, arc:.7, windup:.1, recovery:.2, damage:1, knockback:.2, mobility:1.15 }),
+ melee('bucket', locKey('Lento y pesado, el que más lejos llega: tres pepazos y un empujón; con la punta, cuatro.'), { reach:2.6, arc:.6, windup:.35, recovery:.75, damage:3, knockback:1.6, mobility:1, sweetSpot:{ from:.7, bonus:1 } }),
+ melee('maraca', locKey('Un pepazo que aturde: el rival queda lento un segundo.'), { reach:2, arc:.75, windup:.1, recovery:.3, damage:1, knockback:.2, stun:1, mobility:1.12 }),
+];
+// Every weapon a kit can hold: the markers, then the melee set.
+export const WEAPONS = [...MARKERS, ...MELEE];
+export const weaponOf = id => WEAPONS.find(w => w.id === id) || null;
+export const isMelee = id => MELEE.some(m => m.id === id);
 // The classes that hold markers, in PAINT_CLASSES order (granadas and melee have none).
 export const CLASSES = PAINT_CLASSES.filter(c => c.weapons.some(id => MARKERS.some(m => m.id === id)));
-// Every marker in class order: the order Z/X (and [ ]) cycle through mid-round.
-export const WEAPON_CYCLE = CLASSES.flatMap(c => c.weapons.filter(id => MARKERS.some(m => m.id === id)));
-// The next (step 1) or previous (step -1) marker in WEAPON_CYCLE, wrapping round.
+// The armory's class chips: the marker classes, then Los del pescozón.
+export const MELEE_CLASS = PAINT_CLASSES.find(c => c.id === 'melee');
+export const ARMORY_CLASSES = [...CLASSES, MELEE_CLASS];
+// Every weapon in class order, melee last: the order Z/X (and [ ]) cycle through mid-round.
+export const WEAPON_CYCLE = ARMORY_CLASSES.flatMap(c => c.weapons.filter(id => WEAPONS.some(m => m.id === id)));
+// The next (step 1) or previous (step -1) weapon in WEAPON_CYCLE, wrapping round.
 export const cycleWeapon = (id, step = 1) => { const n = WEAPON_CYCLE.length, i = WEAPON_CYCLE.indexOf(id); return WEAPON_CYCLE[((i < 0 ? 0 : i + step) % n + n) % n]; };
 // Seconds between shots as the simulation fires them: the cadence rounded up to whole ticks.
 export function shotInterval(cadence) { let left = cadence, ticks = 0; do { left = Math.max(0, left - STEP); ticks++; } while (left > 0); return ticks * STEP; }
 // Pepazos a second with every ball landing; a direct rocket counts as a knockout (3).
-export const dpsOf = s => (s.direct ? 3 : (s.damage ?? 1) * s.pellets) / shotInterval(s.cadence);
+export const dpsOf = s => (s.direct ? 3 : (s.damage ?? 1) * s.pellets) / (s.melee ? meleeInterval(s) : shotInterval(s.cadence));
+// Seconds between two melee swings as the simulation runs them: windup and recovery in whole ticks.
+const ticks = seconds => Math.max(1, Math.ceil(seconds / STEP - 1e-6)) * STEP;
+export const meleeInterval = s => ticks(s.windup) + ticks(s.recovery);
+// How far a throwable melee weapon flies from a level look before it lands (metres), for the armory.
+export function throwRange(t, hand = 1.45) { const vy = Math.sin(t.lift) * t.speed, time = (vy + Math.sqrt(vy * vy + 2 * t.gravity * hand)) / t.gravity; return Math.min(time, t.life) * Math.cos(t.lift) * t.speed; }
 export const ATTACHMENTS = [
  {id:'barrel',name:locKey('Cañón afinado'),blurb:locKey('Más precisión y alcance; en las marcadoras que no se desvían, la bola o el cohete sale más rápido. −5% movilidad.')},
  {id:'hopper',name:locKey('Tolva grande'),blurb:locKey('Más bolas; recarga más lenta y −5% movilidad. En El Cohetón y La Bazuca: un cohete extra.')},
  {id:'stock',name:locKey('Culata ligera'),blurb:locKey('+5% movilidad, menos control. Los cohetes pierden radio de salpicadura.')},
  {id:'optic',name:locKey('Mira'),blurb:locKey('Apuntas con clic derecho: acerca la vista y endereza el tiro. Cada marcadora trae su mira. −2% movilidad.')},
+ // Melee parts, on the grip, the head and the pommel of every melee model: one tradeoff each.
+ {id:'tape',melee:true,name:locKey('Cinta de agarre'),blurb:locKey('Golpeas 20% más rápido; llegas 15% menos lejos.')},
+ {id:'drip',melee:true,name:locKey('Goteo de pintura'),blurb:locKey('+1 pepazo por golpe; te recuperas 25% más lento.')},
+ {id:'strap',melee:true,name:locKey('Correa'),blurb:locKey('La chancla lanzada vuelve 40% antes; las demás se recuperan 15% más rápido. −4% movilidad.')},
 ];
 // Each Mira kind's aim tuning (the kind comes with the marker: PAINT_OPTICS).
 // zoom: magnification while aiming (a scoped marker multiplies its own scope by
@@ -103,11 +135,11 @@ const pick = (list,id) => list.some(x=>x.id===id) ? id : list[0].id;
 // any three parts fit together; the fourth stays in the box.
 export const ATTACHMENT_SLOTS = 3;
 // Which attachments fit which marker: the mounts its model has (paint-arsenal.js).
-export const ATTACHMENT_RULES = Object.fromEntries(MARKERS.map(m=>[m.id,ATTACHMENTS.map(a=>a.id).filter(id=>PAINT_MOUNTS[m.id]?.includes(id))]));
+export const ATTACHMENT_RULES = Object.fromEntries(WEAPONS.map(m=>[m.id,ATTACHMENTS.map(a=>a.id).filter(id=>PAINT_MOUNTS[m.id]?.includes(id))]));
 export const canAttach = (weaponId, attachmentId) => !!ATTACHMENT_RULES[weaponId]?.includes(attachmentId);
 export function cleanKit(value={}) {
  if (!value || typeof value !== 'object') value={};
- const weapon=pick(MARKERS,value.weapon), raw=Array.isArray(value.attachments)?value.attachments:[];
+ const weapon=pick(WEAPONS,value.weapon), raw=Array.isArray(value.attachments)?value.attachments:[];
  // Up to ATTACHMENT_SLOTS entries are slot positions; a longer list (old or hostile) is packed.
  const list=raw.length>ATTACHMENT_SLOTS?raw.filter(id=>canAttach(weapon,id)).filter((id,i,all)=>all.indexOf(id)===i):raw;
  const attachments=Array.from({length:ATTACHMENT_SLOTS},(_,i)=>{const id=list[i];return canAttach(weapon,id) && !list.slice(0,i).includes(id) ? id : null;});
@@ -129,8 +161,9 @@ export function changeWeapon(kit, weaponId) {
 }
 export function kitStats(value={}, options={}) {
  const kit=cleanKit(value), weapon=options.weapons==='pistol'?'pistol':kit.weapon;
- const s={...MARKERS.find(w=>w.id===weapon)}, armor=ARMOR.find(a=>a.id===kit.armor), parts=kit.attachments.filter(id=>id && canAttach(weapon,id));
+ const s={...weaponOf(weapon)}, armor=ARMOR.find(a=>a.id===kit.armor), parts=kit.attachments.filter(id=>id && canAttach(weapon,id));
  s.zoom=s.scope||1.2; s.sens=1; s.optic=null;
+ if(s.melee) return meleeStats(s,parts,armor,options);
  for(const id of parts) {
   // A marker that already flies straight cannot get tighter: its barrel sends the shot out faster instead.
   if(id==='barrel') { if(s.spread>0) { s.spread*=.65; s.life*=1.12; } else s.speed*=1.12; if(s.aimSpread!=null) s.aimSpread*=.65; s.mobility-=.05; }
@@ -152,11 +185,31 @@ export function kitStats(value={}, options={}) {
  s.aims=s.aimSpread!=null; return s;
 }
 
+// A melee weapon's numbers with its parts and armor: no ammo, no reload, never aims.
+// `cadence` is the swing interval, so whatever reads a marker's pace reads this too.
+function meleeStats(s,parts,armor,options) {
+ if(s.throwable) s.throwable={...s.throwable}; if(s.sweetSpot) s.sweetSpot={...s.sweetSpot};
+ for(const id of parts) {
+  if(id==='tape') { s.windup*=.8; s.recovery*=.8; s.reach*=.85; }
+  if(id==='drip') { s.damage+=1; s.recovery*=1.25; }
+  if(id==='strap') { if(s.throwable) s.throwable.recall*=.6; else s.recovery*=.85; s.mobility-=.04; }
+ }
+ // The thrown chancla paints what a strike paints, drips included.
+ if(s.throwable) s.throwable.damage=s.damage;
+ s.mobility*=armor.mobility; s.toughness=Math.max(1,(options.toughness||3)+armor.toughness);
+ return Object.assign(s,{cadence:s.windup+s.recovery,magazine:0,reload:0,speed:0,life:0,spread:0,sprint:true,aims:false});
+}
+// The engine definition (engine/play/melee.js) behind a melee kit's stats.
+export const meleeOf = s => meleeDef(s);
 // A bounded build summary, not a player rank or a damage multiplier. All inputs
 // come from the same effective stats used by Arena, including room overrides.
 export function kitRating(value={}, options={}) {
  const s=kitStats(value,options), grenade=GRENADES.find(g=>g.id===cleanKit(value).grenade);
  const unit=n=>Math.max(0,Math.min(1,n));
+ const lob=.025*unit(grenade.radius*grenade.damage/(grenade.fuse*4));
+ // Melee: reach (or the throw) for range, the cone for precision, pepazos a second, swing pace.
+ if(s.melee) return Math.round(100+700*(.15*unit((s.throwable?throwRange(s.throwable):s.reach)/60)+.10*unit(s.arc/1.2)+.20*unit(dpsOf(s)/6)+.05
+  +.10*unit(1-meleeInterval(s)/1.5)+.15*unit(s.mobility/1.15)+.15*unit(s.toughness/6)+.025*unit((s.knockback+s.stun)/2)+lob));
  const sustained=s.magazine*s.pellets*s.damage/(s.magazine*s.cadence+s.reload);
  const score=.15*unit(s.speed*s.life/60)+.10*unit(1-(s.aimSpread??s.spread)/.3)
   +.20*unit(sustained/6)+.10*unit((s.magazine+(s.reserve||0))/26)

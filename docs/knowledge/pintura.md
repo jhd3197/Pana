@@ -244,7 +244,106 @@ the pad sent), not a direction captured before the first frame set the yaw.
 - Third-person markers are `bakePaintKit` batches (a few draws each), and ball
   streaks share one material per colour: La Licuadora and La Fumigadora put
   twenty balls a second in the air.
-- Bots keep the default kit; they never use the other markers.
+- Bots keep the default kit; they never use the other markers. A bot given a
+  melee kit (tests, `selectKit`) walks straight at the nearest rival it sees and
+  swings inside the reach (`Arena.meleeBot`); with La Chancleta it also throws at
+  a rival 5–22 m away in sight, pitched by `aimThrow`.
+
+## Melee: Los del pescozón
+
+Six close-range weapons, the `melee` class of `PAINT_CLASSES` (its chip is the
+last in the armory; Z/X reach them after the markers). The mechanic is shared:
+`engine/play/melee.js` (state machine, one-target `swingHit`, the throw) on
+`engine/play/projectile.js`'s gravity arc (`sweepArc`, `stepArc`). Pepazo's data
+is `MELEE` in `armory-data.js`; `WEAPONS` is markers plus melee, and everything
+that used to look a weapon up in `MARKERS` (cleanKit, cleanInput, the HUD, the
+armory, the pause menu's weapon list) reads `WEAPONS`.
+
+| Weapon | reach m | cone ± | windup + recovery s | pepazos | extra |
+|---|---|---|---|---|---|
+| El Bate `bat` | 2.4 | 0.55 rad | 0.25 + 0.5 | 3 (4 past 75% of the reach) | 0.8 m shove |
+| La Chancleta `sandal` | 1.8 | 0.6 | 0.15 + 0.55 | 3 | throwable |
+| El Rodillo `roller` | 2.2 | 1.0 | 0.2 + 0.4 | 2 | the widest cone |
+| La Brocha `brush` | 1.8 | 0.7 | 0.1 + 0.2 | 1 | the fastest |
+| El Tobo `bucket` | 2.6 | 0.6 | 0.35 + 0.75 | 3 (4 past 70%) | 1.6 m shove |
+| La Maraca `maraca` | 2.0 | 0.75 | 0.1 + 0.3 | 1 | slows the victim 1 s |
+
+Mobility 1.0–1.15 (lighter than La Chispa), sprint allowed, never aims, no
+ammo or reload. `kitStats` returns `melee: true`, `cadence` = windup +
+recovery, `magazine` 0; `meleeInterval` is the simulated interval in whole
+ticks, and `dpsOf` uses it (2.2–4 pepazos/s; `tests/melee.test.js` keeps every
+weapon between 2 and 5).
+
+- **Damage is a big stack, not a one-hit rule.** A blow lands `damage` pepazos
+  at once through `Arena.hit` (the same path as La Lejana's two). At the default
+  Aguante 3 the heavy three (bate, chancla, tobo) knock out in one hit, but El
+  Acolchado survives one and Aguante 5 needs two; the light ones (brocha,
+  maraca) chain. One rule keeps toughness, armor, the Goteo part and room
+  options meaningful, where a flat one-hit kill would make all of them moot.
+- **One person per swing.** The blow is decided once, when the windup ends
+  (`stepMelee` says `'strike'`): the nearest rival whose body (0.55 m) comes
+  within the reach, inside the cone, with no cover between. Friendly fire,
+  shields and respawns follow the balls' rules (`Arena.targetsOf`). A hit pushes
+  a splat under the victim and counts `p.smacks` (clients play the blow sound).
+- Parts (`ATTACHMENTS` with `melee: true`; the models mount them on the grip,
+  head and pommel): **Cinta de agarre** `tape` swings 20% faster and reaches 15%
+  less; **Goteo de pintura** `drip` paints +1 pepazo and recovers 25% slower;
+  **Correa** `strap` brings a thrown chancla back 40% sooner (1.5 s), the others
+  recover 15% faster, −4% mobility. Melee weapons take only these three and
+  markers only theirs (`PAINT_MOUNTS` in `engine/play/paint-arsenal.js`); the
+  armory lists only the kind that fits.
+- Switching weapon mid-swing drops the blow but keeps 0.3 s of wait; while the
+  chancla is away the server ignores a weapon change (the client keeps sending
+  its pick, so it applies once the chancla is back).
+- Client: `viewmodel.js` `swingPose` blends rest → cocked over the windup,
+  snaps through in 0.09 s and eases back over the recovery, on its own clock
+  from the `melee.swings` count (no allocation per frame). Third person reuses
+  the grenade arm throw. Sounds: `sounds.js` `MELEE_SOUND` maps each weapon to an
+  `engine/sfx.js` material (`swing`/`smack`: bat `wood`, sandal `slap`, roller
+  `squish`, brush `swish`, bucket `clang`, maraca `rattle`) and `pop` when your
+  chancla is back. The hopper plate shows pepazos per blow over a swing bar
+  (`#hop.melee`, `--cd` = `readiness`), the crosshair ring fills the same way.
+  Knockouts are called `¡Pescozón!`, a thrown one `¡Chancletazo!`.
+
+### La Chancleta's throw
+
+Asked for by name: a close strike (the melee path above) plus a throw.
+
+- **Input.** `alt` in `cleanInput` (also accepted as `throw`, real booleans
+  only; pitch clamped to the look's limits). Right mouse and F are Apuntar, but a
+  melee weapon never aims, so with a throwable weapon in hand they throw instead;
+  V always throws. Pad: LT (it sends F) or the right stick click (`rs`, V).
+  Touch: the Mira button reads "Lanzar" and throws. The throw rides three inputs
+  (`throwSends`), like a grenade; the server throws on the rising edge (`altHeld`).
+- **Flight.** `throwStart` from the hand (`handAt`: 1.45 m up, 0.45 m ahead, never
+  through cover) at 20 m/s, elevation = pitch + 0.15, gravity 9.8: from a level
+  look it lands about 18 m out and is still at chest height at 15 m. Each tick
+  `stepThrown` sweeps the chord against cover (with heights: it flies over a low
+  crate), the fence, the ground and panas; the first pana it meets takes the
+  strike's whole stack (3, so it knocks out at Aguante 3 from any range it
+  reaches; Goteo raises both). It splats where it stops.
+- **Recall after cooldown, not pickup.** It is back in the hand 2.5 s after the
+  throw (1.5 s with the Correa) whether it hit or not: `phase 'away'` → `'return'`
+  in `stepMelee`, `p.recalls` counts it, the client pops and the HUD bar ("La
+  chancla vuelve en … s") fills. No chase across the court, a fixed and fair
+  cost for a miss, nothing on the floor to sync or to get lost behind the fence,
+  and it works the same on every map. A respawn puts it back at once.
+  `returns: 'pickup'` exists in the engine for a later weapon (stays away until
+  the game calls `recall`).
+- **It leaves the hand.** While away the first-person model hides
+  (`world.held`), and the third-person one too; the projectile is the pana's own
+  baked sandal model (`Thrown sandal` in the scene, one per thrower, reused),
+  spinning end over end and gliding between snapshots.
+
+What changed for the chancla, by file: `Pana/engine/play/melee.js` (throw and
+recall state machine, `aimThrow`), `Pana/engine/play/projectile.js` (`sweepArc`,
+`stepArc`), `Pana/games/pintura/public/armory-data.js` (`MELEE.sandal.throwable`,
+the Correa, `throwRange`), `rules.js` (`cleanInput.alt`, `handAt`,
+`Arena.throwMelee`, `flyThrown`, `thrown` in the view, the bot throw), `game.js`
+(right mouse / F / V / `rs` / the Lanzar button, `throwSends`, sounds),
+`scene.js` (the flying model, hiding the held one), `combat-hud.js` (the recall
+bar), `armory.js` ("lanzada … m", "Vuelve en"), `tests/melee.test.js` and the
+melee part of `tests/browser.mjs`.
 
 ## Notes for agents
 
@@ -343,8 +442,8 @@ expire and slow opponents. Grenade flight and blasts: see "Grenades" below.
 comparisons for range, damage, paint per second (`dpsOf`), spread (aimed spread
 and zoom when it aims), the real fire rate, capacity, reload, mobility and
 toughness. The marker picker comes by class: a chip per class with markers
-(nickname over kind, `CLASSES`; granadas and melee have none so they get no
-chip), then that class's markers, each card with its pepazos/s, range and
+(nickname over kind, `ARMORY_CLASSES`: the marker classes plus melee; granadas
+has none so it gets no chip), then that class's weapons, each card with its pepazos/s, range and
 magazine. The header shows the class under the name. Its Probar
 range runs an independent `Arena` against a target, using the same rules as the
 server. It never spends ammo or emits shots into the multiplayer room.

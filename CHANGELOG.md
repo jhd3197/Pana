@@ -8,6 +8,15 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Pepazo llegan Los del pescozón: El Bate, La Chancleta, El Rodillo, La Brocha, El Tobo y La Maraca, y la chancla se lanza.**
+  Se eligen en la armería como las marcadoras, con su alcance, pepazos por
+  golpe, golpes por segundo, movilidad y aguante, y tres accesorios propios
+  (cinta de agarre, goteo de pintura y correa). Cada golpe pinta a una sola
+  persona, la más cercana que tengas delante, sin gastar pepas. Con La
+  Chancleta, clic derecho, F, V, el botón Lanzar o el stick derecho la lanzan en
+  arco: sale de la mano, pinta a quien toque y vuelve sola a los 2,5 segundos.
+  Cada arma suena distinta al golpear.
+
 - **En Pepazo hay 18 marcadoras en ocho clases, cada una con su mira y tres espacios de accesorios.**
   Llegan La Metra, La Licuadora, La China, El Tambor, La Corneta, La Fumigadora,
   El Llanero, La Pulga, La Parrandera, El Tuqueque, El Zamuro y La Culebrona. En

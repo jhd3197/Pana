@@ -1,4 +1,5 @@
-import { cleanKit, kitStats, grenadeDef, MARKERS } from './armory-data.js';
+import { cleanKit, kitStats, grenadeDef, WEAPONS } from './armory-data.js';
+import { createMelee, startSwing, stepMelee, swingHit, throwStart, stepThrown, aimThrow, inHand } from '../../../engine/play/melee.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/worlds/arena-layouts.js';
@@ -61,8 +62,19 @@ export function cleanInput(input = {}) {
   const pitch = Number.isFinite(input.pitch) ? clamp(input.pitch, THROW.down, THROW.up) : 0, charge = Number.isFinite(input.charge) ? clamp(input.charge, 0, 1) : 0;
   let x = num(input.x), z = num(input.z), length = Math.hypot(x, z); if (length > 1) { x /= length; z /= length; }
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
-  return { x, z, ax, az, weapon: MARKERS.some(m => m.id === input.weapon) ? input.weapon : null, fire: input.fire === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, pitch, charge, jump: jumpCount(input) };
+  // `alt` (also sent as `throw`) is the alternate attack: La Chancleta's throw.
+  return { x, z, ax, az, weapon: WEAPONS.some(m => m.id === input.weapon) ? input.weapon : null, fire: input.fire === true, alt: input.alt === true || input.throw === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, pitch, charge, jump: jumpCount(input) };
 }
+// Where a thrown melee weapon leaves pana p's hand: like a grenade, 1.45 m up and
+// 0.45 m ahead, never reaching through the cover p stands against.
+export function handAt(p, ax, az, cover = []) {
+  const length = Math.hypot(ax, az) || 1; ax /= length; az /= length;
+  let ahead = THROW.ahead;
+  for (const o of cover) { const t = segmentBox(p.x, p.z, ax * ahead, az * ahead, o, .15); if (t !== null) ahead = Math.min(ahead, Math.max(0, t * ahead - .02)); }
+  return { x: p.x + ax * ahead, y: THROW.hand + (p.jumpHeight || 0), z: p.z + az * ahead, ax, az };
+}
+// A fresh melee state that keeps the swing and throw counts (clients play each one once).
+const freshMelee = p => ({ ...createMelee(), swings: p.melee?.swings || 0, throws: p.melee?.throws || 0 });
 export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : id === 'noche' ? NOCHE_SPAWNS : id === 'terminal' ? TERMINAL_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
 // Half-extents of each map's court. Most are square; El Puerto runs long between its two bases.
 const BOUNDS = new Map([['muelle', { x: MUELLE_SIZE, z: MUELLE_SIZE }], ['noche', { x: NOCHE_SIZE, z: NOCHE_SIZE }], ['terminal', TERMINAL_BOUNDS]]);
@@ -74,11 +86,9 @@ const outside = (id, x, z, margin = 0) => { const b = boundsFor(id); return Math
 // ({ ax, az, pitch, charge }): the server's throw, the aim preview and the bots
 // all start here. The hand never reaches through cover the pana stands against.
 export function grenadeStart(p, { ax = 0, az = -1, pitch = 0, charge = 0 }, kind, cover = []) {
-  const def = grenadeDef(kind), [slow, fast] = def.speed, length = Math.hypot(ax, az) || 1; ax /= length; az /= length;
-  let ahead = THROW.ahead;
-  for (const o of cover) { const t = segmentBox(p.x, p.z, ax * ahead, az * ahead, o, .15); if (t !== null) ahead = Math.min(ahead, Math.max(0, t * ahead - .02)); }
+  const def = grenadeDef(kind), [slow, fast] = def.speed, hand = handAt(p, ax, az, cover);
   const elevation = clamp(pitch, THROW.down, THROW.up) + THROW.lift;
-  return { x: p.x + ax * ahead, y: THROW.hand + (p.jumpHeight || 0), z: p.z + az * ahead, ...lobVelocity(ax, az, elevation, slow + (fast - slow) * clamp(charge, 0, 1)) };
+  return { x: hand.x, y: hand.y, z: hand.z, ...lobVelocity(hand.ax, hand.az, elevation, slow + (fast - slow) * clamp(charge, 0, 1)) };
 }
 // The bounce rules of a grenade kind on map `mapId` (no map: open ground, for range sums).
 export function grenadeFlight(kind, cover = [], mapId = null) {
@@ -144,7 +154,7 @@ function distanceField(grid, target) {
   return far;
 }
 export class Arena {
-  constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.puddles = []; this.booms = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; }
+  constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; }
   selectKit(id, value) { const p=this.players.find(p=>p.id===id && p.connected); if(!p || this.phase==='playing') return false; p.kit=cleanKit(value); p.weapon=p.kit.weapon; return true; }
   // Why selectKit would refuse this seat right now ('' when it would accept): the client says so instead of dropping the pick.
   kitRejection(id) { return !this.players.some(p=>p.id===id && p.connected) ? 'absent' : this.phase==='playing' ? 'playing' : ''; }
@@ -179,7 +189,7 @@ export class Arena {
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.
     if (this.phase === 'playing' && !this.loading) this.ready.add(id);
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); return p; }
-    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
+    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, altHeld: false, melee: createMelee(), smacks: 0, recalls: 0, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p); return p;
   }
   // Seats this round's bots from the `bots` option: the old bots leave, then
@@ -202,7 +212,7 @@ export class Arena {
   // round count stays, so the next court still rotates its layout.
   toLobby({ keepBots = false } = {}) {
     return returnToLobby(this, { keepBots, reset: g => {
-      Object.assign(g, { survivors: null, loading: 0, countdown: 0, time: g.options.duration, balls: [], splats: [], grenades: [], puddles: [], booms: [], flags: [], teamScores: [0, 0] }); g.ready = new Set();
+      Object.assign(g, { survivors: null, loading: 0, countdown: 0, time: g.options.duration, balls: [], splats: [], grenades: [], thrown: [], puddles: [], booms: [], flags: [], teamScores: [0, 0] }); g.ready = new Set();
       g.players.forEach((p, i) => Object.assign(p, spawnsFor(g.mapId)[i % 8], { respawn: 0, eliminated: false }));
       g.say(locKey('La cancha está lista.'));
     } });
@@ -210,7 +220,7 @@ export class Arena {
   // Only from the lobby: a finished round goes through toLobby() first.
   start() {
     if (this.phase !== 'lobby' || !this.canStart()) return false;
-    this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = []; this.grenades = []; this.puddles = []; this.booms = [];
+    this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = [];
     this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }));
     this.players.forEach(p => this.refill(p));
     // One by one, so each pana spawns away from the rivals already placed and on a free spot.
@@ -230,7 +240,7 @@ export class Arena {
   // Skip the wait and the countdown: the armory's range and tests that only exercise play.
   go() { this.loading = this.countdown = 0; }
   freezeJumps(inputs) { for (const p of this.players) if (!p.bot) resetJump(p, inputs.get(p.id)); }
-  refill(p) { const stats=kitStats(p.kit,this.options); p.ammo=stats.magazine; p.reserve=stats.reserve ?? 0; p.weapon=stats.id; p.grenadeReady=true; p.grenadeHeld=false; p.lobAt=null; p.shots=0; }
+  refill(p) { const stats=kitStats(p.kit,this.options); p.ammo=stats.magazine; p.reserve=stats.reserve ?? 0; p.weapon=stats.id; p.grenadeReady=true; p.grenadeHeld=false; p.lobAt=null; p.shots=0; p.melee=freshMelee(p); }
   // Respawn protection: 1.5 s of shield (the ring blinks in the scene) so nobody is
   // painted on arrival; firing or throwing cancels it early.
   respawn(p) {
@@ -291,8 +301,21 @@ export class Arena {
       const step = d > 2 && this.route(p, tx, tz); if (step) ({ x, z } = step);
       else if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { const swap = x; x = -z; z = swap; }
     }
+    const stats = kitStats(p.kit, this.options);
+    if (stats.melee) return this.meleeBot(p, q, { clear, length, x, z, ax: aimX, az: aimZ, fire: Math.sin(t * 3) > skill.trigger }, stats);
     const lob = this.botGrenade(p, q, clear);
     return cleanInput({ x, z, ax: aimX, az: aimZ, fire: !lob && clear && length < 34 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear, ...lob });
+  }
+  // A bot holding a melee weapon walks straight at the nearest rival it can see and
+  // swings once inside the reach. With a throwable one (La Chancleta) it throws at a
+  // rival 5–22 m away in sight, pitched by aimThrow; the recall is its cooldown.
+  meleeBot(p, q, { clear, length, x, z, ax, az, fire }, stats) {
+    if (clear && !this.options.flag) {
+      x = (q.x - p.x) / length; z = (q.z - p.z) / length;
+      if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { const swap = x; x = -z; z = swap; }
+    }
+    const shot = stats.throwable && fire && clear && length > 5 && length < 22 && p.melee.phase === 'ready' && aimThrow(stats, length);
+    return cleanInput({ x, z, ax, az, fire: clear && length - RADIUS <= stats.reach * .95, alt: !!shot, pitch: shot ? shot.pitch : 0 });
   }
   // A throw from p that blows up at (tx, tz), solved with the server's own flight
   // on open ground: { ax, az, pitch, charge, x, z } with where it would really blow
@@ -339,13 +362,23 @@ export class Arena {
       let stats=kitStats(p.kit,this.options);
       if (p.reload > 0) { p.reload = Math.max(0, p.reload - dt); if (!p.reload) { p.ammo = stats.reserve != null ? Math.min(stats.magazine,p.reserve) : stats.magazine; if(stats.reserve != null) p.reserve-=p.ammo; } }
       const input = p.bot ? this.bot(p) : cleanInput(inputs.get(p.id));
-      if(input.weapon && input.weapon !== p.kit.weapon && this.options.weapons !== 'pistol') {
+      // A thrown chancla has to come back before the pana can change weapon.
+      if(input.weapon && input.weapon !== p.kit.weapon && this.options.weapons !== 'pistol' && inHand(p.melee)) {
         // Parts that do not fit the new marker come off, exactly as the client's armory drops them.
         p.kit=cleanKit({...p.kit,weapon:input.weapon}); stats=kitStats(p.kit,this.options);
         p.ammo=Math.min(p.ammo,stats.magazine); p.reserve=0;
-        if(p.shots>0) { p.ammo=0; p.reload=stats.reload; }
+        if(p.shots>0 && !stats.melee) { p.ammo=0; p.reload=stats.reload; }
+        // A switch mid-swing drops the blow but not the wait.
+        if(p.melee.phase==='windup') { p.melee.phase='recover'; p.melee.t+=.3; }
       }
       p.weapon=stats.id;
+      if(stats.melee) {
+        const event=stepMelee(p.melee,stats,dt);
+        if(event==='strike') this.strike(p,stats);
+        if(event==='return') p.recalls++;
+        if(input.alt && !p.altHeld) this.throwMelee(p,input,stats);
+      }
+      p.altHeld=input.alt;
       if(input.grenade && !p.grenadeHeld && p.grenadeReady) this.throwGrenade(p,input);
       p.grenadeHeld=input.grenade;
       p.ax = input.ax; p.az = input.az;
@@ -356,7 +389,9 @@ export class Arena {
       const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, regen: 5, move: axisMove((x, z) => blocked(x, z, RADIUS, this.mapId, this.variant)) }).sprinting; p.sprint = sprinting;
       p.walk = !!(input.x || input.z);
       if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < stats.magazine && (stats.reserve == null || p.reserve > 0)) p.reload = stats.reload;
-      if (input.fire && !sprinting && !p.cooldown && !p.reload && p.ammo > 0) {
+      // Melee: the trigger swings (no ammo); the blow lands when the windup ends.
+      if (stats.melee) { if (input.fire && !sprinting && startSwing(p.melee, stats)) p.shield = 0; }
+      else if (input.fire && !sprinting && !p.cooldown && !p.reload && p.ammo > 0) {
         p.ammo--; p.shots++; p.fired++; p.cooldown=stats.cadence; p.shield=0;
         const spread=p.aim && stats.aimSpread!=null ? stats.aimSpread : stats.spread;
         const jitter=stats.pellets===1 ? Math.sin(p.shots*2.4)*spread : 0;
@@ -379,13 +414,13 @@ export class Arena {
       }
     }
     for(const ball of this.balls) if(ball.rocket && ball.life<=0 && !ball.exploded) this.blast(ball,ball.splash);
-    this.stepGrenades(dt);
+    this.stepGrenades(dt); this.flyThrown(dt);
     this.balls = this.balls.filter(b => b.life > 0); this.booms = this.booms.filter(b => (b.life -= dt) > 0); this.splats = this.splats.filter(s => (s.life -= dt) > 0).slice(-64);
     if (this.options.flag) this.updateFlags();
     const alive = this.players.filter(p => p.connected && !p.eliminated), teams = this.options.mode === 'teams' || this.options.flag;
     const eliminatedEnd = this.options.lives > 0 && this.players.some(p => p.eliminated) && this.players.length > 1 && (teams ? new Set(alive.map(p => p.team)).size <= 1 : alive.length <= 1);
     if (eliminatedEnd) this.survivors = alive.map(p => p.id);
-    if (this.time <= 0 || eliminatedEnd || (this.options.flag ? this.teamScores.some(s => s >= 3) : teams ? this.teamScores.some(s => s >= TARGET) : this.players.some(p => p.score >= TARGET))) { this.phase = 'finished'; this.balls = []; }
+    if (this.time <= 0 || eliminatedEnd || (this.options.flag ? this.teamScores.some(s => s >= 3) : teams ? this.teamScores.some(s => s >= TARGET) : this.players.some(p => p.score >= TARGET))) { this.phase = 'finished'; this.balls = []; this.thrown = []; }
   }
   // The grenade leaves the hand on release (its fuse starts then: a held grenade
   // never cooks, so lag can never blow one up in a pana's hand).
@@ -393,6 +428,46 @@ export class Arena {
     p.grenadeReady=false; p.shield=0;
     const def=grenadeDef(p.kit.grenade);
     this.grenades.push({id:++this.serial,owner:p.id,color:p.color,kind:def.id,...grenadeStart(p,input,def.id,this.cover),t:0,bounces:0,rolling:false,resting:false,life:def.fuse,total:def.fuse,radius:def.radius,damage:def.damage});
+  }
+  // Who p's blows and throws can paint now: rivals in play, unshielded (team mates with friendly fire).
+  targetsOf(p) { return this.players.filter(q => q.id !== p?.id && q.connected && !q.respawn && !q.eliminated && !q.shield && (this.options.friendlyFire || !this.sameTeam(q, p))); }
+  // A melee blow lands: ONE pana, the nearest in reach and in front with no cover
+  // between (engine/play/melee.js swingHit), takes the weapon's whole stack of
+  // paint, is shoved back `knockback` metres and slowed `stun` seconds.
+  strike(p, stats) {
+    const hit = swingHit(p, this.targetsOf(p), stats, { boxes: this.cover, radius: RADIUS }); if (!hit) return null;
+    const victim = hit.target, dx = victim.x - p.x, dz = victim.z - p.z, length = Math.hypot(dx, dz) || 1;
+    p.smacks++; this.splats.push({ id: ++this.serial, x: victim.x, z: victim.z, color: p.color, life: 9, pattern: p.kit.pattern, radius: 1.3 });
+    if (stats.stun) victim.slow = Math.max(victim.slow || 0, stats.stun);
+    // The shove moves in small steps and stops at cover or the fence.
+    for (let i = 0, n = Math.ceil(stats.knockback / .2); i < n; i++) {
+      const s = stats.knockback / n, x = victim.x + dx / length * s, z = victim.z + dz / length * s;
+      if (blocked(x, z, RADIUS, this.mapId, this.variant)) break; victim.x = x; victim.z = z;
+    }
+    this.hit(victim, p, p.color, { x: dx, z: dz, weapon: stats.id, melee: true }, hit.damage);
+    return victim;
+  }
+  // La Chancleta leaves the hand on an arc (engine/play/melee.js throwStart) and is
+  // back `recall` seconds later whether it hit or not.
+  throwMelee(p, input, stats) {
+    const hand = handAt(p, input.ax, input.az, this.cover);
+    const flying = throwStart(p.melee, stats, { ...hand, pitch: input.pitch }); if (!flying) return null;
+    p.shield = 0;
+    const item = { id: ++this.serial, owner: p.id, kind: stats.id, color: p.color, t: 0, ...flying };
+    this.thrown.push(item); return item;
+  }
+  // Thrown weapons fly, swept against cover, the fence, the ground and panas: the
+  // first pana it meets takes the throw's paint (the strike's whole stack).
+  flyThrown(dt) {
+    for (const f of this.thrown) {
+      const owner = this.players.find(q => q.id === f.owner);
+      const r = stepThrown(f, dt, { boxes: this.cover, targets: this.targetsOf(owner || { id: f.owner }), radius: RADIUS }); f.t += dt;
+      if (!r.hit && outside(this.mapId, f.x, f.z)) { f.life = 0; r.hit = 'cover'; }
+      if (!r.hit) continue;
+      this.splats.push({ id: ++this.serial, x: f.x, z: f.z, color: f.color, life: 9, pattern: owner?.kit.pattern || 'splat' });
+      if (r.victim) { if (owner) owner.smacks++; this.hit(r.victim, owner, f.color, { x: f.vx, z: f.vz, weapon: f.kind, melee: true, thrown: true }, f.damage); }
+    }
+    this.thrown = this.thrown.filter(f => f.life > 0);
   }
   // A blast paints everyone in `radius` it can see: `damage` pepazos inside 40% of
   // the radius, fewer towards the edge (never under one). Cover lower than the
@@ -438,16 +513,16 @@ export class Arena {
     const length = Math.hypot(dx, dz) || 1;
     victim.impact = { x: dx / length, z: dz / length, zone: 'body', blast: !!impact.blast, n: this.eventSerial + 1 };
     const distance = owner ? Math.round(Math.hypot(owner.x - victim.x, owner.z - victim.z)) : 0;
-    const toughness = kitStats(victim.kit,this.options).toughness, weapon = impact.weapon || null;
+    const toughness = kitStats(victim.kit,this.options).toughness, weapon = impact.weapon || null, thrown = !!impact.thrown;
     victim.paint = Math.min(toughness, victim.paint + Math.max(1, damage)); victim.stains = [...victim.stains, color].slice(-5); victim.calm = 0;
-    if (victim.paint < toughness) { this.event('hit', owner, victim, distance, { weapon }); return; }
+    if (victim.paint < toughness) { this.event('hit', owner, victim, distance, { weapon, thrown }); return; }
     victim.respawn = 2.5; victim.hits++; victim.slow = this.options.paint === 'sticky' ? 7 : 0; victim.eliminated = this.options.lives > 0 && victim.hits >= this.options.lives;
     const rival = !!owner && !this.sameTeam(owner, victim), revenge = rival && owner.nemesis === victim.id;
     if (rival) { owner.score++; owner.streak++; if (revenge) owner.nemesis = null; victim.nemesis = owner.id; if (!this.options.flag) this.teamScores[owner.team]++; }
     victim.streak = 0;
     for (const flag of this.flags) if (flag.carrier === victim.id) { flag.carrier = null; flag.x = victim.x; flag.z = victim.z; }
     if (owner) this.say(locKey('{owner} pintó a {victim} · {distance} m'), { owner: owner.name, victim: victim.name, distance }); else this.say(locKey('Un pana pintó a {victim} · {distance} m'), { victim: victim.name, distance });
-    this.event('out', owner, victim, distance, { streak: rival ? owner.streak : 0, revenge, weapon, direct: damage === Infinity });
+    this.event('out', owner, victim, distance, { streak: rival ? owner.streak : 0, revenge, weapon, thrown, direct: damage === Infinity });
   }
   // The feed line is synced: a Spanish key plus its variables, shown with loc() on each client.
   say(message, vars = null) { this.message = message; this.messageVars = vars; }
@@ -479,7 +554,7 @@ export class Arena {
     const best = teams ? Math.max(...this.teamScores) : Math.max(...this.players.map(p => p.score));
     return this.players.filter(p => (teams ? this.teamScores[p.team] : p.score) === best).map(p => p.id);
   }
-  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, loading: this.loading, countdown: this.countdown, time: this.time, players: this.players.map(p => ({ ...p, impact: p.impact ? { ...p.impact } : null, stains: [...p.stains] })), grenades:this.grenades.map(g=>({...g})), booms:this.booms.map(b=>({...b})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message, messageVars: this.messageVars ? { ...this.messageVars } : null }; }
+  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, loading: this.loading, countdown: this.countdown, time: this.time, players: this.players.map(p => ({ ...p, melee: { ...p.melee }, impact: p.impact ? { ...p.impact } : null, stains: [...p.stains] })), thrown: this.thrown.map(f => ({ ...f })), grenades:this.grenades.map(g=>({...g})), booms:this.booms.map(b=>({...b})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message, messageVars: this.messageVars ? { ...this.messageVars } : null }; }
 }
 
 // Stable lobby positions are independent of member IDs and survive roster changes.

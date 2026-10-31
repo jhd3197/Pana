@@ -132,9 +132,9 @@ test('drops under a pepazo soak in: five of La Fumigadora make one, and they was
   assert.equal(b.soak, 0, 'four quiet seconds wash the soak off with the stain');
 });
 
-test('Z/X cycle through every marker in class order and wrap', () => {
-  assert.equal(new Set(WEAPON_CYCLE).size, 18);
-  assert.deepEqual(WEAPON_CYCLE, CLASSES.flatMap(c => c.weapons));
+test('Z/X cycle through every marker in class order, then the melee set, and wrap', () => {
+  assert.equal(new Set(WEAPON_CYCLE).size, 24);
+  assert.deepEqual(WEAPON_CYCLE, [...CLASSES.flatMap(c => c.weapons), 'bat', 'sandal', 'roller', 'brush', 'bucket', 'maraca']);
   assert.equal(cycleWeapon('pistol', 1), 'rapid'); assert.equal(cycleWeapon('pistol', -1), WEAPON_CYCLE.at(-1));
   assert.equal(cycleWeapon(WEAPON_CYCLE.at(-1), 1), 'pistol'); assert.equal(cycleWeapon('nope', 1), WEAPON_CYCLE[0]);
   let id = 'pistol'; for (let i = 0; i < WEAPON_CYCLE.length; i++) id = cycleWeapon(id, 1); assert.equal(id, 'pistol');

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Arena, blocked, cleanInput, segmentBox, coverFor, COVER, SIZE } from '../public/rules.js';
 const arena = (options = { toughness: 1 }) => { const g = new Arena('plaza', 'normal', options); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); g.go(); return g; };
 test('inputs are finite, bounded and diagonal movement is normalized', () => {
-  assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, weapon: null, grenade: false, pitch: 0, charge: 0, fire: false, aim: false, reload: false, sprint: false, jump: 0 });
+  assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, weapon: null, alt: false, grenade: false, pitch: 0, charge: 0, fire: false, aim: false, reload: false, sprint: false, jump: 0 });
   const input = cleanInput({ x: 99, z: 99, ax: Infinity, az: NaN, fire: 'yes' }); assert.ok(Math.abs(Math.hypot(input.x, input.z) - 1) < 1e-9); assert.equal(input.fire, false);
 });
 test('movement stops at arena walls and cover, sliding along free axes', () => {

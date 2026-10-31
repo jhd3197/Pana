@@ -1,6 +1,6 @@
 import { createKnockout } from './knockout.js';
 import { createPaintKit, bakePaintKit, createPaintVest, createPaintRocket, createPaintGrenade, PAINT_KIT_BORE } from '/engine/models/props/paintball-kit.js';
-import { FINISHES, MARKERS, kitStats, grenadeDef } from './armory-data.js';
+import { FINISHES, MARKERS, kitStats, grenadeDef, isMelee } from './armory-data.js';
 import { createViewmodel, recoilOf } from './viewmodel.js';
 import { createArenaEnvironment } from '/engine/worlds/arenas.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
@@ -52,7 +52,7 @@ export function createScene(canvas) {
   const scene = new THREE.Scene(); scene.background = new THREE.Color(WARM_DAY.background); scene.fog = new THREE.Fog(WARM_DAY.background, 90, 190);
   const sky = createSky(WARM_DAY.sky); scene.add(sky.mesh);
   const camera = new THREE.PerspectiveCamera(72, 1, .05, 220), target = new THREE.Vector3(), destination = new THREE.Vector3(); scene.add(camera);
-  let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, sprintFov = 0, lastFired = 0, aiming = false;
+  let lastSmacks = 0, cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, sprintFov = 0, lastFired = 0, aiming = false;
   // The view's own kick, climb and shake (shots, hits, explosions) and the scope's zoom.
   const feel = createRecoil(), scope = createScope({ zoom: 1.2 }), seenBooms = new Set();
   // The fitted Mira's look speed while aiming (kitStats().sens), blended in with the aim.
@@ -200,7 +200,8 @@ export function createScene(canvas) {
   function holdMarker(p) {
     const key=JSON.stringify(modelOptions(p)); if(heldColor===key) return;
     held?.removeFromParent(); held?.userData.dispose(); held?.userData.flash?.geometry.dispose(); held?.userData.flash?.material.dispose(); heldColor = key;
-    held = createPaintKit(modelOptions(p)); held.scale.setScalar(.3); held.traverse(o => { o.castShadow = false; }); camera.add(held);
+    // A melee weapon is held bigger (its model is about life size); the small chancla more so.
+    held = createPaintKit(modelOptions(p)); held.scale.setScalar(isMelee(p.weapon) ? (p.weapon === 'sandal' ? .6 : .42) : .3); held.traverse(o => { o.castShadow = false; }); camera.add(held);
     // A flash of paint-gas at the muzzle for the first frames after each shot.
     const flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
     // On the barrel's axis (the model's bore) just past its muzzle, for every marker.
@@ -227,6 +228,24 @@ export function createScene(canvas) {
   });
   const bases = flags.map((_, team) => { const ring = new THREE.Mesh(new THREE.RingGeometry(1.7, 1.95, 32), material(team ? '#29c5cd' : '#f28b42')); ring.rotation.x = -Math.PI / 2; scene.add(ring); return ring; });
   const kitObjects=new Map(), grenadeMeshes = new Map();
+  // A thrown chancla is the pana's own model (baked), spinning end over end along its
+  // arc and gliding between 50 ms snapshots. One per thrower, reused throw after throw.
+  const thrownMeshes = new Map();
+  function drawThrown(state, dt) {
+    for (const o of thrownMeshes.values()) o.userData.live = false;
+    for (const f of state.thrown || []) {
+      const owner = state.players.find(p => p.id === f.owner), options = { ...(owner ? modelOptions(owner) : { color: f.color }), weapon: f.kind }, key = JSON.stringify(options);
+      let o = thrownMeshes.get(f.owner);
+      if (o && o.userData.key !== key) { o.removeFromParent(); o.userData.dispose(); o = null; }
+      if (!o) { o = bakePaintKit(options); o.name = `Thrown ${f.kind}`; o.scale.setScalar(1.6); o.rotation.order = 'YXZ'; o.userData.key = key; o.userData.seen = { id: 0, x: 0, y: 0, z: 0, t: 0 }; o.userData.spin = 0; scene.add(o); thrownMeshes.set(f.owner, o); }
+      const seen = o.userData.seen; o.userData.live = true; o.visible = true;
+      if (seen.id !== f.id || seen.x !== f.x || seen.y !== f.y || seen.z !== f.z) Object.assign(seen, { id: f.id, x: f.x, y: f.y, z: f.z, t: 0 }); else seen.t += dt;
+      const ahead = Math.min(TICK, seen.t);
+      o.position.set(f.x + f.vx * ahead, Math.max(.05, f.y + f.vy * ahead - f.gravity / 2 * ahead * ahead) - .3, f.z + f.vz * ahead);
+      o.userData.spin += dt * 17; o.rotation.set(o.userData.spin, Math.atan2(f.vx, f.vz), 0);
+    }
+    for (const o of thrownMeshes.values()) if (!o.userData.live) o.visible = false;
+  }
   // Grenades in flight: the paint grenade tumbles, glides between 50 ms snapshots
   // along its arc and blinks its lamp through the last half second of the fuse.
   function drawGrenades(state, dt) {
@@ -283,7 +302,7 @@ export function createScene(canvas) {
         avatar = buildCharacter(p.avatar); avatar.group.position.set(p.x, 0, p.z); scene.add(avatar.group);
         const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: p.color, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .05; avatar.group.add(ring);
         // Third-person markers are batched (bakePaintKit): a few draws each instead of dozens.
-        const marker = bakePaintKit(modelOptions(p)); marker.position.set(.48, .95, .25); avatar.group.add(marker);
+        const marker = bakePaintKit(modelOptions(p)); marker.position.set(.48, .95, .25); marker.rotation.x = isMelee(p.weapon) ? .5 : 0; avatar.group.add(marker);
         avatar.ring = ring; avatar.marker = marker; avatar.paintColor = p.color; avatar.stains = []; avatar.stainCount = 0; avatar.flinch = 0; avatar.paint = p.paint || 0; avatar.out = p.respawn > 0 || p.eliminated ? 9 : 0;
         avatar.group.rotation.order = 'YXZ'; avatars.set(p.id, avatar);
       }
@@ -300,7 +319,7 @@ export function createScene(canvas) {
       syncStains(avatar, p);
       if (avatar.paintColor !== p.color || avatar.kitKey !== JSON.stringify(modelOptions(p))) {
         avatar.marker.removeFromParent(); avatar.marker.userData.dispose();
-        avatar.marker = bakePaintKit(modelOptions(p)); avatar.marker.position.set(.48, .95, .25); avatar.group.add(avatar.marker); avatar.paintColor = p.color; avatar.kitKey=JSON.stringify(modelOptions(p));
+        avatar.marker = bakePaintKit(modelOptions(p)); avatar.marker.position.set(.48, .95, .25); avatar.marker.rotation.x = isMelee(p.weapon) ? .5 : 0; avatar.group.add(avatar.marker); avatar.paintColor = p.color; avatar.kitKey=JSON.stringify(modelOptions(p));
       }
       if(!avatar.vest) {avatar.vest=createPaintVest();avatar.group.add(avatar.vest);}
       avatar.vest.visible=p.kit?.armor==='padded';
@@ -316,6 +335,10 @@ export function createScene(canvas) {
       avatar.marker.visible = !down; avatar.vest.visible = !down && p.kit?.armor === 'padded';
       if (falling && avatar.knockout) { avatar.group.rotation.set(0, Math.atan2(p.ax,p.az), 0); avatar.knockout.update(dt); }
       else avatar.update(dt, { walk: p.walk, run: p.walk });
+      // A swing or a throw (a new count) swings the right arm like a grenade throw.
+      const melee = p.melee || {}, swung = (melee.swings || 0) + (melee.throws || 0);
+      if (avatar.swung !== undefined && swung > avatar.swung) avatar.throwing = THROW_ARM;
+      avatar.swung = swung; avatar.marker.visible = !down && melee.phase !== 'away';
       if (avatar.throwing > 0) { const k = 1 - avatar.throwing / THROW_ARM; avatar.armR.rotation.x = -3 + 2.5 * (1 - (1 - k) ** 2); avatar.throwing = down ? 0 : avatar.throwing - dt; }
     }
     for (const [id, avatar] of avatars) if (!state.players.some(p => p.id === id)) { avatar.marker.userData.dispose(); avatar.vest?.userData.dispose(); avatar.ring.removeFromParent(); avatar.ring.material.dispose(); avatar.stains.forEach(blob => blob.removeFromParent()); avatar.dispose(); avatars.delete(id); }
@@ -340,7 +363,13 @@ export function createScene(canvas) {
       for (const bounds of cameraBounds) if (frontRay.intersectBox(bounds, hit)) clearance = Math.min(clearance, hit.distanceTo(camera.position));
       // Through a scope the marker leaves the view; the overlay (game.js) takes its place.
       holdMarker(me); held.visible = !down && !scope.scoped;
-      const shot = viewmodel.update(dt, { held, weapon: me.weapon, fired: me.fired || 0, reload: me.reload, reloadTime: stats.reload, sprint: me.sprint, bob, sway, down, air: me.jumpHeight, push: Math.max(0, .6 - clearance), aim: scope.amount });
+      // A thrown chancla has left the hand: nothing is held until it is back.
+      if (stats.melee && me.melee?.phase === 'away') held.visible = false;
+      // A blow that lands jolts the view a little.
+      if ((me.smacks || 0) > lastSmacks && state.phase === 'playing') feel.shake(.45);
+      lastSmacks = me.smacks || 0;
+      const shot = viewmodel.update(dt, { held, weapon: me.weapon, fired: me.fired || 0, reload: me.reload, reloadTime: stats.reload, sprint: me.sprint, bob, sway, down, air: me.jumpHeight, push: Math.max(0, .6 - clearance), aim: scope.amount,
+        melee: stats.melee ? { swings: me.melee?.swings || 0, windup: stats.windup, recovery: stats.recovery } : null });
       const flash = held.userData.flash; flash.visible = held.visible && shot.flash > .05; flash.material.opacity = shot.flash;
       if (shot.shot) flash.rotation.z = Math.random() * Math.PI;
       flash.scale.setScalar(flashSize(me.weapon) * (1.15 - shot.flash * .3) * (.9 + (me.fired % 3) * .1));
@@ -396,7 +425,7 @@ export function createScene(canvas) {
       o.position.set(g.x,.07,g.z);
     }
     for(const [id,o] of kitObjects) if(!puddles.some(g=>g.id===id)) {o.removeFromParent();o.geometry.dispose();o.material.dispose();kitObjects.delete(id);}
-    drawGrenades(state, dt);
+    drawGrenades(state, dt); drawThrown(state, dt);
     aimGrenade(state, me);
     aim.visible = !lobby && !first && !!aimPoint; if (aimPoint) aim.position.set(aimPoint.x, .07, aimPoint.z);
     blasts.update(dt); puffs.update(dt); elapsed += dt; sky.update(elapsed); renderer.render(scene, camera);
@@ -404,6 +433,8 @@ export function createScene(canvas) {
   return { renderer, scene, camera, avatars, draw, setMap,
     setView(value) { cameraView = value; initialized = false; },
     get view() { return cameraView; },
+    // The first-person weapon (hidden while a thrown chancla is away).
+    get held() { return held; },
     get yaw() { return yaw; },
     // The look's pitch: a grenade throw lobs higher when you look up.
     get pitch() { return pitch; },
@@ -433,6 +464,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { unbind(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { unbind(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); thrownMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }
