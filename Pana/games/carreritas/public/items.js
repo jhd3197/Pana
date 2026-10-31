@@ -348,7 +348,7 @@ export function createItems(hooks) {
       feedback(c, victims.length ? locn(victims.length, '¡Aguacero sobre {n} rival!', '¡Aguacero sobre {n} rivales!') : loc('Nadie más en la pista: llovió en vano'));
     } else if (kind === 'jugo' || kind === 'jugo3') {
       c.boost = Math.max(c.boost, juiced ? 3.2 : 2.2);
-      sound.turbo();
+      hooks.vsfx.boost();
       hooks.say(c, LINES.jugo, 1);
       puffs.spawn(new THREE.Vector3(c.x, c.y + 0.6, c.z), { color: 0xffae2b, count: 6, spread: 1.4 });
     } else if (kind === 'trampa') {
@@ -604,7 +604,7 @@ export function createItems(hooks) {
     fragments.burst(crate.pieces, { velocity: new THREE.Vector3(0, 5, 0), power: 11 });
     hooks.explode?.(pos);
     if (sound.explode) sound.explode(1.4);
-    else sound.bonk(1.4);
+    else hooks.vsfx.crash(1.4, 'car');
   }
 
   function update(dt, cars, racing) {
@@ -727,7 +727,7 @@ export function createItems(hooks) {
         }
         give(c, order, b);
         breakCrate(b, c);
-        if (c.isPlayer) sound.bonk(0.4);
+        if (c.isPlayer) hooks.vsfx.crash(0.4, 'bump');
       }
 
       for (const coin of coins) {
@@ -755,7 +755,7 @@ export function createItems(hooks) {
         const fwd = dx * Math.sin(p.h) + dz * Math.cos(p.h);
         const side = dx * Math.cos(p.h) - dz * Math.sin(p.h);
         if (Math.abs(fwd) < p.l / 2 && Math.abs(side) < p.w / 2 + 0.6 && Math.abs(c.y-(p.terrain?groundAt(c.x,c.z,p.y):p.y))<2) {
-          if (c.boost < 0.5) {sound.turbo();p.flash=1;padHit.value.set(p.x,p.z,t);}
+          if (c.boost < 0.5) {hooks.vsfx.boost();p.flash=1;padHit.value.set(p.x,p.z,t);}
           c.boost = Math.max(c.boost, 1.2);
         }
       }

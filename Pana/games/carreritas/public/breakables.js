@@ -94,7 +94,7 @@ export function createBreakables({ race, sound, track }) {
     race.puffs.spawn(new THREE.Vector3(p.x, p.y + 0.6, p.z), { color: 0x9a6236, count: 8, size: 0.35, rise: 3, life: 0.6, spread: 1.4 });
     c.hits = (c.hits || 0) + 1;
     if (!c.remote) { c.vx *= SCRUB; c.vz *= SCRUB; c.vf = (c.vf || 0) * SCRUB; }
-    if (c.isPlayer) { sound.bonk(0.7); statCount('carreritas.smashes', 1); }
+    if (c.isPlayer) { race.vsfx.crash(0.7, 'prop'); statCount('carreritas.smashes', 1); }
   }
 
   return {
