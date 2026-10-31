@@ -2,22 +2,81 @@
 // Marker, vest and grenade names are proper names and stay Spanish; generic
 // names and blurbs are locKey() and shown with loc() (armory.js).
 import { locKey } from '../../../engine/i18n.js';
+import { PAINT_WEAPONS, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, classOf } from '../../../engine/play/paint-arsenal.js';
+// The simulation step (rules.js TICK). A marker fires on a tick, so its real
+// interval is its `cadence` rounded up to whole ticks: see shotInterval.
+const STEP = .05;
+// One marker: its model's name (paint-arsenal.js) and class come from the kit.
+const marker = (id, blurb, stats) => ({ id, name: PAINT_WEAPONS[id], class: classOf(id).id, blurb, pellets: 1, ...stats });
+// Eighteen markers in PAINT_WEAPONS order (number keys 1–9 follow it). The
+// BALANCING section of docs/knowledge/pintura.md explains every number;
+// tests/balance.test.js holds them inside each class's envelope.
+// `damage` under 1 soaks: the pepazo lands once a pana has soaked a whole one.
 export const MARKERS = [
- { id:'pistol', name:'La Chispa', blurb:locKey('La confiable. Precisa, pareja y ligera.'), magazine:12, reload:1.3, cadence:.2, mobility:1, spread:0, pellets:1, speed:85, life:.6 }, // i18n-ignore: proper name
- { id:'scatter', name:'El Trueno', blurb:locKey('Tres bolas de cerca. De lejos pierde fuerza.'), magazine:8, reload:1.8, cadence:.75, mobility:.93, spread:.18, pellets:3, speed:85, life:.2 }, // i18n-ignore: proper name
- { id:'rapid', name:'Las Gemelas', blurb:locKey('Alterna las dos marcadoras. Mucha presión; recargar lleva tiempo.'), magazine:18, reload:2.4, cadence:.16, mobility:1, spread:.045, pellets:1, speed:85, life:.44 }, // i18n-ignore: proper name
- { id:'rocket', name:'El Cohetón', blurb:locKey('Un cohete de pintura, un pepazo por rival. Cuatro cargas por vida; no permite correr.'), magazine:1, reserve:3, reload:3.2, cadence:1, mobility:.63, spread:0, pellets:1, speed:18, life:2.4, splash:4.5, heavy:true }, // i18n-ignore: proper name
+ marker('pistol', locKey('La confiable. Precisa, pareja y ligera.'), { magazine:12, reload:1.3, cadence:.2, mobility:1, spread:0, speed:85, life:.6 }),
+ marker('scatter', locKey('Tres bolas de cerca. De lejos pierde fuerza.'), { magazine:8, reload:1.8, cadence:.75, mobility:.93, spread:.18, pellets:3, speed:85, life:.2 }),
+ marker('rapid', locKey('Alterna las dos marcadoras. Mucha presión; recargar lleva tiempo.'), { magazine:18, reload:2.4, cadence:.16, mobility:1, spread:.045, speed:85, life:.44 }),
+ marker('rocket', locKey('Un cohete de pintura, un pepazo por rival. Cuatro cargas por vida; no permite correr.'), { magazine:1, reserve:3, reload:3.2, cadence:1, mobility:.63, spread:0, speed:18, life:2.4, splash:4.5, heavy:true }),
  // La Lejana: two pepazos a hit, 70 m of reach; aimed through the scope it flies dead straight,
  // from the hip it wanders (`spread`), and scoped you walk at half speed.
- { id:'sniper', name:'La Lejana', blurb:locKey('Francotiradora: dos pepazos por tiro y 70 m de alcance. Clic derecho para la mira; sin ella se desvía.'), magazine:4, reload:2.6, cadence:1.25, mobility:.9, spread:.1, aimSpread:0, scope:3.5, damage:2, pellets:1, speed:140, life:.5 }, // i18n-ignore: proper name
+ marker('sniper', locKey('Francotiradora: dos pepazos por tiro y 70 m de alcance. Clic derecho para la mira; sin ella se desvía.'), { magazine:4, reload:2.6, cadence:1.25, mobility:.9, spread:.1, aimSpread:0, scope:3.5, damage:2, speed:140, life:.5 }),
  // La Bazuca: a slow, visible rocket. A direct hit knocks out at once; the splash is tiny.
- { id:'bazooka', name:'La Bazuca', blurb:locKey('Un cohete lento que se ve venir. Si pega directo, fuera de una; casi no salpica. Tres por vida.'), magazine:1, reserve:2, reload:3.8, cadence:1.2, mobility:.7, spread:0, pellets:1, speed:14, life:3, splash:1.4, direct:true, heavy:true }, // i18n-ignore: proper name
+ marker('bazooka', locKey('Un cohete lento que se ve venir. Si pega directo, fuera de una; casi no salpica. Tres por vida.'), { magazine:1, reserve:2, reload:3.8, cadence:1.2, mobility:.7, spread:0, speed:14, life:3, splash:1.4, direct:true, heavy:true }),
+ // La Metra: the close-range hose. Ten balls a second that wander and die at 29 m.
+ marker('smg', locKey('Diez bolas por segundo de cerca. Se desvía y no llega lejos.'), { magazine:30, reload:2.4, cadence:.1, mobility:1, spread:.09, speed:80, life:.36 }),
+ // La Licuadora: the most balls of all, half a pepazo each; heavy, slow to reload, no sprint.
+ marker('minigun', locKey('Veinte bolas por segundo de medio pepazo. Pesada, sin correr y con recarga larga.'), { magazine:90, reload:4.4, cadence:.05, mobility:.68, spread:.13, damage:.5, speed:75, life:.41, heavy:true }),
+ // La China: two stones paint one pepazo, but the pouch holds forty and refills in a blink.
+ marker('slingshot', locKey('Medio pepazo por piedra, pero casi nunca se acaba. Recta, ligera y rápida de recargar.'), { magazine:40, reload:.8, cadence:.35, mobility:1.1, spread:0, damage:.5, speed:60, life:.7 }),
+ // El Tambor: six paint grenades that burst on landing; mid range, splash, no sprint.
+ marker('revolver', locKey('Seis granadas de pintura seguidas que revientan al caer. Alcance medio; no permite correr.'), { magazine:6, reserve:6, reload:3.4, cadence:.55, mobility:.8, spread:.02, speed:24, life:1.3, splash:2.2, heavy:true }),
+ // La Corneta: five pellets in a wide cone, 12 m, three shots and a slow reload.
+ marker('blunderbuss', locKey('Cinco bolas en abanico: de cerca no perdona, a 12 m ya no llega. Tres tiros.'), { magazine:3, reload:2.2, cadence:1, mobility:.92, spread:.28, pellets:5, speed:70, life:.17 }),
+ // La Fumigadora: a stream of droplets, a fifth of a pepazo each, slow and short.
+ marker('sprayer', locKey('Un chorro de pintura: cada gota es un quinto de pepazo. Corto, lento y casi sin fin.'), { magazine:120, reload:3, cadence:.05, mobility:.95, spread:.05, damage:.2, speed:32, life:.38 }),
+ // El Llanero: six heavy rounds, two pepazos each, at mid range.
+ marker('sixshooter', locKey('Seis tiros de dos pepazos cada uno. Lento entre tiro y tiro; recarga larga.'), { magazine:6, reload:2.2, cadence:.4, mobility:1, spread:.012, damage:2, speed:95, life:.55 }),
+ // La Pulga: the lightest marker; fast but short and loose.
+ marker('pdw', locKey('La más ligera. Rápida y de recarga corta, pero corta de alcance.'), { magazine:22, reload:1.5, cadence:.12, mobility:1.08, spread:.06, speed:78, life:.33 }),
+ // La Parrandera: the all-rounder, steady at mid range.
+ marker('carbine', locKey('Para todo: cadencia buena, precisa y 48 m de alcance.'), { magazine:24, reload:2, cadence:.15, mobility:.96, spread:.03, speed:95, life:.5 }),
+ // El Tuqueque: slower than La Parrandera, tighter and further.
+ marker('bullpup', locKey('Más lenta que La Parrandera, pero más recta y llega a 61 m.'), { magazine:20, reload:2.4, cadence:.18, mobility:.94, spread:.022, speed:105, life:.58 }),
+ // El Zamuro: a scoped marksman marker, one pepazo a shot but quick for a rifle.
+ marker('marksman', locKey('Tirador con mira de 2,2×: un pepazo por tiro, más rápido que La Lejana.'), { magazine:8, reload:2.3, cadence:.45, mobility:.92, spread:.06, aimSpread:.006, scope:2.2, speed:120, life:.52 }),
+ // La Culebrona: belt-fed; long magazine, steady at 45 m, slow to move and reload.
+ marker('lmg', locKey('Cincuenta bolas de cinta, estable a 45 m. Pesada para moverse y recargar.'), { magazine:50, reload:3.6, cadence:.12, mobility:.8, spread:.05, speed:90, life:.5 }),
 ];
+// The classes that hold markers, in PAINT_CLASSES order (granadas and melee have none).
+export const CLASSES = PAINT_CLASSES.filter(c => c.weapons.some(id => MARKERS.some(m => m.id === id)));
+// Every marker in class order: the order Z/X (and [ ]) cycle through mid-round.
+export const WEAPON_CYCLE = CLASSES.flatMap(c => c.weapons.filter(id => MARKERS.some(m => m.id === id)));
+// The next (step 1) or previous (step -1) marker in WEAPON_CYCLE, wrapping round.
+export const cycleWeapon = (id, step = 1) => { const n = WEAPON_CYCLE.length, i = WEAPON_CYCLE.indexOf(id); return WEAPON_CYCLE[((i < 0 ? 0 : i + step) % n + n) % n]; };
+// Seconds between shots as the simulation fires them: the cadence rounded up to whole ticks.
+export function shotInterval(cadence) { let left = cadence, ticks = 0; do { left = Math.max(0, left - STEP); ticks++; } while (left > 0); return ticks * STEP; }
+// Pepazos a second with every ball landing; a direct rocket counts as a knockout (3).
+export const dpsOf = s => (s.direct ? 3 : (s.damage ?? 1) * s.pellets) / shotInterval(s.cadence);
 export const ATTACHMENTS = [
  {id:'barrel',name:locKey('Cañón afinado'),blurb:locKey('Más precisión y alcance; en las marcadoras que no se desvían, la bola o el cohete sale más rápido. −5% movilidad.')},
  {id:'hopper',name:locKey('Tolva grande'),blurb:locKey('Más bolas; recarga más lenta y −5% movilidad. En El Cohetón y La Bazuca: un cohete extra.')},
  {id:'stock',name:locKey('Culata ligera'),blurb:locKey('+5% movilidad, menos control. Los cohetes pierden radio de salpicadura.')},
+ {id:'optic',name:locKey('Mira'),blurb:locKey('Apuntas con clic derecho: acerca la vista y endereza el tiro. Cada marcadora trae su mira. −2% movilidad.')},
 ];
+// Each Mira kind's aim tuning (the kind comes with the marker: PAINT_OPTICS).
+// zoom: magnification while aiming (a scoped marker multiplies its own scope by
+// `scopeBoost` instead); aimSpread: the aimed spread as a share of the hip spread;
+// sens: look speed while aiming, on top of the zoom's own slowdown; hipSpread:
+// the laser also tightens hip fire. Numbers and reasons: docs/knowledge/pintura.md.
+export const OPTICS = {
+ dot:{name:locKey('Punto rojo'),zoom:1.35,aimSpread:.75,sens:.9},
+ holo:{name:locKey('Holográfica'),zoom:1.5,aimSpread:.7,sens:.85},
+ laser:{name:locKey('Láser'),zoom:1.1,aimSpread:.8,sens:1,hipSpread:.85},
+ scope:{name:locKey('Mira telescópica'),zoom:2.4,aimSpread:.5,sens:.75,scopeBoost:1.3},
+ pin:{name:locKey('Mira de pines'),zoom:1.2,aimSpread:.6,sens:.95},
+};
+// The Mira kind a marker takes.
+export const opticOf = weaponId => PAINT_OPTICS[weaponId] || null;
 export const ARMOR = [
  {id:'shirt',name:'La Franela',blurb:locKey('Aguante y movilidad normales.'),mobility:1,toughness:0}, // i18n-ignore: proper name
  {id:'padded',name:'El Acolchado',blurb:locKey('+1 pepazo de aguante, −10% movilidad.'),mobility:.9,toughness:1}, // i18n-ignore: proper name
@@ -38,21 +97,18 @@ export const FINISHES = [{id:'factory',name:locKey('De fábrica'),color:null},{i
 export const CHARMS = [{id:'none',name:locKey('Sin llavero')},{id:'mango',name:'Manguito'},{id:'ball',name:locKey('Bola de pintura')}];
 export const PATTERNS = [{id:'splat',name:locKey('Salpicadura')},{id:'stripe',name:locKey('Rayas')},{id:'dots',name:locKey('Puntos')}];
 const pick = (list,id) => list.some(x=>x.id===id) ? id : list[0].id;
-// Two attachment slots. A kit stores `attachments` as a fixed [slot 0, slot 1]
-// array of id|null so a part stays in the slot the player put it in.
-export const ATTACHMENT_SLOTS = 2;
-// Which attachments fit which marker. Data, so per-weapon mounts can plug in
-// later. La Lejana already carries a wooden stock, and La Bazuca rests on the
-// shoulder with no place for one, so neither takes the light stock.
-export const ATTACHMENT_RULES = {
- pistol:['barrel','hopper','stock'], scatter:['barrel','hopper','stock'], rapid:['barrel','hopper','stock'],
- rocket:['barrel','hopper','stock'], sniper:['barrel','hopper'], bazooka:['barrel','hopper'],
-};
+// Three attachment slots. A kit stores `attachments` as a fixed [slot 0, slot 1,
+// slot 2] array of id|null so a part stays in the slot the player put it in. Every
+// marker's mounts (muzzle, feed, stock, rail) are separate places on the model, so
+// any three parts fit together; the fourth stays in the box.
+export const ATTACHMENT_SLOTS = 3;
+// Which attachments fit which marker: the mounts its model has (paint-arsenal.js).
+export const ATTACHMENT_RULES = Object.fromEntries(MARKERS.map(m=>[m.id,ATTACHMENTS.map(a=>a.id).filter(id=>PAINT_MOUNTS[m.id]?.includes(id))]));
 export const canAttach = (weaponId, attachmentId) => !!ATTACHMENT_RULES[weaponId]?.includes(attachmentId);
 export function cleanKit(value={}) {
  if (!value || typeof value !== 'object') value={};
  const weapon=pick(MARKERS,value.weapon), raw=Array.isArray(value.attachments)?value.attachments:[];
- // Up to two entries are slot positions; a longer list (old or hostile) is packed.
+ // Up to ATTACHMENT_SLOTS entries are slot positions; a longer list (old or hostile) is packed.
  const list=raw.length>ATTACHMENT_SLOTS?raw.filter(id=>canAttach(weapon,id)).filter((id,i,all)=>all.indexOf(id)===i):raw;
  const attachments=Array.from({length:ATTACHMENT_SLOTS},(_,i)=>{const id=list[i];return canAttach(weapon,id) && !list.slice(0,i).includes(id) ? id : null;});
  return { weapon, attachments, armor:pick(ARMOR,value.armor), grenade:pick(GRENADES,value.grenade), finish:pick(FINISHES,value.finish), charm:pick(CHARMS,value.charm), pattern:pick(PATTERNS,value.pattern) };
@@ -73,16 +129,27 @@ export function changeWeapon(kit, weaponId) {
 }
 export function kitStats(value={}, options={}) {
  const kit=cleanKit(value), weapon=options.weapons==='pistol'?'pistol':kit.weapon;
- const s={...MARKERS.find(w=>w.id===weapon)}, armor=ARMOR.find(a=>a.id===kit.armor);
- for(const id of kit.attachments.filter(Boolean)) {
+ const s={...MARKERS.find(w=>w.id===weapon)}, armor=ARMOR.find(a=>a.id===kit.armor), parts=kit.attachments.filter(id=>id && canAttach(weapon,id));
+ s.zoom=s.scope||1.2; s.sens=1; s.optic=null;
+ for(const id of parts) {
   // A marker that already flies straight cannot get tighter: its barrel sends the shot out faster instead.
   if(id==='barrel') { if(s.spread>0) { s.spread*=.65; s.life*=1.12; } else s.speed*=1.12; if(s.aimSpread!=null) s.aimSpread*=.65; s.mobility-=.05; }
   if(id==='hopper') { if(s.reserve!=null) s.reserve++; else s.magazine=Math.ceil(s.magazine*1.4); s.reload*=1.25; s.mobility-=.05; }
   if(id==='stock') { s.mobility+=.05; s.spread=s.spread*1.3+.015; if(s.aimSpread!=null) s.aimSpread+=.008; if(s.splash) s.splash*=.8; }
  }
+ // The Mira goes on last, so it steadies whatever spread the other parts left.
+ if(parts.includes('optic')) {
+  const kind=opticOf(weapon), o=OPTICS[kind];
+  s.optic=kind; s.sens=o.sens; s.mobility-=.02;
+  if(o.hipSpread) s.spread*=o.hipSpread;
+  s.aimSpread=(s.aimSpread??s.spread)*o.aimSpread;
+  s.zoom=s.scope ? s.scope*(o.scopeBoost||1) : o.zoom;
+ }
  s.mobility*=armor.mobility; s.toughness=Math.max(1,(options.toughness||3)+armor.toughness);
  if(options.fastReload) s.reload*=.55/1.3;
- s.damage=s.damage||1; s.sprint=!s.heavy; return s;
+ s.damage=s.damage||1; s.sprint=!s.heavy;
+ // Aiming (right mouse, F, LT, Mira) only does anything with a scope or a Mira.
+ s.aims=s.aimSpread!=null; return s;
 }
 
 // A bounded build summary, not a player rank or a damage multiplier. All inputs
@@ -90,7 +157,7 @@ export function kitStats(value={}, options={}) {
 export function kitRating(value={}, options={}) {
  const s=kitStats(value,options), grenade=GRENADES.find(g=>g.id===cleanKit(value).grenade);
  const unit=n=>Math.max(0,Math.min(1,n));
- const sustained=s.magazine*s.pellets/(s.magazine*s.cadence+s.reload);
+ const sustained=s.magazine*s.pellets*s.damage/(s.magazine*s.cadence+s.reload);
  const score=.15*unit(s.speed*s.life/60)+.10*unit(1-(s.aimSpread??s.spread)/.3)
   +.20*unit(sustained/6)+.10*unit((s.magazine+(s.reserve||0))/26)
   +.10*unit(1-s.reload/4)+.15*unit(s.mobility/1.15)

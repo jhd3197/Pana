@@ -39,3 +39,7 @@
 #armory-note{position:absolute;left:40px;right:390px;bottom:178px;margin:0;padding:8px 14px;background:var(--pk-yellow);color:#16161a;font-weight:900;font-size:13px;transform:skew(-10deg);box-shadow:4px 4px #16161a;z-index:3}#armory-note:empty{display:none}#armory.choosing #armory-note{left:200px;right:40px;bottom:calc(30% + 50px)}
 @media(max-width:800px){#armory-note{left:20px;right:20px;bottom:262px}#armory.choosing #armory-note{left:20px;bottom:calc(36% + 90px)}}
 #armory-rating{display:inline-block;margin-left:18px;vertical-align:middle}#armory-rating .pk-kit-level{font-size:24px}
+
+/* Marker classes: a row of chips (nickname over the kind) heading the marker choices. */
+#armory-classes{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}.armory-class{background:var(--pk-deep);color:var(--pk-text);border:0;padding:6px 12px;transform:skew(-10deg);box-shadow:3px 3px #16161a;text-align:left}.armory-class b{display:block;font:15px var(--pk-display)}.armory-class span{display:block;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--pk-muted)}.armory-class[aria-pressed=true]{background:var(--pk-yellow);color:#16161a}.armory-class[aria-pressed=true] span{color:#16161a}
+#armory-class{display:block;margin-top:6px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--pk-muted)}

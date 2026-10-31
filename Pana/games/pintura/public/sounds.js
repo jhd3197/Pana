@@ -1,17 +1,28 @@
 import { sfx as lib, burst, pitch } from '/engine/sfx.js';
 import { createFootsteps } from '/engine/play/footsteps.js';
+import { MARKERS } from './armory-data.js';
+
+// The six first markers have their own shot; the rest sound like their class
+// (engine/sfx.js profiles). Reloads go the same way: a hopper, a pump, a tube,
+// a bolt or a box magazine.
+const SHOT_OF = { pistolas: 'pistol', subfusiles: 'smg', fusiles: 'smg', ametralladoras: 'minigun', escopetas: 'shotgun', francotiradores: 'sniper', lanzadores: 'launcher', especiales: 'pellet' };
+const OWN_SHOT = new Set(['pistol', 'scatter', 'rapid', 'rocket', 'sniper', 'bazooka', 'slingshot', 'sprayer']);
+const RELOAD_OF = { pistolas: 'hopper', subfusiles: 'magazine', fusiles: 'magazine', ametralladoras: 'magazine', escopetas: 'pump', francotiradores: 'bolt', lanzadores: 'tube', especiales: 'hopper' };
+const classOf = weapon => MARKERS.find(m => m.id === weapon)?.class;
+export const shotKind = weapon => OWN_SHOT.has(weapon) ? weapon : SHOT_OF[classOf(weapon)] || 'pistol';
+export const reloadKind = weapon => ['pistol', 'rapid', 'scatter', 'rocket', 'sniper', 'bazooka'].includes(weapon) ? weapon : RELOAD_OF[classOf(weapon)] || 'hopper';
 
 // Pepazo's sounds are the engine's shared library (engine/sfx.js) called by
 // meaning: a distinct shot per marker, a wet splat, the reload clicks, the
 // countdown. Only the knockout fanfare and the "you are out" thud are its own.
 export const sfx = {
   // Your marker, or another pana's quieter with distance (volume 0–1).
-  shot(volume = 1, weapon = 'pistol') { lib.shot(weapon, { volume }); },
+  shot(volume = 1, weapon = 'pistol') { lib.shot(shotKind(weapon), { volume }); },
   dry: lib.dry, reloaded: lib.reloaded, hurt: () => lib.hurt(), swap: lib.swap, go: lib.go,
-  reload: (weapon, seconds) => lib.reload(weapon, seconds),
+  reload: (weapon, seconds) => lib.reload(reloadKind(weapon), seconds),
   impact: (volume = 1) => lib.impact('paint', { volume }),
   // An explosion by what blew up: La Bazuca loudest, a sticky grenade softest.
-  boom: (kind, volume = 1) => lib.boom({ bazooka: 1.25, rocket: 1, pinita: .9, chispita: .8 }[kind] || .65, { volume }),
+  boom: (kind, volume = 1) => lib.boom({ bazooka: 1.25, rocket: 1, pinita: .9, chispita: .8, revolver: .75 }[kind] || .65, { volume }),
   // The grenade: the pin pulled as the charge starts, the throw's whoosh, a metal
   // clink on every bounce and the fuse's beeps (quick in the last half second).
   pin() { burst({ dur: .03, f0: 4200, q: 3, vol: .07, priority: 2 }); pitch({ dur: .09, f0: 2300, f1: 1900, type: 'triangle', vol: .05, delay: .03, priority: 2 }); pitch({ dur: .05, f0: 1500, type: 'triangle', vol: .04, delay: .1, priority: 2 }); },

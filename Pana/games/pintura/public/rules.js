@@ -235,7 +235,7 @@ export class Arena {
   // painted on arrival; firing or throwing cancels it early.
   respawn(p) {
     const spawn = this.spawnPoint(p, this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)));
-    Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, stains: [], calm: 0, stamina: 1, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }); this.refill(p);
+    Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, soak: 0, stains: [], calm: 0, stamina: 1, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }); this.refill(p);
   }
   // A spawn far from these rivals, out of their sight if possible and not p's last one.
   // Team rounds keep each side on its own half of the spawns: even indices are team 0's
@@ -335,7 +335,7 @@ export class Arena {
       if (p.respawn > 0) { p.respawn = Math.max(0, p.respawn - dt); resetJump(p, inputs.get(p.id)); if (!p.respawn) this.respawn(p); continue; }
       p.shield = Math.max(0, p.shield - dt); p.cooldown = Math.max(0, p.cooldown - dt);
       // Paint wears off after four quiet seconds, one pepazo every 1.5 s.
-      if (p.paint > 0 && (p.calm += dt) >= 4) { p.paint--; p.stains = p.stains.slice(1); p.calm = 2.5; }
+      if ((p.paint > 0 || p.soak > 0) && (p.calm += dt) >= 4) { if (p.paint > 0) { p.paint--; p.stains = p.stains.slice(1); } p.soak = 0; p.calm = 2.5; }
       let stats=kitStats(p.kit,this.options);
       if (p.reload > 0) { p.reload = Math.max(0, p.reload - dt); if (!p.reload) { p.ammo = stats.reserve != null ? Math.min(stats.magazine,p.reserve) : stats.magazine; if(stats.reserve != null) p.reserve-=p.ammo; } }
       const input = p.bot ? this.bot(p) : cleanInput(inputs.get(p.id));
@@ -349,8 +349,8 @@ export class Arena {
       if(input.grenade && !p.grenadeHeld && p.grenadeReady) this.throwGrenade(p,input);
       p.grenadeHeld=input.grenade;
       p.ax = input.ax; p.az = input.az;
-      // A scope (La Lejana) steadies the shot and halves the walk while it is up.
-      p.aim = input.aim && !!stats.scope;
+      // A scope (La Lejana, El Zamuro) or a Mira steadies the shot and halves the walk while it is up.
+      p.aim = input.aim && stats.aims;
       // Shift sprints 45% faster for up to three seconds; sprinting holds fire.
       const walk = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (p.aim ? .5 : 1);
       const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, regen: 5, move: axisMove((x, z) => blocked(x, z, RADIUS, this.mapId, this.variant)) }).sprinting; p.sprint = sprinting;
@@ -360,7 +360,8 @@ export class Arena {
         p.ammo--; p.shots++; p.fired++; p.cooldown=stats.cadence; p.shield=0;
         const spread=p.aim && stats.aimSpread!=null ? stats.aimSpread : stats.spread;
         const jitter=stats.pellets===1 ? Math.sin(p.shots*2.4)*spread : 0;
-        const angles=stats.pellets===3 ? [-spread,0,spread] : [jitter];
+        // Several pellets fan evenly across the spread (three: left, centre, right).
+        const angles=stats.pellets>1 ? Array.from({length:stats.pellets},(_,i)=>spread*(2*i/(stats.pellets-1)-1)) : [jitter];
         for(const angle of angles) this.balls.push({ id:++this.serial, owner:p.id, color:p.color, x:p.x, z:p.z, ...launch(p.ax, p.az, stats.speed, angle),
           life:stats.life, kind:stats.id, rocket:!!stats.splash, direct:!!stats.direct, damage:stats.damage, splash:stats.splash || 0, pattern:p.kit.pattern, hand:p.weapon==='rapid'?p.shots%2:0 });
       }
@@ -426,6 +427,13 @@ export class Arena {
   // A pepazo stains the victim; the last one their aguante allows takes them out.
   // `damage` pepazos land at once: La Lejana's 2, Infinity for a direct rocket.
   hit(victim, owner, color, impact = {}, damage = 1) {
+    // Under a whole pepazo (La Fumigadora's drops, La China's stones, La Licuadora's
+    // balls) the victim soaks it; once a whole one has soaked in, that is the pepazo.
+    if (damage < 1) {
+      victim.soak = (victim.soak || 0) + damage; victim.calm = 0;
+      if (victim.soak < 1 - 1e-9) return;
+      victim.soak -= 1; if (victim.soak < 1e-9) victim.soak = 0; damage = 1;
+    }
     const dx = impact.x ?? (victim.x - (owner?.x ?? victim.x)), dz = impact.z ?? (victim.z - (owner?.z ?? victim.z));
     const length = Math.hypot(dx, dz) || 1;
     victim.impact = { x: dx / length, z: dz / length, zone: 'body', blast: !!impact.blast, n: this.eventSerial + 1 };

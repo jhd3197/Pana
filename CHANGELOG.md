@@ -8,6 +8,18 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Pepazo hay 18 marcadoras en ocho clases, cada una con su mira y tres espacios de accesorios.**
+  Llegan La Metra, La Licuadora, La China, El Tambor, La Corneta, La Fumigadora,
+  El Llanero, La Pulga, La Parrandera, El Tuqueque, El Zamuro y La Culebrona. En
+  la armería las eliges por clase con sus números reales (pepazos por segundo,
+  alcance, cargador) y cada pieza va en su sitio del modelo; la nueva Mira
+  (punto rojo, holográfica, láser, telescópica o de pines) acerca la vista,
+  endereza el tiro al apuntar y baja la sensibilidad. En plena ronda cambias con
+  1 a 9, Z y X (o [ y ]), la Y del control o las flechas junto a Mira en el teléfono, y el
+  marcador muestra la marcadora, su clase y sus accesorios. La China y La
+  Fumigadora pintan medio y un quinto de pepazo por tiro: se acumulan hasta
+  completar uno.
+
 - **En Pepazo la granada se lanza de verdad: mantén G para cargarla y mira arriba para lanzarla lejos.**
   Qué estaba mal: salía de los pies, siempre a ras del suelo a 12 m/s sin
   importar hacia dónde miraras, con un saltito falso dibujado encima de una
@@ -24,7 +36,7 @@ becomes the GitHub release's notes.
 - **En Pepazo cada accesorio queda en el espacio donde lo pusiste.**
   Tocas Accesorio 1 o 2 y eliges qué va ahí (o Ninguno); la armería avisa si
   una pieza no cabe en tu marcadora o si intentas cambiar el kit en plena ronda,
-  cambiar de marcadora con 1 a 6 queda guardado, y el cañón afinado hace más
+  cambiar de marcadora con los números queda guardado, y el cañón afinado hace más
   rápidos los tiros de La Chispa, El Cohetón y La Bazuca.
 
 - **"Más ajustes" ahora se ve como el panel de la sala.**

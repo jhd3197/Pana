@@ -1,6 +1,6 @@
 import { createKnockout } from './knockout.js';
-import { createPaintKit, createPaintVest, createPaintRocket, createPaintGrenade } from '/engine/models/props/paintball-kit.js';
-import { FINISHES, kitStats, grenadeDef } from './armory-data.js';
+import { createPaintKit, bakePaintKit, createPaintVest, createPaintRocket, createPaintGrenade, PAINT_KIT_BORE } from '/engine/models/props/paintball-kit.js';
+import { FINISHES, MARKERS, kitStats, grenadeDef } from './armory-data.js';
 import { createViewmodel, recoilOf } from './viewmodel.js';
 import { createArenaEnvironment } from '/engine/worlds/arenas.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
@@ -33,10 +33,15 @@ import { SIZE, SPREAD, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK } 
 
 // First person: the camera sits at the pana's eyes and the marker is held in view.
 const EYE = 1.55, LOOK_UP = .55, LOOK_DOWN = -.7;
-// Muzzle flash size per marker, and how big each rocket's explosion is drawn
-// (a grenade's comes from its radius, so the shock ring ends near the blast's edge).
-const FLASH = { rocket: 1.7, bazooka: 2.2, sniper: 1.5, scatter: 1.3, rapid: .75 };
-const BOOM_SIZE = { bazooka: 1.25, rocket: 1 };
+// Muzzle flash size per marker (a few have their own), else per class, and how big
+// each launcher's explosion is drawn (a grenade's comes from its radius, so the
+// shock ring ends near the blast's edge).
+const FLASH = { rocket: 1.7, bazooka: 2.2, sniper: 1.5, scatter: 1.3, rapid: .75, blunderbuss: 1.7, minigun: 1.1, slingshot: .35, sprayer: .45 };
+const CLASS_FLASH = { pistolas: .9, subfusiles: .8, fusiles: 1, ametralladoras: 1, escopetas: 1.3, francotiradores: 1.4, lanzadores: 1.6, especiales: .5 };
+const flashSize = weapon => FLASH[weapon] ?? CLASS_FLASH[MARKERS.find(m => m.id === weapon)?.class] ?? .9;
+const BOOM_SIZE = { bazooka: 1.25, rocket: 1, revolver: .7 };
+// How big a launcher's round is drawn (the shared ball scaled up): El Tambor's grenades are smaller.
+const ROUND_SIZE = { revolver: 4 };
 // The overhand throw: the right arm winds up over the head and swings through in THROW_ARM seconds.
 const THROW_ARM = .45;
 
@@ -50,6 +55,8 @@ export function createScene(canvas) {
   let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, sprintFov = 0, lastFired = 0, aiming = false;
   // The view's own kick, climb and shake (shots, hits, explosions) and the scope's zoom.
   const feel = createRecoil(), scope = createScope({ zoom: 1.2 }), seenBooms = new Set();
+  // The fitted Mira's look speed while aiming (kitStats().sens), blended in with the aim.
+  let opticSens = 1;
   const hemi = new THREE.HemisphereLight(WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5); scene.add(hemi);
   const sun = new THREE.DirectionalLight(WARM_DAY.sun.color, 3.2); sun.position.set(-15, 35, 16); sun.castShadow = true; scene.add(sun.target);
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 80 }); sun.shadow.mapSize.setScalar(shadowSize(2048)); sun.shadow.normalBias = .03; scene.add(sun);
@@ -59,6 +66,8 @@ export function createScene(canvas) {
   // At night a headlamp follows the camera and paint glows: balls carry a halo, splats shine.
   const headlamp = new THREE.SpotLight('#fff1d6', 60, 30, .42, .6, 1.3); headlamp.visible = false; headlamp.position.set(0, .1, 0); headlamp.target.position.set(0, -.6, -10); camera.add(headlamp, headlamp.target);
   const halo = glowTexture(), halos = new Map();
+  // One streak material per paint colour, shared by every ball in flight (a minigun puts twenty a second up).
+  const streaks = new Map(), streakMaterial = color => { if (!streaks.has(color)) streaks.set(color, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .6, depthWrite: false })); return streaks.get(color); };
   const haloMaterial = color => { if (!halos.has(color)) halos.set(color, new THREE.SpriteMaterial({ map: halo, color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); return halos.get(color); };
   let glow = false;
   function light(look) {
@@ -194,7 +203,8 @@ export function createScene(canvas) {
     held = createPaintKit(modelOptions(p)); held.scale.setScalar(.3); held.traverse(o => { o.castShadow = false; }); camera.add(held);
     // A flash of paint-gas at the muzzle for the first frames after each shot.
     const flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-    flash.position.set(0, { sniper: .17, bazooka: .24 }[p.weapon] ?? .3, held.userData.tip + .12); flash.visible = false; held.add(flash); held.userData.flash = flash; viewmodel.reset();
+    // On the barrel's axis (the model's bore) just past its muzzle, for every marker.
+    flash.position.set(0, held.userData.bore ?? PAINT_KIT_BORE[p.weapon] ?? .2, held.userData.tip + .12); flash.visible = false; held.add(flash); held.userData.flash = flash; viewmodel.reset();
   }
   // Paint that stopped against cover splats on that face, not on the paving.
   function stick(mesh, s, cover) {
@@ -272,7 +282,8 @@ export function createScene(canvas) {
       if (!avatar) {
         avatar = buildCharacter(p.avatar); avatar.group.position.set(p.x, 0, p.z); scene.add(avatar.group);
         const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: p.color, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .05; avatar.group.add(ring);
-        const marker = createPaintKit(modelOptions(p)); marker.position.set(.48, .95, .25); avatar.group.add(marker);
+        // Third-person markers are batched (bakePaintKit): a few draws each instead of dozens.
+        const marker = bakePaintKit(modelOptions(p)); marker.position.set(.48, .95, .25); avatar.group.add(marker);
         avatar.ring = ring; avatar.marker = marker; avatar.paintColor = p.color; avatar.stains = []; avatar.stainCount = 0; avatar.flinch = 0; avatar.paint = p.paint || 0; avatar.out = p.respawn > 0 || p.eliminated ? 9 : 0;
         avatar.group.rotation.order = 'YXZ'; avatars.set(p.id, avatar);
       }
@@ -289,7 +300,7 @@ export function createScene(canvas) {
       syncStains(avatar, p);
       if (avatar.paintColor !== p.color || avatar.kitKey !== JSON.stringify(modelOptions(p))) {
         avatar.marker.removeFromParent(); avatar.marker.userData.dispose();
-        avatar.marker = createPaintKit(modelOptions(p)); avatar.marker.position.set(.48, .95, .25); avatar.group.add(avatar.marker); avatar.paintColor = p.color; avatar.kitKey=JSON.stringify(modelOptions(p));
+        avatar.marker = bakePaintKit(modelOptions(p)); avatar.marker.position.set(.48, .95, .25); avatar.group.add(avatar.marker); avatar.paintColor = p.color; avatar.kitKey=JSON.stringify(modelOptions(p));
       }
       if(!avatar.vest) {avatar.vest=createPaintVest();avatar.group.add(avatar.vest);}
       avatar.vest.visible=p.kit?.armor==='padded';
@@ -319,7 +330,7 @@ export function createScene(canvas) {
       // Sprinting widens the view a little; aiming narrows it (La Lejana's scope a lot).
       const stats = kitStats(me.kit, state.options);
       sprintFov += ((me.sprint ? 7 : 0) - sprintFov) * (1 - Math.exp(-dt * 6));
-      scope.setZoom(stats.scope || 1.2); scope.update(dt, aiming && !down && !me.sprint && !(me.reload > 0) && state.phase === 'playing');
+      scope.setZoom(stats.zoom); opticSens = stats.sens; scope.update(dt, aiming && !down && !me.sprint && !(me.reload > 0) && state.phase === 'playing');
       camera.fov = scope.fov((mobile ? 80 : 72) + sprintFov);
       camera.position.set(body.x, EYE + lift + body.y + Math.abs(Math.sin(bob)) * .05 * sway, body.z);
       camera.rotation.set(pitch - lift * .22 + jolt.pitch, yaw + jolt.yaw, Math.sin(bob) * .008 * sway + jolt.roll, 'YXZ');
@@ -332,7 +343,7 @@ export function createScene(canvas) {
       const shot = viewmodel.update(dt, { held, weapon: me.weapon, fired: me.fired || 0, reload: me.reload, reloadTime: stats.reload, sprint: me.sprint, bob, sway, down, air: me.jumpHeight, push: Math.max(0, .6 - clearance), aim: scope.amount });
       const flash = held.userData.flash; flash.visible = held.visible && shot.flash > .05; flash.material.opacity = shot.flash;
       if (shot.shot) flash.rotation.z = Math.random() * Math.PI;
-      flash.scale.setScalar((FLASH[me.weapon] || .9) * (1.15 - shot.flash * .3) * (.9 + (me.fired % 3) * .1));
+      flash.scale.setScalar(flashSize(me.weapon) * (1.15 - shot.flash * .3) * (.9 + (me.fired % 3) * .1));
       camera.clearViewOffset();
     } else {
       if (held) held.visible = false; scope.reset();
@@ -354,7 +365,7 @@ export function createScene(canvas) {
         mesh = new THREE.Mesh(ballGeo, glow ? new THREE.MeshBasicMaterial({ color: b.color }) : material(b.color)); scene.add(mesh); ballMeshes.set(b.id, mesh);
         // Unlit balls with a halo read as tracers in the dark.
         // At 85 m/s a ball jumps 4 m per snapshot: a streak the length of that step joins the dots into one line.
-        if (!b.rocket) { const streak = new THREE.Mesh(streakGeo, new THREE.MeshBasicMaterial({ color: b.color, transparent: true, opacity: .6, depthWrite: false })); streak.scale.z = Math.hypot(b.vx, b.vz) * .05; streak.position.z = -streak.scale.z / 2; mesh.add(streak); mesh.userData.streak = streak; }
+        if (!b.rocket) { const streak = new THREE.Mesh(streakGeo, streakMaterial(b.color)); streak.scale.z = Math.hypot(b.vx, b.vz) * .05; streak.position.z = -streak.scale.z / 2; mesh.add(streak); mesh.userData.streak = streak; }
         if (glow) { const trail = new THREE.Sprite(haloMaterial(b.color)); trail.scale.setScalar(1.1); mesh.add(trail); }
       }
       // Rockets fly between 50 ms snapshots along their velocity, so a slow one glides instead of stepping.
@@ -362,11 +373,11 @@ export function createScene(canvas) {
       if (!seen || seen.x !== b.x || seen.z !== b.z) mesh.userData.seen = { x: b.x, z: b.z, t: 0 }; else seen.t += dt;
       const ahead = b.rocket ? Math.min(.06, mesh.userData.seen.t) : 0;
       mesh.position.set(b.x + b.vx * ahead, 1.1, b.z + b.vz * ahead); mesh.rotation.y = Math.atan2(b.vx, b.vz);
-      if (b.kind !== 'bazooka') mesh.scale.setScalar(b.rocket ? 6.9 : 1);
+      if (b.kind !== 'bazooka') mesh.scale.setScalar(b.rocket ? ROUND_SIZE[b.kind] ?? 6.9 : 1);
       if (b.rocket) blasts.trail(b.id, mesh.position.clone().addScaledVector(new THREE.Vector3(b.vx, 0, b.vz).normalize(), -.55), dt);
     }
     blasts.keep(flying);
-    for (const [id, mesh] of ballMeshes) if (!flying.has(id)) { mesh.removeFromParent(); mesh.userData.dispose?.(); mesh.userData.streak?.material.dispose(); if (mesh.material?.isMeshBasicMaterial) mesh.material.dispose(); ballMeshes.delete(id); }
+    for (const [id, mesh] of ballMeshes) if (!flying.has(id)) { mesh.removeFromParent(); mesh.userData.dispose?.(); if (mesh.material?.isMeshBasicMaterial) mesh.material.dispose(); ballMeshes.delete(id); }
     // Explosions: a flash, a fireball, smoke, and a shake for whoever stands close.
     for (const boom of state.booms || []) {
       if (seenBooms.has(boom.id)) continue; seenBooms.add(boom.id);
@@ -401,12 +412,14 @@ export function createScene(canvas) {
     // Right mouse, F or the Mira button: held aim, shared by the scope and the server's steadier shot.
     setAim(on) { aiming = !!on; },
     get scope() { return scope; },
-    // A rifle's tracer: from the muzzle (your marker in first person) to the first cover or pana it meets.
+    // Look speed now: the zoom's slowdown times the Mira's own `sens`, both eased in with the aim.
+    sensitivity() { return scope.sensitivity() * (1 + (opticSens - 1) * scope.amount); },
+    // A scoped rifle's tracer (La Lejana, El Zamuro): from the muzzle (your marker in first person) to the first cover or pana it meets.
     tracer(p, state, mine) {
       const reach = kitStats(p.kit, state.options), range = reach.speed * reach.life, cover = coverFor(state.mapId, state.variant || 0);
       const targets = state.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated);
       // The round itself when it is in the snapshot (a hip shot wanders off the aim), else the aim.
-      const ball = state.balls.filter(b => b.owner === p.id && b.kind === 'sniper').at(-1), speed = ball ? Math.hypot(ball.vx, ball.vz) : 0;
+      const ball = state.balls.filter(b => b.owner === p.id && b.kind === p.weapon).at(-1), speed = ball ? Math.hypot(ball.vx, ball.vz) : 0;
       const dx = speed ? ball.vx / speed : p.ax, dz = speed ? ball.vz / speed : p.az;
       const length = traceRay(p.x, p.z, dx, dz, range, { boxes: cover, targets, padding: .12 });
       const from = mine && held?.visible ? held.userData.flash.getWorldPosition(new THREE.Vector3()) : mine ? camera.localToWorld(new THREE.Vector3(.1, -.13, -.35)) : new THREE.Vector3(p.x + p.ax * .7, 1.25, p.z + p.az * .7);
@@ -420,6 +433,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { unbind(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { unbind(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }
