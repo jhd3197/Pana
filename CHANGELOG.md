@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **"Más ajustes" ahora se ve como el panel de la sala.**
+  Esquinas rectas, sombra dura, el título en placa amarilla, las mismas fichas
+  y botones que los ajustes de la sala, en todos los juegos; sigue igual de compacto.
+
 - **En Pepazo eliges cuántos bots juegan, y "Más ajustes" cabe de un vistazo.**
   La nueva opción Bots (Auto, 0, 1, 2, 3, 5 o 7) vale online y en práctica; Auto sigue
   igual que antes. El cuadro de ajustes de todos los juegos ahora es compacto,

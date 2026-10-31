@@ -48,6 +48,16 @@
   --pk-r-lg: 16px;
   --pk-r-xl: 26px;
   --pk-drop: 0 4px 0 rgba(0, 0, 0, .35);
+
+  /* game skin: the lobby room panel's look (sala.css) and every .pk-skin-* piece */
+  --pk-skin-shade: #090818;                       /* hard offset shadow colour */
+  --pk-skin-shadow: 4px 4px var(--pk-skin-shade); /* square panels, cards, buttons */
+  --pk-skin-lean: -5deg;                          /* panels and cards lean */
+  --pk-skin-plate-lean: -9deg;                    /* yellow title plate, start button */
+  --pk-skin-chip: #ffffff14;                      /* chip at rest */
+  --pk-skin-chip-hover: #ffffff21;
+  --pk-skin-well: #ffffff0f;                      /* summary rows, "Más ajustes" row */
+  --pk-skin-panel: #0e0b24f2;                     /* the room panel's fill */
 }
 
 /* ---------- type ---------- */
@@ -174,6 +184,52 @@
 .pk-seg > :is([aria-pressed="true"], [aria-checked="true"], .is-on, :has(input:checked)) { background: var(--pk-raised); color: var(--pk-yellow); }
 .pk-seg > label { position: relative; }
 .pk-seg > label input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+
+/* ---------- game skin ----------
+   The lobby room panel's language for any panel or dialog: square corners, hard
+   offset shadows, leaning plates, a yellow title plate, square chips.
+     <dialog class="pk-skin-panel">              leaning panel (the plate leans, content stays upright)
+       <h2 class="pk-skin-plate">Pepazo</h2>     yellow skewed title plate
+       <fieldset class="pk-skin-card">           leaning card inside it
+         <legend class="pk-skin-label">Vidas</legend>
+         <div class="pk-seg pk-skin-chips"><button aria-pressed="true">3</button>…</div>
+       <button class="pk-btn pk-skin-btn">       square button with the hard shadow
+       <button class="pk-btn pk-skin-go">        yellow display-font start button
+       <button class="pk-btn pk-skin-link">      small underlined text link
+   The plates are ::before pseudo-elements, so scrolling, hit areas and focus rings
+   stay square. Give a panel its own fill with --pk-skin-fill. Below 801px wide the
+   plates stand straight, like the lobby panel. */
+.pk-skin-panel, .pk-skin-card { position: relative; isolation: isolate; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.pk-skin-panel::before, .pk-skin-card::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--pk-skin-fill, var(--pk-skin-panel)); box-shadow: var(--pk-skin-ring, 0 0 #0000), var(--pk-skin-shadow);
+  transform: skew(var(--pk-skin-lean));
+}
+.pk-skin-card { --pk-skin-fill: var(--pk-night); }
+.pk-skin-card.is-changed { --pk-skin-ring: inset 0 0 0 2px var(--pk-yellow); }
+@media (max-width: 800px) { .pk-skin-panel::before, .pk-skin-card::before { transform: none; } }
+.pk-skin-plate {
+  justify-self: start; align-self: center; width: fit-content; max-width: 100%; box-sizing: border-box;
+  padding: .3em .6em .15em; background: var(--pk-yellow); color: var(--pk-night);
+  font: 400 24px/1 var(--pk-display); letter-spacing: .5px; text-shadow: none;
+  transform: skew(var(--pk-skin-plate-lean));
+}
+.pk-skin-label { display: block; font: 800 11px/1.3 var(--pk-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--pk-muted); }
+.pk-skin-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; border: 0; border-radius: 0; background: none; }
+.pk-skin-chips > button { min-width: 0; min-height: 32px; padding: 7px 11px; border: 0; border-radius: 0; background: var(--pk-skin-chip); color: var(--pk-text); font: 800 12px/1.2 var(--pk-sans); box-shadow: none; cursor: pointer; }
+.pk-skin-chips > button:hover:not(:disabled) { background: var(--pk-skin-chip-hover); }
+.pk-skin-chips > :is([aria-pressed="true"], [aria-checked="true"], .is-on, :has(input:checked)) { background: var(--pk-yellow); color: var(--pk-night); }
+.pk-skin-chips > :disabled { cursor: default; opacity: .5; }
+.pk-skin-chips > [aria-pressed="true"]:disabled { opacity: .85; }
+/* :root lifts the buttons over body themes such as .banderin .pk-btn. */
+:root .pk-btn.pk-skin-btn { border: 0; border-radius: 0; background: var(--pk-night); color: var(--pk-text); font: 800 13px/1.1 var(--pk-sans); letter-spacing: 0; box-shadow: var(--pk-skin-shadow); }
+:root .pk-btn.pk-skin-btn:hover { background: var(--pk-raised); }
+:root .pk-btn.pk-skin-btn:active:not(:disabled), :root .pk-btn.pk-skin-go:active:not(:disabled) { box-shadow: 2px 2px var(--pk-skin-shade); }
+:root .pk-btn.pk-skin-go { border: 0; border-radius: 0; background: var(--pk-yellow); color: var(--pk-night); font: 400 22px/1 var(--pk-display); letter-spacing: .5px; padding: 12px 22px 8px; box-shadow: var(--pk-skin-shadow); }
+:root .pk-btn.pk-skin-go, :root .pk-btn.pk-skin-go:hover, :root .pk-btn.pk-skin-go:active:not(:disabled) { transform: skew(var(--pk-skin-plate-lean)); }
+:root .pk-btn.pk-skin-go:hover { background: #ffd04d; }
+:root .pk-btn.pk-skin-link { min-height: 30px; padding: 4px 6px; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--pk-muted); font: 800 12px/1.2 var(--pk-sans); text-decoration: underline; text-underline-offset: 3px; }
+:root .pk-btn.pk-skin-link:hover { color: var(--pk-text); transform: none; }
 
 /* switch: <button class="pk-switch" role="switch" aria-checked="true"> */
 .pk-switch { position: relative; flex: none; width: 56px; height: 32px; padding: 0; border: 0; border-radius: 999px; background: var(--pk-raised); cursor: pointer; }

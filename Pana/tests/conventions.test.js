@@ -75,6 +75,21 @@ test('shared room menus include their stylesheet and use pure validated option f
   }
 });
 
+test('"Más ajustes" and the lobby room panel share the kit game skin', () => {
+  const engine = name => read(path.join(app, 'engine', name));
+  const kit = engine('kit.css'), js = engine('room-options.js'), sala = engine('sala.css');
+  const css = engine('room-options.css').split('/* "Más ajustes"')[1] || '';
+  assert(css, 'room-options.css keeps its "Más ajustes" section');
+  for (const cls of ['pk-skin-panel', 'pk-skin-card', 'pk-skin-plate', 'pk-skin-label', 'pk-skin-chips', 'pk-skin-btn', 'pk-skin-go', 'pk-skin-link']) {
+    assert(kit.includes(`.${cls}`), `kit.css misses .${cls}`);
+    assert(js.includes(cls), `room-options.js must dress the dialog with ${cls}`);
+  }
+  // The dialog lays the skin out; it never brings back its own rounded corners or soft shadows.
+  assert.doesNotMatch(css, /border-radius:\s*[1-9]/, 'room-options.css must keep the skin square');
+  assert.doesNotMatch(css, /box-shadow:\s*0 \d+px 0/, 'room-options.css must use the skin hard shadow');
+  for (const token of ['--pk-skin-shadow', '--pk-skin-lean', '--pk-skin-plate-lean', '--pk-skin-chip']) assert(sala.includes(token), `sala.css must read ${token}`);
+});
+
 test('every game has the files the hub and the kit expect', () => {
   const problems = [];
   for (const id of games) {

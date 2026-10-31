@@ -27,15 +27,16 @@ export function createRoomOptions(container, { title, fields, change, reset, hel
   const primary = make('div', 'pk-room-primary');
   const more = make('button', 'pk-room-more'); more.type = 'button'; more.id = 'pana-room-more';
   const count = make('small', ''); more.append(icon('gear'), make('span', '', loc('Más ajustes')), count, icon('chevronRight'));
-  const dialog = make('dialog', 'pk-room-dialog'); dialog.id = 'pana-room-dialog'; dialog.setAttribute('aria-labelledby', 'pana-room-title');
+  // The dialog wears the lobby room panel's game skin (kit.css, .pk-skin-*).
+  const dialog = make('dialog', 'pk-room-dialog pk-skin-panel'); dialog.id = 'pana-room-dialog'; dialog.setAttribute('aria-labelledby', 'pana-room-title');
   const heading = make('div', 'pk-room-heading'), names = make('div', 'pk-room-names');
-  const name = make('h2', 'pk-room-title', title); name.id = 'pana-room-title';
-  names.append(make('span', 'pk-eyebrow', loc('Más ajustes')), name);
-  const notice = make('p', 'pk-room-notice'), close = make('button', 'pk-btn pk-room-close'); close.type = 'button'; close.setAttribute('aria-label', loc('Cerrar ajustes')); close.append(icon('close'));
+  const name = make('h2', 'pk-room-title pk-skin-plate', title); name.id = 'pana-room-title';
+  names.append(make('span', 'pk-eyebrow pk-skin-label', loc('Más ajustes')), name);
+  const notice = make('p', 'pk-room-notice'), close = make('button', 'pk-btn pk-skin-btn pk-room-close'); close.type = 'button'; close.setAttribute('aria-label', loc('Cerrar ajustes')); close.append(icon('close'));
   heading.append(names, notice, close);
   // Schema fields first, then adopted extras (map, bot aim, roles…) as cards of the same grid.
   const grid = make('div', 'pk-room-grid'), foot = make('div', 'pk-room-footer'), links = make('div', 'pk-room-links');
-  const restore = make('button', 'pk-btn pk-room-reset', loc('Restablecer sala')), done = make('button', 'pk-btn pk-btn--primary pk-room-done', loc('Listo'));
+  const restore = make('button', 'pk-btn pk-skin-btn pk-room-reset', loc('Restablecer sala')), done = make('button', 'pk-btn pk-skin-go pk-room-done', loc('Listo'));
   restore.type = done.type = 'button'; restore.id = 'pana-room-reset'; done.id = 'pana-room-done';
   const layer = make('section', 'pk-room-help'); layer.id = 'pana-room-help'; layer.hidden = true; layer.setAttribute('aria-labelledby', 'pana-room-help-title');
   foot.append(restore, links, done); dialog.append(heading, grid, layer, foot); document.body.append(dialog);
@@ -49,6 +50,7 @@ export function createRoomOptions(container, { title, fields, change, reset, hel
       button.addEventListener('click', () => { if (enabled) change({ [field.id]: value }); });
       choices.append(button); return { button, value };
     });
+    if (field.advanced) { group.classList.add('pk-skin-card'); legend.className = 'pk-skin-label'; choices.classList.add('pk-skin-chips'); }
     group.append(legend, choices); (field.advanced ? grid : primary).append(group);
     return { field, group, buttons };
   });
@@ -64,8 +66,13 @@ export function createRoomOptions(container, { title, fields, change, reset, hel
     for (const node of lobby.querySelectorAll('[data-room-primary]')) primary.prepend(node);
     for (const node of lobby.querySelectorAll('[data-room-extra], [data-room-help]')) {
       if (node.closest('[data-pana-roster]')) continue;
-      if (node.matches('[data-room-help]')) links.append(node);
-      else { node.classList.add('pk-room-card'); grid.append(node); extraCount++; }
+      if (node.matches('[data-room-help]')) {
+        for (const link of [node, ...node.querySelectorAll('.pk-btn')]) if (link.matches('.pk-btn')) link.classList.add('pk-skin-link');
+        links.append(node);
+      } else {
+        node.classList.add('pk-room-card', 'pk-skin-card'); grid.append(node); extraCount++;
+        for (const seg of node.querySelectorAll('.pk-seg')) seg.classList.add('pk-skin-chips');
+      }
     }
     // The settings panel always ends with the single advanced-settings entry.
     lobby.append(container);
@@ -73,13 +80,13 @@ export function createRoomOptions(container, { title, fields, change, reset, hel
   } });
 
   function list(cls, label, nodes) {
-    const box = make('div', cls); box.append(make('span', 'pk-eyebrow', label), ...nodes); return box;
+    const box = make('div', `${cls} pk-skin-card`); box.append(make('span', 'pk-eyebrow pk-skin-label', label), ...nodes); return box;
   }
   function openHelp(trigger) {
     const data = (typeof help === 'function' ? help() : help) || {};
-    const back = make('button', 'pk-btn pk-room-back'); back.type = 'button'; back.append(icon('chevronLeft'), make('span', '', loc('Volver')));
+    const back = make('button', 'pk-btn pk-skin-btn pk-room-back'); back.type = 'button'; back.append(icon('chevronLeft'), make('span', '', loc('Volver')));
     back.addEventListener('click', closeHelp);
-    const head = make('div', 'pk-room-help-head'), heading = make('h3', '', data.title || trigger?.textContent.trim() || loc('Cómo se juega'));
+    const head = make('div', 'pk-room-help-head'), heading = make('h3', 'pk-skin-plate', data.title || trigger?.textContent.trim() || loc('Cómo se juega'));
     heading.id = 'pana-room-help-title'; head.append(back, heading);
     const body = make('div', 'pk-room-help-body');
     if (data.controls?.length) {
