@@ -3458,6 +3458,46 @@
       "status": "in-use"
     },
     {
+      "id": "paint-lejana",
+      "name": "La Lejana",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "sniper"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-bazuca",
+      "name": "La Bazuca",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "bazooka"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-cohete-bazuca",
+      "name": "Cohete de La Bazuca",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintRocket",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
       "id": "paint-acolchado",
       "name": "El Acolchado",
       "category": "Objetos",
