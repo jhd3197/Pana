@@ -54,8 +54,17 @@ test('timeout, scoring, rotating roles, every player seeks and replay resets sco
   assert.equal(game.players.find(p => p.id === bot.id).score, botScore);
   while (game.round < RULES.rounds) { game.finish('hiders', 'Done'); game.start(1); }
   game.finish('hiders', 'Done');
-  assert.equal(game.phase, 'finished'); game.start(1, 'seek');
-  assert.equal(game.round, 1); assert.ok(game.players.every(p => p.score === 0));
+  assert.equal(game.phase, 'finished'); assert.equal(game.start(1, 'seek'), false, 'a finished match never replays its map directly');
+  assert.ok(game.toLobby()); assert.equal(game.phase, 'lobby'); assert.ok(game.players.every(p => p.score === 0 && !p.bot));
+  assert.ok(game.selectMap('ruinas')); assert.ok(game.start(1, 'seek'));
+  assert.equal(game.round, 1); assert.equal(game.mapId, 'ruinas'); assert.ok(game.players.every(p => p.score === 0));
+});
+test('only a finished match goes back to the lobby; between rounds the match goes on', () => {
+  const game = session('seek');
+  assert.equal(game.toLobby(), false);
+  game.finish('hiders', 'Done'); assert.equal(game.phase, 'results');
+  assert.equal(game.toLobby(), false); assert.equal(game.selectMap('hato'), false);
+  assert.ok(game.start(1)); assert.equal(game.round, 2);
 });
 test('an eight-round room gives every player a seeker turn', () => {
   const game = new HuntRound(); game.configure({ rounds: 8 });

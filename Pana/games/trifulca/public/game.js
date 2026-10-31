@@ -45,7 +45,7 @@ const markTutorial = () => { try { localStorage.setItem(TUTORIAL_KEY, 'done'); }
 const humans = () => room.state.players.filter(p => !p.bot).length;
 $('rules').onclick = () => { if (room.isHost && room.connected) { sound.unlock(); room.action('tutorial'); } else menu.open('controls'); };
 $('start').onclick = () => { sound.unlock(); room.action(!tutorialDone() && humans() <= 1 ? 'tutorial' : 'start'); };
-$('again').onclick = () => { sound.unlock(); room.action('start'); };
+$('again').onclick = () => { sound.unlock(); room.action('lobby'); };
 $('tutorial-go').onclick = $('tutorial-skip').onclick = () => { markTutorial(); sound.unlock(); room.action('start'); };
 $('practice').onclick = () => room.practice();
 // Bets by corner (the buttons) or by number (keys 1 to 4, in the corners' order).

@@ -36,6 +36,10 @@ on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
   in fixed 50 ms slices from real elapsed time. Drive it with `elapsedClock()`:
   a host in a background tab gets timers about once a second, and a fixed
   `tick(0.05)` would slow the game twenty times for everyone.
+  A game whose rules have `toLobby()` (`engine/play/round-lobby.js`) gets the
+  host's `room.action('lobby')` for free: LiveRoom calls it and publishes,
+  without a `handle()` line. Results screens use it so the host picks the next
+  map in the lobby instead of replaying the same one.
   A guest sends its input only to the host, and only when it changed or
   every 200 ms (a third of `inputTtl` if that is shorter), so an idle stick
   costs nothing and the host never expires it; a new host gets it at once.

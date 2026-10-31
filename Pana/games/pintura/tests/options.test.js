@@ -36,7 +36,7 @@ test('team cards preserve eight stable positions through swaps, disconnects, sta
  assert.equal(g.players.find(p=>p.id===2).team,0);assert.equal(g.players.find(p=>p.id===1).team,1);
  assert.equal(g.moveSeat(1,2,5,1),true);const order=g.players.map(p=>[p.id,p.seat,p.team]);
  assert(g.start());assert.deepEqual(g.players.map(p=>[p.id,p.seat,p.team]),order);assert.equal(g.moveSeat(2,0,1,1),false);
- g.phase='finished';assert(g.start());assert.deepEqual(g.players.map(p=>[p.id,p.seat,p.team]),order);
+ g.phase='finished';assert(g.toLobby());assert(g.start());assert.deepEqual(g.players.map(p=>[p.id,p.seat,p.team]),order);
  const old=g.players[7];old.connected=false;g.add(9,{name:'Nueva'});g.add(8,{name:'Vuelve'});
  assert.equal(old.connected,false,'a full round does not duplicate an occupied seat');assert.equal(new Set(g.players.filter(p=>p.connected).map(p=>p.seat)).size,8);
 });

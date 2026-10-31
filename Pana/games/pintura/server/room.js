@@ -12,8 +12,10 @@ export default class PaintRoom extends PanaRoom {
     this.onHostMessage('configure', (client, data) => { if (this.game.configure(data?.options)) this.publish(); });
     this.onHostMessage('map', (client, data) => { if (this.game.selectMap(data?.mapId)) this.publish(); });
     this.onHostMessage('difficulty', (client, data) => { if (this.game.selectDifficulty(data?.difficulty)) this.publish(); });
+    // Results → lobby: the host picks the next map before anyone plays again.
+    this.onHostMessage('lobby', () => { if (this.game.toLobby()) { this.inputs.clear(); this.publish(); } });
     this.onHostMessage('start', () => {
-      if (this.game.phase === 'playing') return;
+      if (this.game.phase !== 'lobby') return;
       this.game.players = this.game.players.filter(p => !p.bot && p.connected);
       if (this.game.players.length === 1) fillBots(3, (seat, info) => this.game.add(seat, info));
       this.inputs.clear(); this.game.start(); this.publish();

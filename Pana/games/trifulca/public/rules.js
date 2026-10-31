@@ -13,6 +13,7 @@ import { defaultOptions, roomOptions } from './options.js';
 import { locKey } from '../../../engine/i18n.js';
 import { arenaOf, newBody, control, presses, stepBodies, edge, crowdSpot, scorecard, setAct, addMareo, knockDown, inRing, facing, CORNERS, MAREO_CALMA, BODY_GAP } from './fight-rules.js';
 import { botInput } from './bot-rules.js';
+import { returnToLobby } from '../../../engine/play/round-lobby.js';
 
 // Alone, ganador se queda is a ladder: you against five rivals, each one
 // tougher (bot level), and three losses end the night.
@@ -63,6 +64,12 @@ export class Trifulca {
   snapshot() { return JSON.parse(JSON.stringify(this)); }
   configure(patch) { const next = this.phase === 'lobby' && roomOptions(this.options, patch); if (!next) return false; this.options = next; return true; }
   get arena() { return arenaOf(this.arenaNow || this.options.arena); }
+  // "Otra noche" and leaving the tutorial: back to the lobby, where the host
+  // picks the next arena. The night's results stay until the next start.
+  toLobby() {
+    return returnToLobby(this, { from: this.tutorial ? [this.phase] : ['finished'],
+      reset: g => Object.assign(g, { tutorial: null, bodies: [], props: [], fight: null, arenaNow: null, time: 0 }) });
+  }
   get mode() { return this.options.modo; }
 
   // A new host continues from the last snapshot without the panas who left.
@@ -120,7 +127,9 @@ export class Trifulca {
     return humans <= 1 ? 3 : humans === 2 ? 0 : humans < 4 ? 1 : 0;
   }
 
+  // A finished night goes through toLobby() first, so the next arena is a choice.
   start(withBots = true) {
+    if (this.phase === 'finished') return false;
     this.players = this.players.filter(p => !p.bot);
     const humans = this.players.length;
     for (let i = 0, n = withBots ? this.botCount(humans) : 0; i < n || this.players.length < 2; i++) {

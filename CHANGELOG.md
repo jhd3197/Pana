@@ -11,6 +11,10 @@ becomes the GitHub release's notes.
 - **En Ludo un 1 también da otra tirada.** Si sacas un 1 y mueves, vuelves a
   tirar como con un 6, hasta tres tiradas extra seguidas; viene activado y el
   anfitrión lo puede apagar en las opciones de la sala.
+- **Al terminar, "Otra ronda" vuelve a la sala y el anfitrión elige el próximo mapa.**
+  En Pepazo, Trifulca ("Otra noche") y Escondidas ("Otra partida") ya no se
+  repite el mismo mapa sin querer: todos vuelven a la sala con sus puestos y
+  opciones, el anfitrión cambia el mapa o la arena y arranca cuando quiera.
 
 - **Pepazo estrena La Lejana y La Bazuca, y todas las marcadoras pegan más duro.**
   La Lejana es una francotiradora de 70 m que pinta dos pepazos por tiro, con

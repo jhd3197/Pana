@@ -33,7 +33,7 @@ test('ammo, cooldown, manual reload and automatic reload are enforced', () => {
 });
 test('timer, target score and rematches produce clean rounds', () => {
   const g = arena(); g.time = .01; g.step(.05); assert.equal(g.phase, 'finished');
-  g.start(); g.go(); assert.equal(g.round, 2); assert.equal(g.time, 180); assert.equal(g.players[0].score, 0);
+  assert.ok(g.toLobby()); g.start(); g.go(); assert.equal(g.round, 2); assert.equal(g.time, 180); assert.equal(g.players[0].score, 0);
   g.players[0].score = 10; g.step(.05); assert.equal(g.phase, 'finished'); assert.equal(g.balls.length, 0);
 });
 test('bots move and fire without escaping the playable arena', () => {
@@ -119,9 +119,10 @@ test('knockouts track streaks and revenge', () => {
 });
 test('each round plays the next of three fixed layouts', () => {
   const g = arena(); assert.equal(g.variant, 0);
-  g.phase = 'finished'; g.start(); assert.equal(g.view().variant, 1);
-  g.phase = 'finished'; g.start(); assert.equal(g.variant, 2);
-  g.phase = 'finished'; g.start(); assert.equal(g.variant, 0);
+  const again = () => { g.phase = 'finished'; assert.ok(g.toLobby()); assert.ok(g.start()); };
+  again(); assert.equal(g.view().variant, 1);
+  again(); assert.equal(g.variant, 2);
+  again(); assert.equal(g.variant, 0);
   assert.notDeepEqual(coverFor('plaza', 1), coverFor('plaza', 0)); assert.ok(coverFor('muelle', 2).length !== coverFor('muelle', 0).length);
 });
 
@@ -132,4 +133,27 @@ test('Shift sprints faster for three seconds, holds fire, then recovers', () => 
   const ammo = p.ammo; g.step(.05, new Map([[1, { x: 1, sprint: true, fire: true }]])); assert.equal(p.ammo, ammo - 1, 'firing cancels the sprint');
   for (let i = 0; i < 80; i++) g.step(.05, new Map([[1, { x: -1, sprint: true }]])); assert.ok(p.stamina < .05); assert.equal(p.sprint, false);
   for (let i = 0; i < 40; i++) g.step(.05); assert.ok(p.stamina > .35);
+});
+
+test('Otra ronda returns to the lobby and the next round plays the map picked there', () => {
+  const g = new Arena('plaza', 'normal', { mode: 'teams' });
+  g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.add(1000, { name: 'Coco', avatar: {}, bot: true });
+  assert.ok(g.start()); g.go(); const seats = g.players.map(p => [p.id, p.seat, p.team]);
+  g.time = .01; g.step(.05); assert.equal(g.phase, 'finished');
+  // The old path: restarting from the results is refused, so the map never repeats silently.
+  assert.equal(g.start(), false); assert.equal(g.phase, 'finished'); assert.equal(g.round, 1);
+  assert.equal(g.selectMap('muelle'), false, 'no map change on the results screen');
+  assert.ok(g.toLobby({ keepBots: true })); assert.equal(g.phase, 'lobby'); assert.equal(g.toLobby(), false);
+  assert.deepEqual(g.players.map(p => [p.id, p.seat, p.team]), seats, 'seats and teams stay');
+  assert.deepEqual(g.balls, []); assert.deepEqual(g.flags, []); assert.equal(g.loading, 0);
+  assert.ok(g.selectMap('muelle')); assert.ok(g.start());
+  assert.equal(g.phase, 'playing'); assert.equal(g.mapId, 'muelle'); assert.equal(g.round, 2); assert.equal(g.variant, 1);
+  assert.ok(g.players.every(p => p.score === 0));
+});
+
+test('an online room leaves its bots behind on the way to the lobby', () => {
+  const g = new Arena('plaza'); g.add(1, { name: 'A', avatar: {} }); g.add(1000, { name: 'Coco', avatar: {}, bot: true });
+  g.start(); g.phase = 'finished';
+  assert.ok(g.toLobby()); assert.deepEqual(g.players.map(p => p.id), [1]);
+  assert.equal(g.toLobby(), false, 'only from a finished round');
 });

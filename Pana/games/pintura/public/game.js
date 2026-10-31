@@ -71,7 +71,7 @@ const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'),
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
 $('room-code').textContent = loc('Sala {code}', { code }); $('rules').onclick = () => menu.open('controls');
 $('grenade').onclick=()=>{if(active())queuedGrenade=true;};
-$('start').onclick = () => { sound.unlock(); if (!room.connected && $('connection').dataset.failed === 'true') room.practice(); else room.start(); }; $('again').onclick = () => room.start();
+$('start').onclick = () => { sound.unlock(); if (!room.connected && $('connection').dataset.failed === 'true') room.practice(); else room.start(); }; $('again').onclick = () => room.toLobby();
 for (const id of ['practice', 'fallback']) $(id).onclick = () => { menu.close(); $('recovery').hidden = true; room.practice(); };
 function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = queuedGrenade = mouseAim = touchAim = false; $('aim').setAttribute('aria-pressed', 'false'); pads.forEach(p => p.release()); room.input({ jump: jumpPress }); }
 // Space or the Saltar button. The count rides every input, so frozen play (loading, the 3-2-1) spends it.

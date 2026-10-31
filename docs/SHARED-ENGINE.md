@@ -205,6 +205,7 @@ See candidates.
 | Seat bubbles (frases) | `engine/play/seat-bubbles.js`, `play/frases.js` | Caída, Dominó, QQSMP, Stop (bubbles); Caída, Dominó, QQSMP, Reliquia (frases) |
 | ¿Quién empieza? (roll-off for the first turn) | `engine/play/quien-empieza.js` + `-rules.js`, `play/roll-off.js` | Billar, Bululú, Caída, Criollas, Dominó, Ludo, Póquer |
 | Map picker | `engine/play/map-picker.js` | Billar, Caída, Criollas, Dominó, Escondidas, Pepazo, Póquer |
+| Results → lobby (pick the next map) | `engine/play/round-lobby.js` (`returnToLobby`; LiveRoom's `lobby` action calls `game.toLobby()`) | Escondidas, Pepazo, Trifulca |
 | Difficulty picker | `engine/play/difficulty.js` | Billar, Criollas, Pepazo |
 | Room options (fields, rules, finalize) | `engine/room-options.js`, `room-options-rules.js`, `room-option-fields.js` | 22 games; fields in 12 |
 | Results screen | `engine/results.js` + `.pk-results` | 21 games (not Bululú, Embuste) |

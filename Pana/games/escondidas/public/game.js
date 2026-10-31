@@ -260,7 +260,9 @@ for (const mode of ['hide', 'seek']) $(`role-${mode}`).onclick = () => {
   preference = mode;
   for (const m of ['hide', 'seek']) { $(`role-${m}`).classList.toggle('selected', m === mode); $(`role-${m}`).setAttribute('aria-pressed', String(m === mode)); }
 };
-$('start').onclick = $('next').onclick = () => { sound.unlock(); room.action('start', { preference }); };
+$('start').onclick = () => { sound.unlock(); room.action('start', { preference }); };
+// Between rounds the match goes on; a finished match returns to the lobby to pick a map.
+$('next').onclick = () => { sound.unlock(); if (state.phase === 'finished') room.action('lobby'); else room.action('start', { preference }); };
 $('practice').onclick = () => { room.practice(); show('practice', false); };
 $('action').onclick = act;
 $('revert').onclick = () => transform(null);

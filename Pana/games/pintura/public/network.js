@@ -39,6 +39,11 @@ export class PaintConnection {
   }
   selectKit(kit) { this.kit=kit; if(this.local) { if(this.game.selectKit(this.id,kit)) this.publish(); } else if(this.connected) this.link.send('kit',kit); }
   start() { if (this.local) { this.game.start(); this.publish(); } else if (this.connected) this.link.send('start'); }
+  // Results → lobby to pick the next map. Practice keeps its bots: its start adds none.
+  toLobby() {
+    if (!this.isHost || !this.connected) return;
+    if (this.local) { if (this.game.toLobby({ keepBots: true })) this.publish(); } else this.link.send('lobby');
+  }
   // This client has the round's court on screen and can play.
   ready(round) { if (this.local) { if (this.game.markReady(this.id, round)) this.publish(); } else if (this.connected) this.link.send('ready', { round }); }
   input(value) { this.current = cleanInput(value); if (!this.local && this.connected) this.link.send('input', this.current); }
