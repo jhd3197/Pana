@@ -13,6 +13,7 @@ import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
 import { fillRoster } from '/engine/results.js';
 import { sound } from '/engine/fx.js';
+import { createToast } from '/engine/hud.js';
 import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
@@ -40,7 +41,7 @@ let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').dataset.failed = String(failed); $('connection').textContent = text; document.dispatchEvent(new Event('pana:sala-update')); $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
-const armory = createArmory({room,onPick:value=>{weapon=value;}});
+const armory = createArmory({ room, onPick: value => { weapon = value; }, notify: createToast($('toast')) });
 $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-armory').click(), read: () => {
   const describe = p => { const stats = kitStats(p.kit || room.kit, room.state.options); return { id: room.link?.state.players.find(m => m.seat === p.id)?.id, kit: stats.name, level: kitRating(p.kit || room.kit, room.state.options), color: p.color || '#ffc629', team: (room.state.options?.mode === 'teams' || room.state.options?.flag) ? (p.team ? loc('Turquesa') : loc('Naranja')) : '' }; };
   const people = room.state.players.filter(p => p.connected && !p.bot).length || 1;
@@ -64,7 +65,7 @@ const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficul
   notes: { facil: loc('Los bots fallan seguido y disparan menos.'), normal: loc('Bots con buena mano, pero se les va alguna.'), dificil: loc('Los bots apuntan fino y no sueltan el gatillo.'), experto: loc('Casi no fallan: muévete y cúbrete.') } });
 const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
  
-  options: [{ id: 'weapon', label: loc('Marcadora (si la sala permite todas)'), choices: MARKERS.map(m=>[m.id,m.name]), get: () => weapon, set: value => { weapon = value; } },
+  options: [{ id: 'weapon', label: loc('Marcadora (si la sala permite todas)'), choices: MARKERS.map(m=>[m.id,m.name]), get: () => weapon, set: value => armory.setWeapon(value) },
     { id: 'view', label: loc('Cámara'), choices: [['primera', loc('Primera persona')], ['cancha', loc('Ver la cancha')]], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? loc('La práctica está en pausa.') : loc('La ronda online sigue mientras estás en el menú.'),
   controls, tips,
@@ -99,7 +100,9 @@ for (const type of ['pointerup', 'pointercancel']) canvas.addEventListener(type,
 addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 addEventListener('keydown', event => {
   if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a')) return;
-  const key = event.key.toLowerCase(), slot = Number(key); if (slot >= 1 && slot <= MARKERS.length) weapon = MARKERS[slot - 1].id; if (key === 'm') toggleMute();
+  const key = event.key.toLowerCase(), slot = Number(key);
+  // A number picks the marker for this round and the saved kit (pistol-only rooms keep La Chispa).
+  if (slot >= 1 && slot <= MARKERS.length && room.state.options?.weapons !== 'pistol') armory.setWeapon(MARKERS[slot - 1].id); if (key === 'm') toggleMute();
   if (key === 'g' && active() && !event.repeat) queuedGrenade = true;
   if (key === 'tab') { event.preventDefault(); if (room.state.phase === 'playing') showBoard(true); }
   if (['w', 'a', 's', 'd', 'q', 'e', 'r', 'f', ' ', 'enter', 'shift', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ' && !event.repeat) jump(); if (key === 'enter') queuedFire = true; if (key === 'r') queuedReload = true; } }

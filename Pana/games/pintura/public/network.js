@@ -19,6 +19,8 @@ export class PaintConnection {
       link.on('view', state => { if (!this.local) { this.state = { ...state, options: normalizeRoomOptions(FIELDS, state.options), flags: state.flags || [], teamScores: state.teamScores || [0, 0], winners: state.winners || [] }; this.onState(this.state); } });
       link.on('state', () => { if (!this.local) this.onState(this.state); });
       link.on('status', (text, failed) => { if (!this.local) { this.connected = !failed; this.onStatus(text || loc('En línea con tus panas'), !!failed); this.onState(this.state); } });
+      // The room refused a kit (mid-round): the armory says why.
+      link.on('kit-rejected', data => { if (!this.local) this.onKitRejected?.(data || {}); });
       link.on('left', () => { if (!this.local) { this.connected = false; this.onStatus(loc('Se cortó la conexión. Recarga para volver o practica con bots.'), true); this.onState(this.state); } });
       this.onStatus(loc('En línea con tus panas')); if(this.kit) this.selectKit(this.kit); this.onState(this.state);
     } catch (error) { if (!this.local && !this.disposed) { this.connected = false; this.onStatus(error.full ? loc('Sala llena. Abre otra cancha desde Pana.') : loc('Sin conexión. Puedes practicar con bots.'), true); this.onState(this.state); } }
@@ -39,7 +41,11 @@ export class PaintConnection {
     if (this.local) { if (this.game.selectDifficulty(difficulty)) this.publish(); }
     else this.link.send('difficulty', { difficulty });
   }
-  selectKit(kit) { this.kit=kit; if(this.local) { if(this.game.selectKit(this.id,kit)) this.publish(); } else if(this.connected) this.link.send('kit',kit); }
+  selectKit(kit) {
+    this.kit=kit;
+    if(this.local) { if(this.game.selectKit(this.id,kit)) this.publish(); else this.onKitRejected?.({ reason: this.game.kitRejection(this.id) || 'invalid' }); }
+    else if(this.connected) this.link.send('kit',kit);
+  }
   // Practice seats its bots like the server does, from the room's `bots` option.
   start() {
     if (this.local) { this.game.seatBots(i => ({ name: PRACTICE_BOTS[i % PRACTICE_BOTS.length], avatar: randomAvatar() })); this.game.start(); this.publish(); }

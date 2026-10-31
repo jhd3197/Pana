@@ -35,4 +35,7 @@
  #armory-slots button{height:110px}
 }
 
+/* Why a pick changed or did not stick; above the slots, or above the choices while choosing. */
+#armory-note{position:absolute;left:40px;right:390px;bottom:178px;margin:0;padding:8px 14px;background:var(--pk-yellow);color:#16161a;font-weight:900;font-size:13px;transform:skew(-10deg);box-shadow:4px 4px #16161a;z-index:3}#armory-note:empty{display:none}#armory.choosing #armory-note{left:200px;right:40px;bottom:calc(30% + 50px)}
+@media(max-width:800px){#armory-note{left:20px;right:20px;bottom:262px}#armory.choosing #armory-note{left:20px;bottom:calc(36% + 90px)}}
 #armory-rating{display:inline-block;margin-left:18px;vertical-align:middle}#armory-rating .pk-kit-level{font-size:24px}

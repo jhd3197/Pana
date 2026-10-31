@@ -14,7 +14,7 @@ export const MARKERS = [
  { id:'bazooka', name:'La Bazuca', blurb:locKey('Un cohete lento que se ve venir. Si pega directo, fuera de una; casi no salpica. Tres por vida.'), magazine:1, reserve:2, reload:3.8, cadence:1.2, mobility:.7, spread:0, pellets:1, speed:14, life:3, splash:1.4, direct:true, heavy:true }, // i18n-ignore: proper name
 ];
 export const ATTACHMENTS = [
- {id:'barrel',name:locKey('Cañón afinado'),blurb:locKey('Más precisión y alcance. −5% movilidad.')},
+ {id:'barrel',name:locKey('Cañón afinado'),blurb:locKey('Más precisión y alcance; en las marcadoras que no se desvían, la bola o el cohete sale más rápido. −5% movilidad.')},
  {id:'hopper',name:locKey('Tolva grande'),blurb:locKey('Más bolas; recarga más lenta y −5% movilidad. En El Cohetón y La Bazuca: un cohete extra.')},
  {id:'stock',name:locKey('Culata ligera'),blurb:locKey('+5% movilidad, menos control. Los cohetes pierden radio de salpicadura.')},
 ];
@@ -32,15 +32,45 @@ export const FINISHES = [{id:'factory',name:locKey('De fábrica'),color:null},{i
 export const CHARMS = [{id:'none',name:locKey('Sin llavero')},{id:'mango',name:'Manguito'},{id:'ball',name:locKey('Bola de pintura')}];
 export const PATTERNS = [{id:'splat',name:locKey('Salpicadura')},{id:'stripe',name:locKey('Rayas')},{id:'dots',name:locKey('Puntos')}];
 const pick = (list,id) => list.some(x=>x.id===id) ? id : list[0].id;
+// Two attachment slots. A kit stores `attachments` as a fixed [slot 0, slot 1]
+// array of id|null so a part stays in the slot the player put it in.
+export const ATTACHMENT_SLOTS = 2;
+// Which attachments fit which marker. Data, so per-weapon mounts can plug in
+// later. La Lejana already carries a wooden stock, and La Bazuca rests on the
+// shoulder with no place for one, so neither takes the light stock.
+export const ATTACHMENT_RULES = {
+ pistol:['barrel','hopper','stock'], scatter:['barrel','hopper','stock'], rapid:['barrel','hopper','stock'],
+ rocket:['barrel','hopper','stock'], sniper:['barrel','hopper'], bazooka:['barrel','hopper'],
+};
+export const canAttach = (weaponId, attachmentId) => !!ATTACHMENT_RULES[weaponId]?.includes(attachmentId);
 export function cleanKit(value={}) {
  if (!value || typeof value !== 'object') value={};
- return { weapon:pick(MARKERS,value.weapon), attachments:[...new Set((Array.isArray(value.attachments)?value.attachments:[]).filter(id=>ATTACHMENTS.some(a=>a.id===id)))].slice(0,2), armor:pick(ARMOR,value.armor), grenade:pick(GRENADES,value.grenade), finish:pick(FINISHES,value.finish), charm:pick(CHARMS,value.charm), pattern:pick(PATTERNS,value.pattern) };
+ const weapon=pick(MARKERS,value.weapon), raw=Array.isArray(value.attachments)?value.attachments:[];
+ // Up to two entries are slot positions; a longer list (old or hostile) is packed.
+ const list=raw.length>ATTACHMENT_SLOTS?raw.filter(id=>canAttach(weapon,id)).filter((id,i,all)=>all.indexOf(id)===i):raw;
+ const attachments=Array.from({length:ATTACHMENT_SLOTS},(_,i)=>{const id=list[i];return canAttach(weapon,id) && !list.slice(0,i).includes(id) ? id : null;});
+ return { weapon, attachments, armor:pick(ARMOR,value.armor), grenade:pick(GRENADES,value.grenade), finish:pick(FINISHES,value.finish), charm:pick(CHARMS,value.charm), pattern:pick(PATTERNS,value.pattern) };
+}
+// The attachment in each slot, always ATTACHMENT_SLOTS long.
+export const slotsOf = kit => cleanKit(kit).attachments;
+// Puts `id` (or null to clear) in slot `index`; the same part in the other slot moves here.
+// Returns a new clean kit, or the kit unchanged when the part does not fit the marker.
+export function setSlot(kit, index, id) {
+ const clean=cleanKit(kit); if(!(index>=0 && index<ATTACHMENT_SLOTS) || (id!=null && !canAttach(clean.weapon,id))) return clean;
+ const attachments=clean.attachments.map((a,i)=>i===index?(id??null):a===id?null:a);
+ return cleanKit({...clean,attachments});
+}
+// A new marker keeps the parts that fit it; `dropped` lists the ones it cannot take.
+export function changeWeapon(kit, weaponId) {
+ const before=cleanKit(kit), after=cleanKit({...before,weapon:weaponId});
+ return { kit:after, dropped:before.attachments.filter((id,i)=>id && after.attachments[i]!==id) };
 }
 export function kitStats(value={}, options={}) {
  const kit=cleanKit(value), weapon=options.weapons==='pistol'?'pistol':kit.weapon;
  const s={...MARKERS.find(w=>w.id===weapon)}, armor=ARMOR.find(a=>a.id===kit.armor);
- for(const id of kit.attachments) {
-  if(id==='barrel') { s.spread*=.65; if(s.aimSpread!=null) s.aimSpread*=.65; s.life*=1.12; s.mobility-=.05; }
+ for(const id of kit.attachments.filter(Boolean)) {
+  // A marker that already flies straight cannot get tighter: its barrel sends the shot out faster instead.
+  if(id==='barrel') { if(s.spread>0) { s.spread*=.65; s.life*=1.12; } else s.speed*=1.12; if(s.aimSpread!=null) s.aimSpread*=.65; s.mobility-=.05; }
   if(id==='hopper') { if(s.reserve!=null) s.reserve++; else s.magazine=Math.ceil(s.magazine*1.4); s.reload*=1.25; s.mobility-=.05; }
   if(id==='stock') { s.mobility+=.05; s.spread=s.spread*1.3+.015; if(s.aimSpread!=null) s.aimSpread+=.008; if(s.splash) s.splash*=.8; }
  }
