@@ -6,7 +6,11 @@ import {
   PROFILE_KEY, PROFILE_VERSION, claimReceipt, cleanSetup, createProfileStore,
   migrateProfile, receiptKey, recordCupTrophy, trophyCredits,
 } from '../public/cup-profile.js';
-import { TRACK_IDS } from '../public/online-rules.js';
+import { TRACK_IDS as ALL_TRACK_IDS } from '../public/online-rules.js';
+import { TRACK_DEFINITIONS } from '../public/track-definitions.js';
+// Private store circuits (premium-tracks.js) that join no cup are marked `premium`.
+const PREMIUM_IDS = TRACK_DEFINITIONS.filter(t => t.premium).map(t => t.id);
+const TRACK_IDS = ALL_TRACK_IDS.filter(id => !PREMIUM_IDS.includes(id));
 import { LEGACY_PROFILE_FIXTURES } from './cup-profile-fixtures.js';
 
 // The public build has one cup; the pana.sh overlay adds PREMIUM_CUPS. These tests hold in both.

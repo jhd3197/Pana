@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CUPS, POINTS, trophyFor, rubberBand, DIFFICULTY, cleanLaps, battleOrder, battleOver, BATTLE_TIME } from '../public/modes.js';
-import { TRACK_IDS } from '../public/online-rules.js';
+import { TRACK_IDS as ALL_TRACK_IDS } from '../public/online-rules.js';
+import { TRACK_DEFINITIONS } from '../public/track-definitions.js';
+// Private store circuits (premium-tracks.js) that join no cup are marked `premium`.
+const PREMIUM_IDS = TRACK_DEFINITIONS.filter(t => t.premium).map(t => t.id);
+const TRACK_IDS = ALL_TRACK_IDS.filter(id => !PREMIUM_IDS.includes(id));
 import { STANDALONE_TRACKS } from '../public/cup-definitions.js';
 
 test('four-race cups and explicitly standalone tracks cover the circuit list', () => {
