@@ -16,6 +16,11 @@ becomes the GitHub release's notes.
   Tres capis por equipo en la orilla del llano: camina, apunta, carga la bazuca
   de pintura y mide el viento; cada pintazo abre un cráter, la tierra pintada
   resbala y un capi pintado al 100 % o que cae al río queda fuera.
+- **En Capis a Pintazos los capis son panas de verdad y cargan La Bazuca de Pepazo.**
+  Tu capi líder lleva tu pana con su ropa y gorra; cada capi tiene pañoleta de su equipo,
+  levanta la bazuca para apuntar, la carga con una gota de pintura en la punta,
+  retrocede con el disparo, vuela el cohete de Pepazo, se encoge al recibir un pintazo
+  y celebra al ganar.
 
 ## 0.8.0 - 2026-10-31
 

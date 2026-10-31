@@ -5,7 +5,8 @@ import { buildMap, llanosHeight, LLANOS, SPAWNS } from '../public/map-rules.js';
 import { planShot, bestShot, createBot } from '../public/bot.js';
 import { fillHeights, surfaceY } from '../../../engine/play/terrain-mask.js';
 import { simulateFlight, aimVelocity } from '../../../engine/play/ballistic.js';
-import { muzzle, flightOptions } from '../public/rules.js';
+import { muzzle, shoulder, flightOptions } from '../public/rules.js';
+import { aiming, bodyPose, barrelPose, CARRY_PITCH, CARRY_DROP } from '../public/poses.js';
 
 const DT = 1 / 60;
 const run = (m, seconds, input = () => ({})) => { for (let t = 0; t < seconds && m.phase !== 'finished'; t += DT) tickMatch(m, DT, input(m)); };
@@ -122,4 +123,35 @@ test('a bot fires on its own turn, before the clock, and two bots finish a match
   assert.ok(fired.length >= 4, `${fired.length} shots`);
   assert.ok(fired.every(f => f.left > 0), 'every shot left before time ran out');
   assert.equal(m.phase, 'finished', `still ${m.phase} after ${m.turn.n} turns`);
+});
+
+test('the shell leaves La Bazuca\'s barrel tip, on the shoulder, never inside its own capi', () => {
+  const m = flatMatch(), c = activeCapy(m);
+  for (const facing of [1, -1]) for (let a = RULES.aimMin; a <= RULES.aimMax; a += .05) {
+    const p = muzzle(c, a, facing), o = shoulder(c), own = center(c);
+    assert.ok(Math.abs(Math.hypot(p.x - o.x, p.y - o.y) - RULES.muzzle) < 1e-9, 'the barrel is RULES.muzzle long from the shoulder pivot');
+    assert.equal(Math.sign(p.x - c.x), facing, 'the barrel points the way the capi faces');
+    assert.ok(Math.hypot(p.x - own.x, p.y - own.y) > RULES.radius + .1, `aim ${a.toFixed(2)} starts outside the shooter's body`);
+  }
+  // A fired shell starts exactly at that tip.
+  c.aim = .4; fire(m, .5);
+  assert.deepEqual({ x: m.shot.x, y: m.shot.y }, muzzle(c, .4, c.facing));
+});
+
+test('poses follow the match: only the capi on its turn raises La Bazuca', () => {
+  const m = flatMatch(), me = activeCapy(m), other = m.capys.find(c => c !== me);
+  assert.equal(aiming(m, me), true);
+  assert.equal(aiming(m, other), false);
+  assert.deepEqual(barrelPose(m, me), { pitch: me.aim, drop: 0 });
+  assert.deepEqual(barrelPose(m, other), { pitch: CARRY_PITCH, drop: CARRY_DROP });
+  assert.equal(bodyPose(m, me, 0), 'idle');
+  assert.equal(bodyPose(m, me, 2.4), 'walk');
+  me.grounded = false; me.vy = 3; assert.equal(bodyPose(m, me), 'rise');
+  me.vy = -3; assert.equal(bodyPose(m, me), 'fall');
+  other.out = 'water'; assert.equal(bodyPose(m, other), 'sink');
+  other.out = 'paint'; assert.equal(bodyPose(m, other), 'splat');
+  m.phase = 'flight'; assert.equal(aiming(m, me), false, 'the barrel lowers once the shell is away');
+  m.phase = 'finished'; m.winner = 0; me.grounded = true;
+  assert.equal(bodyPose(m, me), 'cheer');
+  assert.equal(bodyPose(m, m.capys.find(c => c.team === 1 && !c.out)), 'sulk');
 });
