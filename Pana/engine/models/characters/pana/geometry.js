@@ -110,3 +110,31 @@ export function patch(parent, name, shape, material, depthAt, detail = 40) {
   g.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   return mesh(parent, name, g, material);
 }
+
+// The chef outfit's body fit (a 31x37 depth grid and the neck strap's rays) is
+// the same for every pana of a tessellation profile, and it costs ~2 s of ray
+// casting on every page load. chef.js keeps it in memory per page; this keeps
+// it between pages, so coming back to Mi pana (or any game) does not redo it.
+//
+// Entries are keyed by a fingerprint of the geometry they were fitted to, so a
+// change to the body model is a cache miss, never a stale fit. Values are
+// Float32 bytes (exact), a handful of entries, one localStorage key.
+const STORE = 'pana:fit:v1', LIMIT = 8;
+const toBase64 = array => { let s = ''; const bytes = new Uint8Array(array.buffer, array.byteOffset, array.byteLength); for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
+const fromBase64 = text => { const s = atob(text), bytes = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i); return new Float32Array(bytes.buffer); };
+function read() {
+  try { const all = JSON.parse(localStorage.getItem(STORE)); return all && typeof all === 'object' && !Array.isArray(all) ? all : {}; } catch { return {}; }
+}
+// The saved Float32Array for `key`, or null when it is missing or the wrong size.
+export function readFit(key, length) {
+  const text = read()[key];
+  if (typeof text !== 'string') return null;
+  try { const values = fromBase64(text); return values.length === length && values.every(Number.isFinite) ? values : null; } catch { return null; }
+}
+export function writeFit(key, values) {
+  try {
+    const all = read(); delete all[key]; all[key] = toBase64(Float32Array.from(values));
+    for (const old of Object.keys(all).slice(0, -LIMIT)) delete all[old];
+    localStorage.setItem(STORE, JSON.stringify(all));
+  } catch { /* Quota or private browsing: the fit is still right for this page. */ }
+}
