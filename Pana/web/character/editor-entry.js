@@ -6,7 +6,7 @@ import { cachedPortrait } from '/engine/portrait-cache.js';
 padControls({ playing: () => false });
 // Your pana covers the page while the editor and its 3D model load, so the
 // panel never fills in under the player.
-const cover = showCover({ title: 'Mi pana', portrait: cachedPortrait(loadAvatar()) || '', text: 'Preparando tu pana…' });
+const cover = showCover({ title: 'Mi pana', image: '/images/launcher/personaje-cover.webp', portrait: cachedPortrait(loadAvatar()) || '', text: 'Preparando tu pana…' });
 try {
   await import('./editor.js');
   document.querySelector('.panel').inert = false;

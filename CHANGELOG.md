@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Mi pana vuelve a abrir en un par de segundos, con un vestidor de fondo.**
+  Volver al editor ya no tarda cinco a ocho segundos: el ajuste del cuerpo del
+  chef (lo que más tardaba) se guarda en el navegador y solo se calcula la
+  primera vez. La pantalla de carga ahora muestra a tu pana en un vestidor, y la
+  página pide de antemano el editor y Three.js.
 - **Pepazo dispara de verdad: bolas chicas, rápidas y con respuesta clara.**
   Las bolas de pintura son más pequeñas y vuelan casi como un rayo, con una
   estela para seguirlas, y la Chispa dispara cinco veces por segundo. Cada tiro
