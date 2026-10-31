@@ -171,6 +171,24 @@ stationary pana an Experto bot scores more than a Fácil one (rules test).
 The phone browser check measures movement along `room.current` (the input
 the pad sent), not a direction captured before the first frame set the yaw.
 
+## HUD, viewmodel and sound
+
+- `hud-model.js` is the pure arithmetic (race rows, the 12-ball pepas row, low
+  ammo, the angle a hit came from, the clock) and is unit tested in Node, so it
+  imports nothing but `locKey`. `combat-hud.js` draws it into the `#hud` ids
+  that `game.js` already reads; `hud-banderin.css` is the look (Banderín:
+  night chips and yellow plates skewed 10deg with hard ink shadows, sized from
+  `--u`, 1px of a 1600x900 screen). `minimap.js` is a round map in the same style.
+- The one knockout line lives in the killfeed (yours in yellow, the one that took
+  you out with a coral bar), so `combat.duplicate()` keeps the bottom pill quiet
+  for those two messages. Team scores are in the race row, not the pill.
+- `viewmodel.js` poses the first-person marker (sway, recoil, reload, sprint
+  lowering) from the player fields; the marker models are in
+  `engine/models/props/paintball-kit.js`, one silhouette per marker.
+- Sound goes through the shared library (`engine/sfx.js`) via the `sounds.js`
+  facade; steps come from `engine/play/footsteps.js`. See `shared-sfx.md` and
+  `shared-player.md`.
+
 ## Notes for agents
 
 Keep simulation in pure rules and room authorization on the server. Never add

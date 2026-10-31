@@ -8,6 +8,21 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo estrena marcador: la carrera arriba, tus pepas abajo y un mapa redondo.**
+  Arriba van tú, el reloj y el rival más cercano (o tu equipo contra el otro),
+  con la meta debajo; abajo a la izquierda tu aguante, tu resistencia y la
+  granada, y abajo a la derecha las pepas que te quedan con el nombre de la
+  marcadora. Al recargar o quedarte sin pepas sale una barra bajo la mira, una
+  flecha coral te señala de dónde te pintaron, la racha se ve desde la segunda
+  pintada y el panel de eliminación toma el color de quien te sacó.
+- **Cada marcadora de Pepazo se ve distinta y se mueve en primera persona.**
+  La Chispa, El Trueno, Las Gemelas y El Cohetón tienen cada una su silueta; al
+  mirar se balancean, patean al disparar, bajan al correr y se recargan con su
+  propia animación.
+- **Pepazo suena: cada marcadora dispara distinto y se oyen golpes, recargas y saltos.**
+  Salpicaduras al caer, un quejido cuando te pintan, clic al quedarte sin pepas,
+  recarga, aterrizaje y el pitido de la cuenta regresiva, todo con la biblioteca
+  de sonidos compartida.
 - **Mi pana estrena vestidor: m?s claro, con menos texto y con la tienda a un toque.**
   El editor ahora es de pantalla completa con el toldo rojo y blanco de la
   tienda y el garaje, un pana grande sobre su tarima y colores c?lidos en vez
