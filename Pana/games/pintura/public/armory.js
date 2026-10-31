@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { createPaintKit, createPaintVest } from '/engine/models/props/paintball-kit.js';
-import { MARKERS, CLASSES, ATTACHMENTS, OPTICS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, cleanKit, kitStats, kitRating, canAttach, setSlot, changeWeapon, opticOf, shotInterval, dpsOf } from './armory-data.js';
+import { MARKERS, WEAPONS, ARMORY_CLASSES, ATTACHMENTS, throwRange, meleeInterval, OPTICS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, cleanKit, kitStats, kitRating, canAttach, setSlot, changeWeapon, opticOf, shotInterval, dpsOf } from './armory-data.js';
 import { Arena } from './rules.js';
 import { ICONS } from '/engine/icons.js';
 import { pixelRatio } from '/engine/settings.js';
@@ -11,7 +11,7 @@ import { loc, locn, locKey, formatList } from '/engine/i18n.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
 // The empty choice of an attachment slot.
 const NONE={id:'',name:locKey('Ninguno'),blurb:locKey('Deja este espacio vacío.')};
-const classOfMarker=id=>CLASSES.find(c=>c.weapons.includes(id))||CLASSES[0];
+const classOfMarker=id=>ARMORY_CLASSES.find(c=>c.weapons.includes(id))||ARMORY_CLASSES[0];
 // Pepazos with up to two decimals: La China's stones paint half of one.
 const pepazos=n=>locn(n,'{n} pepazo','{n} pepazos',{n:String(Math.round(n*100)/100)});
 // notify: a toast for news that arrives while the armory is closed (mid-round).
@@ -21,7 +21,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  const dialog=document.getElementById('armory'),choices=document.getElementById('armory-choices'),note=document.getElementById('armory-note');
  // Says why a pick changed or did not stick: inline while the armory is open, a toast otherwise.
  const say=text=>{note.textContent=text;if(!dialog.open)notify(text);};
- const weaponName=id=>loc(MARKERS.find(m=>m.id===id).name);
+ const weaponName=id=>loc(WEAPONS.find(m=>m.id===id).name);
  const dropNote=(dropped,weapon)=>locn(dropped.length,'{parts} no cabe en {weapon} y salió del kit.','{parts} no caben en {weapon} y salieron del kit.',{parts:formatList(dropped.map(id=>loc(ATTACHMENTS.find(a=>a.id===id).name)),{type:'conjunction'}),weapon:weaponName(weapon)});
  room.onKitRejected=({reason}={})=>say(reason==='playing'?loc('No se pueden cambiar accesorios en plena ronda.'):loc('La sala no aceptó el kit. Inténtalo otra vez.'));
  const rating=document.createElement('span');rating.id='armory-rating';document.getElementById('armory-name').after(rating);
@@ -32,7 +32,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  const icons={weapon:'kitBarrel',attachments:'plus',armor:'kitVest',grenade:'kitGrenade',finish:'kitPaint',charm:'wardrobe-cuello',pattern:'kitPaint'};
  for(const b of document.querySelectorAll('#armory-slots button')){const icon=document.createElement('i');icon.innerHTML=ICONS[icons[b.dataset.slot]];b.insertBefore(icon,b.querySelector('b'));}
  let shown=null,ratedOptions='',category='weapon',slot=0,renderer=null,scene,camera,model,avatar,vest,target,range=null,acc=0; const balls=new Map();
- const catalog={weapon:MARKERS,attachments:ATTACHMENTS,armor:ARMOR,grenade:GRENADES,finish:FINISHES,charm:CHARMS,pattern:PATTERNS};
+ const catalog={weapon:WEAPONS,attachments:ATTACHMENTS,armor:ARMOR,grenade:GRENADES,finish:FINISHES,charm:CHARMS,pattern:PATTERNS};
  function paintStats(value=kit){
   ratedOptions=JSON.stringify(room.state.options);
   rating.innerHTML=ratingBadge(kitRating(value,room.state.options));
@@ -40,7 +40,14 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   // Precision is the aimed spread (La Lejana through its scope); a marker that flies straight shows its shot speed, which a barrel raises; damage counts pepazos per hit, a direct rocket knocks out.
   const aimed=s=>s.aimSpread??s.spread;
   // Cadence is the rate the simulation really fires at (whole 50 ms ticks); Pintura/s is pepazos a second with every ball landing.
-  const rows=[[loc('Alcance'),s=>s.speed*s.life,s=>`${Math.round(s.speed*s.life)} m`,80,false],[loc('Daño'),s=>s.direct?3:s.damage*s.pellets,s=>s.direct?loc('K.O. directo'):s.pellets>1?`${s.pellets} × ${pepazos(s.damage)}`:pepazos(s.damage),3,false],[loc('Pintura/s'),dpsOf,s=>dpsOf(s).toFixed(1),10,false],[loc('Precisión'),s=>Math.max(0,1-aimed(s)/.3),s=>!aimed(s) && !s.aims?`${loc('Recta')} · ${Math.round(s.speed)} m/s`:`${(aimed(s)*180/Math.PI).toFixed(1)}°${s.aims?` · ${Math.round(s.zoom*100)/100}×`:''}`,1,false],[loc('Cadencia'),s=>1/shotInterval(s.cadence),s=>`${(1/shotInterval(s.cadence)).toFixed(1)}/s`,20,false],[loc('Capacidad'),s=>s.magazine,s=>`${s.magazine}${s.reserve!=null?' + '+s.reserve:''}`,60,false],[loc('Recarga'),s=>s.reload,s=>`${s.reload.toFixed(1)} s`,4,true],[loc('Movilidad'),s=>s.mobility,s=>`${Math.round(s.mobility*100)}%`,1.15,false],[loc('Aguante'),s=>s.toughness,s=>locn(s.toughness,'{n} pepazo','{n} pepazos'),6,false]];
+  // A melee weapon has its own rows: reach (and the throw), pepazos per blow, swings a second, mobility, aguante.
+  const melee=[[loc('Alcance'),s=>s.melee?s.reach:s.speed*s.life,s=>s.melee?`${s.reach.toFixed(1)} m${s.throwable?` · ${loc('lanzada')} ${Math.round(throwRange(s.throwable))} m`:''}`:`${Math.round(s.speed*s.life)} m`,3,false],
+   [loc('Daño'),s=>s.melee?s.damage:s.damage*s.pellets,s=>s.melee&&s.sweetSpot?`${pepazos(s.damage)} · ${loc('con la punta')} ${s.damage+s.sweetSpot.bonus}`:pepazos(s.damage),4,false],
+   [loc('Golpes/s'),s=>s.melee?1/meleeInterval(s):1/shotInterval(s.cadence),s=>`${(s.melee?1/meleeInterval(s):1/shotInterval(s.cadence)).toFixed(1)}/s`,4,false],
+   [loc('Pintura/s'),dpsOf,s=>dpsOf(s).toFixed(1),10,false],
+   ...(next.throwable?[[loc('Vuelve en'),s=>s.throwable?.recall??0,s=>s.throwable?`${s.throwable.recall.toFixed(1)} s`:'–',3,true]]:[]),
+   [loc('Movilidad'),s=>s.mobility,s=>`${Math.round(s.mobility*100)}%`,1.15,false],[loc('Aguante'),s=>s.toughness,s=>locn(s.toughness,'{n} pepazo','{n} pepazos'),6,false]];
+  const rows=next.melee?melee:[[loc('Alcance'),s=>s.speed*s.life,s=>`${Math.round(s.speed*s.life)} m`,80,false],[loc('Daño'),s=>s.direct?3:s.damage*s.pellets,s=>s.direct?loc('K.O. directo'):s.pellets>1?`${s.pellets} × ${pepazos(s.damage)}`:pepazos(s.damage),3,false],[loc('Pintura/s'),dpsOf,s=>dpsOf(s).toFixed(1),10,false],[loc('Precisión'),s=>Math.max(0,1-aimed(s)/.3),s=>!aimed(s) && !s.aims?`${loc('Recta')} · ${Math.round(s.speed)} m/s`:`${(aimed(s)*180/Math.PI).toFixed(1)}°${s.aims?` · ${Math.round(s.zoom*100)/100}×`:''}`,1,false],[loc('Cadencia'),s=>1/shotInterval(s.cadence),s=>`${(1/shotInterval(s.cadence)).toFixed(1)}/s`,20,false],[loc('Capacidad'),s=>s.magazine,s=>`${s.magazine}${s.reserve!=null?' + '+s.reserve:''}`,60,false],[loc('Recarga'),s=>s.reload,s=>`${s.reload.toFixed(1)} s`,4,true],[loc('Movilidad'),s=>s.mobility,s=>`${Math.round(s.mobility*100)}%`,1.15,false],[loc('Aguante'),s=>s.toughness,s=>locn(s.toughness,'{n} pepazo','{n} pepazos'),6,false]];
   document.getElementById('armory-stats').innerHTML=rows.map(([name,get,text,max,inverse])=>{const a=Math.round(Math.min(1,get(current)/max)*10),b=Math.round(Math.min(1,get(next)/max)*10),gain=inverse?b<a:b>a;return `<div><dt>${name}</dt><dd><span class="armory-bars">${Array.from({length:10},(_,i)=>`<i class="${i<Math.min(a,b)?'on':i<Math.max(a,b)?gain?'gain':'loss':''}"></i>`).join('')}</span><b>${text(next)}</b></dd></div>`;}).join('');
  }
  function paint() {
@@ -55,16 +62,18 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   const attaching=category==='attachments', arming=category==='weapon';
   back.textContent=attaching?loc('‹ Atrás · Accesorio {n}',{n:slot+1}):loc('‹ Atrás');
   // Markers come by class: a chip per class (nickname · kind), then that class's markers.
-  if(arming && !CLASSES.includes(shown)) shown=classOfMarker(kit.weapon);
-  if(arming) tabs.replaceChildren(...CLASSES.map(c=>{const t=document.createElement('button');t.type='button';t.className='armory-class';t.dataset.class=c.id;t.setAttribute('aria-pressed',String(c===shown));t.innerHTML=`<b>${esc(loc(c.name))}</b><span>${esc(loc(c.kind))}</span>`;t.onclick=()=>{shown=c;paint();};return t;}));
-  const items=attaching?[NONE,...ATTACHMENTS]:arming?MARKERS.filter(m=>shown.weapons.includes(m.id)):catalog[category];
+  if(arming && !ARMORY_CLASSES.includes(shown)) shown=classOfMarker(kit.weapon);
+  if(arming) tabs.replaceChildren(...ARMORY_CLASSES.map(c=>{const t=document.createElement('button');t.type='button';t.className='armory-class';t.dataset.class=c.id;t.setAttribute('aria-pressed',String(c===shown));t.innerHTML=`<b>${esc(loc(c.name))}</b><span>${esc(loc(c.kind))}</span>`;t.onclick=()=>{shown=c;paint();};return t;}));
+  // A melee weapon lists its own three parts, a marker its four.
+  const melee=WEAPONS.find(w=>w.id===kit.weapon)?.melee;
+  const items=attaching?[NONE,...ATTACHMENTS.filter(a=>!!a.melee===!!melee)]:arming?WEAPONS.filter(m=>shown.weapons.includes(m.id)):catalog[category];
   choices.replaceChildren(...(arming?[tabs]:[]),...items.map(item=>{
    const b=document.createElement('button');b.type='button';b.className='armory-choice';b.dataset.id=item.id;
    const at=attaching && item.id ? kit.attachments.indexOf(item.id) : -1, fits=!attaching || !item.id || canAttach(kit.weapon,item.id), elsewhere=at>=0 && at!==slot;
    b.setAttribute('aria-pressed',String(attaching?(kit.attachments[slot]??'')===item.id:kit[category]===item.id));b.disabled=!fits;
    // A Mira says which one this marker takes; a marker card shows its real numbers.
    const sight=item.id==='optic' && opticOf(kit.weapon) ? `${loc(OPTICS[opticOf(kit.weapon)].name)}: ` : '';
-   const numbers=arming?(()=>{const s=kitStats({weapon:item.id},room.state.options);return ` ${dpsOf(s).toFixed(1)} ${loc('pepazos/s')} · ${Math.round(s.speed*s.life)} m · ${s.magazine}${s.reserve!=null?' + '+s.reserve:''}`;})():'';
+   const numbers=arming?(()=>{const s=kitStats({weapon:item.id},room.state.options);return s.melee?` ${pepazos(s.damage)} · ${s.reach.toFixed(1)} m · ${(1/meleeInterval(s)).toFixed(1)} ${loc('golpes/s')}`:` ${dpsOf(s).toFixed(1)} ${loc('pepazos/s')} · ${Math.round(s.speed*s.life)} m · ${s.magazine}${s.reserve!=null?' + '+s.reserve:''}`;})():'';
    const blurb=!fits?loc('No cabe en esta marcadora: no tiene dónde montarlo'):elsewhere?loc('Está en el accesorio {n}; elígelo para moverlo aquí.',{n:at+1}):item.blurb?sight+loc(item.blurb)+numbers:loc('Solo cambia el estilo.');
    b.innerHTML=`<b>${esc(loc(item.name))}</b><span>${esc(blurb)}</span>`;
    // Read the kit when the event fires, not when the button was drawn.
@@ -79,7 +88,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  // Number keys and the pause menu: the room takes the marker from input mid-round,
  // so only the lobby sends the kit; the saved kit follows either way.
  function setWeapon(id){
-  if(id===kit.weapon || !MARKERS.some(m=>m.id===id))return;
+  if(id===kit.weapon || !WEAPONS.some(m=>m.id===id))return;
   const {kit:next,dropped}=changeWeapon(kit,id);kit=next;
   if(room.state.phase==='playing'){store();room.kit=kit;onPick(kit.weapon);}else save();
   if(dropped.length)say(dropNote(dropped,kit.weapon));

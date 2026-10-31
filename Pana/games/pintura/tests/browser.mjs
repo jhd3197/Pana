@@ -158,6 +158,48 @@ try {
   await b.locator('#start').click(); await wait(c, () => pinturaDebug.room.state.round === 2 && pinturaDebug.room.state.phase === 'playing' && pinturaDebug.room.state.mapId === 'muelle');
   console.log('ok: real round end agrees across clients, Otra ronda returns to the lobby and the next map is the host\'s pick');
   await b.close(); await c.close();
+  // Los del pescozón: La Chancleta from the armory, a swing that paints the bot in
+  // front, then the throw: it leaves the hand (the held model hides, the real
+  // sandal flies), paints a bot 12 m away and comes back to the hand.
+  const s = await open('Chancla', `${code}-melee`);
+  await s.locator('#open-armory').click(); await s.locator('[data-slot="weapon"]').click();
+  await s.locator('#armory-classes [data-class="melee"]').click();
+  assert.match(await s.locator('#armory-choices [data-id="sandal"]').textContent(), /La Chancleta/);
+  await s.locator('#armory-choices [data-id="sandal"]').click();
+  assert.match(await s.locator('#armory-class').textContent(), /Cuerpo a cuerpo/);
+  assert.match(await s.locator('#armory-stats').textContent(), /Golpes\/s/); assert.doesNotMatch(await s.locator('#armory-stats').textContent(), /Capacidad/);
+  await s.locator('#armory-parts-back').click(); await s.locator('[data-slot="attachments"][data-index="0"]').click();
+  assert.equal(await s.locator('#armory-choices [data-id="barrel"]').count(), 0, 'melee lists its own parts');
+  await s.locator('#armory-choices [data-id="tape"]').click(); await s.locator('#armory-parts-back').click(); await s.locator('#armory-close').click();
+  assert.equal(await s.evaluate(() => JSON.parse(localStorage.getItem('pintura:kit')).weapon), 'sandal');
+  // The positions below are on the plaza (open from x -14, z 22 down to z 10).
+  await s.evaluate(() => pinturaDebug.room.selectMap('plaza')); await wait(s, () => pinturaDebug.room.state.mapId === 'plaza');
+  await s.locator('#practice').click();
+  await wait(s, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing' && !pinturaDebug.room.state.loading && !pinturaDebug.room.state.countdown);
+  // The bots stand still; the pana looks down -z at the first one, `gap` metres away.
+  const place = gap => s.evaluate(gap => {
+    const g = pinturaDebug.room.game, [me, bot] = g.players;
+    g.bot = () => ({ x: 0, z: 0, ax: 0, az: 1, weapon: null, fire: false, alt: false, aim: false, reload: false, sprint: false, grenade: false, pitch: 0, charge: 0, jump: 0 });
+    g.players.slice(2).forEach(p => Object.assign(p, { x: 20, z: -20 }));
+    Object.assign(me, { x: -14, z: 22, shield: 0, respawn: 0 }); Object.assign(bot, { x: -14, z: 22 - gap, shield: 0, respawn: 0, paint: 0, hits: 0 });
+    pinturaDebug.world.look(-pinturaDebug.world.yaw, -pinturaDebug.world.pitch);
+  }, gap);
+  await s.locator('#world').focus(); await place(1.4);
+  await wait(s, `${mine}.kit.weapon === 'sandal' && ${mine}.melee.phase === 'ready'`);
+  await s.keyboard.press('Enter');
+  await wait(s, () => pinturaDebug.room.state.players[1].hits > 0 && pinturaDebug.room.state.players[0].smacks > 0);
+  assert.equal(await s.evaluate(() => pinturaDebug.room.state.players[0].ammo), 0, 'no ammo involved');
+  console.log('ok: La Chancleta picked by its class chip with melee stats and parts; a swing paints the bot in front');
+  await wait(s, () => !pinturaDebug.room.state.players[1].respawn); await place(12);
+  await wait(s, `${mine}.melee.phase === 'ready' && pinturaDebug.world.held.visible`);
+  await s.keyboard.press('v');
+  await wait(s, () => pinturaDebug.room.state.thrown.length > 0 && !pinturaDebug.world.held.visible && pinturaDebug.world.scene.getObjectByName('Thrown sandal')?.visible);
+  await wait(s, () => pinturaDebug.room.state.players[1].hits > 0);
+  assert.equal(await s.evaluate(() => pinturaDebug.room.state.events.filter(e => e.type === 'out').at(-1).thrown), true);
+  await wait(s, `${mine}.melee.phase === 'ready' && ${mine}.recalls > 0 && pinturaDebug.world.held.visible`);
+  assert.match(await s.locator('#aim').textContent(), /Lanzar/);
+  console.log('ok: V throws the chancla on an arc: it leaves the hand, paints a bot 12 m away and comes back');
+  await s.close();
   }
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` }); await m.locator('#practice').tap();
   await wait(m, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing' && !pinturaDebug.room.state.loading && !pinturaDebug.room.state.countdown); assert.ok(await m.locator('#fire').isVisible());

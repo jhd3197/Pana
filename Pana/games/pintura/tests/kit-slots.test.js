@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Arena } from '../public/rules.js';
-import { ATTACHMENT_SLOTS, ATTACHMENT_RULES, ATTACHMENTS, MARKERS, canAttach, changeWeapon, cleanKit, kitStats, setSlot, slotsOf } from '../public/armory-data.js';
+import { ATTACHMENT_SLOTS, ATTACHMENT_RULES, ATTACHMENTS, MARKERS, MELEE, canAttach, changeWeapon, cleanKit, kitStats, setSlot, slotsOf } from '../public/armory-data.js';
 import { PAINT_MOUNTS } from '../../../engine/play/paint-arsenal.js';
 
 test('attachment slots keep their position', () => {
@@ -56,7 +56,9 @@ test('mounts come from the model: what a marker has a mount for, it takes', () =
     for (const id of ATTACHMENT_RULES[m.id]) assert.ok(ATTACHMENTS.some(a => a.id === id));
   }
   // Every marker in today's kit has a muzzle, a feed, a stock mount and a rail or bracket.
-  for (const m of MARKERS) for (const a of ATTACHMENTS) assert.equal(canAttach(m.id, a.id), true, `${m.id} ${a.id}`);
+  for (const m of MARKERS) for (const a of ATTACHMENTS) assert.equal(canAttach(m.id, a.id), !a.melee, `${m.id} ${a.id}`);
+  // The melee set takes only its own three parts (grip tape, paint drips, wrist strap).
+  for (const m of MELEE) for (const a of ATTACHMENTS) assert.equal(canAttach(m.id, a.id), !!a.melee, `${m.id} ${a.id}`);
   assert.equal(canAttach('nope', 'barrel'), false); assert.equal(canAttach('pistol', 'nope'), false);
 });
 

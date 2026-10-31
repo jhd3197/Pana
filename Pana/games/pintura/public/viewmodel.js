@@ -32,14 +32,41 @@ const CLASS_RECOIL = {
 export const recoilOf = weapon => RECOIL[weapon] || CLASS_RECOIL[MARKERS.find(m => m.id === weapon)?.class] || RECOIL.pistol;
 const ease = t => t * t * (3 - 2 * t);
 
+// A melee weapon (its model stands on +Y from the grip) in three poses: carried
+// leaning forward, cocked over the right shoulder, and swung through to the left.
+// [rotation x, rotation z, x, y] for each; a swing blends rest → cocked over the
+// windup, snaps to the strike in STRIKE seconds and eases back over the recovery.
+const REST = [-.45, -.35, .24, -.32], COCKED = [.55, -1.05, .3, -.2], THROUGH = [-1.65, .55, -.02, -.36], STRIKE = .09;
+const mix = (a, b, k, out) => { for (let i = 0; i < 4; i++) out[i] = a[i] + (b[i] - a[i]) * k; return out; };
+// The pose `since` seconds into a swing with this windup and recovery, into `out` (no allocation).
+export function swingPose(since, windup, recovery, out = [0, 0, 0, 0]) {
+  if (!(since >= 0)) return mix(REST, REST, 0, out);
+  if (since < windup) return mix(REST, COCKED, ease(since / windup), out);
+  if (since < windup + STRIKE) return mix(COCKED, THROUGH, (since - windup) / STRIKE, out);
+  const back = Math.max(.05, recovery - STRIKE);
+  return mix(THROUGH, REST, ease(Math.min(1, (since - windup - STRIKE) / back)), out);
+}
+
 export function createViewmodel() {
-  let swap = 0, sprint = 0, flash = 0, lastFired = null, lastWeapon = '', t = 0;
-  const recoil = createRecoil();
+  let swap = 0, sprint = 0, flash = 0, lastFired = null, lastWeapon = '', t = 0, lastSwings = null, since = -1;
+  const recoil = createRecoil(), pose = [0, 0, 0, 0];
   return {
-    // o: { held, weapon, fired, reload, reloadTime, sprint, bob, sway, down, air, push, aim }
+    // o: { held, weapon, fired, reload, reloadTime, sprint, bob, sway, down, air, push, aim,
+    //      melee: { swings, windup, recovery } for a melee weapon }
     update(dt, o) {
       t += dt; const r = recoilOf(o.weapon), held = o.held;
-      if (o.weapon !== lastWeapon) { swap = lastWeapon ? 1 : 0; lastWeapon = o.weapon; recoil.reset(); lastFired = o.fired; }
+      if (o.weapon !== lastWeapon) { swap = lastWeapon ? 1 : 0; lastWeapon = o.weapon; recoil.reset(); lastFired = o.fired; lastSwings = o.melee?.swings ?? null; since = -1; }
+      if (o.melee) {
+        // A new swing count starts the swing; it plays on its own clock, smooth between snapshots.
+        if (lastSwings !== null && o.melee.swings > lastSwings) since = 0; else if (since >= 0) since += dt;
+        lastSwings = o.melee.swings; if (since > o.melee.windup + o.melee.recovery + .2) since = -1;
+        swap = Math.max(0, swap - dt * 3.2); sprint += ((o.sprint && !o.down ? 1 : 0) - sprint) * (1 - Math.exp(-dt * 9));
+        swingPose(since, o.melee.windup, o.melee.recovery, pose);
+        const sway = o.sway || 0, air = o.air || 0;
+        held.position.set(pose[2] + Math.sin(o.bob) * .014 * sway + sprint * .04, pose[3] + Math.abs(Math.cos(o.bob)) * .012 * sway - sprint * .08 - swap * .3 - air * .04 + Math.sin(t * 1.4) * .004, -.42 + (o.push || 0));
+        held.rotation.set(pose[0] - sprint * .35 - swap * .9, 0, pose[1] - sprint * .25);
+        return { flash: 0, kick: 0, shot: false, swing: since };
+      }
       const shot = lastFired !== null && o.fired > lastFired;
       if (shot) { recoil.fire(r); flash = 1; }
       lastFired = o.fired;
@@ -61,6 +88,6 @@ export function createViewmodel() {
       held.userData.hands?.forEach((hand, i) => { hand.position.z = lastFired % 2 === i ? kick * r.back * 2.5 : 0; });
       return { flash, kick, shot };
     },
-    reset() { recoil.reset(); swap = sprint = flash = 0; lastFired = null; lastWeapon = ''; },
+    reset() { recoil.reset(); swap = sprint = flash = 0; lastFired = null; lastWeapon = ''; lastSwings = null; since = -1; },
   };
 }

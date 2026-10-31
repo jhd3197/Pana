@@ -8,7 +8,7 @@ sound by what it is, never by how it is built.
 
 | Module | What it is |
 |---|---|
-| `engine/sfx.js` | `sfx.step(surface, {sprint, foot, volume})`, `jump`, `land`, `shot(kind)`, `impact(surface)`, `splat`, `boom(size, {volume})`, `hitConfirm`, `hurt`, `reload(kind, seconds)`, `reloaded`, `dry`, `swap`, `swish`, `tick`, `confirm`, `back`, `count(n)`, `go`, `boing` (a cartoon hop), `squeak` (a startled small animal), `splash(size)` (falling into water), `chime` (your turn), `sting(win)` (match won or lost; effects, not music). Also exports the two primitives `burst` (filtered noise that glides and decays) and `pitch` (a falling or rising thump) for building a new sound. |
+| `engine/sfx.js` | `sfx.step(surface, {sprint, foot, volume})`, `jump`, `land`, `shot(kind)`, `impact(surface)`, `splat`, `boom(size, {volume})`, `hitConfirm`, `hurt`, `reload(kind, seconds)`, `reloaded`, `dry`, `swap`, `swish`, `swing(material)` and `smack(material)` (a melee swing and its blow: `wood`, `slap`, `squish`, `swish`, `clang`, `rattle`), `pop` (something back in the hand), `tick`, `confirm`, `back`, `count(n)`, `go`, `boing` (a cartoon hop), `squeak` (a startled small animal), `splash(size)` (falling into water), `chime` (your turn), `sting(win)` (match won or lost; effects, not music). Also exports the two primitives `burst` (filtered noise that glides and decays) and `pitch` (a falling or rising thump) for building a new sound. |
 | `engine/vehicle-audio.js` | `createMotor(sound, {profile, topSpeed})`, `createTyres(sound)`, `vehicleSfx.skid / boost / crash(power, kind)`. |
 | `engine/vehicle-revs.js` | The pure half: `PROFILES` and `stepRevs` (gearbox, shift cut, rev slew). Unit-tested in Node. |
 
@@ -48,4 +48,4 @@ to `PROFILES` in `vehicle-revs.js` (the test checks it fires in an audible band)
 
 ## Used by
 
-Carreritas (tyres, boost, crash, drift skid; its car motor is still the older `sound.startEngine` in `engine/fx.js`, players preferred it to `createMotor`), Pepazo (everything on foot and every gun), Capis a Pintazos (every sound it makes).
+Carreritas (tyres, boost, crash, drift skid; its car motor is still the older `sound.startEngine` in `engine/fx.js`, players preferred it to `createMotor`), Pepazo (everything on foot, every gun and every melee weapon), Capis a Pintazos (every sound it makes).

@@ -1,6 +1,6 @@
 import { loc, locn } from '/engine/i18n.js';
 import { icon } from '/engine/icons.js';
-import { kitStats, MARKERS, CLASSES, ATTACHMENTS, OPTICS } from './armory-data.js';
+import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, ATTACHMENTS, OPTICS } from './armory-data.js';
 import { TARGET } from './rules.js';
 import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES } from './hud-model.js';
 
@@ -8,7 +8,7 @@ import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES } from './hud-model.j
 // prompt, your streak and the arrow that points at whoever painted you. game.js hands
 // it the room state each render; hud-model.js holds the arithmetic, hud-banderin.css the look.
 // Under the pepas: the marker's name and class, and an icon per fitted part.
-const PART_ICON = { barrel: 'kitBarrel', hopper: 'kitHopper', stock: 'kitStock', optic: 'kitOptic' };
+const PART_ICON = { barrel: 'kitBarrel', hopper: 'kitHopper', stock: 'kitStock', optic: 'kitOptic', tape: 'plus', drip: 'kitPaint', strap: 'plus' };
 export function createCombatHud(doc = document) {
   const $ = id => doc.getElementById(id), body = doc.body;
   const set = (el, text) => { if (el.textContent !== text) el.textContent = text; };
@@ -28,17 +28,20 @@ export function createCombatHud(doc = document) {
       set($('position'), r.teams ? goal : `${goal} · ${loc('{rank} de {n} panas', { rank: r.rank, n: r.n })}`);
       set($('timer'), clock(state.time)); $('clock').classList.toggle('low', state.time <= 30);
 
-      const stats = kitStats(me?.kit, state.options), ammo = me?.ammo ?? stats.magazine;
+      const stats = kitStats(me?.kit, state.options), ammo = me?.ammo ?? stats.magazine, melee = !!stats.melee;
       $('hud').style.setProperty('--pepa', me?.color || 'var(--pk-yellow)');
       set($('me-name'), me?.name || '');
-      const lit = pepas(ammo, stats.magazine);
+      // A melee weapon has no pepas: the plate shows its pepazos per blow over a swing bar (--cd).
+      $('hop').classList.toggle('melee', melee);
+      const lit = melee ? { total: 0, on: 0 } : pepas(ammo, stats.magazine);
       if (balls !== lit.total) { balls = lit.total; $('pepas').replaceChildren(...Array.from({ length: balls }, () => doc.createElement('i'))); }
       [...$('pepas').children].forEach((ball, i) => ball.classList.toggle('out', i >= lit.on));
       // Rocket markers carry spare rockets beyond the one loaded: shown as "+n".
-      set($('ammo-n'), String(ammo)); set($('ammo-max'), `/ ${stats.magazine}${stats.reserve != null ? ` +${me?.reserve ?? stats.reserve}` : ''}`); set($('pepas-label'), loc('Pepas'));
-      $('hop').classList.toggle('low', lowAmmo(ammo, stats.magazine));
+      if (melee) { set($('ammo-n'), String(stats.damage)); set($('ammo-max'), loc('por golpe')); set($('pepas-label'), loc('Pepazos')); }
+      else { set($('ammo-n'), String(ammo)); set($('ammo-max'), `/ ${stats.magazine}${stats.reserve != null ? ` +${me?.reserve ?? stats.reserve}` : ''}`); set($('pepas-label'), loc('Pepas')); }
+      $('hop').classList.toggle('low', !melee && lowAmmo(ammo, stats.magazine));
       const lives = Math.max(0, (state.options?.lives || 0) - (me?.hits || 0));
-      const marker = MARKERS.find(m => m.id === me?.weapon) || MARKERS[0], group = CLASSES.find(c => c.id === marker.class);
+      const marker = WEAPONS.find(m => m.id === me?.weapon) || MARKERS[0], group = ARMORY_CLASSES.find(c => c.id === marker.class);
       set($('ammo'), [marker.name, group && loc(group.kind), state.options?.lives && locn(lives, '{n} vida', '{n} vidas')].filter(Boolean).join(' · '));
       const fitted = (me?.kit?.attachments || []).filter(Boolean);
       if (parts !== fitted.join()) {
@@ -46,9 +49,10 @@ export function createCombatHud(doc = document) {
         $('wpn-kit').replaceChildren(...fitted.map(id => { const el = doc.createElement('i'); el.append(icon(PART_ICON[id])); el.title = id === 'optic' && stats.optic ? loc(OPTICS[stats.optic].name) : loc(ATTACHMENTS.find(a => a.id === id)?.name || ''); return el; }));
       }
 
-      const reloading = me?.reload > 0, empty = !!me && ammo <= 0 && !reloading && !me.respawn && !me.eliminated;
-      $('reload-prompt').hidden = !(reloading || empty); $('reload-prompt').classList.toggle('empty', empty);
-      set($('reload-text'), reloading ? loc('Recargando {n} s', { n: me.reload.toFixed(1) }) : empty ? loc('Sin pepas · R para recargar') : '');
+      // A thrown chancla is away: the same bar fills until it is back in the hand.
+      const away = melee && me?.melee?.phase === 'away' && !me.respawn, reloading = !melee && me?.reload > 0, empty = !melee && !!me && ammo <= 0 && !reloading && !me.respawn && !me.eliminated;
+      $('reload-prompt').hidden = !(reloading || empty || away); $('reload-prompt').classList.toggle('empty', empty);
+      set($('reload-text'), away ? loc('La chancla vuelve en {n} s', { n: Math.max(0, me.melee.t).toFixed(1) }) : reloading ? loc('Recargando {n} s', { n: me.reload.toFixed(1) }) : empty ? loc('Sin pepas · R para recargar') : '');
 
       const gear = $('gear'), ready = !!me?.grenadeReady;
       if (gear.dataset.ready !== String(ready)) { gear.dataset.ready = String(ready); gear.replaceChildren(icon('kitGrenade'), doc.createTextNode(` ${ready ? loc('Granada') : loc('Sin granada')}`)); }
