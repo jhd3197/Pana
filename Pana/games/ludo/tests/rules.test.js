@@ -142,8 +142,9 @@ for(const seats of SEAT_CHOICES)test(`200 seeded ${seats}-seat bot matches finis
   }
 });
 test('four seats replay the same seeded match as before five and six existed',()=>{
-  // Fingerprint of seed 7's whole bot match, recorded on the four-seat-only rules.
-  const g=new LudoGame(7);g.start();cachos(g);const log=[];
+  // Fingerprint of seed 7's whole bot match, recorded on the four-seat-only rules
+  // (before extraOnOne existed, so it is switched off here).
+  const g=new LudoGame(7);g.options.extraOnOne=false;g.start();cachos(g);const log=[];
   while(g.phase!=='finished'){if(g.die){const m=chooseMove(g);log.push(m);g.move(m);}else{g.roll();log.push(g.lastDie);}}
   assert.deepEqual([g.winner,log.length,g.rng],[0,732,4111943361]);
 });

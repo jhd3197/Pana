@@ -70,6 +70,7 @@ function render(rawState){
   if(!lobby&&roomOptions.isOpen)roomOptions.close();
   document.querySelector('.rules-summary').textContent=state.options.entry==='six'?loc('Saca un seis para salir. Captura a tus rivales y lleva tus cuatro fichas al centro con el número exacto.'):loc('Sal con uno o seis. Captura a tus rivales y lleva tus cuatro fichas al centro con el número exacto.');
   if(state.options.assistedEntry)document.querySelector('.rules-summary').textContent+=' '+loc('Salida asistida: ayuda tras un límite aleatorio de tres a cinco intentos sin salir.');
+  if(state.options.extraOnOne!==false)document.querySelector('.rules-summary').textContent+=' '+loc('Un 1 que mueve da otra tirada, hasta tres seguidas.');
   document.body.classList.toggle('in-lobby',lobby);$('welcome').hidden=!lobby;$('hud').hidden=lobby;
   $('start').disabled=!world||!room.connected||!room.isHost;
   $('start').textContent=!world?loc('Preparando la mesa…'):!room.connected?loc('Conectando…'):room.isHost?loc('¡Jugar!'):loc('Espera al anfitrión');
