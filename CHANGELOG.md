@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Bochinche ahora se ve cuál es tu pana.** Tu luchador lleva un borde dorado que respira suave y una flechita encima de la cabeza que se ve aunque algo lo tape; los demás panas y los bots se quedan como siempre.
+
 - **Carreritas vuelve al sonido de motor de antes.** El motor nuevo con marchas no gustó, así que los carros suenan otra vez como antes; los cauchos, el turbo y los choques nuevos se quedan.
 
 - **El motor tiene un mapa de lo que comparten los juegos, y quien programa lo mira primero.**

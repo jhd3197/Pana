@@ -194,6 +194,25 @@ See candidates.
 | Mangos (shared currency) | `engine/mangos.js` | Bochinche, Carreritas |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
 | Text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`) | all 23 |
+| Your own pana's outline and marker | `engine/play/local-outline.js` | Bochinche |
+
+### Your own pana: outline and marker
+
+`engine/play/local-outline.js`. `createLocalOutline(group, { color, thickness })`
+adds an inverted-hull copy of every opaque mesh in a character (skinned bodies
+follow the pose) with one shared BackSide material and a slow pulse;
+`createLocalMarker({ color })` is a small bobbing diamond that draws over walls,
+placed by the caller. Both return `update(dt)` and `dispose()`; call `dispose()`
+before `disposeModel` on the root. The hulls share the source geometry, so the
+helper never disposes it. Use it for the local player only.
+
+```js
+const outline = createLocalOutline(character.group), marker = createLocalMarker();
+root.add(marker.group); marker.group.position.y = height * 1.2;
+outline.update(dt); marker.update(dt);   // every frame
+```
+
+Used by: Bochinche.
 
 ## Worlds and models
 
@@ -263,6 +282,7 @@ flowchart LR
   results["results"]:::mod -->|used by| R21["21 games"]:::game
   mangos["mangos"]:::mod -->|used by| bochinche:::game
   mangos -->|used by| carreritas
+  outline["play/local-outline"]:::mod -->|used by| bochinche
   premium["premium-tracks (game-local)"]:::mod -->|used by| carreritas
   spawn["spawn-picker (game-local)"]:::mod -->|used by| pintura
 ```
