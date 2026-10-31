@@ -1,6 +1,7 @@
 import { createKnockout } from './knockout.js';
 import { createPaintKit, createPaintVest } from '/engine/models/props/paintball-kit.js';
-import { FINISHES } from './armory-data.js';
+import { FINISHES, kitStats } from './armory-data.js';
+import { createViewmodel, recoilOf } from './viewmodel.js';
 import { createArenaEnvironment } from '/engine/worlds/arenas.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { createMuelle } from './muelle.js';
@@ -172,11 +173,14 @@ export function createScene(canvas) {
   function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) renderer.setSize(w, h, false); }
   // The marker held in first person, rebuilt when the pana's paint colour changes.
   const modelOptions = p => ({...p.kit, weapon:p.weapon, color:FINISHES.find(f=>f.id===p.kit?.finish)?.color || p.color});
-  let held = null, heldColor = '';
+  let held = null, heldColor = ''; const viewmodel = createViewmodel();
   function holdMarker(p) {
     const key=JSON.stringify(modelOptions(p)); if(heldColor===key) return;
-    held?.removeFromParent(); held?.userData.dispose(); heldColor = key;
+    held?.removeFromParent(); held?.userData.dispose(); held?.userData.flash?.geometry.dispose(); held?.userData.flash?.material.dispose(); heldColor = key;
     held = createPaintKit(modelOptions(p)); held.scale.setScalar(.3); held.traverse(o => { o.castShadow = false; }); camera.add(held);
+    // A flash of paint-gas at the muzzle for the first frames after each shot.
+    const flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    flash.position.set(0, .3, held.userData.tip + .12); flash.visible = false; held.add(flash); held.userData.flash = flash; viewmodel.reset();
   }
   // Paint that stopped against cover splats on that face, not on the paving.
   function stick(mesh, s, cover) {
@@ -266,15 +270,14 @@ export function createScene(canvas) {
       camera.position.set(body.x, EYE + lift + body.y + Math.abs(Math.sin(bob)) * .05 * sway, body.z);
       shake = Math.max(0, shake - dt * 3);
       const jolt = shake * shake * .05;
-      camera.rotation.set(pitch - lift * .22 + kick * .045 + (Math.random() - .5) * jolt, yaw + (Math.random() - .5) * jolt, Math.sin(bob) * .008 * sway + (Math.random() - .5) * jolt, 'YXZ');
+      camera.rotation.set(pitch - lift * .22 + kick * .045 * recoilOf(me.weapon).cam + (Math.random() - .5) * jolt, yaw + (Math.random() - .5) * jolt, Math.sin(bob) * .008 * sway + (Math.random() - .5) * jolt, 'YXZ');
       // Pull the marker in when the pana stands against cover, so it never pokes through.
       camera.updateMatrixWorld(); camera.getWorldDirection(front); front.y = 0; front.normalize(); frontRay.set(camera.position, front);
       let clearance = 2;
       for (const bounds of cameraBounds) if (frontRay.intersectBox(bounds, hit)) clearance = Math.min(clearance, hit.distanceTo(camera.position));
       holdMarker(me); held.visible = !down;
-      held.position.set(.2 + Math.sin(bob) * .012 * sway, -.25 + Math.abs(Math.cos(bob)) * .01 * sway - kick * .01, -.34 + kick * .05 + Math.max(0, .6 - clearance));
-      held.rotation.set(kick * .14, Math.PI, 0);
-      held.userData.hands?.forEach((hand,i)=>{hand.position.z=(me.shots%2===i ? kick*.13 : 0);});
+      const shot = viewmodel.update(dt, { held, weapon: me.weapon, fired: me.fired || 0, reload: me.reload, reloadTime: kitStats(me.kit, state.options).reload, sprint: me.sprint, bob, sway, down, air: me.jumpHeight, push: Math.max(0, .6 - clearance) });
+      const flash = held.userData.flash; flash.visible = held.visible && shot.flash > .05; flash.material.opacity = shot.flash; flash.scale.setScalar((me.weapon === 'rocket' ? 1.7 : .9) * (1.15 - shot.flash * .3));
       camera.clearViewOffset();
     } else {
       if (held) held.visible = false;
