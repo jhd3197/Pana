@@ -35,7 +35,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  const back=document.createElement('button');back.id='armory-parts-back';back.type='button';back.className='pk-btn';back.textContent=loc('‹ Atrás');choices.before(back);back.onclick=()=>dialog.classList.remove('choosing');
  const icons={weapon:'kitBarrel',attachments:'plus',armor:'kitVest',grenade:'kitGrenade',finish:'kitPaint',camo:'kitPaint',charm:'wardrobe-cuello',pattern:'kitPaint'};
  for(const b of document.querySelectorAll('#armory-slots button')){const icon=document.createElement('i');icon.innerHTML=ICONS[icons[b.dataset.slot]];b.insertBefore(icon,b.querySelector('b'));}
- let shown=null,ratedOptions='',category='weapon',slot=0,renderer=null,scene,camera,model,avatar,vest,target,range=null,acc=0,pivot,gunBox,padded=false,framed=null; const balls=new Map();
+ let shown=null,ratedOptions='',category='weapon',slot=0,renderer=null,scene,camera,model,avatar,vest,target,range=null,acc=0,pivot,gunBox,padded=false,framed=null,sway=0; const balls=new Map();
  const catalog={weapon:WEAPONS,attachments:ATTACHMENTS,armor:ARMOR,grenade:GRENADES,finish:FINISHES,charm:CHARMS,pattern:PATTERNS};
  // Camuflajes: camos.js and camo-store.js load with the first look at the tab (at once on
  // pana.sh, whose bridge says what this pana owns). Without the bridge only the solid ones are yours.
@@ -138,14 +138,17 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   if(dropped.length)say(dropNote(dropped,kit.weapon));
   if(dialog.open){paint();rebuild();}
  }
- // The preview shows the gun alone, centred and turning on `pivot`. The pana only comes
- // back where the body is the point: the armor tab (wearing the vest) and the test range.
- const withBody=()=>!!range||(category==='armor'&&dialog.classList.contains('choosing'));
+ // Three views: the gun alone, centred and turning on `pivot`; the armor tab, the pana
+ // alone wearing the vest (no gun in front of it), centred and swaying; the test range,
+ // pana and gun side by side.
+ const view=()=>range?'range':category==='armor'&&dialog.classList.contains('choosing')?'armor':'gun';
  function frame(){
-  const body=withBody();avatar.group.visible=body;vest.visible=body&&padded;
-  if(body){pivot.position.set(.5,1.3,0);model.position.set(0,0,0);model.scale.setScalar(1.7);camera.position.set(4,2.7,5);camera.lookAt(0,1.2,0);}
-  else{const s=3.1/Math.max(gunBox.size.x,gunBox.size.y,gunBox.size.z,.01);pivot.position.set(0,1.2,0);model.scale.setScalar(s);model.position.copy(gunBox.center).multiplyScalar(-s);camera.position.set(1.6,2.1,5);camera.lookAt(0,1.15,0);}
-  framed=body;
+  const v=view(),body=v!=='gun';avatar.group.visible=body;vest.visible=body&&padded;model.visible=v!=='armor';
+  if(v==='armor'){avatar.group.position.set(0,0,0);avatar.group.rotation.y=0;camera.position.set(0,1.05,4.4);camera.lookAt(0,.92,0);}
+  else{avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;}
+  if(v==='range'){pivot.position.set(.5,1.3,0);model.position.set(0,0,0);model.scale.setScalar(1.7);camera.position.set(4,2.7,5);camera.lookAt(0,1.2,0);}
+  else if(v==='gun'){const s=3.1/Math.max(gunBox.size.x,gunBox.size.y,gunBox.size.z,.01);pivot.position.set(0,1.2,0);model.scale.setScalar(s);model.position.copy(gunBox.center).multiplyScalar(-s);camera.position.set(1.6,2.1,5);camera.lookAt(0,1.15,0);}
+  framed=v;
  }
  function rebuild(look=kit){
   if(!renderer)return;model?.removeFromParent();model?.userData.dispose();
@@ -178,7 +181,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  dialog.addEventListener('close',()=>{range=null;if(target)target.group.visible=false;document.getElementById('range-controls').hidden=true;document.getElementById('open-armory').focus();});
  return {get kit(){return kit;}, get preview(){return model;}, get body(){return avatar?.group;},get camos(){return camoData;}, refreshCamos:()=>loadCamos(true), open, setWeapon, update(dt){
   if(!dialog.open||!renderer)return;if(ratedOptions!==JSON.stringify(room.state.options))paintStats();const c=renderer.domElement,w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
-  if(framed!==withBody())frame();pivot.rotation.y+=dt*.18;if(framed)avatar.update(dt,{walk:false});
+  if(framed!==view())frame();pivot.rotation.y+=dt*.18;sway+=dt;if(framed==='armor')avatar.group.rotation.y=Math.sin(sway*.5)*.7;if(framed!=='gun')avatar.update(dt,{walk:false});
   if(range){acc+=dt;while(acc>=.05){range.step(.05,new Map([[1,{ax:0,az:1,fire,...(grenade||{})}]]));fire=grenade=false;acc-=.05;}const p=range.players[0],dummy=range.players[1];document.getElementById('range-status').textContent=`Blanco: ${dummy.paint} pepazos · ${dummy.hits} fuera · Carga: ${p.ammo} · ${p.reload>0?'Recargando':p.grenadeReady?'Granada lista':'Sin granada'}`;target.group.rotation.z=dummy.paint*.08;target.update(dt,{walk:false});if(dummy.respawn){dummy.respawn=0;Object.assign(dummy,{x:-22,z:-15,paint:0,shield:0});} }
   if(range) {
    for(const ball of range.balls){let o=balls.get(ball.id);if(!o){o=new THREE.Mesh(new THREE.SphereGeometry(ball.rocket?.12:.04,8,6),new THREE.MeshBasicMaterial({color:ball.color}));balls.set(ball.id,o);scene.add(o);}const t=(ball.z+22)/7;o.position.set(.1+1.7*t,1.1,-2*t);}
