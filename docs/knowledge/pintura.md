@@ -12,6 +12,18 @@ The host only starts rounds. Its departure cannot interrupt simulation.
 - Three minutes by default or ten knockouts; ties share victory. `toughness` (Aguante, default 3)
   pepazos knock a pana out for 2.5 seconds; `paint` counts hits taken and `stains` keeps
   their colours. After 4 s without a hit one pepazo washes off every 1.5 s; respawn clears both. Spawn protection lasts 1.5 seconds and firing cancels it.
+- Spawns (`public/spawn-picker.js`). Free-for-all round start uses `spreadSpawns`: an
+  exact search over the 8 spawns keeps every pair at least `MIN_SPAWN_GAP` (20 m)
+  apart, drawing among sets within 6 m of the widest spread. When no set reaches
+  20 m it takes the widest one (`fallback`); only El Puerto falls short (3-4 panas
+  18 m, 5-8 panas 6 m, since each base holds four spawns 6 m apart), and there people
+  get the most isolated spots before bots (one pana with four bots gets a base alone).
+  The lobby parks panas on the same spread; a late arrival lands like a respawn.
+  `arena.spawnReport` holds `{ arena, count, minGap, fallback }`; `PANA_LOG_SPAWNS=1`
+  prints it once per round. Free-for-all respawns use `pickRespawn`: 20 m from the
+  nearest living rival when a spawn allows it (else the farthest), within 6 m of the
+  farthest, out of sight only as a tie-break, never the last spawn. Team and flag
+  rounds keep `pickSpawn` on their own half (even indices team 0).
 - La Chispa starts with twelve paintballs, a 0.25-second firing interval and
   1.3-second reload. Every marker has its own magazine, cadence, spread and
   reload in `armory-data.js`. Empty magazines reload automatically. Server ticks

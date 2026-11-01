@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pickSpawn, rankSpawns } from '../public/spawn-picker.js';
+import { pickSpawn, pickRespawn, rankSpawns, spreadSpawns, MIN_SPAWN_GAP } from '../public/spawn-picker.js';
 import { Arena, segmentBox, spawnsFor } from '../public/rules.js';
 import { rng } from '../../../engine/random.js';
+import { PAINT_ARENAS } from '../../../engine/worlds/arena-layouts.js';
 const line = [{ x: 0, z: 0 }, { x: 10, z: 0 }, { x: 20, z: 0 }, { x: 40, z: 0 }];
 const draws = [0, .34, .67, .99].map(n => () => n);
 const room = (id, players, options = {}, seed = 7) => {
@@ -58,4 +59,110 @@ test('the same seed draws the same spawns', () => {
   const spots = seed => room('plaza', 6, {}, seed).players.map(p => p.spawn);
   assert.deepEqual(spots(42), spots(42));
   assert.ok([1, 2, 3, 4, 5, 6].some(seed => spots(seed).join() !== spots(42).join()), 'other seeds vary the round');
+});
+
+// Free-for-all spread. Each court's widest possible spread for n panas, by brute force.
+const ARENA_IDS = PAINT_ARENAS.map(map => map.id);
+const apart = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+const minGapOf = points => Math.min(...points.flatMap((a, i) => points.slice(i + 1).map(b => apart(a, b))));
+function widest(spawns, n) {
+  let best = 0;
+  const walk = (from, chosen) => {
+    if (chosen.length === n) { best = Math.max(best, minGapOf(chosen.map(i => spawns[i]))); return; }
+    for (let i = from; i < spawns.length; i++) walk(i + 1, [...chosen, i]);
+  };
+  walk(0, []); return best;
+}
+const ffa = (id, people, bots, seed) => {
+  const g = new Arena(id, 'normal', {}); g.random = rng(seed);
+  for (let i = 1; i <= people + bots; i++) g.add(i, { name: `P${i}`, avatar: {}, bot: i > people });
+  g.start(); return g;
+};
+// What these courts manage below MIN_SPAWN_GAP: El Puerto's two bases each hold
+// four spawns 6 m apart, so a third pana always shares a base.
+const FALLBACKS = { 'terminal 3': 18, 'terminal 4': 18, 'terminal 5': 6, 'terminal 6': 6, 'terminal 7': 6, 'terminal 8': 6 };
+const fallbackTable = () => {
+  const table = {};
+  for (const id of ARENA_IDS) for (let n = 2; n <= 8; n++) {
+    const { minGap, fallback } = spreadSpawns(spawnsFor(id), n, { rng: rng(1) });
+    if (fallback) table[`${id} ${n}`] = Math.round(minGap * 10) / 10;
+  }
+  return table;
+};
+
+test('free-for-all round start keeps every pana MIN_SPAWN_GAP apart, or as far as the court allows', () => {
+  assert.equal(MIN_SPAWN_GAP, 20);
+  for (const id of ARENA_IDS) for (let n = 2; n <= 8; n++) {
+    const spawns = spawnsFor(id), best = widest(spawns, n), feasible = best >= MIN_SPAWN_GAP;
+    for (let seed = 1; seed <= 25; seed++) for (const people of [1, 2]) {
+      const g = ffa(id, people, n - people, seed), where = `${id} n=${n} seed=${seed}`;
+      assert.equal(new Set(g.players.map(p => p.spawn)).size, n, `${where}: distinct spawns`);
+      g.players.forEach(p => assert.deepEqual({ x: p.x, z: p.z }, spawns[p.spawn]));
+      const gap = minGapOf(g.players);
+      if (feasible) assert.ok(gap >= MIN_SPAWN_GAP, `${where}: ${gap} m`);
+      else assert.ok(Math.abs(gap - best) < 1e-6, `${where}: ${gap} m, the court allows ${best}`);
+      assert.equal(g.spawnReport.fallback, !feasible, `${where}: fallback flag`);
+      assert.equal(g.spawnReport.count, n); assert.equal(g.spawnReport.arena, id);
+      assert.ok(Math.abs(g.spawnReport.minGap - gap) < .051, `${where}: reported gap`);
+    }
+  }
+});
+
+test('the fallback table is deterministic and only El Puerto falls short', () => {
+  assert.deepEqual(fallbackTable(), FALLBACKS);
+  assert.deepEqual(fallbackTable(), fallbackTable());
+  for (let n = 2; n <= 8; n++) {
+    const a = spreadSpawns(spawnsFor('plaza'), n, { rng: rng(9), first: 1 }), b = spreadSpawns(spawnsFor('plaza'), n, { rng: rng(9), first: 1 });
+    assert.deepEqual(a, b, 'same rng, same spread');
+  }
+});
+
+test('one pana and four bots on El Puerto: nobody shares the pana base', () => {
+  // The reported round: free-for-all with four bots placed a bot 6 m away in the same base.
+  for (let seed = 1; seed <= 60; seed++) {
+    const g = ffa('terminal', 1, 4, seed), [me, ...bots] = g.players;
+    const nearest = Math.min(...bots.map(b => apart(me, b)));
+    assert.ok(nearest >= MIN_SPAWN_GAP, `seed ${seed}: nearest bot ${nearest} m away`);
+    assert.ok(bots.every(b => Math.sign(b.x) !== Math.sign(me.x)), `seed ${seed}: the bots share the other base`);
+    assert.deepEqual({ fallback: g.spawnReport.fallback, minGap: g.spawnReport.minGap }, { fallback: true, minGap: 6 });
+  }
+  // Two people and three bots: each person still gets the most room the court has.
+  for (let seed = 1; seed <= 20; seed++) {
+    const g = ffa('terminal', 2, 3, seed), people = g.players.filter(p => !p.bot);
+    for (const p of people) assert.ok(Math.min(...g.players.filter(q => q !== p).map(q => apart(p, q))) >= 18);
+  }
+});
+
+test('lobby panas and a late arrival are never parked on top of each other', () => {
+  const g = new Arena('plaza', 'normal', {}); g.random = rng(3);
+  for (let i = 1; i <= 6; i++) g.add(i, { name: `P${i}`, avatar: {}, bot: i > 1 });
+  assert.ok(minGapOf(g.players) >= MIN_SPAWN_GAP, 'spread already in the lobby');
+  g.selectMap('noche'); assert.ok(minGapOf(g.players) >= MIN_SPAWN_GAP, 'and after the map changes');
+  g.start(); g.go();
+  const late = g.add(7, { name: 'P7', avatar: {} });
+  const nearest = Math.min(...g.players.filter(q => q !== late).map(q => apart(late, q)));
+  assert.ok(nearest >= MIN_SPAWN_GAP, `late arrival ${nearest} m from the nearest pana`);
+});
+
+test('free-for-all respawns go distance first: MIN_SPAWN_GAP from the nearest rival when a spawn allows it', () => {
+  const draws = [0, .2, .4, .6, .8, .99].map(n => () => n);
+  for (const id of ARENA_IDS) {
+    const spawns = spawnsFor(id), random = rng(id.length);
+    for (let trial = 0; trial < 40; trial++) {
+      // Rivals on a few spawns and scattered over the court.
+      const enemies = Array.from({ length: 1 + trial % 6 }, (_, k) => k % 2 ? { ...spawns[Math.floor(random() * spawns.length)] } : { x: (random() - .5) * 40, z: (random() - .5) * 30 });
+      const last = trial % spawns.length, nearOf = i => Math.min(...enemies.map(e => apart(e, spawns[i])));
+      const old = Math.min(...draws.map(d => nearOf(pickSpawn(spawns, { enemies, last, rng: d }))));
+      const reachable = spawns.some((s, i) => i !== last && nearOf(i) >= MIN_SPAWN_GAP);
+      for (const d of draws) {
+        const index = pickRespawn(spawns, { enemies, last, rng: d }), near = nearOf(index);
+        assert.notEqual(index, last, `${id}: not the last spawn`);
+        assert.ok(near >= old - 1e-9, `${id}: ${near} m, the old pick could land ${old} m`);
+        if (reachable) assert.ok(near >= MIN_SPAWN_GAP, `${id}: ${near} m while a spawn ${MIN_SPAWN_GAP} m away was open`);
+      }
+    }
+  }
+  // Through the arena: a respawn on El Puerto with rivals in both bases.
+  const g = ffa('terminal', 1, 4, 5), me = g.players[0]; g.go();
+  for (let k = 0; k < 10; k++) { g.respawn(me); assert.ok(Math.min(...g.players.slice(1).map(q => apart(me, q))) >= 6 - 1e-9); }
 });

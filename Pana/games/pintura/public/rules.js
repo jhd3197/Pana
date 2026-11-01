@@ -9,7 +9,7 @@ import { NOCHE_COVERS, NOCHE_SPAWNS, NOCHE_SIZE } from './noche-layout.js';
 import { TERMINAL_COVERS, TERMINAL_SPAWNS, TERMINAL_BOUNDS } from './terminal-layout.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/play/difficulty.js';
 import { clamp } from '../../../engine/random.js';
-import { pickSpawn } from './spawn-picker.js';
+import { pickSpawn, pickRespawn, spreadSpawns, MIN_SPAWN_GAP } from './spawn-picker.js';
 import { locKey } from '../../../engine/i18n.js';
 import { resetJump, jumpCount } from '../../../engine/play/jump.js';
 import { stepWalker, axisMove } from '../../../engine/play/walker.js';
@@ -181,7 +181,7 @@ export class Arena {
   camoRefusal(id, value) { const camo=cleanKit(value).camo; return ownsCamo(camo,this.camoOwners.get(id)) ? '' : camo; }
   // Why selectKit would refuse this seat right now ('' when it would accept): the client says so instead of dropping the pick.
   kitRejection(id) { return !this.players.some(p=>p.id===id && p.connected) ? 'absent' : this.phase==='playing' ? 'playing' : ''; }
-  configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.players.forEach(p => { p.color = COLORS[teamPlay(this.options) ? p.team : p.seat]; }); return true; }
+  configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.players.forEach(p => { p.color = COLORS[teamPlay(this.options) ? p.team : p.seat]; }); this.parkLobby(); return true; }
   moveSeat(actorId, from, to, hostId) {
     if (!['lobby', 'finished'].includes(this.phase) || !teamPlay(this.options)) return false;
     const seats = paintSeats(this.players);
@@ -195,7 +195,7 @@ export class Arena {
   sameTeam(a, b) { return teamPlay(this.options) && a?.team === b?.team; }
   selectMap(id) {
     if (this.phase !== 'lobby' || !validPaintArena(id)) return false;
-    this.mapId = id; this.players.forEach((p, i) => Object.assign(p, spawnsFor(id)[i % 8])); return true;
+    this.mapId = id; this.players.forEach((p, i) => Object.assign(p, spawnsFor(id)[i % 8])); this.parkLobby(); return true;
   }
   selectDifficulty(id) {
     if (this.phase === 'playing' || !validDifficulty(id)) return false;
@@ -211,9 +211,12 @@ export class Arena {
     const team = seat % 2, color = COLORS[teamPlay(this.options) ? team : seat];
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.
     if (this.phase === 'playing' && !this.loading) this.ready.add(id);
-    if (p) { Object.assign(p, info, { connected: true, seat, team, color }); return p; }
+    if (p) { Object.assign(p, info, { connected: true, seat, team, color }); this.parkLobby(); return p; }
     p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, altHeld: false, melee: createMelee(), smacks: 0, recalls: 0, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
-    this.players.push(p); return p;
+    this.players.push(p);
+    // A late arrival mid-round lands like a respawn, away from the living rivals.
+    if (this.phase === 'playing') Object.assign(p, this.spawnPoint(p, this.rivalsOf(p))); else this.parkLobby();
+    return p;
   }
   // Seats this round's bots from the `bots` option: the old bots leave, then
   // botCount() new ones join, each on the smaller team in team and flag
@@ -236,7 +239,7 @@ export class Arena {
   toLobby({ keepBots = false } = {}) {
     return returnToLobby(this, { keepBots, reset: g => {
       Object.assign(g, { survivors: null, outcome: null, flagEvents: [], loading: 0, countdown: 0, time: roundTime(g.options), balls: [], splats: [], grenades: [], thrown: [], puddles: [], booms: [], flags: [], teamScores: [0, 0] }); g.ready = new Set();
-      g.players.forEach((p, i) => Object.assign(p, spawnsFor(g.mapId)[i % 8], { respawn: 0, eliminated: false }));
+      g.players.forEach((p, i) => Object.assign(p, spawnsFor(g.mapId)[i % 8], { respawn: 0, eliminated: false })); g.parkLobby();
       g.say(locKey('La cancha está lista.'));
     } });
   }
@@ -246,9 +249,11 @@ export class Arena {
     this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = roundTime(this.options); this.teamScores = [0, 0]; this.outcome = null; ctfReset(this); this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = [];
     this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: teamPlay(this.options) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }));
     this.players.forEach(p => this.refill(p));
-    // One by one, so each pana spawns away from the rivals already placed and on a free spot.
-    const placed = [];
-    for (const p of this.players) { Object.assign(p, this.spawnPoint(p, placed.filter(q => !this.sameTeam(p, q)), placed.map(q => q.spawn))); placed.push(p); }
+    if (this.teamRound) {
+      // One by one, so each pana spawns away from the rivals already placed and on a free spot of its side.
+      const placed = [];
+      for (const p of this.players) { Object.assign(p, this.spawnPoint(p, placed.filter(q => !this.sameTeam(p, q)), placed.map(q => q.spawn))); placed.push(p); }
+    } else this.spread(this.random);
     this.ready = new Set(); this.loading = READY_TIMEOUT; this.countdown = 0; this.checkReady();
     this.say(locKey('¡A pintar! Cancha {variant}.'), { variant: variantName(this.mapId, this.variant) }); return true;
   }
@@ -267,18 +272,36 @@ export class Arena {
   // Respawn protection: 1.5 s of shield (the ring blinks in the scene) so nobody is
   // painted on arrival; firing or throwing cancels it early.
   respawn(p) {
-    const spawn = this.spawnPoint(p, this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)));
+    const spawn = this.spawnPoint(p, this.rivalsOf(p));
     Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, soak: 0, stains: [], calm: 0, stamina: 1, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }); this.refill(p);
   }
   // A spawn far from these rivals, out of their sight if possible and not p's last one.
   // Team rounds keep each side on its own half of the spawns: even indices are team 0's
   // (El Puerto's west base and the orange flag), odd ones team 1's.
+  // Free-for-all goes distance first (pickRespawn: MIN_SPAWN_GAP from the nearest rival when a spawn allows it).
   spawnPoint(p, enemies, taken = []) {
-    const spawns = spawnsFor(this.mapId), teams = teamPlay(this.options);
+    const spawns = spawnsFor(this.mapId), teams = this.teamRound;
     const sees = (e, s) => !this.cover.some(o => segmentBox(e.x, e.z, s.x - e.x, s.z - e.z, o) !== null);
-    p.spawn = pickSpawn(spawns, { enemies, taken, last: p.spawn ?? -1, allowed: teams ? spawns.map((_, i) => i).filter(i => i % 2 === p.team) : null, sees, rng: this.random });
+    const options = { enemies, taken, last: p.spawn ?? -1, allowed: teams ? spawns.map((_, i) => i).filter(i => i % 2 === p.team) : null, sees, rng: this.random };
+    p.spawn = teams ? pickSpawn(spawns, options) : pickRespawn(spawns, options);
     const { x, z } = spawns[p.spawn]; return { x, z };
   }
+  get teamRound() { return teamPlay(this.options); }
+  // The living rivals p must keep away from.
+  rivalsOf(p) { return this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)); }
+  // Free-for-all round start: every pana on its own spawn, all of them at least
+  // MIN_SPAWN_GAP apart (or as far apart as the court allows), people before bots
+  // on the most isolated spots. spawnReport says what the court managed; set
+  // PANA_LOG_SPAWNS (or arena.logSpawns) to print it once per round.
+  spread(rng, log = true) {
+    const spawns = spawnsFor(this.mapId), people = this.players.filter(p => !p.bot), bots = this.players.filter(p => p.bot);
+    const { indices, minGap, fallback } = spreadSpawns(spawns, this.players.length, { rng, first: people.length });
+    [...people, ...bots].forEach((p, k) => { p.spawn = indices[k]; Object.assign(p, spawns[indices[k]]); });
+    this.spawnReport = { arena: this.mapId, count: this.players.length, minGap: Math.round(minGap * 10) / 10, fallback, gap: MIN_SPAWN_GAP };
+    if (log && (this.logSpawns ?? globalThis.process?.env?.PANA_LOG_SPAWNS)) console.log(`pepazo spawns ${JSON.stringify(this.spawnReport)}`);
+  }
+  // Lobby: free-for-all panas wait on the spots a round would spread them to (no rng drawn).
+  parkLobby() { if (!this.teamRound && this.phase === 'lobby' && this.players.length) this.spread(() => 0, false); }
   // A unit step for bot p along open cells toward (tx, tz), or null when no route is known.
   route(p, tx, tz) {
     const grid = navGrid(this.mapId, this.variant), target = grid.cell(tx, tz);
