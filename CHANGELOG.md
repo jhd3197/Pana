@@ -31,6 +31,16 @@ becomes the GitHub release's notes.
   Chocas con cada barril, no con una caja de 3 x 2,6 m, y las dos bases tienen
   los barriles en espejo. `npm run collision-report -- --fix` propone y aplica
   estos arreglos solo, y una prueba revisa que ninguna cancha tenga cajas así.
+- **En Capis a Pintazos ahora eliges entre cinco armas de Pepazo en cada turno.**
+  La Bazuca (cráter grande, mucho viento), La Piñita (rebota y explota a los
+  3 segundos, nunca se acaba), La Lejana (casi recta, sin viento, duele mucho
+  si le das al capi), La Licuadora (taladra un túnel largo que abre caminos o
+  tumba al rival) y El Trueno (cinco perdigones en abanico). Las cuatro
+  primeras tienen pocos tiros por equipo; se cambian con 1–5, Q E o Tab, o
+  tocando la barra de abajo, y la guía de tiro sigue el vuelo de cada una. La
+  máquina también escoge: guarda La Bazuca para un buen tiro, remata con La
+  Lejana y abre túneles cuando no tiene tiro.
+
 - **El corte del terreno de Capis a Pintazos ahora muestra capas de tierra de verdad.**
   Bajo la grama hay tierra negra con raíces colgando, y debajo capas de
   ceniza, arcilla, piedra pómez, ocre y una base oscura que ondulan, se

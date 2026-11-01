@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMask, fillHeights, solidAt, carve, fill, splash, drips, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA, fieldRGBA, coverageContour, smoothTops } from '../play/terrain-mask.js';
+import { createMask, fillHeights, solidAt, carve, carveLine, fill, splash, drips, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA, fieldRGBA, coverageContour, smoothTops } from '../play/terrain-mask.js';
 
 const near = (a, b, tol = .11) => Math.abs(a - b) <= tol;
 const flat = (h = 10) => { const m = createMask({ width: 40, height: 20, cell: .1 }); fillHeights(m, () => h); takeDirty(m); return m; };
@@ -163,3 +163,15 @@ test('smoothTops follows the starting top per column, smoothed, and counts the e
   assert.ok(Math.abs(before[100] - 6) < .5);
 });
 
+
+test('carveLine bores a tunnel: a capsule along the segment, round at both ends', () => {
+  const m = flat(15), removed = carveLine(m, 10, 8, 19, 8, 1);
+  // 2r × length plus a full disc, in 0.1-unit cells.
+  assert.ok(Math.abs(removed - (2 * 9 + Math.PI) * 100) < 60, `${removed} cells`);
+  for (const x of [10, 14.5, 19]) assert.equal(solidAt(m, x, 8), false, `open at ${x}`);
+  assert.equal(solidAt(m, 20.2, 8), true); assert.equal(solidAt(m, 14.5, 9.2), true); assert.equal(solidAt(m, 14.5, 6.8), true);
+  assert.ok(takeDirty(m), 'marks the cells it changed');
+  const slant = flat(15); carveLine(slant, 5, 12, 11, 6, .8);
+  assert.equal(solidAt(slant, 8, 9), false); assert.equal(solidAt(slant, 8, 11), true);
+  assert.equal(carveLine(flat(15), 5, 18, 9, 18, 1), 0, 'nothing to dig in the air');
+});

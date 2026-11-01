@@ -62,6 +62,23 @@ export function carve(m, cx, cy, radius) {
   return removed;
 }
 
+// A tunnel: every cell within `radius` of the segment (x0, y0)-(x1, y1)
+// becomes air (a capsule, round at both ends). Returns the cells removed.
+export function carveLine(m, x0, y0, x1, y1, radius) {
+  const c0 = col(m, Math.min(x0, x1) - radius), c1 = col(m, Math.max(x0, x1) + radius);
+  const r0 = row(m, Math.min(y0, y1) - radius), r1 = row(m, Math.max(y0, y1) + radius);
+  const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy, rr = radius * radius;
+  let removed = 0;
+  for (let r = Math.max(0, r0); r <= Math.min(m.rows - 1, r1); r++) for (let c = Math.max(0, c0); c <= Math.min(m.cols - 1, c1); c++) {
+    const i = r * m.cols + c; if (!m.solid[i]) continue;
+    const x = (c + .5) * m.cell, y = (r + .5) * m.cell;
+    const t = l2 ? Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / l2)) : 0;
+    if ((x - x0 - dx * t) ** 2 + (y - y0 - dy * t) ** 2 <= rr) { m.solid[i] = 0; m.stain[i] = 0; removed++; }
+  }
+  markDirty(m, c0, r0, c1, r1);
+  return removed;
+}
+
 // Adds ground (a bridge, a mound). Returns the cells added.
 export function fill(m, cx, cy, radius) {
   let added = 0;

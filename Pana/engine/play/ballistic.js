@@ -11,6 +11,7 @@
 import { segmentCircle } from './projectile.js';
 
 export const FLIGHT = Object.freeze({ gravity: 18, windForce: 7 });
+const UP_NORMAL = Object.freeze({ x: 0, y: 1 }), UP = () => UP_NORMAL;
 
 // Velocity for an aim `angle` (radians above the horizon) towards `facing` (±1).
 export function aimVelocity(angle, facing, speed) {
@@ -52,7 +53,59 @@ export function simulateFlight(start, options = {}, { dt = 1 / 60, maxTime = 8, 
   for (let i = 1; ball.t < maxTime; i++) {
     const r = stepFlight(ball, dt, options);
     if (r.hit || i % every === 0) points.push({ x: ball.x, y: ball.y });
-    if (r.hit) return { points, x: ball.x, y: ball.y, t: ball.t, hit: r.hit, victim: r.victim };
+    if (r.hit) return { points, x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy, t: ball.t, hit: r.hit, victim: r.victim };
   }
   return { points, x: ball.x, y: ball.y, t: ball.t, hit: null, victim: null };
+}
+
+// A thrown thing that bounces off the side-view ground instead of bursting on
+// it (a grenade on a fuse): the same step, but on contact it backs up to the
+// last free point and reflects off `normal(x, y)` (the ground's outward unit
+// normal, e.g. terrain-mask.js `surfaceNormal`), keeping `restitution` of the
+// speed into the ground and `friction` of the speed along it. A round target
+// (a capi) is bounced off the same way. Slower than `settle` after a bounce
+// it comes to rest (`ball.resting`) and stays until the ground under it goes,
+// then falls again. Returns { hit: null | 'bounce' | 'water' | 'out', victim }.
+export function stepBounce(ball, dt, options = {}) {
+  const { normal = UP, restitution = .45, friction = .7, settle = 1.6, maxBounces = 24 } = options;
+  const solid = options.solid || (() => false);
+  if (ball.resting) {
+    ball.t = (ball.t || 0) + dt;
+    if (solid(ball.x, ball.y - .12)) return { hit: null, victim: null };
+    ball.resting = false;
+  }
+  const px = ball.x, py = ball.y;
+  const r = stepFlight(ball, dt, options);
+  if (r.hit !== 'ground' && r.hit !== 'target') return r;
+  // Back off to free air: halfway first, else where the step began.
+  if (solid(ball.x, ball.y)) { const mx = (px + ball.x) / 2, my = (py + ball.y) / 2; if (!solid(mx, my)) { ball.x = mx; ball.y = my; } else { ball.x = px; ball.y = py; } }
+  let n;
+  if (r.victim) { const dx = ball.x - r.victim.x, dy = ball.y - r.victim.y, l = Math.hypot(dx, dy) || 1; n = { x: dx / l, y: dy / l }; }
+  else n = normal(ball.x, ball.y);
+  const into = ball.vx * n.x + ball.vy * n.y;
+  if (into < 0) {
+    const tx = ball.vx - into * n.x, ty = ball.vy - into * n.y;
+    ball.vx = tx * friction - into * restitution * n.x; ball.vy = ty * friction - into * restitution * n.y;
+  }
+  ball.x += n.x * .02; ball.y += n.y * .02;
+  ball.bounces = (ball.bounces || 0) + 1;
+  // Wedged in a crevice it would jitter for ever: after `maxBounces` it stops where it is.
+  if ((Math.hypot(ball.vx, ball.vy) < settle && n.y > .35) || ball.bounces >= maxBounces) { ball.vx = ball.vy = 0; ball.resting = true; }
+  return { hit: 'bounce', victim: r.victim };
+}
+
+// A bouncing throw from `start` for `fuse` seconds: the points of its path
+// and where it is when the fuse ends (or how it ended early: 'water', 'out').
+export function simulateBounce(start, options = {}, { dt = 1 / 60, fuse = 3, every = 3 } = {}) {
+  const ball = { x: start.x, y: start.y, vx: start.vx, vy: start.vy, t: 0 }, points = [{ x: ball.x, y: ball.y }];
+  let bounces = 0;
+  for (let i = 1; ball.t < fuse - 1e-9; i++) {
+    const r = stepBounce(ball, dt, options);
+    if (r.hit === 'bounce') bounces++;
+    if (r.hit || i % every === 0) points.push({ x: ball.x, y: ball.y });
+    if (r.hit === 'water' || r.hit === 'out') return { points, x: ball.x, y: ball.y, t: ball.t, hit: r.hit, bounces };
+    // At rest on ground that does not change while it waits: that is where it bursts.
+    if (ball.resting) { points.push({ x: ball.x, y: ball.y }); return { points, x: ball.x, y: ball.y, t: fuse, hit: 'fuse', bounces, rested: true }; }
+  }
+  return { points, x: ball.x, y: ball.y, t: ball.t, hit: 'fuse', bounces };
 }

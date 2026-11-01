@@ -1,14 +1,48 @@
 // The game's own HUD over the 3D view: whose turn and its clock, the wind,
-// both teams with their paint bars, floating name tags, and the results card.
+// both teams with their paint bars, the weapon picker, floating name tags,
+// and the results card.
 import { loc } from '/engine/i18n.js';
 import { fillRoster } from '/engine/results.js';
-import { activeCapy, alive, standings } from './rules.js';
+import { ICONS } from '/engine/icons.js';
+import { activeCapy, alive, standings, ammoLeft } from './rules.js';
+import { WEAPONS, weaponOf } from './weapons.js';
+
+// The picker's icon for each weapon (engine/icons.js).
+const WEAPON_ICONS = { bazooka: 'weaponBazooka', grenade: 'kitGrenade', sniper: 'weaponSniper', drill: 'weaponDrill', scatter: 'weaponScatter' };
 
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 
-export function createHud($, { human = 0 } = {}) {
+export function createHud($, { human = 0, pick = () => {} } = {}) {
   const teamNames = [loc('Tus capis'), loc('La máquina')];
-  let rows = new Map(), tags = new Map(), shownTime = '', shownWind = null;
+  let rows = new Map(), tags = new Map(), shownTime = '', shownWind = null, shownWeapons = '';
+
+  // The weapon picker: one square button per weapon (key, icon, name, shots
+  // left), the one in the active capi's paws lit, empty ones greyed out.
+  const buttons = new Map();
+  for (const [i, w] of WEAPONS.entries()) {
+    const button = el('button', 'weapon-btn'), key = el('b', 'weapon-key', String(i + 1)), art = el('span', 'weapon-icon');
+    const name = el('span', 'weapon-name', w.name), ammo = el('span', 'weapon-ammo pk-num');
+    art.innerHTML = ICONS[WEAPON_ICONS[w.id]]; name.translate = false;
+    button.type = 'button'; button.dataset.weapon = w.id; button.setAttribute('role', 'radio');
+    button.append(key, art, name, ammo); button.onclick = () => pick(w.id);
+    $('weapon-list').append(button); buttons.set(w.id, { button, ammo });
+  }
+  function weapons(match) {
+    const active = activeCapy(match), mine = active?.team === human && match.phase === 'aim' && alive(active);
+    const team = active?.team ?? human, held = active?.weapon;
+    const shown = `${held}|${mine}|${WEAPONS.map(w => ammoLeft(match, team, w.id)).join(',')}`;
+    if (shown === shownWeapons) return; shownWeapons = shown;
+    for (const w of WEAPONS) {
+      const { button, ammo } = buttons.get(w.id), left = ammoLeft(match, team, w.id), on = w.id === held;
+      ammo.textContent = Number.isFinite(left) ? `×${left}` : '';
+      button.classList.toggle('is-on', on); button.classList.toggle('is-empty', left <= 0);
+      button.disabled = !mine || left <= 0; button.setAttribute('aria-checked', String(on));
+      button.title = `${w.name}: ${loc(w.blurb)}${Number.isFinite(left) ? ' ' + loc('Quedan {n}.', { n: left }) : ''}`;
+    }
+    const w = WEAPONS.find(k => k.id === held);
+    $('weapon-note').textContent = w ? loc(w.blurb) : '';
+    $('weapons').classList.toggle('is-rival', !!active && active.team !== human);
+  }
 
   function build(match) {
     rows = new Map(); tags = new Map(); $('labels').replaceChildren();
@@ -32,7 +66,8 @@ export function createHud($, { human = 0 } = {}) {
     if (time !== shownTime) { $('turn-time').textContent = time; shownTime = time; }
     panel.classList.toggle('is-rival', !mine);
     panel.classList.toggle('is-hurry', match.phase === 'aim' && t.time <= 5);
-    $('turn-note').textContent = match.phase === 'flight' ? loc('¡Allá va!') : match.phase === 'retreat' ? loc('¡Corre a cubrirte!')
+    const fuse = match.shot?.weapon === 'grenade' ? Math.max(0, Math.ceil(weaponOf('grenade').fuse - match.shot.t)) : null;
+    $('turn-note').textContent = match.phase === 'flight' ? (fuse != null ? loc('¡Allá va! Mecha: {n} s', { n: fuse }) : loc('¡Allá va!')) : match.phase === 'retreat' ? loc('¡Corre a cubrirte!')
       : match.phase === 'aim' && !mine ? loc('La máquina está apuntando…') : match.phase === 'aim' && t.time <= 5 ? loc('¡Dispara ya!') : '';
     if (match.wind !== shownWind) {
       shownWind = match.wind;
@@ -43,6 +78,7 @@ export function createHud($, { human = 0 } = {}) {
       $('wind-value').textContent = String(Math.round(Math.abs(match.wind) * 10));
       $('wind-value').parentElement.setAttribute('aria-label', calm ? loc('Sin viento') : match.wind < 0 ? loc('Viento hacia la izquierda: {n}', { n: Math.round(Math.abs(match.wind) * 10) }) : loc('Viento hacia la derecha: {n}', { n: Math.round(Math.abs(match.wind) * 10) }));
     }
+    weapons(match);
     for (const c of match.capys) {
       const r = rows.get(c.id); if (!r) continue;
       const shown = `${c.paint}|${c.out}|${c.id === active?.id}`;
