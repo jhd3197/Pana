@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMask, fillHeights, solidAt, carve, fill, splash, drips, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA } from '../play/terrain-mask.js';
+import { createMask, fillHeights, solidAt, carve, fill, splash, drips, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA, fieldRGBA, coverageContour } from '../play/terrain-mask.js';
 
 const near = (a, b, tol = .11) => Math.abs(a - b) <= tol;
 const flat = (h = 10) => { const m = createMask({ width: 40, height: 20, cell: .1 }); fillHeights(m, () => h); takeDirty(m); return m; };
@@ -95,4 +95,51 @@ test('paintRGBA options: sand by the water, bare crater floors, blades of grass,
   assert.ok(blades > 10 && !solidAt(m, 15, 10.05), 'blades are drawn over the grass, the cells stay air');
   const rocky = px(15, 1); assert.ok(Math.abs(rocky[0] - rocky[2]) < 30, 'rock is grey');
   assert.ok(px(15, 8)[0] > px(15, 5)[0], 'earth darkens with height below deepFrom');
+});
+
+test('fieldRGBA writes a signed distance, a smooth coverage and the paint for a shader', () => {
+  const m = flat(10), n = m.cols * m.rows * 4, field = new Uint8Array(n), paint = new Uint8Array(n);
+  splash(m, 20, 10, 2, 1);
+  fieldRGBA(m, field, paint, { rockAt: x => (x > 30 ? 1 : 0), grassAt: x => x < 35, tints: 2 });
+  const px = (x, y) => ((Math.floor(y / m.cell) * m.cols + Math.floor(x / m.cell)) * 4);
+  const sdAt = (x, y) => (field[px(x, y)] - 128) / 4 * m.cell;
+  assert.ok(near(sdAt(5, 9.95), .05, .01), 'the top cell of the ground: half a cell deep');
+  assert.ok(near(sdAt(5, 9.05), .95, .01), 'nine cells further down');
+  assert.ok(near(sdAt(5, 10.05), -.05, .01), 'the air just over the ground');
+  assert.ok(near(sdAt(5, 10.55), -.55, .01));
+  assert.equal(field[px(5, 5) + 1], 255, 'coverage is full inside the ground');
+  assert.equal(field[px(5, 12) + 1], 0, 'and empty in the sky');
+  const edge = field[px(5, 9.95) + 1], above = field[px(5, 10.05) + 1];
+  assert.ok(edge > 127 && above < 128 && edge - above < 150, 'the edge is a ramp through 0.5, not a step');
+  assert.equal(field[px(32, 5) + 2], 255, 'rock where rockAt says');
+  assert.equal(field[px(37, 9.5) + 3], 255, 'bare where grassAt is false');
+  assert.equal(field[px(37, 10.5) + 3], 255, 'and over it, so no grass grows there');
+  assert.equal(field[px(5, 9.5) + 3], 0);
+  assert.ok(paint[px(20, 9.9)] > 200 && paint[px(20, 9.9) + 1] === 255, 'stain and the tint of the coat');
+  assert.ok(paint[px(5, 9.95) + 2] < 200 && paint[px(5, 5) + 2] === 255, 'wide coverage falls near the air');
+  // A repaint of a crater only rewrites the columns around it.
+  // A gentle staircase (one cell every ten columns) reads as a smooth slope.
+  const slope = createMask({ width: 10, height: 4, cell: .1 }), fs = new Uint8Array(slope.cols * slope.rows * 4);
+  fillHeights(slope, x => 2 + Math.floor(x) * .1); fieldRGBA(slope, fs, new Uint8Array(fs.length));
+  const surf = c => 2.05 + (fs[(20 * slope.cols + c) * 4] - 128) / 4 * slope.cell;   // surface seen from row 20 (y 2.05)
+  for (let c = 15; c < 80; c++) assert.ok(surf(c + 1) - surf(c) < .05 && surf(c + 1) >= surf(c) - 1e-9, `no step at column ${c}`);
+  const before = field.slice();
+  carve(m, 20, 10, 2); fieldRGBA(m, field, paint, {}, takeDirty(m));
+  assert.equal(field[px(20, 8.5) + 1], 0, 'the crater is air now');
+  assert.deepEqual(field.slice(px(2, 0), px(2, 0) + 4), before.slice(px(2, 0), px(2, 0) + 4), 'far columns untouched');
+});
+
+test('coverageContour traces a smooth outline with outward normals', () => {
+  const m = flat(10), n = m.cols * m.rows * 4, field = new Uint8Array(n), paint = new Uint8Array(n);
+  carve(m, 20, 10, 3); fieldRGBA(m, field, paint);
+  const { segments, normals, count } = coverageContour(m, field);
+  assert.ok(count > 300, `a long outline (${count})`);
+  let flatTop = 0, inCrater = 0;
+  for (let i = 0; i < count; i++) {
+    const x = segments[i * 4], y = segments[i * 4 + 1], nx = normals[i * 4], ny = normals[i * 4 + 1];
+    assert.ok(Math.abs(Math.hypot(nx, ny) - 1) < 1e-3);
+    if (Math.abs(x - 20) > 4 && y > 9 && y < 11) { flatTop++; assert.ok(near(y, 10, .06) && ny > .99, 'flat ground: the edge at 10, facing up'); }
+    if (Math.hypot(x - 20, y - 10) < 3.2 && y < 9) { inCrater++; assert.ok(near(Math.hypot(x - 20, y - 10), 3, .2)); assert.ok(nx * (20 - x) + ny * (10 - y) > .8, 'the crater wall faces its centre'); }
+  }
+  assert.ok(flatTop > 100 && inCrater > 40);
 });

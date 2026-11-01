@@ -18,8 +18,10 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { fbm2, rng } from '/engine/random.js';
 
-const SKY_TOP = '#3f86cf', SKY_MID = '#9ccbe8', SKY_LOW = '#ffdcae', HAZE = '#e6dcc0';
-const RIVER = '#4a8c94', RIVER_DEEP = '#24525e', SAVANNA = '#9fb456';
+// The sky by how high you look: a warm cream horizon, gold, then soft teal and blue.
+const SKY = [[0, '#ffd6a0'], [.03, '#fde0b4'], [.075, '#dce6cc'], [.13, '#a7d2da'], [.21, '#76b1dc'], [.4, '#4683c8']];
+const HAZE = '#f2dcb4';
+const RIVER = '#4a8c94', RIVER_DEEP = '#24525e', SAVANNA = '#869c4a', SAVANNA_FAR = '#d6c9a0';
 // The sun hangs low in the west of the sky; its light comes from the front left.
 const SUN_AT = { dx: -38, y: 24, z: -205 };
 const FRONT_Z = .55;   // the earth slab's front face (scene.js)
@@ -72,23 +74,67 @@ function riverMaterial(uniforms) {
   return material;
 }
 
+// The savanna: patches of darker and drier grass and scattered bushes, all in
+// the shader from the world position, fading into the haze.
+function savannaMaterial() {
+  const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+  material.onBeforeCompile = shader => {
+    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vPlain;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPlain = (modelMatrix * vec4(transformed, 1.0)).xz;');
+    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
+      varying vec2 vPlain;
+      float sHash(vec2 p) { return fract(sin(dot(floor(p), vec2(127.1, 311.7))) * 43758.5453); }
+      float sNoise(vec2 p) { vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
+        return mix(mix(sHash(i), sHash(i + vec2(1, 0)), u.x), mix(sHash(i + vec2(0, 1)), sHash(i + vec2(1, 1)), u.x), u.y); }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+      {
+        vec2 p = vPlain * vec2(1.0, 2.2);
+        float grassPatch = sNoise(p * 0.05) * 0.6 + sNoise(p * 0.13) * 0.4;
+        diffuseColor.rgb *= mix(vec3(0.78, 0.86, 0.72), vec3(1.12, 1.05, 0.86), smoothstep(0.3, 0.75, grassPatch));
+        float bush = smoothstep(0.78, 0.86, sNoise(p * 0.45 + 7.0));
+        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.55, 0.68, 0.5), bush * 0.8);
+      }`);
+  };
+  material.customProgramCacheKey = () => 'capis-savanna';
+  return material;
+}
+
+// The sky's colour from the elevation of the view ray, with a warm bloom towards the sun.
+function skyMaterial(sunX) {
+  const stops = SKY.map(([at, hex]) => ({ at, color: new THREE.Color(hex) }));
+  const glsl = stops.slice(1).map((s, i) => `c = mix(c, vec3(${s.color.r.toFixed(4)}, ${s.color.g.toFixed(4)}, ${s.color.b.toFixed(4)}), smoothstep(${stops[i].at.toFixed(3)}, ${s.at.toFixed(3)}, e));`).join(' ');
+  const first = stops[0].color;
+  return new THREE.ShaderMaterial({
+    uniforms: { uSun: { value: new THREE.Vector3(sunX, SUN_AT.y, SUN_AT.z) } },
+    vertexShader: 'varying vec3 vWorld; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform vec3 uSun; varying vec3 vWorld;
+    void main() {
+      vec3 d = normalize(vWorld - cameraPosition);
+      float e = d.y;
+      vec3 c = vec3(${first.r.toFixed(4)}, ${first.g.toFixed(4)}, ${first.b.toFixed(4)});
+      ${glsl}
+      float sun = max(0.0, dot(d, normalize(uSun - cameraPosition)));
+      c += vec3(1.0, 0.62, 0.3) * (pow(sun, 24.0) * 0.35 + pow(sun, 6.0) * 0.12);
+      gl_FragColor = vec4(c, 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+    depthWrite: false, fog: false,
+  });
+}
+
 export function createBackdrop(scene, map) {
   const group = new THREE.Group(), mid = map.width / 2, sunX = mid + SUN_AT.dx; scene.add(group);
   const random = rng(map.seed + 5), glow = glowTexture(), uniforms = { uTime: { value: 0 }, uSunX: { value: sunX } };
-  scene.background = new THREE.Color(SKY_LOW);
+  scene.background = new THREE.Color(SKY[0][1]);
   scene.fog = new THREE.Fog(HAZE, 80, 270);
-  // Sky: a vertical gradient far behind everything, warm at the horizon.
-  const sky = new THREE.PlaneGeometry(1000, 300, 1, 16), colors = [], top = new THREE.Color(SKY_TOP), midSky = new THREE.Color(SKY_MID), low = new THREE.Color(SKY_LOW);
-  for (let i = 0; i < sky.attributes.position.count; i++) {
-    const k = THREE.MathUtils.clamp((sky.attributes.position.getY(i) + 70) / 200, 0, 1);
-    const c = k < .3 ? low.clone().lerp(midSky, k / .3) : midSky.clone().lerp(top, (k - .3) / .7); colors.push(c.r, c.g, c.b);
-  }
-  sky.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  const skyMesh = new THREE.Mesh(sky, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, depthWrite: false }));
+  // Sky: graded by the height of the view direction (not the world height), so
+  // the play view and the whole map both get the warm horizon and the blue above.
+  const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(1000, 400), skyMaterial(sunX));
   skyMesh.position.set(mid, 60, -240); group.add(skyMesh);
   // The sun: a glow and its bright disc, both on one sprite each.
-  const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: '#ffc27a', blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true, opacity: .85 }));
-  sunGlow.scale.setScalar(120); sunGlow.position.set(sunX, SUN_AT.y, SUN_AT.z + 2); group.add(sunGlow);
+  const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: '#ffc27a', blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true, opacity: .7 }));
+  sunGlow.scale.setScalar(95); sunGlow.position.set(sunX, SUN_AT.y, SUN_AT.z + 2); group.add(sunGlow);
   const sunDisc = new THREE.Mesh(new THREE.CircleGeometry(6, 32), new THREE.MeshBasicMaterial({ color: '#fff1cf', fog: false }));
   sunDisc.position.set(sunX, SUN_AT.y, SUN_AT.z); group.add(sunDisc);
   // Clouds drifting slowly east, lit warm from below.
@@ -108,9 +154,13 @@ export function createBackdrop(scene, map) {
   const deep = new THREE.Mesh(new THREE.PlaneGeometry(700, 30), new THREE.MeshBasicMaterial({ color: RIVER_DEEP, transparent: true, opacity: .6, depthWrite: false }));
   deep.position.set(mid, map.water - 15, 3.2); group.add(deep);
   // Savanna beyond the river, then three ranges of hills, paler with distance.
-  const savanna = new THREE.Mesh(new THREE.PlaneGeometry(700, 140), new THREE.MeshLambertMaterial({ color: SAVANNA }));
+  // The savanna fades from grass near the river to the haze at the horizon (vertex colours, one draw).
+  const flat = new THREE.PlaneGeometry(700, 140, 1, 8), near = new THREE.Color(SAVANNA), far = new THREE.Color(SAVANNA_FAR), tones = [];
+  for (let i = 0; i < flat.attributes.position.count; i++) { const k = THREE.MathUtils.smoothstep(flat.attributes.position.getY(i), -70, 70); const c = near.clone().lerp(far, k * k); tones.push(c.r, c.g, c.b); }
+  flat.setAttribute('color', new THREE.Float32BufferAttribute(tones, 3));
+  const savanna = new THREE.Mesh(flat, savannaMaterial());
   savanna.rotation.x = -Math.PI / 2; savanna.position.set(mid, map.water + 1.2, -100); group.add(savanna);
-  for (const [width, height, z, color, seed] of [[460, 8, -112, '#86a84c', 3], [560, 24, -165, '#7f9f80', 9], [700, 42, -225, '#a3b4ac', 15]]) {
+  for (const [width, height, z, color, seed] of [[460, 7, -112, '#879f55', 3], [560, 16, -165, '#8fa58f', 9], [700, 26, -225, '#a9b9bb', 15]]) {
     const r = ridge(width, map.water, height, z, color, seed); r.position.x = mid; group.add(r);
   }
   // Morichales: groves of moriche palms on the far bank and out on the savanna,
@@ -120,7 +170,8 @@ export function createBackdrop(scene, map) {
     for (let i = 0; i < n; i++) grove.push({ x: cx + (random() - .5) * spread * 2, y: map.water + 1.2, z: cz + (random() - .5) * spread, rot: random() * 6.3, scale: .8 + random() * .45 });
   }
   instancePlacements(group, moriche({ seed: 5, h: 12, detail: 'low', fruit: false }), grove, { name: 'moriche-grove', cellSize: Infinity, castShadow: false });
-  const palms = [[-12, -30, 12, 3], [92, -30, 11, 11], [77.2, -4.2, 5, 21]].map(([x, z, h, seed]) => { const palm = moriche({ seed, h }); palm.position.set(x, map.water + .6, z); group.add(palm); return palm; });
+  // Far ones in less detail and without fruit; the sandbar palm, near the play, in full.
+  const palms = [[-12, -30, 12, 3, 'lite'], [92, -30, 11, 11, 'lite'], [77.2, -4.2, 5, 21, 'game']].map(([x, z, h, seed, detail]) => { const palm = moriche({ seed, h, detail, fruit: detail === 'game' }); palm.position.set(x, map.water + .6, z); group.add(palm); return palm; });
   // Reeds and rocks at the water's edge, behind the slab and past both banks.
   const reedAt = [];
   for (let i = 0; i < 14; i++) {
@@ -129,7 +180,7 @@ export function createBackdrop(scene, map) {
   }
   reedAt.push({ x: 75.4, y: map.water + .6, z: -3.4, rot: 1, scale: .8 }, { x: 78.6, y: map.water - .1, z: -3.2, rot: 2, scale: .9 });
   for (let i = 0; i < 4; i++) reedAt.push({ x: 4 + random() * 72, y: map.water - .3, z: -9 - random() * 6, rot: random() * 6.3, scale: .7 + random() * .5 });
-  instancePlacements(group, reeds({ seed: 4 }), reedAt, { name: 'shore-reeds', cellSize: Infinity, castShadow: false });
+  instancePlacements(group, reeds({ seed: 4, detail: 'low' }), reedAt, { name: 'shore-reeds', cellSize: Infinity, castShadow: false });
   const rockAt = [[-1.5, 1.5, 1.2], [-6, -4, 1.8], [map.width + 1.6, 1.2, 1.4], [map.width + 4, -3, 2.2], [map.width - 7.5, -3.8, 1.3], [2.5, -4.5, 1]]
     .map(([x, z, s]) => ({ x, y: map.water - .45 * s, z, rot: random() * 6.3, scale: s }));
   instancePlacements(group, mossRock({ seed: 9, size: 1, color: '#b49a78' }), rockAt, { name: 'shore-rocks', cellSize: Infinity, castShadow: false });
