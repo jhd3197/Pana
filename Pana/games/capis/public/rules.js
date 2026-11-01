@@ -10,11 +10,11 @@
 // 'flight' (the shell is in the air), 'retreat' (a few seconds to walk away),
 // 'settle' (everyone stops sliding), then the other team's turn. 'finished'
 // when a team has no capis left.
-import { carve, splash, drips, solidAt } from '../../../engine/play/terrain-mask.js';
+import { carve, splash, drips, solidAt, surfaceY } from '../../../engine/play/terrain-mask.js';
 import { stepSideWalker, knock, settled } from '../../../engine/play/side-walker.js';
 import { aimVelocity, stepFlight } from '../../../engine/play/ballistic.js';
 import { draw, clamp } from '../../../engine/random.js';
-import { LLANOS, SPAWNS, buildMap } from './map-rules.js';
+import { generateMap, DEFAULT_SIZE } from './map-rules.js';
 
 export const RULES = Object.freeze({
   radius: .7,          // a capi's body disc
@@ -55,16 +55,19 @@ export function flightOptions(m, targets = m.capys.filter(alive).map(c => ({ ...
     bounds: { water: m.map.water - .3, left: -20, right: m.map.width + 20 } };
 }
 
-export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, humans = [0], map = LLANOS } = {}) {
-  const m = { map, mask: buildMap(map), seed: seed >>> 0, phase: 'aim', winner: null, wind: 0, shot: null, events: [],
-    options: { seconds: TURN_SECONDS.includes(seconds) ? seconds : 35, difficulty }, humans,
+// A match on the map of `seed` and `size` (map-rules.js): the same seed
+// gives the same ground, spawns and winds, so a match can be replayed.
+export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null } = {}) {
+  const { map, mask } = generated || generateMap(seed, size);
+  const m = { map, mask, seed: map.seed >>> 0, phase: 'aim', winner: null, wind: 0, shot: null, events: [],
+    options: { seconds: TURN_SECONDS.includes(seconds) ? seconds : 35, difficulty, size: map.size }, humans,
     last: [-1, -1], turn: null, clock: 0, shots: 0, capys: [] };
-  SPAWNS.forEach((xs, team) => xs.forEach((x, slot) => {
-    m.capys.push({ id: `${team}-${slot}`, team, slot, name: NAMES[team][slot], x, y: map.height - 2, vx: 0, vy: 0,
+  map.spawns.forEach((xs, team) => xs.forEach((x, slot) => {
+    m.capys.push({ id: `${team}-${slot}`, team, slot, name: NAMES[team][slot], x, y: surfaceY(mask, x) ?? map.height - 2, vx: 0, vy: 0,
       grounded: false, facing: team ? -1 : 1, aim: .55, paint: 0, out: null, jumpPress: 0, slide: 0 });
   }));
-  // Drop everyone onto the ground before the first turn.
-  for (let i = 0; i < 400; i++) for (const c of m.capys) stepSideWalker(c, {}, 1 / 60, m.mask, walkerOptions(m, true));
+  // Settle everyone onto the ground before the first turn.
+  for (let i = 0; i < 60; i++) for (const c of m.capys) stepSideWalker(c, {}, 1 / 60, m.mask, walkerOptions(m, true));
   startTurn(m, 0);
   m.events.length = 0; m.events.push({ type: 'turn', team: 0, capy: m.turn.capy, first: true });
   return m;

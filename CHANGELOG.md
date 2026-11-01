@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos estrena un mapa distinto en cada partida, y más grande.**
+  La orilla se genera de un número: colinas, un río en el medio, a veces El
+  Tepuyito con sus cuevas, islas, mesetas, arcos de piedra y cuevas, igual de
+  justa para los dos equipos. Elige mapa pequeño, mediano o grande, escribe
+  el número de un mapa para repetirlo (también `?seed=`) o pide la revancha en
+  el mismo mapa al terminar.
+
 - **El terreno de Capis a Pintazos ahora se ve hecho a mano.**
   Bordes suaves sin escalones, tierra con vetas, piedritas y raíces, roca con
   grietas, arena con su orilla mojada, una franja de grama con matas bajitas

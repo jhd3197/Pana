@@ -22,7 +22,13 @@
     <h1 id="lobby-title" class="pk-title" translate="no">Capis a Pintazos</h1>
     <p class="pk-copy" data-room-description>Tres capis por equipo en la orilla del llano. Por turnos, apunta la bazuca de pintura, mide el viento y tumba a los rivales al río o píntalos enteros.</p>
     <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
+    <p id="lobby-seed" class="pk-copy lobby-seed" translate="no"></p>
     <div id="room-options"></div>
+    <div class="seed-card" data-room-extra>
+      <label class="pk-eyebrow" for="seed-input">Número del mapa</label>
+      <div class="seed-row"><input id="seed-input" type="number" min="1" max="99999" inputmode="numeric" aria-describedby="seed-help"><button id="seed-new" class="pk-btn pk-btn--ghost" type="button">Otro mapa</button></div>
+      <small id="seed-help" class="pk-copy">Cada partida trae un mapa nuevo. Escribe un número para repetir uno.</small>
+    </div>
     <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando…</button></div>
   </section>
   <main id="hud" hidden>
@@ -38,6 +44,7 @@
     <section class="teams-panel pk-panel" aria-label="Equipos">
       <ol id="team-0" class="team-list"></ol>
       <ol id="team-1" class="team-list"></ol>
+      <span id="map-seed" class="map-seed" translate="no"></span>
     </section>
     <section id="power-bar" class="pk-power" hidden aria-label="Fuerza del tiro">
       <div class="pk-power-control"><span id="power-label">Fuerza</span><div id="power" class="pk-charge" role="meter" aria-labelledby="power-label" aria-valuemin="5" aria-valuemax="100" aria-valuenow="5"><i class="pk-charge-fill"></i><i class="pk-charge-marker"></i></div><span id="power-value" aria-hidden="true">5%</span><span>Suelta</span></div>
@@ -61,7 +68,7 @@
     </div>
   </main>
   <div id="toast" class="pk-toast" role="status" aria-live="polite"></div>
-  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">FIN DE LA PARTIDA</span><h2 id="result-title" class="pk-title"></h2><p id="result-copy" class="pk-copy"></p><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra partida</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">FIN DE LA PARTIDA</span><h2 id="result-title" class="pk-title"></h2><p id="result-copy" class="pk-copy"></p><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra partida</button><button id="same-map" class="pk-btn pk-btn--ghost pk-btn--block">Revancha en este mapa</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
   <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">Preparando Capis a Pintazos</h2><p>Llenando las bazucas de pintura…</p></div></div>
   <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
 </body>

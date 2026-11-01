@@ -69,20 +69,23 @@ export function createCapisScene(canvas, match) {
   scene.add(new THREE.HemisphereLight('#ffe9c8', '#5f5a34', 1.45));
   const sun = new THREE.DirectionalLight('#ffd9a8', 2.5); sun.position.set(-34, 30, 34); scene.add(sun);
   const rim = new THREE.DirectionalLight('#ffb27a', .7); rim.position.set(30, 14, -40); scene.add(rim);
-  const backdrop = createBackdrop(scene, match.map);
-  let mask = match.mask;
+  const backdrop = createBackdrop(scene, match.map, match.mask);
+  let mask = match.mask, shown = match.map;
   const palette = { ...PALETTE, sandBelow: match.map.water + 2.4, water: match.map.water };
 
   // ---------- the ground ----------
   // One shader draws the slab (engine/play/terrain-material.js): the front
   // face, the wall extruded from the smooth outline, and the back wall (the
   // starting ground plus the map's hollows) so a crater reads as a dent.
-  const terrain = createTerrain(scene, mask, { palette, rockAt, grassAt, zBack: SLAB[0], zFront: SLAB[1], back: true, renderer });
+  // What the earth is made of comes from the map on show (map-rules.js).
+  const ground = { rockAt: (x, y) => rockAt(shown, x, y), grassAt: (x, y) => grassAt(shown, x, y) };
+  const makeTerrain = () => createTerrain(scene, mask, { palette, ...ground, zBack: SLAB[0], zFront: SLAB[1], back: true, renderer });
+  let terrain = makeTerrain(), plain = false;
   // If the ground's shader cannot compile here, draw it in plain colour instead of not at all.
   renderer.debug.onShaderError = (gl, program, vs, fs) => {
     const ground = /terrainColor/.test(gl.getShaderSource(fs) || '');
     console.error(`capis: a shader failed to compile${ground ? '; the ground falls back to plain colour' : ''}`, gl.getShaderInfoLog(fs) || gl.getShaderInfoLog(vs));
-    if (ground) terrain.fallback();
+    if (ground) { plain = true; terrain.fallback(); }
   };
   function paintTerrain(rect = takeDirty(mask)) {
     if (!rect) return;
@@ -137,7 +140,8 @@ export function createCapisScene(canvas, match) {
   }
   const capis = new Map();
   function setMatch(next) {
-    match = next; mask = next.mask;
+    const resized = next.mask.cols !== mask.cols || next.mask.rows !== mask.rows, remap = next.map !== shown;
+    match = next; mask = next.mask; shown = next.map;
     for (const c of match.capys) {
       let m = capis.get(c.id);
       if (!m) { m = buildCapi(c); capis.set(c.id, m); scene.add(m.root); }
@@ -145,7 +149,11 @@ export function createCapisScene(canvas, match) {
       Object.assign(m, { hit: 0, sink: 0, fall: 0, paint: -1, lastX: c.x, speed: 0, yaw, pitch: pose.pitch, drop: pose.drop });
       m.root.visible = true; m.root.rotation.set(0, 0, 0); m.gun.visible = true;
     }
-    takeDirty(mask); terrain.reset(mask); backdrop.shore(mask);
+    takeDirty(mask);
+    // A map of another size needs ground textures of another size.
+    if (resized) { terrain.dispose(); terrain = makeTerrain(); if (plain) terrain.fallback(); } else terrain.reset(mask);
+    if (remap) backdrop.setMap(next.map, mask); else backdrop.shore(mask);
+    backdrop.react('idle');
     for (const spray of sprays) spray.clear();
   }
   setMatch(match);
@@ -171,6 +179,9 @@ export function createCapisScene(canvas, match) {
   let wide = false, hold = 0, holdAt = null, time = 0, shooter = null, flashT = 0, trailT = 0;
   let closeUp = 0;   // a narrower view for test screenshots (capisDebug)
   const viewWidth = () => wide ? match.map.width + 8 : closeUp || (camera.aspect < 1 ? 22 : 34);
+  // The whole map sits on the bottom of the screen with the sky above it,
+  // however wide the map is: the bottom edge stays a little under the water.
+  const wideY = half => Math.max(match.map.height * .35, half / camera.aspect + match.map.water - 13);
 
   function event(e) {
     const c = e.capy && capis.get(e.capy), team = e.team ?? e.by;
@@ -345,9 +356,11 @@ export function createCapisScene(canvas, match) {
     const target = match.shot ? { x: match.shot.x, y: match.shot.y } : hold && holdAt ? holdAt : active ? { x: active.x, y: active.y + 1.5 } : focus;
     const half = viewWidth() / 2;
     const tx = wide ? match.map.width / 2 : THREE.MathUtils.clamp(target.x, half - 6, match.map.width - half + 6);
-    const ty = wide ? match.map.height * .35 : Math.max(match.map.water + 4, target.y);
+    const ty = wide ? wideY(half) : Math.max(match.map.water + 4, target.y);
     focus.lerp(goal.set(tx, ty), 1 - Math.exp(-dt * (match.shot ? 6 : 3)));
     const distance = half / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / camera.aspect;
+    // The haze starts past the ground, so a wide map is not fogged in the whole-map view.
+    scene.fog.near = Math.max(80, distance + 12); scene.fog.far = scene.fog.near + 190;
     const kick = feel.update(dt, { decay: 4 });
     camera.position.set(focus.x + kick.yaw * 25, focus.y + distance * .16 + kick.pitch * 25, FRONT + distance);
     camera.lookAt(focus.x + kick.yaw * 25, focus.y, FRONT);

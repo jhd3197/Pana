@@ -17,16 +17,30 @@ import { ROOM_OPTIONS, defaultOptions, roomOptions } from './options.js';
 import { createMatch, tickMatch, takeEvents, activeCapy, alive, fire } from './rules.js';
 import { createBot } from './bot.js';
 import { createHud } from './hud.js';
+import { mapSeed, mapSize, SEED_LIMIT } from './map-rules.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const HUMAN = 0, STEP = 1 / 60;
-let world = null, match = createMatch(), playing = false, bot = null, options = defaultOptions(), acc = 0, lastTick = 0;
+// Every match is a new map from a seed; ?seed=12345 (and ?size=large) replays one.
+const newSeed = () => 1 + Math.floor(Math.random() * (SEED_LIMIT - 1));
+let options = { ...defaultOptions(), ...(params.has('size') ? { size: mapSize(params.get('size')) } : {}) };
+let seed = mapSeed(params.get('seed')) ?? newSeed();
+let world = null, match = createMatch({ seed, size: options.size }), playing = false, bot = null, acc = 0, lastTick = 0;
 const hud = createHud($, { human: HUMAN }), notify = createToast($('toast'), { ms: 2600 });
 
+// The lobby shows the map the match will be played on.
+function preview() {
+  if (match.map.seed !== seed || match.map.size !== options.size) match = createMatch({ seed, size: options.size });
+  world?.setMatch(match); hud.build(match);
+  $('seed-input').value = String(seed); $('lobby-seed').textContent = loc('Mapa #{n}', { n: seed });
+}
 const panel = createRoomOptions($('room-options'), { title: 'Capis a Pintazos', fields: ROOM_OPTIONS, // i18n-ignore: the game's name
-  change: patch => { options = roomOptions(options, patch); panel.update(options, true); },
-  reset: () => { options = defaultOptions(); panel.update(options, true); } });
+  change: patch => { options = roomOptions(options, patch) || options; panel.update(options, true); preview(); },
+  reset: () => { options = defaultOptions(); panel.update(options, true); preview(); } });
 panel.update(options, true);
+$('seed-input').value = String(seed); $('lobby-seed').textContent = loc('Mapa #{n}', { n: seed });
+$('seed-input').addEventListener('change', () => { seed = mapSeed($('seed-input').value) ?? seed; preview(); });
+$('seed-new').onclick = () => { seed = newSeed(); preview(); };
 const menu = createGameMenu({ title: 'Capis a Pintazos · Pana', sound, orientation: 'libre', // i18n-ignore: the game's name
   pad: { move: 'wasd', keys: { a: ['Space', loc('Cargar y disparar')], b: ['Enter', loc('Saltar')], y: ['KeyZ', loc('Ver todo el mapa')] } },
   note: () => loc('La partida está en pausa.'),
@@ -41,7 +55,10 @@ $('rules').onclick = () => menu.open('controls');
 // ---------- the match ----------
 function start() {
   sound.unlock();
-  match = createMatch({ seconds: options.seconds, difficulty: options.difficulty, seed: (Date.now() >>> 0) % 100000 });
+  match = createMatch({ seconds: options.seconds, difficulty: options.difficulty, seed, size: options.size });
+  // The address replays this map: share it, or reload it, for the same ground.
+  const url = new URL(location.href); url.searchParams.set('seed', String(seed)); url.searchParams.set('size', options.size); history.replaceState(null, '', url);
+  $('map-seed').textContent = loc('Mapa #{n}', { n: seed });
   bot = createBot({ team: 1 - HUMAN, difficulty: options.difficulty, seed: match.seed + 1 });
   world?.setMatch(match); hud.build(match);
   playing = true; acc = 0; lastTick = 0; world.wide = false;
@@ -54,7 +71,9 @@ function toLobby() {
   if (world) world.wide = true;
 }
 $('start').onclick = start;
-$('again').onclick = toLobby;
+// Another match: a new map in the lobby, or a rematch on this one.
+$('again').onclick = () => { seed = newSeed(); toLobby(); preview(); };
+$('same-map').onclick = start;
 
 // ---------- input ----------
 const keys = new Set(), touch = new Set();
@@ -153,7 +172,7 @@ function render() {
 export const { sceneReady } = bootGame({
   load: async () => (await import('./scene.js')).createCapisScene($('world'), match),
   ready: (created) => {
-    world = created; world.wide = true; hud.build(match);
+    world = created; world.wide = true; if (world.match !== match) world.setMatch(match); hud.build(match);
     $('start').disabled = false; $('start').textContent = loc('¡A pintar!');
   },
   frame: (dt, scene) => {

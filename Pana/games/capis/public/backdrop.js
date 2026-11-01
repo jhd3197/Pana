@@ -123,85 +123,67 @@ function skyMaterial(sunX) {
   });
 }
 
-export function createBackdrop(scene, map) {
-  const group = new THREE.Group(), mid = map.width / 2, sunX = mid + SUN_AT.dx; scene.add(group);
-  const random = rng(map.seed + 5), glow = glowTexture(), uniforms = { uTime: { value: 0 }, uSunX: { value: sunX } };
+// Where the ground meets the water line, as runs of bank [from, to] in world x.
+function shoreRuns(mask, water) {
+  const r = Math.floor((water + .05) / mask.cell), runs = [];
+  let start = -1;
+  for (let c = 0; c <= mask.cols; c++) {
+    const solid = c < mask.cols && mask.solid[r * mask.cols + c];
+    if (solid && start < 0) start = c;
+    if (!solid && start >= 0) { runs.push([start * mask.cell, c * mask.cell]); start = -1; }
+  }
+  return runs;
+}
+
+// Everything is laid out from the map (its width, its banks and islands), so
+// a new map of any size calls setMap(map, mask) and the world follows it.
+export function createBackdrop(scene, map, mask) {
+  const group = new THREE.Group(); scene.add(group);
+  const glow = glowTexture(), uniforms = { uTime: { value: 0 }, uSunX: { value: 0 } };
   scene.background = new THREE.Color(SKY[0][1]);
   scene.fog = new THREE.Fog(HAZE, 80, 270);
+  const sky = skyMaterial(0);
   // Sky: graded by the height of the view direction (not the world height), so
   // the play view and the whole map both get the warm horizon and the blue above.
-  const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(1000, 400), skyMaterial(sunX));
-  skyMesh.position.set(mid, 60, -240); group.add(skyMesh);
+  const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(1400, 420), sky); group.add(skyMesh);
   // The sun: a glow and its bright disc, both on one sprite each.
   const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: '#ffc27a', blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true, opacity: .7 }));
-  sunGlow.scale.setScalar(95); sunGlow.position.set(sunX, SUN_AT.y, SUN_AT.z + 2); group.add(sunGlow);
-  const sunDisc = new THREE.Mesh(new THREE.CircleGeometry(6, 32), new THREE.MeshBasicMaterial({ color: '#fff1cf', fog: false }));
-  sunDisc.position.set(sunX, SUN_AT.y, SUN_AT.z); group.add(sunDisc);
+  sunGlow.scale.setScalar(95); group.add(sunGlow);
+  const sunDisc = new THREE.Mesh(new THREE.CircleGeometry(6, 32), new THREE.MeshBasicMaterial({ color: '#fff1cf', fog: false })); group.add(sunDisc);
   // Clouds drifting slowly east, lit warm from below.
   const clouds = new THREE.InstancedMesh(cloudGeometry(), new THREE.MeshLambertMaterial({ color: '#ffffff', emissive: '#ffe6cf', emissiveIntensity: .62, flatShading: true, fog: false }), 9);
-  const cloudAt = Array.from({ length: 9 }, (_, i) => ({ x: mid - 200 + i * 48 + random() * 20, y: 38 + random() * 34, z: -170 - random() * 25, s: .9 + random() * .9, speed: .5 + random() * .6 }));
+  const cloudRandom = rng(41), cloudAt = Array.from({ length: 9 }, (_, i) => ({ i, y: 38 + cloudRandom() * 34, z: -170 - cloudRandom() * 25, s: .9 + cloudRandom() * .9, speed: .5 + cloudRandom() * .6, jitter: cloudRandom() * 20 }));
   const dummy = new THREE.Object3D();
+  let mid = map.width / 2, wrap = 440;
   function placeClouds(time) {
-    for (let i = 0; i < cloudAt.length; i++) {
-      const c = cloudAt[i], x = ((c.x + time * c.speed - mid + 220) % 440 + 440) % 440 + mid - 220;
-      dummy.position.set(x, c.y, c.z); dummy.scale.set(c.s * 1.4, c.s, c.s); dummy.updateMatrix(); clouds.setMatrixAt(i, dummy.matrix);
+    for (const c of cloudAt) {
+      const x0 = mid - wrap / 2 + c.i * wrap / 9 + c.jitter, x = ((x0 + time * c.speed - mid + wrap / 2) % wrap + wrap) % wrap + mid - wrap / 2;
+      dummy.position.set(x, c.y, c.z); dummy.scale.set(c.s * 1.4, c.s, c.s); dummy.updateMatrix(); clouds.setMatrixAt(c.i, dummy.matrix);
     }
   }
-  placeClouds(0); clouds.frustumCulled = false; group.add(clouds);
+  clouds.frustumCulled = false; group.add(clouds);
   // The river: a wide sheet at the water line, and its deep face in front.
-  const river = new THREE.Mesh(new THREE.PlaneGeometry(700, 160), riverMaterial(uniforms));
-  river.rotation.x = -Math.PI / 2; river.position.set(mid, map.water, -50); group.add(river);
-  const deep = new THREE.Mesh(new THREE.PlaneGeometry(700, 30), new THREE.MeshBasicMaterial({ color: RIVER_DEEP, transparent: true, opacity: .6, depthWrite: false }));
-  deep.position.set(mid, map.water - 15, 3.2); group.add(deep);
-  // Savanna beyond the river, then three ranges of hills, paler with distance.
-  // The savanna fades from grass near the river to the haze at the horizon (vertex colours, one draw).
-  const flat = new THREE.PlaneGeometry(700, 140, 1, 8), near = new THREE.Color(SAVANNA), far = new THREE.Color(SAVANNA_FAR), tones = [];
+  const river = new THREE.Mesh(new THREE.PlaneGeometry(900, 160), riverMaterial(uniforms));
+  river.rotation.x = -Math.PI / 2; group.add(river);
+  const deep = new THREE.Mesh(new THREE.PlaneGeometry(900, 30), new THREE.MeshBasicMaterial({ color: RIVER_DEEP, transparent: true, opacity: .6, depthWrite: false })); group.add(deep);
+  // Savanna beyond the river, fading from grass near the river to the haze at the horizon (vertex colours, one draw).
+  const flat = new THREE.PlaneGeometry(900, 140, 1, 8), near = new THREE.Color(SAVANNA), far = new THREE.Color(SAVANNA_FAR), tones = [];
   for (let i = 0; i < flat.attributes.position.count; i++) { const k = THREE.MathUtils.smoothstep(flat.attributes.position.getY(i), -70, 70); const c = near.clone().lerp(far, k * k); tones.push(c.r, c.g, c.b); }
   flat.setAttribute('color', new THREE.Float32BufferAttribute(tones, 3));
   const savanna = new THREE.Mesh(flat, savannaMaterial());
-  savanna.rotation.x = -Math.PI / 2; savanna.position.set(mid, map.water + 1.2, -100); group.add(savanna);
-  for (const [width, height, z, color, seed] of [[460, 7, -112, '#879f55', 3], [560, 16, -165, '#8fa58f', 9], [700, 26, -225, '#a9b9bb', 15]]) {
-    const r = ridge(width, map.water, height, z, color, seed); r.position.x = mid; group.add(r);
-  }
-  // Morichales: groves of moriche palms on the far bank and out on the savanna,
-  // one instanced prototype; two nearer palms keep their own sway.
-  const grove = [];
-  for (const [cx, cz, n, spread] of [[-22, -48, 3, 7], [14, -62, 4, 9], [62, -58, 4, 9], [100, -50, 3, 7], [40, -96, 4, 16]]) {
-    for (let i = 0; i < n; i++) grove.push({ x: cx + (random() - .5) * spread * 2, y: map.water + 1.2, z: cz + (random() - .5) * spread, rot: random() * 6.3, scale: .8 + random() * .45 });
-  }
-  instancePlacements(group, moriche({ seed: 5, h: 12, detail: 'low', fruit: false }), grove, { name: 'moriche-grove', cellSize: Infinity, castShadow: false });
-  // Far ones in less detail and without fruit; the sandbar palm, near the play, in full.
-  const palms = [[-12, -30, 12, 3, 'lite'], [92, -30, 11, 11, 'lite'], [77.2, -4.2, 5, 21, 'game']].map(([x, z, h, seed, detail]) => { const palm = moriche({ seed, h, detail, fruit: detail === 'game' }); palm.position.set(x, map.water + .6, z); group.add(palm); return palm; });
-  // Reeds and rocks at the water's edge, behind the slab and past both banks.
-  const reedAt = [];
-  for (let i = 0; i < 14; i++) {
-    const west = i % 2 === 0, x = west ? -4 + random() * 9 : map.width - 6 + random() * 12;
-    reedAt.push({ x, y: map.water - .25, z: -3.2 - random() * 8, rot: random() * 6.3, scale: .8 + random() * .7 });
-  }
-  reedAt.push({ x: 75.4, y: map.water + .6, z: -3.4, rot: 1, scale: .8 }, { x: 78.6, y: map.water - .1, z: -3.2, rot: 2, scale: .9 });
-  for (let i = 0; i < 4; i++) reedAt.push({ x: 4 + random() * 72, y: map.water - .3, z: -9 - random() * 6, rot: random() * 6.3, scale: .7 + random() * .5 });
-  instancePlacements(group, reeds({ seed: 4, detail: 'low' }), reedAt, { name: 'shore-reeds', cellSize: Infinity, castShadow: false });
-  const rockAt = [[-1.5, 1.5, 1.2], [-6, -4, 1.8], [map.width + 1.6, 1.2, 1.4], [map.width + 4, -3, 2.2], [map.width - 7.5, -3.8, 1.3], [2.5, -4.5, 1]]
-    .map(([x, z, s]) => ({ x, y: map.water - .45 * s, z, rot: random() * 6.3, scale: s }));
-  instancePlacements(group, mossRock({ seed: 9, size: 1, color: '#b49a78' }), rockAt, { name: 'shore-rocks', cellSize: Infinity, castShadow: false });
-  // Corocoras crossing the sky in two loose flocks.
-  const birds = birdFlock(scarletIbis({ seed: 3, detail: 'low' }), { routes: [{ cx: mid - 20, cz: -60, cy: 30, r: 46, speed: .1 }, { cx: mid + 35, cz: -95, cy: 40, r: 60, speed: -.075, phase: 2 }], size: 4, seed: 6, scale: 1.5 });
+  savanna.rotation.x = -Math.PI / 2; group.add(savanna);
+  // Corocoras crossing the sky in two loose flocks (their routes follow the map).
+  const routes = [{ cx: 0, cz: -60, cy: 30, r: 46, speed: .1 }, { cx: 0, cz: -95, cy: 40, r: 60, speed: -.075, phase: 2 }];
+  const birds = birdFlock(scarletIbis({ seed: 3, detail: 'low' }), { routes, size: 4, seed: 6, scale: 1.5 });
   group.add(birds);
   // Foam where the bank meets the water, along the slab's front: one
   // instanced soft strip per stretch of shore, re-laid after a blast.
   const foamMaterial = new THREE.MeshBasicMaterial({ map: glow, color: '#f4fbff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: .55 });
-  const foam = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), foamMaterial, 24);
+  const foam = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), foamMaterial, 36);
   foam.count = 0; foam.frustumCulled = false; group.add(foam);
-  function shore(mask) {
-    const r = Math.floor((map.water + .05) / mask.cell), runs = [];
-    let start = -1;
-    for (let c = 0; c <= mask.cols; c++) {
-      const solid = c < mask.cols && mask.solid[r * mask.cols + c];
-      if (solid && start < 0) start = c;
-      if (!solid && start >= 0) { runs.push([start * mask.cell, c * mask.cell]); start = -1; }
-    }
+  function shore(ground) {
     let n = 0;
-    for (const [a, b] of runs) {
+    for (const [a, b] of shoreRuns(ground, map.water)) {
       // The front line of the run, and a short tongue round each end where the bank goes back into the slab.
       for (const [x, z, sx, sz] of [[(a + b) / 2, FRONT_Z + .25, b - a + 1.2, .9], [a, (FRONT_Z - 2.6) / 2, 1.3, 3.6], [b, (FRONT_Z - 2.6) / 2, 1.3, 3.6]]) {
         if (n >= foam.instanceMatrix.count) break;
@@ -210,6 +192,53 @@ export function createBackdrop(scene, map) {
     }
     foam.count = n; foam.instanceMatrix.needsUpdate = true;
   }
+  // The map's own scenery (ridges, groves, palms, reeds, rocks), rebuilt for each map.
+  let layout = null, palms = [];
+  function setMap(next, ground) {
+    map = next; mid = map.width / 2; wrap = Math.max(440, map.width * 3);
+    const sunX = mid + SUN_AT.dx, wide = Math.max(1, map.width / 140), random = rng(map.seed * 7 + 5);
+    uniforms.uSunX.value = sunX; sky.uniforms.uSun.value.set(sunX, SUN_AT.y, SUN_AT.z);
+    skyMesh.position.set(mid, 60, -240); sunGlow.position.set(sunX, SUN_AT.y, SUN_AT.z + 2); sunDisc.position.set(sunX, SUN_AT.y, SUN_AT.z);
+    river.position.set(mid, map.water, -50); deep.position.set(mid, map.water - 15, 3.2); savanna.position.set(mid, map.water + 1.2, -100);
+    routes[0].cx = mid - map.width * .25; routes[0].r = 46 * wide; routes[1].cx = mid + map.width * .44; routes[1].r = 60 * wide;
+    placeClouds(0);
+    if (layout) { layout.traverse(o => { o.geometry?.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m?.dispose?.()); }); layout.removeFromParent(); }
+    layout = new THREE.Group(); group.add(layout);
+    // Three ranges of hills, paler with distance, wide enough for the whole-map view.
+    for (const [width, height, z, color, seed] of [[460, 7, -112, '#879f55', 3], [560, 16, -165, '#8fa58f', 9], [700, 26, -225, '#a9b9bb', 15]]) {
+      const r = ridge(width * wide, map.water, height, z, color, seed); r.position.x = mid; layout.add(r);
+    }
+    // Morichales: groves of moriche palms on the far bank and out on the
+    // savanna, one instanced prototype, spread along the whole map.
+    const grove = [], groves = Math.round(4 + map.width / 35);
+    for (let g = 0; g < groves; g++) {
+      const cx = -map.width * .15 + map.width * 1.3 * (g + .3 + random() * .4) / groves, cz = -46 - random() * 22 - (g % 3 === 2 ? 34 : 0), n = 3 + Math.floor(random() * 2);
+      for (let i = 0; i < n; i++) grove.push({ x: cx + (random() - .5) * 14, y: map.water + 1.2, z: cz + (random() - .5) * 8, rot: random() * 6.3, scale: .8 + random() * .45 });
+    }
+    instancePlacements(layout, moriche({ seed: 5, h: 12, detail: 'low', fruit: false }), grove, { name: 'moriche-grove', cellSize: Infinity, castShadow: false });
+    // The shores of this map: the reeds, the rocks and the near palm stand by them.
+    const runs = shoreRuns(ground, map.water), edges = runs.flatMap(([a, b]) => [a > 1 ? a : null, b < map.width - 1 ? b : null]).filter(x => x !== null);
+    const islands = runs.filter(([a, b]) => a > 1 && b < map.width - 1 && b - a < 12);
+    // Far palms past each end in less detail and without fruit; the near one, by an island or a bank, in full.
+    const nearPalm = islands.length ? (islands[0][0] + islands[0][1]) / 2 : edges.length ? edges[Math.floor(random() * edges.length)] : mid;
+    palms = [[-12, -30, 12, 3, 'lite'], [map.width + 12, -30, 11, 11, 'lite'], [nearPalm + .6, -4.2, 5, 21, 'game']].map(([x, z, h, seed, detail]) => {
+      const palm = moriche({ seed, h, detail, fruit: detail === 'game' }); palm.position.set(x, map.water + .6, z); layout.add(palm); return palm;
+    });
+    // Reeds and rocks at the water's edge, behind the slab and past both ends.
+    const reedAt = [], clumps = Math.round(10 + 4 * wide);
+    for (let i = 0; i < clumps; i++) {
+      const end = i % 3 === 0, x = end ? (i % 2 ? -4 + random() * 9 : map.width - 6 + random() * 12) : (edges.length ? edges[i % edges.length] + (random() - .5) * 5 : random() * map.width);
+      reedAt.push({ x, y: map.water - .25, z: -3.2 - random() * 8, rot: random() * 6.3, scale: .8 + random() * .7 });
+    }
+    for (const [a, b] of islands) reedAt.push({ x: a + .4, y: map.water + .3, z: -3.4, rot: 1, scale: .8 }, { x: b - .4, y: map.water - .1, z: -3.2, rot: 2, scale: .9 });
+    instancePlacements(layout, reeds({ seed: 4, detail: 'low' }), reedAt, { name: 'shore-reeds', cellSize: Infinity, castShadow: false });
+    const rockAt = [[-1.5, 1.5, 1.2], [-6, -4, 1.8], [map.width + 1.6, 1.2, 1.4], [map.width + 4, -3, 2.2], [2.5, -4.5, 1]]
+      .concat(edges.slice(0, 4).map((x, i) => [x + (i % 2 ? 1.5 : -1.5), -3.8, 1 + random() * .4]))
+      .map(([x, z, s]) => ({ x, y: map.water - .45 * s, z, rot: random() * 6.3, scale: s }));
+    instancePlacements(layout, mossRock({ seed: 9, size: 1, color: '#b49a78' }), rockAt, { name: 'shore-rocks', cellSize: Infinity, castShadow: false });
+    shore(ground);
+  }
+  setMap(map, mask);
   // The player's pana on a dock by the west bank.
   const dock = new THREE.Mesh(new THREE.BoxGeometry(3.2, .3, 2.4), new THREE.MeshLambertMaterial({ color: '#8a5a34' }));
   dock.position.set(-3.5, map.water + .4, -2.5); group.add(dock);
@@ -220,7 +249,7 @@ export function createBackdrop(scene, map) {
   pana.group.position.set(-3.5, map.water + .55, -2.5); pana.group.rotation.y = .5; pana.group.scale.setScalar(1.5); group.add(pana.group);
   let mood = 'idle', time = 0;
   return {
-    pana, shore,
+    pana, shore, setMap,
     // 'cheer' (a good shot), 'ouch' (our capi was hit), 'win', 'lose'.
     react(kind) {
       if (kind === 'cheer') pana.bounce(1.2);
