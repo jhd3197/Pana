@@ -115,7 +115,8 @@ test('fieldRGBA writes a signed distance, a smooth coverage and the paint for a 
   assert.equal(field[px(37, 9.5) + 3], 255, 'bare where grassAt is false');
   assert.equal(field[px(37, 10.5) + 3], 255, 'and over it, so no grass grows there');
   assert.equal(field[px(5, 9.5) + 3], 0);
-  assert.ok(paint[px(20, 9.9)] > 200 && paint[px(20, 9.9) + 1] === 255, 'stain and the tint of the coat');
+  assert.ok(paint[px(20, 9.5)] > 200 && paint[px(20, 9.5) + 1] === 255, 'stain and the tint of the coat');
+  assert.ok(paint[px(20, 9.95)] < paint[px(20, 9.5)], 'softened at the edge of the ground (round drops)');
   assert.ok(paint[px(5, 9.95) + 2] < 200 && paint[px(5, 5) + 2] === 255, 'wide coverage falls near the air');
   // A repaint of a crater only rewrites the columns around it.
   // A gentle staircase (one cell every ten columns) reads as a smooth slope.

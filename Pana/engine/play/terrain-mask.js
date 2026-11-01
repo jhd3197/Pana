@@ -267,7 +267,7 @@ export function paintRGBA(m, rgba, { earth, deep, grass, topsoil = deep, tints =
 //          G  coverage: the solid cells blurred [1 6 15 20 15 6 1] (the edge sits at 0.5)
 //          B  rockAt(x, y) 0..1 (every cell, so rock fades smoothly at the edge)
 //          A  bare: 255 when grassAt says the top surface over (or under) the cell has no grass
-//   paint  R  stain   G  tint / (tints − 1)
+//   paint  R  stain, blurred [1 2 1] so drops and streaks have round ends   G  tint / (tints − 1)
 //          B  wide coverage (a box blur of `wide` cells): soft occlusion near air
 //          A  cells of solid ground down to the first air below (an overhang's underside)
 // `extra` (a Uint8Array like solid) counts as ground too: a back wall's hollows.
@@ -320,12 +320,14 @@ export function fieldRGBA(m, field, paint, { rockAt = null, grassAt = null, tint
     }
   }
   // Coverage: a small separable blur (the silhouette) and a wide box blur (occlusion).
-  const span = c1 - c0 + 1, k5 = [1, 6, 15, 20, 15, 6, 1], h5 = new Float32Array(span * rows), hw = new Float32Array(span * rows);
+  const span = c1 - c0 + 1, k5 = [1, 6, 15, 20, 15, 6, 1], h5 = new Float32Array(span * rows), hw = new Float32Array(span * rows), hs = new Float32Array(span * rows);
+  const stainAt = (c, r) => (c < 0 || c >= cols ? 0 : m.stain[(r < 0 ? 0 : r >= rows ? rows - 1 : r) * cols + c]);
   for (let r = 0; r < rows; r++) for (let j = 0; j < span; j++) {
     const c = c0 + j;
     let s = 0; for (let d = -3; d <= 3; d++) s += k5[d + 3] * at(c + d, r);
     let w = 0; for (let d = -wide; d <= wide; d++) w += at(c + d, r);
     h5[r * span + j] = s / 64; hw[r * span + j] = w / (2 * wide + 1);
+    hs[r * span + j] = (stainAt(c - 1, r) + 2 * stainAt(c, r) + stainAt(c + 1, r)) / 4;
   }
   const rowOf = r => (r < 0 ? 0 : r >= rows ? rows - 1 : r) * span;
   for (let j = 0; j < span; j++) {
@@ -334,6 +336,7 @@ export function fieldRGBA(m, field, paint, { rockAt = null, grassAt = null, tint
       let w = 0; for (let d = -wide; d <= wide; d++) w += hw[rowOf(r + d) + j];
       const o = (r * cols + c0 + j) * 4;
       field[o + 1] = Math.round(s / 64 * 255); paint[o + 2] = Math.round(w / (2 * wide + 1) * 255);
+      paint[o] = Math.round((hs[rowOf(r - 1) + j] + 2 * hs[rowOf(r) + j] + hs[rowOf(r + 1) + j]) / 4);
     }
   }
 }

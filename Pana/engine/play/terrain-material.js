@@ -73,15 +73,17 @@ vec4 tPebbles(vec2 p, float size, float chance) {
 }
 // Height of the grass tufts along x: soft rounded clumps of a few blades.
 float tTufts(float x) {
-  float clump = smoothstep(0.15, 0.85, tNoise(vec2(x * 1.1, 4.0)));
+  float clump = smoothstep(0.2, 0.8, tNoise(vec2(x * 1.4, 4.0))) * 0.75 + 0.25 * tNoise(vec2(x * 5.0, 6.0));
   float h = 0.0;
   for (int k = 0; k < 3; k++) {
-    float w = k == 0 ? 0.21 : k == 1 ? 0.13 : 0.085;
-    float u = (x + float(k) * 0.37) / w, i = floor(u), f = fract(u) * 2.0 - 1.0;
-    float blade = pow(max(0.0, 1.0 - f * f), 0.75) * (0.45 + 0.55 * tHash(vec2(i, float(k) + 2.0)));
-    h = max(h, blade * (1.0 - 0.22 * float(k)));
+    float w = k == 0 ? 0.23 : k == 1 ? 0.14 : 0.09;
+    float u = (x + float(k) * 0.37) / w, i = floor(u);
+    float lean = (tHash(vec2(i, float(k) + 8.0)) - 0.5) * 0.5;
+    float f = (fract(u) - 0.5 - lean * 0.3) * 2.0 / (0.7 + 0.3 * tHash(vec2(i, float(k) + 4.0)));
+    float blade = pow(max(0.0, 1.0 - f * f), 0.7) * (0.2 + 0.8 * tHash(vec2(i, float(k) + 2.0)));
+    h = max(h, blade * (1.0 - 0.18 * float(k)));
   }
-  return h * uTuft * (0.4 + 0.6 * clump);
+  return h * uTuft * (0.25 + 0.75 * clump);
 }
 vec4 terrainColor() {
   vec3 P = vTerrainP, N = normalize(vTerrainN);
