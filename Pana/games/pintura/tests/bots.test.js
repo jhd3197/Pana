@@ -36,7 +36,7 @@ test('seatBots honours the count, re-seats instead of piling up, and keeps teams
   // Both people on team 0 (seats 0 and 2): two bots both join team 1.
   const teams = lobby({ mode: 'teams', bots: 2 }, 2); assert.ok(teams.moveSeat(2, 1, 2, 1));
   teams.seatBots(make); assert.deepEqual(bots(teams).map(p => p.team), [1, 1]); assert.ok(teams.start());
-  const flag = lobby({ flag: true, bots: 3 }); flag.seatBots(make);
+  const flag = lobby({ mode: 'ctf', bots: 3 }); flag.seatBots(make);
   const count = t => flag.players.filter(p => p.team === t).length; assert.equal(count(0), 2); assert.equal(count(1), 2);
   assert.ok(flag.start()); assert.equal(flag.seatBots(make), 0, 'no re-seating mid-round');
 });

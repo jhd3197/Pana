@@ -34,7 +34,7 @@ test('a spawn out of every rival\'s sight beats a slightly farther one in the op
 });
 
 test('round start places every pana on its own spawn, far from those already placed', () => {
-  for (const id of ['plaza', 'muelle', 'noche', 'terminal']) for (const options of [{}, { mode: 'teams' }, { flag: true }]) {
+  for (const id of ['plaza', 'muelle', 'noche', 'terminal']) for (const options of [{}, { mode: 'teams' }, { mode: 'ctf' }]) {
     const g = room(id, 8, options);
     assert.equal(new Set(g.players.map(p => p.spawn)).size, 8, `${id} ${JSON.stringify(options)}: eight different spawns`);
     g.players.forEach(p => assert.deepEqual({ x: p.x, z: p.z }, spawnsFor(id)[p.spawn]));
@@ -44,7 +44,7 @@ test('round start places every pana on its own spawn, far from those already pla
 });
 
 test('teams keep their own side; El Puerto keeps its two facing bases', () => {
-  for (const options of [{ mode: 'teams' }, { flag: true }]) for (let seed = 1; seed < 6; seed++) {
+  for (const options of [{ mode: 'teams' }, { mode: 'ctf' }]) for (let seed = 1; seed < 6; seed++) {
     const g = room('terminal', 8, options, seed);
     for (const p of g.players) assert.equal(Math.sign(p.x), p.team ? 1 : -1, `seat ${p.seat} spawns in its team's base`);
     for (const p of g.players) { g.respawn(p); assert.equal(Math.sign(p.x), p.team ? 1 : -1, 'and respawns there'); }

@@ -3,7 +3,7 @@
 import { locKey } from '../../../engine/i18n.js';
 
 export const PEPAS = 12;           // balls in the ammo row; bigger magazines show a fraction of it
-export const FLAG_GOAL = 3;        // captures that end a flag round (rules.js)
+export const FLAG_GOAL = 3;        // default captures that end a flag round (options.js flagGoal)
 // The knockout lines rules.js says: the killfeed already shows them, so the bottom pill stays quiet.
 export const KILL_LINES = new Set([locKey('{owner} pintó a {victim} · {distance} m'), locKey('Un pana pintó a {victim} · {distance} m')]);
 
@@ -14,7 +14,7 @@ export function race(state, id, target) {
   const players = state.players || [], me = players.find(p => p.id === id), n = players.length;
   const order = [...players].sort((a, b) => b.score - a.score || a.hits - b.hits);
   const rank = Math.max(1, order.findIndex(p => p.id === id) + 1);
-  const flag = !!state.options?.flag, teams = flag || state.options?.mode === 'teams', goal = flag ? FLAG_GOAL : target;
+  const flag = state.options?.mode === 'ctf', teams = flag || state.options?.mode === 'teams', goal = flag ? state.options.flagGoal || FLAG_GOAL : target;
   if (teams && me) {
     const mine = me.team ? 1 : 0, scores = state.teamScores || [0, 0];
     return { teams, flag, rank, n, goal, me: { team: mine, score: scores[mine] || 0 }, rival: { team: 1 - mine, score: scores[1 - mine] || 0 } };

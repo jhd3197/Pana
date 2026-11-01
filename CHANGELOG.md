@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo tiene modo Captura la bandera.**
+  Dos equipos, una bandera en cada base de todos los mapas: tómala, llévala a
+  la tuya y anota mientras la tuya esté en casa. Capturas y tiempo límite en
+  el lobby, bots que atacan, escoltan y defienden, y marcadores y sonidos de
+  cada bandera.
+
 - **En El Puerto de Pepazo los barriles de cada base ya no tienen una caja invisible alrededor.**
   Chocas con cada barril, no con una caja de 3 x 2,6 m, y las dos bases tienen
   los barriles en espejo. `npm run collision-report -- --fix` propone y aplica
