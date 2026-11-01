@@ -1,7 +1,8 @@
 import { cleanKit, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO, rangedDamage } from './armory-data.js';
 import { createMelee, startSwing, stepMelee, swingHit, throwStart, stepThrown, aimThrow, inHand } from '../../../engine/play/melee.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
-import { DEFAULT_OPTIONS, validOptions } from './options.js';
+import { DEFAULT_OPTIONS, validOptions, teamPlay, roundTime, livesOf } from './options.js';
+import { isCtf, ctfReset, ctfStep, ctfDrop, ctfOutcome, ctfGoal } from './ctf.js';
 import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/worlds/arena-layouts.js';
 import { MUELLE_COVERS, MUELLE_SPAWNS, MUELLE_SIZE } from './muelle-layout.js';
 import { NOCHE_COVERS, NOCHE_SPAWNS, NOCHE_SIZE } from './noche-layout.js';
@@ -170,7 +171,7 @@ function distanceField(grid, target) {
   return far;
 }
 export class Arena {
-  constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; this.camoOwners = new Map(); }
+  constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.flagEvents = []; this.flagSerial = 0; this.outcome = null; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; this.camoOwners = new Map(); }
   // A camo the seat does not own falls back to the first solid one (camoRefusal names it for the client).
   selectKit(id, value) { const p=this.players.find(p=>p.id===id && p.connected); if(!p || this.phase==='playing') return false; p.kit=cleanKit(value); if(!ownsCamo(p.kit.camo,this.camoOwners.get(id))) p.kit.camo=FALLBACK_CAMO; p.weapon=p.kit.weapon; return true; }
   // The camos a seat owns beyond the solid ones: the room passes the gateway's signed list, practice the local one.
@@ -180,18 +181,18 @@ export class Arena {
   camoRefusal(id, value) { const camo=cleanKit(value).camo; return ownsCamo(camo,this.camoOwners.get(id)) ? '' : camo; }
   // Why selectKit would refuse this seat right now ('' when it would accept): the client says so instead of dropping the pick.
   kitRejection(id) { return !this.players.some(p=>p.id===id && p.connected) ? 'absent' : this.phase==='playing' ? 'playing' : ''; }
-  configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.players.forEach(p => { p.color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? p.team : p.seat]; }); return true; }
+  configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.players.forEach(p => { p.color = COLORS[teamPlay(this.options) ? p.team : p.seat]; }); return true; }
   moveSeat(actorId, from, to, hostId) {
-    if (!['lobby', 'finished'].includes(this.phase) || !(this.options.mode === 'teams' || this.options.flag)) return false;
+    if (!['lobby', 'finished'].includes(this.phase) || !teamPlay(this.options)) return false;
     const seats = paintSeats(this.players);
     if (!canMoveSeats(seats, from, to, actorId, hostId) || !this.players.some(p => p.connected && p.id === actorId)) return false;
     [seats[from], seats[to]] = [seats[to], seats[from]];
     seats.forEach((p, seat) => { if (p) Object.assign(p, { seat, team: seat % 2, color: COLORS[seat % 2] }); });
     return true;
   }
-  canStart() { const people = this.players.filter(p => p.connected); return !(this.options.mode === 'teams' || this.options.flag) || people.length < 2 || new Set(people.map(p => p.team)).size === 2; }
+  canStart() { const people = this.players.filter(p => p.connected); return !teamPlay(this.options) || people.length < 2 || new Set(people.map(p => p.team)).size === 2; }
   get cover() { return coverFor(this.mapId, this.variant); }
-  sameTeam(a, b) { return (this.options.mode === 'teams' || this.options.flag) && a?.team === b?.team; }
+  sameTeam(a, b) { return teamPlay(this.options) && a?.team === b?.team; }
   selectMap(id) {
     if (this.phase !== 'lobby' || !validPaintArena(id)) return false;
     this.mapId = id; this.players.forEach((p, i) => Object.assign(p, spawnsFor(id)[i % 8])); return true;
@@ -207,7 +208,7 @@ export class Arena {
     const free = Array.from({ length: SEATS }, (_, i) => i).filter(i => !occupied.includes(i));
     const seat = p && !occupied.includes(p.seat) ? p.seat : free.includes(want) ? want : free[0];
     if (seat === undefined) return null;
-    const team = seat % 2, color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? team : seat];
+    const team = seat % 2, color = COLORS[teamPlay(this.options) ? team : seat];
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.
     if (this.phase === 'playing' && !this.loading) this.ready.add(id);
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); return p; }
@@ -220,7 +221,7 @@ export class Arena {
   seatBots(make) {
     if (this.phase !== 'lobby') return 0;
     this.players = this.players.filter(p => !p.bot && p.connected);
-    const count = botCount(this.options.bots, this.players.length), teams = this.options.mode === 'teams' || this.options.flag;
+    const count = botCount(this.options.bots, this.players.length), teams = teamPlay(this.options);
     for (let i = 0; i < count; i++) {
       const people = this.players.filter(p => p.connected), taken = new Set(people.map(p => p.seat));
       const free = Array.from({ length: SEATS }, (_, s) => s).filter(s => !taken.has(s));
@@ -234,7 +235,7 @@ export class Arena {
   // round count stays, so the next court still rotates its layout.
   toLobby({ keepBots = false } = {}) {
     return returnToLobby(this, { keepBots, reset: g => {
-      Object.assign(g, { survivors: null, loading: 0, countdown: 0, time: g.options.duration, balls: [], splats: [], grenades: [], thrown: [], puddles: [], booms: [], flags: [], teamScores: [0, 0] }); g.ready = new Set();
+      Object.assign(g, { survivors: null, outcome: null, flagEvents: [], loading: 0, countdown: 0, time: roundTime(g.options), balls: [], splats: [], grenades: [], thrown: [], puddles: [], booms: [], flags: [], teamScores: [0, 0] }); g.ready = new Set();
       g.players.forEach((p, i) => Object.assign(p, spawnsFor(g.mapId)[i % 8], { respawn: 0, eliminated: false }));
       g.say(locKey('La cancha está lista.'));
     } });
@@ -242,8 +243,8 @@ export class Arena {
   // Only from the lobby: a finished round goes through toLobby() first.
   start() {
     if (this.phase !== 'lobby' || !this.canStart()) return false;
-    this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = [];
-    this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }));
+    this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = roundTime(this.options); this.teamScores = [0, 0]; this.outcome = null; ctfReset(this); this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = [];
+    this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: teamPlay(this.options) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }));
     this.players.forEach(p => this.refill(p));
     // One by one, so each pana spawns away from the rivals already placed and on a free spot.
     const placed = [];
@@ -273,7 +274,7 @@ export class Arena {
   // Team rounds keep each side on its own half of the spawns: even indices are team 0's
   // (El Puerto's west base and the orange flag), odd ones team 1's.
   spawnPoint(p, enemies, taken = []) {
-    const spawns = spawnsFor(this.mapId), teams = this.options.mode === 'teams' || this.options.flag;
+    const spawns = spawnsFor(this.mapId), teams = teamPlay(this.options);
     const sees = (e, s) => !this.cover.some(o => segmentBox(e.x, e.z, s.x - e.x, s.z - e.z, o) !== null);
     p.spawn = pickSpawn(spawns, { enemies, taken, last: p.spawn ?? -1, allowed: teams ? spawns.map((_, i) => i).filter(i => i % 2 === p.team) : null, sees, rng: this.random });
     const { x, z } = spawns[p.spawn]; return { x, z };
@@ -313,14 +314,14 @@ export class Arena {
     let x = clear ? dx / length * (length > 9 ? .8 : -.25) - dz / length * strafe * .6 : Math.cos(t * .6);
     let z = clear ? dz / length * (length > 9 ? .8 : -.25) + dx / length * strafe * .6 : Math.sin(t * .6);
     // A rival out of sight and far away: walk the open lanes toward them.
-    const hunt = !clear && length > 12 && this.route(p, q.x, q.z);
+    const hunt = !clear && length > 12 && !isCtf(this.options) && this.route(p, q.x, q.z);
     if (hunt) ({ x, z } = hunt);
     else if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { x = -dz / length; z = dx / length; }
-    if (this.options.flag) {
-      const carried = this.flags.find(f => f.carrier === p.id), target = carried ? this.flags[p.team] : this.flags[1 - p.team];
-      const tx = carried ? target.homeX : target.x, tz = carried ? target.homeZ : target.z, d = Math.hypot(tx - p.x, tz - p.z) || 1;
-      x = (tx - p.x) / d; z = (tz - p.z) / d;
-      const step = d > 2 && this.route(p, tx, tz); if (step) ({ x, z } = step);
+    // Capture the flag (ctf.js ctfGoal): walk the lanes to the bot's flag goal; inside `near` m it fights as usual.
+    const goal = isCtf(this.options) && ctfGoal(this, p), gx = goal && goal.x - p.x, gz = goal && goal.z - p.z, gd = goal ? Math.hypot(gx, gz) || 1 : 0;
+    if (goal && gd > goal.near) {
+      x = gx / gd; z = gz / gd;
+      const step = gd > 2 && this.route(p, goal.x, goal.z); if (step) ({ x, z } = step);
       else if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { const swap = x; x = -z; z = swap; }
     }
     const stats = kitStats(p.kit, this.options);
@@ -334,7 +335,7 @@ export class Arena {
   // swings once inside the reach. With a throwable one (La Chancleta) it throws at a
   // rival 5–22 m away in sight, pitched by aimThrow; the recall is its cooldown.
   meleeBot(p, q, { clear, length, x, z, ax, az, fire }, stats) {
-    if (clear && !this.options.flag) {
+    if (clear && !isCtf(this.options)) {
       x = (q.x - p.x) / length; z = (q.z - p.z) / length;
       if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { const swap = x; x = -z; z = swap; }
     }
@@ -447,11 +448,12 @@ export class Arena {
     for(const ball of this.balls) if(ball.rocket && ball.life<=0 && !ball.exploded) this.blast(ball,ball.splash);
     this.stepGrenades(dt); this.flyThrown(dt);
     this.balls = this.balls.filter(b => b.life > 0); this.booms = this.booms.filter(b => (b.life -= dt) > 0); this.splats = this.splats.filter(s => (s.life -= dt) > 0).slice(-64);
-    if (this.options.flag) this.updateFlags();
-    const alive = this.players.filter(p => p.connected && !p.eliminated), teams = this.options.mode === 'teams' || this.options.flag;
-    const eliminatedEnd = this.options.lives > 0 && this.players.some(p => p.eliminated) && this.players.length > 1 && (teams ? new Set(alive.map(p => p.team)).size <= 1 : alive.length <= 1);
+    if (isCtf(this.options)) ctfStep(this, dt);
+    const alive = this.players.filter(p => p.connected && !p.eliminated), teams = teamPlay(this.options);
+    const eliminatedEnd = livesOf(this.options) > 0 && this.players.some(p => p.eliminated) && this.players.length > 1 && (teams ? new Set(alive.map(p => p.team)).size <= 1 : alive.length <= 1);
     if (eliminatedEnd) this.survivors = alive.map(p => p.id);
-    if (this.time <= 0 || eliminatedEnd || (this.options.flag ? this.teamScores.some(s => s >= 3) : teams ? this.teamScores.some(s => s >= TARGET) : this.players.some(p => p.score >= TARGET))) { this.phase = 'finished'; this.balls = []; this.thrown = []; }
+    const ctf = isCtf(this.options) && ctfOutcome(this); if (ctf) this.outcome = ctf;
+    if (ctf || this.time <= 0 || eliminatedEnd || (!isCtf(this.options) && (teams ? this.teamScores.some(s => s >= TARGET) : this.players.some(p => p.score >= TARGET)))) { this.phase = 'finished'; this.balls = []; this.thrown = []; }
   }
   // The grenade leaves the hand on release (its fuse starts then: a held grenade
   // never cooks, so lag can never blow one up in a pana's hand).
@@ -548,11 +550,11 @@ export class Arena {
     const toughness = kitStats(victim.kit,this.options).toughness, weapon = impact.weapon || null, thrown = !!impact.thrown;
     victim.paint = Math.min(toughness, victim.paint + Math.max(1, damage)); victim.stains = [...victim.stains, color].slice(-5); victim.calm = 0;
     if (victim.paint < toughness) { this.event('hit', owner, victim, distance, { weapon, thrown }); return; }
-    victim.respawn = 2.5; victim.hits++; victim.slow = this.options.paint === 'sticky' ? 7 : 0; victim.eliminated = this.options.lives > 0 && victim.hits >= this.options.lives;
+    victim.respawn = 2.5; victim.hits++; victim.slow = this.options.paint === 'sticky' ? 7 : 0; victim.eliminated = livesOf(this.options) > 0 && victim.hits >= livesOf(this.options);
     const rival = !!owner && !this.sameTeam(owner, victim), revenge = rival && owner.nemesis === victim.id;
-    if (rival) { owner.score++; owner.streak++; if (revenge) owner.nemesis = null; victim.nemesis = owner.id; if (!this.options.flag) this.teamScores[owner.team]++; }
+    if (rival) { owner.score++; owner.streak++; if (revenge) owner.nemesis = null; victim.nemesis = owner.id; if (!isCtf(this.options)) this.teamScores[owner.team]++; }
     victim.streak = 0;
-    for (const flag of this.flags) if (flag.carrier === victim.id) { flag.carrier = null; flag.x = victim.x; flag.z = victim.z; }
+    if (isCtf(this.options)) ctfDrop(this, victim);
     if (owner) this.say(locKey('{owner} pintó a {victim} · {distance} m'), { owner: owner.name, victim: victim.name, distance }); else this.say(locKey('Un pana pintó a {victim} · {distance} m'), { victim: victim.name, distance });
     this.event('out', owner, victim, distance, { streak: rival ? owner.streak : 0, revenge, weapon, thrown, direct: damage === Infinity && !impact.headshot, headshot: !!impact.headshot });
   }
@@ -561,32 +563,15 @@ export class Arena {
   event(type, owner, victim, distance, extra = {}) {
     this.events = [...this.events, { n: ++this.eventSerial, type, owner: owner?.id ?? null, victim: victim.id, color: owner?.color || victim.color, distance, impact: { ...victim.impact }, ...extra }].slice(-12);
   }
-  updateFlags() {
-    const reset = f => Object.assign(f, { x: f.homeX, z: f.homeZ, carrier: null });
-    for (const flag of this.flags) {
-      const carrier = this.players.find(p => p.id === flag.carrier);
-      if (carrier && carrier.connected && !carrier.eliminated && !carrier.respawn) { flag.x = carrier.x; flag.z = carrier.z; }
-      else if (flag.carrier != null) flag.carrier = null;
-      for (const p of this.players.filter(p => p.connected && !p.eliminated && !p.respawn)) {
-        if (flag.carrier == null && Math.hypot(p.x - flag.x, p.z - flag.z) < 1.4) {
-          if (p.team === flag.team) reset(flag); else { flag.carrier = p.id; p.shield = 0; }
-        }
-        if (flag.carrier === p.id) {
-          const home = this.flags[p.team];
-          if (home.carrier == null && Math.hypot(home.x - home.homeX, home.z - home.homeZ) < .1 && Math.hypot(p.x - home.homeX, p.z - home.homeZ) < 2) {
-            this.teamScores[p.team]++; p.score += 3; this.say(locKey('{name} capturó la bandera.'), { name: p.name }); reset(flag);
-          }
-        }
-      }
-    }
-  }
   winners() {
-    const teams = this.options.mode === 'teams' || this.options.flag;
+    const teams = teamPlay(this.options);
+    // Capture the flag: the winning team, or everyone on a draw (ctf.js ctfOutcome).
+    if (!this.survivors?.length && isCtf(this.options) && this.outcome) return this.players.filter(p => this.outcome.winner === null || p.team === this.outcome.winner).map(p => p.id);
     if (this.survivors?.length) { const survivors = this.players.filter(p => this.survivors.includes(p.id)); return teams ? this.players.filter(p => p.team === survivors[0].team).map(p => p.id) : this.survivors; }
     const best = teams ? Math.max(...this.teamScores) : Math.max(...this.players.map(p => p.score));
     return this.players.filter(p => (teams ? this.teamScores[p.team] : p.score) === best).map(p => p.id);
   }
-  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, loading: this.loading, countdown: this.countdown, time: this.time, players: this.players.map(p => ({ ...p, melee: { ...p.melee }, impact: p.impact ? { ...p.impact } : null, stains: [...p.stains] })), thrown: this.thrown.map(f => ({ ...f })), grenades:this.grenades.map(g=>({...g})), booms:this.booms.map(b=>({...b})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message, messageVars: this.messageVars ? { ...this.messageVars } : null }; }
+  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), flagEvents: this.flagEvents.map(e => ({ ...e })), outcome: this.outcome ? { ...this.outcome } : null, teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, loading: this.loading, countdown: this.countdown, time: this.time, players: this.players.map(p => ({ ...p, melee: { ...p.melee }, impact: p.impact ? { ...p.impact } : null, stains: [...p.stains] })), thrown: this.thrown.map(f => ({ ...f })), grenades:this.grenades.map(g=>({...g})), booms:this.booms.map(b=>({...b})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message, messageVars: this.messageVars ? { ...this.messageVars } : null }; }
 }
 
 // Stable lobby positions are independent of member IDs and survive roster changes.

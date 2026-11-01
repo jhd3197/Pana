@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Arena } from '../public/rules.js';
+import { ctfStep } from '../public/ctf.js';
 const game = options => { const g = new Arena('plaza', 'normal', { toughness: 1, ...options }); for (let id = 1; id <= 4; id++) g.add(id, { name: `Pana ${id}` }); g.start(); g.go(); return g; };
 function shoot(g, a, b) { Object.assign(a, { x: -3, z: -4, shield: 0, cooldown: 0 }); Object.assign(b, { x: 3, z: -4, shield: 0 }); g.step(.05, new Map([[a.id, { ax: 1, az: 0, fire: true }]])); for (let i = 0; i < 5; i++) g.step(.05); }
 test('teams prevent friendly hits unless enabled; finite lives eliminate and sticky paint slows respawns', () => {
@@ -22,11 +23,11 @@ test('elimination awards the surviving team even when the eliminated team scored
   assert.equal(g.phase, 'finished'); assert.deepEqual(g.winners(), [1, 3]);
 });
 test('carried flags drop on paint hits and captures score for a team, never for friendly fire', () => {
-  const g = game({ flag: true, lives: 0 }), p = g.players[0], flag = g.flags[1];
-  Object.assign(p, { x: flag.x, z: flag.z }); g.updateFlags(); assert.equal(flag.carrier, p.id);
+  const g = game({ mode: 'ctf', lives: 0 }), p = g.players[0], flag = g.flags[1];
+  Object.assign(p, { x: flag.x, z: flag.z }); ctfStep(g, 0); assert.equal(flag.carrier, p.id);
   shoot(g, g.players[1], p); assert.equal(flag.carrier, null); assert.equal(flag.x, p.x); assert.equal(g.teamScores[1], 0);
-  p.respawn = 0; g.updateFlags(); assert.equal(flag.carrier, p.id);
-  Object.assign(p, { x: g.flags[0].homeX, z: g.flags[0].homeZ }); g.updateFlags(); assert.equal(g.teamScores[0], 1); assert.equal(flag.carrier, null); assert.equal(flag.x, flag.homeX);
+  p.respawn = 0; ctfStep(g, 0); assert.equal(flag.carrier, p.id);
+  Object.assign(p, { x: g.flags[0].homeX, z: g.flags[0].homeZ }); ctfStep(g, 0); assert.equal(g.teamScores[0], 1); assert.equal(flag.carrier, null); assert.equal(flag.x, flag.homeX);
   g.teamScores[0] = 3; g.step(.05); assert.equal(g.phase, 'finished'); assert.deepEqual(g.winners(), [1, 3]);
 });
 
@@ -41,7 +42,7 @@ test('team cards preserve eight stable positions through swaps, disconnects, sta
  assert.equal(old.connected,false,'a full round does not duplicate an occupied seat');assert.equal(new Set(g.players.filter(p=>p.connected).map(p=>p.seat)).size,8);
 });
 test('team changes require an opposing player when friends start, with empty positions available to join', () => {
- const g=new Arena('plaza','normal',{flag:true});g.add(1,{name:'A'});g.add(2,{name:'B'});
+ const g=new Arena('plaza','normal',{mode:'ctf'});g.add(1,{name:'A'});g.add(2,{name:'B'});
  assert(g.moveSeat(2,1,2,1));assert.equal(g.canStart(),false);assert.equal(g.start(),false);
  assert(g.moveSeat(2,2,3,1));assert(g.canStart());assert(g.start());
 });
@@ -49,6 +50,6 @@ test('team changes require an opposing player when friends start, with empty pos
 test('team and flag options update lobby paint colors before the round starts',()=>{
  const g=new Arena();for(let id=1;id<=4;id++)g.add(id,{name:`P${id}`});const original=g.players.map(p=>p.color);
  assert(g.configure({mode:'teams'}));assert.equal(g.players[0].color,g.players[2].color);assert.equal(g.players[1].color,g.players[3].color);
- assert(g.configure({mode:'ffa',flag:false}));assert.deepEqual(g.players.map(p=>p.color),original);
- assert(g.configure({flag:true}));assert.equal(g.players[0].color,g.players[2].color);
+ assert(g.configure({mode:'ffa'}));assert.deepEqual(g.players.map(p=>p.color),original);
+ assert(g.configure({mode:'ctf'}));assert.equal(g.players[0].color,g.players[2].color);
 });

@@ -81,7 +81,7 @@ test('the container yard is selectable, keeps bots inside and flags at its spawn
   for (let i = 0; i < 8; i++) g.add(i + 1, { name: `Pana ${i}`, avatar: {}, bot: i > 0 });
   g.start(); assert.equal(g.view().mapId, 'muelle');
   for (let i = 0; i < 900 && g.phase === 'playing'; i++) { g.step(.05); for (const p of g.players) assert.equal(blocked(p.x, p.z, .55, 'muelle'), false); }
-  const flags = new Arena('muelle', 'normal', { flag: true }); flags.add(1, { name: 'A' }); flags.add(2, { name: 'B' }); flags.start();
+  const flags = new Arena('muelle', 'normal', { mode: 'ctf' }); flags.add(1, { name: 'A' }); flags.add(2, { name: 'B' }); flags.start();
   for (const f of flags.flags) assert.equal(blocked(f.homeX, f.homeZ, 1.4, 'muelle'), false);
 });
 

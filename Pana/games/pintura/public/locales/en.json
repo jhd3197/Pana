@@ -39,7 +39,6 @@
     "one": "{n} taken",
     "other": "{n} taken"
   },
-  "{name} capturó la bandera.": "{name} captured the flag.",
   "{name} te pintó desde {distance} m · sin vidas, observando la ronda": "{name} painted you from {distance} m · out of lives, watching the round",
   "{name} te pintó desde {distance} m · vuelves en {n}": "{name} painted you from {distance} m · back in {n}",
   "{owner} pintó a {victim} · {distance} m": "{owner} painted {victim} · {distance} m",
@@ -73,7 +72,6 @@
   "Arma anterior o siguiente (las de pescozón van al final)": "Previous or next weapon (the melee ones come last)",
   "Armar mi kit": "Build my kit",
   "Armas": "Weapons",
-  "Bandera": "Flag",
   "banderas para ganar": "flags to win",
   "Barre ancho: dos pepazos a quien tengas delante, aunque esté de lado.": "Sweeps wide: two hits on whoever is in front of you, even off to the side.",
   "Blanco": "Target",
@@ -268,5 +266,29 @@
   "Vuelve en": "Back in",
   "Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.": "You return to the court 2.5 seconds after being painted. When you respawn you get 1.5 seconds of protection; shooting cancels it.",
   "WASD / Flechas": "WASD / Arrows",
-  "WASD caminar · Shift correr · Ratón mirar · Clic pintar · Tab tabla · Esc menú": "WASD walk · Shift sprint · Mouse look · Click paint · Tab scoreboard · Esc menu"
+  "WASD caminar · Shift correr · Ratón mirar · Clic pintar · Tab tabla · Esc menú": "WASD walk · Shift sprint · Mouse look · Click paint · Tab scoreboard · Esc menu",
+  "Banderas": "Flags",
+  "La lleva {name}": "{name} has it",
+  "En el suelo · {n} s": "On the ground · {n} s",
+  "En su base": "At base",
+  "¡Llevas la bandera! Corre a tu base": "You have the flag! Run to your base",
+  "¡Llevas la bandera! Recupera la tuya para anotar": "You have the flag! Get yours back to score",
+  "¡Se llevan tu bandera!": "They took your flag!",
+  "Tu bandera está en el suelo: tócala para devolverla": "Your flag is on the ground: touch it to return it",
+  "Base": "Base",
+  "{name} tomó la bandera {flag}.": "{name} took the {flag} flag.",
+  "{name} soltó la bandera {flag}.": "{name} dropped the {flag} flag.",
+  "{name} devolvió la bandera {flag}.": "{name} returned the {flag} flag.",
+  "La bandera {flag} volvió a su base.": "The {flag} flag went back to base.",
+  "{name} capturó la bandera {flag}.": "{name} captured the {flag} flag.",
+  "turquesa": "turquoise",
+  "naranja": "orange",
+  "Captura la bandera": "Capture the flag",
+  "Capturas: naranja {orange} · turquesa {teal}. ¿Otra ronda?": "Captures: orange {orange} · turquoise {teal}. Another round?",
+  "Capturas para ganar": "Captures to win",
+  "Tiempo límite": "Time limit",
+  "{n} captura": {
+    "one": "{n} capture",
+    "other": "{n} captures"
+  }
 }

@@ -22,7 +22,7 @@ test('teams race team against team, and flags end at three', () => {
   const state = { options: { mode: 'teams' }, teamScores: [4, 6], players: [player(1, 2), player(2, 1)] };
   const mine = race(state, 1, 10);   // id 1 is team 1
   assert.ok(mine.teams && !mine.flag); assert.deepEqual([mine.me.team, mine.me.score, mine.rival.team, mine.rival.score], [1, 6, 0, 4]);
-  const flags = race({ ...state, options: { flag: true } }, 2, 10);
+  const flags = race({ ...state, options: { mode: 'ctf' } }, 2, 10);
   assert.ok(flags.flag); assert.equal(flags.goal, 3); assert.equal(flags.me.score, 4);
 });
 

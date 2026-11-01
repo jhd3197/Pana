@@ -2,6 +2,7 @@ import { loc, locn } from '/engine/i18n.js';
 import { icon } from '/engine/icons.js';
 import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, ATTACHMENTS, OPTICS } from './armory-data.js';
 import { TARGET } from './rules.js';
+import { livesOf } from './options.js';
 import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES } from './hud-model.js';
 
 // Pepazo's Banderín HUD: the race to the goal, your aguante and pepas, the reload
@@ -40,9 +41,9 @@ export function createCombatHud(doc = document) {
       if (melee) { set($('ammo-n'), String(stats.damage)); set($('ammo-max'), loc('por golpe')); set($('pepas-label'), loc('Pepazos')); }
       else { set($('ammo-n'), String(ammo)); set($('ammo-max'), `/ ${stats.magazine}${stats.reserve != null ? ` +${me?.reserve ?? stats.reserve}` : ''}`); set($('pepas-label'), loc('Pepas')); }
       $('hop').classList.toggle('low', !melee && lowAmmo(ammo, stats.magazine));
-      const lives = Math.max(0, (state.options?.lives || 0) - (me?.hits || 0));
+      const lives = Math.max(0, livesOf(state.options) - (me?.hits || 0));
       const marker = WEAPONS.find(m => m.id === me?.weapon) || MARKERS[0], group = ARMORY_CLASSES.find(c => c.id === marker.class);
-      set($('ammo'), [marker.name, group && loc(group.kind), state.options?.lives && locn(lives, '{n} vida', '{n} vidas')].filter(Boolean).join(' · '));
+      set($('ammo'), [marker.name, group && loc(group.kind), livesOf(state.options) && locn(lives, '{n} vida', '{n} vidas')].filter(Boolean).join(' · '));
       const fitted = (me?.kit?.attachments || []).filter(Boolean);
       if (parts !== fitted.join()) {
         parts = fitted.join();

@@ -427,7 +427,7 @@ option, so a changed count applies there too.
 
 The shared lobby offers free-for-all or two alternating-seat teams, three/five
 minutes, one/three/unlimited lives, sticky paint, permitted markers, friendly
-fire, faster reloads and capture-the-flag. Eight seats remain available. Teams
+fire, faster reloads, and the capture-the-flag mode. Eight seats remain available. Teams
 share a color and score. A finite-life player stays out after the last hit;
 the surviving player/team wins even if its hit count is lower. Disconnecting
 alone does not end an otherwise live round. The server alone validates settings
@@ -444,11 +444,40 @@ that input. Fast reload is 0.55 seconds instead of 1.3. Sticky paint slows the
 victim for seven seconds including the respawn wait. Friendly hits can consume
 a life when enabled but never award points.
 
-Flag mode uses two teams even when the ordinary mode is free-for-all. Pick up
-the rival flag by touching it, then return to your base while your own flag is
-home. Touching a dropped friendly flag returns it; getting painted drops a
-carried flag. Three captures win, or the clock/finite-life victory ends the
-round. Flags and team scores are authoritative snapshot data and have 3D meshes.
+### Capture the flag ("Captura la bandera")
+
+A third `mode` (`'ctf'`), with its own lobby limits: `flagGoal` (3, 1 or 5
+captures) and `flagTime` (10, 5 or 15 min); `duration` only shows for the other
+modes (`visibleWhen`). `options.js` `teamPlay(options)` is true for teams and
+CTF, `roundTime(options)` gives the round's clock. The flag rules are the
+engine's (`engine/play/objectives.js`, see `docs/SHARED-ENGINE.md`); Pepazo's
+part is `public/ctf.js`: the stand table, round reset, feed lines, the outcome
+and the bot goals. The server room owns the flags like everything else: they
+ride `view()` as `flags`, `flagEvents` (numbered, the last eight) and `outcome`.
+
+- Stands (`FLAG_STANDS`, team 0 orange then team 1 turquoise) sit 4.5–10 m in
+  front of each team's spawns and clear of cover in all three layouts of every
+  map; `tests/ctf.test.js` flood-fills each layout from the team spawns to prove
+  both stands are reachable and at least 30 m apart. A new map needs a row.
+- One tick resolves in a fixed order: carriers follow or drop (painted out,
+  disconnected), then captures (only with your own flag home), then contact (a
+  defender's return beats an attacker's pickup on the same tick; the nearest
+  rival lifts first), then the 30 s auto-return. Painted carriers also drop
+  inside `hit()` so the flag lies exactly where they fell.
+- Time up: more captures wins; a tie goes to the team whose flag is home while
+  the other's is out, then to the team whose flag was taken fewer times, else a
+  draw (`winners()` lists everyone). Kills still add to a pana's own score, never
+  to the team score; a capture is worth 3 personal points.
+- Bots take roles by their order on the team (attack, defend, attack, escort):
+  a carrier runs home, defenders and the nearest bot return a dropped flag or
+  chase the rival carrier, the rest escort a team-mate carrier or go for the
+  rival flag. Goals go through `Arena.route`; the BFS hunt toward a hidden rival
+  is off in CTF so one distance field per bot serves the goal. A 7-bot round on
+  each map ends by the score limit in 40–400 s of game time at about 0.1 ms per tick.
+- Client: `ctf-hud.js` (two chips under the race bar, a carrier/alarm banner,
+  world markers with distance, synth cues for pickup, stolen, drop, return and
+  capture) and `ctf-scene.js` (stand pads, flags with a light column, the
+  carrier's flag on the back). Styles in `ctf.css`.
 
 Team and flag lobbies show the shared avatar roster, with four orange and four turquoise positions. Stable `player.seat` positions are separate from network IDs; team is seat parity. Any connected pana can move their own card, including swapping an occupied position; only the host can arrange other players. The server rejects live-round moves and preserves choices through start, rematch and host departure. With multiple humans, both teams need a player before starting; solo practice still fills bots. Reconnecting into a full arena cannot duplicate another player's position.
 

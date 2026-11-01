@@ -6,6 +6,7 @@ import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { createMuelle } from './muelle.js';
 import { createNoche } from './noche.js';
 import { createTerminal } from './terminal.js';
+import { createCtfProps } from './ctf-scene.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import * as THREE from 'three';
@@ -227,13 +228,8 @@ export function createScene(canvas) {
     mesh.rotation.set(-Math.PI / 2, 0, s.id * 1.7); mesh.position.set(s.x, .06, s.z);
   }
   const face = p => { yaw = Math.atan2(p.x, p.z); pitch = 0; };
-  const flags = [0, 1].map(team => {
-    const root = new THREE.Group(), pole = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, 2.7, 8), material('#f8f0d2'));
-    root.name = `Bandera ${team}`;
-    pole.position.y = 1.35; root.add(pole);
-    const cloth = new THREE.Mesh(new THREE.BoxGeometry(1.1, .65, .06), material(team ? '#29c5cd' : '#f28b42')); cloth.position.set(.55, 2.2, 0); root.add(cloth); scene.add(root); return root;
-  });
-  const bases = flags.map((_, team) => { const ring = new THREE.Mesh(new THREE.RingGeometry(1.7, 1.95, 32), material(team ? '#29c5cd' : '#f28b42')); ring.rotation.x = -Math.PI / 2; scene.add(ring); return ring; });
+  // Capture the flag: stands, flags and the carrier's flag (ctf-scene.js).
+  const ctfProps = createCtfProps(scene);
   const kitObjects=new Map(), grenadeMeshes = new Map();
   // A thrown chancla is the pana's own model (baked), spinning end over end along its
   // arc and gliding between 50 ms snapshots. One per thrower, reused throw after throw.
@@ -291,8 +287,7 @@ export function createScene(canvas) {
     arcRing.userData.set(r.x, groundAt(r.x, r.z, cover) + .06, r.z, def.radius);
   }
   function draw(state, id, dt, aimPoint) {
-    flags.forEach((root, i) => { const flag = state.flags?.[i]; root.visible = !!state.options?.flag && !!flag && state.phase === 'playing'; if (flag) root.position.set(flag.x, flag.carrier == null ? 0 : 2, flag.z); });
-    bases.forEach((ring, i) => { const flag = state.flags?.[i]; ring.visible = flags[i].visible; if (flag) ring.position.set(flag.homeX, .035, flag.homeZ); });
+    ctfProps.draw(state, avatars, dt);
     setMap(state.mapId, state.variant || 0); environment?.update(elapsed, dt);
     canvas.style.width = '100vw'; canvas.style.height = '100dvh';
     resize(); const aspect = canvas.clientWidth / canvas.clientHeight, lobby = state.phase === 'lobby';
@@ -473,6 +468,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { disposed = true; unbind(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); thrownMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { disposed = true; unbind(); ctfProps.dispose(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); thrownMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }
