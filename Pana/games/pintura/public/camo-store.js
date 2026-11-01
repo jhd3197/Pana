@@ -4,6 +4,8 @@
 // fresh JSON. Public Pana has no bridge, and a bridge without a session rejects:
 // either way only the start camos count (`online: false`; `signedOut` when the bridge refused).
 // Answers are cached for `ttl` ms; a call slower than `timeout` ms falls back.
+// A camo got mid-session reaches the room through window.PanaSh.camosSigned(nonce)
+// (optional: see `signed`); without it the room learns it at the next join.
 import { START_CAMOS } from './armory-data.js';
 import { camoById } from './camos.js';
 
@@ -43,6 +45,18 @@ export function createCamoStore({ bridge = () => globalThis.PanaSh, timeout = 50
         () => { if (!cached?.online) cached = { ...offline(false), signedOut: true }; at = -Infinity; return cached; })
         .finally(() => { pending = null; });
       return pending;
+    },
+    // Whether pana.sh can sign the owned list for the room (camosSigned in its bridge).
+    get canSign() { return typeof bridge()?.camosSigned === 'function'; },
+    // pana.sh's signed owned list for the room's nonce, { ids, nonce, exp, sig }, or null.
+    // The room checks the signature (server/src/camo-trust.js verifyRefresh); this only checks the shape.
+    async signed(nonce) {
+      const api = bridge();
+      if (typeof api?.camosSigned !== 'function' || typeof nonce !== 'string' || !nonce) return null;
+      try {
+        const d = await within(Promise.resolve().then(() => api.camosSigned(nonce)));
+        return d && typeof d.ids === 'string' && typeof d.sig === 'string' && Number.isSafeInteger(d.exp) ? { ids: d.ids, nonce, exp: d.exp, sig: d.sig } : null;
+      } catch { return null; }
     },
     // Buys one camo: { ok: true, data } or { ok: false, error } with pana.sh's (Spanish) reason.
     async buy(id) {

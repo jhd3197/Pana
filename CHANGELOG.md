@@ -21,7 +21,9 @@ becomes the GitHub release's notes.
   panas con una marcadora (por ejemplo 15 con La Parrandera) y luego van en
   cualquier arma; Caribe, Tricolor, Llanero, Rumba y Pepazo se compran con
   mangos en pana.sh. No hay selector de color libre, y la sala solo acepta los
-  camuflajes que pana.sh firma como tuyos.
+  camuflajes que pana.sh firma como tuyos. Uno que compras o desbloqueas en
+  plena sesión vale en la sala sin volver a entrar cuando pana.sh lo firma; si
+  todavía no puede, la armería te dice que entres de nuevo para estrenarlo.
 
 - **En Pepazo llegan Los del pescozón: El Bate, La Chancleta, El Rodillo, La Brocha, El Tobo y La Maraca, y la chancla se lanza.**
   Se eligen en la armería como las marcadoras, con su alcance, pepazos por

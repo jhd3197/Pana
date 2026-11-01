@@ -33,7 +33,11 @@ These instructions run the open-source application on your own server.
    comma-separated) and `x-pana-camos-sig` (hex `HMAC-SHA256(secret, value)`)
    to the room's WebSocket upgrade, and strips any the browser sent. Set the
    same secret as `PANA_GATEWAY_SECRET` here; only a valid signature counts.
-   Without it everyone wears only the six solid camos. `PANA_UNLOCK_ALL_CAMOS=1`
+   Without it everyone wears only the six solid camos. For camos got while
+   connected to count without a rejoin, the proxy also signs an account handle
+   (`x-pana-sub`, `x-pana-sub-sig`) and the page offers
+   `window.PanaSh.camosSigned(nonce)`; the exact strings are in
+   `docs/knowledge/pintura.md` ("Mid-session refresh"). `PANA_UNLOCK_ALL_CAMOS=1`
    unlocks every camo for local screenshots and tests; never set it on a
    public server.
 

@@ -544,6 +544,44 @@ Parrandera"; the client writes its own progress text from the marker names).
   instance one, and pana.sh signs the socket anyway. No secret, no or a bad
   signature: solid camos only. `PANA_UNLOCK_ALL_CAMOS=1` owns everything, for
   local screenshots and tests only (`docs/DEPLOYMENT.md`).
+- **Mid-session refresh.** A camo bought or unlocked after the socket opened
+  reaches the room without a rejoin, still only on pana.sh's word. The armory
+  reloads the owned set fresh on open, after a buy and after
+  `onCamoUnlocked`, and hands it to `network.js` `setCamos(owned, sign)`. When
+  the list differs from the last one the room confirmed and the bridge has
+  `camosSigned`, the client sends `camos-nonce`, the room answers a one-use
+  16-byte hex nonce (`''` when the connection has no signed account handle),
+  `camo-store.js` `signed(nonce)` asks pana.sh, and the client forwards
+  `camos-refresh { ids, nonce, exp, sig }`. The room checks it with
+  `camo-trust.js` `verifyRefresh` (same `PANA_GATEWAY_SECRET`): signed for the
+  account handle this connection was vouched for at connect, the nonce it was
+  given (spent on any attempt, stale after `REFRESH_WINDOW` 2 min), `exp` an
+  integer epoch-ms no more than 2 min ahead. Only then does the seat's list
+  get replaced; the room answers `camos-refreshed { ok }`. Binding to the
+  account and the nonce means a signed answer can neither be replayed nor
+  given to another player. A kit sent while a refresh is in flight waits for
+  it, so a fresh camo is not swapped for a solid one. Without `camosSigned` the
+  room keeps the connect list, and a refused camo the armory knows is yours
+  says to rejoin. `parseOwned` rejects any value with characters other than
+  ids and commas, so a refresh message never passes as a connect header.
+- **pana.sh follow-up (not in this repo).** Until pana.sh ships both halves
+  below, mid-session camos still need a rejoin:
+  1. On the ws proxy upgrade, next to `x-pana-camos`, add `x-pana-sub: <sub>`
+     and `x-pana-sub-sig: hex HMAC-SHA256(PANA_GATEWAY_SECRET,
+     "pana-sub:v1|" + sub)`, and strip client-sent ones like the other
+     `x-pana-*`. `sub` is a stable opaque account handle, 8–128 characters of
+     `[A-Za-z0-9_-]` (for example the first 32 hex of
+     HMAC-SHA256(secret, "pana-sub-id:" + uid)); never the raw uid or email.
+  2. `window.PanaSh.camosSigned(nonce)` in `static/pana-sh.js`, backed by a
+     session-cookie route (e.g. `POST /auth/camos/sign {"nonce"}`, rate-limited
+     like `/auth/camos`, refusing a nonce that is not 1–64 characters of
+     `[A-Za-z0-9_-]`). It resolves to `{ ids, nonce, exp, sig }`: `ids` the
+     owned camo ids comma-separated exactly as for `x-pana-camos`, `exp`
+     now + 60 000 as an integer of epoch milliseconds, `sig` hex
+     HMAC-SHA256(PANA_GATEWAY_SECRET, "pepazo-camos-refresh:v1|" + sub + "|" +
+     nonce + "|" + exp + "|" + ids) with the same `sub` as step 1. It rejects
+     without a session. `server/tests/camo-trust.test.js` builds these exact
+     strings; a pana.sh test should sign the same inputs and compare.
 - **Refusal.** `Arena.selectKit` swaps an unowned camo for `FALLBACK_CAMO`
   (`liso-mango`) and keeps the rest of the kit; the room then sends
   `kit-rejected` with `reason: 'camo'` and the armory says so (inline, or a
@@ -565,7 +603,7 @@ Parrandera"; the client writes its own progress text from the marker names).
   `feats.js` `weaponHit`, besides `pintura.paint-hits`; grenade blasts and
   unknown ids send nothing. pana.sh counts only the five kills weapons. If its
   bridge exposes `onCamoUnlocked(callback)`, the game toasts the unlock and
-  refreshes the armory.
+  refreshes the armory (and, through it, the room: see Mid-session refresh).
 - **Rendering.** `scene.js` passes the kit (camo included) to the model, so the
   held marker, the third-person `bakePaintKit` marker and the thrown chancla
   rebuild when the camo changes (it is part of the model key). A solid camo is

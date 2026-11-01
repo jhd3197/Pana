@@ -373,7 +373,7 @@ See candidates.
 | Shell (load, loops, teardown) | `engine/game-shell.js` (`bootGame`) | 17 games |
 | Invite links | `engine/invite.js` | all 24 (Capis a Pintazos through game-entry only) |
 | Seeded random, noise | `engine/random.js` | 14 games |
-| Gateway-vouched ownership (pana.sh signs `x-pana-camos` with `PANA_GATEWAY_SECRET`; `parseOwned(headers)` verifies the HMAC, timing-safe) | `server/src/camo-trust.js`, read in a room's `onAuth(client, options, context)` | Pepazo (camos). The catalog and the bridge client stay game-local: `games/pintura/public/camos.js`, `camo-store.js` |
+| Gateway-vouched ownership (pana.sh signs `x-pana-camos` with `PANA_GATEWAY_SECRET`; `parseOwned(headers)` verifies the HMAC, timing-safe; mid-session `parseSub` + `newNonce` + `verifyRefresh` for a nonce-bound signed refresh) | `server/src/camo-trust.js`, read in a room's `onAuth(client, options, context)` | Pepazo (camos). The catalog and the bridge client stay game-local: `games/pintura/public/camos.js`, `camo-store.js` |
 
 ## HUD and UI
 
