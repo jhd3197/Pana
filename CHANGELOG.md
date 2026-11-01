@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El terreno de Capis a Pintazos ahora se ve hecho a mano.**
+  Bordes suaves sin escalones, tierra con vetas, piedritas y raíces, roca con
+  grietas, arena con su orilla mojada, una franja de grama con matas bajitas
+  en vez de la pared de púas, y un cielo de tarde que pasa de dorado a azul.
+
 - **Capis a Pintazos tiene una orilla nueva y los pintazos se sienten.**
   El mapa ahora tiene playa, un arco de piedra, El Tepuyito en el medio con
   cuevas a cada lado, un barranco sobre el río y un banco de arena, con

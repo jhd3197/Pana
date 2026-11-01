@@ -14,20 +14,44 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
 
 - **Ground** is `engine/play/terrain-mask.js`: a 800 × 400 grid (one cell is
   0.1 world units, the map is 80 × 40) of solid/air cells with a paint layer.
-  `paintRGBA` writes it into a `THREE.DataTexture` (no canvas), repainted only
-  for the columns a blast changed. Nine stacked alpha-tested planes from
-  z = -2.6 to 0.55 carry the same texture, darker towards the back, so the
-  earth reads as a slab with sides. The palette (`PALETTE` in scene.js) uses
-  the painter's optional layers: grass with blades drawn into the air above it
-  (`fringe`, the cells stay air), roots in the topsoil, earth darkening by
-  height (`deepFrom`, so the earth under a cave matches its neighbours), rock
-  strata from the map's `rockAt`, sand and wet sand below 2.4 over the water,
-  bare earth on any top surface below the first ground (`grassAt`: crater and
-  cave floors) and shade under overhangs.
-- **The back wall**: a tenth plane just behind the slab, painted once per
-  match from the starting ground plus the map's `hollow` cells (the caves and
-  the cliff's notch). A crater reads as a dent with a dark back instead of a
-  hole onto the sky, and a cave has a back. Overhangs and the arch stay open.
+  It is drawn by `engine/play/terrain-material.js` (`createTerrain`): the
+  cells go into two field textures (`fieldRGBA`), repainted only for the
+  columns a blast or a splash changed, and one Lambert-based shader colours
+  everything from world position, so nothing tiles and no cell shows:
+  - the silhouette is the coverage blurred [1 6 15 20 15 6 1] and cut at 0.5
+    with a little noise, anti-aliased (alpha to coverage with MSAA, else a
+    discard at 0.5), so slopes, craters and caves are smooth curves;
+  - depth below the surface is a vertical signed distance averaged along x
+    over neighbours on the same surface (no stair steps on gentle slopes, a
+    cliff stays sharp), stored in quarter cells, so it saturates 3.2 below;
+  - soil darkens with height under `deepFrom` (14) and carries wavy strata
+    that follow the surface, a few clay bands, mottling, flecks, pebbles and
+    a few small stones (lit from the top left with a shadow under), roots
+    under grassy tops; rock (`rockAt`, read through a noise warp so the map's
+    boxes don't show) has wavy layers and branching cracks; the beach and the
+    sandbar (tops under `water + 2.4`) are sand, thicker towards the water,
+    with grain, bedding lines, light grains and a wet band near the water;
+  - grass is a band 0.2–0.33 deep with a bright lip, a soft dark edge under
+    it, and short rounded tufts (up to `tuft` 0.3 units, about the paws)
+    drawn in the air on the front face only; crater floors (`grassAt` false)
+    are bare damp topsoil;
+  - soft occlusion from a wide coverage (11 cells) below 0.5 deep and under
+    overhangs; paint has a crisp wet edge (the stain is blurred [1 2 1] so
+    drops and streaks end round).
+  The slab is three draws: the front face at z = 0.55, a wall extruded from
+  the smooth outline (`coverageContour`, normals from the coverage gradient)
+  back to z = -2.6, grass on its top faces and darker towards the back
+  (rebuilt only when a cell changes between solid and air, about 4 k
+  triangles), and the back wall. The nine stacked alpha-tested planes and
+  their grass blades in the air (the wall of sawtooth spikes) are gone.
+  `PALETTE` in scene.js holds the colours. If the shader fails to compile,
+  `renderer.debug.onShaderError` swaps the ground to a plain earth colour cut
+  out by the coverage (`fallback()`); other materials only log.
+- **The back wall**: the same shader with `uBack`, from the starting ground
+  plus the map's `hollow` cells (the caves and the cliff's notch), darker
+  (×0.3–0.4), no tufts and no paint. A crater reads as a dent with a dark back
+  instead of a hole onto the sky, and a cave has a back. Overhangs and the
+  arch stay open.
 - **Capis, shells, the aim arrow and the dashed arc** move at z = 1, in front of
   the slab, so a capi in a crater stays visible.
 - **The capis are panas**: `buildCharacter` from `avatar-model.js` at ×0.8
@@ -113,14 +137,22 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   a team lobs over it or digs. In 2D any tunnel straight through a hill cuts
   off everything above it, which is why the caves stop at a wall: an earlier
   through-tunnel left the tower floating. Same ground on every load.
-- **The world behind** (`public/backdrop.js`), a late afternoon: a sky
-  gradient warm at the horizon, the sun low in the west (a disc and an
-  additive glow), nine instanced low-poly clouds drifting, three ranges of
-  hills paler with distance in a warm fog, the river (a standard material
+- **The world behind** (`public/backdrop.js`), a late afternoon: the sky is
+  graded in its shader by the elevation of the view ray, not the world height
+  (cream at the horizon, gold, soft teal, blue by about 25°), with a warm
+  bloom towards the sun, so the play view and the whole map both show the
+  gradient; the fog is the same warm haze. The sun hangs low in the west (a
+  disc and an additive glow), nine instanced low-poly clouds drifting, three lower ranges of
+  hills paler with distance in a warm fog, the savanna in front of them
+  fading from olive grass to the haze with darker patches and bushes in its
+  shader (at play zoom the camera looks down about 9°, so this plain, not the
+  sky, fills the back of the view: it was the flat yellow-green), the river (a standard material
   whose shader adds moving ripple bands and a glint path under the sun, calmer
   near the camera), foam strips where the bank meets the water (one instanced
   mesh, re-laid when a blast reaches the water line), morichales (18 palms on
-  one instanced prototype) and three palms that sway, instanced reeds and
+  one instanced prototype) and three palms that sway (the two far ones at
+  `lite` detail without fruit), instanced reeds (`reeds({ detail: 'low' })`,
+  less than half the triangles) and
   rocks by the banks and on the sandbar, two flocks of corocoras
   (`birdFlock`, three draws), and the player's own pana on a dock by the
   west bank. It bounces on a good shot, wobbles when one of ours is hit and
@@ -201,21 +233,28 @@ in the river), `chime` (turn starts), `tick` (last 5 s), `sting(win)`.
 
 Headless, 1280 × 800, low quality (`?debug`, a fresh match):
 
-| View | Before the map and effects pass | After |
-|---|---|---|
-| Play view | 224 draws, 210 k triangles | 229 draws, 339 k triangles |
-| Whole map (Z) | 90 draws, 111 k triangles | 86 draws, 219 k triangles |
-| Lobby (still frame) | 224 draws, 212 k triangles | 229 draws, 341 k triangles |
+| View | Before the map and effects pass | Before the terrain pass | After the terrain pass |
+|---|---|---|---|
+| Play view | 224 draws, 210 k triangles | 229 draws, 339 k triangles | 221 draws, 297 k triangles |
+| Whole map (Z) | 90 draws, 111 k triangles | 86 draws, 219 k triangles | 77 draws, 175 k triangles |
+| Lobby (still frame) | 224 draws, 212 k triangles | 229 draws, 341 k triangles | 221 draws, 298 k triangles |
+| Close-up (`closeUp = 12`) | | 196 draws, 338 k triangles | 189 draws, 296 k triangles |
 
-Mid-blast the play view adds at most the four spray pools (drops, clods,
-sparks, rings). The extra triangles are the morichales and reeds; instancing
-keeps them at a few draws, and replacing seven separate palms with one grove
-paid for the clouds, sun, birds, foam and back wall.
+The terrain pass replaced ten ground planes with three draws (front, extruded
+wall of about 4 k triangles, back wall) and cut the shore reeds (85 k → 39 k
+triangles for the 20 clumps, `detail: 'low'`) and the two far palms (9.7 k → 8.1 k for the three). Mid-blast the play
+view adds at most the four spray pools (drops, clods, sparks, rings); a blast
+on our plateau measured 159 draws and 275 k triangles in its first frames.
+A blast repaints the field textures for the columns it touched and, if cells
+changed, rebuilds the outline (a full-map marching squares, a few ms).
 
 ## Known gaps (milestone one)
 
 - One map and one weapon. No team or player-vs-player online yet.
-- The slab's sides show the planes as steps when seen at an angle.
+- The drips and blobs keep the cell grid's shapes under the blur: at the
+  closest zoom a streak still reads as two or three cells wide.
+- The tufts stand only on the front face; the extruded top behind it is
+  shaded grass, not blades.
 - A capi pushed against a crater wall can lose most of its knockback (the walker
   bounces off at 30 %), so it seldom flies far from inside a crater.
 - The paws on the grips are set by hand-tuned angles, not inverse kinematics:
@@ -233,7 +272,8 @@ paid for the clouds, sun, birds, foam and back wall.
 `npm test -- capis` (map and its landmarks, the tower blocking a flat shot,
 turns, clock, blast, damage, water, winner, bot) and
 `npm test -- terrain-mask ballistic side-walker lod-band` for the engine pieces
-(drips and the painter's options included).
+(drips, the painter's options, the shader fields with no steps on a gentle
+staircase, and the outline's normals included).
 `npm run test:browser -- capis` checks that all six capis are the studio pana
 with a team bandana and a batched La Bazuca, that only the capi on its turn
 raises it and that its tip is the rules' muzzle, that the capi on its turn is

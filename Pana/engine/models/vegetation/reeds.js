@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { M, mesh, rng } from '/engine/models/core/primitives.js';
 import { stemMaterial, finish, stem, leaf } from '/engine/models/vegetation/plant-kit.js';
 
-// detail 'low': the same clump with fewer sides and segments (about a fifth of
+// detail 'low': the same clump with fewer sides and segments (less than half
 // the triangles), for backdrops seen from afar.
 export function reeds({seed=1,detail='full'}={}) {
   const r=rng(seed),g=new THREE.Group(),brown=M(0x775136,{roughness:1,flatShading:false}),low=detail==='low';
