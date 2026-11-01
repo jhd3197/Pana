@@ -90,26 +90,46 @@ export function zoneOccupants(zone, actors) {
   for (const a of actors) if (a.alive && near(a, zone.x, zone.z, zone.radius)) teams.set(a.team, (teams.get(a.team) || 0) + 1);
   return teams;
 }
-// One tick: a lone team inside turns the zone (more panas, faster, up to 3×);
-// a rival owner's zone is first neutralised, then claimed. Two teams inside
-// contest it and nothing moves; an empty zone slowly loses unfinished progress.
+// One tick: a lone team inside turns the zone (more panas, faster: +50% each,
+// up to 3×); a rival owner's zone is first neutralised, then claimed. Two teams
+// inside contest it and nothing moves. An empty zone drifts back to its owner:
+// unfinished progress of a claimer fades at half speed, a drained owner's zone
+// refills at half speed. The owner alone inside refills it at full speed.
+// Events: `contested` when a second team steps in, `neutral`, `captured`.
 export function stepZone(zone, actors, dt) {
-  const teams = zoneOccupants(zone, actors), events = [];
+  const teams = zoneOccupants(zone, actors), events = [], was = zone.contested;
   zone.contested = teams.size > 1;
-  if (teams.size !== 1) { if (!teams.size && zone.claim !== zone.owner) zone.progress = Math.max(0, zone.progress - dt / zone.captureTime / 2); if (!zone.progress && zone.claim !== zone.owner) zone.claim = zone.owner; return events; }
+  if (zone.contested && !was) events.push({ type: 'contested', zone: zone.id, team: zone.owner });
+  if (teams.size > 1) return events;
+  if (!teams.size) {
+    const drift = dt / zone.captureTime / 2;
+    if (zone.claim !== zone.owner) { zone.progress = Math.max(0, zone.progress - drift); if (!zone.progress) zone.claim = zone.owner; }
+    else if (zone.owner !== null) zone.progress = Math.min(1, zone.progress + drift);
+    return events;
+  }
   const [[team, count]] = teams, rate = dt / zone.captureTime * Math.min(3, 1 + (count - 1) * .5);
-  if (zone.owner === team) { zone.claim = team; zone.progress = 1; return events; }
+  if (zone.owner === team && zone.claim === team) { zone.progress = Math.min(1, zone.progress + rate); return events; }
   if (zone.claim !== team) {
     zone.progress -= rate;
     if (zone.progress <= 0) {
       zone.progress = 0; zone.claim = team;
-      if (zone.owner !== null) { events.push({ type: 'neutral', zone: zone.id, team: zone.owner, by: team }); zone.owner = null; }
+      if (zone.owner !== null && zone.owner !== team) { events.push({ type: 'neutral', zone: zone.id, team: zone.owner, by: team }); zone.owner = null; }
     }
     return events;
   }
   zone.progress = Math.min(1, zone.progress + rate);
-  if (zone.progress >= 1) { zone.owner = team; events.push({ type: 'captured', zone: zone.id, team }); }
+  if (zone.progress >= 1 && zone.owner !== team) { zone.owner = team; events.push({ type: 'captured', zone: zone.id, team }); }
   return events;
+}
+// Every zone in one tick; events in zone order.
+export const stepZones = (zones, actors, dt) => zones.flatMap(zone => stepZone(zone, actors, dt));
+// How many zones each team owns right now.
+export const zonesHeld = (zones, teams = 2) => Array.from({ length: teams }, (_, t) => zones.filter(z => z.owner === t).length);
+// Hold scoring: every owned zone earns `perSecond` points. Fractions wait in
+// `bank` (one number per team, mutated) so whole points land on time; returns
+// the whole points each team earned this tick.
+export function zonePoints(zones, bank, dt, perSecond = 1) {
+  return zonesHeld(zones, bank.length).map((held, t) => { bank[t] += held * perSecond * dt; const whole = Math.floor(bank[t] + 1e-9); bank[t] -= whole; return whole; });
 }
 
 // --- Match end -------------------------------------------------------------------
@@ -132,3 +152,5 @@ export const flagTieBreaks = (flags, teams = 2) => {
   const of = t => flags.find(f => f.team === t);
   return [Array.from({ length: teams }, (_, t) => (of(t) && flagHome(of(t)) ? 1 : 0)), Array.from({ length: teams }, (_, t) => -(of(t)?.taken || 0))];
 };
+// Zone tie-break for decideWinner: the team holding more zones right now.
+export const zoneTieBreaks = (zones, teams = 2) => [zonesHeld(zones, teams)];

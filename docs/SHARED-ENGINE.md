@@ -489,11 +489,15 @@ game turns into scores, feed lines and sounds.
   (carrier follows, drop on death or leave, capture only with your own flag
   home, own-team touch returns a dropped flag, rival touch lifts it, auto-return
   after `returnAfter` s), `dropCarried`, `carriedBy`, `returnFlag`.
-- Zones (for a Domination mode): `createZone(id, { x, z, radius, captureTime })`,
-  `stepZone(zone, actors, dt)` (lone team turns it, two teams contest it, a
-  rival's zone is neutralised first), `zoneOccupants`.
+- Zones: `createZone(id, { x, z, radius, captureTime })`, `stepZone(zone,
+  actors, dt)` / `stepZones(zones, actors, dt)` (lone team turns it, +50% per
+  extra pana up to 3×; two teams contest it; a rival's zone is neutralised
+  first; an empty zone drifts back to its owner; events `contested`, `neutral`,
+  `captured`), `zoneOccupants`, `zonesHeld(zones)`, `zonePoints(zones, bank, dt,
+  perSecond)` (hold scoring with a per-team fraction bank).
 - Match end: `reachedLimit(scores, limit)`, `decideWinner(scores, tieBreaks)`,
-  `flagTieBreaks(flags)` (flag at home, then fewer times taken).
+  `flagTieBreaks(flags)` (flag at home, then fewer times taken),
+  `zoneTieBreaks(zones)` (more zones held now).
 
 ```js
 import { createFlag, stepFlags } from '../../../engine/play/objectives.js'; // relative: rules run on the server
@@ -501,8 +505,9 @@ const flags = stands.map((stand, team) => createFlag(team, stand));
 for (const e of stepFlags(flags, actors, dt)) if (e.type === 'capture') scores[e.team]++;
 ```
 
-Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`). Tests:
-`engine/tests/objectives.test.js`, `games/pintura/tests/ctf.test.js`.
+Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
+`games/pintura/public/domination.js`). Tests: `engine/tests/objectives.test.js`,
+`games/pintura/tests/ctf.test.js`, `games/pintura/tests/domination.test.js`.
 
 ## Rooms and netcode
 

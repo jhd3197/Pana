@@ -16,7 +16,7 @@ export class PaintConnection {
     try {
       const link = await joinRoom('pintura', { code: this.code, name: this.name, avatar: this.avatar, lead: leadFromUrl() });
       if (this.local || this.disposed) { link.leave(); return; } this.link = link; this.connected = true; this.camosSynced = undefined;
-      link.on('view', state => { if (!this.local) { this.state = { ...state, options: normalizeRoomOptions(FIELDS, state.options), flags: state.flags || [], flagEvents: state.flagEvents || [], outcome: state.outcome || null, teamScores: state.teamScores || [0, 0], winners: state.winners || [] }; this.onState(this.state); } });
+      link.on('view', state => { if (!this.local) { this.state = { ...state, options: normalizeRoomOptions(FIELDS, state.options), flags: state.flags || [], flagEvents: state.flagEvents || [], zones: state.zones || [], zoneEvents: state.zoneEvents || [], outcome: state.outcome || null, teamScores: state.teamScores || [0, 0], winners: state.winners || [] }; this.onState(this.state); } });
       link.on('state', () => { if (!this.local) this.onState(this.state); });
       link.on('status', (text, failed) => { if (!this.local) { this.connected = !failed; this.onStatus(text || loc('En línea con tus panas'), !!failed); this.onState(this.state); } });
       // The room refused a kit (mid-round): the armory says why.

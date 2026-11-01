@@ -4,6 +4,7 @@ import { locKey } from '../../../engine/i18n.js';
 
 export const PEPAS = 12;           // balls in the ammo row; bigger magazines show a fraction of it
 export const FLAG_GOAL = 3;        // default captures that end a flag round (options.js flagGoal)
+export const DOM_GOAL = 200;       // default points that end a domination round (options.js domGoal)
 // The knockout lines rules.js says: the killfeed already shows them, so the bottom pill stays quiet.
 export const KILL_LINES = new Set([locKey('{owner} pintó a {victim} · {distance} m'), locKey('Un pana pintó a {victim} · {distance} m')]);
 
@@ -14,13 +15,13 @@ export function race(state, id, target) {
   const players = state.players || [], me = players.find(p => p.id === id), n = players.length;
   const order = [...players].sort((a, b) => b.score - a.score || a.hits - b.hits);
   const rank = Math.max(1, order.findIndex(p => p.id === id) + 1);
-  const flag = state.options?.mode === 'ctf', teams = flag || state.options?.mode === 'teams', goal = flag ? state.options.flagGoal || FLAG_GOAL : target;
+  const flag = state.options?.mode === 'ctf', dom = state.options?.mode === 'dom', teams = flag || dom || state.options?.mode === 'teams', goal = flag ? state.options.flagGoal || FLAG_GOAL : dom ? state.options.domGoal || DOM_GOAL : target;
   if (teams && me) {
     const mine = me.team ? 1 : 0, scores = state.teamScores || [0, 0];
-    return { teams, flag, rank, n, goal, me: { team: mine, score: scores[mine] || 0 }, rival: { team: 1 - mine, score: scores[1 - mine] || 0 } };
+    return { teams, flag, dom, rank, n, goal, me: { team: mine, score: scores[mine] || 0 }, rival: { team: 1 - mine, score: scores[1 - mine] || 0 } };
   }
   const rival = order.find(p => p.id !== id);
-  return { teams: false, flag, rank, n, goal, me: { name: me?.name, color: me?.color, score: me?.score || 0 },
+  return { teams: false, flag, dom, rank, n, goal, me: { name: me?.name, color: me?.color, score: me?.score || 0 },
     rival: rival ? { name: rival.name, color: rival.color, score: rival.score || 0 } : null };
 }
 
