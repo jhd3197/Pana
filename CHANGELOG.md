@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los mapas de Capis a Pintazos ahora son tierra de lado a lado, de cinco tipos.**
+  Cerros con mesetas, una montaña con un túnel y cuevas, islas unidas por
+  puentes de piedra, un valle con su laguna bajo un arco natural o un tepuy
+  en terrazas: el lobby dice cuál te tocó. Ya no son espejo: cada mapa se
+  mide para que los dos equipos arranquen parejos, y la máquina le apunta al
+  capi que puede pegar en vez de al más cercano.
+
 - **Capis a Pintazos estrena un mapa distinto en cada partida, y más grande.**
   La orilla se genera de un número: colinas, un río en el medio, a veces El
   Tepuyito con sus cuevas, islas, mesetas, arcos de piedra y cuevas, igual de

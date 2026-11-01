@@ -25,6 +25,10 @@ const HUMAN = 0, STEP = 1 / 60;
 const newSeed = () => 1 + Math.floor(Math.random() * (SEED_LIMIT - 1));
 let options = { ...defaultOptions(), ...(params.has('size') ? { size: mapSize(params.get('size')) } : {}) };
 let seed = mapSeed(params.get('seed')) ?? newSeed();
+// The kind of ground the seed made (map-rules.js KINDS), shown with its number.
+const KIND_NAMES = { cerros: loc('Cerros'), cuevas: loc('Montaña de cuevas'), islas: loc('Islas con puentes'), valle: loc('Valle con laguna'),
+  terrazas: loc('Terrazas del tepuy'), suave: loc('Lomas suaves') };
+const mapLabel = m => loc('Mapa #{n} · {kind}', { n: m.seed, kind: KIND_NAMES[m.kind] || '' });
 let world = null, match = createMatch({ seed, size: options.size }), playing = false, bot = null, acc = 0, lastTick = 0;
 const hud = createHud($, { human: HUMAN }), notify = createToast($('toast'), { ms: 2600 });
 
@@ -32,13 +36,13 @@ const hud = createHud($, { human: HUMAN }), notify = createToast($('toast'), { m
 function preview() {
   if (match.map.seed !== seed || match.map.size !== options.size) match = createMatch({ seed, size: options.size });
   world?.setMatch(match); hud.build(match);
-  $('seed-input').value = String(seed); $('lobby-seed').textContent = loc('Mapa #{n}', { n: seed });
+  $('seed-input').value = String(seed); $('lobby-seed').textContent = mapLabel(match.map);
 }
 const panel = createRoomOptions($('room-options'), { title: 'Capis a Pintazos', fields: ROOM_OPTIONS, // i18n-ignore: the game's name
   change: patch => { options = roomOptions(options, patch) || options; panel.update(options, true); preview(); },
   reset: () => { options = defaultOptions(); panel.update(options, true); preview(); } });
 panel.update(options, true);
-$('seed-input').value = String(seed); $('lobby-seed').textContent = loc('Mapa #{n}', { n: seed });
+$('seed-input').value = String(seed); $('lobby-seed').textContent = mapLabel(match.map);
 $('seed-input').addEventListener('change', () => { seed = mapSeed($('seed-input').value) ?? seed; preview(); });
 $('seed-new').onclick = () => { seed = newSeed(); preview(); };
 const menu = createGameMenu({ title: 'Capis a Pintazos · Pana', sound, orientation: 'libre', // i18n-ignore: the game's name
@@ -58,7 +62,7 @@ function start() {
   match = createMatch({ seconds: options.seconds, difficulty: options.difficulty, seed, size: options.size });
   // The address replays this map: share it, or reload it, for the same ground.
   const url = new URL(location.href); url.searchParams.set('seed', String(seed)); url.searchParams.set('size', options.size); history.replaceState(null, '', url);
-  $('map-seed').textContent = loc('Mapa #{n}', { n: seed });
+  $('map-seed').textContent = mapLabel(match.map);
   bot = createBot({ team: 1 - HUMAN, difficulty: options.difficulty, seed: match.seed + 1 });
   world?.setMatch(match); hud.build(match);
   playing = true; acc = 0; lastTick = 0; world.wide = false;
@@ -145,7 +149,7 @@ function handle(e) {
       else notify(loc('¡{name} quedó pintado de pies a cabeza!', { name: nameOf(e.capy) }));
       break;
     case 'timeout': notify(loc('¡Se acabó el tiempo!')); break;
-    case 'finished': sfx.sting(e.winner === HUMAN); world?.react(e.winner === HUMAN ? 'win' : 'lose'); charge.cancel(); setTimeout(() => { if (match.phase === 'finished') hud.results(match); }, 1400); break;
+    case 'finished': if (e.by === 'turns') notify(loc('¡Se acabaron los turnos!')); sfx.sting(e.winner === HUMAN); world?.react(e.winner === HUMAN ? 'win' : 'lose'); charge.cancel(); setTimeout(() => { if (match.phase === 'finished') hud.results(match); }, 1400); break;
   }
 }
 

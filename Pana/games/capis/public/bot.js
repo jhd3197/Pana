@@ -1,9 +1,12 @@
 // The machine's capis. Pure: it reads the match and returns the same input a
 // player's keys make, so it can never do what a player cannot. On its turn it
-// picks the nearest rival, walks closer while that rival is out of range (never
-// into the river or off a drop, and not forever), searches angle and power with
-// the real flight (wind included), misses by an amount set by the difficulty,
-// waits like a person would and fires before the clock runs out.
+// picks the rival it has the easiest shot at (a quick search with the real
+// flight, wind included: how close it lands, how far, how much paint the
+// rival already carries), or the nearest one when it has no shot at any; it
+// walks closer while that one is out of range (never into the water or off a
+// drop, and not forever), searches angle and power finely, misses by an amount
+// set by the difficulty, waits like a person would and fires before the clock
+// runs out.
 import { simulateFlight, aimVelocity } from '../../../engine/play/ballistic.js';
 import { difficultyInfo } from '../../../engine/play/difficulty.js';
 import { rng, clamp } from '../../../engine/random.js';
@@ -20,10 +23,10 @@ const WALK_SHARE = .45;
 
 // The best shot from `capy` at `target` (a point), searching the whole arc.
 // Returns { angle, power, facing, miss } where miss is how far it lands.
-export function bestShot(m, capy, target, { avoid = [] } = {}) {
+export function bestShot(m, capy, target, { avoid = [], angles = .05, powers = .025 } = {}) {
   const facing = target.x >= capy.x ? 1 : -1, options = flightOptions(m, []);
   let best = { ...DEFAULT_SHOT, facing, miss: Infinity };
-  for (let angle = -.2; angle <= 1.4; angle += .05) for (let power = .2; power <= 1.0001; power += .025) {
+  for (let angle = -.2; angle <= 1.4; angle += angles) for (let power = .2; power <= 1.0001; power += powers) {
     const start = { ...muzzle(capy, angle, facing), ...aimVelocity(angle, facing, power * RULES.speed) };
     const end = simulateFlight(start, options, { dt: 1 / 60, maxTime: 7, every: 1e9 });
     if (!end.hit) continue;
@@ -35,13 +38,38 @@ export function bestShot(m, capy, target, { avoid = [] } = {}) {
   return best;
 }
 
-// The shot the bot will take this turn, with its difficulty's error applied.
-export function planShot(m, capy, { difficulty = 'normal', random = Math.random } = {}) {
+// A landing this close counts as a shot the bot can take.
+export const FEASIBLE = 2.5;
+const aimAt = c => ({ x: c.x, y: c.y + RULES.radius * .5 });
+const nearest = (capy, list) => list.reduce((a, b) => Math.abs(a.x - capy.x) <= Math.abs(b.x - capy.x) ? a : b);
+
+// Which rival to shoot at from where `capy` stands: every rival gets a quick
+// search (a coarse grid, about 290 flights) and a score: how far the best
+// landing misses, a little for distance (a long lob is harder to land), less
+// for a rival already half painted (a hit may finish it). The best with a
+// feasible shot, else the nearest rival with `feasible: false`.
+export function pickTarget(m, capy) {
+  const rivals = m.capys.filter(c => alive(c) && c.team !== capy.team);
+  if (!rivals.length) return null;
+  const avoid = m.capys.filter(c => alive(c) && c.team === capy.team).map(center);
+  let best = null;
+  for (const rival of rivals) {
+    const shot = bestShot(m, capy, aimAt(rival), { avoid, angles: .1, powers: .05 });
+    if (!(shot.miss < FEASIBLE)) continue;
+    const score = shot.miss + .03 * Math.hypot(rival.x - capy.x, rival.y - capy.y) - (rival.paint >= 50 ? 1 : 0);
+    if (!best || score < best.score) best = { rival, score, miss: shot.miss };
+  }
+  return best ? { rival: best.rival, feasible: true, miss: best.miss } : { rival: nearest(capy, rivals), feasible: false };
+}
+
+// The shot the bot will take this turn at `target` (a rival's id; the nearest
+// rival by default), with its difficulty's error applied.
+export function planShot(m, capy, { difficulty = 'normal', random = Math.random, target: id = null } = {}) {
   const rivals = m.capys.filter(c => alive(c) && c.team !== capy.team);
   if (!rivals.length) return { ...DEFAULT_SHOT, facing: capy.facing, miss: Infinity };
-  const target = rivals.reduce((a, b) => Math.abs(a.x - capy.x) <= Math.abs(b.x - capy.x) ? a : b);
+  const target = rivals.find(c => c.id === id) || nearest(capy, rivals);
   const avoid = m.capys.filter(c => alive(c) && c.team === capy.team).map(center);
-  const shot = bestShot(m, capy, { x: target.x, y: target.y + RULES.radius * .5 }, { avoid });
+  const shot = bestShot(m, capy, aimAt(target), { avoid });
   // Out of reach: no shot lands at all, take the default lob; one that only lands far still goes the right way.
   if (!Number.isFinite(shot.miss)) return { ...DEFAULT_SHOT, facing: target.x >= capy.x ? 1 : -1, miss: shot.miss, target: target.id };
   if (shot.miss > 25) return { ...shot, target: target.id };
@@ -61,9 +89,10 @@ export function createBot({ team = 1, difficulty = 'normal', seed = 7 } = {}) {
       if (!capy || capy.team !== team || m.phase !== 'aim' || !alive(capy)) return {};
       if (m.turn.n !== turn) {
         turn = m.turn.n;
-        const rival = m.capys.filter(c => alive(c) && c.team !== team).sort((a, b) => Math.abs(a.x - capy.x) - Math.abs(b.x - capy.x))[0];
-        plan = { rival: rival?.id, walkUntil: m.clock + m.turn.time * WALK_SHARE, dir: rival ? Math.sign(rival.x - capy.x) : 0, walking: true,
-          think: .9 + random() * 1.3, shot: null, fireAt: Infinity, last: capy.x, lastAt: m.clock, hopped: false, jumps: capy.jumpPress || 0 };
+        // The easiest rival to hit from here: no walking needed. With no shot at any, walk towards the nearest.
+        const pick = pickTarget(m, capy), rival = pick?.rival;
+        plan = { rival: rival?.id, walkUntil: m.clock + m.turn.time * WALK_SHARE, dir: rival ? Math.sign(rival.x - capy.x) : 0, walking: !pick?.feasible,
+          think: .9 + random() * 1.3, shot: null, startX: capy.x, fireAt: Infinity, last: capy.x, lastAt: m.clock, hopped: false, jumps: capy.jumpPress || 0 };
       }
       const hurry = m.turn.time < 2;
       if (plan.walking) plan.walking = !hurry && keepWalking(m, capy, plan);
@@ -75,7 +104,11 @@ export function createBot({ team = 1, difficulty = 'normal', seed = 7 } = {}) {
         }
         if (plan.walking) return { x: plan.dir, jump: plan.jumps };
       }
-      if (!plan.shot) { plan.shot = planShot(m, capy, { difficulty, random }); plan.fireAt = m.clock + plan.think; }
+      if (!plan.shot) {
+        // After a walk, look again from the new spot (only when the walk moved it).
+        if (Math.abs(capy.x - plan.startX) > 1) { const again = pickTarget(m, capy); if (again?.feasible) plan.rival = again.rival.id; }
+        plan.shot = planShot(m, capy, { difficulty, random, target: plan.rival }); plan.fireAt = m.clock + plan.think;
+      }
       const s = plan.shot, aimed = Math.abs(capy.aim - s.angle) < .02 && capy.facing === s.facing;
       // Swing the barrel at a person's speed, then hold and fire.
       const step = RULES.aimRate / 60, aimTo = capy.aim + clamp(s.angle - capy.aim, -step, step);
