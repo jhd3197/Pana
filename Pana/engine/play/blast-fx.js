@@ -20,13 +20,14 @@ export function createBlastFx(scene, puffs) {
   function add(object, { life, from, to, alpha = 1, ease = 2 }) { scene.add(object); live.push({ object, life, age: 0, from, to, alpha, ease }); }
 
   return {
-    // ground: the height of the shock ring (a side-view game passes the impact's own height).
-    boom({ x, z, y = 1, size = 1, color = '#ff9a3d', ground = .08 }) {
+    // ground: the height of the shock ring (a side-view game passes the impact's own height);
+    // front: the ring stands up facing +z instead of lying flat, for a side view.
+    boom({ x, z, y = 1, size = 1, color = '#ff9a3d', ground = .08, front = false }) {
       const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: '#fff3c8', blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
       flash.position.set(x, y + .2, z); add(flash, { life: .22, from: 2 * size, to: 7.5 * size });
       const fire = new THREE.Mesh(ball, additive('#ff8a2a')); fire.position.set(x, y, z); add(fire, { life: .5, from: .35 * size, to: 2.3 * size, alpha: .9 });
       const core = new THREE.Mesh(ball, additive('#fff0a0')); core.position.set(x, y, z); add(core, { life: .25, from: .3 * size, to: 1.3 * size });
-      const shock = new THREE.Mesh(ring, additive('#fff6e0')); shock.position.set(x, ground, z); add(shock, { life: .45, from: .5, to: 5.5 * size, alpha: .7, ease: 1 });
+      const shock = new THREE.Mesh(ring, additive('#fff6e0')); shock.position.set(x, ground, z); if (front) shock.rotation.x = Math.PI / 2; add(shock, { life: .45, from: .5, to: 5.5 * size, alpha: .7, ease: 1 });
       const at = { x, y, z };
       puffs.spawn(at, { color: '#5b5752', count: Math.round(12 * size), spread: 1.6 * size, size: 1.2 * size, rise: 1.8, life: 1.7 });
       puffs.spawn(at, { color, count: Math.round(10 * size), spread: 1.2 * size, size: .7, rise: 2.6, life: .9 });

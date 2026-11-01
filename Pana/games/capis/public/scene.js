@@ -18,11 +18,14 @@ import { Puffs } from '/engine/fx.js';
 import { createBlastFx } from '/engine/play/blast-fx.js';
 import { guideRibbon, pathLength } from '/engine/play/aim-guide.js';
 import { createRecoil, shakeAt } from '/engine/play/recoil.js';
-import { paintRGBA, takeDirty } from '/engine/play/terrain-mask.js';
+import { paintRGBA, takeDirty, solidAt } from '/engine/play/terrain-mask.js';
+import { createSpray } from '/engine/play/spray.js';
+import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { simulateFlight, aimVelocity } from '/engine/play/ballistic.js';
 import { RULES, TEAM_COLORS, alive, muzzle, flightOptions, activeCapy } from './rules.js';
 import { aiming, bodyPose, barrelPose } from './poses.js';
 import { createBackdrop } from './backdrop.js';
+import { rockAt, grassAt } from './map-rules.js';
 
 const FRONT = 1;               // the depth where capis and shells move
 const SLAB = [-2.6, .55];      // the earth's back and front faces
@@ -40,7 +43,18 @@ const ROCKET = 2.2;
 // back to full detail under 47. The play view is about 31 to 40 away.
 const LOD_BAND = { far: 55, near: 47 }, LOD_CELL = .06;
 const rgb = hex => { const c = new THREE.Color(hex); return [c.r * 255, c.g * 255, c.b * 255]; };
-const PALETTE = { earth: [176, 116, 66], deep: [96, 58, 38], topsoil: [120, 82, 46], grass: [104, 168, 64], tints: TEAM_COLORS.map(rgb), grassDepth: 5 };
+// The ground's look: grass with a fringe of blades on top, roots in the topsoil,
+// earth darkening with depth, rock strata, sand on the beach and the sandbar,
+// shade under overhangs (terrain-mask.js paintRGBA).
+const PALETTE = { earth: [178, 112, 62], deep: [88, 52, 34], topsoil: [116, 74, 42], grass: [96, 166, 56], tints: TEAM_COLORS.map(rgb), grassDepth: 5,
+  sand: [226, 198, 140], wet: [176, 150, 108], rock: [156, 134, 110], roots: [104, 70, 42], fringe: 3, shade: .5, rockAt, grassAt,
+  deepFrom: 14, deepAt: 120 };
+// The back wall behind the slab: where the ground was at the start and in the
+// map's hollows (caves), so a crater reads as a dent and a cave has a back
+// instead of a window onto the sky.
+const BACK = [98, 64, 42];
+// The colours a blast throws up: topsoil, earth, grass and rock.
+const CLODS = ['#6f4a2a', '#9c6a3c', '#5c9a36', '#8f7c66'];
 const { damp } = THREE.MathUtils;
 
 // Our lead capi wears the player's own pana; the others are seeded panas in
@@ -55,10 +69,13 @@ export function createCapisScene(canvas, match) {
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const unbind = bindRenderer(renderer, 2);
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, .5, 600);
-  scene.add(new THREE.HemisphereLight('#fff4dc', '#5d6f3a', 1.6));
-  const sun = new THREE.DirectionalLight('#fff1d0', 2.2); sun.position.set(-20, 40, 30); scene.add(sun);
+  // Late afternoon in the Llanos: warm low sun from the front left, a soft warm rim from behind.
+  scene.add(new THREE.HemisphereLight('#ffe9c8', '#5f5a34', 1.45));
+  const sun = new THREE.DirectionalLight('#ffd9a8', 2.5); sun.position.set(-34, 30, 34); scene.add(sun);
+  const rim = new THREE.DirectionalLight('#ffb27a', .7); rim.position.set(30, 14, -40); scene.add(rim);
   const backdrop = createBackdrop(scene, match.map);
   let mask = match.mask;
+  const palette = { ...PALETTE, sandBelow: match.map.water + 2.4 };
 
   // ---------- the ground ----------
   const pixels = new Uint8Array(mask.cols * mask.rows * 4);
@@ -70,7 +87,47 @@ export function createCapisScene(canvas, match) {
     const layer = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ map: texture, alphaTest: .5, color: new THREE.Color(shade, shade, shade), side: THREE.DoubleSide }));
     layer.position.set(mask.width / 2, mask.height / 2, SLAB[0] + (SLAB[1] - SLAB[0]) * k); scene.add(layer); layers.push(layer);
   }
-  function paintTerrain(rect = takeDirty(mask)) { if (!rect) return; paintRGBA(mask, pixels, PALETTE, rect); texture.needsUpdate = true; }
+  const backPixels = new Uint8Array(mask.cols * mask.rows * 4);
+  const backTexture = new THREE.DataTexture(backPixels, mask.cols, mask.rows, THREE.RGBAFormat);
+  backTexture.colorSpace = THREE.SRGBColorSpace; backTexture.magFilter = backTexture.minFilter = THREE.LinearFilter; backTexture.generateMipmaps = false;
+  const backWall = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ map: backTexture, alphaTest: .5 }));
+  backWall.position.set(mask.width / 2, mask.height / 2, SLAB[0] - .05); scene.add(backWall);
+  function paintBack() {
+    for (let c = 0; c < mask.cols; c++) {
+      for (let r = mask.rows - 1; r >= 0; r--) {
+        const i = r * mask.cols + c, o = i * 4;
+        if (!mask.solid[i] && !mask.hollow?.[i]) { backPixels[o + 3] = 0; continue; }
+        const k = .75 + .25 * Math.min(1, r / 140) + (((c * 73856093) ^ (r * 19349663)) >>> 27) / 160;
+        backPixels[o] = BACK[0] * k; backPixels[o + 1] = BACK[1] * k; backPixels[o + 2] = BACK[2] * k; backPixels[o + 3] = 255;
+      }
+    }
+    backTexture.needsUpdate = true;
+  }
+  function paintTerrain(rect = takeDirty(mask)) {
+    if (!rect) return;
+    paintRGBA(mask, pixels, palette, rect); texture.needsUpdate = true;
+    if (rect.r0 * mask.cell < match.map.water + .2) backdrop.shore(mask);
+  }
+
+  // Pooled effects, one draw each while anything flies: paint and water drops,
+  // clods of earth, sparks, and rings on the water.
+  const drops = createSpray(scene, { shape: 'drop', capacity: 320, roughness: .25 });
+  const clods = createSpray(scene, { shape: 'clod', capacity: 160, gravity: 22, drag: .3 });
+  const sparks = createSpray(scene, { shape: 'spark', capacity: 96, additive: true, gravity: 6, drag: 2.2 });
+  const rings = createSpray(scene, { shape: 'ring', capacity: 48, additive: true });
+  const sprays = [drops, clods, sparks, rings];
+  const solid = (x, y) => solidAt(mask, x, y);
+  let ringBudget = 0;
+  const ripple = (x, z) => { if (ringBudget > 0) { ringBudget--; rings.burst({ x, y: match.map.water + .04, z }, { count: 1, color: '#9fc9d6', speed: 0, size: .1, grow: .9, life: .55 }); } };
+  // Water thrown up where something falls in the river: a crown of drops, rings, mist.
+  function waterSplash(x, size, color = null) {
+    const at = { x, y: match.map.water + .1, z: FRONT };
+    drops.burst(at, { count: Math.round(30 * size), color: '#dff4ff', speed: 10 * size, dir: { x: 0, y: 1 }, cone: .45, size: .11, life: 1.2, spread: .6 });
+    drops.burst(at, { count: Math.round(14 * size), color: '#8cc6d8', speed: 5 * size, dir: { x: 0, y: 1 }, cone: 1.1, size: .09, life: .9, spread: .8 });
+    if (color) drops.burst(at, { count: 10, color, speed: 6, dir: { x: 0, y: 1 }, cone: .8, size: .1, life: 1 });
+    for (let i = 0; i < 3; i++) rings.burst(at, { count: 1, color: i ? '#a7d3e0' : '#ffffff', speed: 0, size: .3 + i * .2, grow: (1.6 + i * 1.1) * size, life: .7 + i * .35 });
+    puffs.spawn(at, { color: '#e9f7ff', count: Math.round(8 * size), spread: 1, size: .55, rise: 2.4, life: .8 });
+  }
 
   // ---------- capis ----------
   // Shared by every capi: the team cloth, the bandana's shape and one batched
@@ -107,7 +164,8 @@ export function createCapisScene(canvas, match) {
       Object.assign(m, { hit: 0, sink: 0, fall: 0, paint: -1, lastX: c.x, speed: 0, yaw, pitch: pose.pitch, drop: pose.drop });
       m.root.visible = true; m.root.rotation.set(0, 0, 0); m.gun.visible = true;
     }
-    takeDirty(mask); paintRGBA(mask, pixels, PALETTE); texture.needsUpdate = true;
+    takeDirty(mask); paintRGBA(mask, pixels, palette); texture.needsUpdate = true; backdrop.shore(mask); paintBack();
+    for (const spray of sprays) spray.clear();
   }
   setMatch(match);
   const marker = createLocalMarker({ color: '#ffc629' }); marker.group.scale.setScalar(3); scene.add(marker.group);
@@ -119,12 +177,16 @@ export function createCapisScene(canvas, match) {
   // La Bazuca's rocket in flight, one per team colour.
   const rockets = TEAM_COLORS.map(color => { const r = createPaintRocket({ color }); r.scale.setScalar(ROCKET); r.visible = false; scene.add(r); return r; });
   // The muzzle flash, and a drop of paint that swells at the barrel's tip while the shot charges.
-  const flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-  flash.visible = false; scene.add(flash);
+  // The flash is a soft glow and a streak along the barrel, both on the shared glow texture.
+  const glow = glowTexture();
+  const flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: glow, color: '#ffe9a8', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  const streak = new THREE.Mesh(flash.geometry, new THREE.MeshBasicMaterial({ map: glow, color: '#fff3c4', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  flash.visible = streak.visible = false; scene.add(flash, streak);
+  let flashAngle = 0;
   const drip = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: .4, roughness: .2 }));
   drip.visible = false; scene.add(drip);
   const focus = new THREE.Vector2(match.capys[0].x, match.capys[0].y + 2), goal = new THREE.Vector2();
-  const at = new THREE.Vector3(), dir = new THREE.Vector3(), tail = new THREE.Vector3(), NOSE = new THREE.Vector3(0, 0, 1);
+  const at = new THREE.Vector3(), dir = new THREE.Vector3(), tail = new THREE.Vector3(), NOSE = new THREE.Vector3(0, 0, 1), back = new THREE.Vector2(), UP = { x: 0, y: 1 };
   let wide = false, hold = 0, holdAt = null, time = 0, shooter = null, flashT = 0, trailT = 0;
   let closeUp = 0;   // a narrower view for test screenshots (capisDebug)
   const viewWidth = () => wide ? match.map.width + 8 : closeUp || (camera.aspect < 1 ? 22 : 34);
@@ -134,23 +196,45 @@ export function createCapisScene(canvas, match) {
     if (e.type === 'fire') {
       feel.fire({ cam: 1.2, shake: .35 }); gunFeel.fire({ cam: 5 }); shooter = e.capy; flashT = 1; flash.rotation.z = Math.random() * Math.PI;
       c?.avatar.bounce(.5);
-      puffs.spawn({ x: e.x, y: e.y, z: FRONT + NEAR }, { color: TEAM_COLORS[e.team], count: 12, spread: .45, size: .45, rise: .9, life: .55 });
-      puffs.spawn({ x: e.x, y: e.y, z: FRONT + NEAR }, { color: '#f4efe4', count: 5, spread: .3, size: .5, rise: .5, life: .7 });
+      const k = match.capys.find(x => x.id === e.capy), out = k ? { x: Math.cos(k.aim) * k.facing, y: Math.sin(k.aim) } : { x: 1, y: 0 };
+      flashAngle = Math.atan2(out.y, out.x);
+      const from = { x: e.x, y: e.y, z: FRONT + NEAR };
+      puffs.spawn(from, { color: TEAM_COLORS[e.team], count: 10, spread: .45, size: .45, rise: .9, life: .55 });
+      puffs.spawn(from, { color: '#f4efe4', count: 7, spread: .35, size: .55, rise: .6, life: .9 });
+      sparks.burst(from, { count: 14, color: '#ffd27a', speed: 9, dir: out, cone: .35, size: .07, life: .28 });
+      drops.burst(from, { count: 8, color: TEAM_COLORS[e.team], speed: 5, dir: out, cone: .5, size: .07, life: .8 });
     }
     if (e.type === 'blast') {
-      fx.boom({ x: e.x, y: e.y, z: FRONT, size: 1.1, color: TEAM_COLORS[team], ground: e.y });
-      puffs.spawn({ x: e.x, y: e.y, z: FRONT }, { color: TEAM_COLORS[team], count: 22, spread: 2.4, size: .5, rise: 3, life: 1.1 });
-      feel.shake(shakeAt(Math.hypot(e.x - focus.x, e.y - focus.y) * .5, 1.2)); hold = .9; holdAt = { x: e.x, y: e.y };
+      // The blast: flash, fireball, a ring standing towards the camera, then
+      // paint, clods of earth, sparks and dust flying out of the crater.
+      const from = { x: e.x, y: e.y, z: FRONT }, paint = TEAM_COLORS[team];
+      fx.boom({ x: e.x, y: e.y, z: FRONT, size: 1.1, color: paint, ground: e.y, front: true });
+      puffs.spawn(from, { color: paint, count: 16, spread: 2.4, size: .5, rise: 3, life: 1.1 });
+      puffs.spawn(from, { color: '#dccaa6', count: 10, spread: 3, size: .65, rise: 1.6, life: 1.6 });
+      drops.burst(from, { count: 46, color: paint, speed: 12, dir: UP, cone: 1.25, size: .13, life: 1.6, spread: .8 });
+      drops.burst(from, { count: 18, color: '#ffffff', speed: 8, dir: UP, cone: 1.4, size: .08, life: 1.1, spread: .6 });
+      CLODS.forEach((color, i) => clods.burst(from, { count: i === 2 ? 6 : 9, color, speed: 10, dir: UP, cone: 1.15, size: .16, life: 2.2, spread: 1.2 }));
+      sparks.burst(from, { count: 18, color: '#ffc861', speed: 13, cone: Math.PI, size: .08, life: .35 });
+      ringBudget = 10;
+      feel.shake(shakeAt(Math.hypot(e.x - focus.x, e.y - focus.y), 1.35, 36)); hold = .9; holdAt = { x: e.x, y: e.y };
     }
     if ((e.type === 'plop' || (e.type === 'out' && e.reason === 'water'))) {
-      const x = e.x ?? match.capys.find(k => k.id === e.capy)?.x ?? focus.x;
-      puffs.spawn({ x, y: match.map.water + .2, z: FRONT }, { color: '#d8f1ff', count: 16, spread: 1.2, size: .5, rise: 3.5, life: .9 });
+      const x = e.x ?? match.capys.find(k => k.id === e.capy)?.x ?? focus.x, shell = e.type === 'plop';
+      waterSplash(x, shell ? 1.2 : 1.4, shell ? TEAM_COLORS[match.turn?.team ?? 0] : null); ringBudget = 6;
+      hold = 1.1; holdAt = { x, y: match.map.water + 3 };
+      feel.shake(shakeAt(Math.abs(x - focus.x), shell ? .5 : .7, 30));
     }
     // A hit: the capi flinches with a squash, a wobble and a splash of the rival's paint.
     if (e.type === 'hit' && c) {
       const k = match.capys.find(x => x.id === e.capy);
       c.hit = 1; c.avatar.bounce(1.4); c.avatar.stagger(1, 0);
-      if (k) puffs.spawn({ x: k.x, y: k.y + 1, z: FRONT + .3 }, { color: TEAM_COLORS[e.by], count: 10, spread: .9, size: .4, rise: 2.2, life: .8 });
+      if (k) {
+        // The rival's paint bursts over the capi.
+        const on = { x: k.x, y: k.y + 1.1, z: FRONT + .4 };
+        puffs.spawn(on, { color: TEAM_COLORS[e.by], count: 10, spread: .9, size: .4, rise: 2.2, life: .8 });
+        drops.burst(on, { count: 12 + Math.round(e.paint / 3), color: TEAM_COLORS[e.by], speed: 6.5, dir: UP, cone: 1.5, size: .1, life: 1.2, spread: .7 });
+        sparks.burst(on, { count: 6, color: '#ffffff', speed: 7, cone: Math.PI, size: .06, life: .22 });
+      }
     }
     if (e.type === 'out' && e.reason === 'paint' && c) c.avatar.bounce(1.6);
     if (e.type === 'turn') { hold = 0; holdAt = null; }
@@ -257,8 +341,12 @@ export function createCapisScene(canvas, match) {
       drip.position.set(at.x, at.y - p * .1, at.z); drip.scale.set(r, r * (1 + p * .35), r);
       drip.material.color.set(TEAM_COLORS[active.team]); drip.material.emissive.set(TEAM_COLORS[active.team]); drip.material.emissiveIntensity = .3 + p * .9;
     }
-    flash.visible = flashT > .05 && !!tipOf;
-    if (flash.visible) { flash.position.copy(at); flash.position.z += .05; flash.material.opacity = flashT; flash.scale.setScalar(1.9 * (1.15 - flashT * .3)); }
+    flash.visible = streak.visible = flashT > .05 && !!tipOf;
+    if (flash.visible) {
+      flash.position.copy(at); flash.position.z += .05; flash.material.opacity = flashT; flash.scale.setScalar(2.6 * (1.15 - flashT * .3));
+      streak.position.set(at.x + Math.cos(flashAngle) * .7, at.y + Math.sin(flashAngle) * .7, at.z + .06); streak.rotation.z = flashAngle;
+      streak.scale.set(2.6 * (1.3 - flashT * .3), .7 * flashT + .2, 1); streak.material.opacity = flashT;
+    }
     // La Bazuca's rocket along its velocity, trailing smoke and drops of paint.
     rockets.forEach((r, team) => { r.visible = !!match.shot && match.shot.team === team; });
     if (match.shot) {
@@ -267,8 +355,9 @@ export function createCapisScene(canvas, match) {
       if (Math.hypot(s.vx, s.vy) > .01) r.quaternion.setFromUnitVectors(NOSE, dir.set(s.vx, s.vy, 0).normalize());
       tail.copy(r.position).addScaledVector(dir, -.55 * ROCKET / 2.2);
       fx.trail('shell', tail, dt);
+      // Drops of paint shaken off the shell fall in their own arcs.
       trailT -= dt;
-      if (trailT <= 0) { trailT = .05; puffs.spawn(tail, { color: TEAM_COLORS[s.team], count: 1, spread: .1, size: .28, rise: -.6, life: .5 }); }
+      if (trailT <= 0) { trailT = .03; back.set(-s.vx, -s.vy); drops.burst(tail, { count: 1, color: TEAM_COLORS[s.team], speed: 2.5, dir: back, cone: .6, size: .075, life: 1.1, spread: .1 }); }
     }
     // Camera: the shell in flight, a fresh blast for a moment, else the capi whose turn it is.
     hold = Math.max(0, hold - dt);
@@ -284,6 +373,8 @@ export function createCapisScene(canvas, match) {
     camera.rotation.z += kick.roll;
     for (const c of match.capys) { const m = capis.get(c.id); m.lod.setFar(chooseFar(m.lod.far, camera.position.distanceTo(m.root.position), LOD_BAND)); }
     fx.update(dt); puffs.update(dt); backdrop.update(dt);
+    drops.update(dt, { solid, water: match.map.water, onWater: ripple }); clods.update(dt, { solid, water: match.map.water, onWater: ripple });
+    sparks.update(dt); rings.update(dt);
     if (view.labels) {
       view.labels(match.capys.map(c => {
         const g = capis.get(c.id).root; at.set(g.position.x, g.position.y + HEAD, FRONT).project(camera);
@@ -318,13 +409,17 @@ export function createCapisScene(canvas, match) {
     get wide() { return wide; }, set wide(on) { wide = !!on; },
     set closeUp(width) { closeUp = Number(width) || 0; },
     get calls() { return renderer.info.render.calls; },
+    // How a sound at (x, y) reaches the player: volume, and how far (0..1) for muffling.
+    hearing(x, y) { const d = Math.hypot(x - focus.x, y - focus.y), far = Math.min(1, d / 60); return { volume: 1 - far * .65, far }; },
+    get effects() { return { drops: drops.active, clods: clods.active, sparks: sparks.active, rings: rings.active }; },
     dispose() {
       unbind(); capis.forEach(m => { m.lod.dispose(); m.root.removeFromParent(); m.avatar.dispose(); }); capis.clear();
       launchers.forEach(l => l.userData.dispose()); rockets.forEach(r => { r.removeFromParent(); r.userData.dispose(); });
       bandanaGeo.dispose(); knotGeo.dispose(); cloth.forEach(mt => mt.dispose());
-      flash.geometry.dispose(); flash.material.dispose(); drip.geometry.dispose(); drip.material.dispose();
+      flash.geometry.dispose(); flash.material.dispose(); streak.material.dispose(); glow.dispose(); drip.geometry.dispose(); drip.material.dispose();
+      sprays.forEach(spray => spray.dispose());
       fx.dispose(); marker.dispose(); aimArrow.userData.dispose(); dashes.forEach(d => d.userData.dispose());
-      backdrop.dispose(); texture.dispose(); plane.dispose(); layers.forEach(l => l.material.dispose()); renderer.dispose();
+      backdrop.dispose(); texture.dispose(); backTexture.dispose(); backWall.material.dispose(); plane.dispose(); layers.forEach(l => l.material.dispose()); renderer.dispose();
     },
   };
 }

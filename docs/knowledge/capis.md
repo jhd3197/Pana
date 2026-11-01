@@ -17,7 +17,17 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   `paintRGBA` writes it into a `THREE.DataTexture` (no canvas), repainted only
   for the columns a blast changed. Nine stacked alpha-tested planes from
   z = -2.6 to 0.55 carry the same texture, darker towards the back, so the
-  earth reads as a slab with sides.
+  earth reads as a slab with sides. The palette (`PALETTE` in scene.js) uses
+  the painter's optional layers: grass with blades drawn into the air above it
+  (`fringe`, the cells stay air), roots in the topsoil, earth darkening by
+  height (`deepFrom`, so the earth under a cave matches its neighbours), rock
+  strata from the map's `rockAt`, sand and wet sand below 2.4 over the water,
+  bare earth on any top surface below the first ground (`grassAt`: crater and
+  cave floors) and shade under overhangs.
+- **The back wall**: a tenth plane just behind the slab, painted once per
+  match from the starting ground plus the map's `hollow` cells (the caves and
+  the cliff's notch). A crater reads as a dent with a dark back instead of a
+  hole onto the sky, and a cave has a back. Overhangs and the arch stay open.
 - **Capis, shells, the aim arrow and the dashed arc** move at z = 1, in front of
   the slab, so a capi in a crater stays visible.
 - **The capis are panas**: `buildCharacter` from `avatar-model.js` at ×0.8
@@ -67,19 +77,55 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   sets the whole-map view), so the still lobby picture shows full-detail
   capis (229 → 224 draws).
 - **Charge cue**: a drop of the team's paint swells and glows at the barrel's tip
-  while the shot charges; the shot flashes there (an additive plane, as in
-  Pepazo) and bursts paint.
+  while the shot charges; the shot flashes there (a soft glow and a streak
+  along the barrel on the shared glow texture) with sparks, paint and smoke.
+- **Effects** are pooled: four `engine/play/spray.js` pools (paint and water
+  drops, clods of earth, sparks, rings on the river), one draw each while
+  something flies and none when idle, plus the shared `Puffs` and
+  `blast-fx`. The shell sheds smoke (`fx.trail`) and paint drops that fall in
+  their own arcs. A blast is the flash, fireball and a shock ring standing
+  towards the camera (`boom({ front: true })`), 64 drops of paint and white,
+  33 clods in topsoil, earth, grass and rock colours, sparks, paint smoke and a
+  pale dust cloud; drops and clods stick where they land on the ground (a
+  flattened blob that soaks in) and ring the water where they fall in. The
+  blast shakes the camera by `shakeAt(distance to the view, 1.35, 36)`. A hit
+  bursts the rival's paint over the capi (more drops the more paint). A shell
+  or a capi in the river throws up a crown of drops, three rings and mist, and
+  the camera holds on the water a moment.
+- **Paint on the ground runs**: `explode` adds `drips` (terrain-mask.js) after
+  the splash: nine seeded streaks run down from the bottom of the stain through
+  the earth, each ending in a drop, and six blobs land on the ground past the
+  rim. Seeded by the shot count and the impact, so the bot, tests and the
+  screen agree; they are real stain (a blob on a slope is slick).
 - **Walking** is `engine/play/side-walker.js`; **flight** is
   `engine/play/ballistic.js`. The bot, the aim preview and the match share the
   same flight, so the preview is the real path.
-- **The map** (`public/map-rules.js`) is built from `fbm2` with a fixed seed
-  (2026): banks dropping into the river at both ends, a médano in the middle
-  with a small cave under it, two caños as dips. Same ground on every load.
-- **The world behind** (`public/backdrop.js`): sky gradient, river sheet,
-  savanna, two ridges of hills (perspective gives the parallax), moriche palms
-  and reeds from the model library, and the player's own pana on a dock by the
-  left bank. It bounces on a good shot, wobbles when one of ours is hit and
-  goes dizzy on a loss.
+- **The map** (`public/map-rules.js`) is a heightfield from `fbm2` with a fixed
+  seed (2026) plus carved and filled shapes, west to east (`FEATURES`): a long
+  sandy beach into the river (never steeper than a capi climbs), our plateau
+  with a boulder (spawns 13, 19, 25), the west caño under a thin rock arch, El
+  Tepuyito in the middle (a rock tower, top 22.6, with an overhanging cap, on
+  a climbable mound), a cave dug into the mound from each side with a thin
+  wall between them (one shot opens it), the east caño under an overhanging
+  lip, the rivals' plateau with its boulder (55, 61, 67), a rock cliff whose
+  foot the river has notched, and a sandbar just above the water past it.
+  Mirrored spawns; the tower stops a flat shot across the middle (tested), so
+  a team lobs over it or digs. In 2D any tunnel straight through a hill cuts
+  off everything above it, which is why the caves stop at a wall: an earlier
+  through-tunnel left the tower floating. Same ground on every load.
+- **The world behind** (`public/backdrop.js`), a late afternoon: a sky
+  gradient warm at the horizon, the sun low in the west (a disc and an
+  additive glow), nine instanced low-poly clouds drifting, three ranges of
+  hills paler with distance in a warm fog, the river (a standard material
+  whose shader adds moving ripple bands and a glint path under the sun, calmer
+  near the camera), foam strips where the bank meets the water (one instanced
+  mesh, re-laid when a blast reaches the water line), morichales (18 palms on
+  one instanced prototype) and three palms that sway, instanced reeds and
+  rocks by the banks and on the sandbar, two flocks of corocoras
+  (`birdFlock`, three draws), and the player's own pana on a dock by the
+  west bank. It bounces on a good shot, wobbles when one of ours is hit and
+  goes dizzy on a loss. Light: a warm hemisphere, a low warm sun from the
+  front left and a warm rim light from behind.
 
 ## Files
 
@@ -95,6 +141,7 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   results.
 - `public/game.js`: wiring (keys, mouse, touch, the shot charge, sounds).
 - `tests/rules.test.js`, `tests/capis.browser.js`.
+- Cover art: `web/images/launcher/capis.jpg` (hero, kept under 100 KB so it stays in Git) and`capis-card.jpg` (hub tile), registered in `web/launcher-art.js`. `public/card.js` is now only the fallback live card.
 
 ## Rules and tuning (`RULES` in `rules.js`)
 
@@ -143,17 +190,32 @@ Space is the fire key, so jump is Enter. Escape is the shared pause menu.
 
 ## Sound
 
-All from `engine/sfx.js`, no music: `shot('bazuca')`, `boom`, `splat`,
-`squeak` (a capi is hit), `boing` (jump), `land('grass')`, `splash` (water),
-`chime` (turn starts), `tick` (last 5 s), `sting(win)`.
+All from `engine/sfx.js`, no music: `shot('bazuca')`; a blast layers `boom`,
+`splat`, `debris` (earth raining back, .3 s later) and `patter` (drops landing,
+.45 s), quieter and muffled (`boom({ far })`) the farther it is from the view
+(`world.hearing(x, y)`); `squeak` and a small `splat` (a capi is hit), `boing`
+(jump), `land('grass')`, `splash` with a `patter` of drops (a shell or a capi
+in the river), `chime` (turn starts), `tick` (last 5 s), `sting(win)`.
+
+## Draw calls
+
+Headless, 1280 × 800, low quality (`?debug`, a fresh match):
+
+| View | Before the map and effects pass | After |
+|---|---|---|
+| Play view | 224 draws, 210 k triangles | 229 draws, 339 k triangles |
+| Whole map (Z) | 90 draws, 111 k triangles | 86 draws, 219 k triangles |
+| Lobby (still frame) | 224 draws, 212 k triangles | 229 draws, 341 k triangles |
+
+Mid-blast the play view adds at most the four spray pools (drops, clods,
+sparks, rings). The extra triangles are the morichales and reeds; instancing
+keeps them at a few draws, and replacing seven separate palms with one grove
+paid for the clouds, sun, birds, foam and back wall.
 
 ## Known gaps (milestone one)
 
 - One map and one weapon. No team or player-vs-player online yet.
-- No launcher illustration: the hub tile is the scaffold's live card
-  (the player's pana) and the lobby has no background picture.
 - The slab's sides show the planes as steps when seen at an angle.
-- Paint is per cell; the stain shows mostly on crater rims, not as drips.
 - A capi pushed against a crater wall can lose most of its knockback (the walker
   bounces off at 30 %), so it seldom flies far from inside a crater.
 - The paws on the grips are set by hand-tuned angles, not inverse kinematics:
@@ -168,8 +230,10 @@ All from `engine/sfx.js`, no music: `shot('bazuca')`, `boom`, `splat`,
 
 ## Proof
 
-`npm test -- capis` (map, turns, clock, blast, damage, water, winner, bot) and
-`npm test -- terrain-mask ballistic side-walker lod-band` for the engine pieces.
+`npm test -- capis` (map and its landmarks, the tower blocking a flat shot,
+turns, clock, blast, damage, water, winner, bot) and
+`npm test -- terrain-mask ballistic side-walker lod-band` for the engine pieces
+(drips and the painter's options included).
 `npm run test:browser -- capis` checks that all six capis are the studio pana
 with a team bandana and a batched La Bazuca, that only the capi on its turn
 raises it and that its tip is the rules' muzzle, that the capi on its turn is

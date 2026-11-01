@@ -247,16 +247,36 @@ export const sfx = {
   },
   splat(volume = 1) { sfx.impact('paint', { volume }); },
   // An explosion: a crack, a fireball's roar, a deep drop, debris and a long rumble.
-  // size 0.5..1.5 (a grenade ~.8, a rocket 1, a bazooka 1.2); volume falls with distance.
-  boom(size = 1, { volume = 1 } = {}) {
+  // size 0.5..1.5 (a grenade ~.8, a rocket 1, a bazooka 1.2); volume falls with distance;
+  // far 0..1 takes the crack and the debris away first, as distance does, leaving the rumble.
+  boom(size = 1, { volume = 1, far = 0 } = {}) {
     if (!sound.ctx || sound.muted) return;
-    const k = clamp(size, .4, 1.5), v = clamp(volume, 0, 1.5) * (.7 + k * .2), j = jit(.06);
-    burst({ dur: .06, f0: 3000 * j, type: 'highpass', vol: .18 * v, priority: 2 });
-    burst({ dur: .9 * k, f0: 900 * j, f1: 120, q: .6, type: 'lowpass', vol: .24 * v, priority: 2 });
+    const k = clamp(size, .4, 1.5), v = clamp(volume, 0, 1.5) * (.7 + k * .2), j = jit(.06), near = 1 - clamp(far);
+    burst({ dur: .06, f0: 3000 * j, type: 'highpass', vol: .18 * v * near, priority: 2 });
+    burst({ dur: .9 * k, f0: (900 - 500 * (1 - near)) * j, f1: 120, q: .6, type: 'lowpass', vol: .24 * v, priority: 2 });
     pitch({ dur: .9 * k, f0: 82 * j, f1: 24, vol: .28 * v, priority: 2 });
     pitch({ dur: .3, f0: 160, f1: 45, type: 'triangle', vol: .12 * v, priority: 2 });
-    for (let i = 0; i < 3; i++) burst({ dur: .04, f0: rnd(1500, 4000), q: 3, vol: rnd(.03, .05) * v, delay: .12 + i * .13 + rnd(0, .05), priority: 0 });
-    burst({ dur: 1.6 * k, f0: 320, f1: 70, q: .7, type: 'lowpass', vol: .1 * v, delay: .1, priority: 1 });
+    for (let i = 0; i < 3; i++) burst({ dur: .04, f0: rnd(1500, 4000), q: 3, vol: rnd(.03, .05) * v * near, delay: .12 + i * .13 + rnd(0, .05), priority: 0 });
+    burst({ dur: 1.6 * k, f0: 320, f1: 70, q: .7, type: 'lowpass', vol: .1 * v * (1 + .6 * (1 - near)), delay: .1, priority: 1 });
+  },
+  // Earth thrown up by a blast raining back down: a soft thud, then clods pattering.
+  debris(size = 1, { volume = 1, delay = .25 } = {}) {
+    if (!sound.ctx || sound.muted) return;
+    const k = clamp(size, .4, 1.5), v = clamp(volume, 0, 1.5);
+    pitch({ dur: .18, f0: 120 * jit(), f1: 50, vol: .12 * v * k, delay, priority: 1 });
+    burst({ dur: .3, f0: 420, f1: 160, q: .8, type: 'lowpass', vol: .1 * v, delay, priority: 1 });
+    const n = Math.round(4 + 4 * k);
+    for (let i = 0; i < n; i++) burst({ dur: .03 + rnd(0, .03), f0: rnd(500, 1400), q: 2, vol: rnd(.025, .05) * v, delay: delay + .1 + i * .07 + rnd(0, .06), priority: 0 });
+  },
+  // Drops of paint landing all around: short wet blips.
+  patter(count = 6, { volume = 1, delay = 0 } = {}) {
+    if (!sound.ctx || sound.muted) return;
+    const v = clamp(volume, 0, 1.5);
+    for (let i = 0; i < clamp(count, 1, 10); i++) {
+      const at = delay + i * .055 + rnd(0, .05);
+      pitch({ dur: .04, f0: rnd(600, 900), f1: rnd(250, 380), vol: .035 * v, delay: at, priority: 0 });
+      burst({ dur: .03, f0: rnd(1800, 2800), q: 2.5, vol: .025 * v, delay: at, priority: 0 });
+    }
   },
   // The tick that confirms you hit someone.
   hitConfirm() { pitch({ dur: .04, f0: 1400, type: 'square', vol: .09, priority: 3 }); pitch({ dur: .06, f0: 2100, type: 'square', vol: .08, delay: .04, priority: 3 }); pitch({ dur: .08, f0: 260, f1: 110, vol: .14, priority: 3 }); burst({ dur: .04, f0: 3200, q: 1, vol: .1, priority: 3 }); },

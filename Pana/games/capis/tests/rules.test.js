@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMatch, tickMatch, takeEvents, fire, explode, activeCapy, teamAlive, center, standings, RULES } from '../public/rules.js';
-import { buildMap, llanosHeight, LLANOS, SPAWNS } from '../public/map-rules.js';
+import { buildMap, llanosHeight, rockAt, grassAt, LLANOS, SPAWNS, FEATURES } from '../public/map-rules.js';
 import { planShot, bestShot, createBot } from '../public/bot.js';
-import { fillHeights, surfaceY } from '../../../engine/play/terrain-mask.js';
+import { fillHeights, surfaceY, solidAt, groundBelow } from '../../../engine/play/terrain-mask.js';
 import { simulateFlight, aimVelocity } from '../../../engine/play/ballistic.js';
 import { muzzle, shoulder, flightOptions } from '../public/rules.js';
 import { aiming, bodyPose, barrelPose, CARRY_PITCH, CARRY_DROP } from '../public/poses.js';
@@ -25,6 +25,48 @@ test('the Llanos riverbank is the same on every load, with water at both ends', 
   assert.deepEqual(a.solid, b.solid);
   assert.ok(llanosHeight(1) < LLANOS.water && llanosHeight(LLANOS.width - 1) < LLANOS.water, 'the river at both banks');
   for (const x of SPAWNS.flat()) assert.ok(surfaceY(a, x) > LLANOS.water + 3, `spawn ${x} on dry land`);
+});
+
+test('the map has its landmarks: tower on a mound, caves, arch, lip, cliff notch, beach and sandbar', () => {
+  const m = buildMap(), { tower, caves, arch, lip, cliff, island } = FEATURES, ground = x => groundBelow(m, x, LLANOS.height);
+  // El Tepuyito stands well above both plateaus and stands on the mound (no floating rock).
+  assert.ok(surfaceY(m, tower.x) > tower.top - 1 && surfaceY(m, tower.x) > Math.max(...SPAWNS.flat().map(x => surfaceY(m, x))) + 6);
+  // Its cap overhangs: rock above, air just under the lip.
+  for (const side of [-1, 1]) {
+    const x = tower.x + side * (tower.half + 1.5);
+    assert.ok(solidAt(m, x, tower.top - .3) && !solidAt(m, x, tower.top - 2), 'the cap juts out over air');
+  }
+  // A cave on each side, the two parted by a thin wall; marked hollow for the back wall.
+  for (const side of [-1, 1]) {
+    const x = tower.x + side * (caves.wall + caves.radius + 1);
+    let floor = 10; while (solidAt(m, x, floor)) floor += .1;
+    assert.ok(floor < 16 && !solidAt(m, x, floor + 1) && solidAt(m, x, floor + caves.radius * 2 + .4), `a cave with a roof at ${x}`);
+    assert.equal(m.hollow[Math.floor((floor + 1) / m.cell) * m.cols + Math.floor(x / m.cell)], 1, 'the cave is a hollow');
+  }
+  for (let y = 10; y < tower.top - 1; y += .1) assert.ok(solidAt(m, tower.x, y), 'the wall between the caves');
+  // The arch spans the west caño with air under it; the east caño has a lip with air under it.
+  const archX = (arch.from + arch.to) / 2;
+  assert.ok(solidAt(m, archX, arch.y - .5) && !solidAt(m, archX, arch.y - 2.5), 'air under the arch');
+  assert.ok(solidAt(m, lip.x - 1, lip.y) && !solidAt(m, lip.x - 1, lip.y - 1.6), 'air under the east lip');
+  // The cliff drops into the river with a notch at the water; the sandbar stands just above the water.
+  assert.ok(!solidAt(m, cliff - .2, LLANOS.water + 2.3) && solidAt(m, cliff - .4, LLANOS.water + 6), 'the notch under the cliff');
+  assert.ok(ground(cliff + 1.4) < LLANOS.water, 'the river between the cliff and the sandbar');
+  const bar = ground(island.x);
+  assert.ok(bar > LLANOS.water && bar < LLANOS.water + 1.6, `the sandbar at ${bar}`);
+  // The beach is walkable from the water to the plateau (never steeper than 52°).
+  for (let x = 2; x < FEATURES.beach; x += .5) assert.ok(Math.abs(ground(x + 1) - ground(x)) < Math.tan(52 * Math.PI / 180), `the beach climbs at ${x.toFixed(1)}`);
+  // The painter's hints: rock in the tower and the cliff, earth in the plateau, grass only near the first ground.
+  assert.ok(rockAt(tower.x, tower.top - 3) > .5 && rockAt(cliff - .5, 10) > .5 && rockAt(20, 12) < .5);
+  assert.ok(grassAt(20, llanosHeight(20)) && !grassAt(20, llanosHeight(20) - 3), 'a crater floor is bare earth');
+});
+
+test('the tower blocks a flat shot across the middle, a lob clears it', () => {
+  const m = createMatch({ seed: 3 }); m.wind = 0;
+  const c = m.capys.find(k => k.id === '0-2');
+  const flat = simulateFlight({ ...muzzle(c, .05, 1), ...aimVelocity(.05, 1, RULES.speed) }, flightOptions(m, []));
+  assert.ok(flat.hit === 'ground' && flat.x < FEATURES.tower.x + FEATURES.tower.half + 2, `a flat shot stops at the tower (${flat.x.toFixed(1)})`);
+  const shot = bestShot(m, c, { x: 55, y: surfaceY(m.mask, 55) });
+  assert.ok(shot.miss < 3, `a lob reaches the far plateau (miss ${shot.miss.toFixed(2)})`);
 });
 
 test('a match starts with two teams of three capis standing on the ground, team 0 first', () => {

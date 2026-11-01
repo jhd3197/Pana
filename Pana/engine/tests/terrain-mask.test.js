@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMask, fillHeights, solidAt, carve, fill, splash, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA } from '../play/terrain-mask.js';
+import { createMask, fillHeights, solidAt, carve, fill, splash, drips, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA } from '../play/terrain-mask.js';
 
 const near = (a, b, tol = .11) => Math.abs(a - b) <= tol;
 const flat = (h = 10) => { const m = createMask({ width: 40, height: 20, cell: .1 }); fillHeights(m, () => h); takeDirty(m); return m; };
@@ -68,4 +68,31 @@ test('paintRGBA draws air transparent, grass on top and paint over the earth', (
   assert.equal(px(5, 15)[3], 0, 'sky is see-through');
   const top = px(5, 9.95); assert.ok(top[1] > top[0] && top[3] === 255, 'the surface is grass green');
   const painted = px(30, 8); assert.ok(painted[0] > 200 && painted[2] > 90, 'the splash shows its colour');
+});
+
+test('drips run paint down from a blast and throw blobs past it, the same way for the same seed', () => {
+  const blast = seed => { const m = flat(10); carve(m, 30, 10, 3); splash(m, 30, 10, 4.5, 1); takeDirty(m); return { m, n: drips(m, 30, 10, 4.1, 1, { seed }) }; };
+  const a = blast(7), b = blast(7), c = blast(8);
+  assert.ok(a.n > 0); assert.deepEqual(a.m.stain, b.m.stain); assert.notDeepEqual(a.m.stain, c.m.stain);
+  assert.ok(takeDirty(a.m), 'the drips mark the ground to repaint');
+  // Below the splash's reach there is paint now, on solid ground only.
+  let below = 0; for (let r = 0; r < Math.floor((10 - 4.5) / a.m.cell); r++) for (let col = 0; col < a.m.cols; col++) { const i = r * a.m.cols + col; if (a.m.stain[i]) { below++; assert.equal(a.m.solid[i], 1); } }
+  assert.ok(below > 0, 'a streak runs below the stain');
+  // Blobs land on the top surface past the crater.
+  assert.ok(stainAt(a.m, 30 - 4.1 * 1.4, 9.95, 1.5) > 0 || stainAt(a.m, 30 + 4.1 * 1.4, 9.95, 1.5) > 0, 'a blob past the rim');
+});
+
+test('paintRGBA options: sand by the water, bare crater floors, blades of grass, rock and height shading', () => {
+  const m = flat(10), rgba = new Uint8Array(m.cols * m.rows * 4);
+  fillHeights(m, x => x < 10 ? 3 : 10); carve(m, 30, 10, 2);
+  const palette = { earth: [150, 100, 60], deep: [80, 50, 30], grass: [70, 160, 60], sand: [230, 200, 140], sandBelow: 4, rock: [140, 140, 140], rockAt: (x, y) => y < 2 ? 1 : 0,
+    grassAt: (x, y) => y > 9.5, fringe: 3, deepFrom: 10, deepAt: 50 };
+  paintRGBA(m, rgba, palette);
+  const px = (x, y) => { const i = (Math.floor(y / m.cell) * m.cols + Math.floor(x / m.cell)) * 4; return [...rgba.slice(i, i + 4)]; };
+  const sand = px(5, 2.95); assert.ok(sand[0] > 180 && sand[1] > 150, 'the low shore is sand');
+  const floor = px(30, 7.95); assert.ok(floor[1] < floor[0], 'the crater floor is bare earth, not grass');
+  let blades = 0; for (let x = 12; x < 25; x += .1) if (px(x, 10.05)[3]) blades++;
+  assert.ok(blades > 10 && !solidAt(m, 15, 10.05), 'blades are drawn over the grass, the cells stay air');
+  const rocky = px(15, 1); assert.ok(Math.abs(rocky[0] - rocky[2]) < 30, 'rock is grey');
+  assert.ok(px(15, 8)[0] > px(15, 5)[0], 'earth darkens with height below deepFrom');
 });

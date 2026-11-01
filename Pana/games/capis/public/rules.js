@@ -10,7 +10,7 @@
 // 'flight' (the shell is in the air), 'retreat' (a few seconds to walk away),
 // 'settle' (everyone stops sliding), then the other team's turn. 'finished'
 // when a team has no capis left.
-import { carve, splash, solidAt } from '../../../engine/play/terrain-mask.js';
+import { carve, splash, drips, solidAt } from '../../../engine/play/terrain-mask.js';
 import { stepSideWalker, knock, settled } from '../../../engine/play/side-walker.js';
 import { aimVelocity, stepFlight } from '../../../engine/play/ballistic.js';
 import { draw, clamp } from '../../../engine/random.js';
@@ -96,11 +96,13 @@ export function fire(m, power) {
   return true;
 }
 
-// The paint shell lands: a crater, paint on the ground, paint and a push on
-// every capi near it.
+// The paint shell lands: a crater, paint on the ground (running down through
+// the earth and thrown in blobs past the rim), paint and a push on every capi
+// near it.
 export function explode(m, x, y, team) {
   carve(m.mask, x, y, RULES.blast);
   splash(m.mask, x, y, RULES.stain, team);
+  drips(m.mask, x, y, RULES.stain - .4, team, { seed: m.shots * 7919 + Math.round(x * 10) * 31 + Math.round(y * 10) });
   m.events.push({ type: 'blast', x, y, team });
   const reach = RULES.blast + RULES.radius;
   for (const c of m.capys.filter(alive)) {
