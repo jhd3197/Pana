@@ -406,3 +406,24 @@ export function coverageContour(m, field, level = 127.5, { c0 = 0, c1 = m.cols }
   }
   return { segments: new Float32Array(seg), normals: new Float32Array(nor), count: seg.length / 4 };
 }
+
+// The top of the ground in every column (world y of the highest solid or
+// `extra` cell, 0 where there is none), box-blurred twice over `wide` and over
+// `narrow` world units: smooth lines that follow the land, for strata that
+// drape over hills without breaking at a cliff. Returns { wide, narrow }
+// (Float32Array, one value a column).
+export function smoothTops(m, { extra = null, wide = 6, narrow = 1.5 } = {}) {
+  const { cols, rows, cell } = m, raw = new Float32Array(cols);
+  for (let c = 0; c < cols; c++) {
+    let r = rows - 1;
+    while (r >= 0 && !m.solid[r * cols + c] && !(extra && extra[r * cols + c])) r--;
+    raw[c] = (r + 1) * cell;
+  }
+  const blur = (src, reach) => {
+    const out = new Float32Array(cols), k = Math.max(0, Math.round(reach / cell)), at = c => src[c < 0 ? 0 : c >= cols ? cols - 1 : c];
+    let sum = 0; for (let d = -k; d <= k; d++) sum += at(d);
+    for (let c = 0; c < cols; c++) { if (c) sum += at(c + k) - at(c - k - 1); out[c] = sum / (2 * k + 1); }
+    return out;
+  };
+  return { wide: blur(blur(raw, wide / 2), wide / 2), narrow: blur(blur(raw, narrow / 2), narrow / 2) };
+}

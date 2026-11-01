@@ -88,6 +88,25 @@ front face, a wall extruded from the outline and an optional back wall (the
 starting ground plus `mask.hollow`), three draws in all, with soil, strata,
 pebbles, roots, rock, sand, a grass band with short tufts and the paint all
 computed in the fragment shader (Lambert lighting and fog kept).
+`palette.strata` (keys of `DEFAULT_STRATA`: topsoil, ash, clay, pumice, ochre,
+loam, base and seam colours, `period`, `fold`, `tilt`, `phase`) sets the soil
+profile; `setStrata(strata)` swaps it for the next map without a rebuild.
+
+**Strata.** The bands are read from the ground as it was at `reset()`, never
+from the ground now, so a crater cuts through them and nothing pops or
+stretches: the field is copied into a start texture (depth, coverage, wide
+coverage, bare) and `smoothTops(mask, { extra, wide, narrow })`
+(terrain-mask.js, pure) gives the starting top per column smoothed wide and
+narrow, uploaded as a one-row half-float texture. A point's place down the
+profile is `fold` x its depth under the smoothed top plus the rest level (the
+bands drape over hills and fold gently instead of running parallel to every
+bump), waved and thickened along x by noise; runs of seven bands of five
+kinds repeat every `period` units with shares, swaps and swells hashed per
+run, some contacts sharp, some graded, some with a thin dotted seam. The
+topsoil, the root fringe and the grass cover use the starting depth too, and
+where the coverage is now lower than at the start (a crater) the new face is
+scorched, charred right at the edge. Two texture taps more than the plain
+soil and about 30 value-noise lookups a pixel; no mesh, draw or pass added.
 `update(takeDirty(mask))` after a blast or a splash (it rebuilds the outline
 only when cells changed between solid and air), `reset(mask)` for a new
 match, `fallback()` for a plain cut-out ground if the shader cannot compile.

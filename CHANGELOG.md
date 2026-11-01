@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El corte del terreno de Capis a Pintazos ahora muestra capas de tierra de verdad.**
+  Bajo la grama hay tierra negra con raíces colgando, y debajo capas de
+  ceniza, arcilla, piedra pómez, ocre y una base oscura que ondulan, se
+  adelgazan y siguen la forma del cerro. Cada cráter las corta limpio y deja
+  el borde chamuscado, y cada tipo de mapa trae sus propios colores.
+
 - **En Pepazo los disparos pasan por encima de los sacos, cajas y barriles bajos.**
   Ya no hay paredes invisibles sobre la cobertura baja de El Puerto y la Cancha
   de Noche: si ves a un rival por encima, le puedes dar, y los bots también.

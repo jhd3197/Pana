@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMatch, tickMatch, takeEvents, fire, explode, activeCapy, teamAlive, center, standings, RULES } from '../public/rules.js';
-import { generateMap, rockAt, grassAt, MAP_SIZES, KINDS } from '../public/map-rules.js';
+import { generateMap, rockAt, grassAt, MAP_SIZES, KINDS, strataPalette, STRATA_KEYS } from '../public/map-rules.js';
 import { planShot, bestShot, createBot, pickTarget } from '../public/bot.js';
 import { fillHeights, surfaceY, solidAt, groundBelow, carve } from '../../../engine/play/terrain-mask.js';
 import { simulateFlight, aimVelocity } from '../../../engine/play/ballistic.js';
@@ -245,3 +245,25 @@ test('poses follow the match: only the capi on its turn raises La Bazuca', () =>
   assert.equal(bodyPose(m, me), 'cheer');
   assert.equal(bodyPose(m, m.capys.find(c => c.team === 1 && !c.out)), 'sulk');
 });
+
+test('the layers of the cut face belong to the map: same seed and kind, same look; colours and numbers in range', () => {
+  for (const kind of [...KINDS, 'suave']) {
+    for (const seed of [1, 2, 101, 4242, 99999]) {
+      const a = strataPalette(seed, kind), b = strataPalette(seed, kind);
+      assert.deepEqual(a, b, `${kind} ${seed} is deterministic`);
+      for (const key of STRATA_KEYS) {
+        assert.equal(a[key].length, 3);
+        for (const v of a[key]) assert.ok(Number.isInteger(v) && v >= 0 && v <= 255, `${kind} ${key} ${v}`);
+      }
+      assert.ok(a.period >= 3.8 && a.period <= 5.6, `period ${a.period}`);
+      assert.ok(a.fold >= .3 && a.fold <= .55 && Math.abs(a.tilt) <= .02 && a.phase >= 0 && a.phase < 100);
+      // The topsoil is darker than the pale ash, the base darker than the loam over it.
+      const lum = c => c[0] * .3 + c[1] * .55 + c[2] * .15;
+      assert.ok(lum(a.topsoil) < lum(a.ash) && lum(a.base) < lum(a.loam) && lum(a.pumice) > lum(a.clay));
+    }
+  }
+  assert.notDeepEqual(strataPalette(101, 'cerros'), strataPalette(102, 'cerros'), 'another seed shifts the look');
+  assert.notDeepEqual(strataPalette(101, 'cerros').clay, strataPalette(101, 'terrazas').clay, 'another kind has its own colours');
+  assert.deepEqual(strataPalette(101, 'nada'), strataPalette(101, 'nada'), 'an unknown kind falls back');
+});
+

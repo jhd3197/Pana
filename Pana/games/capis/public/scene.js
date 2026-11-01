@@ -26,7 +26,7 @@ import { simulateFlight, aimVelocity } from '/engine/play/ballistic.js';
 import { RULES, TEAM_COLORS, alive, muzzle, flightOptions, activeCapy } from './rules.js';
 import { aiming, bodyPose, barrelPose } from './poses.js';
 import { createBackdrop } from './backdrop.js';
-import { rockAt, grassAt } from './map-rules.js';
+import { rockAt, grassAt, strataPalette } from './map-rules.js';
 
 const FRONT = 1;               // the depth where capis and shells move
 const SLAB = [-2.6, .55];      // the earth's back and front faces
@@ -45,10 +45,10 @@ const ROCKET = 2.2;
 const LOD_BAND = { far: 55, near: 47 }, LOD_CELL = .06;
 const rgb = hex => { const c = new THREE.Color(hex); return [c.r * 255, c.g * 255, c.b * 255]; };
 // The ground's look (terrain-material.js): grass with short tufts on top,
-// roots in the topsoil, earth darkening with height, rock strata, sand on the
-// beach and the sandbar, wet by the water.
-const PALETTE = { earth: [176, 110, 62], deep: [92, 56, 36], topsoil: [112, 72, 42], grass: [104, 172, 58], tints: TEAM_COLORS.map(rgb),
-  sand: [230, 204, 150], wet: [168, 140, 100], rock: [150, 134, 116], roots: [86, 56, 34], deepFrom: 14, deepAt: 120, tuft: .3 };
+// rock, sand on the beach and the sandbar, wet by the water; the layers of the
+// cut face come from the map (`strataPalette`).
+const PALETTE = { earth: [176, 110, 62], topsoil: [112, 72, 42], grass: [104, 172, 58], tints: TEAM_COLORS.map(rgb),
+  sand: [230, 204, 150], wet: [168, 140, 100], rock: [150, 134, 116], roots: [86, 56, 34], tuft: .3 };
 // The colours a blast throws up: topsoil, earth, grass and rock.
 const CLODS = ['#6f4a2a', '#9c6a3c', '#5c9a36', '#8f7c66'];
 const { damp } = THREE.MathUtils;
@@ -71,7 +71,9 @@ export function createCapisScene(canvas, match) {
   const rim = new THREE.DirectionalLight('#ffb27a', .7); rim.position.set(30, 14, -40); scene.add(rim);
   const backdrop = createBackdrop(scene, match.map, match.mask);
   let mask = match.mask, shown = match.map;
-  const palette = { ...PALETTE, sandBelow: match.map.water + 2.4, water: match.map.water };
+  // The cut face's layers belong to the map: its kind's colours, shifted by its seed.
+  const strataOf = map => strataPalette(map.seed, map.kind);
+  const palette = { ...PALETTE, sandBelow: match.map.water + 2.4, water: match.map.water, strata: strataOf(match.map) };
 
   // ---------- the ground ----------
   // One shader draws the slab (engine/play/terrain-material.js): the front
@@ -151,7 +153,8 @@ export function createCapisScene(canvas, match) {
     }
     takeDirty(mask);
     // A map of another size needs ground textures of another size.
-    if (resized) { terrain.dispose(); terrain = makeTerrain(); if (plain) terrain.fallback(); } else terrain.reset(mask);
+    palette.strata = strataOf(shown);
+    if (resized) { terrain.dispose(); terrain = makeTerrain(); if (plain) terrain.fallback(); } else { terrain.setStrata(palette.strata); terrain.reset(mask); }
     if (remap) backdrop.setMap(next.map, mask); else backdrop.shore(mask);
     backdrop.react('idle');
     for (const spray of sprays) spray.clear();

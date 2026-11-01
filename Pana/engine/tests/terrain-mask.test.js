@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMask, fillHeights, solidAt, carve, fill, splash, drips, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA, fieldRGBA, coverageContour } from '../play/terrain-mask.js';
+import { createMask, fillHeights, solidAt, carve, fill, splash, drips, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA, fieldRGBA, coverageContour, smoothTops } from '../play/terrain-mask.js';
 
 const near = (a, b, tol = .11) => Math.abs(a - b) <= tol;
 const flat = (h = 10) => { const m = createMask({ width: 40, height: 20, cell: .1 }); fillHeights(m, () => h); takeDirty(m); return m; };
@@ -144,3 +144,22 @@ test('coverageContour traces a smooth outline with outward normals', () => {
   }
   assert.ok(flatTop > 100 && inCrater > 40);
 });
+
+test('smoothTops follows the starting top per column, smoothed, and counts the extra cells as ground', () => {
+  const m = createMask({ width: 40, height: 20, cell: .1 });
+  fillHeights(m, x => (x < 20 ? 6 : 12));
+  const flatTops = smoothTops(m, { wide: 6, narrow: 1 });
+  assert.equal(flatTops.wide.length, m.cols);
+  assert.ok(Math.abs(flatTops.narrow[50] - 6) < 1e-4 && Math.abs(flatTops.narrow[350] - 12) < 1e-4, 'flat away from the step');
+  // Across the step the line is a ramp, never a jump, and the wide one is gentler.
+  let jumpN = 0, jumpW = 0;
+  for (let c = 1; c < m.cols; c++) { jumpN = Math.max(jumpN, Math.abs(flatTops.narrow[c] - flatTops.narrow[c - 1])); jumpW = Math.max(jumpW, Math.abs(flatTops.wide[c] - flatTops.wide[c - 1])); }
+  assert.ok(jumpN < .7 && jumpW < jumpN, `smooth across a cliff (${jumpN}, ${jumpW})`);
+  assert.ok(flatTops.narrow[200] > 6 && flatTops.narrow[200] < 12);
+  // A crater does not move the line it was built from; a hollow above the ground raises it.
+  const before = smoothTops(m).wide.slice(); carve(m, 10, 6, 2);
+  const extra = new Uint8Array(m.solid.length); for (let c = 0; c < 40; c++) extra[150 * m.cols + c] = 1;
+  assert.ok(smoothTops(m, { extra }).narrow[5] > 14, 'the hollow counts as ground');
+  assert.ok(Math.abs(before[100] - 6) < .5);
+});
+
