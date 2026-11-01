@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos tiene una orilla nueva y los pintazos se sienten.**
+  El mapa ahora tiene playa, un arco de piedra, El Tepuyito en el medio con
+  cuevas a cada lado, un barranco sobre el río y un banco de arena, con
+  morichales, corocoras y el sol de la tarde llanera. Cada disparo salpica
+  gotas de pintura, terrones y chispas, la pintura chorrea por el cráter y el
+  río salpica cuando algo cae en él; el bombazo suena más lejos o más cerca.
+
 - **En Pepazo El Acolchado ahora parece un chaleco táctico de verdad.**
   Lleva placas delante y detrás con ribete turquesa, correas, faja lateral con
   hebillas y bolsillos de bolas con tapa mango; se mueve con tu pana al caminar.

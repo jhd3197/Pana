@@ -103,18 +103,26 @@ $('zoom').onclick = () => { if (world) world.wide = !world.wide; };
 
 // ---------- events → sound, effects, toasts ----------
 const nameOf = id => match.capys.find(c => c.id === id)?.name || '';
+// How loud a sound at (x, y) is from where the camera looks: far ones are quieter and muffled.
+const heard = (x, y) => world && Number.isFinite(x) ? world.hearing(x, y) : { volume: 1, far: 0 };
 function handle(e) {
   world?.event(e);
   switch (e.type) {
     case 'turn': sfx.chime(); notify(match.turn.team === HUMAN ? loc('Tu turno: {name}', { name: nameOf(e.capy) }) : loc('Turno de la máquina: {name}', { name: nameOf(e.capy) })); break;
     case 'fire': sfx.shot('bazuca'); break;
-    case 'blast': sfx.boom(1.1, { volume: .8 }); sfx.splat(1.2); break;
-    case 'hit': sfx.squeak(); world?.react(e.team === HUMAN ? 'ouch' : e.by === HUMAN ? 'cheer' : 'idle'); break;
+    case 'blast': {
+      // The boom, the wet splat, the earth raining back and the drops pattering down.
+      const { volume, far } = heard(e.x, e.y);
+      sfx.boom(1.2, { volume: .85 * volume, far }); sfx.splat(1.2 * volume);
+      sfx.debris(1.1, { volume: .9 * volume, delay: .3 }); sfx.patter(7, { volume: .8 * volume, delay: .45 });
+      break;
+    }
+    case 'hit': sfx.squeak(); sfx.splat(.5); world?.react(e.team === HUMAN ? 'ouch' : e.by === HUMAN ? 'cheer' : 'idle'); break;
     case 'jump': sfx.boing(.8); break;
     case 'land': sfx.land('grass', { power: .4, volume: .7 }); break;
-    case 'plop': sfx.splash(.6); break;
+    case 'plop': sfx.splash(.8, { volume: heard(e.x, e.y).volume }); sfx.patter(4, { volume: .5, delay: .35 }); break;
     case 'out':
-      if (e.reason === 'water') { sfx.splash(1.2); notify(loc('¡{name} se fue al río!', { name: nameOf(e.capy) })); }
+      if (e.reason === 'water') { sfx.splash(1.3); sfx.patter(5, { volume: .6, delay: .4 }); notify(loc('¡{name} se fue al río!', { name: nameOf(e.capy) })); }
       else notify(loc('¡{name} quedó pintado de pies a cabeza!', { name: nameOf(e.capy) }));
       break;
     case 'timeout': notify(loc('¡Se acabó el tiempo!')); break;
