@@ -135,3 +135,136 @@ export function headroom(mask, x, y, height = 2.4) {
   for (let r = Math.floor((y + .05) / mask.cell); r <= Math.floor((y + height) / mask.cell) && r < mask.rows; r++) if (r >= 0 && mask.solid[r * mask.cols + c]) return false;
   return true;
 }
+
+// Where a walker can stand and where it can get, caves, tunnels, ledges and
+// bridges included (walkSpans only sees the top surface). The ground is sampled
+// every `step` along x; a floor is the top of solid ground with `clearance` of
+// air over it, above `water + dry`. From a floor a walker can:
+//   walk  to the next column, up at most `maxSlope × step` (or a `stepUp`
+//         bump), or off a ledge, falling to the first ground below;
+//   hop   with a jump (`hop`: take-off speed up and forward, `gravity`),
+//         landing on the first ground its arc meets within `leap`.
+// Never into the water. Edges are found as they are visited, so a search
+// only pays for the floors it reaches.
+//
+//   const g = floorGraph(mask, { water: 4.2 });
+//   const seen = g.reach(g.near(x, y));            // Uint8Array over g.y
+//   seen[g.near(x2, y2)]                           // can it get there?
+//   g.reach(from, { hops: false })                 // on foot only
+export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clearance = 1.7, maxSlope = Math.tan(50 * Math.PI / 180), stepUp = .35,
+  hop = { up: 7, forward: 2.6, gravity: 18 }, leap = 2.4, body = 1.5 } = {}) {
+  const { cols, rows, solid, cell } = mask, count = Math.floor(mask.width / step), need = Math.ceil(clearance / cell);
+  const colOf = k => Math.min(cols - 1, Math.floor((k + .5) * step / cell));
+  const air = (c, r) => r >= rows || (r >= 0 && !solid[r * cols + c]);
+  const start = new Int32Array(count + 1), ys = [], ks = [];
+  for (let k = 0; k < count; k++) {
+    start[k] = ys.length;
+    const c = colOf(k);
+    for (let r = 0; r < rows; r++) {
+      if (!solid[r * cols + c] || !air(c, r + 1)) continue;
+      const y = (r + 1) * cell;
+      if (y <= water + dry) continue;
+      let open = true;
+      for (let q = r + 1; q <= r + need && open; q++) open = air(c, q);
+      if (open) { ys.push(y); ks.push(k); }
+    }
+  }
+  start[count] = ys.length;
+  const y = Float32Array.from(ys), col = Int32Array.from(ks);
+  // The floor of column k at height h (within half a cell), or -1.
+  const at = (k, h) => { if (k < 0 || k >= count) return -1; for (let i = start[k]; i < start[k + 1]; i++) if (Math.abs(y[i] - h) < cell * .6) return i; return -1; };
+  // The first ground at or under height h in column k: its floor id, or -1 (water, no room).
+  const landing = (k, h) => {
+    if (k < 0 || k >= count) return -1;
+    const c = colOf(k);
+    for (let r = Math.min(rows - 1, Math.floor(h / cell)); r >= 0; r--) if (solid[r * cols + c]) return at(k, (r + 1) * cell);
+    return -1;
+  };
+  const clear = (k, from, to) => { const c = colOf(k); for (let r = Math.max(0, Math.floor(from / cell)); r <= Math.floor(to / cell); r++) if (!air(c, r)) return false; return true; };
+  function edges(i, hops, out) {
+    out.length = 0;
+    const k = col[i], h = y[i], rise = Math.max(stepUp, maxSlope * step);
+    for (const dir of [-1, 1]) {
+      const n = k + dir;
+      if (n >= 0 && n < count && clear(n, h + rise + cell, h + body)) { const j = landing(n, h + rise); if (j >= 0) out.push(j); }
+      if (!hops || !clear(k, h + cell, h + body + hop.up * hop.up / (2 * hop.gravity))) continue;
+      // The arc of a jump, column by column: blocked by ground in the body's
+      // way, landed where the feet meet ground while coming down.
+      for (let s = 1; s * step <= leap; s++) {
+        const m = k + dir * s;
+        if (m < 0 || m >= count) break;
+        const t = s * step / hop.forward, feet = h + hop.up * t - hop.gravity * t * t / 2;
+        if (!clear(m, feet + .1, feet + body)) break;
+        if (hop.up - hop.gravity * t < 0) {
+          const j = landing(m, feet + .1);
+          if (j >= 0 && y[j] >= feet - .5) { out.push(j); break; }
+        }
+        if (s * step + step > leap) { const j = landing(m, feet); if (j >= 0) out.push(j); }
+      }
+    }
+    return out;
+  }
+  // Each floor's edges, worked out once (with and without hops).
+  const cache = [new Array(y.length), new Array(y.length)], scratch = [];
+  const linked = (i, hops) => { const c = cache[hops ? 1 : 0]; return c[i] || (c[i] = Int32Array.from(edges(i, hops, scratch))); };
+  // Every floor reachable from floor `from` (one id or a list), as a Uint8Array.
+  function reach(from, { hops = true } = {}) {
+    const seen = new Uint8Array(y.length), queue = new Int32Array(y.length);
+    let head = 0, tail = 0;
+    for (const f of [].concat(from)) if (f >= 0 && !seen[f]) { seen[f] = 1; queue[tail++] = f; }
+    while (head < tail) for (const j of linked(queue[head++], hops)) if (!seen[j]) { seen[j] = 1; queue[tail++] = j; }
+    return seen;
+  }
+  // How many floors a walker crosses from `from` to `to` (Infinity if it cannot), times the step: about the distance walked.
+  function distance(from, to, { hops = true } = {}) {
+    if (from < 0 || to < 0) return Infinity;
+    const dist = new Int32Array(y.length).fill(-1), queue = new Int32Array(y.length);
+    let head = 0, tail = 0; dist[from] = 0; queue[tail++] = from;
+    while (head < tail) {
+      const i = queue[head++];
+      if (i === to) return dist[i] * step;
+      for (const j of linked(i, hops)) if (dist[j] < 0) { dist[j] = dist[i] + Math.abs(col[j] - col[i]); queue[tail++] = j; }
+    }
+    return Infinity;
+  }
+  // The floor nearest (x, h) in x's column (within `within` up or down), or -1.
+  function near(x, h, within = 1) {
+    const k = Math.floor(x / step); if (k < 0 || k >= count) return -1;
+    let best = -1;
+    for (let i = start[k]; i < start[k + 1]; i++) if (Math.abs(y[i] - h) <= within && (best < 0 || Math.abs(y[i] - h) < Math.abs(y[best] - h))) best = i;
+    return best;
+  }
+  // Columns with more than one floor: ledges over ground, caves, bridges, overhangs.
+  let layered = 0; for (let k = 0; k < count; k++) if (start[k + 1] - start[k] > 1) layered++;
+  return { step, y, col, start, count, layered: layered / Math.max(1, count), near, reach, distance, edges: (i, hops = true) => [...linked(i, hops)] };
+}
+
+// How sheltered (x, y) is from shots coming from side `dir` (±1): the share
+// of `rays` rays fanned from `from`° to `to`° above the horizon, towards that
+// side, that meet ground within `length`. 0 in the open, 1 behind a wall.
+export function coverToward(mask, x, y, dir, { rays = 9, from = 5, to = 80, length = 12, step = .25 } = {}) {
+  let blocked = 0;
+  for (let k = 0; k < rays; k++) {
+    const a = (from + (to - from) * k / (rays - 1)) * Math.PI / 180, dx = Math.cos(a) * dir, dy = Math.sin(a);
+    for (let t = step; t <= length; t += step) {
+      const px = x + dx * t, py = y + dy * t;
+      if (py >= mask.height) break;
+      const c = Math.floor(px / mask.cell), r = Math.floor(py / mask.cell);
+      if (c >= 0 && c < mask.cols && r >= 0 && mask.solid[r * mask.cols + c]) { blocked++; break; }
+    }
+  }
+  return blocked / rays;
+}
+
+// The shape of the top of the ground above the water: its relief (highest
+// minus lowest dry top), how bumpy it is (mean rise over 2 units), and the
+// share of the width that is dry land.
+export function relief(mask, { water = -Infinity, step = .2 } = {}) {
+  const top = topLine(mask, step), span = Math.max(1, Math.round(2 / step));
+  let hi = -Infinity, lo = Infinity, dry = 0, bump = 0, n = 0;
+  for (let k = 0; k < top.length; k++) {
+    if (top[k] > water) { dry++; hi = Math.max(hi, top[k]); lo = Math.min(lo, top[k]); }
+    if (k >= span && top[k] > water && top[k - span] > water) { bump += Math.abs(top[k] - top[k - span]); n++; }
+  }
+  return { relief: dry ? hi - lo : 0, high: hi, low: lo, bumpy: n ? bump / n : 0, land: dry / Math.max(1, top.length) };
+}

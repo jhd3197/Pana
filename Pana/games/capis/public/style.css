@@ -55,3 +55,8 @@ body { --pk-game: #e8569b; --team-0: #e8569b; --team-1: #2ad1b2; --wind: #bfe9ff
   .wind-panel { top: 64px; padding: 4px 10px; }
 }
 @media (max-width: 640px) { .teams-panel { display: none; } .wind-panel { top: 84px; right: 10px; } .turn-panel { top: 64px; } }
+
+/* Sharp corners everywhere in Capis (HUD panels, buttons, bars, toasts, labels, the lobby). */
+body { --pk-r-sm: 0; --pk-r: 0; --pk-r-lg: 0; --pk-r-xl: 0; }
+body *, body *::before, body *::after { border-radius: 0 !important; }
+.pk-power-control input::-webkit-slider-thumb, .pk-power-control input::-moz-range-thumb { border-radius: 0 !important; }

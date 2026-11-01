@@ -29,6 +29,7 @@ export const RULES = Object.freeze({
   settleMax: 5,        // a turn never waits longer than this for sliding capis
   aimMin: -1.2, aimMax: 1.45, aimRate: 1.3,
   flightMax: 12,       // a shell still flying after this is lost
+  turnLimit: 60,       // after this many turns the match is decided by who is left (see `byCount`)
 });
 export const TURN_SECONDS = [30, 35, 45];
 export const TEAM_COLORS = ['#e8569b', '#2ad1b2'];
@@ -125,9 +126,19 @@ function winnerOf(m) {
   return standing.length === 2 ? null : standing.length ? standing[0] : -1;
 }
 
-function finish(m, winner) {
-  m.phase = 'finished'; m.winner = winner; m.shot = null;
-  m.events.push({ type: 'finished', winner });
+// At the turn limit: the team with more capis standing wins, then the one
+// with less paint on them; else a draw. (Two teams that cannot reach each
+// other, a capi stuck in a pit, never stall a match.)
+export function byCount(m) {
+  const left = [0, 1].map(team => teamAlive(m, team)), paint = left.map(list => list.reduce((s, c) => s + c.paint, 0));
+  if (left[0].length !== left[1].length) return left[0].length > left[1].length ? 0 : 1;
+  if (Math.abs(paint[0] - paint[1]) >= 1) return paint[0] < paint[1] ? 0 : 1;
+  return -1;
+}
+
+function finish(m, winner, by = 'out') {
+  m.phase = 'finished'; m.winner = winner; m.shot = null; m.endedBy = by;
+  m.events.push({ type: 'finished', winner, by });
 }
 
 // Advance the match by dt seconds with the input of the capi whose turn it is.
@@ -169,6 +180,7 @@ export function tickMatch(m, dt, input = {}) {
     if (m.capys.every(c => !alive(c) || settled(c)) || t.settle > RULES.settleMax) {
       const winner = winnerOf(m);
       if (winner !== null) finish(m, winner);
+      else if (t.n >= RULES.turnLimit) finish(m, byCount(m), 'turns');
       else startTurn(m, teamAlive(m, 1 - t.team).length ? 1 - t.team : t.team);
     }
   }

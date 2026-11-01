@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMatch, tickMatch, takeEvents, fire, explode, activeCapy, teamAlive, center, standings, RULES } from '../public/rules.js';
-import { generateMap, rockAt, grassAt, MAP_SIZES } from '../public/map-rules.js';
-import { planShot, bestShot, createBot } from '../public/bot.js';
-import { fillHeights, surfaceY, solidAt, groundBelow } from '../../../engine/play/terrain-mask.js';
+import { generateMap, rockAt, grassAt, MAP_SIZES, KINDS } from '../public/map-rules.js';
+import { planShot, bestShot, createBot, pickTarget } from '../public/bot.js';
+import { fillHeights, surfaceY, solidAt, groundBelow, carve } from '../../../engine/play/terrain-mask.js';
 import { simulateFlight, aimVelocity } from '../../../engine/play/ballistic.js';
 import { muzzle, shoulder, flightOptions } from '../public/rules.js';
 import { aiming, bodyPose, barrelPose, CARRY_PITCH, CARRY_DROP } from '../public/poses.js';
@@ -20,62 +20,76 @@ function flatMatch(xs = [[10, 14, 18], [50, 56, 62]]) {
   return m;
 }
 
-// The first seeds whose map has `kind` (and passes `keep`), medium size.
-function seedWith(test, from = 1) { for (let seed = from; seed < from + 200; seed++) { const g = generateMap(seed); if (test(g.map)) return { seed, ...g }; } throw new Error('no seed'); }
+// The first seed whose medium map passes `test`.
+function seedWith(test, from = 1) { for (let seed = from; seed < from + 400; seed++) { const g = generateMap(seed); if (test(g.map)) return { seed, ...g }; } throw new Error('no seed'); }
 const ground = (mask, x) => groundBelow(mask, x, mask.height);
+const hollowAt = (mask, x, y) => mask.hollow[Math.floor(y / mask.cell) * mask.cols + Math.floor(x / mask.cell)] === 1;
 
-test('a seed builds the same riverbank on every load, with water at both ends and between the banks', () => {
+test('a seed builds the same ground on every load: land across the map, the sea at both ends', () => {
   const a = generateMap(4242), b = generateMap(4242);
   assert.deepEqual(a.mask.solid, b.mask.solid); assert.deepEqual(a.map.spawns, b.map.spawns);
   const { map, mask } = a;
   assert.equal(mask.width, MAP_SIZES.medium.width);
-  assert.ok(ground(mask, 1) < map.water && ground(mask, map.width - 1) < map.water, 'the river at both ends');
-  let channel = false; for (let x = map.spawns[0][0]; x < map.spawns[1][0]; x += .25) channel ||= ground(mask, x) < map.water;
-  assert.ok(channel, 'water between the two banks');
+  assert.ok(KINDS.includes(map.kind) || map.kind === 'suave');
+  assert.ok(ground(mask, 1) < map.water && ground(mask, map.width - 1) < map.water, 'the sea at both ends');
   for (const x of map.spawns.flat()) assert.ok(surfaceY(mask, x) > map.water + 2.5, `spawn ${x.toFixed(1)} on dry land`);
 });
 
-test('El Tepuyito: a tower on a mound with an overhanging cap and a cave each side, parted by a wall', () => {
-  const { map, mask } = seedWith(m => m.kind === 'tepuy' && m.plan.center.caves), c = map.plan.center, mid = map.width / 2;
-  // It stands well above both banks' front capis and on the mound (no floating rock).
-  assert.ok(surfaceY(mask, mid) > c.tower.top - 1.2 && surfaceY(mask, mid) > Math.max(surfaceY(mask, map.spawns[0][0]), surfaceY(mask, map.spawns[1][0])) + 6);
-  for (const side of [-1, 1]) {
-    const x = mid + side * (c.tower.half + 1.5);
-    assert.ok(solidAt(mask, x, c.tower.top - .3) && !solidAt(mask, x, c.tower.top - 2), 'the cap juts out over air');
-    // The cave: air with a roof over it, marked hollow for the back wall.
-    const cx = mid + side * (c.tower.half + 1), floor = heightOfCave(mask, cx);
-    assert.ok(floor !== null && solidAt(mask, cx, floor + 2.8), `a cave with a roof at ${cx.toFixed(1)}`);
-    assert.equal(mask.hollow[Math.floor((floor + .6) / mask.cell) * mask.cols + Math.floor(cx / mask.cell)], 1, 'the cave is a hollow');
+test('Montaña de cuevas: a massif over the middle, a tunnel through its foot with a room, marked hollow', () => {
+  const { map, mask } = seedWith(m => m.kind === 'cuevas'), f = map.plan.features.find(k => k.type === 'mountain'), t = map.plan.tunnels[0];
+  // The front capis stand on its crest, well above the lowland at its feet.
+  assert.ok(surfaceY(mask, map.spawns[0][0]) > ground(mask, f.at - f.half - 4) + 6);
+  // The tunnel: air with rock over it, all the way through, a back wall behind it.
+  for (let k = 1; k < 4; k++) {
+    const p = t.points[k];
+    assert.ok(!solidAt(mask, p.x, p.y + 1) && solidAt(mask, p.x, p.y + 4.5), `the tunnel at ${p.x.toFixed(1)}`);
+    assert.ok(hollowAt(mask, p.x, p.y + 1), 'the tunnel is a hollow');
   }
-  for (let y = c.foot; y < c.tower.top - 1; y += .1) assert.ok(solidAt(mask, mid, y), 'the wall between the caves');
-  assert.ok(rockAt(map, mid, c.tower.top - 3) > .5, 'the tower is rock');
+  assert.ok(rockAt(map, f.at - f.half + 2, map.plan.base + 5) > .5 && rockAt(map, f.at + f.half - 2, map.plan.base + 5) > .5, 'its sheer faces are rock');
 });
-// The first air above solid ground under the surface in column x (a cave's floor).
-function heightOfCave(mask, x) { let y = 1, inside = false; for (; y < mask.height; y += .1) { if (!solidAt(mask, x, y)) { inside = true; break; } } return inside && y < surfaceY(mask, x) - 1 ? y : null; }
 
-test('landmarks: a mesa with a steep, capped face, a cliff with its notch, a walkable beach', () => {
+test('Islas con puentes: islands at different heights, rock bridges over the water between them', () => {
+  const { map, mask } = seedWith(m => m.kind === 'islas'), islands = map.plan.features.filter(f => f.type === 'island');
+  for (const s of map.plan.bridges) {
+    const x = (s.a.x + s.b.x) / 2;
+    assert.ok(ground(mask, x) > map.water + 6, 'a bridge stands over the gap');
+    assert.ok(groundBelow(mask, x, ground(mask, x) - 2.5) < map.water, 'and the sea under it');
+    assert.ok(rockAt(map, x, ground(mask, x) - .4) > .5, 'the bridge is rock');
+  }
+  assert.ok(new Set(islands.map(f => Math.round(f.top))).size > 1, 'not all at one height');
+});
+
+test('Valle con laguna: sheer sides, an arch from rim to rim, the pond under it', () => {
+  const { map, mask } = seedWith(m => m.kind === 'valle'), v = map.plan.features.find(f => f.type === 'valley'), pond = map.plan.features.find(f => f.type === 'pond');
+  assert.ok(ground(mask, pond.at) > v.left - 6, 'the arch is the top over the pond');
+  assert.ok(groundBelow(mask, pond.at, ground(mask, pond.at) - 2.5) < map.water, 'the pond under the arch');
+  let floor = Infinity;
+  for (let x = v.at - v.floor + 1; x < v.at + v.floor - 1; x += .5) floor = Math.min(floor, groundBelow(mask, x, ground(mask, x) - 2.5) ?? -1);
+  assert.ok(floor < Math.min(v.left, v.right) - 8, 'the valley floor is deep under the rims');
+});
+
+test('landmarks: a mesa with a steep, capped face, a cliff end with its notch, a walkable beach', () => {
   const mesa = seedWith(m => m.plan.features.some(f => f.type === 'mesa' && f.cap)), f = mesa.map.plan.features.find(k => k.type === 'mesa' && k.cap);
-  const mid = mesa.map.width / 2, edge = mid - (f.at - f.top), out = 1;   // the left bank's mesa faces the river (+x)
-  assert.ok(ground(mesa.mask, edge - 1) > f.T - 1.2, 'the mesa top is flat ground');
-  assert.ok(solidAt(mesa.mask, edge + out * 1.2, f.T - .5) && !solidAt(mesa.mask, edge + out * 1.2, f.T - 2.6), 'its cap overhangs the steep face');
-  assert.ok(rockAt(mesa.map, mid - f.at, f.T - 2) > .5, 'the mesa is rock');
-  const cliff = seedWith(m => m.plan.shore.style === 'cliff'), face = cliff.map.plan.shore.run, water = cliff.map.water;
-  assert.ok(!solidAt(cliff.mask, face + .3, water + 2.3) && solidAt(cliff.mask, face + .6, water + 6), 'the river notched the cliff');
-  const beach = seedWith(m => m.plan.shore.style === 'beach');
+  const edge = f.at + f.face * f.top;
+  assert.ok(ground(mesa.mask, edge - f.face) > f.T - 1.2, 'the mesa top is flat ground');
+  assert.ok(solidAt(mesa.mask, edge + f.face * 1.2, f.T - .5) && !solidAt(mesa.mask, edge + f.face * 1.2, f.T - 2.6), 'its cap overhangs the steep face');
+  assert.ok(rockAt(mesa.map, f.at, f.T - 2) > .5, 'the mesa is rock');
+  const cliff = seedWith(m => m.plan.ends[0].style === 'cliff'), face = cliff.map.plan.ends[0].run, water = cliff.map.water;
+  assert.ok(!solidAt(cliff.mask, face + .3, water + 2.3) && solidAt(cliff.mask, face + .6, water + 6), 'the sea notched the cliff');
+  const beach = seedWith(m => m.plan.ends[0].style === 'beach');
   for (let x = 2; ground(beach.mask, x) < beach.map.water + 2.4; x += .5) assert.ok(Math.abs(ground(beach.mask, x + 1) - ground(beach.mask, x)) < Math.tan(52 * Math.PI / 180), `the beach climbs at ${x.toFixed(1)}`);
   // Grass only near the starting ground: a crater's floor is bare earth.
   const x = beach.map.spawns[0][1], top = surfaceY(beach.mask, x);
   assert.ok(grassAt(beach.map, x, top) && !grassAt(beach.map, x, top - 3), 'a crater floor is bare earth');
 });
 
-test('the tower blocks a flat shot across the middle, a lob clears it', () => {
-  const { seed, map } = seedWith(m => m.kind === 'tepuy'), m = createMatch({ seed }); m.wind = 0;
-  const c = m.capys.find(k => k.id === '0-0'), mid = map.width / 2, tower = map.plan.center.tower;
-  const flat = simulateFlight({ ...muzzle(c, .05, 1), ...aimVelocity(.05, 1, RULES.speed) }, flightOptions(m, []));
-  assert.ok(flat.hit === 'ground' && flat.x < mid + tower.half + 2, `a flat shot stops at the tower (${flat.x.toFixed(1)})`);
-  const rival = m.capys.find(k => k.id === '1-0');
-  const shot = bestShot(m, c, { x: rival.x, y: surfaceY(m.mask, rival.x) });
-  assert.ok(shot.miss < 3, `a lob reaches the rivals' front capi (miss ${shot.miss.toFixed(2)})`);
+test('the front capis can lob a shell onto each other on every kind of map', () => {
+  for (const kind of KINDS) {
+    const { seed } = seedWith(m => m.kind === kind), m = createMatch({ seed }); m.wind = 0;
+    const c = m.capys.find(k => k.id === '0-0'), rival = m.capys.find(k => k.id === '1-0');
+    const shot = bestShot(m, c, { x: rival.x, y: surfaceY(m.mask, rival.x) });
+    assert.ok(shot.miss < 3, `${kind} seed ${seed}: a lob reaches the rivals' front capi (miss ${shot.miss.toFixed(2)})`);
+  }
 });
 
 test('a match starts with two teams of three capis standing on the ground, team 0 first', () => {
@@ -148,6 +162,17 @@ test('a capi knocked into the river is out, and the last team standing wins', ()
   assert.equal(standings(m)[0].team, 0);
 });
 
+test('at the turn limit the team with more capis standing wins, then the one with less paint, else a draw', () => {
+  const end = (setup) => { const m = flatMatch(); setup(m); m.turn.n = RULES.turnLimit; m.turn.time = .01; run(m, RULES.settleMax + 1); return m; };
+  const more = end(m => { m.capys.find(c => c.id === '1-2').out = 'paint'; });
+  assert.equal(more.phase, 'finished'); assert.equal(more.endedBy, 'turns'); assert.equal(more.winner, 0);
+  const cleaner = end(m => { m.capys.find(c => c.id === '0-1').paint = 40; });
+  assert.equal(cleaner.winner, 1, 'the same count: less paint wins');
+  assert.equal(end(() => {}).winner, -1, 'level in everything: a draw');
+  const before = flatMatch(); before.turn.n = RULES.turnLimit - 1; before.turn.time = .01; run(before, RULES.settleMax + 1);
+  assert.notEqual(before.phase, 'finished', 'one turn before the limit the match goes on');
+});
+
 test('the bot lands next to a still target on flat ground and always returns a shot', () => {
   const m = flatMatch([[10, 14, 18], [40, 56, 62]]), capy = m.capys.find(c => c.id === '0-2'), target = m.capys.find(c => c.id === '1-0');
   let random = 0; const fixed = () => (random = (random * 9301 + 49297) % 233280) / 233280;
@@ -161,6 +186,20 @@ test('the bot lands next to a still target on flat ground and always returns a s
   fillHeights(m.mask, x => Math.abs(x - capy.x) < 2 ? 10 : 39);
   const stuck = planShot(m, capy, { difficulty: 'facil' });
   for (const k of ['angle', 'power', 'facing']) assert.ok(Number.isFinite(stuck[k]), k);
+});
+
+test('the bot picks the rival it can hit, not just the nearest one', () => {
+  // The nearest rival sits in a pocket inside a rock; the next one stands in the open.
+  const m = flatMatch([[10, 14, 18], [34, 50, 62]]), capy = m.capys.find(c => c.id === '0-2');
+  fillHeights(m.mask, x => x > 28 && x < 40 ? 20 : 10);
+  carve(m.mask, 34, 12.4, 2.4);
+  for (const c of m.capys) c.y = groundBelow(m.mask, c.x, c.x === 34 ? 12 : m.mask.height);
+  const pick = pickTarget(m, capy);
+  assert.ok(pick.feasible && pick.rival.id === '1-1', `picked ${pick.rival.id}`);
+  // No rival in reach at all: the nearest, flagged so the bot walks towards it.
+  fillHeights(m.mask, x => Math.abs(x - capy.x) < 2 ? 10 : 39);
+  const none = pickTarget(m, capy);
+  assert.equal(none.feasible, false); assert.equal(none.rival.id, '1-0');
 });
 
 test('a bot fires on its own turn, before the clock, and two bots finish a match', () => {

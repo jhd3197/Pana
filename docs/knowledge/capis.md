@@ -1,11 +1,13 @@
 # Capis a Pintazos
 
 Turn-based paint artillery between capybaras: two teams of three capis on a
-Llanos riverbank generated for each match, one player against the machine (`players: 1`, offline, no
-room and no `network.js`). Each turn a capi walks, jumps, aims and fires La
-Bazuca de pintura; the shell flies with the wind, digs a crater, paints the
-ground and the capis near it and knocks them back. A capi with 100 % paint, or
-one that falls into the river, is out. The last team standing wins.
+stretch of the Llanos generated for each match (hills, a cave mountain,
+islands and bridges, a valley, a tepuy), one player against the machine
+(`players: 1`, offline, no room and no `network.js`). Each turn a capi walks,
+jumps, aims and fires La Bazuca de pintura; the shell flies with the wind,
+digs a crater, paints the ground and the capis near it and knocks them back. A
+capi with 100 % paint, or one that falls into the water, is out. The last team
+standing wins (or, after 60 turns, the one with more capis standing).
 
 ## How it is built
 
@@ -165,7 +167,8 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
 - `public/map-rules.js`: the map generator (plan, ground, spawns, checks,
   `rockAt` and `grassAt` for the painter).
 - `engine/play/terrain-gen.js`: the generic pieces (seeded streams, bumps,
-  floating-piece removal, walk spans, `walkTo`, sky exposure, headroom).
+  floating-piece removal, walk spans, `walkTo`, sky exposure, headroom, the
+  floor graph, cover, relief).
 - `public/bot.js`: the machine's capis (pure, tested).
 - `public/options.js`: turn time, the machine's level and the map size,
   through the shared room panel even offline.
@@ -204,82 +207,120 @@ can shoot late.
 
 ## The machine (`bot.js`)
 
-On its turn it picks the nearest rival and, while that rival is more than 34
-units away (`RANGE`), walks towards it for up to 45 % of the turn. Before
-each step (five times a second) it runs its own next two seconds of walking
-through the real walker (`safeWalk`) and stops if that ends in the river: a
-steep caño bank or a painted slope carries a capi further than a look at the
-ground ahead suggests. Stuck against a bump it hops once, only if the hop
-lands dry. Then it searches angles −0.2..1.4 rad and powers
-0.2..1 (about 1 000 simulated flights, ~12 ms) for the shot that lands closest,
-penalising landings in the water or next to its own capis. The difficulty's
-`aimError` (from `engine/play/difficulty.js`) is scaled ×3 for the angle and
-×1.6 for the power. It turns the barrel at a player's speed, waits 0.9–2.2 s,
-and fires; with under 2 s left it fires at once. With no shot that lands at
-all it fires a default lob; one that only lands far still goes towards the
-rival, so it never stalls.
+On its turn it first picks a target (`pickTarget`): every rival gets a quick
+search from where the bot stands (angles −0.2..1.4 rad every 0.1, powers
+0.2..1 every 0.05, about 290 real flights with the wind) and a score: how far
+the best landing misses, plus 0.03 a unit of distance (a long lob is harder to
+land), minus 1 for a rival already at 50 % paint. A miss under `FEASIBLE`
+(2.5) counts; the best score is the target and the bot does not walk. With no
+feasible shot at anyone it takes the nearest rival and, while that rival is
+more than 34 units away (`RANGE`), walks towards it for up to 45 % of the turn,
+then looks again from where it got. Before each step (five times a second) it
+runs its own next two seconds of walking through the real walker (`safeWalk`)
+and stops if that ends in the water: a steep bank or a painted slope carries
+a capi further than a look at the ground ahead suggests. Stuck against a bump
+it hops once, only if the hop lands dry. Then the fine search (every 0.05 rad
+and 0.025 power, about 1 000 flights, ~12 ms) at the target, penalising
+landings in the water or next to its own capis. The whole choice costs about
+25 ms once a turn. The difficulty's `aimError` (from
+`engine/play/difficulty.js`) is scaled ×3 for the angle and ×1.6 for the
+power, as before: the choice of target makes it smarter, not more accurate. It
+turns the barrel at a player's speed, waits 0.9–2.2 s, and fires; with under
+2 s left it fires at once. With no shot that lands at all it fires a default
+lob; one that only lands far still goes towards the rival, so it never stalls.
+
+**The turn limit.** Two teams that cannot get at each other (three capis
+stuck in a crater, the last rival out of range) would play forever, so after
+`RULES.turnLimit` (60) turns the match ends: the team with more capis standing
+wins, then the one with less paint, else a draw (`byCount`, `endedBy:
+'turns'`, a toast and its own line on the results card). In 80 bot-against-bot
+matches 4 end there, all on terrazas and cuevas maps.
 
 ## Map generation
 
 `generateMap(seed, size)` in `public/map-rules.js`; the generic pieces are in
 `engine/play/terrain-gen.js`.
 
-- **A profile across the map, mirrored.** Distance from the middle `d`
-  decides the large shapes, the same on both banks: a bank (`bank` 21.5–24.5
-  high) that falls towards the river (`valley`, 5–8.5 over 26–36 units, so
-  the back capis stand on high ground), low-frequency rolling `fbm2` (5–7)
-  and two to five gaussian hills and hollows (`bumps`, width ≥ 1.5 × height
-  so slopes stay walkable). Detail is not mirrored: two noise layers (±0.35
-  and ±0.8) on x itself, so the banks do not look copied while the spawns stay
-  within the fairness limits.
-- **The middle** is one of three kinds (seeded roll): `tepuy` (45 %), El
-  Tepuyito: a rock tower (top 10–13 above the bank, half-width 3–3.6) with an
-  overhanging cap on a mound, a cave dug into the mound from each side with
-  its mouth low on the flank and a thin wall between them (85 % of tepuys),
-  and a caño each side cut below the water with steep (1.8–2.3) banks;
-  `island` (30 %), a wide river with a sandbar (half 3.2–4.6, just above the
-  water) or a rocky islet (a dome 3.2–5 above the water) in the middle;
-  `river` (25 %), a wide plain river. The river's banks are a smoothstep from
-  2.4 under the water over 14–17 units.
-- **The ends**: a sandy beach (a capi walks up it from the water to 2.6 above
-  it, then the bank's earth slope) or a cliff with a notch eaten by the river
-  and a sandbar off it; the same style at both ends.
-- **Landmarks**: one to three per bank (none to one with the tepuy; at most
-  two and no caves on a small map), mirrored, at least 11 apart (17 next to a
-  mesa, whose ramp runs about 10 units behind it): a **mesa** (a butte 7.5–11
-  high, a steep face towards the river often overhung by its cap, a walkable
-  ramp behind; rock that follows the ramp under a coat of earth), an **arch**
-  (a thin span of rock over a dip) or a **cave** (a tunnel into a knoll,
-  floor 3.8+ under its top, mouth where the knoll's flank comes down to the
-  floor, so it is walked into).
-- **Spawns**: three a side, mirrored exactly. A spot is standable on open
-  ground above `water + 2.5`, not steep, with half the sky open. The front
-  capi (slot 0, who plays first) takes the first spot from the bank top; the
-  back one the last spot within `0.36 × half` behind it; the middle one the
-  spot nearest halfway with `GAP` (5 / 7 / 8 by size) to both. So the first
-  shot is a real lob across the water (front capis 35–55 apart, median 44 on
-  medium; the reach check proves a shot exists) and
-  the back capis start on the high ground.
-- **Checks and re-rolls.** Each attempt is checked (`check`): nothing floating
-  (`dropFloating` removes specks up to 1 500 cells, a bigger piece fails),
-  three spots a side, water between the front capis, every spawn with at
-  least 6 units to walk, the two sides within `FAIR` (per slot height 1.2 and
-  open sky 0.25, means 0.8 and 0.12), the front capis able to hit each other
-  with no wind (`reachable`, a coarse version of the bot's search), and every
-  back capi able to walk to its front (`walkTo`, down ledges included) or hit
-  the rivals' front from where it gets. A map that fails is built again from
-  the next attempt of the same seed (`capis-map:<seed>:<size>:<attempt>`), so
-  a replay rebuilds it exactly; the eighth attempt is a plain river, which
-  passes. Over 100 seeds a size, 27 % of medium, 25 % of large and 41 % of
-  small seeds re-roll at least once (small maps lack room), at most to the
-  sixth attempt; never to the plain fallback.
-- **Cost**: 15 ms (small) to 28 ms (large) a map in Node, checks included.
-- **Replay**: the lobby shows the map the match will use and its number
-  ("Mapa #12345"), with "Otro mapa" and a number field in "Más ajustes";
-  the HUD shows the number under the teams; starting a match writes
-  `?seed=…&size=…` into the address, so a reload or a shared link replays it;
-  the results card has "Revancha en este mapa". A future server only needs
-  to send `{ seed, size }`.
+- **Land across the whole map.** The sea is only under it: at both ends (a
+  beach or a cliff with a notch and a sandbar, each end its own), in a pond, or
+  between islands. Between the front capis the top surface is dry on every
+  kind but `islas` (95 % of the width is dry land, median). Each end falls to
+  the sea over `fall` units, lengthened where the land is high so the slope
+  stays walkable (0.85).
+- **Five kinds** (`KINDS`, picked once per seed by `capis-kind:<seed>:<size>`,
+  so a re-roll keeps the kind; odds 24/20/18/20/18 %), shown in the lobby and
+  the HUD next to the number ("Mapa #12345 · Islas con puentes"):
+  - `cerros` (Cerros): rolling ground (base 15–19, `fbm2` ±3–5.5, three to
+    six gaussian hills) with one or two mesas at least 22 from the middle (a
+    small map: one at most, lower), their steep face towards the middle, often
+    overhung by the cap, often a cave at its foot; sometimes a pond near the
+    middle under a natural bridge.
+  - `cuevas` (Montaña de cuevas): a broad massif over the middle (half-width
+    0.27–0.31 of the map, 12–15 over the lowland, a broad peak and a craggy
+    crest), sheer rock faces overhung by the crest's lip, and a tunnel through
+    its foot from lowland to lowland, rising 1.8–3.4 inside, with one or two
+    rooms. The front capis start on the crest; the back ones in the lowlands
+    walk through the tunnel.
+  - `islas` (Islas con puentes): three to five islands (by size) at different
+    heights (13–28, steps of up to ±5), undercut by the sea, each joined to
+    the next by a rock bridge (arched or nearly flat) whose top is flush with
+    both islands.
+  - `valle` (Valle con laguna): two high sides (12–17 over the floor) with
+    sheer, rocky cliffs, a natural arch from rim to rim across the valley, a
+    pond on its floor and often a ledge on a cliff. The floor is a pit: a capi
+    knocked down there stays (and can still shoot); the arch is the way across.
+  - `terrazas` (Terrazas del tepuy): a stepped tepuy near the middle, two to
+    four shelves and risers (about 40°) on each side, each side its own.
+  - `suave` (Lomas suaves) is the last attempt only: mirrored gentle hills
+    with a knoll in the middle, which always passes.
+  Plus caves dug into the slopes that fall towards the shores, only past each
+  team's back capi (dug after the spawns are chosen).
+- **Why the way across is plain ground.** Seen from the side, anything that
+  overhangs the only way (a cave mouth, a ledge, a cap) is a wall for a walker
+  going one way, and a tunnel through a hill always cuts its top off from the
+  ground (in 2D the cells above a tunnel are a separate piece). So between the
+  teams there are only slopes a capi walks both ways, bridges and arches over
+  water or a pit, and tunnels whose mouths open at the foot of sheer faces
+  nobody could climb anyway. Overhangs and dead-end caves stand off that way.
+  `dropFloating` still removes specks; a big piece is allowed only as the roof
+  of a tunnel (one per tunnel, over 4 000 cells).
+- **Spawns**, not mirrored: every standable spot (dry, not steep, half the sky
+  open, earth at least 3 deep under it, outside the kind's `keepOut`, e.g. the
+  valley) at least `INNER` (14.5 / 16 / 18) from the middle. The front capis
+  are the pair of spots near each side's first whose heights match best; then
+  team 0's back and middle capis (`SPREAD` 0.4 of the half map, `GAP` 5 / 7 /
+  8 apart, leaning by the seed) and team 1's trio whose mean height matches
+  theirs best.
+- **Measured, then re-rolled.** `measure` reads, per spawn, height, open sky,
+  cover towards the rivals (`coverToward`), room to walk and distance to the
+  nearest rival; builds the floor graph (`floorGraph`) for the walk from each
+  front capi to the other's and back (with and without hops), the floors each
+  capi can reach, and whether every cave, tunnel and room is reachable; and
+  for each capi whether a coarse search finds a shot at a rival in range. A
+  map is turned down (`check`) when something floats, a team has no three
+  spots (`cramped`), a spawn has under 6 units to walk (`boxed-in`), it is
+  `bland` (interest under 3.2), a team cannot walk or hop to the other
+  (`apart`), a cave is shut, the teams differ by more than `FAIR` (mean
+  height 2.6, front capis' height 3.2, sky 0.2, cover 0.3, distance to the
+  nearest rival 6, walk there over walk back 1.6, capis with a shot 1), a
+  team has no shot, the front capis cannot hit each other with no wind, or a
+  capi can neither walk to within 32 of a rival nor hit one (`walled-in`).
+  The next attempt of the same seed (`capis-map:<seed>:<size>:<attempt>`) is
+  built instead; the tenth is `suave`.
+- **Interest** (`interestOf`): relief / 8 + 8 × the share of columns with more
+  than one floor + 2 × bumpiness + 0.6 a landmark (mesa, tunnel, room, cave,
+  bridge, arch, ledge, pond, knoll). A flat field scores about 1; medians by
+  kind: cuevas 11, islas 7.5, valle 6.7, cerros 6, terrazas 5.5.
+- **Numbers over 300 seeds a size**: 25–50 ms a map in Node (1.5–1.8 attempts
+  a map, 31–36 % of seeds re-roll at least once, one small seed in 300 falls
+  back to `suave`); front capis' heights differ by 0.1 (median), 1.7 (p90),
+  3.2 at most; team means by 0.37 / 1.83 / 2.6; 98 % of maps are walkable
+  both ways without a hop.
+- **Replay**: the lobby shows the map the match will use, its number and
+  kind, with "Otro mapa" and a number field in "Más ajustes"; the HUD shows
+  them under the teams; starting a match writes `?seed=…&size=…` into the
+  address, so a reload or a shared link replays it; the results card has
+  "Revancha en este mapa". A future server only needs to send `{ seed, size }`.
 
 ## Controls
 
@@ -319,6 +360,12 @@ farther apart: fewer full-detail panas are in frame (on a small map two or
 three are). The scenery grows with the width but stays instanced (groves of
 moriches 21–36 instances, 14–17 reed clumps).
 
+The connected maps (headless, 1280 × 720, medium quality; seeds 100, 101,
+103, 104, 107 medium, 504 small, 502 large, one of each kind): whole map 77
+draws on every one; play view 70–134 draws (191 on the small map, where more
+full-detail panas are in frame), as before: the ground is still three draws
+whatever its shape.
+
 The terrain pass replaced ten ground planes with three draws (front, extruded
 wall of about 4 k triangles, back wall) and cut the shore reeds (85 k → 39 k
 triangles for the 20 clumps, `detail: 'low'`) and the two far palms (9.7 k → 8.1 k for the three). Mid-blast the play
@@ -341,16 +388,16 @@ large one (5.1 MB before).
 
 - One weapon. No team or player-vs-player online yet (the map is ready for
   it: a room only needs to share `{ seed, size }`).
-- The large shapes are mirrored for fairness, so a map reads as two copies of
-  one bank in the whole-map view; only small detail differs. An organic
-  (unmirrored) mode that balances by measures instead is not built.
-- Both ends of a map share one shore style, and both banks the same
-  landmarks.
-- Back capis of the bot walk towards the rivals but never climb back up: a
-  capi that dropped off a mesa stays low.
-- The tepuy's caves open onto the caños, so a capi reaches them only when a
-  blast throws it there.
-- The bot targets the nearest rival by x, not the easiest shot.
+- The way between the teams has no overhangs and no cave mouths (see "Why
+  the way across is plain ground"): caves, ledges and caps stand off it, and
+  the tops of the `cuevas` massif above its tunnel mouths and of the `valle`
+  floor are reached only by the front capis' crest or a blast.
+- The bot hops once when stuck and never plans a route with hops, through a
+  tunnel on purpose or back up a slope: it walks straight towards its target.
+- About 5 % of bot matches on `terrazas` and `cuevas` end at the turn limit
+  (a capi stuck in a deep crater out of everyone's range).
+- Fairness is measured at the start only: a crater can change who has the
+  high ground, as it should.
 - The drips and blobs keep the cell grid's shapes under the blur: at the
   closest zoom a streak still reads as two or three cells wide.
 - The tufts stand only on the front face; the extruded top behind it is
@@ -369,12 +416,15 @@ large one (5.1 MB before).
 
 ## Proof
 
-`npm test -- capis` (the generated maps over 90 seeds and every size:
-deterministic bytes, kinds, dry spawns with headroom and room to walk, gaps,
-nothing floating, water between the banks, fairness, every capi in the
-fight, generation time and re-rolls as diagnostics; 80 bot-against-bot
-matches that must all finish with no stuck turn; the landmarks, the tower
-blocking a flat shot, turns, clock, blast, damage, water, winner, bot),
+`npm test -- capis` (the generated maps over 300 seeds a size: deterministic
+bytes, every kind on every size with its landmark, land across the map, dry
+spawns with headroom and room to walk, nothing floating but tunnel roofs, the
+teams walking (or hopping) to each other both ways, every cave reachable,
+interest, fairness by measure, the mirrored fallback always passing,
+generation time, re-rolls, kinds and fairness as diagnostics; 80
+bot-against-bot matches that must all finish with no stuck turn; each kind's
+landmark, a lob between the front capis on every kind, the turn limit, turns,
+clock, blast, damage, water, winner, the bot's choice of target),
 `npm test -- terrain-gen side-walker` and
 `npm test -- terrain-mask ballistic side-walker lod-band` for the engine pieces
 (drips, the painter's options, the shader fields with no steps on a gentle

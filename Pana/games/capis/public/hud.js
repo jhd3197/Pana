@@ -64,7 +64,9 @@ export function createHud($, { human = 0 } = {}) {
   function results(match) {
     const win = match.winner === human;
     $('result-title').textContent = match.winner === -1 ? loc('¡Empate pintado!') : win ? loc('¡Ganaron tus capis!') : loc('Ganó la máquina');
-    $('result-copy').textContent = win ? loc('Ni un capi rival quedó en pie.') : match.winner === -1 ? loc('No quedó ningún capi en pie.') : loc('Tus capis terminaron pintados o en el río.');
+    $('result-copy').textContent = match.endedBy === 'turns'
+      ? (match.winner === -1 ? loc('Se acabaron los turnos y quedaron parejos.') : loc('Se acabaron los turnos: gana el equipo con más capis en pie y menos pintura.'))
+      : win ? loc('Ni un capi rival quedó en pie.') : match.winner === -1 ? loc('No quedó ningún capi en pie.') : loc('Tus capis terminaron pintados o en el río.');
     fillRoster($('result-roster'), standings(match).map((c, i) => ({
       rank: i + 1, name: c.name, me: c.team === human, score: false,
       detail: teamNames[c.team], end: c.out === 'water' ? loc('Al río') : c.out ? loc('Pintado') : loc('En pie · {n}%', { n: c.paint }),
