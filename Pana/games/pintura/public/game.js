@@ -167,7 +167,7 @@ function input() {
   const length = Math.hypot(ax, az) || 1, fire = queuedFire || firing || touchFire || held.has('enter');
   // Pulling the trigger mid-reload clicks, so the wait is never silent.
   if (fire && me.reload > 0 && performance.now() - lastDry > 450) { lastDry = performance.now(); sfx.dry(); }
-  return { weapon, grenade: queuedGrenade !== null, charge: queuedGrenade ?? 0, pitch: cameraView === 'primera' ? world.pitch : 0, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
+  return { weapon, grenade: queuedGrenade !== null, charge: queuedGrenade ?? 0, pitch: cameraView === 'primera' ? world.pitch : null, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
     Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))), sprint: held.has('shift'),
     ax: ax / length, az: az / length, jump: jumpPress, fire, aim: aiming() && cameraView === 'primera', alt: throwSends > 0, reload: queuedReload || held.has('r') };
 }
@@ -177,7 +177,7 @@ function flash(name) { document.body.classList.remove(name); void document.body.
 function callout(e, state) {
   const victim = state.players.find(p => p.id === e.victim)?.name || loc('un pana');
   const title = e.revenge ? loc('¡Venganza!') : e.streak >= 5 ? loc('¡Imparable!') : e.streak === 4 ? loc('¡Cuádruple!') : e.streak === 3 ? loc('¡Triple!') : e.streak === 2 ? loc('¡Doble pepazo!')
-    : e.thrown ? loc('¡Chancletazo!') : WEAPONS.find(m => m.id === e.weapon)?.melee ? loc('¡Pescozón!') : e.direct ? loc('¡Bazucazo!') : MARKERS.find(m => m.id === e.weapon)?.scope ? loc('¡Francotirador!') : loc('¡Pepazo!');
+    : e.thrown ? loc('¡Chancletazo!') : WEAPONS.find(m => m.id === e.weapon)?.melee ? loc('¡Pescozón!') : e.direct ? loc('¡Bazucazo!') : e.headshot ? loc('¡A la cabeza!') : MARKERS.find(m => m.id === e.weapon)?.scope ? loc('¡Francotirador!') : loc('¡Pepazo!');
   $('callout-title').textContent = title; $('callout-detail').textContent = e.distance >= 25 ? loc('{victim} · {distance} m · ¡Tiro largo!', { victim, distance: e.distance }) : e.distance <= 4 ? loc('{victim} · {distance} m · ¡A quemarropa!', { victim, distance: e.distance }) : loc('{victim} · {distance} m', { victim, distance: e.distance });
   $('callout').classList.toggle('callout--long', e.distance >= 25); flash('called');
   clearTimeout(callout.timer); callout.timer = setTimeout(() => document.body.classList.remove('called'), 1900);

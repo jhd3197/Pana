@@ -237,6 +237,23 @@ const end = traceLob(start, opts, { dt: TICK, time: fuse, out: points, land: tru
 
 Used by: Pepazo (grenades: the server flight, the aim arc, bots and the armory range).
 
+### Damage falloff with range
+
+`engine/play/weapon-falloff.js` (pure). A weapon's config `{ near, far, close,
+min, round }` deals `close` up to `near` metres, then a straight line down to
+`min` at `far` and beyond (never below `min`, rounded to whole units unless
+`round: false`). `rangeDamage(config, distance, base)` gives the damage after
+`distance` metres; with no config it returns the flat `base`, so a weapon
+without one behaves as before. `falloffConfig(config)` validates and fills the
+defaults. Tests: `engine/tests/weapon-falloff.test.js`.
+
+```js
+import { rangeDamage } from '../../../engine/play/weapon-falloff.js'; // relative: rules.js also loads on the server
+const damage = rangeDamage(stats.falloff, Math.hypot(ball.x - ball.x0, ball.z - ball.z0), stats.damage);
+```
+
+Used by: Pepazo (La Lejana's body hits: 3 up to 10 m, 1 from 50 m).
+
 ### Scope and aim zoom
 
 `engine/play/scope.js`. `createScope({ zoom })` eases a 0..1 aim blend in and out
@@ -592,6 +609,7 @@ flowchart LR
   mangos["mangos"]:::mod -->|used by| bochinche:::game
   mangos -->|used by| carreritas
   outline["play/local-outline"]:::mod -->|used by| bochinche
+  wfall["play/weapon-falloff"]:::mod -->|used by| pintura
   premium["premium-tracks (game-local)"]:::mod -->|used by| carreritas
   spawn["spawn-picker (game-local)"]:::mod -->|used by| pintura
 ```

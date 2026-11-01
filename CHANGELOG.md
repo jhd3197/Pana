@@ -17,6 +17,10 @@ becomes the GitHub release's notes.
 - **En Pepazo los disparos pasan por encima de los sacos, cajas y barriles bajos.**
   Ya no hay paredes invisibles sobre la cobertura baja de El Puerto y la Cancha
   de Noche: si ves a un rival por encima, le puedes dar, y los bots también.
+
+- **En Pepazo, La Lejana saca de una con un tiro a la cabeza y pega más fuerte de cerca.**
+  En primera persona, un tiro a la cabeza tumba a cualquiera a cualquier distancia.
+  Al cuerpo pinta 3 pepazos hasta 10 m y baja a 1 a partir de 50 m (antes, 2 siempre).
 - **Todos los juegos y la lista de la portada usan el mismo estilo de esquinas rectas.**
   Botones, fichas, menús de ajustes, salas, marcadores, resultados, avisos,
   el editor de personaje y el Studio dejaron las esquinas redondeadas y las
