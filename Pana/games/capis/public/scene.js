@@ -11,6 +11,8 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
 import { bakePaintKit, createPaintRocket } from '/engine/models/props/paintball-kit.js';
+import { createRigLod } from '/engine/models/core/rig-lod.js';
+import { chooseFar } from '/engine/models/core/lod-band.js';
 import { createLocalMarker } from '/engine/play/local-outline.js';
 import { Puffs } from '/engine/fx.js';
 import { createBlastFx } from '/engine/play/blast-fx.js';
@@ -33,6 +35,10 @@ const LAUNCHER = .6, NEAR = .36;
 // face reads past the barrel; La Bazuca itself stays exactly in the side plane.
 const TURN_IN = .78;
 const ROCKET = 2.2;
+// Far from the camera (the whole-map view) a capi is drawn as one merged,
+// lower-detail copy of itself and its launcher (rig-lod.js): from 55 units on,
+// back to full detail under 47. The play view is about 31 to 40 away.
+const LOD_BAND = { far: 55, near: 47 }, LOD_CELL = .06;
 const rgb = hex => { const c = new THREE.Color(hex); return [c.r * 255, c.g * 255, c.b * 255]; };
 const PALETTE = { earth: [176, 116, 66], deep: [96, 58, 38], topsoil: [120, 82, 46], grass: [104, 168, 64], tints: TEAM_COLORS.map(rgb), grassDepth: 5 };
 const { damp } = THREE.MathUtils;
@@ -88,7 +94,8 @@ export function createCapisScene(canvas, match) {
     launcher.scale.setScalar(LAUNCHER); launcher.position.set(0, -kit.userData.bore * LAUNCHER, RULES.muzzle - kit.userData.tip * LAUNCHER); kick.add(launcher);
     const tip = new THREE.Object3D(); tip.position.z = RULES.muzzle; kick.add(tip);
     const ears = avatar.head.children.filter(o => o.name === 'Cupped ear').map(o => ({ o, z: o.rotation.z }));
-    return { avatar, root, turn, gun, kick, launcher, tip, coat, ears, bandana, seed: c.slot * 1.7 + c.team * 2.9 };
+    const lod = createRigLod(root, { pivots: [turn, avatar.body, avatar.head, ...avatar.arms, ...avatar.legs, kick], cell: LOD_CELL });
+    return { avatar, root, turn, gun, kick, launcher, tip, coat, ears, bandana, lod, seed: c.slot * 1.7 + c.team * 2.9 };
   }
   const capis = new Map();
   function setMatch(next) {
@@ -177,7 +184,8 @@ export function createCapisScene(canvas, match) {
     turn.rotation.y = m.yaw * TURN_IN; turn.position.y = 0;
     avatar.update(dt, pose === 'walk' ? { walk: true, open: k > .2 } : { open: k > .2 || pose === 'cheer', dizzy: pose === 'splat' });
     // Paint shows on the coat as the rival's colour soaks in.
-    if (m.paint !== c.paint) { m.paint = c.paint; const p = c.paint / 100 * .75; for (const s of m.coat) s.mt.color.copy(s.base).lerp(stain[1 - c.team], p); }
+    if (m.paint !== c.paint) { m.paint = c.paint; const p = c.paint / 100 * .75; for (const s of m.coat) s.mt.color.copy(s.base).lerp(stain[1 - c.team], p);
+      m.lod.material.color.setScalar(1 - p); m.lod.material.emissive.copy(stain[1 - c.team]).multiplyScalar(p * .55); }
     // Breathing, and now and then an ear flick.
     body.position.y += Math.sin(time * 2.3 + m.seed) * .018;
     const flick = Math.max(0, Math.sin(time * .8 + m.seed * 3) - .97) * 33;
@@ -274,6 +282,7 @@ export function createCapisScene(canvas, match) {
     camera.position.set(focus.x + kick.yaw * 25, focus.y + distance * .16 + kick.pitch * 25, FRONT + distance);
     camera.lookAt(focus.x + kick.yaw * 25, focus.y, FRONT);
     camera.rotation.z += kick.roll;
+    for (const c of match.capys) { const m = capis.get(c.id); m.lod.setFar(chooseFar(m.lod.far, camera.position.distanceTo(m.root.position), LOD_BAND)); }
     fx.update(dt); puffs.update(dt); backdrop.update(dt);
     if (view.labels) {
       view.labels(match.capys.map(c => {
@@ -292,9 +301,12 @@ export function createCapisScene(canvas, match) {
       scene.updateMatrixWorld(true);
       return match.capys.map(c => {
         const m = capis.get(c.id), tip = m.tip.getWorldPosition(new THREE.Vector3());
-        let draws = 0; m.launcher.traverse(o => { if (o.isMesh) draws++; });
+        let draws = 0, drawn = 0; m.launcher.traverse(o => { if (o.isMesh) draws++; });
+        // Meshes the camera draws for the whole capi: one far away, dozens close up.
+        m.root.traverseVisible(o => { if (o.isMesh && o.layers.test(camera.layers)) drawn++; });
         return { id: c.id, model: m.avatar.group.userData.characterVersion, bandana: m.bandana.material.color.getHexString(), launcher: m.launcher.name,
-          draws, held: m.gun.visible, raised: aiming(match, c), tip: { x: tip.x, y: tip.y }, muzzle: muzzle(c) };
+          draws, held: m.gun.visible, raised: aiming(match, c), tip: { x: tip.x, y: tip.y }, muzzle: muzzle(c),
+          far: m.lod.far, drawn, farTriangles: m.lod.triangles };
       });
     },
     // The world point under a screen position, on the plane the capis move in.
@@ -307,7 +319,7 @@ export function createCapisScene(canvas, match) {
     set closeUp(width) { closeUp = Number(width) || 0; },
     get calls() { return renderer.info.render.calls; },
     dispose() {
-      unbind(); capis.forEach(m => { m.root.removeFromParent(); m.avatar.dispose(); }); capis.clear();
+      unbind(); capis.forEach(m => { m.lod.dispose(); m.root.removeFromParent(); m.avatar.dispose(); }); capis.clear();
       launchers.forEach(l => l.userData.dispose()); rockets.forEach(r => { r.removeFromParent(); r.userData.dispose(); });
       bandanaGeo.dispose(); knotGeo.dispose(); cloth.forEach(mt => mt.dispose());
       flash.geometry.dispose(); flash.material.dispose(); drip.geometry.dispose(); drip.material.dispose();

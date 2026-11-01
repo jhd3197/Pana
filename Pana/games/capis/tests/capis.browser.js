@@ -39,6 +39,19 @@ try {
   }
   assert.deepEqual([...new Set(capis.map(c => c.bandana))].length, 2, 'one bandana colour per team');
   assert.deepEqual(capis.filter(c => c.raised).map(c => c.id), [await page.evaluate(() => capisDebug.match.turn.capy)]);
+
+  // Level of detail: in the play view the capi on its turn is the full pana
+  // (dozens of meshes); in the whole-map view every capi, launcher included,
+  // is one merged far copy, so the frame stays near its old draw count.
+  const mine = capis.find(c => c.raised);
+  assert.ok(!mine.far && mine.drawn > 20, `the capi on its turn is drawn at full detail (${mine.drawn} meshes)`);
+  await page.evaluate(() => { capisDebug.world.wide = true; });
+  await waitFor(page, () => capisDebug.world.inspect().every(c => c.far && c.drawn === 1));
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const wideCalls = await page.evaluate(() => capisDebug.world.calls);
+  assert.ok(wideCalls < 140, `the whole-map view stays light (${wideCalls} draws)`);
+  await page.evaluate(() => { capisDebug.world.wide = false; });
+  await waitFor(page, () => { const m = capisDebug.match, c = capisDebug.world.inspect().find(k => k.id === m.turn.capy); return !c.far && c.drawn > 20; });
   await page.keyboard.down('w');
   await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).aim > .9);
   await page.keyboard.up('w');

@@ -447,6 +447,28 @@ Used by: Bochinche.
   game has such a hook (Cocina's `rules.js` only mentions the word in a recipe
   name). If a second game needs paid content, build one in the engine first.
 
+### Far copies of animated models (level of detail)
+
+| Piece | Module | Used by |
+|---|---|---|
+| One-draw far copy of a jointed model (a pana and what it holds) | `engine/models/core/rig-lod.js` (`createRigLod`) | Capis a Pintazos |
+| Which copy to show at a distance, with hysteresis (pure) | `engine/models/core/lod-band.js` (`chooseFar`) | Capis a Pintazos |
+
+`createRigLod(root, { pivots, cell })` merges every mesh visible under `root`
+into one `SkinnedMesh` with one vertex-coloured material, each vertex bound to
+its nearest ancestor in `pivots` (body, head, arms, legs, a held launcher), so
+the far copy follows the animation the full model gets. `cell` welds vertices
+(vertex clustering) for fewer triangles. `setFar(on)` swaps the copies by
+layer mask, never `visible`, so game code that toggles meshes keeps working; a
+hidden pivot collapses its part. For still props use `static-batch.js` or
+`impostor.js` instead. A studio pana and its La Bazuca go from about 55 draws
+to 1 and from about 56 k to 6.4 k triangles (cell 0.06).
+
+```js
+const lod = createRigLod(root, { pivots: [avatar.body, avatar.head, ...avatar.arms, ...avatar.legs, gun], cell: .06 });
+lod.setFar(chooseFar(lod.far, camera.position.distanceTo(root.position), { far: 55, near: 47 }));   // every frame
+```
+
 ## Diagram
 
 Each arrow reads `module --> used by --> game`. Pieces every game imports are
