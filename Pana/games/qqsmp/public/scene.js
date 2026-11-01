@@ -35,7 +35,7 @@ function wrap(ctx, text, maxWidth) {
   return [...lines, line];
 }
 function box(ctx, x, y, w, h, r, fill, stroke) {
-  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.fillStyle = fill; ctx.fill();
   if (stroke) { ctx.lineWidth = 5; ctx.strokeStyle = stroke; ctx.stroke(); }
 }
 
