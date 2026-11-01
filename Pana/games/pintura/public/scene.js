@@ -28,7 +28,7 @@ import { createScope } from '/engine/play/scope.js';
 import { traceRay } from '/engine/play/projectile.js';
 import { traceLob, groundAt } from '/engine/play/lob.js';
 import { guideRibbon, guideBeads, guideRing } from '/engine/play/aim-guide.js';
-import { SIZE, SPREAD, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK } from './rules.js';
+import { SIZE, SPREAD, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK, SHOT_HEIGHT, shotCover } from './rules.js';
 // The shared courts' factory (engine/worlds/arenas.js) loads on first use: see setMap.
 let arenasLoad = null; const loadArenas = () => arenasLoad ??= import('/engine/worlds/arenas.js').catch(error => { arenasLoad = null; throw error; });
 
@@ -408,7 +408,7 @@ export function createScene(canvas) {
       const seen = mesh.userData.seen;
       if (!seen || seen.x !== b.x || seen.z !== b.z) mesh.userData.seen = { x: b.x, z: b.z, t: 0 }; else seen.t += dt;
       const ahead = b.rocket ? Math.min(.06, mesh.userData.seen.t) : 0;
-      mesh.position.set(b.x + b.vx * ahead, 1.1, b.z + b.vz * ahead); mesh.rotation.y = Math.atan2(b.vx, b.vz);
+      mesh.position.set(b.x + b.vx * ahead, SHOT_HEIGHT, b.z + b.vz * ahead); mesh.rotation.y = Math.atan2(b.vx, b.vz);
       if (b.kind !== 'bazooka') mesh.scale.setScalar(b.rocket ? ROUND_SIZE[b.kind] ?? 6.9 : 1);
       if (b.rocket) blasts.trail(b.id, mesh.position.clone().addScaledVector(new THREE.Vector3(b.vx, 0, b.vz).normalize(), -.55), dt);
     }
@@ -423,7 +423,7 @@ export function createScene(canvas) {
     }
     if (seenBooms.size > 64) for (const n of seenBooms) if (!(state.booms || []).some(b => b.id === n)) seenBooms.delete(n);
     // A blast's splat lies flat where it blew (a crate top too) and covers its radius.
-    for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id, s.pattern)); if (s.blast) { mesh.rotation.set(-Math.PI / 2, 0, s.id * 1.7); mesh.position.set(s.x, (s.y || 0) + .05 + (s.id % 7) * .002, s.z); } else stick(mesh, s, coverFor(state.mapId, state.variant || 0)); scene.add(mesh); splats.set(s.id, mesh); if (s.life > 8.6) puffs.spawn({ x: s.x, y: mesh.position.y > .5 ? mesh.position.y : 1.1, z: s.z }, { color: s.color, count: 3, spread: .3, size: .28, rise: .8, life: .35 }); } mesh.scale.setScalar(Math.min(1, s.life) * (s.blast ? s.radius * 2 / 1.25 : s.radius || 1)); }
+    for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id, s.pattern)); if (s.blast) { mesh.rotation.set(-Math.PI / 2, 0, s.id * 1.7); mesh.position.set(s.x, (s.y || 0) + .05 + (s.id % 7) * .002, s.z); } else stick(mesh, s, shotCover(coverFor(state.mapId, state.variant || 0))); scene.add(mesh); splats.set(s.id, mesh); if (s.life > 8.6) puffs.spawn({ x: s.x, y: mesh.position.y > .5 ? mesh.position.y : 1.1, z: s.z }, { color: s.color, count: 3, spread: .3, size: .28, rise: .8, life: .35 }); } mesh.scale.setScalar(Math.min(1, s.life) * (s.blast ? s.radius * 2 / 1.25 : s.radius || 1)); }
     for (const [id, mesh] of splats) if (!state.splats.some(s => s.id === id)) { mesh.removeFromParent(); splats.delete(id); }
     // Sticky puddles: a flat translucent pool.
     const puddles=state.puddles||[];
@@ -459,7 +459,7 @@ export function createScene(canvas) {
       // The round itself when it is in the snapshot (a hip shot wanders off the aim), else the aim.
       const ball = state.balls.filter(b => b.owner === p.id && b.kind === p.weapon).at(-1), speed = ball ? Math.hypot(ball.vx, ball.vz) : 0;
       const dx = speed ? ball.vx / speed : p.ax, dz = speed ? ball.vz / speed : p.az;
-      const length = traceRay(p.x, p.z, dx, dz, range, { boxes: cover, targets, padding: .12 });
+      const length = traceRay(p.x, p.z, dx, dz, range, { boxes: cover, targets, padding: .12, y: SHOT_HEIGHT });
       const from = mine && held?.visible ? held.userData.flash.getWorldPosition(new THREE.Vector3()) : mine ? camera.localToWorld(new THREE.Vector3(.1, -.13, -.35)) : new THREE.Vector3(p.x + p.ax * .7, 1.25, p.z + p.az * .7);
       blasts.tracer(from, new THREE.Vector3(p.x + dx * length, 1.15, p.z + dz * length), '#fff6d8', mine ? .012 : .025);
     },
