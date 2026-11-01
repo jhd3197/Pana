@@ -895,9 +895,109 @@ export function createPaintRocket({color='#f28b42'}={}) {
  group.name='Cohete de La Bazuca';
  group.userData.dispose=dispose;return group;
 }
+// --- El Acolchado ---
+// A plate-carrier vest sized for the shared pana in its world units (feet at the origin, +Z
+// forward, torso about y 0.68–1.1). Front and back plates with a shooter's cut and teal
+// binding, shoulder straps, side cummerbunds with buckles, three ball-pod pouches, a utility
+// pouch and a splat patch. Every part is vertex-coloured and merged: one mesh, one draw.
+const VEST={olive:'#56694f',char:'#323e3b',pouch:'#6b7d5c',trim:'#29c5cd',stitch:'#d9d2b4',metal:'#c9d0cf',mango:'#ff8a3d',splat:'#ffc629'};
+// A rounded polygon [[x,y,r?],…] as a Shape (same corner rule as `trace` above).
+function vestShape(pts){const s=new THREE.Shape(),n=pts.length;for(let i=0;i<n;i++){const [x,y,r=0]=pts[i];
+  if(!r){i?s.lineTo(x,y):s.moveTo(x,y);continue;}
+  const [px,py]=pts[(i+n-1)%n],[nx,ny]=pts[(i+1)%n],d1=Math.hypot(px-x,py-y),d2=Math.hypot(nx-x,ny-y),k=Math.min(r,d1/2,d2/2);
+  const ax=x+(px-x)/d1*k,ay=y+(py-y)/d1*k,bx=x+(nx-x)/d2*k,by=y+(ny-y)/d2*k;
+  i?s.lineTo(ax,ay):s.moveTo(ax,ay);s.quadraticCurveTo(x,y,bx,by);}
+ s.closePath();return s;}
+// The plate outline: square shoulders cut in at the top for the arms, x ±hw, y ±hh.
+const plateOutline=(hw,hh,cut)=>[[-hw,-hh,.05],[hw,-hh,.05],[hw,hh-cut,.035],[hw*.6,hh,.04],[-hw*.6,hh,.04],[-hw,hh-cut,.035]];
+// A flat strap `w` wide and `t` thick along a smooth curve through `points`, its width along
+// `up` tilted inwards by `lean` (away from `center`). Non-indexed, with flat normals.
+function vestStrap(points,w,t,up=new THREE.Vector3(1,0,0),{lean=0,center=null,segments=16}={}){
+ const P=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))).getPoints(segments),T=new THREE.Vector3(),W=new THREE.Vector3(),N=new THREE.Vector3(),out=new THREE.Vector3(),ring=[],pos=[];
+ for(let i=0;i<P.length;i++){T.subVectors(P[Math.min(i+1,P.length-1)],P[Math.max(i-1,0)]).normalize();W.copy(up);
+  if(lean&&center){out.set(P[i].x-center.x,0,P[i].z-center.z).normalize();W.addScaledVector(out,-lean);}
+  W.addScaledVector(T,-W.dot(T)).normalize();N.crossVectors(T,W);
+  ring.push([[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b])=>P[i].clone().addScaledVector(W,a*w/2).addScaledVector(N,b*t/2)));}
+ const tri=(...v)=>v.forEach(p=>pos.push(p.x,p.y,p.z));
+ for(let i=0;i<ring.length-1;i++)for(let k=0;k<4;k++){const a=ring[i][k],b=ring[i][(k+1)%4],c=ring[i+1][(k+1)%4],d=ring[i+1][k];tri(a,c,d,a,b,c);}
+ const [s,e]=[ring[0],ring[ring.length-1]];tri(s[0],s[2],s[1],s[0],s[3],s[2]);tri(e[3],e[1],e[2],e[3],e[0],e[1]);
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.computeVertexNormals();return g;}
 export function createPaintVest() {
- const group=new THREE.Group(),material=new THREE.MeshStandardMaterial({color:'#344847',roughness:.85}),geometry=new THREE.BoxGeometry(.58,.55,.13);
- for(const z of [-.2,.2]) {const pad=new THREE.Mesh(geometry,material);pad.position.set(0,1.08,z);group.add(pad);}
- for(const x of [-.18,.18]) {const pad=new THREE.Mesh(geometry,material);pad.scale.set(.3,.6,1.2);pad.position.set(x,1.06,.29);group.add(pad);}
+ const group=new THREE.Group(),front=[],back=[],body=[],color=new THREE.Color();
+ // Each piece is coloured, stripped to position/normal/color, and pushed into a layer.
+ const add=(list,geo,hex)=>{const g=geo.index?geo.toNonIndexed():geo;if(g!==geo)geo.dispose();for(const k of Object.keys(g.attributes))if(k!=='position'&&k!=='normal')g.deleteAttribute(k);
+  if(!g.attributes.normal)g.computeVertexNormals();color.set(hex).convertSRGBToLinear();const n=g.attributes.position.count,c=new Float32Array(n*3);for(let i=0;i<n;i++)c.set([color.r,color.g,color.b],i*3);
+  g.setAttribute('color',new THREE.BufferAttribute(c,3));list.push(g);return g;};
+ const at=(geo,x,y,z,rx=0,ry=0,rz=0)=>{geo.rotateX(rx);geo.rotateY(ry);geo.rotateZ(rz);geo.translate(x,y,z);return geo;};
+ const rbox=(w,h,d,r=.012)=>new RoundedBoxGeometry(w,h,d,1,Math.min(r,w/2,h/2,d/2));
+ const extrude=(pts,depth,bevel)=>new THREE.ExtrudeGeometry(vestShape(pts),{depth,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel*.8,bevelSegments:2,curveSegments:3});
+ // A plate panel in its own frame: inner face on z=0, facing +Z. Teal binding under a dark
+ // cover inset by the binding width, with stitching dashes running round the cover.
+ const plate=(list,hw,hh,cut)=>{
+  add(list,at(extrude(plateOutline(hw,hh,cut),.03,.012),0,0,.012),VEST.trim);
+  const b=.022;add(list,at(extrude(plateOutline(hw-b,hh-b,cut-b*.3),.01,.008),0,0,.05),VEST.olive);
+  const out=plateOutline(hw-b-.016,hh-b-.016,cut-b*.3),pts=[];for(let i=0;i<out.length;i++){const a=out[i],c=out[(i+1)%out.length],len=Math.hypot(c[0]-a[0],c[1]-a[1]),n=Math.floor(len/.042);
+   for(let j=0;j<n;j++){const t=(j+.5)/n;pts.push([a[0]+(c[0]-a[0])*t,a[1]+(c[1]-a[1])*t,Math.atan2(c[1]-a[1],c[0]-a[0])]);}}
+  for(const [x,y,r] of pts)add(list,at(new THREE.PlaneGeometry(.018,.0045),x,y,.0688,0,0,r),VEST.stitch);};
+ // MOLLE webbing: rows of strap sewn across a panel, tacked at intervals.
+ const webbing=(list,y,hw,z)=>{add(list,at(new THREE.BoxGeometry(hw*2,.022,.008),0,y,z),VEST.char);
+  for(let x=-hw+.04;x<hw-.02;x+=.075)add(list,at(new THREE.PlaneGeometry(.007,.022),x,y,z+.0042),VEST.trim);};
+
+ // Front: plate, two webbing rows, three ball-pod pouches with mango caps, a utility pouch and a splat patch.
+ plate(front,.23,.18,.09);
+ webbing(front,.065,.17,.068);webbing(front,.02,.17,.068);
+ for(const x of [-.135,0,.135]){
+  add(front,at(rbox(.112,.13,.07,.02),x,-.085,.098),VEST.pouch);
+  add(front,at(new THREE.BoxGeometry(.114,.018,.072),x,-.105,.099),VEST.trim);
+  add(front,at(new THREE.CylinderGeometry(.034,.034,.05,10),x,.0,.098),VEST.char);
+  add(front,at(new THREE.CylinderGeometry(.038,.036,.022,10),x,.03,.098),VEST.mango);
+  add(front,at(new THREE.BoxGeometry(.03,.034,.008),x,-.04,.136),VEST.char);}
+ add(front,at(rbox(.13,.075,.04,.012),.075,.105,.087),VEST.pouch);
+ add(front,at(new THREE.BoxGeometry(.12,.006,.006),.075,.125,.108),VEST.trim);
+ add(front,at(new THREE.BoxGeometry(.012,.02,.008),.12,.125,.111),VEST.metal);
+ const splat=[];for(let i=0;i<9;i++){const a=i/9*Math.PI*2,r=i%2?.028:.042;splat.push([Math.cos(a)*r,Math.sin(a)*r,.012]);}
+ add(front,at(new THREE.ExtrudeGeometry(vestShape(splat),{depth:.004,bevelEnabled:false,curveSegments:2}),-.085,.12,.069),VEST.splat);
+ add(front,at(new THREE.CircleGeometry(.009,6),-.035,.15,.074),VEST.splat);
+ // Curve the front across the chest, tilt it back with the chest, set it on the torso.
+ const bend=(list,k)=>{for(const g of list){const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setZ(i,p.getZ(i)-k*p.getX(i)**2);g.computeVertexNormals();}};
+ for(const g of front)g.scale(1.34,1.16,1.05);bend(front,.45);for(const g of front){g.rotateX(-.29);g.translate(0,.9,.345);}
+
+ // Back: plate, three webbing rows and a drag handle.
+ plate(back,.24,.165,.08);
+ for(const y of [.06,.0,-.06])webbing(back,y,.19,.068);
+ add(back,vestStrap([[-.065,.115,.066],[-.05,.135,.098],[0,.142,.108],[.05,.135,.098],[.065,.115,.066]],.03,.012,new THREE.Vector3(0,1,0),{segments:10}),VEST.char);
+ for(const g of back)g.scale(1.3,1.14,1.05);bend(back,.4);for(const g of back){g.rotateY(Math.PI);g.translate(0,.87,-.378);}
+
+ // Shoulder straps from the front plate's top corners over the shoulder to the back plate,
+ // a teal centre stripe and a padded section on top (the pana's jowls hide its middle).
+ const across=new THREE.Vector3(1,0,0);
+ for(const s of [-1,1]){
+  const path=[[.235,1.055,.305],[.25,1.11,.22],[.275,1.16,.08],[.28,1.165,-.08],[.272,1.145,-.22],[.25,1.095,-.33],[.23,1.0,-.395]].map(([x,y,z])=>[s*x,y,z]);
+  add(body,vestStrap(path,.085,.02,across),VEST.char);
+  add(body,vestStrap(path,.016,.025,across,{segments:12}),VEST.trim);
+  add(body,vestStrap([[.262,1.135,.15],[.278,1.172,.03],[.282,1.172,-.08],[.272,1.15,-.19]].map(([x,y,z])=>[s*x,y,z]),.11,.036,across,{segments:10}),VEST.olive);}
+
+ // Cummerbunds: bands wrapping each side from under the front plate to under the back plate,
+ // leaning in at the top, with teal edge binding and a quick-release buckle on each. Each
+ // side is two lengths that end under the arm, so the arm hangs over the band, not through it.
+ const cy=.815,ea=.495,eb=.385,lean=.35,center=new THREE.Vector3(0,cy,0),up=new THREE.Vector3(0,1,0);
+ const ring=(t,s,lift=0,off=0)=>{const n=new THREE.Vector3(s*Math.sin(t)/ea,0,Math.cos(t)/eb).normalize(),w=new THREE.Vector3(-lean*n.x,1,-lean*n.z).normalize();
+  return [s*Math.sin(t)*ea+n.x*off+w.x*lift,cy+w.y*lift,Math.cos(t)*eb+n.z*off+w.z*lift];};
+ for(const s of [-1,1]){for(const [t0,t1] of [[.54,1.42],[Math.PI-1.42,Math.PI-.54]]){const band=(lift,off)=>{const p=[];for(let i=0;i<=5;i++)p.push(ring(t0+(t1-t0)*i/5,s,lift,off));return p;};
+   add(body,vestStrap(band(0,0),.115,.022,up,{lean,center,segments:12}),VEST.olive);
+   for(const lift of [-.047,.047])add(body,vestStrap(band(lift,.011),.014,.008,up,{lean,center,segments:8}),VEST.trim);}
+  const t=1.05,[bx,by,bz]=ring(t,s,0,.016),yaw=Math.atan2(s*Math.sin(t)/ea,Math.cos(t)/eb);
+  add(body,rbox(.06,.072,.024,.008).rotateX(-lean*.9).rotateY(yaw).translate(bx,by,bz),VEST.char);
+  add(body,rbox(.04,.05,.014,.005).translate(0,0,.012).rotateX(-lean*.9).rotateY(yaw).translate(bx,by,bz),VEST.metal);}
+
+ const geometry=mergeGeometries([...front,...back,...body]);[...front,...back,...body].forEach(g=>g.dispose());
+ geometry.computeBoundingBox();geometry.computeBoundingSphere();
+ const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.82,metalness:.05});
+ const mesh=new THREE.Mesh(geometry,material);mesh.name='El Acolchado · chaleco';mesh.castShadow=true;group.add(mesh);
  group.name='El Acolchado'; group.userData.dispose=()=>{geometry.dispose();material.dispose();};return group;
+}
+// Puts a vest on a buildCharacter() pana so it rides the body's bob and lean: the vest is
+// modelled in the pana's world units, so it undoes the sculpt's internal scale.
+export function wearPaintVest(character,vest=createPaintVest()){
+ const body=character.body,scale=body.parent?.scale.x||1;vest.scale.setScalar(1/scale);vest.position.set(0,0,0);body.add(vest);return vest;
 }

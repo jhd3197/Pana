@@ -240,6 +240,9 @@ launchers in third person pays for one.
 `createPaintRocket({ color })` is La Bazuca's round in flight (+Z the nose).
 `createPaintGrenade({ color })` is Pepazo's paint grenade (about 30 cm, upright,
 origin at its centre; `userData.light` is the fuse lamp's material to blink).
+`createPaintVest()` is El Acolchado, a plate carrier in a pana's world units (one
+vertex-coloured mesh); `wearPaintVest(character, vest?)` puts it on a
+`buildCharacter()` pana's body so it follows the walk bob and lean.
 
 Camo goes on by id only: `camo: '<id>'` names a `PAINT_CAMOS` pattern (selva,
 medanos, bolivar, caracas, caribe, jaguar, llanero, rumba, tricolor, pepazo) or

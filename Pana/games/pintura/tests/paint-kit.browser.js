@@ -1,7 +1,8 @@
 // The real paint-kit models in a WebGL page: all eighteen markers build with every
 // attachment set the armory allows, each part lands on the model, the data the game
 // reads (tip, sight, bore, optic kind) agrees with paint-arsenal.js, the batched
-// version keeps it, and camo stays inert unless asked for and shares one program.
+// version keeps it, camo stays inert unless asked for and shares one program, and El
+// Acolchado is one cheap mesh that fits the pana's torso and rides its body.
 import assert from 'node:assert/strict';
 import { launch, openGame } from '../../../tests/browser-kit.js';
 
@@ -54,6 +55,22 @@ try {
       if (!meshes(solid).some(m => m.material.color?.getHexString() === '8d85df' || m.geometry.attributes.color)) problems.push('a solid camo did not recolour the body');
       solid.userData.dispose();
     }
+    // El Acolchado: one vertex-coloured mesh, a few thousand triangles, inside the torso
+    // envelope (feet at 0, +Z forward), worn on the body at the same place, fully disposed.
+    const vest = kit.createPaintVest(), vestMeshes = meshes(vest), vestBox = new THREE.Box3().setFromObject(vest);
+    const tris = vestMeshes.reduce((n, m) => n + (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3, 0);
+    if (vest.name !== 'El Acolchado' || typeof vest.userData.dispose !== 'function') problems.push('vest lost its name or dispose');
+    if (!finite(vest)) problems.push('vest has non-finite geometry');
+    const inside = (v, lo, hi) => v >= lo && v <= hi;
+    if (!inside(vestBox.min.x, -.56, -.4) || !inside(vestBox.max.x, .4, .56) || !inside(vestBox.min.y, .62, .75) || !inside(vestBox.max.y, 1.1, 1.22) || !inside(vestBox.min.z, -.52, -.4) || !inside(vestBox.max.z, .4, .55)) problems.push(`vest outside the torso envelope ${JSON.stringify([vestBox.min, vestBox.max])}`);
+    const { buildCharacter } = await import('/engine/models/characters/pana/avatar-model.js');
+    const pana = buildCharacter({}), worn = kit.wearPaintVest(pana); pana.group.updateMatrixWorld(true);
+    const wornBox = new THREE.Box3().setFromObject(worn);
+    if (worn.parent !== pana.body || wornBox.min.distanceTo(vestBox.min) > .001 || wornBox.max.distanceTo(vestBox.max) > .001) problems.push('a worn vest does not sit where it was modelled');
+    let freed = 0; const owned = vestMeshes.flatMap(m => [m.geometry, m.material]); owned.forEach(o => o.addEventListener('dispose', () => freed++));
+    vest.userData.dispose(); worn.userData.dispose(); pana.dispose();
+    if (freed !== owned.length) problems.push(`vest dispose freed ${freed}/${owned.length}`);
+    const vestStats = { meshes: vestMeshes.length, tris };
     const renderer = new THREE.WebGLRenderer({ canvas: document.createElement('canvas') }); renderer.setSize(64, 64, false); renderer.debug.checkShaderErrors = true;
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(40, 1, .1, 20); camera.position.set(2, 1, 3); camera.lookAt(0, .2, .5);
     scene.add(new THREE.HemisphereLight('#fff', '#445', 2));
@@ -70,15 +87,17 @@ try {
     // Each camo material keeps its own colours although they share the program.
     const colours = camoMeshes.map(list => renderer.properties.get(list[0].material).uniforms?.uC0?.value.getHexString());
     selva.userData.dispose(); rumba.userData.dispose(); baked.userData.dispose(); renderer.dispose();
-    return { problems, builds, camoPrograms, glError, colours };
+    return { problems, builds, camoPrograms, glError, colours, vestStats };
   });
   assert.deepEqual(result.problems, []);
   assert.ok(result.builds >= 18 * 15, `built ${result.builds} marker/attachment sets`);
   assert.equal(result.glError, 0, 'WebGL reported an error');
   assert.equal(result.camoPrograms, 1, 'every camo material shares one compiled program');
   assert.deepEqual(result.colours, ['4b5b2c', '1a1030', 'f28b42'], 'each camo keeps its own colours');
+  assert.equal(result.vestStats.meshes, 1, 'El Acolchado draws in one call');
+  assert.ok(result.vestStats.tris <= 5000, `El Acolchado has ${result.vestStats.tris} triangles`);
   assert.deepEqual(page.errors, []);
-  console.log(`ok: ${result.builds} marker/attachment sets build with parts on their mounts, bore/optic/tip agree, baking keeps them, camo is inert unless asked and shares one program`);
+  console.log(`ok: ${result.builds} marker/attachment sets build with parts on their mounts, bore/optic/tip agree, baking keeps them, camo is inert unless asked and shares one program, El Acolchado is ${result.vestStats.tris} triangles in one draw`);
 } finally {
   await browser.close();
 }

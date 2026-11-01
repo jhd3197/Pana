@@ -1,5 +1,5 @@
 import { createKnockout } from './knockout.js';
-import { createPaintKit, bakePaintKit, createPaintVest, createPaintRocket, createPaintGrenade, PAINT_KIT_BORE } from '/engine/models/props/paintball-kit.js';
+import { createPaintKit, bakePaintKit, wearPaintVest, createPaintRocket, createPaintGrenade, PAINT_KIT_BORE } from '/engine/models/props/paintball-kit.js';
 import { FINISHES, MARKERS, kitStats, grenadeDef, isMelee } from './armory-data.js';
 import { createViewmodel, recoilOf } from './viewmodel.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
@@ -328,7 +328,7 @@ export function createScene(canvas) {
         avatar.marker.removeFromParent(); avatar.marker.userData.dispose();
         avatar.marker = bakePaintKit(modelOptions(p)); avatar.marker.position.set(.48, .95, .25); avatar.marker.rotation.x = isMelee(p.weapon) ? .5 : 0; avatar.group.add(avatar.marker); avatar.paintColor = p.color; avatar.kitKey=JSON.stringify(modelOptions(p));
       }
-      if(!avatar.vest) {avatar.vest=createPaintVest();avatar.group.add(avatar.vest);}
+      if(!avatar.vest) avatar.vest=wearPaintVest(avatar);
       avatar.vest.visible=p.kit?.armor==='padded';
       avatar.ring.material.color.set(p.color);
       const falling = down && avatar.out < 2.2;

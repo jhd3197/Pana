@@ -482,6 +482,22 @@ server. It never spends ammo or emits shots into the multiplayer room.
 attachments and padded vest to both preview and gameplay. Studio registers
 those same models. Paint pattern changes are cosmetic and never change hits.
 
+El Acolchado (`createPaintVest`) is a plate carrier merged into one
+vertex-coloured mesh (about 4,300 triangles, one draw; the browser suite caps it
+at 5,000 and checks its bounds): front and back plates with teal binding and
+stitching, shoulder straps, cummerbunds, three ball-pod pouches with mango caps,
+a utility pouch and a splat patch. It is modelled in the pana's world units and
+worn with `wearPaintVest(avatar)`, which parents it to `avatar.body` and undoes
+the sculpt's 0.6 scale, so it rides the walk bob and lean instead of floating
+on `avatar.group`. The shared pana is pear-shaped: the trunk is about ±0.47
+wide at y 0.8 but only ±0.3 at the chest (y 0.9–1.05), and the hoodie's
+sleeves (skinned to the arm bones inside the outfit mesh) reach x ±0.6 at belly
+height. Torso widths measured from every visible mesh include those sleeves.
+The cummerbunds therefore sit on a ±0.495 × 0.385 ellipse at y 0.815 and stop
+under each arm, so the arm hangs over the band. The front plate tilts back
+0.29 rad with the chest and its top sits under the jowls, which hide the
+middle of the shoulder straps.
+
 The two-client browser proof picks the marker through its class chip, fills a
 guest kit slot by slot (slot 2 first, clearing slot 1 leaves slots 2 and 3),
 fits La Bazuca's Mira in slot 3 (it names Holográfica), verifies the host

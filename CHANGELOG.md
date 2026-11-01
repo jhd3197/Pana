@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Pepazo El Acolchado ahora parece un chaleco táctico de verdad.**
+  Lleva placas delante y detrás con ribete turquesa, correas, faja lateral con
+  hebillas y bolsillos de bolas con tapa mango; se mueve con tu pana al caminar.
+
 - **Pepazo abre más rápido: la primera carga baja de 161 a 133 módulos.**
   Las canchas compartidas (Puerto, Hato y Ruinas) se descargan cuando el
   anfitrión elige una, mientras la tarjeta de carga cubre la espera.
