@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El corte del terreno de Capis a Pintazos ahora muestra capas de tierra de verdad.**
+  Bajo la grama hay tierra negra con raíces colgando, y debajo capas de
+  ceniza, arcilla, piedra pómez, ocre y una base oscura que ondulan, se
+  adelgazan y siguen la forma del cerro. Cada cráter las corta limpio y deja
+  el borde chamuscado, y cada tipo de mapa trae sus propios colores.
+
 - **Todos los juegos y la lista de la portada usan el mismo estilo de esquinas rectas.**
   Botones, fichas, menús de ajustes, salas, marcadores, resultados, avisos,
   el editor de personaje y el Studio dejaron las esquinas redondeadas y las

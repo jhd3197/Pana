@@ -609,7 +609,8 @@ export function generateMap(seed = 1, size = DEFAULT_SIZE) {
 // ---------- what the earth is made of (for the painter) ----------
 
 // 0..1 rock at (x, y): the mesas, the tepuy, the islands' undercut sides, the
-// bridges and ledges, the cliffs at the ends, and wavy strata everywhere.
+// bridges and ledges and the cliffs at the ends. The soil's layers between
+// them are the shader's strata (`strataPalette`).
 export function rockAt(map, x, y) {
   const p = map.plan;
   let k = 0;
@@ -618,8 +619,6 @@ export function rockAt(map, x, y) {
     if (b.span) { if (Math.abs(y - spanY(b.span, x)) < b.span.radius + .45) k = Math.max(k, .75); }
     else if (y > b.y0 && y < b.y1) k = Math.max(k, .85 * clamp((b.y1 - y) * 3) * clamp((y - b.y0) * .8));
   }
-  const wave = Math.sin(x * .21) * .5 + Math.sin(x * .07 + 1) * .9;
-  if (Math.abs(y - 7.6 - wave) < .45 || Math.abs(y - 2.9 - wave * .6) < .6 || Math.abs(y - 13.4 - wave * 1.3) < .35 || Math.abs(y - 21 - wave * 1.6) < .3) k = Math.max(k, .7);
   return k;
 }
 
@@ -632,4 +631,36 @@ export function grassAt(map, x, y) {
     if (start[r * cols + c] && (r + 1 >= rows || !start[(r + 1) * cols + c])) return true;
   }
   return false;
+}
+
+// ---------- the layers of the cut face (for the painter) ----------
+
+// The soil profile under each kind of map, top to bottom: dark topsoil, pale
+// ash, orange-brown clay, whitish pumice gravel, an ochre band, brown loam,
+// a dark base, and the colour of the thin seams at some contacts (0..255 RGB).
+const STRATA = Object.freeze({
+  cerros: { topsoil: [78, 54, 36], ash: [204, 186, 152], clay: [170, 104, 62], pumice: [218, 208, 186], ochre: [198, 152, 76], loam: [130, 88, 54], base: [86, 58, 40], seam: [146, 66, 40] },
+  cuevas: { topsoil: [62, 50, 40], ash: [196, 192, 180], clay: [138, 118, 100], pumice: [216, 214, 206], ochre: [174, 152, 114], loam: [112, 100, 90], base: [74, 68, 64], seam: [94, 82, 76] },
+  islas: { topsoil: [74, 56, 38], ash: [226, 208, 166], clay: [172, 98, 60], pumice: [232, 224, 204], ochre: [212, 174, 106], loam: [156, 118, 80], base: [104, 72, 50], seam: [166, 74, 42] },
+  valle: { topsoil: [66, 44, 30], ash: [208, 182, 152], clay: [160, 82, 54], pumice: [218, 204, 188], ochre: [192, 136, 72], loam: [126, 72, 48], base: [82, 48, 36], seam: [136, 48, 34] },
+  terrazas: { topsoil: [64, 46, 36], ash: [222, 210, 194], clay: [152, 80, 64], pumice: [232, 226, 214], ochre: [194, 128, 92], loam: [130, 82, 66], base: [92, 54, 46], seam: [112, 46, 40] },
+  suave: { topsoil: [78, 54, 36], ash: [202, 186, 152], clay: [166, 104, 64], pumice: [216, 208, 188], ochre: [194, 152, 82], loam: [128, 90, 58], base: [86, 60, 42], seam: [142, 70, 44] },
+});
+export const STRATA_KEYS = Object.freeze(['topsoil', 'ash', 'clay', 'pumice', 'ochre', 'loam', 'base', 'seam']);
+
+// The look of the layers for a map: the kind's colours shifted a little by
+// the seed (same seed and kind, same look), and how they lie:
+//   period  world units of one run of bands (they repeat with a different mix)
+//   fold    0..1 how much the bands drape over the land (the rest is level)
+//   tilt    a gentle dip along x, units per unit
+//   phase   where the seed's noise starts, so two maps don't share wiggles
+export function strataPalette(seed, kind) {
+  const base = STRATA[kind] || STRATA.cerros, r = seededStream(`capis-strata:${mapSeed(seed) ?? 1}:${kind}`);
+  const warm = (r() - .5) * .08, light = 1 + (r() - .5) * .1;
+  const out = {};
+  for (const key of STRATA_KEYS) {
+    const own = 1 + (r() - .5) * .08;
+    out[key] = base[key].map((v, i) => Math.round(clamp(v * light * own * (1 + warm * (1 - i)), 0, 255)));
+  }
+  return Object.assign(out, { period: +(3.8 + r() * 1.8).toFixed(3), fold: +(.3 + r() * .25).toFixed(3), tilt: +((r() - .5) * .04).toFixed(4), phase: +(r() * 100).toFixed(2) });
 }

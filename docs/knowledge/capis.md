@@ -27,17 +27,37 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   - depth below the surface is a vertical signed distance averaged along x
     over neighbours on the same surface (no stair steps on gentle slopes, a
     cliff stays sharp), stored in quarter cells, so it saturates 3.2 below;
-  - soil darkens with height under `deepFrom` (14) and carries wavy strata
-    that follow the surface, a few clay bands, mottling, flecks, pebbles and
-    a few small stones (lit from the top left with a shadow under), roots
-    under grassy tops; rock (`rockAt`, read through a noise warp so the map's
-    boxes don't show) has wavy layers and branching cracks; the beach and the
-    sandbar (tops under `water + 2.4`) are sand, thicker towards the water,
-    with grain, bedding lines, light grains and a wet band near the water;
+  - the soil is a profile of strata like a road cut through volcanic ash
+    (`strataPalette(seed, kind)` in map-rules.js; the shader's rules are in
+    `docs/SHARED-ENGINE.md`, "Strata"): a dark crumbly topsoil 0.35–0.6 deep
+    with a fringe of roots and fine rootlets hanging from the grass, then runs
+    of seven bands (pale ash with laminae, orange-brown clay with small
+    cracks, whitish pumice gravel full of speckles and pebbles, mottled ochre,
+    crumbly loam) every 3.8–5.6 units, darker towards the base from 4 units
+    down. Contacts wave (low and high frequency), bands swell and pinch along
+    x, some contacts grade and some carry a thin dotted iron or pale seam.
+    The bands drape over the land by `fold` (0.3–0.55 of the depth under the
+    starting top smoothed over 12 and 2 units; the rest is level), so they
+    fold over hills and stay continuous across a cliff;
+  - everything about the profile (bands, topsoil, roots, grass cover) is read
+    from the ground at `reset()`, so a crater cuts through the same bands
+    with no popping or stretching; its new face is darker and charred at the
+    edge where the coverage is lower than at the start, fading over about
+    0.5 units, the walls of the extruded slab a little less;
+  - the palette per kind: cerros warm ochre and brown, cuevas greyer with
+    pale bands, islas sandy with rust, valle redder clay, terrazas brick reds
+    and whites (suave like cerros); the seed shifts warmth and lightness a
+    few percent and picks `period`, `fold`, `tilt` and the noise `phase`;
+  - rock (`rockAt`: the mesas, the tepuy, bridges, ledges and the end cliffs
+    only; the old level rock stripes gave way to the strata) is read through
+    a noise warp so the map's boxes don't show, has wavy layers and
+    branching cracks and takes a little of the band's colour; the beach and
+    the sandbar (tops under `water + 2.4`) are sand, thicker towards the
+    water, with grain, bedding lines, light grains and a wet band near it;
   - grass is a band 0.2–0.33 deep with a bright lip, a soft dark edge under
     it, and short rounded tufts (up to `tuft` 0.3 units, about the paws)
-    drawn in the air on the front face only; crater floors (`grassAt` false)
-    are bare damp topsoil;
+    drawn in the air on the front face only; cave floors (`grassAt` false)
+    are bare damp topsoil, a crater's floor shows the bands;
   - soft occlusion from a wide coverage (11 cells) below 0.5 deep and under
     overhangs; paint has a crisp wet edge (the stain is blurred [1 2 1] so
     drops and streaks end round).
@@ -365,6 +385,10 @@ The connected maps (headless, 1280 × 720, medium quality; seeds 100, 101,
 draws on every one; play view 70–134 draws (191 on the small map, where more
 full-detail panas are in frame), as before: the ground is still three draws
 whatever its shape.
+
+The strata pass changed only the ground's shader and two small textures: the
+whole map stays at 77 draws and the medium play view at 134 (1280 × 720,
+medium quality), the same as before it.
 
 The terrain pass replaced ten ground planes with three draws (front, extruded
 wall of about 4 k triangles, back wall) and cut the shore reeds (85 k → 39 k
