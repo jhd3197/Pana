@@ -48,6 +48,24 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   hops with the bazuca overhead, a capi painted out topples onto its back with
   its paws up and dizzy stars, one in the river spins as it sinks. The arms are
   set after `avatar.update`: near paw on the rear grip, far paw on the front grip.
+- **Far capis are one draw** (`engine/models/core/rig-lod.js`). A full capi,
+  pana and La Bazuca, is about 55 draws and 56 k triangles, so the six made
+  the whole-map view (Z) cost 420 draws and 411 k triangles when the capybara
+  model gave way to the studio pana. Each capi builds a far copy once: every
+  visible mesh merged into one `SkinnedMesh` bound to the pivots that move
+  (`turn`, body, head, both arms, both legs, the launcher's `kick`), welded at
+  0.06 (6.4 k triangles), with one vertex-coloured material. `chooseFar`
+  (`lod-band.js`) swaps it in beyond 55 units from the camera and back under
+  47; the play view is 31 to 40 away, the whole map about 80, so play and
+  close-ups keep the full pana. The rival's paint tints the far copy through
+  its material (colour × (1 − p) plus the paint as emissive). Measured at
+  1280 × 800, low quality, headless: whole map in a match 420 → 93 draws and
+  411 k → 113 k triangles, the lobby's whole-map camera 411 → 87 draws and
+  408 k → 111 k; the play view stays at 227–232 draws, the close-up at 69–76.
+  The lobby stops live rendering (`engine/game-load.js`) after the frame
+  drawn while the scene prepares, which is at play width (before `ready`
+  sets the whole-map view), so the still lobby picture shows full-detail
+  capis (229 → 224 draws).
 - **Charge cue**: a drop of the team's paint swells and glows at the barrel's tip
   while the shot charges; the shot flashes there (an additive plane, as in
   Pepazo) and bursts paint.
@@ -145,18 +163,17 @@ All from `engine/sfx.js`, no music: `shot('bazuca')`, `boom`, `splat`,
 - Aiming up, the barrel on the near shoulder crosses the face.
 - Teammates of the lead capi do not use the player's look; there is no way to
   dress them yet.
-- The six studio panas are the frame's main cost: about 40 draws each. The
-  whole-map lobby view went from 135 to 408 draws and 136 k to 380 k triangles
-  (CPU submit 2.7 → 6.2 ms, GPU 0.14 → 0.56 ms at Nítida, 2560 × 1600 on a
-  desktop) when the capybara model gave way to them. The launchers are at most 6
-  draws each. A lower-detail pana for far views would win most of that back.
+- Far capis lose the face's small motions (blinks, ear flicks, the open
+  mouth) and the dizzy stars; at whole-map size none of it reads.
 
 ## Proof
 
 `npm test -- capis` (map, turns, clock, blast, damage, water, winner, bot) and
-`npm test -- terrain-mask ballistic side-walker` for the engine pieces.
+`npm test -- terrain-mask ballistic side-walker lod-band` for the engine pieces.
 `npm run test:browser -- capis` checks that all six capis are the studio pana
 with a team bandana and a batched La Bazuca, that only the capi on its turn
-raises it and that its tip is the rules' muzzle; it starts from the lobby, walks with D, holds and
+raises it and that its tip is the rules' muzzle, that the capi on its turn is
+the full pana in the play view while in the whole-map view every capi is one
+draw and the frame stays under 140 draws; it starts from the lobby, walks with D, holds and
 releases Space, waits for the crater and the paint, the machine's turn and
 shot, then a win, the results card and the way back to the lobby.

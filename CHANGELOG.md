@@ -12,6 +12,11 @@ becomes the GitHub release's notes.
   Las canchas compartidas (Puerto, Hato y Ruinas) se descargan cuando el
   anfitrión elige una, mientras la tarjeta de carga cubre la espera.
 
+- **En Capis a Pintazos la vista de todo el mapa (Z) va mucho más ligera.**
+  Los capis lejanos se dibujan como una sola pieza más sencilla que sigue sus
+  movimientos, con la bazuca y la pañoleta; de cerca siguen siendo tu pana con
+  todo detalle.
+
 - **En la armería de Pepazo la marcadora se ve sola, centrada y girando.**
   Las marcadoras, accesorios, granadas y camuflajes se previsualizan sin tu
   pana delante; tu pana solo aparece en Equipo, con el chaleco puesto, y en la
