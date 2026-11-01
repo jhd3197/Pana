@@ -12,6 +12,8 @@ becomes the GitHub release's notes.
   Las marcadoras, accesorios, granadas y camuflajes se previsualizan sin tu
   pana delante; tu pana solo aparece en Equipo, con el chaleco puesto, y en la
   prueba de tiro.
+  En Equipo la marcadora se aparta y tu pana sale sola y centrada, para que
+  el chaleco se vea completo.
 
 - **En Pepazo tu marcadora lleva camuflaje: seis lisos para todos y diez estampados que se ganan pintando o con mangos.**
   En la armería, Camuflaje muestra cada uno con su muestra y lo previsualiza en

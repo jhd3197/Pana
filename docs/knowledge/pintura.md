@@ -448,8 +448,11 @@ expire and slow opponents. Grenade flight and blasts: see "Grenades" below.
 `armory.js` previews the actual marker (with its parts) alone: it turns on a pivot,
 centred and scaled from its own bounding box so a pistol and La Bazuca fill the
 frame alike. The own pana (with El Acolchado when worn) only appears on the
-Equipo tab while choosing and during the range test, in a wider framing with the marker beside it
-(`withBody`/`frame`; `pinturaDebug.armory.body` is its group). Hover gives
+Equipo tab while choosing and during the range test (`view`/`frame`;
+`pinturaDebug.armory.body` is its group). On Equipo the marker is hidden
+(`visible=false`) and the pana stands alone at the origin, swaying, with the
+camera at chest height (y 1.05): from higher up the big head hides the vest.
+The range keeps the wider framing with the marker beside the pana. Hover gives
 comparisons for range, damage, paint per second (`dpsOf`), spread (aimed spread
 and zoom when it aims), the real fire rate, capacity, reload, mobility and
 toughness. The marker picker comes by class: a chip per class with markers

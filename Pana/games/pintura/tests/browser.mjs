@@ -98,10 +98,13 @@ try {
   assert.equal(await slotButton(0).locator('b').textContent(), 'Sin accesorio'); assert.equal(await slotButton(1).locator('b').textContent(), 'Tolva grande'); assert.equal(await slotButton(2).locator('b').textContent(), 'Mira');
   assert.deepEqual((await savedKit()).attachments, [null, 'hopper', 'optic']);
   await b.locator('[data-slot="armor"]').click();await b.locator('#armory-choices [data-id="padded"]').click();
-  // On armor the body is the point: the pana comes back wearing the vest.
-  await wait(b, () => pinturaDebug.armory.body.visible && pinturaDebug.armory.body.getObjectByName('El Acolchado')?.visible);
+  // On armor the body is the point: the pana comes back wearing the vest, and the gun
+  // leaves the view so it does not hide the vest.
+  await wait(b, `pinturaDebug.armory.body.visible && pinturaDebug.armory.body.getObjectByName('El Acolchado')?.visible && !(${shows})(pinturaDebug.armory.preview)`);
   await b.locator('#armory-parts-back').click();
-  await wait(b, () => !pinturaDebug.armory.body.visible);
+  await b.locator('[data-slot="weapon"]').click();
+  await wait(b, `(${shows})(pinturaDebug.armory.preview) && !pinturaDebug.armory.body.visible`);
+  await b.locator('#armory-parts-back').click();
   await b.locator('[data-slot="grenade"]').click();await b.locator('#armory-choices [data-id="pegajosa"]').click();
   await b.locator('#armory-close').click();
   await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && JSON.stringify(p.kit.attachments)==='[null,"hopper","optic"]' && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
