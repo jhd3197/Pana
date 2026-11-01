@@ -238,8 +238,17 @@ the pad sent), not a direction captured before the first frame set the yaw.
 
 ## La Lejana, La Bazuca and gun feel
 
-- Markers carry `damage` (pepazos per hit, default 1). La Lejana paints 2, so it
-  knocks out in two hits at Aguante 3 or 4 and one on El Cortaviento.
+- Markers carry `damage` (pepazos per hit, default 1). La Lejana's body hits
+  fade with the distance the ball flew from where it was fired (`falloff` in
+  `armory-data.js`, `rangedDamage` on the shared `engine/play/weapon-falloff.js`): 3 pepazos up to 10 m, linear down to 1 at
+  50 m and beyond, rounded (2 at 30 m). One close hit knocks out at Aguante 3,
+  two at Aguante 5. Its `damage: 2` is only the armory's pace number.
+- La Lejana (`headshot`) knocks out with one head hit at any range. The shot is
+  a ray from the eye (`EYE` 1.55 m plus the shooter's jump) at the input's
+  pitch; where the flat sweep meets the victim it is a head hit at `HEAD_Y`
+  1.4 m or higher (plus the victim's jump), else body. Only inputs with a real
+  pitch (`look`, first person; other views send `pitch: null`) can reach a head.
+  Bots holding it pitch at the chest (`CHEST_Y` 1.1 m), so theirs are body hits.
   `Arena.hit(victim, owner, color, impact, damage)` clamps paint at the
   victim's toughness; La Bazuca's `direct` rocket passes `Infinity`.
 - Aim is an input flag (`aim`, right mouse, F, LT, or the Mira toggle on
@@ -694,7 +703,7 @@ reload; hip spread (→ aimed); native scope; kit nivel with the default kit.
 | La Culebrona (lmg) | ametralladoras | 1 | 0.15 s | 6.67 | 0.30 s | 45 m | 90 m/s | 80% | 50 / 3.6 s | 0.05 |  | 578 |
 | El Trueno (scatter) | escopetas | 1 × 3 | 0.75 s | 4.00 | 0 s | 17 m | 85 m/s | 93% | 8 / 1.8 s | 0.18 |  | 450 |
 | La Corneta (blunderbuss) | escopetas | 1 × 5 | 1.00 s | 5.00 | 0 s | 12 m | 70 m/s | 92% | 3 / 2.2 s | 0.28 |  | 399 |
-| La Lejana (sniper) | francotiradores | 2 | 1.25 s | 1.60 | 1.25 s | 70 m | 140 m/s | 90% | 4 / 2.6 s | 0.1 → 0 | 3.5× | 493 |
+| La Lejana (sniper) | francotiradores | 3 → 1 (head: K.O.) | 1.25 s | 1.60 | 1.25 s | 70 m | 140 m/s | 90% | 4 / 2.6 s | 0.1 → 0 | 3.5× | 493 |
 | El Zamuro (marksman) | francotiradores | 1 | 0.50 s | 2.00 | 1.00 s | 62 m | 120 m/s | 92% | 8 / 2.3 s | 0.06 → 0.006 | 2.2× | 509 |
 | El Cohetón (rocket) | lanzadores | 1 (splash 4.5 m) | 1.00 s | 1.00 | 2.00 s | 43 m | 18 m/s | 63% heavy | 1+3 / 3.2 s | 0 |  | 418 |
 | La Bazuca (bazooka) | lanzadores | direct K.O. (splash 1.4 m) | 1.20 s | 2.50 | 0 s | 42 m | 14 m/s | 70% heavy | 1+2 / 3.8 s | 0 |  | 408 |
@@ -785,8 +794,9 @@ Now the throw is a real 3D lob through `engine/play/lob.js`:
 ## Directional knockout physics
 
 Hit metadata comes from the authoritative projectile velocity, or from the blast
-centre to the victim, and is replicated as `impact`. Pepazo still shoots level:
-all hits are body hits, with no cosmetic headshot damage bonus. `knockout.js`
+centre to the victim, and is replicated as `impact`. Every hit is a body hit
+except La Lejana's head hits (`impact.zone: 'head'`, `headshot` on the event),
+which knock out at once. `knockout.js`
 drives the own sculpt's body, neck, arm and skinned leg pivots from the pure
 `KnockoutPhysics` distance-constraint solver. It uses 120 Hz steps, bounded
 catch-up, floor and cover collision, and restores captured transforms on respawn.

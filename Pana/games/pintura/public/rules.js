@@ -1,4 +1,4 @@
-import { cleanKit, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO } from './armory-data.js';
+import { cleanKit, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO, rangedDamage } from './armory-data.js';
 import { createMelee, startSwing, stepMelee, swingHit, throwStart, stepThrown, aimThrow, inHand } from '../../../engine/play/melee.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
@@ -62,6 +62,12 @@ export const BOT_SKILL = { facil: { wobble: .16, trigger: .45, reaction: .15 }, 
 // look still lobs at about 26 degrees. TICK is the simulation step, which the aim
 // preview and the bots' throw search also use, so they predict the server exactly.
 export const THROW = Object.freeze({ hand: 1.45, ahead: .45, lift: .45, down: -.7, up: .55 }), TICK = .05;
+// A marker with `headshot` (La Lejana) shoots a ray from the eye (scene.js EYE) at
+// the look's pitch. Where it meets a pana at HEAD_Y or higher (lifted by their jump)
+// it is a head hit; lower is the body. Bots aim at CHEST_Y.
+export const EYE = 1.55, HEAD_Y = 1.4, CHEST_Y = 1.1;
+// Height of the shot from `ball` once it has flown `travel` metres flat.
+export const shotHeight = (ball, travel) => ball.y0 + Math.tan(ball.pitch) * travel;
 export function cleanInput(input = {}) {
   if (!input || typeof input !== 'object') input = {};
   const num = n => Number.isFinite(n) ? clamp(n, -1, 1) : 0;
@@ -69,7 +75,8 @@ export function cleanInput(input = {}) {
   let x = num(input.x), z = num(input.z), length = Math.hypot(x, z); if (length > 1) { x /= length; z /= length; }
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
   // `alt` (also sent as `throw`) is the alternate attack: La Chancleta's throw.
-  return { x, z, ax, az, weapon: WEAPONS.some(m => m.id === input.weapon) ? input.weapon : null, fire: input.fire === true, alt: input.alt === true || input.throw === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, pitch, charge, jump: jumpCount(input) };
+  // `look` says a real pitch came (first person); without it no shot can reach a head.
+  return { look: Number.isFinite(input.pitch), x, z, ax, az, weapon: WEAPONS.some(m => m.id === input.weapon) ? input.weapon : null, fire: input.fire === true, alt: input.alt === true || input.throw === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, pitch, charge, jump: jumpCount(input) };
 }
 // Where a thrown melee weapon leaves pana p's hand: like a grenade, 1.45 m up and
 // 0.45 m ahead, never reaching through the cover p stands against.
@@ -316,7 +323,9 @@ export class Arena {
     const stats = kitStats(p.kit, this.options);
     if (stats.melee) return this.meleeBot(p, q, { clear, length, x, z, ax: aimX, az: aimZ, fire: Math.sin(t * 3) > skill.trigger }, stats);
     const lob = this.botGrenade(p, q, clear);
-    return cleanInput({ x, z, ax: aimX, az: aimZ, fire: !lob && clear && length < 34 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear, ...lob });
+    // A headshot marker aims at the chest, so bots do not knock out with every shot.
+    const chest = stats.headshot ? { pitch: -Math.atan((EYE - CHEST_Y) / length) } : {};
+    return cleanInput({ ...chest, x, z, ax: aimX, az: aimZ, fire: !lob && clear && length < 34 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear, ...lob });
   }
   // A bot holding a melee weapon walks straight at the nearest rival it can see and
   // swings once inside the reach. With a throwable one (La Chancleta) it throws at a
@@ -410,7 +419,10 @@ export class Arena {
         // Several pellets fan evenly across the spread (three: left, centre, right).
         const angles=stats.pellets>1 ? Array.from({length:stats.pellets},(_,i)=>spread*(2*i/(stats.pellets-1)-1)) : [jitter];
         for(const angle of angles) this.balls.push({ id:++this.serial, owner:p.id, color:p.color, x:p.x, z:p.z, ...launch(p.ax, p.az, stats.speed, angle),
-          life:stats.life, kind:stats.id, rocket:!!stats.splash, direct:!!stats.direct, damage:stats.damage, splash:stats.splash || 0, pattern:p.kit.pattern, hand:p.weapon==='rapid'?p.shots%2:0 });
+          life:stats.life, kind:stats.id, rocket:!!stats.splash, direct:!!stats.direct, damage:stats.damage, falloff:stats.falloff || null, splash:stats.splash || 0, pattern:p.kit.pattern, hand:p.weapon==='rapid'?p.shots%2:0,
+          // Where it left (damage fades with the distance flown) and, for a headshot marker
+          // fired with a real pitch, the eye height and pitch its ray climbs or drops at.
+          x0:p.x, z0:p.z, y0:EYE + (p.jumpHeight || 0), pitch:stats.headshot && input.look ? input.pitch : null });
       }
     }
     for (const ball of this.balls) {
@@ -421,7 +433,11 @@ export class Arena {
       if (t <= 1 || outside(this.mapId, ball.x, ball.z)) {
         ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern });
         // La Bazuca's direct hit knocks out at once; its splash then catches only the panas beside.
-        if (victim && (ball.direct || !ball.rocket)) this.hit(victim, owner, ball.color, { x: ball.vx, z: ball.vz, weapon: ball.kind }, ball.direct ? Infinity : ball.damage || 1);
+        // La Lejana's head hit knocks out too; its body hits fade with the distance flown.
+        if (victim && (ball.direct || !ball.rocket)) {
+          const travel = Math.hypot(ball.x - ball.x0, ball.z - ball.z0), head = ball.pitch != null && shotHeight(ball, travel) >= HEAD_Y + (victim.jumpHeight || 0);
+          this.hit(victim, owner, ball.color, { x: ball.vx, z: ball.vz, weapon: ball.kind, ...(head ? { zone: 'head', headshot: true } : {}) }, ball.direct || head ? Infinity : rangedDamage(ball, travel));
+        }
         if (ball.rocket) this.blast(ball,ball.splash);
       }
     }
@@ -512,7 +528,8 @@ export class Arena {
     this.puddles=this.puddles.filter(p=>p.life>0);
   }
   // A pepazo stains the victim; the last one their aguante allows takes them out.
-  // `damage` pepazos land at once: La Lejana's 2, Infinity for a direct rocket.
+  // `damage` pepazos land at once: La Lejana's 1 to 3, Infinity for a direct rocket or a
+  // head hit (impact.headshot, which also sets impact.zone 'head').
   hit(victim, owner, color, impact = {}, damage = 1) {
     // Under a whole pepazo (La Fumigadora's drops, La China's stones, La Licuadora's
     // balls) the victim soaks it; once a whole one has soaked in, that is the pepazo.
@@ -523,7 +540,7 @@ export class Arena {
     }
     const dx = impact.x ?? (victim.x - (owner?.x ?? victim.x)), dz = impact.z ?? (victim.z - (owner?.z ?? victim.z));
     const length = Math.hypot(dx, dz) || 1;
-    victim.impact = { x: dx / length, z: dz / length, zone: 'body', blast: !!impact.blast, n: this.eventSerial + 1 };
+    victim.impact = { x: dx / length, z: dz / length, zone: impact.zone === 'head' ? 'head' : 'body', blast: !!impact.blast, n: this.eventSerial + 1 };
     const distance = owner ? Math.round(Math.hypot(owner.x - victim.x, owner.z - victim.z)) : 0;
     const toughness = kitStats(victim.kit,this.options).toughness, weapon = impact.weapon || null, thrown = !!impact.thrown;
     victim.paint = Math.min(toughness, victim.paint + Math.max(1, damage)); victim.stains = [...victim.stains, color].slice(-5); victim.calm = 0;
@@ -534,7 +551,7 @@ export class Arena {
     victim.streak = 0;
     for (const flag of this.flags) if (flag.carrier === victim.id) { flag.carrier = null; flag.x = victim.x; flag.z = victim.z; }
     if (owner) this.say(locKey('{owner} pintó a {victim} · {distance} m'), { owner: owner.name, victim: victim.name, distance }); else this.say(locKey('Un pana pintó a {victim} · {distance} m'), { victim: victim.name, distance });
-    this.event('out', owner, victim, distance, { streak: rival ? owner.streak : 0, revenge, weapon, thrown, direct: damage === Infinity });
+    this.event('out', owner, victim, distance, { streak: rival ? owner.streak : 0, revenge, weapon, thrown, direct: damage === Infinity && !impact.headshot, headshot: !!impact.headshot });
   }
   // The feed line is synced: a Spanish key plus its variables, shown with loc() on each client.
   say(message, vars = null) { this.message = message; this.messageVars = vars; }

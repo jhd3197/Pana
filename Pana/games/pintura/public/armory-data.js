@@ -4,6 +4,7 @@
 import { locKey } from '../../../engine/i18n.js';
 import { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_SOLIDS, PAINT_CAMO_IDS, classOf } from '../../../engine/play/paint-arsenal.js';
 import { meleeDef } from '../../../engine/play/melee.js';
+import { rangeDamage } from '../../../engine/play/weapon-falloff.js';
 // The simulation step (rules.js TICK). A marker fires on a tick, so its real
 // interval is its `cadence` rounded up to whole ticks: see shotInterval.
 const STEP = .05;
@@ -18,9 +19,11 @@ export const MARKERS = [
  marker('scatter', locKey('Tres bolas de cerca. De lejos pierde fuerza.'), { magazine:8, reload:1.8, cadence:.75, mobility:.93, spread:.18, pellets:3, speed:85, life:.2 }),
  marker('rapid', locKey('Alterna las dos marcadoras. Mucha presión; recargar lleva tiempo.'), { magazine:18, reload:2.4, cadence:.16, mobility:1, spread:.045, speed:85, life:.44 }),
  marker('rocket', locKey('Un cohete de pintura, un pepazo por rival. Cuatro cargas por vida; no permite correr.'), { magazine:1, reserve:3, reload:3.2, cadence:1, mobility:.63, spread:0, speed:18, life:2.4, splash:4.5, heavy:true }),
- // La Lejana: two pepazos a hit, 70 m of reach; aimed through the scope it flies dead straight,
- // from the hip it wanders (`spread`), and scoped you walk at half speed.
- marker('sniper', locKey('Francotiradora: dos pepazos por tiro y 70 m de alcance. Clic derecho para la mira; sin ella se desvía.'), { magazine:4, reload:2.6, cadence:1.25, mobility:.9, spread:.1, aimSpread:0, scope:3.5, damage:2, speed:140, life:.5 }),
+ // La Lejana: 70 m of reach; aimed through the scope it flies dead straight, from the hip it
+ // wanders (`spread`), and scoped you walk at half speed. A head hit (first person) knocks
+ // out at once (`headshot`); a body hit paints 3 pepazos up to 10 m, fading to 1 at 50 m
+ // (`falloff`, see rangedDamage). `damage` is the mid-range 2 the armory's pace sums use.
+ marker('sniper', locKey('Francotiradora: a la cabeza saca de una; al cuerpo pega más de cerca que de lejos. 70 m de alcance. Clic derecho para la mira; sin ella se desvía.'), { magazine:4, reload:2.6, cadence:1.25, mobility:.9, spread:.1, aimSpread:0, scope:3.5, damage:2, falloff:{ near:10, far:50, close:3, min:1 }, headshot:true, speed:140, life:.5 }),
  // La Bazuca: a slow, visible rocket. A direct hit knocks out at once; the splash is tiny.
  marker('bazooka', locKey('Un cohete lento que se ve venir. Si pega directo, fuera de una; casi no salpica. Tres por vida.'), { magazine:1, reserve:2, reload:3.8, cadence:1.2, mobility:.7, spread:0, speed:14, life:3, splash:1.4, direct:true, heavy:true }),
  // La Metra: the close-range hose. Ten balls a second that wander and die at 29 m.
@@ -78,6 +81,10 @@ export const WEAPON_CYCLE = ARMORY_CLASSES.flatMap(c => c.weapons.filter(id => W
 export const cycleWeapon = (id, step = 1) => { const n = WEAPON_CYCLE.length, i = WEAPON_CYCLE.indexOf(id); return WEAPON_CYCLE[((i < 0 ? 0 : i + step) % n + n) % n]; };
 // Seconds between shots as the simulation fires them: the cadence rounded up to whole ticks.
 export function shotInterval(cadence) { let left = cadence, ticks = 0; do { left = Math.max(0, left - STEP); ticks++; } while (left > 0); return ticks * STEP; }
+// Pepazos a body hit paints after flying `distance` metres. A marker with `falloff`
+// ({ near, far, close, min }, engine/play/weapon-falloff.js) paints `close` up to `near`
+// metres, then fewer down to `min` at `far` and beyond; any other marker its `damage`.
+export const rangedDamage = (s, distance) => rangeDamage(s.falloff, distance, s.damage || 1);
 // Pepazos a second with every ball landing; a direct rocket counts as a knockout (3).
 export const dpsOf = s => (s.direct ? 3 : (s.damage ?? 1) * s.pellets) / (s.melee ? meleeInterval(s) : shotInterval(s.cadence));
 // Seconds between two melee swings as the simulation runs them: windup and recovery in whole ticks.
