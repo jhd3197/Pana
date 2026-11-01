@@ -348,6 +348,10 @@
 /* keyboard reminders, bottom-right */
 .pk-hints { display: grid; gap: 4px; justify-items: end; font: 800 13px var(--pk-sans); color: var(--pk-text); text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
 .pk-hints b { color: var(--pk-yellow); font-weight: 900; }
+/* One-time control hints (engine/control-hints.js): one small square line, keys of the device in use. */
+.pk-control-hints { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 10px; max-width: min(560px, 92vw); padding: 4px 8px; border-radius: 0; background: rgba(13, 11, 33, .82); color: var(--pk-text); font: 800 11px/1.3 var(--pk-sans); pointer-events: none; }
+.pk-control-hints[hidden], .pana-no-hints .pk-control-hints { display: none; }
+.pk-control-hints b { margin-right: 3px; padding: 0 4px; border: 1px solid currentColor; border-radius: 0; color: var(--pk-yellow); font-weight: 900; }
 
 /* Power bar: a tall meter on the right edge for aim-and-shoot games (Billar,
    Bolas Criollas), filled in yellow from the bottom. The game sets --fill on
