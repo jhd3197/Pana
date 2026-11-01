@@ -1,7 +1,7 @@
 # Capis a Pintazos
 
 Turn-based paint artillery between capybaras: two teams of three capis on a
-Llanos riverbank, one player against the machine (`players: 1`, offline, no
+Llanos riverbank generated for each match, one player against the machine (`players: 1`, offline, no
 room and no `network.js`). Each turn a capi walks, jumps, aims and fires La
 Bazuca de pintura; the shell flies with the wind, digs a crater, paints the
 ground and the capis near it and knocks them back. A capi with 100 % paint, or
@@ -12,8 +12,9 @@ one that falls into the river, is out. The last team standing wins.
 The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
 (AGENTS.md): a perspective camera looks at the plane the capis move in.
 
-- **Ground** is `engine/play/terrain-mask.js`: a 800 × 400 grid (one cell is
-  0.1 world units, the map is 80 × 40) of solid/air cells with a paint layer.
+- **Ground** is `engine/play/terrain-mask.js`: a grid of solid/air cells with
+  a paint layer, one cell 0.1 world units: 1000 × 460 (small map, 100 × 46),
+  1400 × 520 (medium, 140 × 52) or 1800 × 580 (large, 180 × 58).
   It is drawn by `engine/play/terrain-material.js` (`createTerrain`): the
   cells go into two field textures (`fieldRGBA`), repainted only for the
   columns a blast or a splash changed, and one Lambert-based shader colours
@@ -39,7 +40,8 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
     overhangs; paint has a crisp wet edge (the stain is blurred [1 2 1] so
     drops and streaks end round).
   The slab is three draws: the front face at z = 0.55, a wall extruded from
-  the smooth outline (`coverageContour`, normals from the coverage gradient)
+  the smooth outline (`coverageContour`, normals from the coverage gradient,
+  kept in 64-column bands so a blast re-traces only the bands it touched)
   back to z = -2.6, grass on its top faces and darker towards the back
   (rebuilt only when a cell changes between solid and air, about 4 k
   triangles), and the back wall. The nine stacked alpha-tested planes and
@@ -124,24 +126,18 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
 - **Walking** is `engine/play/side-walker.js`; **flight** is
   `engine/play/ballistic.js`. The bot, the aim preview and the match share the
   same flight, so the preview is the real path.
-- **The map** (`public/map-rules.js`) is a heightfield from `fbm2` with a fixed
-  seed (2026) plus carved and filled shapes, west to east (`FEATURES`): a long
-  sandy beach into the river (never steeper than a capi climbs), our plateau
-  with a boulder (spawns 13, 19, 25), the west caño under a thin rock arch, El
-  Tepuyito in the middle (a rock tower, top 22.6, with an overhanging cap, on
-  a climbable mound), a cave dug into the mound from each side with a thin
-  wall between them (one shot opens it), the east caño under an overhanging
-  lip, the rivals' plateau with its boulder (55, 61, 67), a rock cliff whose
-  foot the river has notched, and a sandbar just above the water past it.
-  Mirrored spawns; the tower stops a flat shot across the middle (tested), so
-  a team lobs over it or digs. In 2D any tunnel straight through a hill cuts
-  off everything above it, which is why the caves stop at a wall: an earlier
-  through-tunnel left the tower floating. Same ground on every load.
+- **The map** (`public/map-rules.js`) is generated for every match from a
+  seed (1–99 999) and a size (`MAP_SIZES`: small 100, medium 140, large 180
+  wide), pure and deterministic: `generateMap(seed, size)` returns the same
+  cells, spawns and plan in the browser, in Node and on any future server,
+  which only needs the seed. See "Map generation" below.
 - **The world behind** (`public/backdrop.js`), a late afternoon: the sky is
   graded in its shader by the elevation of the view ray, not the world height
   (cream at the horizon, gold, soft teal, blue by about 25°), with a warm
   bloom towards the sun, so the play view and the whole map both show the
-  gradient; the fog is the same warm haze. The sun hangs low in the west (a
+  gradient; the fog is the same warm haze, starting past the ground (the
+  scene moves `fog.near` with the camera distance, so the whole-map view of a
+  180-wide map is not hazy). The sun hangs low in the west (a
   disc and an additive glow), nine instanced low-poly clouds drifting, three lower ranges of
   hills paler with distance in a warm fog, the savanna in front of them
   fading from olive grass to the haze with darker patches and bushes in its
@@ -149,13 +145,16 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   sky, fills the back of the view: it was the flat yellow-green), the river (a standard material
   whose shader adds moving ripple bands and a glint path under the sun, calmer
   near the camera), foam strips where the bank meets the water (one instanced
-  mesh, re-laid when a blast reaches the water line), morichales (18 palms on
-  one instanced prototype) and three palms that sway (the two far ones at
-  `lite` detail without fruit), instanced reeds (`reeds({ detail: 'low' })`,
-  less than half the triangles) and
-  rocks by the banks and on the sandbar, two flocks of corocoras
-  (`birdFlock`, three draws), and the player's own pana on a dock by the
-  west bank. It bounces on a good shot, wobbles when one of ours is hit and
+  mesh, re-laid when a blast reaches the water line), morichales (groves of
+  three or four palms on one instanced prototype, spread along the map's
+  width) and three palms that sway (the two far ones past each end at `lite`
+  detail without fruit, the near one by the island or a bank), instanced
+  reeds (`reeds({ detail: 'low' })`) and rocks at every shore of the map (read
+  from the water line of the ground), two flocks of corocoras (`birdFlock`,
+  three draws, routes scaled to the map), and the player's own pana on a dock
+  by the west bank. Everything is laid out from the map: `backdrop.setMap(map,
+  mask)` rebuilds the map's scenery for a new map, and the scene rebuilds the
+  ground textures when a map of another size arrives. It bounces on a good shot, wobbles when one of ours is hit and
   goes dizzy on a loss. Light: a warm hemisphere, a low warm sun from the
   front left and a warm rim light from behind.
 
@@ -163,16 +162,21 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
 
 - `public/rules.js`: the match (pure): teams, turn order, timers, wind,
   firing, blasts, damage, knockback, water, the winner.
-- `public/map-rules.js`: the Llanos riverbank and the spawn points.
+- `public/map-rules.js`: the map generator (plan, ground, spawns, checks,
+  `rockAt` and `grassAt` for the painter).
+- `engine/play/terrain-gen.js`: the generic pieces (seeded streams, bumps,
+  floating-piece removal, walk spans, `walkTo`, sky exposure, headroom).
 - `public/bot.js`: the machine's capis (pure, tested).
-- `public/options.js`: turn time and the machine's level, through the shared
-  room panel even offline.
+- `public/options.js`: turn time, the machine's level and the map size,
+  through the shared room panel even offline.
 - `public/poses.js`: which pose each capi shows and where its barrel points (pure).
 - `public/scene.js`, `public/backdrop.js`: the 3D view.
 - `public/hud.js`: turn and clock, wind, both teams' paint bars, name tags,
   results.
 - `public/game.js`: wiring (keys, mouse, touch, the shot charge, sounds).
-- `tests/rules.test.js`, `tests/capis.browser.js`.
+- `tests/rules.test.js`, `tests/map-rules.test.js` (the generated maps over
+  many seeds), `tests/map-matches.test.js` (bot-against-bot matches),
+  `tests/capis.browser.js`.
 - Cover art: `web/images/launcher/capis.jpg` (hero, kept under 100 KB so it stays in Git) and`capis-card.jpg` (hub tile), registered in `web/launcher-art.js`. `public/card.js` is now only the fallback live card.
 
 ## Rules and tuning (`RULES` in `rules.js`)
@@ -192,6 +196,7 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
 | Max climb (bare ground) | 52° | steeper is a wall |
 | Painted ground | slides above 12° | paint ≥ 0.25 under the feet; uphill on paint the feet only paddle (25 % speed) |
 | Water line | y = 4.2 | feet below it: out |
+| Map | small 100 × 46, medium 140 × 52 (default), large 180 × 58 | lobby choice; seed 1–99 999 |
 
 Turns alternate teams; inside a team they rotate to the next capi still in.
 Firing is refused once the clock reaches zero, so neither a player nor the bot
@@ -199,14 +204,82 @@ can shoot late.
 
 ## The machine (`bot.js`)
 
-On its turn it picks the nearest rival, walks towards it for up to 2 s when it
-is more than 34 units away, then searches angles −0.2..1.4 rad and powers
+On its turn it picks the nearest rival and, while that rival is more than 34
+units away (`RANGE`), walks towards it for up to 45 % of the turn. Before
+each step (five times a second) it runs its own next two seconds of walking
+through the real walker (`safeWalk`) and stops if that ends in the river: a
+steep caño bank or a painted slope carries a capi further than a look at the
+ground ahead suggests. Stuck against a bump it hops once, only if the hop
+lands dry. Then it searches angles −0.2..1.4 rad and powers
 0.2..1 (about 1 000 simulated flights, ~12 ms) for the shot that lands closest,
 penalising landings in the water or next to its own capis. The difficulty's
 `aimError` (from `engine/play/difficulty.js`) is scaled ×3 for the angle and
 ×1.6 for the power. It turns the barrel at a player's speed, waits 0.9–2.2 s,
-and fires; with under 2 s left it fires at once. With no shot that lands
-within 25 units it fires a default lob, so it never stalls.
+and fires; with under 2 s left it fires at once. With no shot that lands at
+all it fires a default lob; one that only lands far still goes towards the
+rival, so it never stalls.
+
+## Map generation
+
+`generateMap(seed, size)` in `public/map-rules.js`; the generic pieces are in
+`engine/play/terrain-gen.js`.
+
+- **A profile across the map, mirrored.** Distance from the middle `d`
+  decides the large shapes, the same on both banks: a bank (`bank` 21.5–24.5
+  high) that falls towards the river (`valley`, 5–8.5 over 26–36 units, so
+  the back capis stand on high ground), low-frequency rolling `fbm2` (5–7)
+  and two to five gaussian hills and hollows (`bumps`, width ≥ 1.5 × height
+  so slopes stay walkable). Detail is not mirrored: two noise layers (±0.35
+  and ±0.8) on x itself, so the banks do not look copied while the spawns stay
+  within the fairness limits.
+- **The middle** is one of three kinds (seeded roll): `tepuy` (45 %), El
+  Tepuyito: a rock tower (top 10–13 above the bank, half-width 3–3.6) with an
+  overhanging cap on a mound, a cave dug into the mound from each side with
+  its mouth low on the flank and a thin wall between them (85 % of tepuys),
+  and a caño each side cut below the water with steep (1.8–2.3) banks;
+  `island` (30 %), a wide river with a sandbar (half 3.2–4.6, just above the
+  water) or a rocky islet (a dome 3.2–5 above the water) in the middle;
+  `river` (25 %), a wide plain river. The river's banks are a smoothstep from
+  2.4 under the water over 14–17 units.
+- **The ends**: a sandy beach (a capi walks up it from the water to 2.6 above
+  it, then the bank's earth slope) or a cliff with a notch eaten by the river
+  and a sandbar off it; the same style at both ends.
+- **Landmarks**: one to three per bank (none to one with the tepuy; at most
+  two and no caves on a small map), mirrored, at least 11 apart (17 next to a
+  mesa, whose ramp runs about 10 units behind it): a **mesa** (a butte 7.5–11
+  high, a steep face towards the river often overhung by its cap, a walkable
+  ramp behind; rock that follows the ramp under a coat of earth), an **arch**
+  (a thin span of rock over a dip) or a **cave** (a tunnel into a knoll,
+  floor 3.8+ under its top, mouth where the knoll's flank comes down to the
+  floor, so it is walked into).
+- **Spawns**: three a side, mirrored exactly. A spot is standable on open
+  ground above `water + 2.5`, not steep, with half the sky open. The front
+  capi (slot 0, who plays first) takes the first spot from the bank top; the
+  back one the last spot within `0.36 × half` behind it; the middle one the
+  spot nearest halfway with `GAP` (5 / 7 / 8 by size) to both. So the first
+  shot is a real lob across the water (front capis 35–55 apart, median 44 on
+  medium; the reach check proves a shot exists) and
+  the back capis start on the high ground.
+- **Checks and re-rolls.** Each attempt is checked (`check`): nothing floating
+  (`dropFloating` removes specks up to 1 500 cells, a bigger piece fails),
+  three spots a side, water between the front capis, every spawn with at
+  least 6 units to walk, the two sides within `FAIR` (per slot height 1.2 and
+  open sky 0.25, means 0.8 and 0.12), the front capis able to hit each other
+  with no wind (`reachable`, a coarse version of the bot's search), and every
+  back capi able to walk to its front (`walkTo`, down ledges included) or hit
+  the rivals' front from where it gets. A map that fails is built again from
+  the next attempt of the same seed (`capis-map:<seed>:<size>:<attempt>`), so
+  a replay rebuilds it exactly; the eighth attempt is a plain river, which
+  passes. Over 100 seeds a size, 27 % of medium, 25 % of large and 41 % of
+  small seeds re-roll at least once (small maps lack room), at most to the
+  sixth attempt; never to the plain fallback.
+- **Cost**: 15 ms (small) to 28 ms (large) a map in Node, checks included.
+- **Replay**: the lobby shows the map the match will use and its number
+  ("Mapa #12345"), with "Otro mapa" and a number field in "Más ajustes";
+  the HUD shows the number under the teams; starting a match writes
+  `?seed=…&size=…` into the address, so a reload or a shared link replays it;
+  the results card has "Revancha en este mapa". A future server only needs
+  to send `{ seed, size }`.
 
 ## Controls
 
@@ -216,7 +289,7 @@ within 25 units it fires a default lob, so it never stalls.
 | W S / ↑ ↓, or move the mouse | aim buttons | aim (the mouse also turns the capi) |
 | hold Space or the left button, release | hold ¡Pinta! | charge and fire |
 | Enter (or J) | jump button | jump |
-| Z | Mapa | whole-map view |
+| Z | Mapa | whole-map view (the whole width, bottom a little under the water, sky above) |
 
 Space is the fire key, so jump is Enter. Escape is the shared pause menu.
 
@@ -231,26 +304,53 @@ in the river), `chime` (turn starts), `tick` (last 5 s), `sting(win)`.
 
 ## Draw calls
 
-Headless, 1280 × 800, low quality (`?debug`, a fresh match):
+Headless, 1280 × 800, low quality (`?debug`, a fresh match, clock and wind frozen):
 
-| View | Before the map and effects pass | Before the terrain pass | After the terrain pass |
-|---|---|---|---|
-| Play view | 224 draws, 210 k triangles | 229 draws, 339 k triangles | 221 draws, 297 k triangles |
-| Whole map (Z) | 90 draws, 111 k triangles | 86 draws, 219 k triangles | 77 draws, 175 k triangles |
-| Lobby (still frame) | 224 draws, 212 k triangles | 229 draws, 341 k triangles | 221 draws, 298 k triangles |
-| Close-up (`closeUp = 12`) | | 196 draws, 338 k triangles | 189 draws, 296 k triangles |
+| View | Before the map and effects pass | Before the terrain pass | After the terrain pass (fixed 80-wide map) | Generated maps |
+|---|---|---|---|---|
+| Play view | 224 draws, 210 k triangles | 229 draws, 339 k triangles | 221 draws, 297 k triangles | 130–134 draws, 222–242 k (medium, large); 186, 262 k (small) |
+| Whole map (Z) | 90 draws, 111 k triangles | 86 draws, 219 k triangles | 77 draws, 175 k triangles | 77 draws, 178–202 k on every size |
+| Lobby (still frame) | 224 draws, 212 k triangles | 229 draws, 341 k triangles | 221 draws, 298 k triangles | 130–132 draws, 224–244 k; 186, 264 k (small) |
+| Close-up (`closeUp = 12`) | | 196 draws, 338 k triangles | 189 draws, 296 k triangles | |
+
+The generated maps are measured on seeds 6, 16, 33 (medium), 3, 9 (large)
+and 5 (small). The play view costs less than before because the capis stand
+farther apart: fewer full-detail panas are in frame (on a small map two or
+three are). The scenery grows with the width but stays instanced (groves of
+moriches 21–36 instances, 14–17 reed clumps).
 
 The terrain pass replaced ten ground planes with three draws (front, extruded
 wall of about 4 k triangles, back wall) and cut the shore reeds (85 k → 39 k
 triangles for the 20 clumps, `detail: 'low'`) and the two far palms (9.7 k → 8.1 k for the three). Mid-blast the play
-view adds at most the four spray pools (drops, clods, sparks, rings); a blast
-on our plateau measured 159 draws and 275 k triangles in its first frames.
-A blast repaints the field textures for the columns it touched and, if cells
-changed, rebuilds the outline (a full-map marching squares, a few ms).
+view adds at most the four spray pools (drops, clods, sparks, rings).
 
-## Known gaps (milestone one)
+**A blast's repaint.** `fieldRGBA` for the columns the blast touched (with its
+drips, about 15 units) and, if cells changed, the outline. On the bigger grids
+this first took 43–62 ms in the browser (the outline was re-traced over the
+whole map). Now the outline is kept in 64-column bands and only the touched
+bands are re-traced; the coverage blur runs on a copy of the band with
+running sums, and the vertical distance skips rows of open sky or deep ground
+(the bytes are identical). Node, median of six blasts: 9.9 ms field and
+1.8 ms outline on a medium map (the old 80-wide map: 18.1 and 12.6); in the
+headless browser 11–20 ms after the first blast (28–35 ms cold). A new match
+paints the whole field once: 60–90 ms small, 110–130 medium, 170–180 large.
+The four RGBA field textures take 11.6 MB on a medium map and 16.7 MB on a
+large one (5.1 MB before).
 
-- One map and one weapon. No team or player-vs-player online yet.
+## Known gaps
+
+- One weapon. No team or player-vs-player online yet (the map is ready for
+  it: a room only needs to share `{ seed, size }`).
+- The large shapes are mirrored for fairness, so a map reads as two copies of
+  one bank in the whole-map view; only small detail differs. An organic
+  (unmirrored) mode that balances by measures instead is not built.
+- Both ends of a map share one shore style, and both banks the same
+  landmarks.
+- Back capis of the bot walk towards the rivals but never climb back up: a
+  capi that dropped off a mesa stays low.
+- The tepuy's caves open onto the caños, so a capi reaches them only when a
+  blast throws it there.
+- The bot targets the nearest rival by x, not the easiest shot.
 - The drips and blobs keep the cell grid's shapes under the blur: at the
   closest zoom a streak still reads as two or three cells wide.
 - The tufts stand only on the front face; the extruded top behind it is
@@ -269,15 +369,24 @@ changed, rebuilds the outline (a full-map marching squares, a few ms).
 
 ## Proof
 
-`npm test -- capis` (map and its landmarks, the tower blocking a flat shot,
-turns, clock, blast, damage, water, winner, bot) and
+`npm test -- capis` (the generated maps over 90 seeds and every size:
+deterministic bytes, kinds, dry spawns with headroom and room to walk, gaps,
+nothing floating, water between the banks, fairness, every capi in the
+fight, generation time and re-rolls as diagnostics; 80 bot-against-bot
+matches that must all finish with no stuck turn; the landmarks, the tower
+blocking a flat shot, turns, clock, blast, damage, water, winner, bot),
+`npm test -- terrain-gen side-walker` and
 `npm test -- terrain-mask ballistic side-walker lod-band` for the engine pieces
 (drips, the painter's options, the shader fields with no steps on a gentle
 staircase, and the outline's normals included).
-`npm run test:browser -- capis` checks that all six capis are the studio pana
+`npm run test:browser -- capis` (on `?seed=6`) checks the lobby shows the
+seed's map, that a large size rebuilds it at 180 wide and back, that the
+match is played on it with its number in the HUD and the address, and that
+all six capis are the studio pana
 with a team bandana and a batched La Bazuca, that only the capi on its turn
 raises it and that its tip is the rules' muzzle, that the capi on its turn is
 the full pana in the play view while in the whole-map view every capi is one
 draw and the frame stays under 140 draws; it starts from the lobby, walks with D, holds and
 releases Space, waits for the crater and the paint, the machine's turn and
-shot, then a win, the results card and the way back to the lobby.
+shot, then a win, the results card, a rematch on the same map and the way
+back to the lobby with a new one.

@@ -1,7 +1,8 @@
-// One player against the machine, played with real keys: the lobby starts a
-// match on the Llanos riverbank, our capi walks and fires La Bazuca de
+// One player against the machine, played with real keys: the lobby shows the
+// map of ?seed=6, a bigger size rebuilds it, and starts a match on it, our capi walks and fires La Bazuca de
 // pintura (Space held, then released), the shell digs a crater, the bot plays
-// its turn and fires, and a won match shows the results and returns to the lobby.
+// its turn and fires, and a won match shows the results, replays the same map
+// and returns to the lobby with a new one.
 // Run: npm run test:browser -- capis   (CAPIS_SHOTS=<folder> also saves screenshots)
 import assert from 'node:assert/strict';
 import path from 'node:path';
@@ -10,15 +11,26 @@ import { launch, openGame, waitFor } from '../../../tests/browser-kit.js';
 const browser = await launch(), shots = process.env.CAPIS_SHOTS;
 const shot = (page, name) => shots ? page.screenshot({ path: path.join(shots, `capis-${name}.png`) }) : null;
 try {
-  const page = await openGame(browser, 'capis', { name: 'Ana', query: 'debug' });
+  const page = await openGame(browser, 'capis', { name: 'Ana', query: 'debug&seed=6' });
   assert.equal(await page.evaluate(() => capisDebug.world.camera.isPerspectiveCamera), true, 'a 3D scene with a perspective camera');
   assert.equal(await page.evaluate(() => new URLSearchParams(location.search).has('room')), false, 'single player: no room in the address');
   await page.locator('[data-room-option="seconds"][data-value="30"]').click();
   await waitFor(page, () => capisDebug.options().seconds === 30);
+  // The lobby shows the seed's map; a large map rebuilds the ground and the world at its new size.
+  assert.match(await page.locator('#lobby-seed').textContent(), /#6\b/);
+  assert.equal(await page.evaluate(() => capisDebug.match.map.width), 140);
+  await page.evaluate(() => document.querySelector('[data-room-option="size"][data-value="large"]').click());
+  await waitFor(page, () => capisDebug.match.map.width === 180 && capisDebug.world.match === capisDebug.match);
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await page.evaluate(() => document.querySelector('[data-room-option="size"][data-value="medium"]').click());
+  await waitFor(page, () => capisDebug.match.map.width === 140 && capisDebug.match.map.seed === 6);
   await shot(page, 'lobby');
   await page.locator('#start').click();
   await waitFor(page, () => capisDebug.playing && capisDebug.match.phase === 'aim' && capisDebug.match.turn.team === 0);
   assert.equal(await page.evaluate(() => capisDebug.match.turn.time <= 30), true);
+  assert.equal(await page.evaluate(() => capisDebug.match.map.seed), 6, 'the match is played on the lobby\'s map');
+  assert.match(await page.locator('#map-seed').textContent(), /#6\b/);
+  assert.match(await page.evaluate(() => location.search), /seed=6/, 'the address replays the map');
 
   // Walk right with the keyboard.
   const me = () => { const m = capisDebug.match; return m.capys.find(c => c.id === m.turn.capy); };
@@ -98,8 +110,17 @@ try {
   assert.equal(await page.evaluate(() => capisDebug.match.winner), 0);
   assert.match(await page.locator('#result-title').textContent(), /Ganaron/);
   await shot(page, 'results');
+  // A rematch on the same map, then back to the lobby with a new one.
+  const ground = await page.evaluate(() => capisDebug.match.mask.solid.length);
+  await page.locator('#same-map').click();
+  await waitFor(page, () => capisDebug.playing && capisDebug.match.phase === 'aim' && capisDebug.match.turn.n === 1 && capisDebug.match.shots === 0);
+  assert.equal(await page.evaluate(() => capisDebug.match.map.seed), 6);
+  assert.equal(await page.evaluate(() => capisDebug.match.mask.solid.length), ground);
+  await page.evaluate(() => { const m = capisDebug.match; m.capys.filter(c => c.team === 1).forEach(c => { c.paint = 100; c.out = 'paint'; }); m.turn.time = .01; });
+  await waitFor(page, () => capisDebug.match.phase === 'finished' && !document.getElementById('results').hidden);
   await page.locator('#again').click();
   await waitFor(page, () => !document.getElementById('lobby').hidden && !capisDebug.playing);
+  assert.notEqual(await page.evaluate(() => capisDebug.match.map.seed), 6, 'another match brings another map');
   assert.deepEqual(page.errors, []);
-  console.log('PASS capis: lobby → match, walk, charge and fire, crater and paint, the bot\'s turn, a win, results, back to the lobby.');
+  console.log('PASS capis: the seed map in the lobby, a size change, match, walk, charge and fire, crater and paint, the bot\'s turn, a win, results, a rematch on the same map, back to the lobby with a new map.');
 } finally { await browser.close(); }

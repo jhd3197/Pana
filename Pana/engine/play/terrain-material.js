@@ -304,9 +304,21 @@ export function createTerrain(scene, mask, { palette = {}, rockAt = null, grassA
   }
   scene.add(group);
   let shape = null;   // the solid cells the skin was built from
+  // The outline is kept in bands of BAND columns; a blast re-traces only the
+  // bands its columns (plus the field's blur reach) touch, not the whole map.
+  const BAND = 64, REACH = 14;
+  let bands = [];
 
-  function buildSkin() {
-    const { segments, normals, count } = coverageContour(mask, tex.field);
+  function buildSkin(rect = null) {
+    const n = Math.ceil(mask.cols / BAND);
+    if (!rect || bands.length !== n) bands = new Array(n).fill(null);
+    for (let k = 0; k < n; k++) {
+      if (bands[k] && rect && ((k + 1) * BAND + 1 < rect.c0 - REACH || k * BAND > rect.c1 + REACH)) continue;
+      bands[k] = coverageContour(mask, tex.field, 127.5, { c0: k * BAND, c1: (k + 1) * BAND });
+    }
+    let count = 0; for (const b of bands) count += b.count;
+    const segments = new Float32Array(count * 4), normals = new Float32Array(count * 4);
+    for (let k = 0, at = 0; k < n; at += bands[k].count * 4, k++) { segments.set(bands[k].segments, at); normals.set(bands[k].normals, at); }
     const pos = new Float32Array(count * 12), nor = new Float32Array(count * 12), index = new Uint32Array(count * 6);
     for (let s = 0; s < count; s++) {
       let ax = segments[s * 4], ay = segments[s * 4 + 1], bx = segments[s * 4 + 2], by = segments[s * 4 + 3];
@@ -346,7 +358,7 @@ export function createTerrain(scene, mask, { palette = {}, rockAt = null, grassA
     if (!rect) return;
     fieldRGBA(mask, tex.field, tex.paint, opts, rect);
     tex.fieldTex.needsUpdate = tex.paintTex.needsUpdate = true;
-    if (reshaped(rect)) buildSkin();
+    if (reshaped(rect)) buildSkin(rect);
   }
   function reset(next = mask) {
     if (next.cols !== mask.cols || next.rows !== mask.rows) throw new Error('createTerrain: a mask of another size');

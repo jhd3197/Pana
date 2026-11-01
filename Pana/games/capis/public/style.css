@@ -32,6 +32,13 @@ body { --pk-game: #e8569b; --team-0: #e8569b; --team-1: #2ad1b2; --wind: #bfe9ff
 .team-list .team-name { grid-column: 1 / -1; font: 400 14px var(--pk-display); letter-spacing: .02em; }
 #team-0 .team-name { color: var(--team-0); } #team-1 .team-name { color: var(--team-1); }
 
+.map-seed { font: 700 10px var(--pk-sans); opacity: .6; letter-spacing: .04em; }
+.lobby-seed { margin: 0; font-weight: 800; opacity: .8; }
+.seed-card { display: grid; gap: 8px; }
+.seed-row { display: flex; gap: 8px; }
+.seed-row input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--pk-line); border-radius: 10px; background: var(--pk-raised); color: var(--pk-text); font: 800 15px var(--pk-sans); }
+#same-map { margin-top: 8px; }
+
 .labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
 .labels span { position: absolute; left: 0; top: 0; padding: 1px 7px; border-radius: 999px; background: rgba(0, 0, 0, .55); font: 800 11px var(--pk-sans); white-space: nowrap; }
 .labels span.team-0 { color: var(--team-0); } .labels span.team-1 { color: var(--team-1); }

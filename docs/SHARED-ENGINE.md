@@ -98,6 +98,17 @@ walks a body left and right over the mask, steps over bumps, refuses bare
 slopes steeper than `maxClimb`, slides down painted slopes (`slick`,
 `slipAngle`), jumps on `jump.js`'s press counter, falls off ledges and into the
 water (`drowned`); `knock(p, vx, vy)` throws it, `settled(p)` says it stopped.
+It only lands with ground under the feet (brushing a rounded lip is a wall to
+slide off), and a body wedged in a narrow V rests on the floor under it.
+
+`engine/play/terrain-gen.js` (pure): building and checking side-view ground
+from a seed. `seededStream(key)` (one stream per seed and attempt, so a re-roll
+replays), `bumps(d, hills)` (gaussian hills and hollows), `dropFloating(mask,
+max)` (removes ground not joined to the bottom row, reports bigger pieces),
+`topLine`, `walkSpans` (stretches a walker covers: walkable slopes and hops),
+`walkTo(mask, x, dir)` (how far a walker gets one way, down ledges included),
+`skyExposure` and `headroom`. The game keeps its own design (Capis:
+`games/capis/public/map-rules.js`).
 
 ```js
 import { createMask, carve, splash } from '../../../engine/play/terrain-mask.js';

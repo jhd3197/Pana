@@ -81,19 +81,26 @@ export function stepSideWalker(p, input = {}, dt, mask, options = {}) {
       const nx = p.x + dx / steps, ny = p.y + dy / steps;
       if (!circleHits(mask, nx, ny + o.radius, o.radius * .9)) { p.x = nx; p.y = ny; continue; }
       const n = surfaceNormal(mask, nx, ny + o.radius, o.radius * 1.4);
-      if (n.y > .5 && p.vy <= 0) {
-        const floor = groundBelow(mask, nx, ny + o.radius, o.radius + o.stepDown);
-        p.x = nx; p.y = floor ?? p.y; p.grounded = true; out.landed = true;
+      // Land only with ground under the feet: brushing the side of a rounded
+      // lip is a wall to slide off, not a floor (that left bodies perched in the air).
+      const floor = n.y > .5 && p.vy <= 0 ? groundBelow(mask, nx, ny + o.radius, o.radius + o.stepDown) : null;
+      if (floor !== null) {
+        p.x = nx; p.y = floor; p.grounded = true; out.landed = true;
         p.slide = stainAt(mask, p.x, p.y - cell, .3) >= o.slick ? p.vx * .6 : 0; p.vx = p.vy = 0;
         break;
       }
       // A wall or a ceiling: lose the speed into it (keeping a little bounce),
       // step back out along the normal and keep sliding along it.
-      const into = p.vx * n.x + p.vy * n.y;
+      const into = p.vx * n.x + p.vy * n.y, falling = p.vy <= 0;
       if (into < 0) { p.vx -= 1.3 * into * n.x; p.vy -= 1.3 * into * n.y; }
       let px = nx, py = ny;
       for (let k = 0; k < 8 && circleHits(mask, px, py + o.radius, o.radius * .9); k++) { px += n.x * cell * .5; py += n.y * cell * .5; }
-      if (circleHits(mask, px, py + o.radius, o.radius * .9)) break;
+      if (circleHits(mask, px, py + o.radius, o.radius * .9)) {
+        // Wedged in a narrow V (a steep wall and a slope): rest on the floor under the feet.
+        const rest = falling ? groundBelow(mask, p.x, p.y + o.radius, o.radius + o.stepDown) : null;
+        if (rest !== null) { p.y = rest; p.grounded = true; out.landed = true; p.vx = p.vy = 0; p.slide = 0; }
+        break;
+      }
       p.x = px; p.y = py;
     }
     if (p.x < -o.radius * 4 || p.x > mask.width + o.radius * 4) p.y = Math.min(p.y, o.water - 1);
