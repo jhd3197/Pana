@@ -2,7 +2,7 @@ import { ratingBadge } from '/engine/kit-rating.js';
 import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
-import { createPaintKit, createPaintVest } from '/engine/models/props/paintball-kit.js';
+import { createPaintKit, wearPaintVest } from '/engine/models/props/paintball-kit.js';
 import { MARKERS, WEAPONS, ARMORY_CLASSES, ATTACHMENTS, throwRange, meleeInterval, OPTICS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, FALLBACK_CAMO, cleanKit, kitStats, kitRating, canAttach, setSlot, changeWeapon, opticOf, shotInterval, dpsOf } from './armory-data.js';
 import { Arena } from './rules.js';
 import { ICONS } from '/engine/icons.js';
@@ -165,7 +165,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(35,1,.1,50);camera.position.set(4,2.7,5);camera.lookAt(0,1.2,0);
   pivot=new THREE.Group();pivot.rotation.y=-.6;scene.add(pivot);
   scene.add(new THREE.HemisphereLight(0xfff5df,0x444466,2));const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(3,6,4);scene.add(light);
-  avatar=buildCharacter(loadAvatar());avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;scene.add(avatar.group);vest=createPaintVest();avatar.group.add(vest);target=buildCharacter({...loadAvatar(),outfitColor:'#29c5cd'});target.group.position.set(1.8,0,-2);target.group.visible=false;scene.add(target.group);rebuild();
+  avatar=buildCharacter(loadAvatar());avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;scene.add(avatar.group);vest=wearPaintVest(avatar);target=buildCharacter({...loadAvatar(),outfitColor:'#29c5cd'});target.group.position.set(1.8,0,-2);target.group.visible=false;scene.add(target.group);rebuild();
  }
  for(const b of document.querySelectorAll('#armory-slots button')) b.onclick=()=>{category=b.dataset.slot;slot=Number(b.dataset.index)||0;shown=null;note.textContent='';dialog.classList.add('choosing');paint();};
  const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda cambias de marcadora con 1 a 9, Z y X.'));return;}note.textContent='';dialog.classList.remove('choosing');dialog.showModal();init();paint();if(camoLib||window.PanaSh)loadCamos(true);};
