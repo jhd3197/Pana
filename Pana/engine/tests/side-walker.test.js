@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMask, fillHeights, splash, carve } from '../play/terrain-mask.js';
+import { createMask, fillHeights, splash, carve, fill } from '../play/terrain-mask.js';
 import { stepSideWalker, knock, settled, SIDE_WALKER } from '../play/side-walker.js';
 import { pressJump } from '../play/jump.js';
 
@@ -68,4 +68,20 @@ test('a crater under the feet drops it; knockback throws it into the river', () 
   knock(p, 16, 14); run(p, {}, m, 4, { water: 3 });
   assert.ok(p.grounded && !p.drowned && p.y > 9.8, 'out of the crater, its rim turns the throw upward');
   assert.deepEqual(stepSideWalker(q, { x: 1 }, DT, m, { water: 3 }), { jumped: false, landed: false, drowned: false, blocked: false });
+});
+
+test('walking off a rounded lip falls past it instead of hanging in the air beside it', () => {
+  // A plateau ending in a round knob of rock over a drop.
+  const m = ground(x => x < 20 ? 15 : 5), p = body(19, 15);
+  fill(m, 20.2, 14.6, .9);
+  p.grounded = true;
+  run(p, { x: 1 }, m, 3);
+  assert.ok(p.grounded && p.y < 6 && p.x > 21, `got down to (${p.x.toFixed(1)}, ${p.y.toFixed(1)})`);
+});
+
+test('a body dropped into a narrow V rests on its floor', () => {
+  // A steep wall and a slope meeting in a crevice too narrow for the body.
+  const m = ground(x => x < 20 ? 22 : 12 + (x - 20) * .9), p = body(20.5, 18);
+  run(p, {}, m, 2);
+  assert.ok(p.grounded && settled(p), `wedged at (${p.x.toFixed(2)}, ${p.y.toFixed(2)}), grounded ${p.grounded}`);
 });
