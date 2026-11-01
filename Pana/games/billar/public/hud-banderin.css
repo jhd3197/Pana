@@ -25,7 +25,7 @@
 .banderin #message { margin:6px 0 0;font-size:13px;line-height:1.45; }
 .banderin .shot-controls { grid-column:2;grid-row:1;gap:10px;min-width:0; }
 .banderin .fine-controls { gap:6px; }
-.banderin .fine-controls .pk-touch { width:40px;height:44px;min-width:40px;border-radius:4px; }
+.banderin .fine-controls .pk-touch { width:40px;height:44px;min-width:40px;border-radius:0; }
 .banderin #shoot { min-width:0;min-height:48px;flex:1;padding:10px 14px;white-space:nowrap;font:20px var(--pk-display);box-shadow:none; }
 .banderin #shoot kbd { margin-left:10px;font:11px var(--pk-sans); }
 .banderin .charge-tip { grid-column:1 / -1;margin:0;text-align:right;font-size:12px;line-height:1.4;color:var(--pk-muted); }

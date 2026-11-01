@@ -28,7 +28,7 @@ body { --pk-game: #2fa3e0; --title-shadow: #154a6b; --lift: #5fe08a; --sink: #ff
 .wing-state { grid-column: 1 / -1; font: 800 12px var(--pk-sans); color: var(--pk-yellow); }
 .leaderboard { position: absolute; right: 20px; top: 84px; margin: 0; padding: 8px; list-style: none; display: grid; gap: 4px; min-width: 190px; max-width: 240px; }
 .leaderboard .pk-row { min-height: 28px; padding: 4px 10px 4px 8px; font-size: 13px; }
-.wing-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--wing); flex: none; box-shadow: 0 0 0 2px var(--pk-night); }
+.wing-dot { width: 10px; height: 10px; border-radius: var(--pk-radius-round); background: var(--wing); flex: none; box-shadow: 0 0 0 2px var(--pk-night); }
 .row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .tip { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); margin: 0; max-width: min(560px, calc(100vw - 480px)); text-align: center; font: 800 14px/1.3 var(--pk-sans); text-shadow: 0 1px 3px #000c; }
 .call { position: absolute; left: 50%; top: 28%; transform: translateX(-50%); font: 400 44px/1 var(--pk-display); color: var(--pk-yellow); -webkit-text-stroke: 2px var(--pk-night); text-shadow: 0 5px 0 var(--pk-coral); white-space: nowrap; animation: call-in .35s ease-out; }

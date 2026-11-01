@@ -294,7 +294,7 @@ export function createMural({ width = 9, height = 3, title = 'CHORONÍ' } = {}) 
 export function createNameTag(text, color = '#ff5a3d') {
   const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
   const g = canvas.getContext('2d');
-  g.fillStyle = 'rgba(22, 22, 26, .72)'; g.beginPath(); g.roundRect(4, 8, 248, 48, 24); g.fill();
+  g.fillStyle = 'rgba(22, 22, 26, .72)'; g.fillRect(4, 8, 248, 48);
   g.fillStyle = color; g.beginPath(); g.arc(30, 32, 9, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle';
   let size = 30; do g.font = `${size}px "Luckiest Guy", system-ui, sans-serif`; while (g.measureText(text).width > 196 && (size -= 2) > 14);

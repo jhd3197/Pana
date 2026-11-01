@@ -15,7 +15,7 @@ body.ghost .dark{opacity:.25}
 .topbar{position:fixed;top:18px;right:20px;z-index:30;display:flex;justify-content:flex-end}
 #game-nav{display:flex;gap:8px}
 #game-nav .pk-btn{background:var(--pk-hud)}
-#game-nav kbd{font:900 10px var(--pk-sans);color:var(--pk-yellow);padding:2px 5px;border:1px solid var(--pk-line-strong);border-radius:5px}
+#game-nav kbd{font:900 10px var(--pk-sans);color:var(--pk-yellow);padding:2px 5px;border:1px solid var(--pk-line-strong);border-radius:0}
 
 /* lobby */
 .pk-lobby{padding-top:28px}
@@ -54,7 +54,7 @@ body.ghost .dark{opacity:.25}
 .tasks h2{margin:0;font:400 22px/1 var(--pk-display);letter-spacing:.5px;color:var(--pk-text)}
 .steps{display:grid;gap:6px;margin:2px 0 0;padding:0;list-style:none}
 .steps li{display:flex;align-items:center;gap:8px;font:700 13px var(--pk-sans);color:var(--pk-muted)}
-.steps li::before{content:'';flex:none;width:16px;height:16px;border:2px solid currentColor;border-radius:5px}
+.steps li::before{content:'';flex:none;width:16px;height:16px;border:2px solid currentColor;border-radius:0}
 .steps li.is-near{color:var(--pk-text)}
 .steps li.is-near::before{border-color:var(--pk-yellow);background:var(--pk-yellow)}
 .steps li.is-done{color:var(--pk-teal);text-decoration:line-through}
@@ -110,7 +110,7 @@ body.mummy .controls{bottom:340px}
 .task-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:12px}
 .task-big{min-width:180px;min-height:64px;font-size:20px}
 .task-done{position:absolute;inset:0;display:grid;place-items:center;background:rgba(14,11,36,.72);font:400 34px var(--pk-display);color:var(--pk-teal)}
-.lantern-btn{width:72px;height:96px;border-radius:14px;border:3px solid var(--pk-line-strong);background:var(--pk-raised);transition:background .12s,box-shadow .12s}
+.lantern-btn{width:72px;height:96px;border-radius:0;border:3px solid var(--pk-line-strong);background:var(--pk-raised);transition:background .12s,box-shadow .12s}
 .lantern-btn.is-lit{background:var(--ember);box-shadow:0 0 26px var(--ember)}
 .lantern-btn.is-flash{background:var(--pk-yellow);box-shadow:0 0 32px var(--pk-yellow)}
 
@@ -131,7 +131,7 @@ body.mummy .controls{bottom:340px}
 .vote.is-voted .vote-mark{display:inline-block}
 .vote .pk-avatar{display:grid;place-items:center;width:34px;height:34px;flex:none;font:400 16px/1 var(--pk-display);color:var(--pk-night)}
 .vote-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vote-mark{display:none;padding:2px 6px;border-radius:6px;background:var(--pk-teal);color:var(--pk-night);font-size:10px}
+.vote-mark{display:none;padding:2px 6px;border-radius:0;background:var(--pk-teal);color:var(--pk-night);font-size:10px}
 .vote-count{font:900 13px var(--pk-sans);color:var(--ember)}
 .vote.is-partner .vote-name{color:var(--mummy)}
 .meeting-foot{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
@@ -139,9 +139,9 @@ body.mummy .controls{bottom:340px}
 .chat-log{display:grid;align-content:end;gap:3px;height:120px;overflow:auto;margin:0;padding:8px;border-radius:var(--pk-r);background:var(--pk-deep);list-style:none;font:700 13px/1.3 var(--pk-sans)}
 .chat-log b{color:var(--ember)}
 .phrases{display:flex;flex-wrap:wrap;gap:5px}
-.phrases button{padding:5px 9px;border:1px solid var(--pk-line);border-radius:999px;background:var(--pk-raised);color:var(--pk-text);font:800 12px var(--pk-sans)}
+.phrases button{padding:5px 9px;border:1px solid var(--pk-line);border-radius:0;background:var(--pk-raised);color:var(--pk-text);font:800 12px var(--pk-sans)}
 .chat-form{display:flex;gap:6px}
-.chat-form input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--pk-line);border-radius:10px;background:var(--pk-deep);color:var(--pk-text);font:700 14px var(--pk-sans)}
+.chat-form input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--pk-line);border-radius:0;background:var(--pk-deep);color:var(--pk-text);font:700 14px var(--pk-sans)}
 .meeting.is-ghost .chat-form,.meeting.is-ghost .phrases{display:none}
 .eject{position:fixed;left:0;right:0;top:16%;z-index:29;display:grid;justify-items:center;gap:8px;padding:0 20px;text-align:center;pointer-events:none}
 .eject b{font:400 clamp(30px,5vw,54px)/1.05 var(--pk-display);color:var(--pk-text);text-shadow:0 4px 0 var(--pk-night)}

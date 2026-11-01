@@ -27,7 +27,7 @@ export default {
       const label = loc('{n} BOLAS · FUERZA {power}%', { n: p.left, power: Math.round(p.power * 100) });
       if (label !== lastLabel) {
         lastLabel = label; const c = canvas.getContext('2d'); c.clearRect(0, 0, 768, 144);
-        c.fillStyle = '#0e0b24'; c.beginPath(); c.roundRect(0, 0, 768, 144, 22); c.fill();
+        c.fillStyle = '#0e0b24'; c.fillRect(0, 0, 768, 144);
         c.textAlign = 'center'; c.fillStyle = '#ffc629'; c.font = '38px "Luckiest Guy", sans-serif'; c.fillText(label, 384, 59);
         c.fillStyle = '#f3e9d7'; c.font = 'bold 26px Nunito, sans-serif';
         c.fillText(p.left ? loc('← → Apunta · Mantén Espacio y suelta para lanzar') : loc('¡Listo! Mira dónde quedan las bolas.'), 384, 112); texture.needsUpdate = true;

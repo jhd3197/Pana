@@ -17,7 +17,7 @@
 #hud .race-row { display: flex; align-items: stretch; gap: calc(4 * var(--u)); }
 #hud .tm { display: flex; align-items: center; gap: calc(8 * var(--u)); min-width: calc(150 * var(--u)); padding: calc(8 * var(--u)) calc(14 * var(--u)) calc(6 * var(--u)); background: var(--glass); box-shadow: calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--ink); }
 #hud .tm--me { box-shadow: inset 0 calc(-5 * var(--u)) 0 var(--pk-yellow), calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--ink); }
-#hud .tm i { flex: none; width: calc(14 * var(--u)); height: calc(14 * var(--u)); border-radius: 50%; background: var(--c, var(--pk-text)); box-shadow: 0 0 0 calc(2 * var(--u)) var(--ink); }
+#hud .tm i { flex: none; width: calc(14 * var(--u)); height: calc(14 * var(--u)); border-radius: var(--pk-radius-round); background: var(--c, var(--pk-text)); box-shadow: 0 0 0 calc(2 * var(--u)) var(--ink); }
 #hud .tm span { max-width: calc(110 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 var(--small) / 1 var(--pk-sans); color: var(--pk-text); }
 #hud .tm b { font: 400 calc(30 * var(--u)) / 1 var(--pk-display); color: #fff; font-variant-numeric: tabular-nums; }
 #hud .tm--me b { margin-left: auto; } #hud .tm--rival b { margin-right: auto; }
@@ -39,7 +39,7 @@
 
 /* You, bottom left: your paint's colour, your aguante as skewed shield bars, stamina, the grenade. */
 #hud .mypl { position: fixed; z-index: 5; left: calc(28 * var(--u)); bottom: calc(28 * var(--u)); display: flex; align-items: center; gap: calc(12 * var(--u)); padding: calc(10 * var(--u)) calc(20 * var(--u)) calc(10 * var(--u)) calc(12 * var(--u)); background: var(--glass); box-shadow: calc(5 * var(--u)) calc(5 * var(--u)) 0 var(--ink); pointer-events: none; }
-#hud .swatch { flex: none; width: calc(46 * var(--u)); height: calc(46 * var(--u)); border-radius: 50%; background: var(--pepa); box-shadow: 0 0 0 calc(3 * var(--u)) var(--ink); }
+#hud .swatch { flex: none; width: calc(46 * var(--u)); height: calc(46 * var(--u)); border-radius: var(--pk-radius-round); background: var(--pepa); box-shadow: 0 0 0 calc(3 * var(--u)) var(--ink); }
 #hud .mypl-body { display: grid; gap: calc(6 * var(--u)); min-width: calc(150 * var(--u)); }
 #hud .mypl-body b { font: 400 calc(22 * var(--u)) / 1 var(--pk-display); color: #fff; max-width: calc(220 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #hud .aguante { display: flex; gap: calc(5 * var(--u)); }
@@ -65,7 +65,7 @@
 #hud .hop.low .hop-n b { color: var(--pk-coral); }
 #hud .pepas { display: grid; grid-template-columns: repeat(12, auto); gap: calc(4 * var(--u)); }
 #hud .hop.melee .pepas { display: block; width: calc(150 * var(--u)); height: calc(10 * var(--u)); background: linear-gradient(90deg, var(--pepa) calc(var(--cd, 1) * 100%), var(--ink) 0); box-shadow: 0 0 0 calc(2 * var(--u)) var(--ink); }
-#hud .pepas i { width: calc(14 * var(--u)); height: calc(14 * var(--u)); border-radius: 50%; background: var(--pepa); box-shadow: 0 0 0 calc(2 * var(--u)) var(--ink); transition: transform .12s, opacity .12s; }
+#hud .pepas i { width: calc(14 * var(--u)); height: calc(14 * var(--u)); border-radius: var(--pk-radius-round); background: var(--pepa); box-shadow: 0 0 0 calc(2 * var(--u)) var(--ink); transition: transform .12s, opacity .12s; }
 #hud .pepas i.out { transform: scale(.5); opacity: .25; background: #fff; }
 #hud .wpn { font: 900 var(--small) / 1 var(--pk-sans); color: var(--pk-yellow); }
 body.reloaded #hud .hop-n b { animation: ammo-pop .35s ease-out; } @keyframes ammo-pop { from { transform: scale(1.3); color: var(--pepa); } to { transform: none; } }

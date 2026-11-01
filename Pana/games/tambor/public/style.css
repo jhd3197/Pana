@@ -15,12 +15,12 @@ body { --pk-game: #ff5a3d; --tb-sabor: #ff8a3d; --tb-bulla: #2ad1b2; --tb-perfec
 .song-panel { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); width: min(540px, calc(100vw - 24px)); padding: 8px 14px 10px; z-index: 3; display: grid; gap: 6px; }
 .song-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .song-head b { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.role-chip { padding: 3px 10px; border-radius: 999px; background: var(--pk-game); color: var(--pk-yellow-ink); font-weight: 900; font-size: 12px; white-space: nowrap; }
-.progress { height: 5px; border-radius: 999px; background: var(--pk-deep); overflow: hidden; }
+.role-chip { padding: 3px 10px; border-radius: 0; background: var(--pk-game); color: var(--pk-yellow-ink); font-weight: 900; font-size: 12px; white-space: nowrap; }
+.progress { height: 5px; border-radius: 0; background: var(--pk-deep); overflow: hidden; }
 .progress i { display: block; height: 100%; width: 0; background: var(--pk-game); }
 .meters { display: flex; gap: 14px; font-size: 12px; font-weight: 900; color: var(--pk-muted); }
 .meters label { flex: 1; display: flex; align-items: center; gap: 8px; }
-.meter { flex: 1; height: 9px; border-radius: 999px; background: var(--pk-deep); overflow: hidden; }
+.meter { flex: 1; height: 9px; border-radius: 0; background: var(--pk-deep); overflow: hidden; }
 .meter i { display: block; height: 100%; width: 50%; background: var(--tb-sabor); transition: width .25s; }
 .meter--bulla i { background: var(--tb-bulla); }
 .meter.low i { background: var(--tb-miss); }
@@ -32,13 +32,13 @@ body { --pk-game: #ff5a3d; --tb-sabor: #ff8a3d; --tb-bulla: #2ad1b2; --tb-perfec
 
 .call-card { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); display: grid; justify-items: center; gap: 4px; z-index: 3; pointer-events: none; min-width: 240px; }
 .call-card b { font-size: clamp(34px, 6vw, 60px); color: var(--tb-call); text-shadow: 0 4px 0 var(--tb-shout-shadow); z-index: 1; }
-.call-card > span { padding: 3px 12px; border-radius: 999px; background: var(--pk-hud); font-weight: 900; font-size: 15px; z-index: 1; }
+.call-card > span { padding: 3px 12px; border-radius: 0; background: var(--pk-hud); font-weight: 900; font-size: 15px; z-index: 1; }
 .call-card .call-partner { background: none; color: var(--pk-muted); font-size: 13px; }
 .call-ring { position: absolute; left: 50%; top: 38%; width: 0; height: 0; }
-.call-ring i { position: absolute; left: 0; top: 0; width: 120px; height: 120px; border: 6px solid var(--tb-ring); border-radius: 50%; transform: translate(-50%, -50%) scale(1); opacity: .9; }
+.call-ring i { position: absolute; left: 0; top: 0; width: 120px; height: 120px; border: 6px solid var(--tb-ring); border-radius: var(--pk-radius-round); transform: translate(-50%, -50%) scale(1); opacity: .9; }
 .call-card.now .call-ring i { border-color: var(--tb-perfect); }
 .misses { display: flex; gap: 6px; z-index: 1; }
-.misses i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--pk-text); background: transparent; }
+.misses i { width: 14px; height: 14px; border-radius: var(--pk-radius-round); border: 2px solid var(--pk-text); background: transparent; }
 .misses i.out { background: var(--tb-miss); border-color: var(--tb-miss); }
 
 .drum-panel, .crowd-panel { position: fixed; right: 20px; bottom: 30px; z-index: 3; padding: 10px 12px; display: grid; gap: 6px; justify-items: center; }
@@ -83,6 +83,6 @@ body { --pk-game: #ff5a3d; --tb-sabor: #ff8a3d; --tb-bulla: #2ad1b2; --tb-perfec
 .titles b { color: var(--pk-yellow); }
 .titles span { color: var(--pk-muted); font-size: 13px; }
 .calibration-dots { display: flex; gap: 8px; justify-content: center; margin: 10px 0; }
-.calibration-dots i { width: 16px; height: 16px; border-radius: 50%; background: var(--pk-deep); border: 2px solid var(--pk-line-strong); }
+.calibration-dots i { width: 16px; height: 16px; border-radius: var(--pk-radius-round); background: var(--pk-deep); border: 2px solid var(--pk-line-strong); }
 .calibration-dots i.on { background: var(--pk-game); }
 .calibration-dots i.hit { background: var(--tb-good); }

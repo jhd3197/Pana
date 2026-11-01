@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Todos los juegos y la lista de la portada usan el mismo estilo de esquinas rectas.**
+  Botones, fichas, menús de ajustes, salas, marcadores, resultados, avisos,
+  el editor de personaje y el Studio dejaron las esquinas redondeadas y las
+  sombras gruesas de abajo: ahora son cuadrados con la sombra sesgada del
+  banderín. Solo los avatares, los puntos de color y el joystick siguen redondos.
+
 - **Los mapas de Capis a Pintazos ahora son tierra de lado a lado, de cinco tipos.**
   Cerros con mesetas, una montaña con un túnel y cuevas, islas unidas por
   puentes de piedra, un valle con su laguna bajo un arco natural o un tepuy

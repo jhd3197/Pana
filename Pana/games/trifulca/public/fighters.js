@@ -26,7 +26,7 @@ export function nameTag(text, { me = false } = {}) {
   ctx.font = '700 34px Nunito, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const w = Math.min(250, ctx.measureText(text).width + 34);
   ctx.fillStyle = me ? '#ffc629' : 'rgba(20,20,30,.72)';
-  ctx.beginPath(); ctx.roundRect((256 - w) / 2, 8, w, 48, 24); ctx.fill();
+  ctx.fillRect((256 - w) / 2, 8, w, 48);
   ctx.fillStyle = me ? '#1f1f24' : '#ffffff'; ctx.fillText(text, 128, 33);
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true }));

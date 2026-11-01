@@ -11,13 +11,13 @@ body { --pk-game: #e8453c; --chapita-away: #e8453c; --chapita-home: #2f7fe0; --c
 #hud [hidden], .connection [hidden] { display: none !important; }
 .lobby-me { display: flex; flex-wrap: wrap; gap: 8px; }
 #hand[aria-pressed="true"] { border-color: var(--pk-yellow); color: var(--pk-yellow); }
-.team-tag { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 2px; background: var(--team); flex: none; }
+.team-tag { display: inline-block; width: 10px; height: 10px; border-radius: var(--pk-radius-round); margin-right: 2px; background: var(--team); flex: none; }
 
 /* The scoreboard: a chalk board with both barrios, the inning, bases and count. */
 .scoreboard { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 3; display: grid; grid-template-columns: auto auto; gap: 14px; align-items: center; padding: 8px 14px; }
 .score-teams { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; min-width: 170px; }
 .score-teams li { display: grid; grid-template-columns: 10px 1fr auto; gap: 8px; align-items: center; font-weight: 900; font-size: 14px; }
-.score-teams li i { width: 10px; height: 10px; border-radius: 50%; background: var(--team); }
+.score-teams li i { width: 10px; height: 10px; border-radius: var(--pk-radius-round); background: var(--team); }
 .score-teams li.batting { color: var(--pk-yellow); }
 .score-teams b { font: 400 22px/1 var(--pk-display); min-width: 2ch; text-align: right; }
 .score-side { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; gap: 4px 12px; align-items: center; }
@@ -28,15 +28,15 @@ body { --pk-game: #e8453c; --chapita-away: #e8453c; --chapita-home: #2f7fe0; --c
 .diamond [data-base="1"] { left: 14px; top: 2px; } .diamond [data-base="0"] { right: 2px; top: 16px; } .diamond [data-base="2"] { left: 2px; top: 16px; }
 .count { display: flex; gap: 5px; align-items: center; font-size: 11px; font-weight: 900; color: var(--pk-muted); }
 .count .pk-pips { gap: 3px; margin-right: 4px; }
-.count .pk-pips > i { flex: none; width: 10px; min-width: 0; height: 10px; border-radius: 50%; }
+.count .pk-pips > i { flex: none; width: 10px; min-width: 0; height: 10px; border-radius: var(--pk-radius-round); }
 .count .pk-pips > i.on { background: var(--pk-coral); }
 #balls > i.on { background: var(--pk-teal); }
 
 .house-rules { position: fixed; left: 16px; top: 74px; z-index: 3; margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-width: 240px; }
 .house-rules li { padding: 5px 10px; border-radius: var(--pk-r-sm); background: var(--pk-hud); border: 1px solid var(--pk-line); font-size: 12px; font-weight: 800; }
 .house-rules li b { color: var(--pk-yellow); }
-.matchup { position: fixed; left: 50%; top: 118px; transform: translateX(-50%); z-index: 3; margin: 0; padding: 6px 14px 5px; border: 3px solid var(--pk-bubble-ink); border-radius: 16px;
-  background: var(--pk-bubble-paper); color: var(--pk-bubble-ink); font: 800 14px/1.25 var(--pk-sans); text-align: center; max-width: min(560px, calc(100vw - 32px)); box-shadow: 0 4px 0 rgba(0, 0, 0, .25); }
+.matchup { position: fixed; left: 50%; top: 118px; transform: translateX(-50%); z-index: 3; margin: 0; padding: 6px 14px 5px; border: 3px solid var(--pk-bubble-ink); border-radius: 0;
+  background: var(--pk-bubble-paper); color: var(--pk-bubble-ink); font: 800 14px/1.25 var(--pk-sans); text-align: center; max-width: min(560px, calc(100vw - 32px)); box-shadow: 4px 4px 0 rgba(0, 0, 0, .25); }
 .matchup:empty { display: none; }
 
 /* The big shout: ¡Jonrón!, ¡Chapazo!, ¡Ni a la acera llegó! */
@@ -58,7 +58,7 @@ body { --pk-game: #e8453c; --chapita-away: #e8453c; --chapita-home: #2f7fe0; --c
 .pitch-choices { display: grid; gap: 6px; }
 .pitch-choices .pk-seg > button, #heights > button { padding: 6px 10px; }
 .aim { display: grid; grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 34px); gap: 3px; padding: 5px; border-radius: var(--pk-r); background: var(--pk-deep); border: 2px dashed var(--chapita-chalk); }
-.aim button { border: 0; border-radius: 6px; background: var(--pk-raised); cursor: pointer; padding: 0; }
+.aim button { border: 0; border-radius: 0; background: var(--pk-raised); cursor: pointer; padding: 0; }
 .aim button[aria-pressed="true"] { background: var(--pk-yellow); box-shadow: inset 0 -3px 0 var(--pk-yellow-edge); }
 /* The batter must see the plate: the bat controls sit in the corner, thumb-side. */
 #bat-panel { left: auto; right: 16px; transform: none; width: min(300px, calc(100vw - 32px)); }
@@ -67,8 +67,8 @@ body { --pk-game: #e8453c; --chapita-away: #e8453c; --chapita-home: #2f7fe0; --c
 #swing { font-size: 22px; }
 
 .catch-panel { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 3; display: grid; justify-items: center; gap: 10px; }
-.catch-ring { position: relative; width: 96px; height: 96px; border-radius: 50%; border: 6px solid var(--pk-yellow); box-sizing: border-box; background: rgba(0, 0, 0, .25); }
-.catch-ring i { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; border: 4px solid var(--chapita-chalk); box-sizing: border-box; transform: scale(var(--closing, 2)); }
+.catch-ring { position: relative; width: 96px; height: 96px; border-radius: var(--pk-radius-round); border: 6px solid var(--pk-yellow); box-sizing: border-box; background: rgba(0, 0, 0, .25); }
+.catch-ring i { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: var(--pk-radius-round); border: 4px solid var(--chapita-chalk); box-sizing: border-box; transform: scale(var(--closing, 2)); }
 
 .event { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); margin: 0; z-index: 3; font-size: 12px; color: var(--pk-muted); }
 .connection { position: fixed; right: 16px; bottom: 6px; display: flex; gap: 8px; align-items: center; font-size: 12px; z-index: 3; }
