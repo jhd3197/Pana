@@ -156,10 +156,11 @@ needs it (see candidates).
 ### Projectiles (level flight, swept collision)
 
 `engine/play/projectile.js`. Pure, so a server room and Node tests run the same
-flight: `launch(ax, az, speed, angle)`, `sweep(ball, dt, { boxes, targets, padding })`
+flight: `launch(ax, az, speed, angle)`, `sweep(ball, dt, { boxes, targets, padding, y })`
 (the earliest cover box or round target along this step's segment, so a fast
-ball never tunnels), `segmentBox`, `segmentCircle`, `traceRay` (where a tracer
-line ends) and `flightTime`.
+ball never tunnels; with `y`, the flight height, boxes no taller than it are
+flown over), `segmentBox`, `segmentCircle`, `traceRay` (where a tracer
+line ends, same `y`) and `flightTime`.
 
 ```js
 import { launch, sweep } from '../../../engine/play/projectile.js'; // relative: rules.js also loads on the server

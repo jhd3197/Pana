@@ -9,7 +9,13 @@
 //   if (t <= 1) { ball.x += ball.vx * dt * t; ... }   // stopped by cover or a target
 //
 // Boxes are axis-aligned `{ x, z, w, d }` (centre and full size); targets are
-// `{ x, z }` circles of `radius`.
+// `{ x, z }` circles of `radius`. `y` is the height the shot flies at: a box
+// whose top (`h` or `height`) is at or under it lets the shot pass over, so
+// waist-high cover never stops a ball that visibly clears it. Without `y`
+// every box is a wall of any height.
+
+// A box's top: `h` or `height`, else infinitely tall.
+const top = o => o.h ?? o.height ?? Infinity;
 
 // The fraction 0..1 of the segment (x, z) + t·(dx, dz) where it enters box o, or null.
 export function segmentBox(x, z, dx, dz, o, padding = 0) {
@@ -37,17 +43,17 @@ export function launch(ax, az, speed, angle = 0) {
 // One step of flight: the earliest cover or target along this step's segment.
 // `t` is that fraction (> 1 when nothing was touched) and `victim` the target hit
 // first, or null when cover came first. The ball itself is not moved.
-export function sweep(ball, dt, { boxes = [], targets = [], padding = 0, radius = .7 } = {}) {
+export function sweep(ball, dt, { boxes = [], targets = [], padding = 0, radius = .7, y = null } = {}) {
   const dx = ball.vx * dt, dz = ball.vz * dt; let t = Infinity, victim = null;
-  for (const o of boxes) { const hit = segmentBox(ball.x, ball.z, dx, dz, o, padding); if (hit !== null && hit < t) t = hit; }
+  for (const o of boxes) { if (y !== null && top(o) <= y) continue; const hit = segmentBox(ball.x, ball.z, dx, dz, o, padding); if (hit !== null && hit < t) t = hit; }
   for (const p of targets) { const hit = segmentCircle(ball.x, ball.z, dx, dz, p, radius); if (hit !== null && hit < t) { t = hit; victim = p; } }
   return { t, victim, dx, dz };
 }
 
 // How far a straight shot from (x, z) along the unit (dx, dz) travels before cover or
 // a target stops it, up to `range`: where a tracer line ends.
-export function traceRay(x, z, dx, dz, range, { boxes = [], targets = [], padding = 0, radius = .7 } = {}) {
-  const { t } = sweep({ x, z, vx: dx * range, vz: dz * range }, 1, { boxes, targets, padding, radius });
+export function traceRay(x, z, dx, dz, range, { boxes = [], targets = [], padding = 0, radius = .7, y = null } = {}) {
+  const { t } = sweep({ x, z, vx: dx * range, vz: dz * range }, 1, { boxes, targets, padding, radius, y });
   return Math.min(1, t) * range;
 }
 
@@ -65,7 +71,6 @@ export const flightTime = (distance, speed) => speed > 0 ? distance / speed : In
 //   const r = sweepArc(sandal, dt, { boxes: cover, targets, radius: .55, height: 1.9, gravity: 9.8 });
 //   if (r.t <= 1) { ... r.victim (a target), or r.hit 'cover' | 'ground' }
 //   else stepArc(sandal, dt, 9.8);
-const top = o => o.h ?? o.height ?? Infinity;
 export function sweepArc(ball, dt, { boxes = [], targets = [], radius = .55, height = 1.9, gravity = 9.8, padding = 0 } = {}) {
   const dx = ball.vx * dt, dz = ball.vz * dt, dy = ball.vy * dt - gravity * dt * dt / 2, y = ball.y;
   let t = Infinity, victim = null, hit = null;

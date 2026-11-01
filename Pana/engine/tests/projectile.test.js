@@ -49,3 +49,11 @@ test('an arc falls under gravity, flies over low cover and stops on tall cover, 
   const ground = sweepArc({ x: 0, y: .1, z: 0, vx: 1, vy: -2, vz: 0 }, .1, { gravity: 10 });
   assert.equal(ground.hit, 'ground'); assert.ok(Math.abs(.1 + ground.dy * ground.t) < 1e-9);
 });
+
+test('a level shot flying at y passes over cover no taller than y', () => {
+  const low = { x: 5, z: 0, w: 1, d: 2, h: .7 }, tall = { ...low, h: 2.6 }, ball = { x: 3, z: 0, vx: 85, vz: 0 };
+  assert.ok(sweep(ball, .05, { boxes: [low], y: 1.1 }).t > 1, 'waist-high cover lets it pass');
+  assert.ok(sweep(ball, .05, { boxes: [tall], y: 1.1 }).t <= 1, 'tall cover stops it');
+  assert.ok(sweep(ball, .05, { boxes: [low] }).t <= 1, 'without y every box is a wall');
+  assert.equal(traceRay(0, 0, 1, 0, 60, { boxes: [low], y: 1.1 }), 60);
+});
