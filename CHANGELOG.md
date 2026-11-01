@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En El Puerto de Pepazo los barriles de cada base ya no tienen una caja invisible alrededor.**
+  Chocas con cada barril, no con una caja de 3 x 2,6 m, y las dos bases tienen
+  los barriles en espejo. `npm run collision-report -- --fix` propone y aplica
+  estos arreglos solo, y una prueba revisa que ninguna cancha tenga cajas así.
 - **El corte del terreno de Capis a Pintazos ahora muestra capas de tierra de verdad.**
   Bajo la grama hay tierra negra con raíces colgando, y debajo capas de
   ceniza, arcilla, piedra pómez, ocre y una base oscura que ondulan, se

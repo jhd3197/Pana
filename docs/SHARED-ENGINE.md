@@ -191,7 +191,9 @@ boxes; `createCollisionDebug(scene)` adds `audit`, colour-coded wireframes
 (`show`), a console table and `download` (JSON).
 
 Used by: Pepazo (`?debugCollision=1` or F9, Shift+F9 saves the report;
-`npm run collision-report` audits every court headless into `Pana/reports/collision/`).
+`npm run collision-report` audits every court headless into `Pana/reports/collision/`;
+`--fix` records the fixes in `games/pintura/public/collision-fixes.js`). A box with
+`shots: false` never stops a level `sweep`.
 
 ### Melee weapons (one target per swing, throwable)
 

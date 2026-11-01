@@ -15,6 +15,7 @@ import { stepWalker, axisMove } from '../../../engine/play/walker.js';
 import { returnToLobby } from '../../../engine/play/round-lobby.js';
 import { segmentBox, launch, sweep } from '../../../engine/play/projectile.js';
 import { lobVelocity, stepLob, traceLob, touched, falloff, solveLob } from '../../../engine/play/lob.js';
+import { applyCollisionFixes } from './collision-fixes.js';
 export { segmentBox };
 
 // Pepazo plays a 54 m court: every map's cover spreads 1.5× from the centre and
@@ -28,7 +29,7 @@ export const READY_TIMEOUT = 8, COUNTDOWN = 3;
 // lets them pass over instead of standing as an invisible wall above it.
 export const SHOT_HEIGHT = 1.1;
 // Cover that stops a level shot: the boxes taller than the ball's flight.
-export const shotCover = cover => cover.filter(o => (o.h ?? o.height ?? Infinity) > SHOT_HEIGHT);
+export const shotCover = cover => cover.filter(o => o.shots !== false && (o.h ?? o.height ?? Infinity) > SHOT_HEIGHT);
 // Eight seats (game.json `players`): people plus bots never pass it. Bot ids
 // start at BOT_ID so they never collide with member seats.
 export const SEATS = 8, BOT_ID = 1000, AUTO_BOTS = 3;
@@ -141,6 +142,8 @@ export function coverFor(id, variant = 0) {
     const layout = arenaLayout(id), base = layout ? spread(layout.cover) : COVER;
     cover = [base, rotate(base), closed(base, layout ? id : 'plaza')][variant];
   }
+  // The collision audit's fixes (collision-fixes.js) fit boxes to what the scene shows.
+  cover = applyCollisionFixes(id, variant, cover);
   covers.set(key, cover); return cover;
 }
 export function blocked(x, z, radius = RADIUS, mapId = 'plaza', variant = 0) {

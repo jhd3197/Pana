@@ -12,7 +12,8 @@
 // `{ x, z }` circles of `radius`. `y` is the height the shot flies at: a box
 // whose top (`h` or `height`) is at or under it lets the shot pass over, so
 // waist-high cover never stops a ball that visibly clears it. Without `y`
-// every box is a wall of any height.
+// every box is a wall of any height. A box with `shots: false` (a broken
+// piece panas still bump into) never stops a level shot.
 
 // A box's top: `h` or `height`, else infinitely tall.
 const top = o => o.h ?? o.height ?? Infinity;
@@ -45,7 +46,7 @@ export function launch(ax, az, speed, angle = 0) {
 // first, or null when cover came first. The ball itself is not moved.
 export function sweep(ball, dt, { boxes = [], targets = [], padding = 0, radius = .7, y = null } = {}) {
   const dx = ball.vx * dt, dz = ball.vz * dt; let t = Infinity, victim = null;
-  for (const o of boxes) { if (y !== null && top(o) <= y) continue; const hit = segmentBox(ball.x, ball.z, dx, dz, o, padding); if (hit !== null && hit < t) t = hit; }
+  for (const o of boxes) { if (o.shots === false || (y !== null && top(o) <= y)) continue; const hit = segmentBox(ball.x, ball.z, dx, dz, o, padding); if (hit !== null && hit < t) t = hit; }
   for (const p of targets) { const hit = segmentCircle(ball.x, ball.z, dx, dz, p, radius); if (hit !== null && hit < t) { t = hit; victim = p; } }
   return { t, victim, dx, dz };
 }

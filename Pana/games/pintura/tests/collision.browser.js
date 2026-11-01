@@ -1,7 +1,12 @@
 // Pepazo's collision debug mode: off and unloaded by default, F9 measures the
-// court and draws its colliders, Shift+F9 saves the JSON report.
+// court and draws its colliders, Shift+F9 saves the JSON report. Then every
+// court and variant is audited in turn: none may have a flagged collider.
+// Blockers that are invisible on purpose (the court's edge) are listed, with
+// the reason, in COLLISION_ALLOW in games/pintura/public/colliders.js.
 import assert from 'node:assert/strict';
 import { launch, openGame, waitFor } from '../../../tests/browser-kit.js';
+import { PAINT_ARENAS } from '../../../engine/worlds/arena-layouts.js';
+import { VARIANTS } from '../public/rules.js';
 
 const browser = await launch();
 try {
@@ -28,6 +33,13 @@ try {
   assert.equal(download.suggestedFilename(), 'collision-terminal-0.json');
   await page.keyboard.press('F9');
   assert.equal(await page.evaluate(() => window.PANA_COLLISION.debug.overlay.visible), false, 'F9 again hides it');
+  // One court at a time in this page, so the machine renders one map at once.
+  const flagged = [];
+  for (const { id } of PAINT_ARENAS) for (let variant = 0; variant < VARIANTS; variant++) {
+    const found = await page.evaluate(([id, variant]) => window.PANA_COLLISION.audit(id, variant).then(r => r.flagged.map(c => `${c.id} ${c.source} [${c.flags}] -> ${c.fix?.action}`)), [id, variant]);
+    flagged.push(...found);
+  }
+  assert.deepEqual(flagged, [], 'no court has a collider without a mesh to match (npm run collision-report -- --fix)');
   assert.deepEqual(page.errors, []);
-  console.log(`ok: collision debug loads on F9, ${view.count} colliders on El Puerto, ${view.flagged} flagged, report downloads`);
+  console.log(`ok: collision debug loads on F9, ${view.count} colliders on El Puerto, report downloads, ${PAINT_ARENAS.length * VARIANTS} courts with no flagged collider`);
 } finally { await browser.close(); }
