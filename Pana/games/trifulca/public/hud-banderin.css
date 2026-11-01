@@ -55,7 +55,7 @@ body:has(#tutorial:not([hidden])) .fight-feedback--right { top: 200px; }
 .tutorial-foot button { border-radius: 0; }
 .keys, .pana-pad-prompts { bottom: 18px; background: var(--hud-plate); padding: 7px; gap: 6px; box-shadow: 5px 5px var(--hud-ink); flex-wrap: wrap; width: max-content; max-width: calc(100vw - 40px); }
 .keys span, .pana-pad-prompts > span { border: 0; border-radius: 0; padding: 8px 12px; background: #ffffff0c; display: flex; flex-direction: column; justify-content: center; gap: 5px; font-size: 11px; font-weight: 900; text-align: center; }
-.keys span .pk-kbd, .pana-pad-prompts kbd { border-radius: 4px; padding: 5px 8px; background: var(--pk-text); color: var(--hud-ink); border: 0; min-width: 16px; text-align: center; }
+.keys span .pk-kbd, .pana-pad-prompts kbd { border-radius: 0; padding: 5px 8px; background: var(--pk-text); color: var(--hud-ink); border: 0; min-width: 16px; text-align: center; }
 .keys [data-key='golpe'] kbd, .pana-pad-prompts > span:nth-child(2) kbd { background: var(--pad-a); }
 .keys [data-key='esquivar'] kbd, .pana-pad-prompts > span:nth-child(3) kbd { background: var(--pad-b); }
 .keys [data-key='agarrar'] kbd, .pana-pad-prompts > span:nth-child(4) kbd { background: var(--pad-x); }

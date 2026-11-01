@@ -84,7 +84,7 @@ const me = () => room.predicted ?? state.players.find(p => p.id === room.id);
 const colors = ['#eb574b', '#4789e3', '#3aae77', '#e4b52c', '#a974d5', '#e584a9', '#57bcc0', '#e68a3c'];
 function actorLabel(p, color) {
   const mat = canvasMat(256, 96, ctx => {
-    ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(5, 5, 246, 74, 18); ctx.fill();
+    ctx.fillStyle = color; ctx.fillRect(5, 5, 246, 74);
     ctx.beginPath(); ctx.moveTo(113, 78); ctx.lineTo(128, 94); ctx.lineTo(143, 78); ctx.fill();
     ctx.fillStyle = '#fff9e7'; ctx.font = '900 35px Nunito'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.id === room.id ? loc('{name} · tú', { name: p.name }) : p.name, 128, 43, 228);
   });

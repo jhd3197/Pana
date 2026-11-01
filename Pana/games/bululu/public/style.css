@@ -39,9 +39,9 @@ body:has(#results:not(.hidden)) #hud { display: none; }
 }
 .plank {
   padding: 6px 16px 3px;
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--wood);
-  box-shadow: 0 4px 0 var(--wood-edge);
+  box-shadow: 4px 4px 0 var(--wood-edge);
   color: #fff;
   font: 400 18px/1.1 var(--pk-display);
   letter-spacing: 1px;
@@ -76,7 +76,7 @@ body:has(#results:not(.hidden)) #hud { display: none; }
   min-width: 0;
   padding: 8px 10px;
   border: 2px solid var(--pk-line);
-  border-radius: 14px;
+  border-radius: 0;
   background: rgba(14, 11, 36, .92);
   box-shadow: var(--pk-drop);
   transition: border-color .2s, transform .2s;
@@ -87,7 +87,7 @@ body.in-mini .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .pcard img {
   width: 40px; height: 40px;
   flex: none;
-  border-radius: 50%;
+  border-radius: var(--pk-radius-round);
   object-fit: cover;
   background: color-mix(in srgb, var(--c) 45%, #fff);
   border: 2px solid var(--c);
@@ -113,7 +113,7 @@ body.in-mini .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   position: absolute;
   top: -10px; right: 8px;
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--pk-yellow);
   color: var(--pk-yellow-ink);
   font: 900 10px/1.4 var(--pk-sans);
@@ -127,7 +127,7 @@ body.in-mini .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   display: grid;
   place-items: center;
   padding-top: 2px;
-  border-radius: 50%;
+  border-radius: var(--pk-radius-round);
   border: 2px solid var(--pk-night);
   background: var(--pk-raised);
   color: var(--pk-text);
@@ -146,7 +146,7 @@ body.in-mini .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 
 .ico { width: 22px; height: 22px; flex: none; display: inline-block; }
 .ico.coin {
-  border-radius: 50%;
+  border-radius: var(--pk-radius-round);
   background: radial-gradient(circle at 35% 35%, var(--coin-shine) 0 22%, var(--pk-yellow) 24% 100%);
   border: 3px solid var(--coin-edge);
 }
@@ -167,7 +167,7 @@ body.in-mini .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .minimap {
   position: static;
   width: 210px; height: 178px;
-  border-radius: 14px;
+  border-radius: 0;
   border: 2px solid rgba(255, 255, 255, .08);
   box-shadow: var(--pk-drop);
   background: var(--sea);
@@ -178,7 +178,7 @@ body.in-mini .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   min-height: 36px;
   padding: 8px 12px;
   border: 1px solid var(--pk-line);
-  border-radius: 10px;
+  border-radius: 0;
   background: rgba(14, 11, 36, .92);
   color: var(--pk-muted);
   font: 700 13px var(--pk-sans);
@@ -199,7 +199,7 @@ body.in-mini .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .top-actions .pk-kbd { min-width: 0; height: 20px; padding: 0 6px; font-size: 11px; color: var(--pk-text); border-bottom-width: 1px; }
 .menu-button kbd {
   display: inline-flex; align-items: center; height: 20px; padding: 0 6px;
-  border: 1px solid var(--pk-line-strong); border-radius: 5px;
+  border: 1px solid var(--pk-line-strong); border-radius: 0;
   background: var(--pk-deep); color: var(--pk-text); font: 900 11px/1 var(--pk-sans);
 }
 .look.on { background: var(--pk-yellow); border-color: var(--pk-yellow); color: var(--pk-yellow-ink); }
@@ -220,7 +220,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys
   align-items: center;
   gap: 8px;
   padding: 8px 12px 8px 8px;
-  border-radius: 12px;
+  border-radius: 0;
   font: 800 12px var(--pk-sans);
 }
 .tile {
@@ -228,7 +228,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys
   align-items: center;
   justify-content: center;
   gap: 3px;
-  border-radius: 8px;
+  border-radius: 0;
   color: #fff;
 }
 .tile.blue { background: var(--tile-blue); }
@@ -257,7 +257,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys
   gap: 10px;
   padding: 8px 22px 8px 16px;
   border: 2px solid var(--pk-yellow);
-  border-radius: 999px;
+  border-radius: 0;
   color: var(--pk-yellow);
 }
 .timer svg { width: 28px; height: 28px; }
@@ -274,11 +274,11 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys
   gap: 4px;
   max-width: min(560px, 90vw);
   padding: 14px 28px 10px;
-  border-radius: 12px;
+  border-radius: 0;
   text-align: center;
   background: var(--tc, var(--pk-game));
   color: var(--tink, #fff);
-  box-shadow: 0 6px 0 color-mix(in srgb, var(--tc, var(--pk-game)) 55%, black), 0 14px 30px rgba(0, 0, 0, .4);
+  box-shadow: 6px 6px 0 color-mix(in srgb, var(--tc, var(--pk-game)) 55%, black), 0 14px 30px rgba(0, 0, 0, .4);
   animation: pop .25s ease-out;
   pointer-events: none;
 }
@@ -311,7 +311,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys
 .prompt p b { color: var(--pk-yellow); }
 .prompt p:empty { display: none; }
 .prompt .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.prompt .pk-btn--primary { font-size: 30px; padding: 14px 26px 10px; box-shadow: 0 6px 0 var(--pk-yellow-edge); }
+.prompt .pk-btn--primary { font-size: 30px; padding: 14px 26px 10px; box-shadow: 6px 6px 0 var(--pk-yellow-edge); }
 .prompt .pk-btn--primary .pk-kbd { text-transform: uppercase; font-size: 12px; padding: 0 8px; }
 /* A throw button rattles while it is held (engine/play/dice-throw.js adds .is-shaking). */
 .prompt button { touch-action: none; }
@@ -364,7 +364,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys
 .spaces small { font: 700 12px/1.25 var(--pk-sans); color: var(--pk-muted); }
 .iplayers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .ip { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ip img { width: 38px; height: 38px; flex: none; border-radius: 50%; object-fit: cover; background: color-mix(in srgb, var(--c) 45%, #fff); border: 2px solid var(--c); }
+.ip img { width: 38px; height: 38px; flex: none; border-radius: var(--pk-radius-round); object-fit: cover; background: color-mix(in srgb, var(--c) 45%, #fff); border: 2px solid var(--c); }
 .ip b { display: none; }
 .ip span { font: 800 13px var(--pk-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .intro .pk-lobby-cta { grid-template-columns: 1fr; }
@@ -373,7 +373,7 @@ body.mode-minis .board-only { display: none; }
 .intro-rules { color: var(--pk-text); }
 .practice-pick { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--pk-muted); font: 700 13px var(--pk-sans); }
 .practice-pick[hidden] { display: none; }
-.practice-pick select { min-height: 34px; padding: 4px 10px; border: 1px solid var(--pk-line); border-radius: 10px; background: rgba(14, 11, 36, .92); color: var(--pk-text); font: 700 13px var(--pk-sans); }
+.practice-pick select { min-height: 34px; padding: 4px 10px; border: 1px solid var(--pk-line); border-radius: 0; background: rgba(14, 11, 36, .92); color: var(--pk-text); font: 700 13px var(--pk-sans); }
 
 /* ---------- dialogs: minigame intro and results ---------- */
 .panel {
@@ -395,7 +395,7 @@ body.mode-minis .board-only { display: none; }
 .prize b { color: var(--pk-yellow); }
 .mready { display: grid; justify-items: center; gap: 8px; }
 .mready .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-.mready .chip { padding: 4px 10px; border: 2px solid var(--c); border-radius: 999px; color: var(--pk-muted); font: 800 13px var(--pk-sans); }
+.mready .chip { padding: 4px 10px; border: 2px solid var(--c); border-radius: 0; color: var(--pk-muted); font: 800 13px var(--pk-sans); }
 .mready .chip.on { background: var(--c); color: #fff; }
 .mready small { color: var(--pk-muted); font: 700 13px var(--pk-sans); }
 .mready .pk-btn--primary { font-size: 26px; padding: 12px 26px 9px; }
@@ -406,7 +406,7 @@ body.mode-minis .board-only { display: none; }
 .rrow { position: relative; gap: 12px; padding: 8px 14px 8px 44px; }
 .rrow .medal { left: 10px; top: 50%; transform: translateY(-50%); }
 .rrow .crown { left: -12px; top: -16px; font-size: 22px; }
-.rrow img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: color-mix(in srgb, var(--c) 40%, #fff); border: 2px solid var(--c); }
+.rrow img { width: 40px; height: 40px; border-radius: var(--pk-radius-round); object-fit: cover; background: color-mix(in srgb, var(--c) 40%, #fff); border: 2px solid var(--c); }
 .rname { flex: 1; min-width: 0; text-align: left; font: 400 20px/1 var(--pk-display); padding-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rv { display: flex; align-items: center; gap: 5px; min-width: 62px; }
 .rv .ico { width: 18px; height: 18px; }
@@ -426,7 +426,7 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 /* a ring with four ticks in the pana's colour; the inner ring tightens as the china is pulled */
 .reticle::before, .reticle i {
   content: ''; position: absolute; left: 0; top: 0;
-  border-radius: 50%;
+  border-radius: var(--pk-radius-round);
   translate: -50% -50%;
 }
 .reticle::before {
@@ -453,7 +453,7 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 .reticle.empty::before { opacity: 0.4; }
 .reticle .ammo { position: absolute; top: 30px; left: 0; translate: -50% 0; display: flex; gap: 4px; }
 .reticle .ammo b {
-  width: 10px; height: 10px; border-radius: 50%;
+  width: 10px; height: 10px; border-radius: var(--pk-radius-round);
   background: var(--c); border: 2px solid var(--reticle-ink);
 }
 .reticle .ammo b.used { background: transparent; border-color: rgba(22, 22, 26, 0.45); }
@@ -462,7 +462,7 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 .mini-hint {
   position: fixed; left: 50%; top: 150px; translate: -50% 0; z-index: 4;
   max-width: min(560px, calc(100vw - 32px)); margin: 0; padding: 7px 16px;
-  border: 1px solid var(--pk-line); border-radius: 999px; background: rgba(14, 11, 36, .86);
+  border: 1px solid var(--pk-line); border-radius: 0; background: rgba(14, 11, 36, .86);
   font: 800 15px/1.3 var(--pk-sans); text-align: center; pointer-events: none;
 }
 .mini-hint[data-tone="go"] { background: var(--pk-yellow); border-color: var(--pk-yellow-edge); color: var(--pk-yellow-ink); }
@@ -472,12 +472,12 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 /* ---------- race progress: one track, a dot per pana ---------- */
 .progress {
   position: fixed; left: 50%; bottom: 22px; translate: -50% 0; z-index: 4;
-  width: min(420px, 46vw); height: 10px; border-radius: 999px;
+  width: min(420px, 46vw); height: 10px; border-radius: 0;
   background: rgba(14, 11, 36, .78); box-shadow: inset 0 0 0 2px var(--pk-line);
   pointer-events: none;
 }
-.progress::after { content: ''; position: absolute; right: -4px; top: -7px; width: 6px; height: 24px; border-radius: 3px; background: repeating-linear-gradient(#fff 0 4px, var(--reticle-ink) 4px 8px); }
-.progress i { position: absolute; top: 50%; width: 14px; height: 14px; translate: -50% -50%; border-radius: 50%; background: var(--c); border: 2px solid var(--reticle-ink); transition: left .1s linear; }
+.progress::after { content: ''; position: absolute; right: -4px; top: -7px; width: 6px; height: 24px; border-radius: 0; background: repeating-linear-gradient(#fff 0 4px, var(--reticle-ink) 4px 8px); }
+.progress i { position: absolute; top: 50%; width: 14px; height: 14px; translate: -50% -50%; border-radius: var(--pk-radius-round); background: var(--c); border: 2px solid var(--reticle-ink); transition: left .1s linear; }
 .progress i.me { width: 20px; height: 20px; border: 3px solid #fff; z-index: 1; }
 
 /* ---------- touch controls (minigames only) ---------- */
@@ -552,7 +552,7 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
     top: 6px; bottom: auto; left: 64px; right: 92px;
     grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px;
   }
-  body.in-mini .pcard { gap: 4px; padding: 3px 5px; border-radius: 10px; border-width: 2px; }
+  body.in-mini .pcard { gap: 4px; padding: 3px 5px; border-radius: 0; border-width: 2px; }
   body.in-mini .pcard img { width: 22px; height: 22px; border-width: 1px; }
   body.in-mini .pcard small { display: none; }
   body.in-mini .vals .big b { font-size: 16px; }
@@ -573,7 +573,7 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 .pcard.me { border-color: var(--c); box-shadow: var(--pk-drop), 0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); }
 .pcard.me::after {
   content: 'TÚ'; position: absolute; bottom: -8px; left: 50%; translate: -50% 0;
-  padding: 0 6px; border-radius: 5px; background: var(--c); color: #fff;
+  padding: 0 6px; border-radius: 0; background: var(--c); color: #fff;
   font: 900 9px/1.5 var(--pk-sans); letter-spacing: .5px;
 }
 /* Short landscape phones on the board: one row of six cards along the bottom. */

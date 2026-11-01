@@ -4,7 +4,7 @@ body { --pk-game: #f28b42; --flash: #ffeaa8; --sky: #c4dfd0; --paint-hurt: #ed61
 .vignette { position: fixed; inset: 0; pointer-events: none; background: linear-gradient(90deg, #0005, transparent 55%); }
 .topbar { position: fixed; top: 16px; left: 24px; right: 24px; display: flex; align-items: center; justify-content: space-between; z-index: 6; }
 #game-nav { display: flex; gap: 8px; } .topbar .pk-logo { font-size: 30px; }
-.lobby { position: fixed; left: 4vw; top: 90px; bottom: 24px; width: min(390px, 92vw); padding: 24px; border-radius: 20px; background: var(--pk-night); overflow-y: auto; gap: 14px; }
+.lobby { position: fixed; left: 4vw; top: 90px; bottom: 24px; width: min(390px, 92vw); padding: 24px; border-radius: 0; background: var(--pk-night); overflow-y: auto; gap: 14px; }
 .lobby .pk-title { font-size: clamp(52px, 5vw, 76px); margin: 0; } .lobby .pk-copy { margin: 0; } .pk-lobby-foot { display: grid; gap: 10px; margin-top: auto; }
 .feed { position: fixed; bottom: 34px; left: 50%; transform: translateX(-50%); padding: 10px 18px; font-size: 14px; max-width: 65vw; text-align: center; }
 .respawn { position: fixed; top: 40%; left: 50%; transform: translateX(-50%); max-width: 90vw; text-align: center; font-size: clamp(20px, 4vw, 32px); }
@@ -18,12 +18,12 @@ body { --pk-game: #f28b42; --flash: #ffeaa8; --sky: #c4dfd0; --paint-hurt: #ed61
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 .crosshair, .lock-hint, .paint-flash { display: none; }
 body.first-person .crosshair { display: block; position: fixed; left: 50%; top: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); pointer-events: none; z-index: 4; }
-.crosshair i { position: absolute; background: #fff; box-shadow: 0 0 0 1px #0007; border-radius: 2px; }
+.crosshair i { position: absolute; background: #fff; box-shadow: 0 0 0 1px #0007; border-radius: 0; }
 .crosshair i:nth-child(1), .crosshair i:nth-child(2) { left: 14px; width: 2px; height: 8px; } .crosshair i:nth-child(1) { top: 0; } .crosshair i:nth-child(2) { bottom: 0; }
-.crosshair s { position: absolute; inset: -9px; border-radius: 50%; opacity: 0; background: conic-gradient(var(--pk-game) calc(var(--cd, 1) * 360deg), #fff3 0); -webkit-mask: radial-gradient(circle closest-side, transparent 78%, #000 80%); mask: radial-gradient(circle closest-side, transparent 78%, #000 80%); transition: opacity .12s; }
+.crosshair s { position: absolute; inset: -9px; border-radius: var(--pk-radius-round); opacity: 0; background: conic-gradient(var(--pk-game) calc(var(--cd, 1) * 360deg), #fff3 0); -webkit-mask: radial-gradient(circle closest-side, transparent 78%, #000 80%); mask: radial-gradient(circle closest-side, transparent 78%, #000 80%); transition: opacity .12s; }
 body.reloading .crosshair s, body.cooling .crosshair s { opacity: 1; }
 body.kicked .crosshair { animation: kick .14s ease-out; } @keyframes kick { from { transform: translate(-50%, -50%) scale(1.55); } to { transform: translate(-50%, -50%) scale(1); } }
-.muzzle-flash { display: none; } body.first-person.muzzle .muzzle-flash { display: block; position: fixed; left: 56%; top: 72%; width: 34vmin; height: 34vmin; margin: -17vmin 0 0 -17vmin; border-radius: 50%; background: radial-gradient(circle, #fff 0, var(--flash) 16%, var(--pk-game) 38%, transparent 68%); mix-blend-mode: screen; pointer-events: none; z-index: 3; animation: muzzle .1s ease-out forwards; } @keyframes muzzle { from { opacity: .95; transform: scale(.6); } to { opacity: 0; transform: scale(1.2); } }
+.muzzle-flash { display: none; } body.first-person.muzzle .muzzle-flash { display: block; position: fixed; left: 56%; top: 72%; width: 34vmin; height: 34vmin; margin: -17vmin 0 0 -17vmin; border-radius: var(--pk-radius-round); background: radial-gradient(circle, #fff 0, var(--flash) 16%, var(--pk-game) 38%, transparent 68%); mix-blend-mode: screen; pointer-events: none; z-index: 3; animation: muzzle .1s ease-out forwards; } @keyframes muzzle { from { opacity: .95; transform: scale(.6); } to { opacity: 0; transform: scale(1.2); } }
 .crosshair i:nth-child(3), .crosshair i:nth-child(4) { top: 14px; height: 2px; width: 8px; } .crosshair i:nth-child(3) { left: 0; } .crosshair i:nth-child(4) { right: 0; }
 body.scored .crosshair i { background: var(--pk-game); animation: hit-mark .3s ease-out; }
 @keyframes hit-mark { from { transform: scale(1.8); } to { transform: none; } }

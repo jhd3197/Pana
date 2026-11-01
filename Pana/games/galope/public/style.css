@@ -10,7 +10,7 @@ button,a,input{-webkit-tap-highlight-color:transparent}
 .topbar{position:fixed;z-index:20;top:0;right:0;padding:18px 20px;pointer-events:none}
 #game-nav{display:flex;gap:8px;pointer-events:auto}
 #game-nav .pk-btn{background:var(--pk-hud)}
-#game-nav kbd{display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px solid var(--pk-line-strong);border-bottom-width:2px;border-radius:6px;background:var(--pk-deep);color:var(--pk-yellow);font:900 11px/1 var(--pk-sans)}
+#game-nav kbd{display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px solid var(--pk-line-strong);border-bottom-width:2px;border-radius:0;background:var(--pk-deep);color:var(--pk-yellow);font:900 11px/1 var(--pk-sans)}
 
 /* loading */
 #loading{justify-content:center;align-items:center;text-align:center}
@@ -20,7 +20,7 @@ button,a,input{-webkit-tap-highlight-color:transparent}
 #lobby .pk-title{--pk-title-shadow:#656b55;font-size:clamp(40px,5vw,58px)}
 #lobby .pk-stat b{color:var(--stat)}
 .horse-picker .pk-seg>button{display:inline-flex;align-items:center;gap:8px}
-.horse-picker i{width:14px;height:14px;border-radius:50%;background:var(--coat);box-shadow:inset 0 -3px #0003,0 0 0 2px var(--pk-night)}
+.horse-picker i{width:14px;height:14px;border-radius:var(--pk-radius-round);background:var(--coat);box-shadow:inset 0 -3px #0003,0 0 0 2px var(--pk-night)}
 .horse-picker .pk-check{margin-top:6px}
 .pk-lobby-room #connection{color:var(--pk-text)}
 .pk-room-code{margin-left:auto;color:var(--pk-teal);font-size:13px;white-space:nowrap}
@@ -39,23 +39,23 @@ body:not(.in-lobby) .lobby-hint{display:none}
 .position #field-size{grid-column:1/-1;-webkit-text-stroke:0;text-shadow:0 1px 3px #000a;color:var(--pk-text);margin-top:4px}
 .race-cards{display:grid;gap:6px;padding-bottom:6px}
 .race-pair{display:flex;gap:6px}
-.race-top .pk-readout{padding:6px 14px;border-radius:12px;min-width:0}
+.race-top .pk-readout{padding:6px 14px;border-radius:0;min-width:0}
 .race-top .pk-num{font-size:24px;white-space:nowrap}
 #leaderboard{position:absolute;left:24px;top:190px;gap:5px;min-width:200px;max-width:240px}
 #leaderboard .pk-row{min-height:30px;padding:5px 12px 5px 8px;font-size:13px}
 #leaderboard .pk-row-n{width:18px;text-align:center}
 .row-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pk-row-end{white-space:nowrap}
-.minimap{position:absolute;right:20px;top:76px;padding:10px 12px;border-radius:14px}
+.minimap{position:absolute;right:20px;top:76px;padding:10px 12px;border-radius:0}
 .map-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}
 .map-head b{font:400 14px var(--pk-display);color:var(--pk-yellow);letter-spacing:.5px}
 .map-head small{font:800 10px var(--pk-sans);color:var(--pk-muted)}
-.minimap canvas{display:block;width:200px;height:173px;border-radius:8px;background:var(--pk-deep)}
+.minimap canvas{display:block;width:200px;height:173px;border-radius:0;background:var(--pk-deep)}
 .jump-cue{position:absolute;left:50%;top:34%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:12px;animation:cue-in .25s ease-out}
 .jump-cue .pk-banner{font-size:36px;padding:10px 26px 6px}
 .jump-cue .pk-chip{font-size:14px}
 @keyframes cue-in{from{opacity:0;transform:translateX(-50%) scale(.7)}}
-.riding-status{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(520px,calc(100vw - 32px));display:grid;gap:8px;padding:14px 20px;border-radius:18px}
+.riding-status{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(520px,calc(100vw - 32px));display:grid;gap:8px;padding:14px 20px;border-radius:0}
 .stamina-head,.stamina-foot{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:12px;font-weight:800}
 .stamina-head .pk-eyebrow{color:var(--pk-teal)}
 .stamina-head>span:last-child{color:var(--pk-muted);font-weight:700;white-space:nowrap}
