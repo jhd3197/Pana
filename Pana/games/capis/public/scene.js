@@ -1,7 +1,7 @@
 // Capis a Pintazos in 3D, seen from the side: a perspective camera looks at
-// the playing plane. The ground is the destructible mask painted into a
-// texture (engine/play/terrain-mask.js paintRGBA → THREE.DataTexture) on a
-// stack of planes, so it reads as a slab of earth with depth; the capis are
+// the playing plane. The ground is the destructible mask drawn as a slab of
+// earth by one terrain shader (engine/play/terrain-material.js: a smooth
+// outline, procedural soil, rock, sand and grass, the paint on top); the capis are
 // panas (the shared studio character, the player's own look on our lead
 // capi) with a team bandana, each holding Pepazo's La Bazuca; the world
 // behind is real 3D scenery (backdrop.js).
@@ -18,7 +18,8 @@ import { Puffs } from '/engine/fx.js';
 import { createBlastFx } from '/engine/play/blast-fx.js';
 import { guideRibbon, pathLength } from '/engine/play/aim-guide.js';
 import { createRecoil, shakeAt } from '/engine/play/recoil.js';
-import { paintRGBA, takeDirty, solidAt } from '/engine/play/terrain-mask.js';
+import { takeDirty, solidAt } from '/engine/play/terrain-mask.js';
+import { createTerrain } from '/engine/play/terrain-material.js';
 import { createSpray } from '/engine/play/spray.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { simulateFlight, aimVelocity } from '/engine/play/ballistic.js';
@@ -29,7 +30,7 @@ import { rockAt, grassAt } from './map-rules.js';
 
 const FRONT = 1;               // the depth where capis and shells move
 const SLAB = [-2.6, .55];      // the earth's back and front faces
-const LAYERS = 9, DASHES = 18, HUMAN = 0;
+const DASHES = 18, HUMAN = 0;
 // A pana is 2.16 units tall: ×.8 a capi stands 1.7, its 1.4 body disc plus the head.
 const CAPY_SCALE = .8, HEAD = 2.05;
 // La Bazuca in the hands: its scale, and how far towards the camera it rides (the near shoulder).
@@ -43,16 +44,11 @@ const ROCKET = 2.2;
 // back to full detail under 47. The play view is about 31 to 40 away.
 const LOD_BAND = { far: 55, near: 47 }, LOD_CELL = .06;
 const rgb = hex => { const c = new THREE.Color(hex); return [c.r * 255, c.g * 255, c.b * 255]; };
-// The ground's look: grass with a fringe of blades on top, roots in the topsoil,
-// earth darkening with depth, rock strata, sand on the beach and the sandbar,
-// shade under overhangs (terrain-mask.js paintRGBA).
-const PALETTE = { earth: [178, 112, 62], deep: [88, 52, 34], topsoil: [116, 74, 42], grass: [96, 166, 56], tints: TEAM_COLORS.map(rgb), grassDepth: 5,
-  sand: [226, 198, 140], wet: [176, 150, 108], rock: [156, 134, 110], roots: [104, 70, 42], fringe: 3, shade: .5, rockAt, grassAt,
-  deepFrom: 14, deepAt: 120 };
-// The back wall behind the slab: where the ground was at the start and in the
-// map's hollows (caves), so a crater reads as a dent and a cave has a back
-// instead of a window onto the sky.
-const BACK = [98, 64, 42];
+// The ground's look (terrain-material.js): grass with short tufts on top,
+// roots in the topsoil, earth darkening with height, rock strata, sand on the
+// beach and the sandbar, wet by the water.
+const PALETTE = { earth: [176, 110, 62], deep: [92, 56, 36], topsoil: [112, 72, 42], grass: [104, 172, 58], tints: TEAM_COLORS.map(rgb),
+  sand: [230, 204, 150], wet: [168, 140, 100], rock: [150, 134, 116], roots: [86, 56, 34], deepFrom: 14, deepAt: 120, tuft: .3 };
 // The colours a blast throws up: topsoil, earth, grass and rock.
 const CLODS = ['#6f4a2a', '#9c6a3c', '#5c9a36', '#8f7c66'];
 const { damp } = THREE.MathUtils;
@@ -75,37 +71,22 @@ export function createCapisScene(canvas, match) {
   const rim = new THREE.DirectionalLight('#ffb27a', .7); rim.position.set(30, 14, -40); scene.add(rim);
   const backdrop = createBackdrop(scene, match.map);
   let mask = match.mask;
-  const palette = { ...PALETTE, sandBelow: match.map.water + 2.4 };
+  const palette = { ...PALETTE, sandBelow: match.map.water + 2.4, water: match.map.water };
 
   // ---------- the ground ----------
-  const pixels = new Uint8Array(mask.cols * mask.rows * 4);
-  const texture = new THREE.DataTexture(pixels, mask.cols, mask.rows, THREE.RGBAFormat);
-  texture.colorSpace = THREE.SRGBColorSpace; texture.magFilter = THREE.LinearFilter; texture.minFilter = THREE.LinearFilter; texture.generateMipmaps = false;
-  const plane = new THREE.PlaneGeometry(mask.width, mask.height), layers = [];
-  for (let i = 0; i < LAYERS; i++) {
-    const k = i / (LAYERS - 1), shade = .55 + .45 * k;
-    const layer = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ map: texture, alphaTest: .5, color: new THREE.Color(shade, shade, shade), side: THREE.DoubleSide }));
-    layer.position.set(mask.width / 2, mask.height / 2, SLAB[0] + (SLAB[1] - SLAB[0]) * k); scene.add(layer); layers.push(layer);
-  }
-  const backPixels = new Uint8Array(mask.cols * mask.rows * 4);
-  const backTexture = new THREE.DataTexture(backPixels, mask.cols, mask.rows, THREE.RGBAFormat);
-  backTexture.colorSpace = THREE.SRGBColorSpace; backTexture.magFilter = backTexture.minFilter = THREE.LinearFilter; backTexture.generateMipmaps = false;
-  const backWall = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ map: backTexture, alphaTest: .5 }));
-  backWall.position.set(mask.width / 2, mask.height / 2, SLAB[0] - .05); scene.add(backWall);
-  function paintBack() {
-    for (let c = 0; c < mask.cols; c++) {
-      for (let r = mask.rows - 1; r >= 0; r--) {
-        const i = r * mask.cols + c, o = i * 4;
-        if (!mask.solid[i] && !mask.hollow?.[i]) { backPixels[o + 3] = 0; continue; }
-        const k = .75 + .25 * Math.min(1, r / 140) + (((c * 73856093) ^ (r * 19349663)) >>> 27) / 160;
-        backPixels[o] = BACK[0] * k; backPixels[o + 1] = BACK[1] * k; backPixels[o + 2] = BACK[2] * k; backPixels[o + 3] = 255;
-      }
-    }
-    backTexture.needsUpdate = true;
-  }
+  // One shader draws the slab (engine/play/terrain-material.js): the front
+  // face, the wall extruded from the smooth outline, and the back wall (the
+  // starting ground plus the map's hollows) so a crater reads as a dent.
+  const terrain = createTerrain(scene, mask, { palette, rockAt, grassAt, zBack: SLAB[0], zFront: SLAB[1], back: true, renderer });
+  // If the ground's shader cannot compile here, draw it in plain colour instead of not at all.
+  renderer.debug.onShaderError = (gl, program, vs, fs) => {
+    const ground = /terrainColor/.test(gl.getShaderSource(fs) || '');
+    console.error(`capis: a shader failed to compile${ground ? '; the ground falls back to plain colour' : ''}`, gl.getShaderInfoLog(fs) || gl.getShaderInfoLog(vs));
+    if (ground) terrain.fallback();
+  };
   function paintTerrain(rect = takeDirty(mask)) {
     if (!rect) return;
-    paintRGBA(mask, pixels, palette, rect); texture.needsUpdate = true;
+    terrain.update(rect);
     if (rect.r0 * mask.cell < match.map.water + .2) backdrop.shore(mask);
   }
 
@@ -164,7 +145,7 @@ export function createCapisScene(canvas, match) {
       Object.assign(m, { hit: 0, sink: 0, fall: 0, paint: -1, lastX: c.x, speed: 0, yaw, pitch: pose.pitch, drop: pose.drop });
       m.root.visible = true; m.root.rotation.set(0, 0, 0); m.gun.visible = true;
     }
-    takeDirty(mask); paintRGBA(mask, pixels, palette); texture.needsUpdate = true; backdrop.shore(mask); paintBack();
+    takeDirty(mask); terrain.reset(mask); backdrop.shore(mask);
     for (const spray of sprays) spray.clear();
   }
   setMatch(match);
@@ -419,7 +400,7 @@ export function createCapisScene(canvas, match) {
       flash.geometry.dispose(); flash.material.dispose(); streak.material.dispose(); glow.dispose(); drip.geometry.dispose(); drip.material.dispose();
       sprays.forEach(spray => spray.dispose());
       fx.dispose(); marker.dispose(); aimArrow.userData.dispose(); dashes.forEach(d => d.userData.dispose());
-      backdrop.dispose(); texture.dispose(); backTexture.dispose(); backWall.material.dispose(); plane.dispose(); layers.forEach(l => l.material.dispose()); renderer.dispose();
+      backdrop.dispose(); terrain.dispose(); renderer.dispose();
     },
   };
 }

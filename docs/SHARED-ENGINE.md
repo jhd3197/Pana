@@ -78,6 +78,21 @@ surface, earth darkening with depth, paint blended over; upload as a
 `rockAt`), roots, grass blades drawn into the air (`fringe`), shade under
 overhangs (`shade`) and darkening by height (`deepFrom`).
 
+`fieldRGBA` writes the same ground as fields for a shader instead of colours
+(a vertical signed distance smoothed along x, a blurred coverage, rock, bare
+tops, paint, wide coverage for occlusion, the distance to air below), and
+`coverageContour` traces the smooth outline (marching squares with normals).
+`engine/play/terrain-material.js` (Three.js) draws them: `createTerrain(scene,
+mask, { palette, rockAt, grassAt, zBack, zFront, back, renderer })` builds the
+front face, a wall extruded from the outline and an optional back wall (the
+starting ground plus `mask.hollow`), three draws in all, with soil, strata,
+pebbles, roots, rock, sand, a grass band with short tufts and the paint all
+computed in the fragment shader (Lambert lighting and fog kept).
+`update(takeDirty(mask))` after a blast or a splash (it rebuilds the outline
+only when cells changed between solid and air), `reset(mask)` for a new
+match, `fallback()` for a plain cut-out ground if the shader cannot compile.
+`terrainMaterial` alone gives the material.
+
 `engine/play/side-walker.js` (pure): `stepSideWalker(p, input, dt, mask, opts)`
 walks a body left and right over the mask, steps over bumps, refuses bare
 slopes steeper than `maxClimb`, slides down painted slopes (`slick`,

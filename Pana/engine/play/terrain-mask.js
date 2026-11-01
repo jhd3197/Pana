@@ -255,3 +255,134 @@ export function paintRGBA(m, rgba, { earth, deep, grass, topsoil = deep, tints =
     }
   }
 }
+
+// The ground as fields for a shader (engine/play/terrain-material.js), written
+// into two RGBA byte arrays the size of the mask for the columns in `rect`
+// (all when null), padded by the blur reach. Bilinear sampling then gives a
+// smooth silhouette and smooth bands instead of per-cell blocks:
+//   field  R  vertical signed distance to the surface in quarter cells: 128 + 4 × (depth
+//             below the top of the ground; negative in the air, height over the ground
+//             below), smoothed along x over neighbours within `smooth` columns whose
+//             distance is close (no stair steps on gentle slopes, cliffs stay sharp)
+//          G  coverage: the solid cells blurred [1 6 15 20 15 6 1] (the edge sits at 0.5)
+//          B  rockAt(x, y) 0..1 (every cell, so rock fades smoothly at the edge)
+//          A  bare: 255 when grassAt says the top surface over (or under) the cell has no grass
+//   paint  R  stain, blurred [1 2 1] so drops and streaks have round ends   G  tint / (tints − 1)
+//          B  wide coverage (a box blur of `wide` cells): soft occlusion near air
+//          A  cells of solid ground down to the first air below (an overhang's underside)
+// `extra` (a Uint8Array like solid) counts as ground too: a back wall's hollows.
+export function fieldRGBA(m, field, paint, { rockAt = null, grassAt = null, tints = 2, wide = 5, smooth = 5, extra = null } = {}, rect = null) {
+  const { cols, rows, cell } = m, pad = Math.max(wide, smooth) + 4;
+  const c0 = rect ? Math.max(0, rect.c0 - pad) : 0, c1 = rect ? Math.min(cols - 1, rect.c1 + pad) : cols - 1;
+  const at = (c, r) => { c = c < 0 ? 0 : c >= cols ? cols - 1 : c; r = r < 0 ? 0 : r >= rows ? rows - 1 : r; const i = r * cols + c; return m.solid[i] || (extra && extra[i]) ? 1 : 0; };
+  const tintScale = 255 / Math.max(1, tints - 1);
+  // Raw signed distances (cells) for the columns plus the smoothing reach on both sides.
+  const s0 = Math.max(0, c0 - smooth), s1 = Math.min(cols - 1, c1 + smooth), sw = s1 - s0 + 1, sd = new Float32Array(sw * rows);
+  for (let c = s0; c <= s1; c++) {
+    let depth = 0, ground = -1;
+    for (let r = rows - 1; r >= 0; r--) { if (!at(c, r)) { depth = 0; continue; } sd[r * sw + c - s0] = Math.min(31.5, depth + .5); depth++; }
+    for (let r = 0; r < rows; r++) { if (at(c, r)) ground = r; else sd[r * sw + c - s0] = ground < 0 ? -32 : -Math.min(32, r - ground - .5); }
+  }
+  for (let c = c0; c <= c1; c++) {
+    const x = (c + .5) * cell;
+    // Down from the sky: depth under the top of each run of ground, and whether that top is bare.
+    let depth = 0, bare = 0;
+    for (let r = rows - 1; r >= 0; r--) {
+      const i = r * cols + c, o = i * 4;
+      if (!at(c, r)) { depth = 0; continue; }
+      if (depth === 0) bare = grassAt && !grassAt(x, (r + 1) * cell) ? 255 : 0;
+      field[o + 3] = bare;
+      depth++;
+    }
+    // Up from the bottom: height over the ground below (air) and ground left down to air (solid).
+    let ground = -1, air = -1, under = 0;
+    for (let r = 0; r < rows; r++) {
+      const i = r * cols + c, o = i * 4;
+      if (at(c, r)) {
+        ground = r; under = field[o + 3];
+        paint[o + 3] = air < 0 ? 255 : Math.min(255, r - air - 1);
+      } else {
+        air = r;
+        field[o + 3] = ground < 0 ? 0 : under;
+        paint[o + 3] = 0;
+      }
+      field[o + 2] = rockAt ? Math.round(255 * Math.min(1, Math.max(0, rockAt(x, (r + .5) * cell)))) : 0;
+      paint[o] = m.stain[i]; paint[o + 1] = Math.round(m.tint[i] * tintScale);
+      // The distance, averaged along x with the neighbours on the same surface.
+      const here = sd[r * sw + c - s0];
+      let sum = 0, weight = 0;
+      for (let d = -smooth; d <= smooth; d++) {
+        const cc = c + d; if (cc < s0 || cc > s1) continue;
+        const v = sd[r * sw + cc - s0]; if (Math.abs(v - here) > 6 || (v > 0) !== (here > 0) && Math.abs(v - here) > 2) continue;
+        const w = smooth + 1 - Math.abs(d); sum += v * w; weight += w;
+      }
+      field[o] = Math.round(Math.max(0, Math.min(255, 128 + 4 * sum / weight)));
+    }
+  }
+  // Coverage: a small separable blur (the silhouette) and a wide box blur (occlusion).
+  const span = c1 - c0 + 1, k5 = [1, 6, 15, 20, 15, 6, 1], h5 = new Float32Array(span * rows), hw = new Float32Array(span * rows), hs = new Float32Array(span * rows);
+  const stainAt = (c, r) => (c < 0 || c >= cols ? 0 : m.stain[(r < 0 ? 0 : r >= rows ? rows - 1 : r) * cols + c]);
+  for (let r = 0; r < rows; r++) for (let j = 0; j < span; j++) {
+    const c = c0 + j;
+    let s = 0; for (let d = -3; d <= 3; d++) s += k5[d + 3] * at(c + d, r);
+    let w = 0; for (let d = -wide; d <= wide; d++) w += at(c + d, r);
+    h5[r * span + j] = s / 64; hw[r * span + j] = w / (2 * wide + 1);
+    hs[r * span + j] = (stainAt(c - 1, r) + 2 * stainAt(c, r) + stainAt(c + 1, r)) / 4;
+  }
+  const rowOf = r => (r < 0 ? 0 : r >= rows ? rows - 1 : r) * span;
+  for (let j = 0; j < span; j++) {
+    for (let r = 0; r < rows; r++) {
+      let s = 0; for (let d = -3; d <= 3; d++) s += k5[d + 3] * h5[rowOf(r + d) + j];
+      let w = 0; for (let d = -wide; d <= wide; d++) w += hw[rowOf(r + d) + j];
+      const o = (r * cols + c0 + j) * 4;
+      field[o + 1] = Math.round(s / 64 * 255); paint[o + 2] = Math.round(w / (2 * wide + 1) * 255);
+      paint[o] = Math.round((hs[rowOf(r - 1) + j] + 2 * hs[rowOf(r) + j] + hs[rowOf(r + 1) + j]) / 4);
+    }
+  }
+}
+
+// The outline of the ground: marching squares over the coverage in `field`
+// (G, from fieldRGBA) at 0.5, between cell centres, in world units. Each
+// segment comes with the outward normal at both ends (down the coverage's
+// gradient), so an extruded wall shades smoothly. Returns
+// { segments: Float32Array [x0, y0, x1, y1, ...], normals: Float32Array [nx0, ny0, nx1, ny1, ...], count }.
+export function coverageContour(m, field, level = 127.5) {
+  const { cols, rows, cell } = m, g = (c, r) => field[(r * cols + c) * 4 + 1];
+  const seg = [], nor = [];
+  const grad = (c, r) => {
+    const cl = Math.max(0, c - 1), cr = Math.min(cols - 1, c + 1), rd = Math.max(0, r - 1), ru = Math.min(rows - 1, r + 1);
+    return [(g(cr, r) - g(cl, r)) / (cr - cl), (g(c, ru) - g(c, rd)) / (ru - rd)];
+  };
+  // The crossing on the edge between two grid points, and its normal.
+  const cross = (ca, ra, cb, rb) => {
+    const a = g(ca, ra), b = g(cb, rb), t = (level - a) / (b - a);
+    const ga = grad(ca, ra), gb = grad(cb, rb);
+    let nx = -(ga[0] + (gb[0] - ga[0]) * t), ny = -(ga[1] + (gb[1] - ga[1]) * t);
+    const l = Math.hypot(nx, ny) || 1;
+    return [(ca + (cb - ca) * t + .5) * cell, (ra + (rb - ra) * t + .5) * cell, nx / l, ny / l];
+  };
+  const push = (p, q) => { seg.push(p[0], p[1], q[0], q[1]); nor.push(p[2], p[3], q[2], q[3]); };
+  for (let r = 0; r < rows - 1; r++) for (let c = 0; c < cols - 1; c++) {
+    const a = g(c, r) > level, b = g(c + 1, r) > level, d = g(c + 1, r + 1) > level, e = g(c, r + 1) > level;
+    const code = (a ? 1 : 0) | (b ? 2 : 0) | (d ? 4 : 0) | (e ? 8 : 0);
+    if (code === 0 || code === 15) continue;
+    // Edges: bottom (a-b), right (b-d), top (e-d), left (a-e).
+    const bottom = () => cross(c, r, c + 1, r), right = () => cross(c + 1, r, c + 1, r + 1);
+    const top = () => cross(c, r + 1, c + 1, r + 1), left = () => cross(c, r, c, r + 1);
+    switch (code) {
+      case 1: case 14: push(left(), bottom()); break;
+      case 2: case 13: push(bottom(), right()); break;
+      case 3: case 12: push(left(), right()); break;
+      case 4: case 11: push(right(), top()); break;
+      case 6: case 9: push(bottom(), top()); break;
+      case 7: case 8: push(left(), top()); break;
+      case 5: case 10: {
+        // A saddle: the centre's average decides which corners connect.
+        const centre = (g(c, r) + g(c + 1, r) + g(c + 1, r + 1) + g(c, r + 1)) / 4 > level;
+        if ((code === 5) === centre) { push(left(), top()); push(bottom(), right()); } else { push(left(), bottom()); push(right(), top()); }
+        break;
+      }
+    }
+  }
+  return { segments: new Float32Array(seg), normals: new Float32Array(nor), count: seg.length / 4 };
+}
