@@ -438,6 +438,8 @@ export function createScene(canvas) {
     blasts.update(dt); puffs.update(dt); elapsed += dt; sky.update(elapsed); renderer.render(scene, camera);
   }
   return { renderer, scene, camera, avatars, draw, setMap,
+    // The current court's own meshes (no panas, paint or effects): what the collision debug view measures.
+    mapGroup() { return environment?.group || defaultCourt; },
     setView(value) { cameraView = value; initialized = false; },
     get view() { return cameraView; },
     // The first-person weapon (hidden while a thrown chancla is away).

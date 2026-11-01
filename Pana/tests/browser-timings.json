@@ -152,6 +152,7 @@
   "Pana/games/ludo/tests/studio-motion.browser.js": 44,
   "Pana/games/parapente/tests/browser.mjs": 79,
   "Pana/games/pintura/tests/browser.mjs": 455,
+  "Pana/games/pintura/tests/collision.browser.js": 8,
   "Pana/games/pintura/tests/knockout.browser.js": 38,
   "Pana/games/pintura/tests/paint-kit.browser.js": 6,
   "Pana/games/poquer/tests/browser.mjs": 112,
