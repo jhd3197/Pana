@@ -25,6 +25,14 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   and barrels, Noche's snakes. Sweeping every box as infinitely tall made those
   invisible walls: a rival seen over a sandbag could not be hit, and bots never
   fired at one. Bot line of sight and splat placement use `shotCover(cover)`.
+- Collision debug: `?debugCollision=1` or F9 draws every collider of the court
+  (red flagged, yellow lets shots pass, grey invisible on purpose), logs a table
+  and Shift+F9 saves the JSON. `npm run collision-report` audits every court and
+  variant headless into `Pana/reports/collision/`. Colliders come from
+  `colliders.js` (`collidersFor`, `COLLISION_ALLOW` for blockers unseen on
+  purpose, only the court edge today). `scene.draw` calls `setMap(state.mapId)`
+  every frame, so anything that stands another court must measure it before the
+  next frame (the debug `audit` retries until the asked court stands).
 - All collision cover comes from `coverFor(mapId)`; scene geometry reads the
   same bounds. Courts are 54 m (`SIZE` 27): each map's cover is spread 1.5×
   from the centre (boxes 1.15× larger) plus an eight-piece outer `RING`.

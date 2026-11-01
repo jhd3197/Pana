@@ -14,6 +14,10 @@ becomes the GitHub release's notes.
   adelgazan y siguen la forma del cerro. Cada cráter las corta limpio y deja
   el borde chamuscado, y cada tipo de mapa trae sus propios colores.
 
+- **Pepazo tiene un modo de depuración de colisiones para encontrar paredes invisibles.**
+  `?debugCollision=1` o F9 dibuja cada caja de colisión de la cancha (en rojo las
+  que no tienen nada visible que las llene) y Shift+F9 descarga el informe;
+  `npm run collision-report` revisa todas las canchas sin abrir el navegador.
 - **En Pepazo los disparos pasan por encima de los sacos, cajas y barriles bajos.**
   Ya no hay paredes invisibles sobre la cobertura baja de El Puerto y la Cancha
   de Noche: si ves a un rival por encima, le puedes dar, y los bots también.

@@ -118,6 +118,11 @@ canvas.addEventListener('pointerdown', event => {
 });
 for (const type of ['pointerup', 'pointercancel']) canvas.addEventListener(type, () => { if (cameraView === 'cancha') firing = false; });
 addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
+// Collision debug (?debugCollision=1, F9 toggles, Shift+F9 saves the report): loaded only when asked.
+let collisionDebug = null;
+const debugCollision = () => collisionDebug ??= import('./collision-debug.js').then(m => m.attachCollisionDebug(world, () => room.state));
+if (params.get('debugCollision') === '1') debugCollision().then(d => d.toggle(true));
+addEventListener('keydown', event => { if (event.key === 'F9') { event.preventDefault(); debugCollision().then(d => event.shiftKey ? d.download() : d.toggle()); } });
 addEventListener('keydown', event => {
   if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a')) return;
   const key = event.key.toLowerCase(), slot = Number(key);

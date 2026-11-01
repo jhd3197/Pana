@@ -175,6 +175,24 @@ moves it on. `engine/play/melee.js` throws with them.
 
 Used by: Pepazo (every ball and rocket, the sniper tracer, the thrown chancla).
 
+### Collision debug (colliders vs what you see)
+
+`engine/play/collision-audit.js` (pure): `auditColliders(colliders, solids, { map,
+variant, shotHeight, allow })` measures each collider `{ id, source, x, z, w, d,
+h, blocksShots, blocksMovement, health }` against the visible triangles inside
+it and flags `no-mesh` (an orphan), `oversized` (under half its footprint or
+60% of its height filled), `under-shot` (stops shots though its mesh is lower
+than they fly) and `damaged` (health under 1 but still stopping shots), each
+with a proposed `fix` (`remove`, `refit` to the mesh box, `split` into one box
+per separate piece, `unblock-shots`). `allow` lists ids or sources that are invisible on purpose.
+`engine/play/collision-debug.js` (Three.js, load it only when asked):
+`collectSolids(root)` turns a map's meshes (baked and instanced too) into those
+boxes; `createCollisionDebug(scene)` adds `audit`, colour-coded wireframes
+(`show`), a console table and `download` (JSON).
+
+Used by: Pepazo (`?debugCollision=1` or F9, Shift+F9 saves the report;
+`npm run collision-report` audits every court headless into `Pana/reports/collision/`).
+
 ### Melee weapons (one target per swing, throwable)
 
 `engine/play/melee.js` (pure, renderer-free). A weapon is data: `{ reach, arc,
