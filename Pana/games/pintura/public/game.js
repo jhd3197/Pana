@@ -286,7 +286,7 @@ let preparedRound = 0, preparingRound = 0, lastCount = 0;
 async function prepareRound(state) {
   const round = preparingRound = state.round;
   if (!window.PANA_PREPARED) await new Promise(resolve => document.addEventListener('pana:game-prepared', resolve, { once: true }));
-  world.setMap(state.mapId, state.variant || 0); await world.renderer.compileAsync(world.scene, world.camera).catch(() => {});
+  await world.setMap(state.mapId, state.variant || 0); await world.renderer.compileAsync(world.scene, world.camera).catch(() => {});
   if (preparingRound !== round) return;
   preparedRound = round; room.ready(round); render(room.state);
 }

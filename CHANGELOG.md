@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo abre más rápido: la primera carga baja de 161 a 133 módulos.**
+  Las canchas compartidas (Puerto, Hato y Ruinas) se descargan cuando el
+  anfitrión elige una, mientras la tarjeta de carga cubre la espera.
+
 - **En la armería de Pepazo la marcadora se ve sola, centrada y girando.**
   Las marcadoras, accesorios, granadas y camuflajes se previsualizan sin tu
   pana delante; tu pana solo aparece en Equipo, con el chaleco puesto, y en la
