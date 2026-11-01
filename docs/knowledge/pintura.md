@@ -20,6 +20,11 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   so a backgrounded or disconnected browser does not keep running or firing.
 - Projectile travel uses segment/AABB and segment/circle intersections. At
   34 units/second, testing only projectile endpoints misses thin cover.
+- Level shots fly at `SHOT_HEIGHT` (1.1 m, where the scene draws the ball) and
+  pass over cover whose `h` is at or under it: El Puerto's sandbags, ammo piles
+  and barrels, Noche's snakes. Sweeping every box as infinitely tall made those
+  invisible walls: a rival seen over a sandbag could not be hit, and bots never
+  fired at one. Bot line of sight and splat placement use `shotCover(cover)`.
 - All collision cover comes from `coverFor(mapId)`; scene geometry reads the
   same bounds. Courts are 54 m (`SIZE` 27): each map's cover is spread 1.5×
   from the centre (boxes 1.15× larger) plus an eight-piece outer `RING`.

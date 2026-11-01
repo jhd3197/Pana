@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Pepazo los disparos pasan por encima de los sacos, cajas y barriles bajos.**
+  Ya no hay paredes invisibles sobre la cobertura baja de El Puerto y la Cancha
+  de Noche: si ves a un rival por encima, le puedes dar, y los bots también.
 - **Todos los juegos y la lista de la portada usan el mismo estilo de esquinas rectas.**
   Botones, fichas, menús de ajustes, salas, marcadores, resultados, avisos,
   el editor de personaje y el Studio dejaron las esquinas redondeadas y las

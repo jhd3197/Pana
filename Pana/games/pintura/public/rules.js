@@ -23,6 +23,12 @@ export const SIZE = 27, SPREAD = 1.5, DURATION = 180, TARGET = 10, SPEED = 7, RA
 // A round holds still until every pana has loaded its court (or READY_TIMEOUT
 // seconds passed), then counts COUNTDOWN seconds down before anyone moves.
 export const READY_TIMEOUT = 8, COUNTDOWN = 3;
+// Level shots fly SHOT_HEIGHT m up (where the scene draws the ball): cover
+// whose top is at or under it (sandbags, ammo piles, barrels, the snake bunkers)
+// lets them pass over instead of standing as an invisible wall above it.
+export const SHOT_HEIGHT = 1.1;
+// Cover that stops a level shot: the boxes taller than the ball's flight.
+export const shotCover = cover => cover.filter(o => (o.h ?? o.height ?? Infinity) > SHOT_HEIGHT);
 // Eight seats (game.json `players`): people plus bots never pass it. Bot ids
 // start at BOT_ID so they never collide with member seats.
 export const SEATS = 8, BOT_ID = 1000, AUTO_BOTS = 3;
@@ -289,7 +295,7 @@ export class Arena {
     const enemies = this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
     const q = enemies[0]; if (!q) return cleanInput();
     const dx = q.x - p.x, dz = q.z - p.z, length = Math.hypot(dx, dz) || 1;
-    const clear = !this.cover.some(o => segmentBox(p.x, p.z, dx, dz, o) !== null);
+    const clear = !shotCover(this.cover).some(o => segmentBox(p.x, p.z, dx, dz, o) !== null);
     const t = (DURATION - this.time) * .7 + p.id, strafe = Math.sin(t) > 0 ? 1 : -1, skill = BOT_SKILL[this.difficulty] || BOT_SKILL.normal;
     // A deterministic wobble around the true line: weaker bots spray, sharp ones rarely miss.
     const ref = this.botAim(p, q, skill.reaction), rx = ref.x - p.x, rz = ref.z - p.z, rl = Math.hypot(rx, rz) || 1;
@@ -410,7 +416,7 @@ export class Arena {
     for (const ball of this.balls) {
       const owner = this.players.find(q => q.id === ball.owner);
       const targets = this.players.filter(p => p.id !== ball.owner && p.connected && !p.respawn && !p.eliminated && !p.shield && (this.options.friendlyFire || !this.sameTeam(p, owner)));
-      const { t, victim, dx, dz } = sweep(ball, dt, { boxes: this.cover, targets, padding: .12 });
+      const { t, victim, dx, dz } = sweep(ball, dt, { boxes: this.cover, targets, padding: .12, y: SHOT_HEIGHT });
       ball.x += dx * Math.min(1, t); ball.z += dz * Math.min(1, t); ball.life -= dt;
       if (t <= 1 || outside(this.mapId, ball.x, ball.z)) {
         ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern });
