@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createFlag, stepFlags, dropCarried, createZone, stepZone, decideWinner, reachedLimit, flagTieBreaks, takeFlag } from '../play/objectives.js';
+import { createFlag, stepFlags, dropCarried, createZone, stepZone, stepZones, zonesHeld, zonePoints, zoneTieBreaks, decideWinner, reachedLimit, flagTieBreaks, takeFlag } from '../play/objectives.js';
 
 const actor = (id, team, x, z, alive = true) => ({ id, team, x, z, alive });
 
@@ -24,6 +24,35 @@ test('zones: a lone team turns the zone, two teams contest it, a rival owner is 
   stepZone(zone, [actor(1, 0, 0, 0), actor(2, 1, 1, 0)], .5); assert.equal(zone.contested, true); assert.equal(zone.owner, 0);
   events = []; for (let i = 0; i < 60; i++) events.push(...stepZone(zone, [actor(2, 1, 0, 0)], .05));
   assert.deepEqual(events.map(e => e.type), ['neutral', 'captured']); assert.equal(zone.owner, 1);
+});
+
+test('zones: contested fires once, an empty zone drifts back to its owner, a drained owner refills', () => {
+  const zone = createZone('b', { x: 0, z: 0, radius: 3, captureTime: 2 });
+  for (let i = 0; i < 50; i++) stepZone(zone, [actor(1, 0, 0, 0)], .05);
+  assert.equal(zone.owner, 0);
+  const both = [actor(1, 0, 0, 0), actor(2, 1, 1, 0)];
+  assert.deepEqual(stepZone(zone, both, .05).map(e => e.type), ['contested']); assert.deepEqual(stepZone(zone, both, .05), []);
+  // Team 1 drains half, then walks away: the zone stays orange and refills on its own.
+  for (let i = 0; i < 20; i++) stepZone(zone, [actor(2, 1, 0, 0)], .05);
+  assert.equal(zone.owner, 0); assert.ok(Math.abs(zone.progress - .5) < 1e-6);
+  for (let i = 0; i < 20; i++) stepZone(zone, [], .05);
+  assert.ok(Math.abs(zone.progress - .75) < 1e-6); assert.equal(zone.owner, 0);
+  // A neutral zone's unfinished claim fades back to nobody.
+  const open = createZone('c', { x: 0, z: 0, radius: 3, captureTime: 2 });
+  for (let i = 0; i < 10; i++) stepZone(open, [actor(2, 1, 0, 0)], .05);
+  assert.equal(open.claim, 1); for (let i = 0; i < 40; i++) stepZone(open, [], .05);
+  assert.equal(open.progress, 0); assert.equal(open.claim, null);
+});
+
+test('zones: held counts, hold points bank fractions, tie-break on zones held', () => {
+  const zones = ['a', 'b', 'c'].map((id, i) => createZone(id, { x: i * 20, z: 0 }));
+  zones[0].owner = 0; zones[2].owner = 0; zones[1].owner = 1;
+  assert.deepEqual(zonesHeld(zones), [2, 1]); assert.deepEqual(zoneTieBreaks(zones), [[2, 1]]);
+  const bank = [0, 0], total = [0, 0];
+  for (let i = 0; i < 20; i++) zonePoints(zones, bank, .05).forEach((n, t) => { total[t] += n; });
+  assert.deepEqual(total, [2, 1]);
+  assert.equal(decideWinner([5, 5], zoneTieBreaks(zones)), 0);
+  assert.deepEqual(stepZones(zones, [], .05), []);
 });
 
 test('match end: score limit, winner by score, tie-breaks, draw', () => {
