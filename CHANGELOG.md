@@ -12,6 +12,10 @@ becomes the GitHub release's notes.
   Tres zonas por mapa (A, B y C): párate en una para tomarla y cada zona tuya
   suma un punto por segundo. Puntos y tiempo límite en el lobby, bots que
   capturan y defienden, y anillos, marcadores y sonidos para cada zona.
+- **En Pepazo, cuando te pintan ves la ronda en vez de una pantalla quieta.**
+  La cámara voltea hacia quien te pintó y luego sigue a un pana vivo; cambias
+  de pana con Q / E (LB / RB en el control o los botones en pantalla) y con
+  Espacio (A) ves la cancha desde arriba. Al reaparecer vuelves a tu vista.
 
 - **Pepazo tiene modo Captura la bandera.**
   Dos equipos, una bandera en cada base de todos los mapas: tómala, llévala a

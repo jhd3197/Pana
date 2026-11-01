@@ -289,6 +289,28 @@ camera.fov = scope.fov(72); look(yaw * scope.sensitivity(), pitch * scope.sensit
 
 Used by: Pepazo (La Lejana scopes 3.5×, the other markers zoom 1.2×).
 
+### Spectating while out (killcam, follow, overhead)
+
+`engine/play/spectate.js`, pure numbers (no Three.js, nothing allocated per
+frame). `createSpectator({ killcam })` is the state: `update(dt, { down, killer,
+targets })` returns `'off'`, `'killcam'` or `'watch'`; `next()`, `prev()` and
+`toggle()` (follow / overhead) switch, and `shot` says what the camera shows. A
+target that goes down hands over to the next one (`nextLiving`); `cycleTarget`
+is the wrap. `createSpectateCamera()` eases toward each pose and arcs over the
+court on long moves; `followPose` (behind a pana's shoulder, stopped short of the
+game's camera bounds through a `clip` callback) and `overheadPose` (the whole
+court in frame) build the poses.
+
+```js
+const watch = createSpectator({ killcam: 1.6 }), rig = createSpectateCamera(), pose = createPose();
+watch.update(dt, input);                 // input = { down, killer, targets }, reused
+followPose(pose, head, aim, { clip }); rig.step(dt, pose); camera.lookAt(rig.look.x, rig.look.y, rig.look.z);
+```
+
+The game picks the targets: it only uses what the room already sends everyone,
+and a team game passes teammates only. Used by: Pepazo (`spectate-hud.js` for the
+label, keys and buttons; `scene.js` for the camera).
+
 ### Recoil and camera shake
 
 `engine/play/recoil.js`. `createRecoil()`: `fire({ cam, shake })` kicks and climbs

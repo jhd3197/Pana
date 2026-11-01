@@ -265,6 +265,28 @@ the pad sent), not a direction captured before the first frame set the yaw.
   `shotgun`, francotiradores `sniper`, lanzadores `launcher`), and reloads go
   the same way (`reloadKind`: hopper, magazine, pump, bolt, tube).
 
+## Spectating while out
+
+Out in first person (the 2.5 s respawn wait or out of lives), the camera stays
+where you fell and turns to whoever painted you for 1.6 s (`KILLCAM` in
+`spectate-hud.js`), then follows a living pana from behind; Q / E, ← / → or a
+controller's LB / RB switch pana, Space or A shows the whole court from above.
+The overview camera (`Ver la cancha`) never spectates: it already shows the court.
+
+- Who may be watched comes only from synced state. In team rounds it is your own
+  team; rivals only once no teammate is standing. Nothing new goes to the room:
+  inputs keep their shape (`spectator.browser.js` checks it).
+- A controller arrives as the keys `engine/gamepad.js` types (LB is Shift, RB is
+  G, A is Space). Those events are untrusted, which is how the spectator tells
+  RB from a keyboard G. `ui.css` hides every `kbd` on controller and touch, so
+  the bar's key chips are `<b>`.
+- The follow camera clips against `cameraBounds` (the boxes that pull the marker
+  in) but skips a box the head stands inside, or a tree's canopy would put the
+  camera in the pana's head. A second clip after the easing stops a switch
+  between panas from cutting through cover.
+- `#hud .respawn` (hud-banderin.css) wins over a plain `.respawn` rule: the
+  spectating style for it needs `body.spectating #hud .respawn`.
+
 ## La Lejana, La Bazuca and gun feel
 
 - Markers carry `damage` (pepazos per hit, default 1). La Lejana's body hits

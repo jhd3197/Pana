@@ -16,6 +16,7 @@ import { fillRoster } from '/engine/results.js';
 import { sound } from '/engine/fx.js';
 import { createToast } from '/engine/hud.js';
 import { mountControlHints } from '/engine/control-hints.js';
+import { createSpectateHud } from './spectate-hud.js';
 import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
@@ -52,6 +53,8 @@ const controlHints = mountControlHints($('control-hints'), { game: 'pintura', hi
   { id: 'move', label: loc('caminar'), keys: { keyboard: 'WASD', gamepad: 'Stick izq.', touch: null } }, { id: 'look', label: loc('mirar'), keys: { keyboard: loc('Ratón'), gamepad: 'Stick der.', touch: loc('Arrastra') } },
   { id: 'fire', label: loc('pintar'), keys: { keyboard: loc('Clic'), gamepad: 'RT', touch: null } }, { id: 'aim', label: loc('apuntar'), keys: { keyboard: loc('Clic der.'), gamepad: 'LT', touch: null } },
   { id: 'reload', label: loc('recargar'), keys: { keyboard: 'R', gamepad: 'X', touch: null } }, { id: 'grenade', label: loc('granada'), keys: { keyboard: 'G', gamepad: 'RB', touch: null } }] });
+// Out of the round in first person: a look at who got you, then watch the others (spectate-hud.js).
+const spectate = createSpectateHud(document, { enabled: () => cameraView === 'primera' }); world.setSpectator(spectate.spectator);
 const toast = createToast($('toast')), armory = createArmory({ room, onPick: value => { weapon = value; }, notify: toast });
 // pana.sh may call back when a camo unlocks mid-session (optional in its bridge).
 if (typeof window.PanaSh?.onCamoUnlocked === 'function') window.PanaSh.onCamoUnlocked(id => import('./camos.js').then(({ camoById }) => { const c = camoById(id); if (c) { toast(loc('¡Camuflaje {name} desbloqueado!', { name: loc(c.name) })); armory.refreshCamos(); } }));
@@ -132,7 +135,7 @@ const debugCollision = () => collisionDebug ??= import('./collision-debug.js').t
 if (params.get('debugCollision') === '1') debugCollision().then(d => d.toggle(true));
 addEventListener('keydown', event => { if (event.key === 'F9') { event.preventDefault(); debugCollision().then(d => event.shiftKey ? d.download() : d.toggle()); } });
 addEventListener('keydown', event => {
-  if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a')) return;
+  if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a') || spectate.key(event)) return;
   const key = event.key.toLowerCase(), slot = Number(key);
   // A number picks the marker for this round and the saved kit (pistol-only rooms keep La Chispa);
   // Z/X and [ ] step through every marker in class order (Q/E already turn the view).
@@ -216,7 +219,7 @@ function announce(e, state) {
   if (me) {
     document.body.style.setProperty('--paint-hurt', `${e.color}aa`); flash('painted');
     combat.hit(e, state, room.id, world.forward());
-    if (e.type === 'out') { const killer = state.players.find(p => p.id === e.owner); sfx.out(); combat.streak(0); lastKiller = { name: killer?.name || loc('Un pana'), distance: e.distance, color: killer?.color || '' }; } else sfx.hurt();
+    if (e.type === 'out') { const killer = state.players.find(p => p.id === e.owner); sfx.out(); combat.streak(0); lastKiller = { id: e.owner, name: killer?.name || loc('Un pana'), distance: e.distance, color: killer?.color || '' }; } else sfx.hurt();
   }
 }
 // Hearing and seeing the court: every shot pops, flashes and puffs, quieter with distance.
@@ -375,14 +378,14 @@ let previous = performance.now(), stoppedAt = previous;
 const timer = setInterval(() => { const now = performance.now(), dt = (now - stoppedAt) / 1000; stoppedAt = now; room.input(input()); queuedFire = queuedReload = false; if (--grenadeSends <= 0) queuedGrenade = null; throwSends = Math.max(0, throwSends - 1); room.tick(dt, menu.isOpen); }, 50);
 function frame(now) {
   if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now;
-  if (active()) world.look((Number(held.has('q')) - Number(held.has('e'))) * dt * 2.2);
+  if (active() && !spectate.spectator.active) world.look((Number(held.has('q')) - Number(held.has('e'))) * dt * 2.2);
   document.body.classList.toggle('first-person', cameraView === 'primera' && room.state.phase === 'playing');
   world.setAim(active() && aiming()); world.aimGrenade(grenadeAim());
-  armory.update(dt); world.draw(room.state, room.id, dt, aim);
+  armory.update(dt); spectate.update(dt, room.state, room.id, lastKiller?.id ?? null); world.draw(room.state, room.id, dt, aim);
   const scoped = world.scope.scoped; scopeView.set(scoped ? world.scope.amount : 0); document.body.classList.toggle('scoped', scoped); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward()); ctfHud.frame(world.camera, myPana()); domHud.frame(world.camera, myPana()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); controlHints.dispose(); room.dispose(); world.dispose(); }, { once: true });
-if (params.has('debug')) window.pinturaDebug = { room, world, menu, input, armory, grenade: grenadeCharge, controlHints };
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); controlHints.dispose(); spectate.dispose(); room.dispose(); world.dispose(); }, { once: true });
+if (params.has('debug')) window.pinturaDebug = { room, world, menu, input, armory, grenade: grenadeCharge, controlHints, spectate };
 
 await prepareScene(world);
