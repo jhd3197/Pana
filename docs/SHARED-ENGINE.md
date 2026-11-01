@@ -68,11 +68,15 @@ Used by: Escondidas, Pepazo, Reliquia.
 
 `engine/play/terrain-mask.js` (pure): a grid of solid/air cells with a paint
 layer, row 0 at the bottom. `createMask`, `fillHeights`, `carve` (round
-crater), `fill`, `splash` (paint that fades to the rim), `solidAt`,
+crater), `fill`, `splash` (paint that fades to the rim), `drips` (seeded streaks
+of paint running down from a blast and blobs thrown past its rim), `solidAt`,
 `groundBelow`, `surfaceY`, `slopeAt`, `circleHits`, `surfaceNormal`, `stainAt`,
 `markDirty`/`takeDirty`, and `paintRGBA` (texture bytes: grass on every top
 surface, earth darkening with depth, paint blended over; upload as a
-`THREE.DataTexture`, no canvas).
+`THREE.DataTexture`, no canvas). Optional palette keys add a beach (`sand`,
+`wet`, `sandBelow`), bare crater floors (`grassAt`), rock strata (`rock`,
+`rockAt`), roots, grass blades drawn into the air (`fringe`), shade under
+overhangs (`shade`) and darkening by height (`deepFrom`).
 
 `engine/play/side-walker.js` (pure): `stepSideWalker(p, input, dt, mask, opts)`
 walks a body left and right over the mask, steps over bumps, refuses bare
@@ -215,10 +219,31 @@ size, color })` (flash, fireball, shock ring, smoke, paint and embers),
 `trail(id, at, dt)` (smoke behind anything flying), `tracer(from, to)` (a bright
 line that fades) and `update(dt)`. Visual only; when and where come from the
 game's state. Sound is `sfx.boom(size)`. `boom({ ground })` sets the shock
-ring's height (default .08, the floor); a side-view game passes the impact's.
+ring's height (default .08, the floor); a side-view game passes the impact's,
+and `boom({ front: true })` stands the ring up facing the camera's side.
 
 Used by: Pepazo (La Bazuca and El Cohetón rockets, grenades, La Lejana's tracer),
 Capis a Pintazos (the paint bazooka's blast).
+
+### Flying bits: drops, clods, sparks, water rings
+
+`engine/play/spray.js` (Three.js). `createSpray(scene, { shape, capacity, additive,
+gravity, drag })`: a pool of bits drawn as one `InstancedMesh` (one draw while
+any fly, none when idle), no allocation per frame or per bit. Shapes `drop clod
+chip spark ring`. `burst(at, { count, color, speed, dir, cone, size, life, grow })`;
+`update(dt, { solid, water, onWater })` adds gravity and drag, sticks a bit where
+`solid(x, y)` (a flattened drop that soaks in) and drops it at the water line
+with a callback for a ripple. `additive` bits glow and fade; `ring` bits lie
+flat and grow.
+
+```js
+const drops = createSpray(scene, { shape: 'drop' });
+drops.burst({ x, y, z }, { count: 40, color: '#e8569b', speed: 12, dir: { x: 0, y: 1 }, cone: 1.2 });
+drops.update(dt, { solid: (x, y) => solidAt(mask, x, y), water: 4.2, onWater: ripple });
+```
+
+Used by: Capis a Pintazos (paint and water drops, clods of earth, sparks, rings
+on the river).
 
 ### Paint markers, La Bazuca and its rocket
 
@@ -284,7 +309,7 @@ Capis a Pintazos (La Bazuca in every capi's hands, batched; the rocket in flight
 
 `engine/sfx.js`. One synthesised library, no audio files, on the same WebAudio
 context and voice budget as `fx.js`: `step(surface)`, `jump`, `land`, `shot(kind)`,
-`impact`, `splat`, `boom(size)`, `hitConfirm`, `hurt`, `reload(kind)`, `reloaded`, `dry`,
+`impact`, `splat`, `boom(size, { far })`, `debris`, `patter`, `hitConfirm`, `hurt`, `reload(kind)`, `reloaded`, `dry`,
 `swap`, `swish`, `tick`, `confirm`, `back`, `count`, `go`, `boing`, `squeak`,
 `splash(size)`, `chime`, `sting(win)`. Shots include `sniper` and
 `bazooka`; reloads include `bolt`. Building blocks: `burst`
@@ -297,7 +322,7 @@ sfx.shot('scatter'); sfx.step('grass', { sprint: true, foot: 1 });
 ```
 
 Used by: Pepazo, Reliquia (steps, jump, landing), Capis a Pintazos (bazooka,
-boom, splat, boing, squeak, splash, chime, tick, sting). Notes: `docs/knowledge/shared-sfx.md`.
+boom with distance, debris, patter, splat, boing, squeak, splash, chime, tick, sting). Notes: `docs/knowledge/shared-sfx.md`.
 
 ### Vehicle audio
 

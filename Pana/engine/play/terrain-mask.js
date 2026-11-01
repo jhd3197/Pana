@@ -136,23 +136,117 @@ export function surfaceNormal(m, x, y, radius = .6) {
   return l < 1e-6 ? { x: 0, y: 1 } : { x: nx / l, y: ny / l };
 }
 
+// Paint running down from a blast: below the stained band of `count` columns
+// across the crater, a streak that soaks down through the earth `length`
+// world units at most, tapering, with a drop at its end; and `spots` blobs
+// thrown onto the ground just past `radius`. Seeded by `seed`, so the same
+// blast drips the same way in a test, for the bot and on screen. Returns the
+// cells painted.
+export function drips(m, cx, cy, radius, tint = 0, { seed = 1, count = 9, length = 2.4, spots = 6, strength = 230 } = {}) {
+  let s = (seed >>> 0) || 1, painted = 0;
+  const rand = () => { s = Math.imul(s ^ (s >>> 15), 2246822507) ^ Math.imul(s ^ (s >>> 13), 3266489909); s >>>= 0; return (s & 0xffffff) / 0x1000000; };
+  const put = (c, r, amount) => {
+    if (!inside(m, c, r)) return;
+    const i = r * m.cols + c;
+    if (m.solid[i] && amount > m.stain[i]) { m.stain[i] = amount; m.tint[i] = tint; painted++; }
+  };
+  const c0 = col(m, cx - radius), c1 = col(m, cx + radius), top = row(m, cy + radius), bottom = row(m, cy - radius - length);
+  for (let k = 0; k < count; k++) {
+    const c = Math.round(c0 + (c1 - c0) * (k + .2 + rand() * .6) / count);
+    // The lowest stained cell of this column under the blast: the streak starts there.
+    let start = -1;
+    for (let r = Math.min(m.rows - 1, top); r >= Math.max(0, row(m, cy - radius)); r--) { const i = r * m.cols + c; if (inside(m, c, r) && m.solid[i] && m.stain[i] > 60 && m.tint[i] === tint) start = r; }
+    if (start < 0) continue;
+    const cells = Math.round(length / m.cell * (.35 + rand() * .65)), wide = rand() < .4 ? 3 : 2;
+    let r = start;
+    for (let j = 0; j < cells && r > bottom; j++, r--) {
+      const amount = Math.round(strength * (1 - .55 * j / cells));
+      for (let w = 0; w < wide; w++) put(c + w, r, amount);
+    }
+    // The drop at the end of the run.
+    for (let dr = -3; dr <= 1; dr++) for (let dc = -1; dc <= wide; dc++) if (dr * dr + (dc - (wide - 1) / 2) ** 2 <= 4.2) put(c + dc, r + dr, Math.round(strength * .6));
+    markDirty(m, c - 2, r - 3, c + 3, start);
+  }
+  for (let k = 0; k < spots; k++) {
+    const side = k % 2 ? 1 : -1, x = cx + side * (radius * (1 + rand() * .7)), y = groundBelow(m, x, cy + radius, radius * 2 + 2);
+    if (y === null) continue;
+    const blob = (.18 + rand() * .3) / m.cell, bc = col(m, x), br = row(m, y - .05);
+    for (let dr = -Math.ceil(blob); dr <= Math.ceil(blob); dr++) for (let dc = -Math.ceil(blob * 1.6); dc <= Math.ceil(blob * 1.6); dc++) {
+      if ((dc / 1.6) ** 2 + dr * dr <= blob * blob) put(bc + dc, br + dr, Math.round(strength * .8));
+    }
+    markDirty(m, bc - Math.ceil(blob * 2), br - Math.ceil(blob), bc + Math.ceil(blob * 2), br + Math.ceil(blob));
+  }
+  return painted;
+}
+
+const hash = (a, b) => ((Math.imul(a, 73856093) ^ Math.imul(b, 19349663)) >>> 0);
+
 // Writes RGBA bytes for the columns in `rect` (all when null). Air is
 // transparent; ground is `earth` darkening to `deep` with depth, a band of
 // `grass` on every top surface, speckle, and paint blended over it from
-// `tints` (the index in mask.tint).
-export function paintRGBA(m, rgba, { earth, deep, grass, topsoil = deep, tints = [], grassDepth = 5, deepAt = 140 }, rect = null) {
-  const c0 = rect ? rect.c0 : 0, c1 = rect ? rect.c1 : m.cols - 1;
+// `tints` (the index in mask.tint). Optional, all in world units:
+//   grassAt(x, y)  false where a top surface is bare (a fresh crater floor): topsoil instead of grass
+//   sand, sandBelow  top surfaces under this height are sand (a beach), wet and darker by the water
+//   rock, rockAt(x, y)  0..1 how much of the earth there is rock, drawn in strata
+//   roots          thin dark roots hanging from the grass into the topsoil
+//   fringe         grass blades up to this many cells tall drawn into the air above grass
+//   shade          0..1 how much darker earth gets under an overhang and beside a wall
+//   deepFrom       earth darkens with height below this y (over deepAt cells), not with depth
+//                  under the local top, so the earth under a cave or a tower matches its neighbours
+export function paintRGBA(m, rgba, { earth, deep, grass, topsoil = deep, tints = [], grassDepth = 5, deepAt = 140,
+  grassAt = null, sand = null, sandBelow = -Infinity, wet = null, rock = null, rockAt = null, roots = null, fringe = 0, shade = 0, deepFrom = null } = {}, rect = null) {
+  const c0 = rect ? rect.c0 : 0, c1 = rect ? rect.c1 : m.cols - 1, cell = m.cell, wetBelow = sandBelow - 1.6;
   for (let c = c0; c <= c1; c++) {
-    const band = grassDepth - 1 + ((c * 2654435761) >>> 29) % 3;
-    let depth = 0;
+    const band = grassDepth - 1 + ((c * 2654435761) >>> 29) % 3, x = (c + .5) * cell;
+    const rootLength = roots && hash(c, 7) % 23 === 0 ? 4 + hash(c, 11) % 9 : 0;
+    let depth = 0, cover = null, exposed = true;
     for (let r = m.rows - 1; r >= 0; r--) {
       const i = r * m.cols + c, o = i * 4;
-      if (!m.solid[i]) { depth = 0; rgba[o + 3] = 0; continue; }
-      const k = Math.min(1, depth / deepAt), grain = 1 + (((c * 73856093) ^ (r * 19349663)) >>> 24 & 31) / 255 - .06;
+      if (!m.solid[i]) {
+        depth = 0; rgba[o + 3] = 0;
+        continue;
+      }
+      if (depth === 0) {
+        const y = (r + 1) * cell;
+        cover = y < sandBelow && sand ? (y < wetBelow && wet ? wet : sand) : grassAt && !grassAt(x, y) ? topsoil : grass;
+        exposed = cover === grass;
+        // Grass blades poking up into the air above a grassy top (drawn only: the cells stay air).
+        if (fringe && exposed) {
+          const tall = hash(c, r) % (fringe + 2);
+          for (let k = 1; k <= tall && r + k < m.rows && !m.solid[(r + k) * m.cols + c]; k++) {
+            const a = ((r + k) * m.cols + c) * 4, tip = .92 - k * .08;
+            rgba[a] = grass[0] * tip; rgba[a + 1] = grass[1] * tip; rgba[a + 2] = grass[2] * tip; rgba[a + 3] = 255;
+          }
+        }
+      }
+      const k = deepFrom === null ? Math.min(1, depth / deepAt) : Math.min(1, Math.max(0, deepFrom / cell - r) / deepAt), grain = 1 + (hash(c, r) >>> 24 & 31) / 255 - .06;
+      const sandy = cover === sand || cover === wet;
       let red, green, blue;
-      if (depth < band) { [red, green, blue] = grass; }
-      else if (depth < band + 3) { [red, green, blue] = topsoil; }
-      else { red = earth[0] + (deep[0] - earth[0]) * k; green = earth[1] + (deep[1] - earth[1]) * k; blue = earth[2] + (deep[2] - earth[2]) * k; }
+      if (depth < band) { [red, green, blue] = cover; if (cover === grass) { const tip = 1.12 - depth * .05; red *= tip; green *= tip; blue *= tip; } }
+      else if (depth < band + 3) { [red, green, blue] = sandy ? sand : topsoil; }
+      else {
+        red = earth[0] + (deep[0] - earth[0]) * k; green = earth[1] + (deep[1] - earth[1]) * k; blue = earth[2] + (deep[2] - earth[2]) * k;
+        if (sandy) { const s = Math.max(0, 1 - (depth - band) / 14) * .8; red += (sand[0] - red) * s; green += (sand[1] - green) * s; blue += (sand[2] - blue) * s; }
+        if (rock && rockAt) {
+          const amount = rockAt(x, (r + .5) * cell);
+          if (amount > 0) {
+            // Strata: lighter and darker bands that wander a little along x.
+            const stripe = .84 + .14 * (((r + (hash(c >> 3, 5) & 3)) >> 2) % 3), a = Math.min(1, amount);
+            red += (rock[0] * stripe - red) * a; green += (rock[1] * stripe - green) * a; blue += (rock[2] * stripe - blue) * a;
+          }
+        }
+      }
+      // A root hanging from the grass into the topsoil.
+      if (rootLength && exposed && depth >= band && depth < band + rootLength && (hash(c, depth >> 2) & 3)) { red = roots[0]; green = roots[1]; blue = roots[2]; }
+      if (shade && depth >= band) {
+        // Darker under an overhang (air a little below) and beside a wall (air to a side).
+        let dark = 0;
+        for (let d = 1; d <= 4 && !dark; d++) {
+          if (r - d >= 0 && !m.solid[i - d * m.cols]) dark = 1.1 - d * .22;
+          else if ((c - d >= 0 && !m.solid[i - d]) || (c + d < m.cols && !m.solid[i + d])) dark = .7 - d * .15;
+        }
+        if (dark > 0) { const d = 1 - shade * Math.min(1, dark); red *= d; green *= d; blue *= d; }
+      }
       red *= grain; green *= grain; blue *= grain;
       const s = m.stain[i] / 255 * .9, tint = tints[m.tint[i]];
       if (s > 0 && tint) { red += (tint[0] - red) * s; green += (tint[1] - green) * s; blue += (tint[2] - blue) * s; }
