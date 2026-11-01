@@ -84,7 +84,10 @@ export function auditColliders(colliders, solids, { map = '', variant = 0, shotH
     const mesh = measure(c, solids, cell), flags = [], allowed = allow.includes(c.id) || allow.includes(c.source);
     if ((blocksShots || blocksMovement) && !allowed) {
       if (!mesh.bounds) flags.push('no-mesh');
-      else if (mesh.coverage < MIN_COVERAGE || mesh.top < Math.min(top(c), 1e6) * MIN_HEIGHT) flags.push('oversized');
+      else if (mesh.coverage < MIN_COVERAGE || mesh.top < Math.min(top(c), 1e6) * MIN_HEIGHT) {
+        // Pieces a few cells apart can touch on the coarse grid: find them on a five times finer one.
+        flags.push('oversized'); mesh.parts = measure(c, solids, cell / 5).parts;
+      }
       if (blocksShots && mesh.bounds && shotHeight !== null && mesh.top < shotHeight) flags.push('under-shot');
       if (blocksShots && health < 1) flags.push('damaged');
     }

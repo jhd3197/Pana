@@ -15,7 +15,7 @@ export const COLLISION_ALLOW = ['court-bounds'];
 export function collidersFor(mapId, variant = 0) {
   const cover = coverFor(mapId, variant).map((o, i) => {
     const h = o.h ?? o.height ?? Infinity;
-    return { id: `${mapId}:${variant}:${i}`, source: o.kind || 'cover', x: o.x, z: o.z, w: o.w, d: o.d, h, blocksShots: h > SHOT_HEIGHT, blocksMovement: true, health: o.health ?? 1 };
+    return { id: o.ref || `${mapId}:${variant}:${i}`, source: o.kind || 'cover', x: o.x, z: o.z, w: o.w, d: o.d, h, blocksShots: o.shots !== false && h > SHOT_HEIGHT, blocksMovement: true, health: o.health ?? 1 };
   });
   const { x, z } = boundsFor(mapId), wall = (id, cx, cz, w, d) => ({ id: `${mapId}:${variant}:${id}`, source: 'court-bounds', x: cx, z: cz, w, d, h: Infinity, blocksShots: true, blocksMovement: true, health: 1 });
   return [...cover, wall('north', 0, -z - .5, x * 2 + 2, 1), wall('south', 0, z + .5, x * 2 + 2, 1), wall('west', -x - .5, 0, 1, z * 2), wall('east', x + .5, 0, 1, z * 2)];

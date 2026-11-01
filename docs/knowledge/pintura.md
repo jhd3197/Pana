@@ -33,6 +33,15 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   purpose, only the court edge today). `scene.draw` calls `setMap(state.mapId)`
   every frame, so anything that stands another court must measure it before the
   next frame (the debug `audit` retries until the asked court stands).
+- Collision fixes: `npm run collision-report -- <arena> --fix` writes each
+  proposed fix into `public/collision-fixes.js`, keyed `map:variant:index` on
+  the raw layout row with the `from` box it was measured on; `coverFor` applies
+  them (a changed row skips its fix and gets flagged again). Rows keep `ref`,
+  so split pieces read `terminal:0:37.0`. `collision.browser.js` audits every
+  court and variant and fails on any flagged collider; an intentional unseen
+  blocker goes in `COLLISION_ALLOW` (`colliders.js`) with a comment. First
+  run: El Puerto's four barrel groups (3 x 2.6 m boxes, drums filling 25%) now
+  collide drum by drum, and the drums are mirrored between the bases.
 - All collision cover comes from `coverFor(mapId)`; scene geometry reads the
   same bounds. Courts are 54 m (`SIZE` 27): each map's cover is spread 1.5×
   from the centre (boxes 1.15× larger) plus an eight-piece outer `RING`.

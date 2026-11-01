@@ -64,7 +64,9 @@ test('every Pepazo map has clear spawns, open passages and one connected court',
   for (const { id } of PAINT_ARENAS) for (const variant of [0, 1, 2]) {
     const cover = coverFor(id, variant), size = sizeFor(id);
     assert.ok(size >= SIZE && size >= 27, `${id}: the larger court`);
-    cover.forEach((a, i) => cover.slice(i + 1).forEach(b => assert.ok(Math.max(Math.abs(a.x - b.x) - (a.w + b.w) / 2, Math.abs(a.z - b.z) - (a.d + b.d) / 2) >= 2.2, `${id}: passage between ${a.x},${a.z} and ${b.x},${b.z}`)));
+    // Pieces split from one row by a collision fix (refs 'map:v:i.0', '.1'...) never had a passage between them.
+    const group = o => (o.ref || '').split('.')[0];
+    cover.forEach((a, i) => cover.slice(i + 1).forEach(b => (a.ref?.includes('.') && group(a) === group(b)) || assert.ok(Math.max(Math.abs(a.x - b.x) - (a.w + b.w) / 2, Math.abs(a.z - b.z) - (a.d + b.d) / 2) >= 2.2, `${id}: passage between ${a.x},${a.z} and ${b.x},${b.z}`)));
     for (const s of spawnsFor(id)) assert.equal(blocked(s.x, s.z, 2, id, variant), false, `${id}/${variant}: spawn ${s.x},${s.z} has room`);
     const key = (x, z) => `${x},${z}`, free = new Set();
     for (let x = 1 - size; x < size; x += .5) for (let z = 1 - size; z < size; z += .5) if (!blocked(x, z, .55, id, variant)) free.add(key(x, z));
