@@ -477,6 +477,33 @@ See candidates.
 | Room options (fields, rules, finalize; compact "Más ajustes" grid in the game skin, in-dialog help layer via `help: { controls, tips }`) | `engine/room-options.js`, `room-options.css`, `room-options-rules.js`, `room-option-fields.js` | 23 games; fields in 13; help layer in Pepazo |
 | Results screen | `engine/results.js` + `.pk-results` | 22 games (not Bululú, Embuste) |
 
+### Team objectives: flags and capture zones
+
+`engine/play/objectives.js`. Pure, no Three.js: a server room, a practice host
+and a unit test run the same rules. Actors are `{ id, team, x, z, alive }`
+built from the game's players each tick; every step returns events
+(`pickup`, `drop`, `return`, `capture`; `captured`, `neutral` for zones) the
+game turns into scores, feed lines and sounds.
+
+- Flags: `createFlag(team, stand)`, `stepFlags(flags, actors, dt, rules)`
+  (carrier follows, drop on death or leave, capture only with your own flag
+  home, own-team touch returns a dropped flag, rival touch lifts it, auto-return
+  after `returnAfter` s), `dropCarried`, `carriedBy`, `returnFlag`.
+- Zones (for a Domination mode): `createZone(id, { x, z, radius, captureTime })`,
+  `stepZone(zone, actors, dt)` (lone team turns it, two teams contest it, a
+  rival's zone is neutralised first), `zoneOccupants`.
+- Match end: `reachedLimit(scores, limit)`, `decideWinner(scores, tieBreaks)`,
+  `flagTieBreaks(flags)` (flag at home, then fewer times taken).
+
+```js
+import { createFlag, stepFlags } from '../../../engine/play/objectives.js'; // relative: rules run on the server
+const flags = stands.map((stand, team) => createFlag(team, stand));
+for (const e of stepFlags(flags, actors, dt)) if (e.type === 'capture') scores[e.team]++;
+```
+
+Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`). Tests:
+`engine/tests/objectives.test.js`, `games/pintura/tests/ctf.test.js`.
+
 ## Rooms and netcode
 
 | Piece | Module | Used by |
