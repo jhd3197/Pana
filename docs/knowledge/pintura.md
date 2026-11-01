@@ -491,6 +491,46 @@ ride `view()` as `flags`, `flagEvents` (numbered, the last eight) and `outcome`.
   capture) and `ctf-scene.js` (stand pads, flags with a light column, the
   carrier's flag on the back). Styles in `ctf.css`.
 
+### Domination ("Dominación")
+
+A fourth `mode` (`'dom'`): three zones, A on orange's half, B in the middle, C
+on turquoise's. Lobby limits: `domGoal` (200, 100 or 300 points) and the same
+`flagTime` field as CTF (10, 5 or 15 min). `objectivePlay(options)` covers CTF
+and domination: team round, always respawn, paint knockouts never add to the
+team score. The zone rules are the engine's (`stepZones`, `zonePoints`,
+`zoneTieBreaks` in `engine/play/objectives.js`); Pepazo's part is
+`public/domination.js`: the zone table, round reset, scoring, feed lines, the
+outcome, bot goals and the pure HUD helpers. The server room owns the zones:
+they ride `view()` as `zones`, `zoneEvents` (numbered, last eight) and `outcome`.
+
+- Zones are 3.5 m rings; one pana turns a neutral zone in 7 s, each extra pana
+  adds 50% (up to 3×), a rival's zone is neutralised first (another 7 s). Both
+  teams inside freeze it; an empty zone keeps its owner (a drained owner's zone
+  refills at half speed, an unfinished claim fades). Each owned zone pays one
+  point a second (fractions bank per team); every pana of the capturing team
+  inside gets a capture and 2 personal points.
+- First to `domGoal` wins; at time up the higher score, then more zones held
+  now, else a draw.
+- `DOM_ZONES` was searched over the real cover: the middle 1.6 m is clear in
+  all three layouts, 70%+ of the ring is walkable, zones sit 13 m+ apart and
+  7.5 m+ off spawns, and B's mean distance to each team's spawns differs by
+  under 4 m (spawns on the square courts are point-symmetric, so "nearest
+  spawn" is a bad mid test). `tests/domination.test.js` flood-fills every
+  layout from both teams' spawns. A new map needs a row.
+- Bots take roles by order (capture, defend, capture, support): capturers split
+  over the zones their team does not own, the defender answers an owned zone
+  under attack or holds the one nearest the middle, support answers attacks and
+  otherwise captures. With nothing to take, capturers hunt rivals. The goal is
+  computed before the hidden-rival hunt and suppresses it: both share one cached
+  route per bot, and alternating targets every tick froze bots in place on El
+  Puerto. A 4v4 bot round to 100 points takes 60–100 s of game time.
+- Client: `domination-hud.js` (A/B/C chips under the race bar with owner colour
+  and a capture bar, an in-zone banner, world markers with distance, synth cues
+  for captured, lost, neutralised, contested, a capture tick and the round end),
+  `domination-scene.js` (ground ring, progress arc, glass wall that flashes when
+  contested, light pillar, letter board hidden when the camera stands inside)
+  and `domination.css`. The minimap draws each zone's ring.
+
 Team and flag lobbies show the shared avatar roster, with four orange and four turquoise positions. Stable `player.seat` positions are separate from network IDs; team is seat parity. Any connected pana can move their own card, including swapping an occupied position; only the host can arrange other players. The server rejects live-round moves and preserves choices through start, rematch and host departure. With multiple humans, both teams need a player before starting; solo practice still fills bots. Reconnecting into a full arena cannot duplicate another player's position.
 
 ## Armory and composed combat kits

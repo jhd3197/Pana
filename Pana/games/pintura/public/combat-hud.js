@@ -28,7 +28,7 @@ export function createCombatHud(doc = document) {
       if (r.teams) { side('me', team(r.me.team), r.me.team ? 'var(--pk-teal)' : 'var(--pk-game)', true); side('rival', team(r.rival.team), r.rival.team ? 'var(--pk-teal)' : 'var(--pk-game)', true); }
       else { side('me', loc('Tú'), r.me.color, true); side('rival', r.rival?.name || '', r.rival?.color, false); }
       set($('score'), String(r.me.score)); set($('rival-score'), r.rival ? String(r.rival.score) : '–');
-      const goal = r.flag ? loc('Primero a {n} banderas', { n: r.goal }) : loc('Primero a {n}', { n: r.goal });
+      const goal = r.flag ? loc('Primero a {n} banderas', { n: r.goal }) : r.dom ? loc('Primero a {n} puntos', { n: r.goal }) : loc('Primero a {n}', { n: r.goal });
       set($('position'), r.teams ? goal : `${goal} · ${loc('{rank} de {n} panas', { rank: r.rank, n: r.n })}`);
       set($('timer'), clock(state.time)); $('clock').classList.toggle('low', state.time <= 30);
 

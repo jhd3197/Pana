@@ -296,5 +296,19 @@
   "pintar": "paint",
   "recargar": "reload",
   "Sin pepas · {key} para recargar": "Out of paint · {key} to reload",
-  "Sin pepas · toca Recargar": "Out of paint · tap Reload"
+  "Sin pepas · toca Recargar": "Out of paint · tap Reload",
+  "Dominación": "Domination",
+  "Puntos para ganar": "Points to win",
+  "puntos para ganar": "points to win",
+  "Primero a {n} puntos": "First to {n} points",
+  "Puntos: naranja {orange} · turquesa {teal}. ¿Otra ronda?": "Points: orange {orange} · turquoise {teal}. Another round?",
+  "El equipo {team} tomó la zona {zone}.": "The {team} team took zone {zone}.",
+  "El equipo {team} neutralizó la zona {zone}.": "The {team} team neutralized zone {zone}.",
+  "¡Zona {zone} en disputa!": "Zone {zone} contested!",
+  "Defiendes la zona {zone}": "Defending zone {zone}",
+  "Neutralizando {zone} · {n}%": "Neutralizing {zone} · {n}%",
+  "Capturando {zone} · {n}%": "Capturing {zone} · {n}%",
+  "Zonas": "Zones",
+  "Zona {zone} · libre": "Zone {zone} · free",
+  "Zona {zone} · {team}": "Zone {zone} · {team}"
 }

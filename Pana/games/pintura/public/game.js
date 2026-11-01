@@ -21,6 +21,7 @@ import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
 import { createCombatHud } from './combat-hud.js';
 import { createCtfHud } from './ctf-hud.js';
+import { createDomHud } from './domination-hud.js';
 import { sfx, createSteps } from './sounds.js';
 import { pressJump } from '/engine/play/jump.js';
 import { createShotCharge } from '/engine/play/shot-charge.js';
@@ -36,7 +37,7 @@ const $ = id => document.getElementById(id), code = roomCode();
 const params = new URLSearchParams(location.search);
 const held = new Set(), pads = []; let aim = null, firing = false, jumpPress = 0, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastKiller = '', wasReloading = false, lastDry = 0; const seenShots = new Map();
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
-const hitFeats = createHitFeats(createFeats($('toast'))), combat = createCombatHud(document), ctfHud = createCtfHud(document);
+const hitFeats = createHitFeats(createFeats($('toast'))), combat = createCombatHud(document), ctfHud = createCtfHud(document), domHud = createDomHud(document);
 // A released grenade rides three inputs (150 ms), so a server tick that only keeps the latest input still sees it.
 let weapon = 'pistol', queuedGrenade = null, grenadeSends = 0, lastWeapon = '', throwSends = 0;
 // Aim: right mouse or F held, or the Mira button toggled on a phone. Scopes and Miras zoom in.
@@ -57,7 +58,7 @@ if (typeof window.PanaSh?.onCamoUnlocked === 'function') window.PanaSh.onCamoUnl
 $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-armory').click(), read: () => {
   const describe = p => { const stats = kitStats(p.kit || room.kit, room.state.options); return { id: room.link?.state.players.find(m => m.seat === p.id)?.id, kit: stats.name, level: kitRating(p.kit || room.kit, room.state.options), color: p.color || '#ffc629', team: teamPlay(room.state.options) ? (p.team ? loc('Turquesa') : loc('Naranja')) : '' }; };
   const people = room.state.players.filter(p => p.connected && !p.bot).length || 1;
-  return { connection: room.local ? 'local' : room.connected ? 'online' : $('connection').dataset.failed === 'true' ? 'offline' : 'connecting', players: room.state.players.map(describe), local: describe({ kit: room.kit }), summary: [locn(people, '{n} pana', '{n} panas'), room.state.options?.mode === 'ctf' ? loc('Captura la bandera') : room.state.options?.mode === 'teams' ? loc('Equipos') : loc('Todos vs todos'), loc('{n} min', { n: roundTime(room.state.options) / 60 })].join(' · ') };
+  return { connection: room.local ? 'local' : room.connected ? 'online' : $('connection').dataset.failed === 'true' ? 'offline' : 'connecting', players: room.state.players.map(describe), local: describe({ kit: room.kit }), summary: [locn(people, '{n} pana', '{n} panas'), room.state.options?.mode === 'ctf' ? loc('Captura la bandera') : room.state.options?.mode === 'dom' ? loc('Dominación') : room.state.options?.mode === 'teams' ? loc('Equipos') : loc('Todos vs todos'), loc('{n} min', { n: roundTime(room.state.options) / 60 })].join(' · ') };
 } };
 const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
 // One copy of the help text: the pause menu and the settings dialog's "Cómo se juega" layer.
@@ -328,8 +329,8 @@ function render(state) {
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase !== 'playing');
   $('round-minutes').textContent = loc('{n} min', { n: roundTime(state.options) / 60 });
-  const ctf = state.options?.mode === 'ctf'; $('win-target').textContent = ctf ? state.options.flagGoal || 3 : TARGET;
-  $('win-target-label').textContent = ctf ? loc('banderas para ganar') : loc('pintadas para ganar');
+  const ctf = state.options?.mode === 'ctf', dom = state.options?.mode === 'dom'; $('win-target').textContent = ctf ? state.options.flagGoal || 3 : dom ? state.options.domGoal || 200 : TARGET;
+  $('win-target-label').textContent = ctf ? loc('banderas para ganar') : dom ? loc('puntos para ganar') : loc('pintadas para ganar');
   const lobby = state.phase === 'lobby', finished = state.phase === 'finished';
   $('lobby').hidden = !lobby; $('hud').hidden = lobby || finished; document.body.classList.toggle('in-lobby', lobby);
   const teams = teamPlay(state.options), people = state.players.filter(p => p.connected);
@@ -340,8 +341,8 @@ function render(state) {
   $('start').disabled = (!room.connected ? $('connection').dataset.failed !== 'true' : !room.isHost || missingTeam); $('start').textContent = !room.connected ? loc('Conectando…') : missingTeam ? loc('Falta un pana en el otro equipo') : room.isHost ? loc('¡A pepear!') : loc('El anfitrión inicia la ronda');
   $('invite').disabled = room.local || !room.connected; $('roster').textContent = state.players.filter(p => p.connected).map(p => p.name).join(' · ');
   const me = state.players.find(p => p.id === room.id), order = [...state.players].sort((a, b) => b.score - a.score || a.hits - b.hits);
-  combat.render(state, me, room.id); ctfHud.render(state, me);
-  const feed = state.message && !combat.duplicate(state.message) ? loc(state.message, state.messageVars?.variant ? { ...state.messageVars, variant: loc(state.messageVars.variant).toLowerCase() } : state.messageVars?.flag ? { ...state.messageVars, flag: loc(state.messageVars.flag) } : state.messageVars || undefined) : '';
+  combat.render(state, me, room.id); ctfHud.render(state, me); domHud.render(state, me);
+  const feed = state.message && !combat.duplicate(state.message) ? loc(state.message, state.messageVars?.variant ? { ...state.messageVars, variant: loc(state.messageVars.variant).toLowerCase() } : state.messageVars?.flag ? { ...state.messageVars, flag: loc(state.messageVars.flag) } : state.messageVars?.team ? { ...state.messageVars, team: loc(state.messageVars.team) } : state.messageVars || undefined) : '';
   $('feed').textContent = feed; $('respawn').hidden = !me?.respawn && !me?.eliminated; $('respawn').style.setProperty('--pc', lastKiller?.color || '');
   $('respawn').textContent = me?.eliminated ? lastKiller ? loc('{name} te pintó desde {distance} m · sin vidas, observando la ronda', lastKiller) : loc('¡Te pintaron! · sin vidas, observando la ronda')
     : lastKiller ? loc('{name} te pintó desde {distance} m · vuelves en {n}', { ...lastKiller, n: Math.ceil(me?.respawn || 0) }) : loc('¡Te pintaron! · vuelves en {n}', { n: Math.ceil(me?.respawn || 0) });
@@ -363,7 +364,7 @@ function render(state) {
     if (state.winners?.includes(room.id)) hitFeats.win();
     $('result-title').textContent = winners.length > 1 ? loc('¡Empate de pintura!') : loc('¡Ganó {name}!', { name: winners[0]?.name });
     if (teamsOn(state)) $('result-title').textContent = new Set(winners.map(p => p.team)).size !== 1 ? loc('¡Empate de equipos!') : winners[0]?.team === 0 ? loc('¡Ganó el equipo naranja!') : loc('¡Ganó el equipo turquesa!');
-    $('result-copy').textContent = ctf ? loc('Capturas: naranja {orange} · turquesa {teal}. ¿Otra ronda?', { orange: state.teamScores?.[0] || 0, teal: state.teamScores?.[1] || 0 }) : locn(order[0]?.score || 0, '{n} pintada en la mejor marca. ¿Otra ronda?', '{n} pintadas en la mejor marca. ¿Otra ronda?');
+    $('result-copy').textContent = ctf ? loc('Capturas: naranja {orange} · turquesa {teal}. ¿Otra ronda?', { orange: state.teamScores?.[0] || 0, teal: state.teamScores?.[1] || 0 }) : dom ? loc('Puntos: naranja {orange} · turquesa {teal}. ¿Otra ronda?', { orange: state.teamScores?.[0] || 0, teal: state.teamScores?.[1] || 0 }) : locn(order[0]?.score || 0, '{n} pintada en la mejor marca. ¿Otra ronda?', '{n} pintadas en la mejor marca. ¿Otra ronda?');
     fillRoster($('result-board'), order.map((p, i) => ({ rank: i + 1, name: p.name, detail: [p.captures && locn(p.captures, '{n} captura', '{n} capturas'), locn(p.hits, '{n} recibida', '{n} recibidas'), p.bot && loc('Bot')].filter(Boolean).join(' · '), end: p.score, score: true, me: p.id === room.id })));
     $('again').disabled = !room.isHost || !room.connected; $('again').textContent = room.isHost ? loc('Otra ronda') : loc('El anfitrión prepara la revancha');
     if (lastPhase !== 'finished') { clearInput(); $('again').focus(); }
@@ -378,7 +379,7 @@ function frame(now) {
   document.body.classList.toggle('first-person', cameraView === 'primera' && room.state.phase === 'playing');
   world.setAim(active() && aiming()); world.aimGrenade(grenadeAim());
   armory.update(dt); world.draw(room.state, room.id, dt, aim);
-  const scoped = world.scope.scoped; scopeView.set(scoped ? world.scope.amount : 0); document.body.classList.toggle('scoped', scoped); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward()); ctfHud.frame(world.camera, myPana()); requestAnimationFrame(frame);
+  const scoped = world.scope.scoped; scopeView.set(scoped ? world.scope.amount : 0); document.body.classList.toggle('scoped', scoped); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward()); ctfHud.frame(world.camera, myPana()); domHud.frame(world.camera, myPana()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); controlHints.dispose(); room.dispose(); world.dispose(); }, { once: true });

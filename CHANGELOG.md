@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo tiene modo Dominación.**
+  Tres zonas por mapa (A, B y C): párate en una para tomarla y cada zona tuya
+  suma un punto por segundo. Puntos y tiempo límite en el lobby, bots que
+  capturan y defienden, y anillos, marcadores y sonidos para cada zona.
+
 - **Pepazo tiene modo Captura la bandera.**
   Dos equipos, una bandera en cada base de todos los mapas: tómala, llévala a
   la tuya y anota mientras la tuya esté en casa. Capturas y tiempo límite en
