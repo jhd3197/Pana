@@ -1,5 +1,6 @@
 import { loc, locn } from '/engine/i18n.js';
 import { icon } from '/engine/icons.js';
+import { keyFor } from '/engine/control-hints.js';
 import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, ATTACHMENTS, OPTICS } from './armory-data.js';
 import { TARGET } from './rules.js';
 import { livesOf } from './options.js';
@@ -9,6 +10,8 @@ import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES } from './hud-model.j
 // prompt, your streak and the arrow that points at whoever painted you. game.js hands
 // it the room state each render; hud-model.js holds the arithmetic, hud-banderin.css the look.
 // Under the pepas: the marker's name and class, and an icon per fitted part.
+// Out of pepas: the reload key of the device in use (a phone has its Recargar button).
+function emptyText() { const key = keyFor({ keyboard: 'R', gamepad: 'X', touch: null }); return key ? loc('Sin pepas · {key} para recargar', { key }) : loc('Sin pepas · toca Recargar'); }
 const PART_ICON = { barrel: 'kitBarrel', hopper: 'kitHopper', stock: 'kitStock', optic: 'kitOptic', tape: 'plus', drip: 'kitPaint', strap: 'plus' };
 export function createCombatHud(doc = document) {
   const $ = id => doc.getElementById(id), body = doc.body;
@@ -53,7 +56,7 @@ export function createCombatHud(doc = document) {
       // A thrown chancla is away: the same bar fills until it is back in the hand.
       const away = melee && me?.melee?.phase === 'away' && !me.respawn, reloading = !melee && me?.reload > 0, empty = !melee && !!me && ammo <= 0 && !reloading && !me.respawn && !me.eliminated;
       $('reload-prompt').hidden = !(reloading || empty || away); $('reload-prompt').classList.toggle('empty', empty);
-      set($('reload-text'), away ? loc('La chancla vuelve en {n} s', { n: Math.max(0, me.melee.t).toFixed(1) }) : reloading ? loc('Recargando {n} s', { n: me.reload.toFixed(1) }) : empty ? loc('Sin pepas · R para recargar') : '');
+      set($('reload-text'), away ? loc('La chancla vuelve en {n} s', { n: Math.max(0, me.melee.t).toFixed(1) }) : reloading ? loc('Recargando {n} s', { n: me.reload.toFixed(1) }) : empty ? emptyText() : '');
 
       const gear = $('gear'), ready = !!me?.grenadeReady;
       if (gear.dataset.ready !== String(ready)) { gear.dataset.ready = String(ready); gear.replaceChildren(icon('kitGrenade'), doc.createTextNode(` ${ready ? loc('Granada') : loc('Sin granada')}`)); }

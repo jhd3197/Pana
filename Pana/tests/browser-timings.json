@@ -154,6 +154,7 @@
   "Pana/games/pintura/tests/browser.mjs": 455,
   "Pana/games/pintura/tests/collision.browser.js": 8,
   "Pana/games/pintura/tests/ctf.browser.js": 113,
+  "Pana/games/pintura/tests/control-hints.browser.js": 23,
   "Pana/games/pintura/tests/knockout.browser.js": 38,
   "Pana/games/pintura/tests/paint-kit.browser.js": 6,
   "Pana/games/poquer/tests/browser.mjs": 112,

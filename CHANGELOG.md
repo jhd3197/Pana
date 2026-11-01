@@ -39,6 +39,10 @@ becomes the GitHub release's notes.
 - **En Pepazo, La Lejana saca de una con un tiro a la cabeza y pega más fuerte de cerca.**
   En primera persona, un tiro a la cabeza tumba a cualquiera a cualquier distancia.
   Al cuerpo pinta 3 pepazos hasta 10 m y baja a 1 a partir de 50 m (antes, 2 siempre).
+- **Pepazo muestra los controles del aparato que usas, una sola vez.**
+  Con mando salen sus botones (RT, R2…), con teclado sus teclas y en teléfono
+  los gestos; cambia al vuelo si cambias de aparato y se va al primer toque.
+
 - **Todos los juegos y la lista de la portada usan el mismo estilo de esquinas rectas.**
   Botones, fichas, menús de ajustes, salas, marcadores, resultados, avisos,
   el editor de personaje y el Studio dejaron las esquinas redondeadas y las

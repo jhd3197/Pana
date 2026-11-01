@@ -237,7 +237,6 @@
   "Sin accesorio": "No attachment",
   "Sin granada": "No grenade",
   "Sin llavero": "No keychain",
-  "Sin pepas · R para recargar": "Out of paint · R to reload",
   "Solo cambia el estilo.": "Only changes the look.",
   "Solo pistola": "Pistol only",
   "Tabla de la ronda": "Round scoreboard",
@@ -266,7 +265,6 @@
   "Vuelve en": "Back in",
   "Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.": "You return to the court 2.5 seconds after being painted. When you respawn you get 1.5 seconds of protection; shooting cancels it.",
   "WASD / Flechas": "WASD / Arrows",
-  "WASD caminar · Shift correr · Ratón mirar · Clic pintar · Tab tabla · Esc menú": "WASD walk · Shift sprint · Mouse look · Click paint · Tab scoreboard · Esc menu",
   "Banderas": "Flags",
   "La lleva {name}": "{name} has it",
   "En el suelo · {n} s": "On the ground · {n} s",
@@ -290,5 +288,13 @@
   "{n} captura": {
     "one": "{n} capture",
     "other": "{n} captures"
-  }
+  },
+  "Arrastra": "Drag",
+  "caminar": "walk",
+  "granada": "grenade",
+  "mirar": "look",
+  "pintar": "paint",
+  "recargar": "reload",
+  "Sin pepas · {key} para recargar": "Out of paint · {key} to reload",
+  "Sin pepas · toca Recargar": "Out of paint · tap Reload"
 }

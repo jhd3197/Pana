@@ -15,6 +15,7 @@ import { holdButton } from '/engine/touch.js';
 import { fillRoster } from '/engine/results.js';
 import { sound } from '/engine/fx.js';
 import { createToast } from '/engine/hud.js';
+import { mountControlHints } from '/engine/control-hints.js';
 import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
@@ -45,6 +46,11 @@ let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').dataset.failed = String(failed); $('connection').textContent = text; document.dispatchEvent(new Event('pana:sala-update')); $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
+// The first round's control hints, once a session, in the keys of the device in use; any input dismisses them.
+const controlHints = mountControlHints($('control-hints'), { game: 'pintura', hints: [
+  { id: 'move', label: loc('caminar'), keys: { keyboard: 'WASD', gamepad: 'Stick izq.', touch: null } }, { id: 'look', label: loc('mirar'), keys: { keyboard: loc('Ratón'), gamepad: 'Stick der.', touch: loc('Arrastra') } },
+  { id: 'fire', label: loc('pintar'), keys: { keyboard: loc('Clic'), gamepad: 'RT', touch: null } }, { id: 'aim', label: loc('apuntar'), keys: { keyboard: loc('Clic der.'), gamepad: 'LT', touch: null } },
+  { id: 'reload', label: loc('recargar'), keys: { keyboard: 'R', gamepad: 'X', touch: null } }, { id: 'grenade', label: loc('granada'), keys: { keyboard: 'G', gamepad: 'RB', touch: null } }] });
 const toast = createToast($('toast')), armory = createArmory({ room, onPick: value => { weapon = value; }, notify: toast });
 // pana.sh may call back when a camo unlocks mid-session (optional in its bridge).
 if (typeof window.PanaSh?.onCamoUnlocked === 'function') window.PanaSh.onCamoUnlocked(id => import('./camos.js').then(({ camoById }) => { const c = camoById(id); if (c) { toast(loc('¡Camuflaje {name} desbloqueado!', { name: loc(c.name) })); armory.refreshCamos(); } }));
@@ -70,7 +76,7 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),
   notes: { facil: loc('Los bots fallan seguido y disparan menos.'), normal: loc('Bots con buena mano, pero se les va alguna.'), dificil: loc('Los bots apuntan fino y no sueltan el gatillo.'), experto: loc('Casi no fallan: muévete y cúbrete.') } });
-const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
+const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] }, prompts: false }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
  
   options: [{ id: 'weapon', label: loc('Marcadora (si la sala permite todas)'), choices: WEAPONS.map(m=>[m.id,m.name]), get: () => weapon, set: value => armory.setWeapon(value) },
     { id: 'view', label: loc('Cámara'), choices: [['primera', loc('Primera persona')], ['cancha', loc('Ver la cancha')]], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
@@ -310,7 +316,7 @@ function roundStart(state) {
   if (count === lastCount) return;
   clearTimeout(roundStart.timer);
   if (count) { $('countdown').textContent = String(count); flash('counting'); sfx.count(count); }
-  else if (round && !preparing) { $('countdown').textContent = loc('¡YA!'); flash('counting'); flash('round-start'); sfx.go(); roundStart.timer = setTimeout(() => document.body.classList.remove('counting'), 1000); }
+  else if (round && !preparing) { $('countdown').textContent = loc('¡YA!'); flash('counting'); flash('round-start'); sfx.go(); controlHints.show(); roundStart.timer = setTimeout(() => document.body.classList.remove('counting'), 1000); }
   else document.body.classList.remove('counting');
   lastCount = count;
 }
@@ -375,7 +381,7 @@ function frame(now) {
   const scoped = world.scope.scoped; scopeView.set(scoped ? world.scope.amount : 0); document.body.classList.toggle('scoped', scoped); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward()); ctfHud.frame(world.camera, myPana()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); room.dispose(); world.dispose(); }, { once: true });
-if (params.has('debug')) window.pinturaDebug = { room, world, menu, input, armory, grenade: grenadeCharge };
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); controlHints.dispose(); room.dispose(); world.dispose(); }, { once: true });
+if (params.has('debug')) window.pinturaDebug = { room, world, menu, input, armory, grenade: grenadeCharge, controlHints };
 
 await prepareScene(world);
