@@ -67,3 +67,16 @@ body.scoped .crosshair, body.scoped .muzzle-flash { display: none !important; }
 .weapon-swap{display:flex;gap:6px}.weapon-swap .pk-touch{min-width:0;width:44px;padding:0}
 @media(pointer:coarse){.touch-actions .weapon-swap{grid-column:1;grid-row:4}}
 @media(max-width:400px){#touch .weapon-swap .pk-touch{width:38px;height:44px}}
+/* Out of the round (spectate-hud.js): one small square bar with who you watch, and the switch keys. */
+.spectate { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 6px; max-width: 92vw; padding: 3px; border-radius: 0; background: rgba(13, 11, 33, .82); color: var(--pk-text); font: 800 12px/1 var(--pk-sans); }
+.spectate-btn { display: inline-flex; align-items: center; gap: 3px; height: 26px; min-width: 26px; padding: 0 5px; border: 1px solid var(--pk-line-strong); border-radius: 0; background: rgba(26, 19, 54, .9); color: var(--pk-text); font: inherit; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.spectate-btn svg { width: 14px; height: 14px; flex: none; pointer-events: none; } .spectate-btn > * { pointer-events: none; }
+.spectate-btn.is-held, .spectate-btn:hover { border-color: var(--pk-yellow); color: var(--pk-yellow); }
+.spectate-key { font: 900 10px/1 var(--pk-sans); color: var(--pk-yellow); }
+.spectate-swatch { width: 9px; height: 9px; flex: none; border-radius: 0; background: var(--pk-game); }
+#spectate-name { overflow: hidden; max-width: 46vw; white-space: nowrap; text-overflow: ellipsis; }
+.spectate-hints { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 6; }
+body.spectating .crosshair, body.spectating .hitmarker, body.spectating .lock-hint { display: none !important; }
+body.spectating #touch { visibility: hidden; }
+body.spectating #hud .respawn { top: calc(100 * var(--u)); padding: 4px 14px 2px; font-size: clamp(13px, calc(20 * var(--u)), 22px); box-shadow: 3px 3px 0 var(--ink); }
+@media (pointer: coarse) { .spectate { bottom: 18px; gap: 8px; } .spectate-btn { height: 40px; min-width: 40px; } .spectate-btn svg { width: 18px; height: 18px; } }

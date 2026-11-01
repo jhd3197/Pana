@@ -28,6 +28,7 @@ import { createBlastFx } from '/engine/play/blast-fx.js';
 import { createRecoil, shakeAt } from '/engine/play/recoil.js';
 import { createScope } from '/engine/play/scope.js';
 import { traceRay } from '/engine/play/projectile.js';
+import { createPose, createSpectateCamera, followPose, overheadPose } from '/engine/play/spectate.js';
 import { traceLob, groundAt } from '/engine/play/lob.js';
 import { guideRibbon, guideBeads, guideRing } from '/engine/play/aim-guide.js';
 import { SIZE, SPREAD, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK, SHOT_HEIGHT, shotCover } from './rules.js';
@@ -202,6 +203,41 @@ export function createScene(canvas) {
   const aim = new THREE.Mesh(new THREE.RingGeometry(.25, .32, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide })); aim.rotation.x = -Math.PI / 2; aim.position.y = .05; scene.add(aim);
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.1), mouse = new THREE.Vector2(), point = new THREE.Vector3();
   const frontRay = new THREE.Ray(), front = new THREE.Vector3(), hit = new THREE.Vector3();
+  // Out of the round (game.js's spectator): the killcam, the follow camera and the overhead view.
+  // Everything here is reused, so watching allocates nothing per frame.
+  const spectatePose = createPose(), spectateRig = createSpectateCamera(), spectateRay = new THREE.Ray(), spectateHit = new THREE.Vector3(), spectateHead = { x: 0, y: 0, z: 0 }, spectateAim = { x: 0, z: 0 };
+  let spectator = null;
+  // How far the camera may go from (ox, oy, oz) along a unit direction before the court's
+  // camera bounds (the same boxes that pull the marker in). A box the head stands inside
+  // (a tree's canopy, a stall's awning) does not count, or the camera would sit in the head.
+  function clipCamera(ox, oy, oz, dx, dy, dz, max) {
+    spectateRay.origin.set(ox, oy, oz); spectateRay.direction.set(dx, dy, dz); let room = max;
+    for (const bounds of cameraBounds) if (!bounds.containsPoint(spectateRay.origin) && spectateRay.intersectBox(bounds, spectateHit)) room = Math.min(room, spectateHit.distanceTo(spectateRay.origin));
+    return room;
+  }
+  const playerById = (state, id) => { for (const p of state.players) if (p.id === id) return p; return null; };
+  function spectateCamera(state, id, dt, aspect) {
+    if (!spectateRig.ready) { camera.getWorldDirection(front); spectateRig.start(camera.position.x, camera.position.y, camera.position.z, camera.position.x + front.x * 10, camera.position.y + front.y * 10, camera.position.z + front.z * 10); }
+    const shot = spectator.shot, watched = avatars.get(shot === 'killcam' ? spectator.killer : spectator.target), p = playerById(state, spectator.target);
+    if (shot === 'killcam') {
+      // Where you fell, turning to whoever got you.
+      spectatePose.pos.x = camera.position.x; spectatePose.pos.y = camera.position.y; spectatePose.pos.z = camera.position.z;
+      if (watched && spectator.killer !== id) { const at = watched.group.position; spectatePose.look.x = at.x; spectatePose.look.y = at.y + 1.2; spectatePose.look.z = at.z; }
+      else { spectatePose.look.x = spectateRig.look.x; spectatePose.look.y = spectateRig.look.y; spectatePose.look.z = spectateRig.look.z; }
+    } else if (shot === 'follow' && watched && p) {
+      const at = watched.group.position; spectateHead.x = at.x; spectateHead.y = at.y + EYE; spectateHead.z = at.z; spectateAim.x = p.ax; spectateAim.z = p.az;
+      followPose(spectatePose, spectateHead, spectateAim, { clip: clipCamera });
+    } else overheadPose(spectatePose, boundsFor(state.mapId), camera.fov, aspect, { max: 85 });
+    spectateRig.step(dt, spectatePose);
+    camera.position.set(spectateRig.pos.x, spectateRig.pos.y, spectateRig.pos.z);
+    // Easing between targets can cut a corner: behind a pana the camera never passes cover.
+    if (shot === 'follow' && watched && p) {
+      const dx = camera.position.x - spectateHead.x, dy = camera.position.y - spectateHead.y, dz = camera.position.z - spectateHead.z, reach = Math.hypot(dx, dy, dz);
+      if (reach > 1e-3 && reach < 8) { const room = Math.max(0, clipCamera(spectateHead.x, spectateHead.y, spectateHead.z, dx / reach, dy / reach, dz / reach, reach + .3) - .3); if (room < reach) camera.position.set(spectateHead.x + dx / reach * room, spectateHead.y + dy / reach * room, spectateHead.z + dz / reach * room); }
+    }
+    camera.lookAt(spectateRig.look.x, spectateRig.look.y, spectateRig.look.z);
+    if (held) { held.visible = false; held.userData.flash.visible = false; }
+  }
   function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) renderer.setSize(w, h, false); }
   // The marker held in first person, rebuilt when the pana's paint colour changes.
   const modelOptions = p => ({...p.kit, weapon:p.weapon, color:FINISHES.find(f=>f.id===p.kit?.finish)?.color || p.color});
@@ -378,9 +414,10 @@ export function createScene(canvas) {
       const flash = held.userData.flash; flash.visible = held.visible && shot.flash > .05; flash.material.opacity = shot.flash;
       if (shot.shot) flash.rotation.z = Math.random() * Math.PI;
       flash.scale.setScalar(flashSize(me.weapon) * (1.15 - shot.flash * .3) * (.9 + (me.fired % 3) * .1));
+      if (spectator?.active) spectateCamera(state, id, dt, aspect); else if (spectateRig.ready) spectateRig.reset();
       camera.clearViewOffset();
     } else {
-      if (held) held.visible = false; scope.reset();
+      if (held) held.visible = false; scope.reset(); if (spectateRig.ready) spectateRig.reset();
       // The overview follows the pana a little; on a long court it follows further.
       const court = boundsFor(state.mapId), reach = court.x > court.z ? .8 : .4;
       destination.set(lobby ? 0 : THREE.MathUtils.clamp((me?.x || 0) * reach, 17 - court.x, court.x - 17), .8, lobby ? -1 : THREE.MathUtils.clamp((me?.z || 0) * .4, 18 - court.z, court.z - 18));
@@ -439,6 +476,9 @@ export function createScene(canvas) {
     // The current court's own meshes (no panas, paint or effects): what the collision debug view measures.
     mapGroup() { return environment?.group || defaultCourt; },
     setView(value) { cameraView = value; initialized = false; },
+    // The spectator (engine/play/spectate.js createSpectator) whose shot the first-person camera shows while out, or null.
+    setSpectator(value) { spectator = value; },
+    get spectating() { return !!spectator?.active && cameraView === 'primera' && spectateRig.ready; },
     get view() { return cameraView; },
     // The first-person weapon (hidden while a thrown chancla is away).
     get held() { return held; },

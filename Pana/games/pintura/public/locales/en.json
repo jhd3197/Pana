@@ -310,5 +310,12 @@
   "Capturando {zone} · {n}%": "Capturing {zone} · {n}%",
   "Zonas": "Zones",
   "Zona {zone} · libre": "Zone {zone} · free",
-  "Zona {zone} · {team}": "Zone {zone} · {team}"
+  "Zona {zone} · {team}": "Zone {zone} · {team}",
+  "Pana anterior": "Previous pana",
+  "Siguiente pana": "Next pana",
+  "Cambiar la vista": "Switch view",
+  "cambiar de pana": "switch pana",
+  "cancha desde arriba": "court from above",
+  "Observando a {name}": "Watching {name}",
+  "Cancha desde arriba": "Court from above"
 }
