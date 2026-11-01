@@ -278,13 +278,19 @@ export function fieldRGBA(m, field, paint, { rockAt = null, grassAt = null, tint
   const tintScale = 255 / Math.max(1, tints - 1);
   // Raw signed distances (cells) for the columns plus the smoothing reach on both sides.
   const s0 = Math.max(0, c0 - smooth), s1 = Math.min(cols - 1, c1 + smooth), sw = s1 - s0 + 1, sd = new Float32Array(sw * rows);
+  // Each column's highest ground and lowest air: far above the one and far below the other the distance is saturated.
+  const high = new Int32Array(sw).fill(-1), low = new Int32Array(sw).fill(rows);
   for (let c = s0; c <= s1; c++) {
     let depth = 0, ground = -1;
-    for (let r = rows - 1; r >= 0; r--) { if (!at(c, r)) { depth = 0; continue; } sd[r * sw + c - s0] = Math.min(31.5, depth + .5); depth++; }
+    for (let r = rows - 1; r >= 0; r--) { if (!at(c, r)) { depth = 0; if (low[c - s0] === rows || r < low[c - s0]) low[c - s0] = r; continue; } if (high[c - s0] < 0) high[c - s0] = r; sd[r * sw + c - s0] = Math.min(31.5, depth + .5); depth++; }
     for (let r = 0; r < rows; r++) { if (at(c, r)) ground = r; else sd[r * sw + c - s0] = ground < 0 ? -32 : -Math.min(32, r - ground - .5); }
   }
   for (let c = c0; c <= c1; c++) {
     const x = (c + .5) * cell;
+    // Rows where every neighbour in the smoothing reach is saturated: open sky (0) or deep ground (254), no averaging needed.
+    let skyFrom = -1, deepTo = rows;
+    for (let d = -smooth; d <= smooth; d++) { const k = c + d - s0; if (k < 0 || k >= sw) continue; skyFrom = Math.max(skyFrom, high[k]); deepTo = Math.min(deepTo, low[k]); }
+    skyFrom += 33; deepTo -= 33;
     // Down from the sky: depth under the top of each run of ground, and whether that top is bare.
     let depth = 0, bare = 0;
     for (let r = rows - 1; r >= 0; r--) {
@@ -309,6 +315,8 @@ export function fieldRGBA(m, field, paint, { rockAt = null, grassAt = null, tint
       field[o + 2] = rockAt ? Math.round(255 * Math.min(1, Math.max(0, rockAt(x, (r + .5) * cell)))) : 0;
       paint[o] = m.stain[i]; paint[o + 1] = Math.round(m.tint[i] * tintScale);
       // The distance, averaged along x with the neighbours on the same surface.
+      if (r > skyFrom) { field[o] = 0; continue; }
+      if (r < deepTo) { field[o] = 254; continue; }
       const here = sd[r * sw + c - s0];
       let sum = 0, weight = 0;
       for (let d = -smooth; d <= smooth; d++) {
@@ -319,23 +327,32 @@ export function fieldRGBA(m, field, paint, { rockAt = null, grassAt = null, tint
       field[o] = Math.round(Math.max(0, Math.min(255, 128 + 4 * sum / weight)));
     }
   }
-  // Coverage: a small separable blur (the silhouette) and a wide box blur (occlusion).
-  const span = c1 - c0 + 1, k5 = [1, 6, 15, 20, 15, 6, 1], h5 = new Float32Array(span * rows), hw = new Float32Array(span * rows), hs = new Float32Array(span * rows);
+  // Coverage: a small separable blur (the silhouette) and a wide box blur
+  // (occlusion), over a copy of the band of columns (edges clamped like at())
+  // with running sums for the box, so a blast's columns stay cheap on a big map.
+  const span = c1 - c0 + 1, k5 = [1, 6, 15, 20, 15, 6, 1], reach = Math.max(3, wide), bw = span + 2 * reach;
+  const band = new Uint8Array(bw * rows), h5 = new Float32Array(span * rows), hw = new Int32Array(span * rows), hs = new Float32Array(span * rows);
+  for (let r = 0; r < rows; r++) for (let k = 0; k < bw; k++) band[r * bw + k] = at(c0 - reach + k, r);
   const stainAt = (c, r) => (c < 0 || c >= cols ? 0 : m.stain[(r < 0 ? 0 : r >= rows ? rows - 1 : r) * cols + c]);
-  for (let r = 0; r < rows; r++) for (let j = 0; j < span; j++) {
-    const c = c0 + j;
-    let s = 0; for (let d = -3; d <= 3; d++) s += k5[d + 3] * at(c + d, r);
-    let w = 0; for (let d = -wide; d <= wide; d++) w += at(c + d, r);
-    h5[r * span + j] = s / 64; hw[r * span + j] = w / (2 * wide + 1);
-    hs[r * span + j] = (stainAt(c - 1, r) + 2 * stainAt(c, r) + stainAt(c + 1, r)) / 4;
+  for (let r = 0; r < rows; r++) {
+    const row = r * bw + reach;
+    let w = 0; for (let d = -wide; d <= wide; d++) w += band[row + d];
+    for (let j = 0; j < span; j++) {
+      if (j) w += band[row + j + wide] - band[row + j - wide - 1];
+      const b = row + j;
+      h5[r * span + j] = (band[b - 3] + band[b + 3] + 6 * (band[b - 2] + band[b + 2]) + 15 * (band[b - 1] + band[b + 1]) + 20 * band[b]) / 64;
+      hw[r * span + j] = w;
+      const c = c0 + j; hs[r * span + j] = (stainAt(c - 1, r) + 2 * stainAt(c, r) + stainAt(c + 1, r)) / 4;
+    }
   }
-  const rowOf = r => (r < 0 ? 0 : r >= rows ? rows - 1 : r) * span;
+  const rowOf = r => (r < 0 ? 0 : r >= rows ? rows - 1 : r) * span, box = (2 * wide + 1) ** 2;
   for (let j = 0; j < span; j++) {
+    let w = 0; for (let d = -wide; d <= wide; d++) w += hw[rowOf(d) + j];
     for (let r = 0; r < rows; r++) {
+      if (r) w += hw[rowOf(r + wide) + j] - hw[rowOf(r - wide - 1) + j];
       let s = 0; for (let d = -3; d <= 3; d++) s += k5[d + 3] * h5[rowOf(r + d) + j];
-      let w = 0; for (let d = -wide; d <= wide; d++) w += hw[rowOf(r + d) + j];
       const o = (r * cols + c0 + j) * 4;
-      field[o + 1] = Math.round(s / 64 * 255); paint[o + 2] = Math.round(w / (2 * wide + 1) * 255);
+      field[o + 1] = Math.round(s / 64 * 255); paint[o + 2] = Math.round(w / box * 255);
       paint[o] = Math.round((hs[rowOf(r - 1) + j] + 2 * hs[rowOf(r) + j] + hs[rowOf(r + 1) + j]) / 4);
     }
   }
@@ -346,7 +363,9 @@ export function fieldRGBA(m, field, paint, { rockAt = null, grassAt = null, tint
 // segment comes with the outward normal at both ends (down the coverage's
 // gradient), so an extruded wall shades smoothly. Returns
 // { segments: Float32Array [x0, y0, x1, y1, ...], normals: Float32Array [nx0, ny0, nx1, ny1, ...], count }.
-export function coverageContour(m, field, level = 127.5) {
+// `cols` ({ c0, c1 }) limits it to the cells with c0 <= c < c1, so a caller
+// can keep the outline in column bands and re-trace only the bands a blast touched.
+export function coverageContour(m, field, level = 127.5, { c0 = 0, c1 = m.cols } = {}) {
   const { cols, rows, cell } = m, g = (c, r) => field[(r * cols + c) * 4 + 1];
   const seg = [], nor = [];
   const grad = (c, r) => {
@@ -362,7 +381,8 @@ export function coverageContour(m, field, level = 127.5) {
     return [(ca + (cb - ca) * t + .5) * cell, (ra + (rb - ra) * t + .5) * cell, nx / l, ny / l];
   };
   const push = (p, q) => { seg.push(p[0], p[1], q[0], q[1]); nor.push(p[2], p[3], q[2], q[3]); };
-  for (let r = 0; r < rows - 1; r++) for (let c = 0; c < cols - 1; c++) {
+  const from = Math.max(0, c0), to = Math.min(cols - 1, c1);
+  for (let r = 0; r < rows - 1; r++) for (let c = from; c < to; c++) {
     const a = g(c, r) > level, b = g(c + 1, r) > level, d = g(c + 1, r + 1) > level, e = g(c, r + 1) > level;
     const code = (a ? 1 : 0) | (b ? 2 : 0) | (d ? 4 : 0) | (e ? 8 : 0);
     if (code === 0 || code === 15) continue;
