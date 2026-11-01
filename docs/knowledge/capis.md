@@ -141,6 +141,7 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   results.
 - `public/game.js`: wiring (keys, mouse, touch, the shot charge, sounds).
 - `tests/rules.test.js`, `tests/capis.browser.js`.
+- Cover art: `web/images/launcher/capis.jpg` (hero, kept under 100 KB so it stays in Git) and`capis-card.jpg` (hub tile), registered in `web/launcher-art.js`. `public/card.js` is now only the fallback live card.
 
 ## Rules and tuning (`RULES` in `rules.js`)
 
@@ -214,8 +215,6 @@ paid for the clouds, sun, birds, foam and back wall.
 ## Known gaps (milestone one)
 
 - One map and one weapon. No team or player-vs-player online yet.
-- No launcher illustration: the hub tile is the scaffold's live card
-  (the player's pana) and the lobby has no background picture.
 - The slab's sides show the planes as steps when seen at an angle.
 - A capi pushed against a crater wall can lose most of its knockback (the walker
   bounces off at 30 %), so it seldom flies far from inside a crater.
