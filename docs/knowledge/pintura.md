@@ -98,6 +98,23 @@ local pause and touch layouts. Screenshots are ignored under the game's `qa/`.
 `engine/tests/table-games.browser.js` also checks all three new 3D scenes, camera
 picking, Q/E turning, touch layouts and the actual Studio model constructors.
 
+### First-load budget
+
+The first load is capped at 161 modules (`npm run budget -- pintura`). The
+shared courts (Puerto, Hato, Ruinas) are built by `engine/worlds/arenas.js`,
+about 28 modules (its props, vegetation, water and ambient life) that El
+Puerto, Plaza, Muelle and Noche never use, so `scene.js` loads it with
+`import()` the first time one of those courts is picked; the lobby picker
+fires that load as soon as the host chooses one. `world.setMap` returns a
+promise that resolves once the court is built, and `prepareRound` awaits it
+before `compileAsync` and `room.ready`, so the loading card covers the fetch
+and nobody starts on an empty court. Until it lands the lobby shows sky and
+avatars only. A failed fetch resolves anyway and retries on the next pick.
+This took the first load from 161 to 133 modules (1456 to 1029 KB). The next
+candidate is the armory's 3D preview and test range (`armory.js` `init`,
+`rebuild`, the range), which only matter once the armory opens; the kit state
+`armory.js` holds is needed at boot, so it would have to be split first.
+
 ## Muelle de La Guaira
 
 Pepazo-only map (`PAINT_ARENAS` in `engine/worlds/arena-layouts.js`; never in `ARENAS`,
@@ -591,8 +608,8 @@ Parrandera"; the client writes its own progress text from the marker names).
   (cached 30 s, 5 s timeout, never rejects). Without the bridge (public Pana)
   only the start camos are owned and the rest say "Disponible en pana.sh"; a
   bridge without a session says to sign in. `camos.js` and `camo-store.js` are
-  dynamic imports (the camo tab, or at once when `window.PanaSh` exists): the
-  first load is at its module cap. The rules only need the ids, which come
+  dynamic imports (the camo tab, or at once when `window.PanaSh` exists), to
+  keep them off the first load (see "First-load budget"). The rules only need the ids, which come
   from `paint-arsenal.js` (`CAMO_IDS`, `START_CAMOS` in `armory-data.js`).
 - **Armory.** Slot Camuflaje: a card per camo with a CSS swatch from its
   palette (no canvas), a padlock and the reason when it is not yours, and

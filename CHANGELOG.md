@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo abre más rápido: la primera carga baja de 161 a 133 módulos.**
+  Las canchas compartidas (Puerto, Hato y Ruinas) se descargan cuando el
+  anfitrión elige una, mientras la tarjeta de carga cubre la espera.
+
 - **En Capis a Pintazos la vista de todo el mapa (Z) va mucho más ligera.**
   Los capis lejanos se dibujan como una sola pieza más sencilla que sigue sus
   movimientos, con la bazuca y la pañoleta; de cerca siguen siendo tu pana con
