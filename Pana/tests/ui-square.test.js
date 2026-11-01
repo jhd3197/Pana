@@ -14,9 +14,8 @@ import path from 'node:path';
 const app = path.resolve(import.meta.dirname, '..');
 const rel = (file) => path.relative(app, file).split(path.sep).join('/');
 
-// TODO: Capis is being restyled in its own branch; drop this entry once its
-// HUD corners are square.
-const ALLOWED_FILES = [/^games\/capis\//];
+// Whole files exempt from the check (none: Capis went square in #34).
+const ALLOWED_FILES = [];
 // Canvas art painted onto 3D meshes or launcher previews, not interface: a
 // pool table's rails, board tiles, playing cards, a wooden track sign.
 const ART_ROUND_RECT = new Set([

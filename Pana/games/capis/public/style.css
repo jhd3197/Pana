@@ -18,7 +18,7 @@ body { --pk-game: #e8569b; --team-0: #e8569b; --team-1: #2ad1b2; --wind: #bfe9ff
 .wind-gauge { display: flex; align-items: center; gap: 8px; }
 /* JS sets the shaft's width (wind strength) and flips the whole arrow for a west wind. */
 .wind-arrow { display: flex; align-items: center; justify-content: center; width: 60px; height: 18px; }
-.wind-shaft { display: block; height: 4px; border-radius: 2px; background: var(--wind); }
+.wind-shaft { display: block; height: 4px; border-radius: 0; background: var(--wind); }
 .wind-head { display: block; width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-left: 11px solid var(--wind); }
 .wind-arrow.is-calm .wind-head { opacity: .3; }
 .teams-panel { position: fixed; left: 20px; top: 76px; display: grid; gap: 10px; padding: 10px 12px; width: 190px; z-index: 3; }
@@ -36,11 +36,11 @@ body { --pk-game: #e8569b; --team-0: #e8569b; --team-1: #2ad1b2; --wind: #bfe9ff
 .lobby-seed { margin: 0; font-weight: 800; opacity: .8; }
 .seed-card { display: grid; gap: 8px; }
 .seed-row { display: flex; gap: 8px; }
-.seed-row input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--pk-line); border-radius: 10px; background: var(--pk-raised); color: var(--pk-text); font: 800 15px var(--pk-sans); }
+.seed-row input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--pk-line); border-radius: 0; background: var(--pk-raised); color: var(--pk-text); font: 800 15px var(--pk-sans); }
 #same-map { margin-top: 8px; }
 
 .labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
-.labels span { position: absolute; left: 0; top: 0; padding: 1px 7px; border-radius: 999px; background: rgba(0, 0, 0, .55); font: 800 11px var(--pk-sans); white-space: nowrap; }
+.labels span { position: absolute; left: 0; top: 0; padding: 1px 7px; border-radius: 0; background: rgba(0, 0, 0, .55); font: 800 11px var(--pk-sans); white-space: nowrap; }
 .labels span.team-0 { color: var(--team-0); } .labels span.team-1 { color: var(--team-1); }
 .hints { position: fixed; right: 20px; bottom: 18px; z-index: 3; }
 
