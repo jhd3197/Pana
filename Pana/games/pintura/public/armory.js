@@ -24,8 +24,9 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  const weaponName=id=>loc(WEAPONS.find(m=>m.id===id).name);
  const dropNote=(dropped,weapon)=>locn(dropped.length,'{parts} no cabe en {weapon} y salió del kit.','{parts} no caben en {weapon} y salieron del kit.',{parts:formatList(dropped.map(id=>loc(ATTACHMENTS.find(a=>a.id===id).name)),{type:'conjunction'}),weapon:weaponName(weapon)});
  // An unowned camo comes back as a solid one: wear what the room wears (the saved pick stays until the next save).
- room.onKitRejected=({reason}={})=>{
-  if(reason==='camo'){kit={...kit,camo:FALLBACK_CAMO};room.kit=kit;if(dialog.open){paint();rebuild();}say(loc('Ese camuflaje todavía no es tuyo: la sala te puso uno liso.'));return;}
+ room.onKitRejected=({reason,camo}={})=>{
+  // Owned here but not vouched for in this room yet (pana.sh could not sign it): a rejoin shows it.
+  if(reason==='camo'){const fresh=camoData?.owned?.includes(camo);kit={...kit,camo:FALLBACK_CAMO};room.kit=kit;if(dialog.open){paint();rebuild();}say(fresh?loc('Ya es tuyo, pero la sala lo verá cuando vuelvas a entrar: por ahora llevas uno liso.'):loc('Ese camuflaje todavía no es tuyo: la sala te puso uno liso.'));return;}
   say(reason==='playing'?loc('No se pueden cambiar accesorios en plena ronda.'):loc('La sala no aceptó el kit. Inténtalo otra vez.'));
  };
  const rating=document.createElement('span');rating.id='armory-rating';document.getElementById('armory-name').after(rating);
@@ -43,8 +44,10 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  const camoName=id=>!id?loc('De fábrica'):camoLib?loc(camoLib.camoById(id)?.name||id):'…';
  function loadCamos(fresh=false){
   camoLoad??=Promise.all([import('./camos.js'),import('./camo-store.js')]).then(([lib,{createCamoStore}])=>{camoLib={...lib,store:createCamoStore()};});
-  return camoLoad.then(()=>camoLib.store.load({fresh})).then(data=>{camoData=data;room.setCamos?.(data.owned);if(dialog.open)paint();return data;});
+  return camoLoad.then(()=>camoLib.store.load({fresh})).then(data=>{camoData=data;room.setCamos?.(data.owned,signer());if(dialog.open)paint();return data;});
  }
+ // The room learns camos got mid-session only through pana.sh's signature (camo-store signed).
+ const signer=()=>camoLib?.store.canSign?nonce=>camoLib.store.signed(nonce):null;
  if(window.PanaSh)loadCamos();
  // One card per camo: a swatch from its palette, its state, a Comprar for mango ones.
  // Every card previews on the 3D marker; only owned ones are picked.
@@ -67,7 +70,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
    if(st.state==='buyable'||st.state==='cantAfford'){
     const buy=document.createElement('button');buy.type='button';buy.className='pk-btn armory-buy';buy.textContent=loc('Comprar · {n} mangos',{n:st.price});buy.disabled=st.state!=='buyable';
     buy.onclick=async()=>{buy.disabled=true;note.textContent=loc('Comprando…');const r=await camoLib.store.buy(c.id);
-     if(r.ok){camoData=r.data;room.setCamos?.(r.data.owned);if(camoLib.camoState(c.id,r.data).state==='owned'){kit=cleanKit(look());save();note.textContent=loc('¡{name} ya es tuyo!',{name:loc(c.name)});}}
+     if(r.ok){camoData=r.data;await room.setCamos?.(r.data.owned,signer());if(camoLib.camoState(c.id,r.data).state==='owned'){kit=cleanKit(look());save();note.textContent=loc('¡{name} ya es tuyo!',{name:loc(c.name)});}}
      else note.textContent=r.error||loc('No se pudo comprar. Inténtalo otra vez.');
      paint();rebuild();};
     card.append(buy);
@@ -165,7 +168,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   avatar=buildCharacter(loadAvatar());avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;scene.add(avatar.group);vest=createPaintVest();avatar.group.add(vest);target=buildCharacter({...loadAvatar(),outfitColor:'#29c5cd'});target.group.position.set(1.8,0,-2);target.group.visible=false;scene.add(target.group);rebuild();
  }
  for(const b of document.querySelectorAll('#armory-slots button')) b.onclick=()=>{category=b.dataset.slot;slot=Number(b.dataset.index)||0;shown=null;note.textContent='';dialog.classList.add('choosing');paint();};
- const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda cambias de marcadora con 1 a 9, Z y X.'));return;}note.textContent='';dialog.classList.remove('choosing');dialog.showModal();init();paint();if(camoLib||window.PanaSh)loadCamos();};
+ const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda cambias de marcadora con 1 a 9, Z y X.'));return;}note.textContent='';dialog.classList.remove('choosing');dialog.showModal();init();paint();if(camoLib||window.PanaSh)loadCamos(true);};
  document.getElementById('open-armory').onclick=open;document.getElementById('armory-close').onclick=()=>dialog.close();
  document.getElementById('armory-go').onclick=()=>{save();dialog.close();if(room.isHost)room.start();};
  document.getElementById('armory-range').onclick=()=>{

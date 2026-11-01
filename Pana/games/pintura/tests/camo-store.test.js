@@ -54,3 +54,17 @@ test('normalize never trusts shapes it does not expect', () => {
   assert.deepEqual(data.owned, START_CAMOS); assert.deepEqual(data.progress, { carbine: { hits: 0, need: 0, camo: '' } });
   assert.deepEqual(data.prices, {}); assert.equal(data.balance, 0); assert.equal(data.equipped, null);
 });
+
+test('signed forwards pana.sh\'s signed list for the room\'s nonce, or null', async () => {
+  const asked = [], bridge = { camosSigned: nonce => { asked.push(nonce); return Promise.resolve({ ids: 'selva', nonce: 'otro', exp: 99, sig: 'ab' }); } };
+  const store = createCamoStore({ bridge: () => bridge });
+  assert.equal(store.canSign, true);
+  assert.deepEqual(await store.signed('n1'), { ids: 'selva', nonce: 'n1', exp: 99, sig: 'ab' }, 'the room\'s nonce, whatever the answer says');
+  assert.equal(await store.signed(''), null); assert.deepEqual(asked, ['n1']);
+  const bad = createCamoStore({ bridge: () => ({ camosSigned: () => Promise.resolve({ ids: ['selva'], exp: 'x' }) }) });
+  assert.equal(await bad.signed('n1'), null, 'wrong shapes');
+  assert.equal(await createCamoStore({ bridge: () => ({ camosSigned: () => Promise.reject(new Error('sin sesión')) }) }).signed('n1'), null);
+  assert.equal(await createCamoStore({ bridge: () => ({ camosSigned: () => new Promise(() => {}) }), timeout: 20 }).signed('n1'), null);
+  const none = createCamoStore({ bridge: () => fake() });
+  assert.equal(none.canSign, false); assert.equal(await none.signed('n1'), null, 'an older bridge without camosSigned');
+});
