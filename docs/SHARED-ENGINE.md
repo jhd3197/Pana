@@ -438,6 +438,7 @@ See candidates.
 | Piece | Module | Used by |
 |---|---|---|
 | Look, fonts, `--pk-*` tokens | `engine/kit.css`, `engine/kit.js` | all 24 |
+| One square UI style: `--pk-r*` radius tokens are 0, hard offset shadows (`--pk-drop`, `--pk-skin-shadow`); real circles (avatars, dots, swatches, joystick, spinners, balls) opt out with `var(--pk-radius-round)` | `engine/kit.css`; guarded by `tests/ui-square.test.js` (pana-kit.md, "One square style") | every page and game; Capis allow-listed while it is restyled |
 | Game skin: the lobby room panel's look for any panel or dialog (`.pk-skin-panel`, `-card`, `-plate`, `-label`, `-chips`, `-btn`, `-go`, `-link`; `--pk-skin-*` tokens) | `engine/kit.css` (pana-ui.md, "Game skin") | the shared sala (`sala.css` reads the tokens) and "Más ajustes" in the 23 room-options games |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | ui: all 24; settings: 16 |
 | Icons (`lock` marks something not yours yet) | `engine/icons.js` | Billar, Bochinche, Bululú, Capis a Pintazos (through room options), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |

@@ -25,7 +25,7 @@
   border-radius: 0;
   background: #0d0b21;
   color: var(--pm-text);
-  box-shadow: 0 10px 0 rgba(0, 0, 0, .35), 0 30px 60px rgba(0, 0, 0, .5);
+  box-shadow: 10px 10px 0 rgba(0, 0, 0, .35), 0 30px 60px rgba(0, 0, 0, .5);
   font: 700 15px/1.45 Nunito, system-ui, sans-serif;
   text-align: left;
 }
@@ -53,18 +53,18 @@
 .pana-close {
   position: absolute; top: 18px; right: 18px;
   width: 40px; height: 40px;
-  border: 1px solid var(--pm-line); border-radius: 10px;
+  border: 1px solid var(--pm-line); border-radius: 0;
   background: var(--pm-raised); font-size: 24px; line-height: 1; cursor: pointer;
 }
 
 .pana-tabs {
   display: flex; align-items: center; gap: 4px;
   margin: 0 28px; padding: 4px;
-  border: 1px solid var(--pm-line); border-radius: 12px; background: var(--pm-deep);
+  border: 1px solid var(--pm-line); border-radius: 0; background: var(--pm-deep);
 }
 .pana-tabs [role="tab"] {
   padding: 8px 14px;
-  border: 0; border-radius: 9px; background: none;
+  border: 0; border-radius: 0; background: none;
   color: var(--pm-muted); font-weight: 800; cursor: pointer;
 }
 .pana-tabs [role="tab"][aria-selected="true"] { color: var(--pm-yellow); background: var(--pm-raised); }
@@ -78,16 +78,16 @@
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   width: 100%; min-height: 58px;
   margin-top: 12px; padding: 14px 20px 11px;
-  border-radius: 14px; text-align: left; cursor: pointer;
+  border-radius: 0; text-align: left; cursor: pointer;
   font: 400 22px/1 var(--pm-display); letter-spacing: .5px;
 }
 .pana-panel > :first-child { margin-top: 0; }
 .pana-primary {
   border: 0; background: var(--pm-yellow); color: var(--pm-ink);
-  box-shadow: 0 5px 0 var(--pm-yellow-edge); font-size: 24px;
+  box-shadow: 5px 5px 0 var(--pm-yellow-edge); font-size: 24px;
 }
 .pana-primary:hover { background: #ffd04d; }
-.pana-primary:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--pm-yellow-edge); }
+.pana-primary:active { transform: translateY(3px); box-shadow: 2px 2px 0 var(--pm-yellow-edge); }
 .pana-secondary { border: 1px solid var(--pm-line); background: var(--pm-raised); color: var(--pm-text); }
 .pana-secondary:hover, .pana-close:hover { border-color: var(--pk-line-strong, #4a3f80); }
 .pana-panel [id^="pana-copy-room"] { color: var(--pm-teal); }
@@ -95,7 +95,7 @@
 .pana-exit {
   display: flex; align-items: center; min-height: 58px;
   margin-top: 12px; padding: 14px 20px 11px;
-  border: 1px solid color-mix(in srgb, var(--pm-coral) 40%, transparent); border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--pm-coral) 40%, transparent); border-radius: 0;
   color: var(--pm-coral); text-decoration: none;
   font: 400 22px/1 var(--pm-display); letter-spacing: .5px;
 }
@@ -105,26 +105,26 @@
 .pana-share { display: block; margin-top: 14px; font-size: 13px; color: var(--pm-muted); }
 .pana-share input {
   width: 100%; margin-top: 6px; padding: 10px 12px;
-  border: 1px solid var(--pm-line); border-radius: 10px; background: var(--pm-deep); color: var(--pm-text);
+  border: 1px solid var(--pm-line); border-radius: 0; background: var(--pm-deep); color: var(--pm-text);
 }
 
 /* settings rows: cards like the Ajustes screen */
 .pana-row {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   min-height: 60px; margin-top: 10px; padding: 10px 16px;
-  border: 1px solid var(--pm-line); border-radius: 14px; background: rgba(255, 255, 255, .025);
+  border: 1px solid var(--pm-line); border-radius: 0; background: rgba(255, 255, 255, .025);
 }
 .pana-panel > .pana-row:first-child { margin-top: 0; }
 .pana-row > span { font-weight: 800; }
 .pana-switch {
   position: relative; flex: none;
   width: 56px; height: 32px; padding: 0;
-  border: 0; border-radius: 999px;
+  border: 0; border-radius: 0;
   background: var(--pm-raised); cursor: pointer; font-size: 0;
 }
 .pana-switch::before {
   content: ''; position: absolute; top: 4px; left: 4px;
-  width: 24px; height: 24px; border-radius: 50%; background: var(--pm-text);
+  width: 24px; height: 24px; border-radius: 0; background: var(--pm-text);
   transition: transform 120ms ease-out;
 }
 .pana-switch[aria-checked="true"] { background: var(--pm-teal); }
@@ -133,10 +133,10 @@
 .pana-volume input { flex: 1; max-width: 220px; accent-color: var(--pm-yellow); }
 .pana-volume input:disabled { opacity: .4; }
 .pana-choice { flex-wrap: wrap; }
-.pana-segments { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--pm-line); border-radius: 12px; background: var(--pm-deep); }
+.pana-segments { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--pm-line); border-radius: 0; background: var(--pm-deep); }
 .pana-segments button {
   min-height: 34px; padding: 6px 12px;
-  border: 0; border-radius: 9px; background: none;
+  border: 0; border-radius: 0; background: none;
   color: var(--pm-muted); font-size: 14px; font-weight: 800; cursor: pointer;
 }
 .pana-segments button[aria-checked="true"] { background: var(--pm-raised); color: var(--pm-yellow); }
@@ -152,7 +152,7 @@
 .pana-menu kbd {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 30px; height: 28px; margin: 0; padding: 0 8px;
-  border: 1px solid var(--pk-line-strong, #4a3f80); border-bottom-width: 3px; border-radius: 7px;
+  border: 1px solid var(--pk-line-strong, #4a3f80); border-bottom-width: 3px; border-radius: 0;
   background: var(--pm-deep); color: var(--pm-yellow);
   font: 900 12px/1 Nunito, system-ui, sans-serif; text-align: center;
 }
@@ -161,7 +161,7 @@
 /* the small "link copied" toast used when a game has none of its own */
 .pana-toast {
   position: fixed; left: 50%; top: 24px; z-index: 50;
-  padding: 10px 18px; border-radius: 10px;
+  padding: 10px 18px; border-radius: 0;
   background: #1a1336; color: #f3e9d7; border: 1px solid #2e2558;
   font: 800 14px Nunito, system-ui, sans-serif;
   transform: translate(-50%, -12px); opacity: 0; pointer-events: none;
@@ -173,7 +173,7 @@
    pointer the right stick moves in games that aim with the mouse */
 .pana-pad-focus { outline: 4px solid #ffc629 !important; outline-offset: 3px !important; box-shadow: 0 0 0 9px rgba(255, 198, 41, .28) !important; }
 .pana-pad-cursor {
-  position: fixed; left: -14px; top: -14px; z-index: 60; width: 28px; height: 28px; border-radius: 50%;
+  position: fixed; left: -14px; top: -14px; z-index: 60; width: 28px; height: 28px; border-radius: var(--pk-radius-round);
   border: 3px solid #fff; background: rgba(255, 198, 41, .45); box-shadow: 0 0 0 2px #1a1336, 0 3px 8px rgba(0, 0, 0, .4);
   pointer-events: none;
 }
@@ -225,7 +225,7 @@
 .pana-rail-button[aria-current=true] { width: 86px; background: var(--pm-yellow); color: #16161a; box-shadow: 4px 4px 0 #16161a; }
 .pana-rail-label { position: absolute; left: calc(100% + 10px); top: 50%; z-index: 4; padding: 6px 10px; background: #16161a; color: #fff; font: 900 13px/1 Nunito, sans-serif; white-space: nowrap; transform: translateY(-50%); opacity: 0; pointer-events: none; transition: opacity 120ms; }
 .pana-rail-button:is(:hover, :focus-visible) .pana-rail-label { opacity: 1; }
-.pana-changed-dot { position: absolute; right: 7px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--pm-teal); }
+.pana-changed-dot { position: absolute; right: 7px; top: 7px; width: 9px; height: 9px; border-radius: var(--pk-radius-round); background: var(--pm-teal); }
 .pana-changed-dot[hidden] { display: none; }
 .pana-settings-main { min-height: 0; overflow: auto; padding: 0 10px 24px 4px; overscroll-behavior: contain; scrollbar-color: var(--pm-line) transparent; }
 .pana-setting-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 18px; }
@@ -298,8 +298,8 @@
 button.pana-hint-button { cursor: pointer; }
 button.pana-hint-button:hover { background: rgba(46, 37, 88, .95); }
 .pana-hint-button[hidden] { display: none; }
-.pana-hint-button kbd { min-width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0 6px; border-radius: 4px; background: #fff; color: #16161a; font: 900 12px/1 Nunito, sans-serif; }
-.pana-hint-button kbd.pana-pad-cap { border-radius: 12px; background: var(--pm-yellow); }
+.pana-hint-button kbd { min-width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0 6px; border-radius: 0; background: #fff; color: #16161a; font: 900 12px/1 Nunito, sans-serif; }
+.pana-hint-button kbd.pana-pad-cap { border-radius: 0; background: var(--pm-yellow); }
 .pana-tab-step { padding: 5px; background: transparent; box-shadow: none; }
 .pana-tab-step kbd { background: transparent; color: var(--pm-muted); box-shadow: inset 0 0 0 2px var(--pm-muted); }
 .pana-tab-step:hover kbd { color: #fff; box-shadow: inset 0 0 0 2px #fff; }
@@ -309,7 +309,7 @@ button.pana-hint-button:hover { background: rgba(46, 37, 88, .95); }
 [data-pana-input=touch] .pana-settings-workspace :is(span.pana-hint-button, .pana-tab-step) { display: none; }
 .pana-settings-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 0 18px 2.5vw; border-top: 1px solid rgba(255, 255, 255, .1); font: 800 13px Nunito, sans-serif; color: var(--pm-muted); }
 .pana-saved { position: absolute; top: 50px; right: calc(4vw + 130px); display: flex; align-items: center; gap: 8px; color: var(--pm-teal); font: 800 14px/1 Nunito, sans-serif; }
-.pana-saved::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--pm-teal); }
+.pana-saved::before { content: ""; width: 10px; height: 10px; border-radius: var(--pk-radius-round); background: var(--pm-teal); }
 .pana-changed-count { margin-left: auto; }
 .pana-input-monitor { padding: 18px 16px; background: #15112d; border-top: 3px solid var(--pm-yellow); }
 .pana-monitor-eyebrow { color: var(--pm-muted); font-size: 11px; font-weight: 900; letter-spacing: .12em; }
@@ -318,8 +318,8 @@ button.pana-hint-button:hover { background: rgba(46, 37, 88, .95); }
 .pana-device-detail { color: var(--pm-muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; margin: 8px 0 14px; }
 .pana-stick-pair { display: flex; justify-content: space-around; gap: 10px; margin: 22px 0 18px; }
 .pana-stick-block { text-align: center; font-size: 11px; color: var(--pm-muted); }
-.pana-stick-disc { position: relative; height: 104px; width: 104px; border: 1px solid #52466e; border-radius: 50%; margin: 8px 0; background: linear-gradient(transparent calc(50% - .5px),#52466e 50%,transparent calc(50% + .5px)),linear-gradient(90deg,transparent calc(50% - .5px),#52466e 50%,transparent calc(50% + .5px)); }
-.pana-stick-disc span { position: absolute; left: 50%; top: 50%; border-radius: 50%; }
+.pana-stick-disc { position: relative; height: 104px; width: 104px; border: 1px solid #52466e; border-radius: var(--pk-radius-round); margin: 8px 0; background: linear-gradient(transparent calc(50% - .5px),#52466e 50%,transparent calc(50% + .5px)),linear-gradient(90deg,transparent calc(50% - .5px),#52466e 50%,transparent calc(50% + .5px)); }
+.pana-stick-disc span { position: absolute; left: 50%; top: 50%; border-radius: var(--pk-radius-round); }
 .pana-stick-deadzone { translate: -50% -50%; background: rgba(255, 75, 75, .2); border: 2px solid var(--pm-coral); }
 .pana-stick-raw { width: 9px; height: 9px; margin: -4.5px; background: #fff; opacity: .6; }
 .pana-stick-dot { width: 11px; height: 11px; margin: -5.5px; border: 2px solid #ffc629; background: #ffc62955; }

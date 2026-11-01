@@ -42,12 +42,17 @@
   --pk-display: 'Luckiest Guy', 'Nunito', system-ui, sans-serif;
   --pk-sans: 'Nunito', system-ui, sans-serif;
 
-  /* shape */
-  --pk-r-sm: 9px;
-  --pk-r: 12px;
-  --pk-r-lg: 16px;
-  --pk-r-xl: 26px;
-  --pk-drop: 0 4px 0 rgba(0, 0, 0, .35);
+  /* shape: one square style everywhere. The radius names stay so var() users
+     inherit the square look; they must stay 0 (tests/ui-square.test.js).
+     --pk-radius-round is the only way back to a curve, and only for things that
+     are real circles: avatar discs, status and team dots, colour swatches,
+     joystick discs, spinners, and balls, coins or reticles drawn in CSS. */
+  --pk-r-sm: 0;
+  --pk-r: 0;
+  --pk-r-lg: 0;
+  --pk-r-xl: 0;
+  --pk-radius-round: 50%;
+  --pk-drop: 4px 4px 0 var(--pk-skin-shade);      /* hard offset, like the skin */
 
   /* game skin: the lobby room panel's look (sala.css) and every .pk-skin-* piece */
   --pk-skin-shade: #090818;                       /* hard offset shadow colour */
@@ -94,25 +99,25 @@
   background: var(--pk-raised); color: var(--pk-text);
   font: 800 15px/1.1 var(--pk-sans); text-decoration: none; text-align: center;
   cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+  box-shadow: var(--pk-skin-shadow);
   transition: transform 200ms cubic-bezier(.34, 1.85, .64, 1), box-shadow 120ms, border-color 120ms, background 120ms;
 }
-.pk-btn:hover { border-color: var(--pk-line-strong); transform: translateY(-1px) scale(1.015); }
-.pk-btn:active:not(:disabled) { transform: translateY(3px) scale(.96, .92); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); transition-duration: 55ms; }
+.pk-btn:hover { border-color: var(--pk-line-strong); transform: translate(-1px, -1px); }
+.pk-btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--pk-skin-shade); transition-duration: 55ms; }
 .pk-btn:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 3px; }
 .pk-btn:disabled, .pk-btn[aria-disabled="true"] { opacity: .55; cursor: default; }
 .pk-btn--primary {
   border: 0; background: var(--pk-yellow); color: var(--pk-yellow-ink);
   font: 400 22px/1 var(--pk-display); letter-spacing: 1px;
-  padding: 14px 24px 11px; box-shadow: 0 5px 0 var(--pk-yellow-edge);
+  padding: 14px 24px 11px; box-shadow: 4px 4px 0 var(--pk-yellow-edge);
 }
-.pk-btn--primary:hover { background: #ffd04d; transform: translateY(-1px) scale(1.02); }
-.pk-btn--primary:active:not(:disabled) { transform: translateY(4px) scale(.95, .91); box-shadow: 0 1px 0 var(--pk-yellow-edge); }
-.pk-btn--lg { min-height: 64px; font-size: 30px; padding: 16px 28px 12px; box-shadow: 0 7px 0 var(--pk-yellow-edge); }
-.pk-btn--teal { border: 0; background: var(--pk-teal); color: #062a23; box-shadow: 0 4px 0 var(--pk-teal-edge); }
-.pk-btn--teal:active:not(:disabled) { transform: translateY(3px) scale(.95, .91); box-shadow: 0 1px 0 var(--pk-teal-edge); }
-.pk-btn--coral { border: 0; background: var(--pk-coral); color: #fff; box-shadow: 0 4px 0 var(--pk-coral-edge); }
-.pk-btn--coral:active:not(:disabled) { transform: translateY(3px) scale(.95, .91); box-shadow: 0 1px 0 var(--pk-coral-edge); }
+.pk-btn--primary:hover { background: #ffd04d; transform: translate(-1px, -1px); }
+.pk-btn--primary:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--pk-yellow-edge); }
+.pk-btn--lg { min-height: 64px; font-size: 30px; padding: 16px 28px 12px; box-shadow: 5px 5px 0 var(--pk-yellow-edge); }
+.pk-btn--teal { border: 0; background: var(--pk-teal); color: #062a23; box-shadow: 4px 4px 0 var(--pk-teal-edge); }
+.pk-btn--teal:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--pk-teal-edge); }
+.pk-btn--coral { border: 0; background: var(--pk-coral); color: #fff; box-shadow: 4px 4px 0 var(--pk-coral-edge); }
+.pk-btn--coral:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--pk-coral-edge); }
 .pk-btn--danger { background: transparent; border-color: color-mix(in srgb, var(--pk-coral) 45%, transparent); color: var(--pk-coral); }
 .pk-btn--ghost { background: transparent; border-color: transparent; color: var(--pk-muted); box-shadow: none; }
 .pk-btn--ghost:hover { color: var(--pk-text); border-color: transparent; }
@@ -125,7 +130,7 @@
 .pk-kbd {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 26px; height: 26px; padding: 0 7px;
-  border: 1px solid var(--pk-line-strong); border-bottom-width: 3px; border-radius: 7px;
+  border: 1px solid var(--pk-line-strong); border-bottom-width: 3px; border-radius: 0;
   background: var(--pk-deep); color: var(--pk-yellow);
   font: 900 12px/1 var(--pk-sans); letter-spacing: .5px;
 }
@@ -143,15 +148,15 @@
 .pk-well { padding: 12px 14px; border: 1px solid var(--pk-line); border-radius: var(--pk-r); background: var(--pk-deep); }
 .pk-modal {
   width: min(560px, calc(100vw - 32px)); padding: 28px; box-sizing: border-box;
-  border: 1px solid var(--pk-line); border-radius: 22px;
-  background: radial-gradient(600px 300px at 50% -20%, #2a1b5e, transparent 70%), var(--pk-purple);
-  color: var(--pk-text); box-shadow: 0 10px 0 rgba(0, 0, 0, .35), 0 30px 60px rgba(0, 0, 0, .45);
+  border: 1px solid var(--pk-line); border-radius: 0;
+  background: var(--pk-purple);
+  color: var(--pk-text); box-shadow: 6px 6px 0 var(--pk-skin-shade);
   font-family: var(--pk-sans);
 }
 
 /* stat tile: <div class="pk-stat"><b>8</b><span>circuitos</span></div> */
 .pk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; }
-.pk-stat { padding: 12px 14px; border: 1px solid var(--pk-line); border-radius: 14px; background: var(--pk-purple); }
+.pk-stat { padding: 12px 14px; border: 1px solid var(--pk-line); border-radius: 0; background: var(--pk-purple); }
 .pk-stat b { display: block; font: 400 26px/1.1 var(--pk-display); color: var(--pk-game); }
 .pk-stat span { font: 700 12px var(--pk-sans); color: var(--pk-muted); }
 /* HUD readout: label over a big number (VUELTA 2/3, TIEMPO 1:12.4) */
@@ -161,19 +166,20 @@
 
 /* pills */
 .pk-ribbon {
-  display: inline-block; align-self: flex-start; padding: 6px 14px; border-radius: 999px;
+  display: inline-block; align-self: flex-start; padding: 6px 14px; border-radius: 0;
   background: var(--pk-game); color: var(--pk-game-ink);
   font: 900 12px var(--pk-sans); letter-spacing: 1.5px; text-transform: uppercase;
+  transform: skew(var(--pk-skin-plate-lean));
 }
 .pk-chip {
-  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 0;
   background: var(--pk-hud); border: 1px solid var(--pk-line); color: var(--pk-text);
   font: 800 13px var(--pk-sans);
 }
 .pk-chip--teal { background: var(--pk-teal); border-color: transparent; color: #062a23; }
 .pk-chip--yellow { background: var(--pk-yellow); border-color: transparent; color: var(--pk-yellow-ink); }
 .pk-chip--coral { background: var(--pk-coral); border-color: transparent; color: #fff; }
-.pk-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pk-teal); flex: none; }
+.pk-dot { width: 8px; height: 8px; border-radius: var(--pk-radius-round); background: var(--pk-teal); flex: none; }
 
 /* segmented control: buttons with aria-pressed / aria-checked / .is-on */
 .pk-seg { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--pk-line); border-radius: var(--pk-r); background: var(--pk-deep); }
@@ -232,18 +238,18 @@
 :root .pk-btn.pk-skin-link:hover { color: var(--pk-text); transform: none; }
 
 /* switch: <button class="pk-switch" role="switch" aria-checked="true"> */
-.pk-switch { position: relative; flex: none; width: 56px; height: 32px; padding: 0; border: 0; border-radius: 999px; background: var(--pk-raised); cursor: pointer; }
-.pk-switch::before { content: ''; position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: var(--pk-text); transition: transform 120ms ease-out; }
+.pk-switch { position: relative; flex: none; width: 56px; height: 32px; padding: 0; border: 0; border-radius: 0; background: var(--pk-raised); cursor: pointer; }
+.pk-switch::before { content: ''; position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 0; background: var(--pk-text); transition: transform 120ms ease-out; }
 .pk-switch[aria-checked="true"] { background: var(--pk-teal); }
 .pk-switch[aria-checked="true"]::before { transform: translateX(24px); }
 
 /* progress: <div class="pk-bar" style="--pk-value:.68"><i></i></div> */
-.pk-bar { height: 12px; border-radius: 999px; background: var(--pk-deep); border: 1px solid var(--pk-line); overflow: hidden; }
+.pk-bar { height: 12px; border-radius: 0; background: var(--pk-deep); border: 1px solid var(--pk-line); overflow: hidden; }
 .pk-bar > i { display: block; height: 100%; width: calc(var(--pk-value, 0) * 100%); border-radius: inherit; background: var(--pk-bar-color, var(--pk-yellow)); transition: width 160ms linear; }
 .pk-bar--stripes > i { background: linear-gradient(#ffd65c, var(--pk-yellow) 60%); box-shadow: inset 0 -2px 0 var(--pk-yellow-edge); }
 /* pips: <div class="pk-pips"><i class="on"></i>…</div> */
 .pk-pips { display: flex; gap: 5px; }
-.pk-pips > i { flex: 1; min-width: 10px; height: 10px; border-radius: 4px; background: var(--pk-raised); }
+.pk-pips > i { flex: 1; min-width: 10px; height: 10px; border-radius: 0; background: var(--pk-raised); }
 .pk-pips > i.on { background: var(--pk-yellow); }
 .pk-pips > i.teal { background: var(--pk-teal); }
 
@@ -252,7 +258,7 @@
 .pk-roster { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .pk-row {
   display: flex; align-items: center; gap: 10px; min-height: 32px; padding: 6px 12px;
-  border: 1px solid var(--pk-line); border-radius: 10px; background: var(--pk-hud);
+  border: 1px solid var(--pk-line); border-radius: 0; background: var(--pk-hud);
   font: 800 14px var(--pk-sans); color: var(--pk-text);
 }
 .pk-row > .pk-row-n { font: 400 15px var(--pk-display); color: var(--pk-muted); min-width: 14px; }
@@ -264,7 +270,7 @@
 .pk-row.is-me .pk-row-name > small { color: inherit; opacity: .75; }
 .pk-row > .pk-row-score { font: 400 22px var(--pk-display); color: var(--pk-yellow); }
 .pk-row.is-me > .pk-row-score { color: inherit; }
-.pk-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex: none; background: var(--pk-raised); border: 2px solid var(--pk-night); }
+.pk-avatar { width: 32px; height: 32px; border-radius: var(--pk-radius-round); object-fit: cover; flex: none; background: var(--pk-raised); border: 2px solid var(--pk-night); }
 
 /* icons: inline SVGs from engine/icons.js, 1em square on the text baseline */
 .pk-ico { display: inline-block; flex: none; width: 1em; height: 1em; vertical-align: -.125em; }
@@ -294,7 +300,7 @@
 .pk-slot {
   position: relative; display: grid; place-items: end center;
   width: 78px; height: 78px; padding: 6px;
-  border: 2px solid var(--pk-line-strong); border-radius: 12px; background: rgba(255, 255, 255, .06);
+  border: 2px solid var(--pk-line-strong); border-radius: 0; background: rgba(255, 255, 255, .06);
   font: 800 12px var(--pk-sans); color: var(--pk-text);
 }
 .pk-slot > .pk-slot-n { position: absolute; top: 5px; left: 8px; font-size: 11px; color: var(--pk-muted); }
@@ -303,7 +309,7 @@
 
 /* speech bubble over a seated pana: engine/play/seat-bubbles.js. The same white
    comic bubble Carreritas draws over its cars; short-lived, so it may cover the HUD. */
-.pk-bubble{position:absolute;z-index:5;transform:translate(-50%,-100%);max-width:220px;padding:7px 14px 5px;border:3px solid var(--pk-bubble-ink);border-radius:18px;background:var(--pk-bubble-paper);color:var(--pk-bubble-ink);font:20px/1.05 var(--pk-display);text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.25);pointer-events:none}
+.pk-bubble{position:absolute;z-index:5;transform:translate(-50%,-100%);max-width:220px;padding:7px 14px 5px;border:3px solid var(--pk-bubble-ink);border-radius:0;background:var(--pk-bubble-paper);color:var(--pk-bubble-ink);font:20px/1.05 var(--pk-display);text-align:center;box-shadow:4px 4px 0 rgba(0,0,0,.25);pointer-events:none}
 .pk-bubble::after{content:'';position:absolute;left:50%;bottom:-11px;width:16px;height:16px;border:solid var(--pk-bubble-ink);border-width:0 3px 3px 0;background:var(--pk-bubble-paper);transform:translateX(-50%) rotate(45deg)}
 .pk-bubble.below{transform:translate(-50%,0)}
 .pk-bubble.below::after{top:-11px;bottom:auto;transform:translateX(-50%) rotate(225deg)}
@@ -316,13 +322,13 @@
 
 /* tilted shout: ¡VUELTA FINAL!, ¡TRONCO! */
 .pk-banner {
-  display: inline-block; padding: 12px 26px 8px; border-radius: 12px;
+  display: inline-block; padding: 12px 26px 8px; border-radius: 0;
   background: var(--pk-coral); color: #fff;
   font: 400 34px/1 var(--pk-display); letter-spacing: .5px;
-  box-shadow: 0 6px 0 var(--pk-coral-edge); transform: rotate(-3deg);
+  box-shadow: 5px 5px 0 var(--pk-coral-edge); transform: rotate(-3deg);
 }
-.pk-banner--yellow { background: var(--pk-yellow); color: var(--pk-yellow-ink); box-shadow: 0 6px 0 var(--pk-yellow-edge); }
-.pk-banner--teal { background: var(--pk-teal); color: #062a23; box-shadow: 0 6px 0 var(--pk-teal-edge); }
+.pk-banner--yellow { background: var(--pk-yellow); color: var(--pk-yellow-ink); box-shadow: 5px 5px 0 var(--pk-yellow-edge); }
+.pk-banner--teal { background: var(--pk-teal); color: #062a23; box-shadow: 5px 5px 0 var(--pk-teal-edge); }
 .pk-banner.pk-pop { animation: pk-pop 1.8s ease-out both; }
 @keyframes pk-pop {
   0% { opacity: 0; transform: rotate(-3deg) scale(.6); }
@@ -335,7 +341,7 @@
 /* feat toast: a small pill under the shout zone for milestone celebrations
    (engine/feats.js). It wears .show while visible.
    <div id="toast" class="pk-toast" role="status" aria-live="polite"></div> */
-.pk-toast { position: fixed; z-index: 41; top: 27%; left: 50%; max-width: 90vw; padding: 8px 18px; border: 1px solid var(--pk-line); border-radius: 999px; background: var(--pk-night); color: var(--pk-text); font: 800 15px var(--pk-sans); text-align: center; opacity: 0; transform: translate(-50%, -8px); pointer-events: none; transition: opacity .18s, transform .18s; }
+.pk-toast { position: fixed; z-index: 41; top: 27%; left: 50%; max-width: 90vw; padding: 8px 18px; border: 1px solid var(--pk-line); border-radius: 0; background: var(--pk-night); color: var(--pk-text); font: 800 15px var(--pk-sans); text-align: center; opacity: 0; transform: translate(-50%, -8px); pointer-events: none; transition: opacity .18s, transform .18s; }
 .pk-toast.show { opacity: 1; transform: translate(-50%, 0); }
 @media (prefers-reduced-motion: reduce) { .pk-toast { transition: opacity .18s; transform: translate(-50%, 0); } }
 
@@ -348,22 +354,22 @@
    the input (0–100%) when its value changes.
    <section class="pk-power"><label class="pk-power-control" for="power"><span>Fuerza</span>
      <input id="power" type="range" aria-orientation="vertical"><output></output></label></section> */
-.pk-power { position: fixed; z-index: 3; right: 20px; top: 50%; transform: translateY(-50%); height: min(380px, 52vh); width: 76px; padding: 12px 0; border-radius: 18px; background: var(--pk-night); }
+.pk-power { position: fixed; z-index: 3; right: 20px; top: 50%; transform: translateY(-50%); height: min(380px, 52vh); width: 76px; padding: 12px 0; border-radius: 0; background: var(--pk-night); }
 .pk-power-control { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: 900; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 .pk-power-control output { color: var(--pk-yellow); font-size: 15px; }
-.pk-power-control input { --fill: 60%; flex: 1; width: 30px; margin: 0; writing-mode: vertical-lr; direction: rtl; appearance: none; -webkit-appearance: none; border-radius: 15px; cursor: pointer;
+.pk-power-control input { --fill: 60%; flex: 1; width: 30px; margin: 0; writing-mode: vertical-lr; direction: rtl; appearance: none; -webkit-appearance: none; border-radius: 0; cursor: pointer;
   background: linear-gradient(to top, var(--pk-yellow) var(--fill), rgba(255, 255, 255, .14) var(--fill)); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .55); }
-.pk-power-control input::-webkit-slider-thumb { -webkit-appearance: none; width: 38px; height: 38px; border-radius: 50%; background: #fffdf6; border: 3px solid var(--pk-night); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
-.pk-power-control input::-moz-range-thumb { width: 34px; height: 34px; border-radius: 50%; background: #fffdf6; border: 3px solid var(--pk-night); }
+.pk-power-control input::-webkit-slider-thumb { -webkit-appearance: none; width: 38px; height: 38px; border-radius: 0; background: #fffdf6; border: 3px solid var(--pk-night); box-shadow: 3px 3px 0 var(--pk-skin-shade); }
+.pk-power-control input::-moz-range-thumb { width: 34px; height: 34px; border-radius: 0; background: #fffdf6; border: 3px solid var(--pk-night); }
 .pk-power-control input:disabled { opacity: .45; cursor: default; }
 /* Charge meter: the hold-and-release version of the power bar (Billar, Bolas
    Criollas). engine/play/shot-charge.js paintCharge() moves the fill and marker.
    <div id="power" class="pk-charge" role="meter" aria-valuemin="5" aria-valuemax="100">
      <i class="pk-charge-fill"></i><i class="pk-charge-marker"></i></div> */
-.pk-charge { position: relative; flex: 1; min-height: 0; width: 28px; border: 2px solid var(--pk-muted); border-radius: 12px; background: linear-gradient(to top, var(--pk-teal) 0% 45%, var(--pk-yellow) 45% 82%, var(--pk-coral) 82% 100%); }
-.pk-charge::before { content: ''; position: absolute; inset: 0; border-radius: 10px; background: var(--pk-night); opacity: .65; }
-.pk-charge-fill { position: absolute; inset: 0; border-radius: 10px; background: inherit; clip-path: inset(95% 0 0); }
-.pk-charge-marker { position: absolute; left: -7px; right: -7px; height: 5px; bottom: 5%; transform: translateY(50%); border-radius: 3px; background: #fffdf6; box-shadow: 0 0 0 2px var(--pk-night); }
+.pk-charge { position: relative; flex: 1; min-height: 0; width: 28px; border: 2px solid var(--pk-muted); border-radius: 0; background: linear-gradient(to top, var(--pk-teal) 0% 45%, var(--pk-yellow) 45% 82%, var(--pk-coral) 82% 100%); }
+.pk-charge::before { content: ''; position: absolute; inset: 0; border-radius: 0; background: var(--pk-night); opacity: .65; }
+.pk-charge-fill { position: absolute; inset: 0; border-radius: 0; background: inherit; clip-path: inset(95% 0 0); }
+.pk-charge-marker { position: absolute; left: -7px; right: -7px; height: 5px; bottom: 5%; transform: translateY(50%); border-radius: 0; background: #fffdf6; box-shadow: 0 0 0 2px var(--pk-night); }
 @media (max-width: 760px) {
   .pk-power { right: 8px; top: auto; bottom: 200px; transform: none; height: min(250px, 34vh); width: 58px; }
   .pk-power-control input { width: 24px; } .pk-power-control input::-webkit-slider-thumb { width: 30px; height: 30px; }
@@ -392,11 +398,11 @@
 .pk-lobby .pk-seating > .pk-copy { display: block; margin: 0; font-size: 13px; }
 .pk-seating-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .pk-seating-rows label { display: grid; gap: 4px; min-width: 0; font: 800 12px var(--pk-sans); color: var(--pk-muted); }
-.pk-seating-rows select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #fff3; border-radius: 8px; padding: 8px; background: var(--pk-purple); color: var(--pk-text); font: 800 14px var(--pk-sans); }
+.pk-seating-rows select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #fff3; border-radius: 0; padding: 8px; background: var(--pk-purple); color: var(--pk-text); font: 800 14px var(--pk-sans); }
 .pk-seating-rows select:focus-visible { outline: 2px solid var(--pk-yellow); outline-offset: 2px; }
 .pk-seating-rows select:disabled { opacity: .7; }
 .pk-map-picker { margin: 16px 0; width: 100%; }
-.pk-select { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--pk-line); border-radius: 10px; background: var(--pk-deep); color: var(--pk-text); font: inherit; cursor: pointer; }
+.pk-select { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--pk-line); border-radius: 0; background: var(--pk-deep); color: var(--pk-text); font: inherit; cursor: pointer; }
 .pk-select:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 3px; }
 .pk-select:disabled { opacity: .7; cursor: default; }
 .pk-map-picker small { margin: 0; font-size: 12px; line-height: 1.4; }
@@ -431,7 +437,7 @@
 .pk-cover-portrait { width: 132px; height: 132px; object-fit: contain; }
 .pk-cover-title { font: 400 clamp(48px, 8vw, 96px)/1 var(--pk-display); letter-spacing: 1px; color: #fff; text-shadow: 0 6px 0 rgba(0, 0, 0, .35); }
 .pk-cover-text { margin: 0; font: 800 17px/1.4 var(--pk-sans); color: rgba(255, 255, 255, .88); }
-.pk-cover-bar { width: min(300px, 70vw); height: 6px; overflow: hidden; border-radius: 99px; background: rgba(255, 255, 255, .18); }
+.pk-cover-bar { width: min(300px, 70vw); height: 6px; overflow: hidden; border-radius: 0; background: rgba(255, 255, 255, .18); }
 .pk-cover-bar i { display: block; width: 40%; height: 100%; border-radius: inherit; background: var(--pk-yellow); animation: pk-cover-run 1.1s ease-in-out infinite; }
 @keyframes pk-cover-run { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
 
@@ -443,10 +449,10 @@
 .pk-touch {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: var(--pk-touch, 64px); height: var(--pk-touch, 64px); padding: 0 16px;
-  border: 2px solid var(--pk-line-strong); border-radius: 18px;
+  border: 2px solid var(--pk-line-strong); border-radius: 0;
   background: rgba(26, 19, 54, .84); color: var(--pk-text);
   font: 400 20px/1 var(--pk-display); letter-spacing: .5px; text-transform: none;
-  box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+  box-shadow: 4px 4px 0 var(--pk-skin-shade);
   cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   transition: transform 180ms cubic-bezier(.34, 1.85, .64, 1), box-shadow 80ms, border-color 60ms, color 60ms;
@@ -454,13 +460,13 @@
 .pk-touch[data-icon] { width: var(--pk-touch, 64px); padding: 0; }
 .pk-touch svg { flex: none; width: calc(var(--pk-touch, 64px) * .46); height: calc(var(--pk-touch, 64px) * .46); pointer-events: none; }
 .pk-touch > * { pointer-events: none; }
-.pk-touch.is-held { transform: translateY(4px) scale(.94, .9); box-shadow: 0 1px 0 rgba(0, 0, 0, .45); border-color: var(--pk-yellow); color: var(--pk-yellow); transition-duration: 50ms; }
-.pk-touch--go { border-color: var(--pk-yellow-ink); background: var(--pk-yellow); color: var(--pk-yellow-ink); box-shadow: 0 5px 0 var(--pk-yellow-edge); }
-.pk-touch--go.is-held { color: var(--pk-yellow-ink); border-color: var(--pk-yellow-ink); box-shadow: 0 1px 0 var(--pk-yellow-edge); }
-.pk-touch--coral { border-color: #5a1012; background: var(--pk-coral); color: #fff; box-shadow: 0 5px 0 var(--pk-coral-edge); }
-.pk-touch--coral.is-held { color: #fff; border-color: #5a1012; box-shadow: 0 1px 0 var(--pk-coral-edge); }
-.pk-touch--sm { --pk-touch: 52px; font-size: 16px; border-radius: 15px; }
-.pk-touch--lg { --pk-touch: 76px; font-size: 22px; border-radius: 22px; }
+.pk-touch.is-held { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--pk-skin-shade); border-color: var(--pk-yellow); color: var(--pk-yellow); transition-duration: 50ms; }
+.pk-touch--go { border-color: var(--pk-yellow-ink); background: var(--pk-yellow); color: var(--pk-yellow-ink); box-shadow: 4px 4px 0 var(--pk-yellow-edge); }
+.pk-touch--go.is-held { color: var(--pk-yellow-ink); border-color: var(--pk-yellow-ink); box-shadow: 1px 1px 0 var(--pk-yellow-edge); }
+.pk-touch--coral { border-color: #5a1012; background: var(--pk-coral); color: #fff; box-shadow: 4px 4px 0 var(--pk-coral-edge); }
+.pk-touch--coral.is-held { color: #fff; border-color: #5a1012; box-shadow: 1px 1px 0 var(--pk-coral-edge); }
+.pk-touch--sm { --pk-touch: 52px; font-size: 16px; border-radius: 0; }
+.pk-touch--lg { --pk-touch: 76px; font-size: 22px; border-radius: 0; }
 /* a cross of four arrows: up on top, left/down/right below */
 .pk-dpad { display: grid; grid-template-columns: repeat(3, var(--pk-touch, 58px)); gap: 6px; --pk-touch: 58px; }
 .pk-dpad [data-icon="up"] { grid-column: 2; }
@@ -478,16 +484,16 @@
 .pk-counter-pop { display: inline-block; animation: pk-counter-pop 280ms cubic-bezier(.34, 1.6, .64, 1); }
 .pk-combo-badge {
   display: inline-flex; align-items: center; justify-content: center;
-  margin-left: 6px; padding: 2px 7px 1px; border-radius: 999px;
+  margin-left: 6px; padding: 2px 7px 1px; border-radius: 0;
   background: var(--pk-yellow); color: var(--pk-yellow-ink);
   font: 400 14px/1 var(--pk-display); letter-spacing: .5px;
-  box-shadow: 0 2px 0 var(--pk-yellow-edge);
+  box-shadow: 2px 2px 0 var(--pk-yellow-edge);
   opacity: 0; transform: scale(.5); pointer-events: none;
   transition: opacity 140ms, transform 180ms cubic-bezier(.34, 1.8, .64, 1);
 }
 .pk-combo-badge.is-on { opacity: 1; transform: scale(1.08) rotate(-4deg); }
 .pk-fly-coin {
-  position: fixed; z-index: 80; width: 18px; height: 18px; border-radius: 50%;
+  position: fixed; z-index: 80; width: 18px; height: 18px; border-radius: var(--pk-radius-round);
   background: radial-gradient(circle at 35% 35%, #fff8c4, var(--fly-color, var(--pk-yellow)) 65%);
   border: 2px solid var(--pk-yellow-ink); box-shadow: 0 0 12px var(--fly-color, var(--pk-yellow));
   pointer-events: none;
