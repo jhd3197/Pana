@@ -56,13 +56,14 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
 .map-wrap[hidden]{display:none}
 .map-wrap canvas{display:block;width:180px;height:180px}
 
-/* compass, inside the Tab layer */
+/* compass, inside the Tab layer: marks on the top row, tags on the bottom one
+   (hud.js spreads them so none sits on another). */
 .compass{position:relative;height:40px;background:var(--pk-deep);border:2px solid rgba(255,255,255,.08);overflow:hidden}
 .compass-strip{position:absolute;inset:0}
 .compass-mark,.compass-tag{position:absolute;transform:translateX(-50%);white-space:nowrap}
-.compass-mark{top:4px;font:900 12px var(--pk-sans);color:var(--pk-muted)}
+.compass-mark{top:3px;font:900 12px/14px var(--pk-sans);color:var(--pk-muted)}
 .compass-mark.is-north{color:var(--pk-text)}
-.compass-tag{bottom:4px;padding:1px 7px;border-radius:0;font:900 10px var(--pk-sans);background:var(--pk-teal);color:var(--pk-night)}
+.compass-tag{bottom:3px;padding:1px 7px;border-radius:0;font:900 10px/12px var(--pk-sans);background:var(--pk-teal);color:var(--pk-night)}
 .compass-tag.is-truck{background:var(--pk-game);color:var(--pk-game-ink)}
 .compass-tag.is-down{background:var(--rel-jade);color:var(--pk-night)}
 .compass-tag.is-boss{background:var(--pk-coral);color:#fff}
@@ -123,7 +124,7 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
   .topbar{top:8px;right:8px}#game-nav #invite,#game-nav #sound{display:none}
   .carry{top:8px;left:8px;bottom:auto;width:min(240px,calc(100vw - 120px))}
   .intel{top:110px;width:calc(100vw - 16px);max-height:calc(100dvh - 110px - 190px);padding:9px;gap:8px;overflow:auto}
-  .intel-body{gap:9px}.map-wrap canvas{width:120px;height:120px}.compass{height:36px}
+  .intel-body{gap:9px}.map-wrap canvas{width:120px;height:120px}
   .place{gap:5px}.place #room-name{font-size:15px}.place .pk-eyebrow{font-size:9px}.haul .pk-num{font-size:15px}
   .choice{top:auto;bottom:250px}.boss{top:auto;bottom:240px}.choice b{font-size:17px}
   .touch-actions{gap:6px}.touch-actions .pk-touch{min-width:54px;height:46px;padding:0 6px;font-size:11px}#t-use{min-width:60px;height:98px}

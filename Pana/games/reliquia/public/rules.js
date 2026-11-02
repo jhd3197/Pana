@@ -162,6 +162,17 @@ export function compassTarget(s, p) {
   const best = [...visibleItems(s).filter(i => floorOf(i.x) === f && i.state === 'ground').map(i => ({ x: i.x, z: i.z, value: valueOf(i.kind) })), ...hidden].sort((a, b) => b.value - a.value)[0];
   return best ? { x: best.x, z: best.z, boss: false } : null;
 }
+// Compass tags on a strip `width` px wide: each wants its centre at x and is w
+// wide. Returns the centres, in the same order and left-to-right order kept,
+// with `gap` px between neighbours and, while they fit, inside the strip.
+export function spreadTags(tags, width, gap = 4) {
+  const order = tags.map((_, i) => i).sort((a, b) => tags[a].x - tags[b].x), left = [];
+  let edge = 0;
+  for (const i of order) { left[i] = Math.max(edge, Math.min(width, tags[i].x) - tags[i].w / 2); edge = left[i] + tags[i].w + gap; }
+  edge = width;
+  for (const i of order.reverse()) { left[i] = Math.min(left[i], edge - tags[i].w); edge = left[i] - gap; }
+  return left.map((l, i) => l + tags[i].w / 2);
+}
 export const tier = s => Math.min(4, Math.floor(s.codicia / 25));
 const TITLES = [['unaMas', locKey('El codicioso'), locKey('pidió una sala más')], ['dropped', locKey('Manos de mantequilla'), locKey('soltó tesoro')], ['banked', locKey('El cargador'), locKey('subió al camión')],
   ['curses', locKey('El que tocó lo que no era'), locKey('despertó maldiciones')], ['last', locKey('El cobarde'), locKey('siempre de último')]];
