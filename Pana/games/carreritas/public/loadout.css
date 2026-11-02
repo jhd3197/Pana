@@ -58,7 +58,6 @@
 #shop > * { pointer-events:auto; position:absolute; }
 #shop[hidden] {display:none;}
 #shop .sk { transform:skewX(-10deg); }
-#shop kbd {font:900 calc(14 * var(--u))/1 var(--pk-sans);padding:3px 6px;border:1px solid currentColor;border-radius:0;}
 /* ---------- D: taller loadout ---------- */
 
 
@@ -81,7 +80,6 @@
 .tl-tabs { left: 50%; top: calc(36 * var(--u)); transform: translateX(-38%); display: flex; align-items: center; gap: calc(10 * var(--u)); }
 .tl-tab { padding: calc(12 * var(--u)) calc(24 * var(--u)) calc(8 * var(--u)) !important; background: var(--night) !important; font: 400 calc(26 * var(--u)) / 1 var(--display) !important; color: var(--muted) !important; box-shadow: calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--ink); }
 .tl-tab.on { background: var(--yellow) !important; color: var(--ink) !important; }
-.tl-kbd { padding: calc(3 * var(--u)) calc(8 * var(--u)); border: calc(2 * var(--u)) solid var(--muted); border-radius: 0; font: 900 calc(14 * var(--u)) / 1 var(--sans); color: var(--muted); }
 .tl-coins { right: calc(40 * var(--u)); top: calc(36 * var(--u)); display: flex; align-items: center; gap: calc(10 * var(--u)); padding: calc(10 * var(--u)) calc(22 * var(--u)) calc(6 * var(--u)); background: var(--night); font: 400 calc(32 * var(--u)) / 1 var(--display); color: #ffd23f; box-shadow: calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--ink); }
 .tl-coins .coin { width: calc(26 * var(--u)); height: calc(26 * var(--u)); border-width: calc(4 * var(--u)); box-shadow: none; }
 .tl-coins.pop { animation: plate-pop 450ms ease-out; }
@@ -222,7 +220,7 @@ body.loadout-focus .menu-footer {transform:translateY(260px);opacity:0;pointer-e
  #shop .tl-tabs {top:104px;left:20px;transform:none;gap:4px;}#shop .tl-tab{font-size:17px!important;padding:7px 10px!important;}
  #shop .tl-coins{right:16px;top:70px;}#shop .tl-stats{right:14px;top:158px;width:220px;}#shop .shop-stats > div{padding:5px 12px;}
  #shop .tl-slots {left:18px;right:0;bottom:100px;overflow-x:auto;padding:25px 8px 8px 0;}
- #shop .tl-slot{width:95px;height:100px;}#shop .tl-sty{flex:none;}#shop .tl-tabs kbd{display:none;}
+ #shop .tl-slot{width:95px;height:100px;}#shop .tl-sty{flex:none;}
  body.shop-open .menu-footer{right:20px;bottom:18px;width:65%;}body.shop-open .menu-footer #play{font-size:27px;padding:14px;}body.shop-open .menu-footer #menu-summary{display:none;}#loadout-kit{font-size:11px;}
  #loadout-drawer{left:12px;bottom:18px;width:calc(100vw - 24px);transform:none!important;max-height:46dvh;}#loadout-drawer .hd small{display:none;}#loadout-drawer .shop-item b{font-size:18px;}
 }

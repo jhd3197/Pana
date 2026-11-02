@@ -30,7 +30,7 @@ try {
   await page.waitForFunction(() => race.pads?.[0]?.throttle === .2 && document.documentElement.dataset.panaInput === 'gamepad');
   await page.mouse.move(100, 100); await page.mouse.move(600, 400); await frames();
   assert.equal(await page.locator('html').getAttribute('data-pana-input'), 'gamepad');
-  assert.equal(await page.locator('#swap-item kbd').isVisible(), false, 'Q disappears while native controller input drives the car');
+  assert.equal(await page.locator('#swap-item kbd').count(), 0, 'no Q keycap on the swap button');
   assert.equal(await page.locator('kbd:not([data-pad-key]):visible').count(), 0);
   await page.evaluate(() => { __pad.buttons[7] = { pressed: false, value: 0 }; });
   await press(9); await page.locator('dialog.pana-menu[open]').waitFor();
