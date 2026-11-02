@@ -104,6 +104,8 @@ nav .pk-btn span { color: var(--pk-yellow); }
   .pk-lobby .pk-copy { font-size: 14px; }
   .pk-lobby .pk-stat { padding: 10px 12px; }
 }
+/* Mid-width screens: the action prompt sits right of the disguise panel instead of over it. */
+@media (max-width: 1240px) and (min-width: 721px) { .action.pk-btn--primary { left: calc(50% + 200px); } }
 @media (max-width: 1100px) {
   .disguise-panel { width: 360px; }
   .prop-list .pk-slot { height: 72px; }

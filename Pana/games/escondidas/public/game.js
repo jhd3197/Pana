@@ -201,7 +201,9 @@ function updateHUD() {
   const near = nearestProp();
   $('action-label').textContent = spectating ? loc('Observando la ronda') : seeking
     ? state.phase === 'hide' ? loc('Espera a que termine la cuenta') : me?.cooldown > 0 ? loc('Revisando… {s} s', { s: me.cooldown.toFixed(1) }) : loc('Revisar lo que está en la mira')
-    : near ? loc('Copiar {object}', { object: propName(near.type).toLowerCase() }) : state.options?.disguises === 'barrels' ? loc('Acércate a un barril para copiar') : loc('Acércate a un objeto para copiar');
+    : near ? loc('Copiar {object}', { object: propName(near.type).toLowerCase() }) : '';
+  // A hider sees the copy prompt only next to something to copy: no generic "go near an object".
+  show('action', spectating || seeking || !!near);
   $('action').disabled = spectating || seeking && (state.phase !== 'hunt' || me?.cooldown > 0) || !seeking && (!near || me?.changes <= 0);
   const suspicion = me?.suspicion || 0; show('suspicion', suspicion > 3 && !spectating && !seeking);
   $('suspicion-fill').style.width = `${suspicion}%`;
