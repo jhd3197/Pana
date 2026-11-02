@@ -39,8 +39,8 @@ test('two panas in reach: only the nearest is painted', () => {
 test('a swing misses past the reach, behind the back and through cover, and waits out its cooldown', () => {
   let { g, b } = duel('brush', 3); run(g, 1, { fire: true }); run(g, 6); assert.equal(b.paint, 0, 'out of reach');
   ({ g, b } = duel('brush', -1.4)); run(g, 1, { fire: true }); run(g, 6); assert.equal(b.paint, 0, 'behind');
-  // Plaza cover: the 2.76 m wide crate row at z = ±16.5 (x ±5.25). A pana on its far side is safe.
-  const d = duel('bat', 2, { toughness: 6 }); Object.assign(d.a, { x: 5.25, z: 18.2 }); Object.assign(d.b, { x: 5.25, z: 14.8 }); d.a.melee.phase = 'ready';
+  // Plaza cover: the 0.8 m deep building corner at z = ±16 (x ±8.7–12.3). A pana on its far side, within reach, is safe.
+  const d = duel('bat', 2, { toughness: 6 }); Object.assign(d.a, { x: 10.5, z: 17.2 }); Object.assign(d.b, { x: 10.5, z: 14.8 }); d.a.melee.phase = 'ready';
   d.g.players[1].shield = 0; run(d.g, 1, { fire: true }); run(d.g, 6); assert.equal(d.b.paint, 0, 'cover between');
   // La Brocha: 0.1 s windup + 0.2 s recovery, one pepazo a blow. Holding fire for 1.5 s lands five.
   const e = duel('brush', 1.2, { toughness: 5 }); run(e.g, 30, { fire: true });
@@ -71,11 +71,11 @@ test('La Chancleta: alt throws it on an arc, it leaves the hand, paints a pana 1
 
 test('a thrown chancla stops on cover and still comes back on time', () => {
   const { g, a, b } = duel('sandal', 15);
-  // The 2.8 m tall stack at x 12 spans z 6.1–11.9: B hides behind it.
-  Object.assign(a, { x: 12, z: 17 }); Object.assign(b, { x: 12, z: 2 });
+  // The 2.8 m building corner at x 8.7–12.3 spans z 15.6–16.4: B hides behind it.
+  Object.assign(a, { x: 10.5, z: 19.5 }); Object.assign(b, { x: 10.5, z: 9 });
   let steps = 0; run(g, 1, { alt: true }); steps++;
   while (g.thrown.length && steps < 60) { run(g, 1); steps++; }
-  assert.equal(b.paint, 0, 'the crate row took it'); assert.ok(g.splats.some(s => Math.abs(s.z - 11.875) < .1), 'it splats on the crate face');
+  assert.equal(b.paint, 0, 'the corner took it'); assert.ok(g.splats.some(s => Math.abs(s.z - 16.375) < .1), 'it splats on the corner face');
   while (a.melee.phase === 'away' && steps < 200) { run(g, 1); steps++; }
   assert.ok(Math.abs(steps * .05 - 2.55) < .06, `back after ${(steps * .05).toFixed(2)} s`);
 });

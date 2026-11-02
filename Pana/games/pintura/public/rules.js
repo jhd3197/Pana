@@ -8,6 +8,7 @@ import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../.
 import { MUELLE_COVERS, MUELLE_SPAWNS, MUELLE_SIZE } from './muelle-layout.js';
 import { NOCHE_COVERS, NOCHE_SPAWNS, NOCHE_SIZE } from './noche-layout.js';
 import { TERMINAL_COVERS, TERMINAL_SPAWNS, TERMINAL_BOUNDS } from './terminal-layout.js';
+import { PLAZA_COVERS } from './plaza-layout.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/play/difficulty.js';
 import { clamp } from '../../../engine/random.js';
 import { pickSpawn, pickRespawn, spreadSpawns, MIN_SPAWN_GAP } from './spawn-picker.js';
@@ -47,13 +48,8 @@ export const COLORS = ['#f28b42', '#29c5cd', '#d363a6', '#a1bd43', '#8d85df', '#
 const RING = [[11, 21.5, 3.6, 1.6, 2], [-11, -21.5, 3.6, 1.6, 2], [-11, 21.5, 3.6, 1.6, 1.8], [11, -21.5, 3.6, 1.6, 1.8],
   [21.5, -11, 1.6, 3.6, 2], [-21.5, 11, 1.6, 3.6, 2], [21.5, 11, 1.6, 3.6, 1.8], [-21.5, -11, 1.6, 3.6, 1.8]].map(([x, z, w, d, h]) => ({ x, z, w, d, h, height: h }));
 const spread = cover => [...cover.map(o => ({ ...o, x: o.x * SPREAD, z: o.z * SPREAD, w: o.w * 1.15, d: o.d * 1.15 })), ...RING];
-// The original plaza court, before spreading.
-const PLAZA_COVER = [
-  { x: 0, z: 0, w: 4, d: 2, h: 2.4 },
-  ...[-1, 1].flatMap(s => [{ x: s * 8, z: -6, w: 2.4, d: 5, h: 2.8 }, { x: s * 8, z: 6, w: 2.4, d: 5, h: 2.8 },
-    { x: s * 3.5, z: -11, w: 4, d: 1.8, h: 1.8 }, { x: s * 3.5, z: 11, w: 4, d: 1.8, h: 1.8 }]),
-];
-export const COVER = spread(PLAZA_COVER);
+// La Plaza (plaza-layout.js): its own three layouts, already at court scale.
+export const COVER = PLAZA_COVERS[0];
 export const SPAWNS = [{ x: -14, z: -14 }, { x: 14, z: 14 }, { x: 14, z: -14 }, { x: -14, z: 14 }, { x: 0, z: -15 }, { x: 0, z: 15 }, { x: -15, z: 0 }, { x: 15, z: 0 }].map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
 const PAINT_SPAWNS = ARENA_SPAWNS.map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
 // Bot marksmanship per difficulty: aim wobble (radians) and how much of the
@@ -119,7 +115,7 @@ export function grenadeFlight(kind, cover = [], mapId = null) {
 // plays a different court. Not random: everyone learns them.
 export const VARIANTS = 3;
 // Spanish keys: clients show them with loc().
-const VARIANT_NAMES = { muelle: [locKey('Patio'), locKey('Laberinto'), locKey('Torres')], terminal: [locKey('Pasillos'), locKey('Fortaleza'), locKey('Laberinto')], noche: [locKey('Torre'), locKey('Inflables'), locKey('Tubos')], default: [locKey('Clásica'), locKey('Girada'), locKey('Cerrada')] };
+const VARIANT_NAMES = { muelle: [locKey('Patio'), locKey('Laberinto'), locKey('Torres')], terminal: [locKey('Pasillos'), locKey('Fortaleza'), locKey('Laberinto')], noche: [locKey('Torre'), locKey('Inflables'), locKey('Tubos')], plaza: [locKey('Clásica'), locKey('Mercado'), locKey('Fiesta')], default: [locKey('Clásica'), locKey('Girada'), locKey('Cerrada')] };
 export const variantName = (id, variant = 0) => (VARIANT_NAMES[id] || VARIANT_NAMES.default)[variant % VARIANTS];
 const gap = (a, b) => Math.max(Math.abs(a.x - b.x) - (a.w + b.w) / 2, Math.abs(a.z - b.z) - (a.d + b.d) / 2);
 // "Girada" turns the cover a quarter; the spawns and ring are symmetric under it.
@@ -144,10 +140,8 @@ export function coverFor(id, variant = 0) {
   if (id === 'muelle') cover = MUELLE_COVERS[variant];
   else if (id === 'noche') cover = NOCHE_COVERS[variant];
   else if (id === 'terminal') cover = TERMINAL_COVERS[variant];
-  else {
-    const layout = arenaLayout(id), base = layout ? spread(layout.cover) : COVER;
-    cover = [base, rotate(base), closed(base, layout ? id : 'plaza')][variant];
-  }
+  else if (!arenaLayout(id)) cover = PLAZA_COVERS[variant];
+  else { const base = spread(arenaLayout(id).cover); cover = [base, rotate(base), closed(base, id)][variant]; }
   // The collision audit's fixes (collision-fixes.js) fit boxes to what the scene shows.
   cover = applyCollisionFixes(id, variant, cover);
   covers.set(key, cover); return cover;

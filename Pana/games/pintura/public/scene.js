@@ -6,6 +6,7 @@ import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { createMuelle } from './muelle.js';
 import { createNoche } from './noche.js';
 import { createTerminal } from './terminal.js';
+import { createPlazaProps } from './plaza-props.js';
 import { createCtfProps } from './ctf-scene.js';
 import { createDomProps } from './domination-scene.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
@@ -15,7 +16,7 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { house, church } from '/engine/models/props/plaza-buildings.js';
-import { crate, barrel, marketStall, streetLamp } from '/engine/models/props/plaza.js';
+import { barrel, marketStall, streetLamp } from '/engine/models/props/plaza.js';
 import { parkBench, basketballHoop } from '/engine/models/props/pueblo.js';
 import { araguaney } from '/engine/models/vegetation/araguaney.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
@@ -126,33 +127,9 @@ export function createScene(canvas) {
     place(streetLamp(), side * 20.5, -12); place(streetLamp(), side * 20.5, 11);
     place(basketballHoop(), side * 17, 21, Math.PI); place(barrel(), side * 21.5, 20);
   }
-  // Old battles left their mark: splats on every crate stack and the paving.
+  // Old battles left their mark on the paving (plaza-props.js marks the cover).
   const splatTextures = [1, 2, 3, 4].map(seed=>splatTexture(seed)), paint = [PALETTE.rojo, PALETTE.azul, PALETTE.amarillo, PALETTE.turquesa, PALETTE.verde];
   const decal = (color, n) => new THREE.MeshStandardMaterial({ color, map: splatTextures[n % 4], transparent: true, alphaTest: .4, roughness: .3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
-  // The plaza's crate stacks follow the round's layout, so they rebuild with it.
-  function plazaCover(cover) {
-    const group = new THREE.Group(), crates = new THREE.Group(), bounds = [], r = rng(31);
-    cover.forEach((o, i) => {
-      bounds.push(new THREE.Box3(new THREE.Vector3(o.x - o.w / 2, 0, o.z - o.d / 2), new THREE.Vector3(o.x + o.w / 2, o.h, o.z + o.d / 2)));
-      // Fit real crate geometry inside the authoritative cover box, including height.
-      const columns = Math.ceil(o.w / 2), rows = Math.ceil(o.d / 2);
-      for (let x = 0; x < columns; x++) for (let z = 0; z < rows; z++) {
-        const model = crate(), box3 = new THREE.Box3().setFromObject(model), size = box3.getSize(new THREE.Vector3());
-        const wrapper = new THREE.Group(); model.position.sub(box3.min); wrapper.add(model); wrapper.scale.set(o.w / columns / size.x, o.h / size.y, o.d / rows / size.z);
-        wrapper.position.set(o.x - o.w / 2 + x * o.w / columns, 0, o.z - o.d / 2 + z * o.d / rows); crates.add(wrapper);
-      }
-      const band = new THREE.Mesh(new THREE.BoxGeometry(o.w + .01, .24, o.d + .01), material(i % 2 ? PALETTE.coral : PALETTE.turquesa)); band.position.set(o.x, o.h * .7, o.z); band.castShadow = band.receiveShadow = true; group.add(band);
-      for (let k = 0; k < 3; k++) {
-        const face = Math.floor(r() * 4), size = .9 + r() * .9, mark = new THREE.Mesh(new THREE.PlaneGeometry(size, size), decal(paint[(i + k) % paint.length], i + k));
-        const u = (r() - .5) * .7, v = o.h * (.25 + r() * .5);
-        if (face < 2) mark.position.set(o.x + u * o.w, v, o.z + (face ? 1 : -1) * (o.d / 2 + .02)); else mark.position.set(o.x + (face === 3 ? 1 : -1) * (o.w / 2 + .02), v, o.z + u * o.d);
-        mark.rotation.set(0, face === 1 ? 0 : face === 0 ? Math.PI : face === 3 ? Math.PI / 2 : -Math.PI / 2, r() * 6); mark.userData.decal = true; group.add(mark);
-      }
-    });
-    group.add(bake(crates)); const original = new Set(); crates.traverse(o => { if (o.geometry) original.add(o.geometry); }); original.forEach(g => g.dispose());
-    // Decal materials are this layout's own; crate and band materials are shared.
-    return { group, bounds, dispose() { group.removeFromParent(); group.traverse(o => { o.geometry?.dispose(); if (o.userData.decal) o.material.dispose(); }); } };
-  }
   const r = rng(77);
   for (let k = 0; k < 48; k++) {
     const size = 1 + r() * 1.8, mark = new THREE.Mesh(new THREE.PlaneGeometry(size, size), decal(paint[k % paint.length], k));
@@ -180,7 +157,7 @@ export function createScene(canvas) {
     id = paintArenaInfo(id).id; if (mapId === id && variant === layout) return mapReady;
     environment?.dispose(); environment = null; crates?.dispose(); crates = null; mapId = id; variant = layout; scene.userData.mapId = id;
     defaultCourt.visible = id === 'plaza'; cameraBounds.length = 0; mapReady = Promise.resolve();
-    if (id === 'plaza') { crates = plazaCover(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...defaultCameraBounds, ...crates.bounds); }
+    if (id === 'plaza') { crates = createPlazaProps(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...defaultCameraBounds, ...crates.bounds); }
     else if (id === 'muelle' || id === 'noche' || id === 'terminal') stand((id === 'muelle' ? createMuelle : id === 'noche' ? createNoche : createTerminal)(layout));
     else mapReady = loadArenas().then(({ createArenaEnvironment }) => { if (!disposed && mapId === id && variant === layout && !environment) stand(createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) })); }).catch(() => {}); // a failed fetch retries on the next pick
     light({ ...DAY, ...environment?.lighting });
