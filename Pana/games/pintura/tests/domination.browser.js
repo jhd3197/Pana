@@ -69,6 +69,16 @@ try {
   await waitFor(a, () => [...document.querySelectorAll('#hud .dom-mark')].filter(m => !m.hidden).length === 3);
   assert.match(await a.locator('#hud .dom-mark').nth(1).textContent(), /^B\d+ m$/);
   await frames(a); await shot(a, 'hud-mixed');
+  // Holding Tab opens the table with the whole court's map beside it; letting go closes both.
+  await a.keyboard.down('Tab'); await waitFor(a, () => !document.querySelector('#scoreboard').hidden);
+  await frames(a); await shot(a, 'board-map');
+  const map = await a.evaluate(() => {
+    const c = document.querySelector('#board-map'), r = c.getBoundingClientRect(), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let painted = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) painted++;
+    return { w: r.width, h: r.height, painted };
+  });
+  assert.ok(map.w > 100 && map.w > map.h * 1.3, `El Puerto's map is long like the court: ${JSON.stringify(map)}`); assert.ok(map.painted > 1000, 'the court map is drawn');
+  await a.keyboard.up('Tab'); await waitFor(a, () => document.querySelector('#scoreboard').hidden);
   // Inside B with a turquoise bot: contested, the banner says so and the wall flashes.
   await stage(() => {
     const { room, world } = pinturaDebug, g = room.game, me = g.players.find(p => p.id === room.id), rival = g.players.find(p => p.bot && p.team === 1), B = g.zones[1];
