@@ -6,7 +6,10 @@ import { zoneColor } from './domination.js';
 // claimer's colour, a low glass wall marking the edge, a light pillar to find it
 // from afar and a square letter board (A, B, C) floating over the middle. A
 // contested zone's wall flashes. With the camera inside a ring its board and
-// pillar hide, so they never fill the view of the pana standing there.
+// pillar hide, so they never fill the view of the pana standing there. Seen from
+// above (Ver la cancha, the spectator's overhead shot) the ring, its fill and the
+// letter board draw over roofs, so a zone under El Puerto's shed is never lost.
+export const OVERHEAD_Y = 8;
 const SEGMENTS = 48;
 function letterTexture(letter) {
   const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
@@ -31,7 +34,7 @@ export function createDomProps(scene) {
     const board = new THREE.Sprite(keep(new THREE.SpriteMaterial({ map: keep(letterTexture(letter)), depthWrite: false }))); board.position.y = 3.1; board.scale.set(1.1, 1.1, 1);
     board.name = `Letra zona ${letter}`;
     root.add(floor, ring, fill, wall, beam, board); scene.add(root);
-    return { root, ring, fill, floor, wall, board, beam, radius: 0, ringMat, fillMat, floorMat, wallMat, beamMat };
+    return { root, ring, fill, floor, wall, board, beam, radius: 0, above: false, ringMat, fillMat, floorMat, wallMat, beamMat };
   });
   let time = 0;
   // Ring and floor geometry per radius, shared (all zones are one size in practice); each
@@ -54,7 +57,9 @@ export function createDomProps(scene) {
         const count = Math.round(progress * SEGMENTS) * 6; t.fill.visible = count > 0; t.fill.geometry.setDrawRange(0, count);
         t.wallMat.opacity = z.contested ? (Math.sin(time * 14) > 0 ? .42 : .12) : .16;
         t.board.position.y = 3.1 + Math.sin(time * 2 + i) * .08;
-        const inside = camera && Math.hypot(camera.position.x - z.x, camera.position.z - z.z) < z.radius + .5; t.board.visible = t.beam.visible = !inside;
+        const above = !!camera && camera.position.y > OVERHEAD_Y;
+        const inside = !above && camera && Math.hypot(camera.position.x - z.x, camera.position.z - z.z) < z.radius + .5; t.board.visible = t.beam.visible = !inside;
+        if (t.above !== above) { t.above = above; for (const [mesh, order] of [[t.ring, 21], [t.fill, 22], [t.board, 23]]) { mesh.material.depthTest = !above; mesh.renderOrder = above ? order : mesh === t.board ? 0 : 2; } }
       });
     },
     dispose() { zones.forEach(t => t.root.removeFromParent()); own.forEach(o => o.dispose()); },

@@ -527,6 +527,13 @@ ride `view()` as `flags`, `flagEvents` (numbered, the last eight) and `outcome`.
   rival flag. Goals go through `Arena.route`; the BFS hunt toward a hidden rival
   is off in CTF so one distance field per bot serves the goal. A 7-bot round on
   each map ends by the score limit in 40–400 s of game time at about 0.1 ms per tick.
+- A carrier walks and runs at `FLAG_CARRIER_SLOW` (0.85) of normal speed:
+  `carrierSlow` in `ctf.js` multiplies the walk in `rules.js` `step()`, the one
+  path humans and bots share, so bots need no extra code. Without it a carrier
+  sprinting home was as fast as every chaser and defence rarely caught one.
+- The first help tip comes from `rulesTip(options)` in `hud-model.js` and
+  `game.js` refreshes `tips[0]` on every render, so it names the room's
+  `flagGoal` (the lobby help and the pause menu read the array when they draw).
 - Client: `ctf-hud.js` (two chips under the race bar, a carrier/alarm banner,
   world markers with distance, synth cues for pickup, stolen, drop, return and
   capture) and `ctf-scene.js` (stand pads, flags with a light column, the
@@ -569,7 +576,10 @@ they ride `view()` as `zones`, `zoneEvents` (numbered, last eight) and `outcome`
   and a capture bar, an in-zone banner, world markers with distance, synth cues
   for captured, lost, neutralised, contested, a capture tick and the round end),
   `domination-scene.js` (ground ring, progress arc, glass wall that flashes when
-  contested, light pillar, letter board hidden when the camera stands inside)
+  contested, light pillar, letter board hidden when the camera stands inside;
+  above `OVERHEAD_Y` (8 m: Ver la cancha, the spectator's overhead shot) the
+  ring, progress arc and letter skip the depth test and draw after the court,
+  so El Puerto's B, under the shed roof at 9.5 m, still shows from above)
   and `domination.css`. The minimap draws each zone's ring.
 
 Team and flag lobbies show the shared avatar roster, with four orange and four turquoise positions. Stable `player.seat` positions are separate from network IDs; team is seat parity. Any connected pana can move their own card, including swapping an occupied position; only the host can arrange other players. The server rejects live-round moves and preserves choices through start, rematch and host departure. With multiple humans, both teams need a player before starting; solo practice still fills bots. Reconnecting into a full arena cannot duplicate another player's position.

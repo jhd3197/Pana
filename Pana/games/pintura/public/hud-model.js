@@ -1,12 +1,15 @@
 // The numbers behind Pepazo's HUD, with no DOM so Node can test them: who is in
 // the race, how many pepas to draw, where a hit came from. combat-hud.js draws them.
-import { locKey } from '../../../engine/i18n.js';
+import { loc, locn, locKey } from '../../../engine/i18n.js';
 
 export const PEPAS = 12;           // balls in the ammo row; bigger magazines show a fraction of it
 export const FLAG_GOAL = 3;        // default captures that end a flag round (options.js flagGoal)
 export const DOM_GOAL = 200;       // default points that end a domination round (options.js domGoal)
 // The knockout lines rules.js says: the killfeed already shows them, so the bottom pill stays quiet.
 export const KILL_LINES = new Set([locKey('{owner} pintó a {victim} · {distance} m'), locKey('Un pana pintó a {victim} · {distance} m')]);
+
+// The first help tip: how a round is won, with the flag round's capture limit as the room has it.
+export const rulesTip = options => `${loc('Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie.')} ${locn(options?.flagGoal || FLAG_GOAL, 'En bandera gana el equipo que llegue a {n} captura.', 'En bandera gana el equipo que llegue a {n} capturas.')}`;
 
 export const clock = seconds => { const s = Math.max(0, Math.ceil(seconds || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 

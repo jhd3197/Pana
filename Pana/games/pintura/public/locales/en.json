@@ -116,6 +116,10 @@
   "El color de fábrica de la marcadora": "The marker's factory colour",
   "El mapa de la esquina muestra a tu equipo y solo a los rivales que tienes a la vista.": "The corner map shows your team and only the rivals you can see.",
   "Elige hasta tres accesorios. Cada ventaja tiene su precio.": "Pick up to three attachments. Every edge has its price.",
+  "En bandera gana el equipo que llegue a {n} captura.": {
+    "one": "In flag mode the first team to {n} capture wins.",
+    "other": "In flag mode the first team to {n} captures wins."
+  },
   "En primera persona: WASD para caminar · ratón para mirar · clic para pintar · R para recargar.": "First person: WASD to walk · mouse to look · click to paint · R to reload.",
   "En teléfono camina con las flechas y arrastra el dedo por la pantalla para mirar. Mantén Pinta: la mira se pega al rival visible que tengas delante.": "On a phone, walk with the arrows and drag your finger across the screen to look. Hold Paint: the sight sticks to the visible rival in front of you.",
   "Entra en tu cuenta de pana.sh para conseguirlo": "Sign in to pana.sh to earn it",
@@ -259,7 +263,7 @@
   "Un pana": "A player",
   "Un pana pintó a {victim} · {distance} m": "A player painted {victim} · {distance} m",
   "Un pepazo que aturde: el rival queda lento un segundo.": "One hit that stuns: the rival is slowed for a second.",
-  "Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie. En bandera gana el equipo con tres capturas.": "Each splat scores a point. Whoever reaches ten or leads when time runs out wins. With limited lives, the last player or team standing also wins. In flag mode the team with three captures wins.",
+  "Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie.": "Each splat scores a point. Whoever reaches ten or leads when time runs out wins. With limited lives, the last player or team standing also wins.",
   "Veinte bolas por segundo de medio pepazo. Pesada, sin correr y con recarga larga.": "Twenty balls a second, half a pepazo each. Heavy, no sprinting and a long reload.",
   "Ver la cancha": "Court view",
   "Vuelve en": "Back in",

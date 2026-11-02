@@ -8,6 +8,14 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Captura la bandera de Pepazo quien lleva la bandera corre más lento, y la ayuda dice cuántas capturas ganan.**
+  Con la bandera caminas y corres un 15% más lento (los bots también), así que
+  los defensores pueden alcanzarte. El consejo de Cómo se juega ya no dice
+  "tres capturas": nombra el límite que eligió la sala.
+- **En Dominación de Pepazo las zonas se ven desde arriba aunque estén bajo techo.**
+  En Ver la cancha y la vista desde arriba del espectador, el anillo y la letra
+  de cada zona se dibujan sobre los techos: la zona B de El Puerto ya no se
+  esconde bajo el galpón.
 - **En Pepazo, el tiro a la cabeza con La Lejana cuenta desde cualquier cámara y siempre se anuncia.**
   Desde Ver la cancha, un tiro que pasa por el centro del rival apuntado le da
   en la cabeza y lo saca de una; "¡A la cabeza!" ahora gana a las rachas y la

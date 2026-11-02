@@ -24,6 +24,10 @@ export const FLAG_STANDS = {
 export const standsFor = id => FLAG_STANDS[id] || FLAG_STANDS.plaza;
 // Touch, capture and auto-return (s) for Pepazo's flags.
 export const CTF_RULES = Object.freeze({ pickup: 1.5, capture: 2.2, returnAfter: 30 });
+// A flag carrier walks and runs 15% slower, so defenders can catch a runner.
+// rules.js applies it to every pana's walk, bots included.
+export const FLAG_CARRIER_SLOW = .85;
+export const carrierSlow = (game, p) => (game.flags?.length && carriedBy(game.flags, p.id) ? FLAG_CARRIER_SLOW : 1);
 
 // Fresh flags at both stands: every round start and every return to the lobby.
 export function ctfReset(game) {
