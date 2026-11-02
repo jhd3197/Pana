@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createEerie, eerieIntensity, EERIE_EVENTS } from '../eerie.js';
+import { createEerie, eerieIntensity, EERIE_EVENTS, scareSound } from '../eerie.js';
 
 // Runs a scheduler for `seconds` at 10 Hz and returns [time, event] pairs.
 function run(eerie, seconds, context = {}, from = 0) {
@@ -78,4 +78,13 @@ test('reset starts a new level: grace again and a fresh sequence', () => {
   assert.equal(eerie.clock, 0);
   const again = run(eerie, 25, { codicia: 100 });
   assert.ok(!again.some(([, e]) => e.kind === 'jumpscare'));
+});
+
+test('scare sounds follow Sustos: full, a quieter far half, or none', () => {
+  for (let roll = 0; roll < 1; roll += .05) {
+    assert.deepEqual(scareSound('normal', roll), { gain: 1, far: false });
+    assert.equal(scareSound('apagados', roll), null);
+    const soft = scareSound('suaves', roll);
+    if (roll < .5) { assert.ok(soft.far && soft.gain < 1); } else assert.equal(soft, null);
+  }
 });

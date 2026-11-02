@@ -37,6 +37,16 @@ export function eerieIntensity({ codicia = 0, depth = 1, alone = false, hp = 1, 
   return clamp(.12 + codicia / 100 * .45 + Math.min(6, Math.max(0, depth - 1)) * .05 + (alone ? .15 : 0) + (1 - clamp(hp, 0, 1)) * .2 + (theme === 'biblioteca' ? .08 : 0), 0, 1);
 }
 
+// How a scare's sampled sound (a whisper, a far door, a fall) plays under the
+// "Sustos" setting, decided from the event's own seeded `roll` so nothing new
+// is drawn from the scheduler: null means it stays silent. normal: full;
+// suaves: about half of them, quieter and always far; apagados: none.
+export function scareSound(mode = 'normal', roll = 0) {
+  if (mode === 'apagados') return null;
+  if (mode === 'suaves') return roll < .5 ? { gain: .45, far: true } : null;
+  return { gain: 1, far: false };
+}
+
 export function createEerie({ seed = 1, events = EERIE_EVENTS, scareCooldown = 80, grace = 20, gap = [7, 20] } = {}) {
   let R = rng(seed), next = 0, scareIn = 0, last = '', since = {}, clock = 0;
   const roll = (a, b) => a + R() * (b - a);

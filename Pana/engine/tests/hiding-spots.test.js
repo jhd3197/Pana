@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dealHidingSpots, searchStep, decaySearches } from '../play/hiding-spots.js';
+import { dealHidingSpots, searchStep, decaySearches, searchesStarted } from '../play/hiding-spots.js';
 import { rng } from '../random.js';
 
 const places = n => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, hard: i / Math.max(1, n - 1) }));
@@ -49,4 +49,14 @@ test('a search completes once, and fades when nobody holds it', () => {
   assert.ok(store.s2 > 0, 'a held search does not fade');
   decaySearches(store, new Set(), 1);
   assert.equal(store.s2, undefined);
+});
+
+test('searchesStarted reports each search once, and again only after it ended', () => {
+  const seen = new Set(), started = [];
+  const look = store => searchesStarted(store, seen, id => started.push(id));
+  look({ s1: .1 }); look({ s1: .4 }); look({ s1: .6, s2: .1 });
+  assert.deepEqual(started, ['s1', 's2']);
+  look({ s2: .3 }); look({ s1: .05, s2: .5 });
+  assert.deepEqual(started, ['s1', 's2', 's1']);
+  look(undefined); assert.equal(seen.size, 0);
 });

@@ -488,6 +488,31 @@ sfx.shot('scatter'); sfx.step('grass', { sprint: true, foot: 1 });
 Used by: Pepazo, Reliquia (steps, jump, landing), Capis a Pintazos (bazooka,
 boom with distance, debris, patter, splat, boing, squeak, splash, chime, tick, sting). Notes: `docs/knowledge/shared-sfx.md`.
 
+### Sampled clips (short MP3s a game ships)
+
+`engine/sample-bank.js`. `createSampleBank(sound, base, sets)` loads a game's
+own clips (`public/audio/*.mp3`, credits in its `audio/SOURCE.md`) on first use
+or `preload(...sets)`, decodes them once and plays them on the shared `fx.js`
+graph, so volume, mute and the voice budget apply. `play(set, { gain, rate,
+jitter, detune, delay, at, listener, range, pan, priority })` picks a random
+take that is never the last one, re-pitches it a little and, given `at` and a
+`listener` `{ x, z, yaw }`, makes it quieter with distance and pans it; at most
+`maxVoices` (6) clips sound at once. `bed(set).set(level, seconds)` is a
+looping bed that fades in, glides, and fades out and stops at 0 or while muted.
+A clip that fails to load is silence. Pure helpers: `pickVariant`,
+`distanceGain`, `panFor`.
+
+```js
+const bank = createSampleBank(sound, new URL('./audio/', import.meta.url), { drip: ['drip_1', 'drip_2'], wind: ['wind_loop'] });
+bank.play('drip', { gain: .1, at: { x, z }, listener: { x: me.x, z: me.z, yaw: heading }, range: 20 });
+bank.bed('wind').set(playing ? .04 : 0, 2);
+```
+
+Used by: Reliquia (`games/reliquia/public/samples.js`: steps on wood and
+stone, hiding-spot searches, book heaps, chandelier chains, wind and drips,
+whispers and far scares). Chapita still loads its swishes by hand (a
+migration candidate). Tests: `engine/tests/sample-bank.test.js`.
+
 ### Vehicle audio
 
 `engine/vehicle-audio.js` (`createMotor`, `createTyres`, `vehicleSfx`) and its pure
@@ -519,6 +544,8 @@ falling books, and rare jump scares (at least 80 s apart, never in the first
 depth, alone, hp, theme, mode })` returns the events to show; `eerieIntensity`
 scales them; `mode` is the player's "Sustos" setting (`SCARE_MODES`: normal,
 suaves, apagados). Events are cosmetic and client-local: nothing is synced.
+`scareSound(mode, event.roll)` says how a sampled scare sound plays under that
+setting (full; a quieter, far half; or none) without drawing from the seed.
 
 ```js
 const eerie = createEerie({ seed });
@@ -538,7 +565,8 @@ fills the rest with junk decoys, minor finds, a rare trap or nothing.
 `searchStep(store, id, dt, need)` adds a held key's progress and is true once,
 when the search completes; `decaySearches(store, held, dt)` fades the ones
 nobody holds. Host and guests deal the same spots from the seed, so a snapshot
-only carries which are open.
+only carries which are open. On a client, `searchesStarted(store, seen, start)`
+calls `start(id)` once when a search begins (Reliquia plays its creak there).
 
 ```js
 const { spots } = dealHidingSpots(rng(seed), places, { treasures: ['mask', 'cup'], junk: ['oldBook'], traps: ['spider'] });
@@ -810,6 +838,7 @@ Found by pattern, not yet read line by line: check the game before you move it.
 | Bululú minigames (Atrapa, Chinazo) | on-foot movement, sprint | `stepWalker` | Same |
 | Bochinche | its own combat engine with spawns and respawns | `spawn-picker` | Pure and tested already; its audio is also outside `sfx` |
 | Chapita, QQSMP, Tambor | raw `AudioContext` in `sounds.js` / `beat.js` | `sfx` for effects (voice packs and the beat stay) | One voice budget; no stray context |
+| Chapita | its own swish-*.mp3 loader in `sounds.js` | `sample-bank` | Same fetch, decode and variant pick, already shared |
 | Lancha | its own "motor drone" in `game.js` | `vehicle-audio` (a `boat` profile exists) | The boat motor is already written |
 | 8 games (see Round countdown) | their own round countdown | a shared `engine/play/countdown.js` (3-2-1-go overlay + `sfx.count/go`) | Same markup and CSS written eight times |
 | Reliquia, Bochinche, Trifulca, Cocina | their own spawn lists | promote `spawn-picker` to `engine/play/` | Pure and tested already |

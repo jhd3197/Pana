@@ -62,6 +62,14 @@ export function searchStep(store, id, dt, need = 1) {
   return store[id] >= need;
 }
 
+// On a client, for sound or dust: calls start(id) once for each search that
+// began since the last call (a spot that appeared in the synced `store`) and
+// forgets the ones that ended. `seen` is a Set the caller keeps between calls.
+export function searchesStarted(store, seen, start) {
+  for (const id of seen) if (!store || !(id in store)) seen.delete(id);
+  if (store) for (const id in store) if (!seen.has(id)) { seen.add(id); start(id); }
+}
+
 // Searches nobody holds fade back (rate per second); finished ones are dropped.
 export function decaySearches(store, held, dt, { rate = 1.5, done = () => false } = {}) {
   for (const id of Object.keys(store)) {

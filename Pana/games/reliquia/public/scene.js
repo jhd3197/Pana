@@ -135,7 +135,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
     const root = new THREE.Group(); root.name = `Piso ${f}`; group.add(root);
     const library = run.theme === 'biblioteca', statics = new THREE.Group(), palette = paletteFor(depth, run.theme), x0 = f * L.SPACING - 60;
     const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
-    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [], spots: new Map(), webs: null, mist: null };
+    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [], spots: new Map(), webs: null, mist: null, chandeliers: [] };
     root.add(floor.shell);
     // Candle flames of the whole floor go in one instanced shader.
     const flamePoints = [], flamesOf = (model, x, y, z, h = 0) => { for (const p of model.userData.flames || []) flamePoints.push(new THREE.Vector3(p.x * Math.cos(h) + p.z * Math.sin(h) + x, p.y + y, -p.x * Math.sin(h) + p.z * Math.cos(h) + z)); };
@@ -143,6 +143,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
       if (d.kind === 'brazier') { const b = place(root, brazier({ seed: d.x | 0, lit: true }), d.x, 0, d.z); floor.braziers.push(b); animated.push(b); continue; }
       const model = decorModel(d); if (!model) continue;
       if (d.kind === 'vein') { model.rotation.z = Math.PI / 2; model.position.y = 1.6; }
+      if (d.kind === 'chandelier') floor.chandeliers.push({ x: d.x, z: d.z });
       flamesOf(model, d.x, 0, d.z, d.h);
       place(statics, model, d.x, model.position.y, d.z, d.h);
     }
@@ -338,7 +339,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
       // the stacks' nave. Small flames only, never a lamp of their own.
       if (room.w >= 16 && !run.decor.some(d => d.kind === 'chandelier' && d.room === room.id)) {
         const stacks = room.kind === 'estanterias', lamp = chandelier({ ceiling: HEIGHT, drop: 1.4, seed: room.x | 0, lit: R() < .7 }), lx = room.x + (stacks ? 0 : (R() - .5) * 2), lz = room.z + (stacks ? (R() < .5 ? -1.5 : 1.5) : (R() - .5) * 2);
-        flamesOf(lamp, lx, 0, lz); place(statics, lamp, lx, 0, lz, R() * 3);
+        flamesOf(lamp, lx, 0, lz); place(statics, lamp, lx, 0, lz, R() * 3); floor.chandeliers.push({ x: lx, z: lz });
         webs.push({ type: 'drape', x: lx + .3, y: WEB_TOP + .1, z: lz, w: 1, size: 1.5, h: R() * 3 });
       }
       if (room.kind === 'estanterias') for (const sz of [-1, 1]) if (R() < .6) { const lamp = hangingLantern({ ceiling: HEIGHT, drop: 1.3 + R() * .4 }), lz = room.z + sz * (4.5 + R() * 2); flamesOf(lamp, room.x, 0, lz); place(statics, lamp, room.x, 0, lz); }
