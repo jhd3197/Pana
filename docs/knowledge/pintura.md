@@ -94,10 +94,11 @@ cover only when map or variant changes. A rules test checks all fifteen layouts.
 
 ## Rendering and proof
 
-The plaza's surroundings (outside the fence) use real shared pueblo houses,
-church, market stalls, benches, streetlights, araguaneyes and mango trees. The
-cover inside is drawn by `plaza-props.js`, one prop per row fitted to its box,
-so artwork never changes movement or shots.
+The plaza's town (outside the fence) is `plaza-town.js`, built from shared
+Studio models (colonial houses, the pueblo church, lamps, benches, planters,
+stalls, trees, a truck, motos, a mural); see "La Plaza" below. The cover
+inside is drawn by `plaza-props.js`, one prop per row fitted to its box, so
+artwork never changes movement or shots.
 The paint marker is a canonical Studio asset in `engine/models/props/paintball.js`.
 
 Look input is `engine/play/first-person.js` (`createLookControls`), shared with Escondidas: it owns pointer lock, drag-to-look and the saved sensitivity (`pana:look-sensitivity`); the scene keeps yaw/pitch. Shift sprints 45% faster while `stamina` lasts (3 s, refills in 5 s) and holds fire; Tab shows the round table.
@@ -148,7 +149,8 @@ promise that resolves once the court is built, and `prepareRound` awaits it
 before `compileAsync` and `room.ready`, so the loading card covers the fetch
 and nobody starts on an empty court. Until it lands the lobby shows sky and
 avatars only. A failed fetch resolves anyway and retries on the next pick.
-This took the first load from 161 to 133 modules (1456 to 1029 KB). The next
+This took the first load from 161 to 133 modules (1456 to 1029 KB). La Plaza's
+town (`plaza-town.js`) loads the same way, the first time La Plaza stands. The next
 candidate is the armory's 3D preview and test range (`armory.js` `init`,
 `rebuild`, the range), which only matter once the armory opens; the kit state
 `armory.js` holds is needed at boot, so it would have to be split first.
@@ -197,6 +199,41 @@ past it: the glorieta's roof, awnings, canopies and the portico's lintel at
   team's spawns differs by 0.1 m. The spawns stay the eight of before.
 - `npm run collision-report -- plaza` measures every prop filling 100% of its
   box on all three layouts, with no collision fixes.
+
+### The town and its draw cost
+
+`public/plaza-town.js` dresses the square and is loaded with `import()` the
+first time La Plaza stands (`setMap` returns once it is in, so the loading card
+covers it); the lobby and every other court never fetch it, and the first load
+went from 149 to 141 modules. It is built once and kept while other courts are
+played. Rings round the court: a garden verge 28.4–30 m (lamps every 9 m,
+benches facing the court, planters, the paint buckets and tyres between them),
+a cobbled street 30–34 (the market, a truck, motos, a handcart), the sidewalk
+34–36 and the facades from 36: continuous `colonialHouse({ detail: 'low' })`
+rows with party walls, a portal arcade on the south side, the pueblo church at
+1.6× on a stone atrio two steps up (north), a corner house or the mural closing
+each street end.
+
+Nothing of it is in play: it stands outside the fence, overhead or flat on the
+paving, so the colliders, spawns, flags and zones are unchanged and the
+collision audit stays at zero. Strands keep above 3.9 m (the portico's lintel
+tops at 3.6 m): four light strands from the glorieta's roof to the corner
+trees, two at x ±11.5 and two bunting lines at z ±21. Keep them off the spawn
+lines (x or z ±21 to ±22.5): a strand straight overhead reads as a black
+vertical line in first person. The court's paving pattern (rosette, fountain
+rings, lane stripes, border) is one `MultiplyBlending` mesh that tints the
+cobbles under it, so it follows the court's texture without a second one.
+
+Draw cost: every plain material bakes into one tinted batch (`bake(..., {
+tint: true })`), the bulbs are one unlit vertex-coloured mesh, the cobbles one
+shared texture clone in three meshes. The fence, lines, ropes, buckets and
+tyres in `scene.js` are one tinted batch too, and the 48 old paint marks are
+four meshes (one per splat shape, colour in the vertices); before, each was its
+own mesh. Facades cast no shadows (they stand beyond the sun's ±30 m shadow
+box); trees, lamps, benches, planters and stalls do. Measured in practice
+(1280×800, quality media, Clásica): overview 376 → 143 draw calls and 722k →
+427k triangles; eye height 295–307 → 115–123 calls, 664–675k → 356–372k
+triangles.
 
 ## Muelle de La Guaira
 
