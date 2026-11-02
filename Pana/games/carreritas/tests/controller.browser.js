@@ -34,9 +34,11 @@ try {
   assert.equal(await page.locator('kbd:not([data-pad-key]):visible').count(), 0);
   await page.evaluate(() => { __pad.buttons[7] = { pressed: false, value: 0 }; });
   await press(9); await page.locator('dialog.pana-menu[open]').waitFor();
+  // RB: Instrucciones, on the pad's column; RB again: Mis ajustes on the pad's page.
+  await press(5); await page.locator('.pana-help-controls[data-device=gamepad]').waitFor();
+  assert.match(await page.locator('.pana-help-controls').innerText(), /objeto adelante.*objeto atrás/is);
   await press(5); await page.locator('[data-settings-category=pad]').waitFor();
   assert.equal(await page.getByRole('tab', { name: 'Controles', exact: true }).count(), 0);
-  assert.match(await page.locator('[data-settings-category=pad]').innerText(), /Objeto adelante.*Objeto atrás/s);
   assert.equal(await page.locator('.pana-device-name').innerText(), 'Mando Xbox');
   assert.equal(await page.locator('kbd:not([data-pad-key]):visible').count(), 0, 'controller settings contain no PC key hints');
   if (process.env.PANA_TEST_ARTIFACTS) await page.screenshot({ path: `${process.env.PANA_TEST_ARTIFACTS}/carreritas-controller-settings.png` });
