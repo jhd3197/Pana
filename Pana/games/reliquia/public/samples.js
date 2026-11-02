@@ -108,5 +108,5 @@ export function createSamples() {
     else if (e.kind === 'bookLand') bank.play('thud', { gain: .2 * g, rate: between(.95, 1.08), at: placed(e.x, e.z), listener: ear, range: 16, priority: 1 });
   }
 
-  return { update, step, ownSteps, searched, scare };
+  return { update, step, ownSteps, searched, scare, bank, get wind() { return wind.playing; } };
 }

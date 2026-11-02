@@ -216,7 +216,7 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
   spot(which = 0) { const run = view.world.run, list = run.spots.filter(s => typeof which !== 'string' || s.kind === which), sp = typeof which === 'number' ? run.spots[which] : list[0]; if (!sp) return null; const d = (sp.wall ? .75 : .9) + 1, x = sp.x + Math.sin(sp.h) * d, z = sp.z + Math.cos(sp.h) * d, h = Math.atan2(sp.x - x, sp.z - z); this.place(room.id, x, z, h); view.heading = h; view.pitch = -.3; return sp; },
   // Skip ahead to jornada n (2 is the first library): host only.
   jornada(n) { const g = room.game; if (!room.isHost || !g || g.phase !== 'playing') return false; while (g.level < n) g.completeLevel(); room.publish(); return g.level; },
-  fx,
+  fx, samples,
 };
 
 await prepareScene({ renderer: view.renderer, scene: view.scene, camera: view.camera });
