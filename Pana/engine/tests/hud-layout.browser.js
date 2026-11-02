@@ -1,5 +1,6 @@
 // Every game in real play: no HUD piece reads as a controls list (those live
-// in the pause menu's Instrucciones page) and no two HUD pieces overlap, at
+// in the pause menu's Instrucciones page), no panel paints an empty box, and
+// no two HUD pieces overlap, at
 // 1280×720, 1920×1080, 1024×600 and a 390×844 phone held upright.
 // Run: node Pana/engine/tests/hud-layout.browser.js   (env PANA_TEST_URL; PANA_HUD_GAMES=a,b;
 // PANA_HUD_SHOTS=<dir> saves a picture per game and size)
@@ -32,6 +33,7 @@ try {
         const report = await page.evaluate(hudReport);
         if (process.env.PANA_HUD_SHOTS) await page.screenshot({ path: `${process.env.PANA_HUD_SHOTS}/${game}-${width}x${height}.png` });
         for (const list of report.lists) failures.push(`${game} ${width}×${height}: controls list on the HUD ${list}`);
+        for (const empty of report.empties) failures.push(`${game} ${width}×${height}: empty HUD panel ${empty}`);
         for (const [a, b, area] of report.overlaps) {
           if (OVERLAP_OK[`${game}:${a}|${b}`] || OVERLAP_OK[`${game}:${b}|${a}`]) continue;
           failures.push(`${game} ${width}×${height}: ${a} overlaps ${b} (${area} px²)`);
