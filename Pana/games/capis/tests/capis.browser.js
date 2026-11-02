@@ -113,6 +113,12 @@ try {
     await page.keyboard.press('2'); await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === 'grenade');
     await waitFor(page, () => document.querySelector('.weapon-btn.is-on')?.dataset.weapon === 'grenade');
     await waitFor(page, () => capisDebug.world.inspect().find(c => c.raised)?.launcher === 'La Piñita');
+    // La Piñita has no grips: it sits in both paws, each paw's end on its surface.
+    await waitFor(page, () => capisDebug.world.inspect().find(c => c.raised).grip.every(d => d < .3));
+    // Far away (the whole map) each capi's one-draw copy shows the weapon in its paws, not La Bazuca.
+    await page.evaluate(() => { capisDebug.match.capys.forEach((c, i) => { if (!c.out) c.weapon = ['grenade', 'sniper', 'scatter', 'drill', 'bazooka', 'grenade'][i]; }); capisDebug.world.wide = true; });
+    await waitFor(page, () => capisDebug.world.inspect().filter(c => !capisDebug.match.capys.find(k => k.id === c.id).out).every(c => c.far && c.drawn === 1 && c.launcher === c.launcherFor));
+    await page.evaluate(() => { capisDebug.world.wide = false; });
     await page.keyboard.press('e'); await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === 'sniper');
     await page.keyboard.press('q'); await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === 'grenade');
     await page.keyboard.press('Tab'); await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === 'sniper');

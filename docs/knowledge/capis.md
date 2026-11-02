@@ -278,10 +278,22 @@ in how it flies, how much it hurts and what it does to the ground:
   least 14 units; La Licuadora's arc continues into the ground as the tunnel
   it will bore; El Trueno shows its middle pellet.
 - **In the paws**: every capi carries all five models, only the picked one
-  shown, each with its tip at the muzzle (`HELD` scales; La Piñita is held
-  up at the barrel's tip). Pepazo's markers are `bakePaintKit` once per
-  team and weapon (at most 6 draws each); the grenade is `createPaintGrenade`.
-  The far copy (`rig-lod.js`) is built with La Bazuca and keeps it.
+  shown, each with its tip at the muzzle (`HELD` scales). Pepazo's markers are
+  `bakePaintKit` once per team and weapon (at most 6 draws each); the grenade
+  is `createPaintGrenade` at ×1.45. La Piñita has no grips, so it is not at
+  the muzzle: `GRENADE_HOLD` sits it 0.37 ahead of the shoulder and 0.24
+  below, 0.12 towards the camera (not on the near shoulder), both paws
+  reaching round it and hugging inwards; it follows 40 % of the aim and of
+  the lowered barrel's drop, so it rises to the chin and drops to the belly
+  instead of swinging across the face. Each paw's end stays 0.09 to 0.16 from
+  its centre (its radius is 0.16) at every aim (`inspect().grip`). It leaves
+  the paws while it flies and the thrower retreats. A shot still starts at
+  the rules' muzzle.
+- **Far away each capi shows what it holds.** The far copy (`rig-lod.js`) is
+  built with all five weapons, each its own pivot; the four not in the paws
+  are hidden, and a hidden pivot collapses its part, so the whole-map view
+  stays one draw a capi (77 draws at 1280x720, seed 6; the play view 79).
+  The optics' glass (see-through, not merged) is hidden while far.
 - **In flight**: La Bazuca's rocket with smoke and drops; La Piñita tumbling,
   its lamp blinking faster as the fuse runs down (and a "Mecha: n s" note);
   La Lejana's glowing slug with a white streak; La Licuadora's spinning bit
@@ -296,68 +308,100 @@ in how it flies, how much it hurts and what it does to the ground:
 ## The machine (`bot.js`)
 
 **Choosing a weapon.** `pickTarget` weighs every weapon the team still has
-(La Lejana and La Bazuca first) against every rival, El Trueno only at a
-rival within 22 units or with a team-mate within 8: a coarse search with the
-weapon's real flight (La Bazuca and El Trueno 289 flights a rival, La Lejana
-111 slugs at full charge; La Piñita, per throw angle, bisects the power for
-the distance with `lob.js` `solveLob`, about 60 throws, each ending early
-once it rests), then `shotValue`: the paint the shot would land on each capi
-(all five pellets for El Trueno), half where aimed and half after a typical
-slip of 1.2 units (0.6 for El Trueno's fan) so a bigger blast forgives more,
-plus 40 for a rival it paints out, its own capis counted 1.5 times against
-it; a bounced throw's slip is 2 units (bounces scatter it more). Less `KEEP`,
-what a scarce shot is worth keeping (La Bazuca 0, El Trueno 4, La Lejana
-30), less 0.03 a unit of distance, plus a little noise by
-difficulty (about ±10 on fácil, ±0.6 on experto). A scarce weapon must also
-land close (La Bazuca 2.5, El Trueno's middle pellet 2, La Lejana a direct
-hit); La Piñita only has to paint someone. A search that could not beat the
-best found so far (all its paint on every rival in reach) is skipped. In
-practice: La Bazuca for a clean hit while it lasts, La Lejana to finish a
-capi at 38 % or more out in the open, El Trueno into a pair, La Piñita for
-the rest.
+(La Lejana and La Bazuca first, the nearest rivals first) against every
+rival within reach of it (El Trueno within 40): a coarse search with the
+weapon's real flight (La Bazuca and El Trueno 289 flights a facing, La
+Lejana up to 41 slugs at full charge near the straight line; La Piñita, per
+throw angle, bisects the power for the distance with `lob.js` `solveLob`),
+then `shotValue`: the paint the shot would land on each capi (all five
+pellets for El Trueno), half where aimed and half after a typical slip of
+1.2 units (0.6 for El Trueno's fan, 2 for a bounce), plus 40 for a rival it
+paints out, its own capis counted 1.5 times against it. Then:
 
-**No shot.** With nothing feasible it walks towards the nearest rival (as
-below; to within 28 units once La Bazuca is spent: La Piñita carries less),
-looks again, and if still nothing bores with La Licuadora when its tunnel
-would end at the rival, or a wall stands within 15 units in the way and the
-tunnel gets it 4 units closer (`drillPlan`); else it lobs La Piñita. It never
-spends a scarce shot on a hopeless one. The fine search for the shot refines
-the coarse search's three best (two rounds of 5 × 5 around them) instead of
-searching the whole arc again.
+- less `keepOf`, what a scarce shot is worth keeping: La Lejana 12, El
+  Trueno 2 at the start, fading to nothing by turn 24, so a team spends its
+  shots instead of finishing the match with them;
+- less 0.03 a unit of distance (not for La Lejana: it flies flat);
+- plus `bonusOf`, the shot each weapon is for: La Lejana +8 at a rival 30 or
+  more away, -16 closer (a blast forgives more there); El Trueno +14 at a
+  rival within 24 or with a team-mate inside the fan (its spread at that
+  distance plus a blast);
+- plus noise for an easy bot (aimErrorOf × 400: about ±10 on fácil at the
+  start, shrinking with the aim).
 
-La Lejana is searched only within 0.3 rad of the straight line from the
-shoulder to the target (every 0.015 rad).
+A scarce weapon must land close (La Bazuca 2.5, El Trueno's middle pellet 2,
+La Lejana a direct hit). **La Piñita is not the default**: it is only taken
+over the best direct weapon that lands when it is worth `BOUNCE_TAX` more
+(fácil 16, normal 10, experto 7: an easy bot, whose throws scatter more,
+prefers direct weapons more). So: La Bazuca for a clean hit, La Lejana for an
+exposed rival at range or one it paints out, El Trueno into a pair or at a
+close rival, La Piñita behind cover, below a roof or when no direct shot
+lands. A search that could not beat the best found so far (all its paint on
+every rival in reach; for El Trueno only the pellets that close together can
+reach one capi) is skipped.
 
-**The cost.** 16 to 21 ms a turn on average and 50 to 75 ms at most on an
-idle machine, over the 110-match run (the one-weapon bot: 10 to 15 and 35
-to 48 on the same machine); a busy machine can multiply both.
+**The flights are simulated once a turn.** Where a shot ends does not depend
+on the target, so `bestShot` takes a `cache` (a Map) keyed by weapon,
+facing, angle and power: the coarse grid is flown once and shared by every
+rival weighed, the walk's second look, `drillPlan`, `digPlan` and the fine
+search. The bot keeps one per spot (turn and position). La Piñita's bounces
+are simulated in 1/120 s steps, as the rules fly them: at 1/60 s a "miss 2"
+throw could end in the river.
 
-**Walking and aiming.** With
+**Walking.** It walks towards a rival before shooting when every rival is
+more than 44 units away (`FAR`; then only the nearest is weighed first, to
+save the search), when nothing is feasible, when the best is La Piñita at a
+rival more than 22 away (`APPROACH`), or when the best throw lands more than
+3 off at a rival 20 or more away. It stops within 22 units of it (34 for a
+direct weapon with nothing feasible, `RANGE`), after 45 % of the turn, or
+when the walk would end in the water (`safeWalk`, the real walker run two
+seconds ahead five times a second); stuck against a bump it hops once if the
+hop lands dry. From where it got it weighs everything again.
 
-no feasible shot at anyone it takes the nearest rival and, while that rival is
-more than 34 units away (`RANGE`), walks towards it for up to 45 % of the turn,
-then looks again from where it got. Before each step (five times a second) it
-runs its own next two seconds of walking through the real walker (`safeWalk`)
-and stops if that ends in the water: a steep bank or a painted slope carries
-a capi further than a look at the ground ahead suggests. Stuck against a bump
-it hops once, only if the hop lands dry. The shot's search penalises
-landings in the water or next to its own capis. The difficulty's `aimError` (from
-`engine/play/difficulty.js`) is scaled ×3 for the angle and ×1.6 for the
-power, as before: the choice of target makes it smarter, not more accurate. It
-turns the barrel at a player's speed, waits 0.9–2.2 s, and fires; with under
-2 s left it fires at once. With no shot that lands at all it fires a default
-lob; one that only lands far still goes towards the rival, so it never stalls.
+**No shot.** Still nothing: it bores with La Licuadora when its tunnel would
+end at the rival, or a wall within 15 units in the way and the tunnel gets
+it 4 units closer (`drillPlan`; the tunnel may start by its own capi, it
+only nudges). Else, when even La Piñita lands 6 or more off, it blasts the
+first ground on the straight line to the rival (`digPlan`: 5.5 to 26 units
+away, into the wall or the top of it) so the next turns can walk or shoot
+through. Else it lobs La Piñita at the rival. A lob that would burst by its
+own team (`clearance` under 1.5 units outside its reach) is swapped for the
+throw that lands safely closest to the rival, either way, else the one that
+lands furthest from its team (`safeShot`: a capi boxed in a pit). It never
+spends a scarce shot on a hopeless one.
+
+**Aiming.** `aimErrorOf(difficulty, turn, behind)`: the shared difficulty's
+`aimError` (`engine/play/difficulty.js`), scaled ×3 for the angle and ×1.6
+for the power (half for a bounce: its power carries further along the
+ground), shrinking to 20 % of itself by turn 30 and to 70 % while its team is
+behind (fewer capis standing, or 30 more paint on as many). Fácil starts at
+0.05 rad (±0.15 on the angle) and ends at 0.01, still above normal (0.004)
+and experto (0.0006). The search penalises landings in the water or next to
+its own capis. It turns the barrel at a player's speed, waits 0.9–2.2 s,
+and fires; with under 2 s left it fires at once. With no shot that lands at
+all it fires a default lob, so it never stalls. Humans play exactly as
+before: none of this touches the rules.
+
+**The cost.** About 12 to 18 ms a turn on average and 40 to 56 ms at most on
+an idle machine (the worst turns: a search, a walk and a second search from
+where it ended); a busy machine can multiply both.
 
 **The turn limit.** Two teams that cannot get at each other (three capis
 stuck in a crater, the last rival out of range) would play forever, so after
 `RULES.turnLimit` (60) turns the match ends: the team with more capis standing
 wins, then the one with less paint, else a draw (`byCount`, `endedBy:
-'turns'`, a toast and its own line on the results card). In the 110
-bot-against-bot matches of `map-matches.test.js` 17 end there (5 of 45
-medium, 3 of 20 small, 3 of 20 large, none of 15 normal, but 6 of 10 fácil:
-an easy bot's aiming error scatters La Piñita's bounces); the one-weapon game
-ended 4 of 80 there. A match can never stall on ammo: La Piñita never runs
-out.
+'turns'`, a toast and its own line on the results card). Over 330
+bot-against-bot matches (120 fácil, 90 normal, 120 experto on every size and
+kind) 5.0 %, 3.3 % and 1.7 % end there (the weapon picker's first bot: 30,
+10 and 8 %); `map-matches.test.js` runs 40, 30 and 40 of them. What is left
+is geometry: a capi on a pillar in the sea or in a pit the jump cannot
+leave, 50 to 90 units from the last rival, with a hill between. A match can
+never stall on ammo: La Piñita never runs out.
+
+**The mix** over those 330 matches: La Piñita 45 to 56 % of the shots
+(before: 67 to 81 %), La Bazuca 22 to 29 % (nearly every shot spent), El
+Trueno 3.5 to 12 % (before: under 0.5 %), La Licuadora 9 to 13 %, La Lejana
+3 to 10 %. Fácil lands 19 to 21 paint on rivals a shot, experto 24 to 30.
 
 ## Map generation
 

@@ -21,6 +21,16 @@ becomes the GitHub release's notes.
   en la cabeza y lo saca de una; "¡A la cabeza!" ahora gana a las rachas y la
   venganza (que pasan a la línea de abajo), y también lo ven quien cayó y
   quien está mirando al tirador.
+- **En Capis a Pintazos los bots mezclan sus armas y terminan las partidas.**
+  Ya no tiran La Piñita en cada turno: La Bazuca para un buen tiro, La Lejana
+  contra un capi expuesto de lejos, El Trueno contra dos capis juntos y La
+  Piñita detrás de una loma o bajo un techo. Caminan hacia el rival cuando
+  está lejos, abren paso cuando una loma los encierra y afinan la puntería con
+  los turnos, así casi ninguna partida llega al límite de 60 turnos; en fácil
+  siguen fallando más que en experto. La Piñita ahora va en las dos patas,
+  frente al pecho, y en la vista de todo el mapa cada capi lleva el arma que
+  tiene en la mano.
+
 - **Pepazo tiene modo Dominación.**
   Tres zonas por mapa (A, B y C): párate en una para tomarla y cada zona tuya
   suma un punto por segundo. Puntos y tiempo límite en el lobby, bots que

@@ -36,9 +36,13 @@ const DASHES = 24, HUMAN = 0;
 const CAPY_SCALE = .8, HEAD = 2.05;
 // La Bazuca in the hands: its scale, and how far towards the camera it rides (the near shoulder).
 const LAUNCHER = .6, NEAR = .36;
-// Each weapon's model in the paws at its own scale (Pepazo's markers by model id; La Piñita
-// is held up at the muzzle, ready to throw).
-const HELD = { bazooka: LAUNCHER, sniper: .52, minigun: .58, scatter: .62, grenade: 2.2 };
+// Each weapon's model in the paws at its own scale (Pepazo's markers by model id).
+const HELD = { bazooka: LAUNCHER, sniper: .52, minigun: .58, scatter: .62, grenade: 1.45 };
+// La Piñita has no grips: it sits in both paws in front of the chest (`z` ahead of the
+// shoulder along the aim, `y` below it, `near` towards the camera, not the near shoulder),
+// the paws reaching `reach` less far round it and `hug` inwards; it tilts with only
+// `follow` of the aim and of the lowered barrel's drop (raised to the chin, lowered to the belly).
+const GRENADE_HOLD = Object.freeze({ z: .37, y: -.24, near: .12, reach: .35, hug: .35, follow: .4 });
 // The body turns a little towards the camera (78 % of a quarter turn) so the
 // face reads past the barrel; La Bazuca itself stays exactly in the side plane.
 const TURN_IN = .78;
@@ -143,14 +147,18 @@ export function createCapisScene(canvas, match) {
     for (const w of WEAPONS) {
       const kit = launchers[c.team][w.id], model = kit.clone(), k = HELD[w.model];
       model.scale.setScalar(k);
-      if (w.model === 'grenade') model.position.set(0, 0, RULES.muzzle);
+      if (w.model === 'grenade') model.position.set(0, GRENADE_HOLD.y, GRENADE_HOLD.z);
       else model.position.set(0, -kit.userData.bore * k, RULES.muzzle - kit.userData.tip * k);
-      model.visible = w.id === 'bazooka'; model.name = w.name; kick.add(model); held[w.id] = model;
+      model.name = w.name; kick.add(model); held[w.id] = model;
     }
     const launcher = held.bazooka;
     const tip = new THREE.Object3D(); tip.position.z = RULES.muzzle; kick.add(tip);
     const ears = avatar.head.children.filter(o => o.name === 'Cupped ear').map(o => ({ o, z: o.rotation.z }));
-    const lod = createRigLod(root, { pivots: [turn, avatar.body, avatar.head, ...avatar.arms, ...avatar.legs, kick], cell: LOD_CELL });
+    // The far copy carries all five weapons, each its own pivot: the ones not in the paws are
+    // hidden, and a hidden pivot collapses its part (rig-lod.js), so far away a capi still shows
+    // what it holds in one draw.
+    const lod = createRigLod(root, { pivots: [turn, avatar.body, avatar.head, ...avatar.arms, ...avatar.legs, kick, ...Object.values(held)], cell: LOD_CELL });
+    for (const w of WEAPONS) held[w.id].visible = w.id === 'bazooka';
     return { avatar, root, turn, gun, kick, launcher, held, weapon: 'bazooka', tip, coat, ears, bandana, lod, seed: c.slot * 1.7 + c.team * 2.9 };
   }
   const capis = new Map();
@@ -323,22 +331,34 @@ export function createCapisScene(canvas, match) {
     const flick = Math.max(0, Math.sin(time * .8 + m.seed * 3) - .97) * 33;
     m.ears.forEach((e, i) => { e.o.rotation.z = e.z + Math.sin(time * 34 + i) * .35 * flick + (i ? -1 : 1) * k * .5; });
     // Where the barrel points: aimed on its turn, low otherwise, over the head to cheer.
-    if (m.weapon !== c.weapon && m.held[c.weapon]) { m.held[m.weapon].visible = false; m.weapon = c.weapon; m.launcher = m.held[c.weapon]; m.launcher.visible = true; }
+    if (m.weapon !== c.weapon && m.held[c.weapon]) { m.held[m.weapon].visible = false; m.weapon = c.weapon; m.launcher = m.held[c.weapon]; }
+    // La Piñita leaves the paws when thrown: none in them while it flies and the thrower retreats.
+    m.launcher.visible = !(m.weapon === 'grenade' && c.id === match.turn?.capy && (match.phase === 'flight' || match.phase === 'retreat'));
     const barrel = barrelPose(match, c);
     let pitch = barrel.pitch, drop = barrel.drop;
     if (pose === 'cheer') { pitch = 1.2; drop = -.3; } else if (pose === 'sulk') { pitch = -1; drop = .5; }
     m.pitch = damp(m.pitch, pitch + k * .5, up ? 24 : 9, dt); m.drop = damp(m.drop, drop, 9, dt);
     const shot = c.id === shooter ? recoil : null, back = shot ? shot.kick : 0;
     gun.visible = pose !== 'splat';
-    gun.position.set(-c.facing * back * .2, RULES.shoulder - m.drop, NEAR);
-    gun.rotation.set(-(m.pitch + (shot ? shot.pitch * 1.6 : 0)), m.yaw, 0);
+    const cradle = m.weapon === 'grenade';
+    const lower = cradle ? m.drop * GRENADE_HOLD.follow : m.drop;
+    gun.position.set(-c.facing * back * .2, RULES.shoulder - lower, cradle ? GRENADE_HOLD.near : NEAR);
+    // A cradled grenade follows the aim only a little: raised to the chin, lowered to the belly.
+    const tilt = cradle ? m.pitch * GRENADE_HOLD.follow : m.pitch;
+    gun.rotation.set(-(tilt + (shot ? shot.pitch * 1.6 : 0)), m.yaw, 0);
     kick.position.z = -back * .32;
     turn.position.x = -c.facing * back * .16;
-    // Arms: the near paw on the rear grip, the far one across to the front grip.
+    // Arms: the near paw on the rear grip, the far one across to the front grip; La Piñita
+    // cradled in both paws in front of the chest.
     const s = c.facing > 0 ? -1 : 1, near = s < 0 ? avatar.armR : avatar.armL, far = s < 0 ? avatar.armL : avatar.armR;
-    const reach = -(Math.PI / 2 + m.pitch);
-    near.rotation.set(reach + .95 + m.drop * 1.4, 0, s * .1);
-    far.rotation.set(reach + .3 + m.drop * 1.1, 0, s * .7);
+    const reach = -(Math.PI / 2 + tilt);
+    if (cradle) {
+      near.rotation.set(reach + GRENADE_HOLD.reach + lower * 1.2, 0, -s * GRENADE_HOLD.hug);
+      far.rotation.set(reach + GRENADE_HOLD.reach + lower * 1.2, 0, s * GRENADE_HOLD.hug);
+    } else {
+      near.rotation.set(reach + .95 + m.drop * 1.4, 0, s * .1);
+      far.rotation.set(reach + .3 + m.drop * 1.1, 0, s * .7);
+    }
     if (up) head.rotation.x -= m.pitch * .35;
     // Feet: tucked going up, reaching down coming down.
     if (pose === 'rise') { legs[0].rotation.x = -.9; legs[1].rotation.x = -.35; }
@@ -473,8 +493,12 @@ export function createCapisScene(canvas, match) {
         let draws = 0, drawn = 0; m.launcher.traverse(o => { if (o.isMesh) draws++; });
         // Meshes the camera draws for the whole capi: one far away, dozens close up.
         m.root.traverseVisible(o => { if (o.isMesh && o.layers.test(camera.layers)) drawn++; });
-        return { id: c.id, model: m.avatar.group.userData.characterVersion, bandana: m.bandana.material.color.getHexString(), launcher: m.launcher.name, weapon: m.weapon,
-          draws, held: m.gun.visible, raised: aiming(match, c), tip: { x: tip.x, y: tip.y }, muzzle: muzzle(c),
+        // Where each paw ends (the far end of its arm) and how far it is from La Piñita in them.
+        const paws = m.avatar.arms.map(arm => { const g = arm.getObjectByName('Arm and mitten'); g.geometry.computeBoundingBox(); const b = g.geometry.boundingBox; return g.localToWorld(new THREE.Vector3((b.min.x + b.max.x) / 2, b.min.y, (b.min.z + b.max.z) / 2)); });
+        const grenade = m.held.grenade.getWorldPosition(new THREE.Vector3());
+        return { id: c.id, model: m.avatar.group.userData.characterVersion, bandana: m.bandana.material.color.getHexString(), launcher: m.launcher.name, weapon: m.weapon, launcherFor: weaponOf(c.weapon).name,
+          draws, held: m.gun.visible, shown: m.launcher.visible, raised: aiming(match, c), tip: { x: tip.x, y: tip.y }, muzzle: muzzle(c),
+          grip: paws.map(p => +p.distanceTo(grenade).toFixed(3)),
           far: m.lod.far, drawn, farTriangles: m.lod.triangles };
       });
     },
