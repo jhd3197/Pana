@@ -6,11 +6,11 @@
 // aim. In team rounds the dead watch their own team (rivals only when no
 // teammate is standing), so watching never shows where rivals hide.
 import { createSpectator } from '/engine/play/spectate.js';
-import { mountControlHints, keyFor } from '/engine/control-hints.js';
 import { holdButton } from '/engine/touch.js';
 import { icon } from '/engine/icons.js';
 import { loc } from '/engine/i18n.js';
 import { teamPlay } from './options.js';
+import { keyFor } from './combat-hud.js';
 
 export const KILLCAM = 1.6;
 const PREV = { keyboard: 'Q', gamepad: 'LB', touch: null }, NEXT = { keyboard: 'E', gamepad: 'RB', touch: null }, VIEW = { keyboard: loc('Espacio'), gamepad: 'A', touch: null };
@@ -18,12 +18,9 @@ const PREV = { keyboard: 'Q', gamepad: 'LB', touch: null }, NEXT = { keyboard: '
 export function createSpectateHud(doc, { enabled = () => true } = {}) {
   const $ = id => doc.getElementById(id), spectator = createSpectator({ killcam: KILLCAM }), targets = [];
   const bar = $('spectate'), label = $('spectate-name'), swatch = $('spectate-swatch'), keys = [...bar.querySelectorAll('[data-key]')];
-  const hints = mountControlHints($('spectate-hints'), { game: 'pintura:spectate', timeout: 9000, hints: [
-    { id: 'spectate-cycle', label: loc('cambiar de pana'), keys: { keyboard: 'Q / E', gamepad: 'LB / RB', touch: null } },
-    { id: 'spectate-view', label: loc('cancha desde arriba'), keys: { keyboard: VIEW.keyboard, gamepad: 'A', touch: null } }] });
   $('spectate-prev').prepend(icon('chevronLeft')); $('spectate-next').append(icon('chevronRight')); $('spectate-view').prepend(icon('camera'));
   let device = '';
-  const press = action => { if (!spectator.active) return false; if (action === 'view') { spectator.toggle(); hints.done('spectate-view'); } else { spectator[action](); hints.done('spectate-cycle'); } return true; };
+  const press = action => { if (!spectator.active) return false; if (action === 'view') spectator.toggle(); else spectator[action](); return true; };
   const pads = [['spectate-prev', 'prev'], ['spectate-next', 'next'], ['spectate-view', 'view']].map(([id, action]) => holdButton($(id), { down: () => press(action), up: () => {}, paused: () => !spectator.active }));
 
   // Living panas that may be watched, in seat order, into one reused list.
@@ -54,8 +51,7 @@ export function createSpectateHud(doc, { enabled = () => true } = {}) {
       const me = state.phase === 'playing' ? byId(state, id) : null;
       input.down = !!me && enabled() && (me.respawn > 0 || !!me.eliminated); input.killer = killer === id ? null : killer ?? null;
       if (me) fill(state, me); else targets.length = 0;
-      const before = spectator.mode, mode = spectator.update(dt, input);
-      if (mode === 'watch' && before !== 'watch') hints.show(); else if (mode === 'off' && before !== 'off') hints.hide();
+      const mode = spectator.update(dt, input);
       doc.body.classList.toggle('spectating', mode === 'watch');
       draw(state);
     },
@@ -68,7 +64,6 @@ export function createSpectateHud(doc, { enabled = () => true } = {}) {
       if (!action) return false;
       event.preventDefault(); return press(action);
     },
-    hints,
-    dispose() { hints.dispose(); pads.forEach(p => p.release?.()); },
+    dispose() { pads.forEach(p => p.release?.()); },
   };
 }

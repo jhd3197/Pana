@@ -15,13 +15,12 @@ import { holdButton } from '/engine/touch.js';
 import { fillRoster } from '/engine/results.js';
 import { sound } from '/engine/fx.js';
 import { createToast } from '/engine/hud.js';
-import { mountControlHints } from '/engine/control-hints.js';
 import { createSpectateHud } from './spectate-hud.js';
 import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
 import { createCombatHud } from './combat-hud.js';
-import { calloutTitle, seesCallout, rulesTip } from './hud-model.js';
+import { calloutTitle, seesCallout } from './hud-model.js';
 import { createCtfHud } from './ctf-hud.js';
 import { createDomHud } from './domination-hud.js';
 import { sfx, createSteps } from './sounds.js';
@@ -49,11 +48,6 @@ let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').dataset.failed = String(failed); $('connection').textContent = text; document.dispatchEvent(new Event('pana:sala-update')); $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
-// The first round's control hints, once a session, in the keys of the device in use; any input dismisses them.
-const controlHints = mountControlHints($('control-hints'), { game: 'pintura', hints: [
-  { id: 'move', label: loc('caminar'), keys: { keyboard: 'WASD', gamepad: 'Stick izq.', touch: null } }, { id: 'look', label: loc('mirar'), keys: { keyboard: loc('Ratón'), gamepad: 'Stick der.', touch: loc('Arrastra') } },
-  { id: 'fire', label: loc('pintar'), keys: { keyboard: loc('Clic'), gamepad: 'RT', touch: null } }, { id: 'aim', label: loc('apuntar'), keys: { keyboard: loc('Clic der.'), gamepad: 'LT', touch: null } },
-  { id: 'reload', label: loc('recargar'), keys: { keyboard: 'R', gamepad: 'X', touch: null } }, { id: 'grenade', label: loc('granada'), keys: { keyboard: 'G', gamepad: 'RB', touch: null } }] });
 // Out of the round in first person: a look at who got you, then watch the others (spectate-hud.js).
 const spectate = createSpectateHud(document, { enabled: () => cameraView === 'primera' }); world.setSpectator(spectate.spectator);
 const toast = createToast($('toast')), armory = createArmory({ room, onPick: value => { weapon = value; }, notify: toast });
@@ -65,28 +59,17 @@ $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-ar
   return { connection: room.local ? 'local' : room.connected ? 'online' : $('connection').dataset.failed === 'true' ? 'offline' : 'connecting', players: room.state.players.map(describe), local: describe({ kit: room.kit }), summary: [locn(people, '{n} pana', '{n} panas'), room.state.options?.mode === 'ctf' ? loc('Captura la bandera') : room.state.options?.mode === 'dom' ? loc('Dominación') : room.state.options?.mode === 'teams' ? loc('Equipos') : loc('Todos vs todos'), loc('{n} min', { n: roundTime(room.state.options) / 60 })].join(' · ') };
 } };
 const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
-// One copy of the help text: the pause menu and the settings dialog's "Cómo se juega" layer.
-const controls = [[loc('WASD / Flechas'), loc('Caminar hacia donde miras')], [loc('Ratón'), loc('Mirar y apuntar (haz clic en la cancha para capturarlo)')], [loc('Clic / Enter'), loc('Disparar pintura')], [loc('Clic derecho / F'), loc('Apuntar (La Lejana mira por la mira telescópica)')], [loc('Clic derecho / F / V'), loc('Con La Chancleta: lanzarla en arco (vuelve sola a tu mano)')], ['Z / X', loc('Arma anterior o siguiente (las de pescozón van al final)')], [loc('Espacio'), loc('Saltar')], ['Shift', loc('Correr (no puedes disparar corriendo)')], ['Tab', loc('Ver la tabla')], ['Q / E', loc('Girar sin ratón')], ['R', loc('Recargar')], ['1 – 6', loc('Chispa / Trueno / Gemelas / Cohetón / Lejana / Bazuca')], ['G', loc('Mantén para cargar la granada y suelta para lanzarla')], ['M', loc('Sonido')], ['Esc', loc('Soltar el ratón y abrir el menú')]];
-const tips = [rulesTip(DEFAULT_OPTIONS),
-  loc('Las barricadas frenan las bolas. Tienes doce por carga; recargas con R o automáticamente al vaciarla.'),
-  loc('Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.'),
-  loc('En teléfono camina con las flechas y arrastra el dedo por la pantalla para mirar. Mantén Pinta: la mira se pega al rival visible que tengas delante.'),
-  loc('El mapa de la esquina muestra a tu equipo y solo a los rivales que tienes a la vista.'),
-  loc('Mantén G para cargar la granada: los puntos marcan su arco y el anillo, hasta dónde pinta. Mira hacia arriba para lanzarla más alto. La mecha corre al soltarla.'),
-  loc('La Lejana pinta dos pepazos por tiro, pero sin la mira se desvía. El cohete de La Bazuca saca de una si pega directo: apunta adelante del rival.'),
-  loc('Si estás solo, tres bots entran contigo; con amigos la cancha es de ustedes. En Más ajustes eliges cuántos bots juegan. Puedes invitar hasta ocho panas.')];
-const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: FIELDS, help: { controls, tips }, change: options => room.configure(options), reset() {
+const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: FIELDS, change: options => room.configure(options), reset() {
   room.configure(DEFAULT_OPTIONS); room.selectMap('terminal'); room.selectDifficulty(DEFAULT_DIFFICULTY);
 } });
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),
   notes: { facil: loc('Los bots fallan seguido y disparan menos.'), normal: loc('Bots con buena mano, pero se les va alguna.'), dificil: loc('Los bots apuntan fino y no sueltan el gatillo.'), experto: loc('Casi no fallan: muévete y cúbrete.') } });
-const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] }, prompts: false }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
+const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
  
   options: [{ id: 'weapon', label: loc('Marcadora (si la sala permite todas)'), choices: WEAPONS.map(m=>[m.id,m.name]), get: () => weapon, set: value => armory.setWeapon(value) },
     { id: 'view', label: loc('Cámara'), choices: [['primera', loc('Primera persona')], ['cancha', loc('Ver la cancha')]], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? loc('La práctica está en pausa.') : loc('La ronda online sigue mientras estás en el menú.'),
-  controls, tips,
   invite: () => inviteUrl(code), onOpen() { clearInput(); looking.release(); }, onClose() {}, canOpen: () => room.state.phase !== 'finished',
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
@@ -323,7 +306,7 @@ function roundStart(state) {
   if (count === lastCount) return;
   clearTimeout(roundStart.timer);
   if (count) { $('countdown').textContent = String(count); flash('counting'); sfx.count(count); }
-  else if (round && !preparing) { $('countdown').textContent = loc('¡YA!'); flash('counting'); flash('round-start'); sfx.go(); controlHints.show(); roundStart.timer = setTimeout(() => document.body.classList.remove('counting'), 1000); }
+  else if (round && !preparing) { $('countdown').textContent = loc('¡YA!'); flash('counting'); flash('round-start'); sfx.go(); roundStart.timer = setTimeout(() => document.body.classList.remove('counting'), 1000); }
   else document.body.classList.remove('counting');
   lastCount = count;
 }
@@ -336,7 +319,6 @@ function render(state) {
   difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase !== 'playing');
   $('round-minutes').textContent = loc('{n} min', { n: roundTime(state.options) / 60 });
   const ctf = state.options?.mode === 'ctf', dom = state.options?.mode === 'dom'; $('win-target').textContent = ctf ? state.options.flagGoal || 3 : dom ? state.options.domGoal || 200 : TARGET;
-  tips[0] = rulesTip(state.options); // the help tip names the room's capture limit
   $('win-target-label').textContent = ctf ? loc('banderas para ganar') : dom ? loc('puntos para ganar') : loc('pintadas para ganar');
   const lobby = state.phase === 'lobby', finished = state.phase === 'finished';
   $('lobby').hidden = !lobby; $('hud').hidden = lobby || finished; document.body.classList.toggle('in-lobby', lobby);
@@ -389,7 +371,7 @@ function frame(now) {
   const scoped = world.scope.scoped; scopeView.set(scoped ? world.scope.amount : 0); document.body.classList.toggle('scoped', scoped); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward()); ctfHud.frame(world.camera, myPana()); domHud.frame(world.camera, myPana()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); controlHints.dispose(); spectate.dispose(); room.dispose(); world.dispose(); }, { once: true });
-if (params.has('debug')) window.pinturaDebug = { room, world, menu, input, armory, grenade: grenadeCharge, controlHints, spectate };
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); spectate.dispose(); room.dispose(); world.dispose(); }, { once: true });
+if (params.has('debug')) window.pinturaDebug = { room, world, menu, input, armory, grenade: grenadeCharge, spectate };
 
 await prepareScene(world);
