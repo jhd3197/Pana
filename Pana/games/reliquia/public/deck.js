@@ -185,8 +185,59 @@ export function generateRun(seed = 1, { depth = 1 } = {}) {
     const [x0, z0, x1, z1] = s.rect;
     if (x1 - x0 > z1 - z0) item.z = item.z < (z0 + z1) / 2 ? z0 - .6 : z1 + .6; else item.x = item.x < (x0 + x1) / 2 ? x0 - .6 : x1 + .6;
   }
+  if (library) libraryHaunts(run, seed, depth);
   cache.set(key, run);
   return run;
+}
+
+// The library's own two: El Lector (a blind librarian, a sleeper in a stacks,
+// archive or copyists' room) and La Estatua (a stone scholar standing against
+// a wall of a library room). Dealt last, from their own seeded stream, so the
+// rest of the deck is exactly what it was without them. One Lector a floor
+// (sometimes two from jornada 5), one Estatua (sometimes two from jornada 5),
+// never in the entrance, a sealed room or a corridor's mouth.
+export const LECTOR_ROOMS = ['estanterias', 'archivo', 'copistas'];
+export const ESTATUA_ROOMS = ['lectura', 'estanterias', 'archivo', 'copistas'];
+const rectGap = (x, z, [x0, z0, x1, z1]) => Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1));
+function libraryHaunts(run, seed, depth) {
+  const R = rng((seed * 2246822519 + depth * 3266489917 + 77) >>> 0);
+  let next = run.sleepers.reduce((n, s) => Math.max(n, s.id + 1), 0);
+  const clear = (room, x, z) => {
+    const f = room.floor;
+    if (!inRect(x, z, room.rect, -.85)) return false;
+    if (run.solids.some(q => q.floor === f && inRect(x, z, q.rect, .75))) return false;
+    if (run.obstacles.some(o => o.floor === f && Math.hypot(o.x - x, o.z - z) < o.r + .8)) return false;
+    if ([...run.loot, ...run.chests, ...run.spots, ...run.sleepers].some(q => q.floor === f && Math.hypot(q.x - x, q.z - z) < 1.1)) return false;
+    if (run.corridors.some(c => (c.a === room.id || c.b === room.id) && rectGap(x, z, c.rect) < 3.2)) return false;
+    if (run.stubs.some(q => q.floor === f && rectGap(x, z, q.rect) < 3.2) || run.hidden.some(h => h.floor === f && rectGap(x, z, h.rect) < 2.5)) return false;
+    return true;
+  };
+  for (let f = 1; f <= run.floors; f++) {
+    const rooms = run.rooms.filter(r => r.floor === f && !r.hidden && !run.seals.some(q => q.room === r.id));
+    const pick = (kinds, taken) => { const list = rooms.filter(r => kinds.includes(r.kind) && !taken.includes(r.id)); return list.length ? list[Math.floor(R() * list.length)] : null; };
+    const used = [];
+    // La Estatua: against a wall, facing into the room.
+    for (let n = 0; n < (depth >= 5 && R() < .6 ? 2 : 1); n++) {
+      const room = pick(ESTATUA_ROOMS, used); if (!room) break;
+      for (let i = 0; i < 40; i++) {
+        const side = Math.floor(R() * 4), alongX = side < 2, span = (alongX ? room.w : room.d) / 2 - 2.5, t = (R() * 2 - 1) * span;
+        const x = alongX ? room.x + t : room.x + (side === 2 ? -1 : 1) * (room.w / 2 - 1), z = alongX ? room.z + (side === 0 ? -1 : 1) * (room.d / 2 - 1) : room.z + t;
+        if (!clear(room, x, z)) continue;
+        run.sleepers.push({ id: next++, kind: 'estatua', floor: f, room: room.id, x, z, h: Math.atan2(room.x - x, room.z - z), pose: Math.floor(R() * 2) });
+        used.push(room.id); break;
+      }
+    }
+    // El Lector: somewhere inside a shelf, archive or copyists' room.
+    for (let n = 0; n < (R() < .8 ? 1 : 0) + (depth >= 5 && R() < .5 ? 1 : 0); n++) {
+      const room = pick(LECTOR_ROOMS, used) || pick(LECTOR_ROOMS, []); if (!room) break;
+      for (let i = 0; i < 40; i++) {
+        const x = room.x + (R() - .5) * (room.w - 4), z = room.z + (R() - .5) * (room.d - 4);
+        if (!clear(room, x, z)) continue;
+        run.sleepers.push({ id: next++, kind: 'lector', floor: f, room: room.id, x, z });
+        used.push(room.id); break;
+      }
+    }
+  }
 }
 
 // Contents of one room: obstacles, loot, chests, traps, sleepers and decor.

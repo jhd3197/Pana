@@ -59,6 +59,23 @@ export function layoutFor(seed = 1, depth = 1) {
     for (let i = 0; i <= n; i++) { const t = n ? i / n : 0; if (!walkable(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, state, radius)) return false; }
     return true;
   }
+  // Can an eye at `a` see `b`? Walls, bookcases, wardrobes, fake walls and
+  // rubble block the view; reading tables and copyists' desks are waist-high
+  // and pits are open air, so neither does. The ends' own half metre is
+  // skipped (a body stands against a case). Allocation-free.
+  const low = run.solids.filter(s => s.kind === 'table' || s.kind === 'desk');
+  function sightClear(a, b, state = {}) {
+    if (floorOf(a.x) !== floorOf(b.x)) return false;
+    const d = distance(a, b), n = Math.ceil(d / .2), skip = Math.min(.5, d / 2), f = floorOf(a.x);
+    for (let i = 0; i <= n; i++) {
+      const t = n ? i / n : 0, along = t * d; if (along < skip || along > d - skip) continue;
+      const x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t, c = cell(x, z);
+      if (c === 0 && !low.some(s => s.floor === f && inRect(x, z, s.rect, .05))) return false;
+      for (const wall of run.hidden) if (!state.revealed?.[wall.id] && inRect(x, z, wall.rect)) return false;
+      for (const id in state.rubble || {}) { const r = run.corridors.find(q => q.id === id); if (r && inRect(x, z, r.rect)) return false; }
+    }
+    return true;
+  }
   function moveBody(body, dx, dz, state, radius = .45) {
     const n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / .2));
     let moved = false;
@@ -116,7 +133,7 @@ export function layoutFor(seed = 1, depth = 1) {
   }
   // A pearl the deck rolled against a pit edge or a wall would be unreachable.
   run.loot = run.loot.filter(l => ITEMS[l.kind]?.size === 'big' || l.y || walkable(l.x, l.z, { open: {}, revealed: Object.fromEntries(run.hidden.map(h => [h.id, true])) }, .3));
-  const layout = { run, walkable, lineClear, moveBody, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
+  const layout = { run, walkable, lineClear, sightClear, moveBody, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
   layouts.set(key, layout);
   return layout;
 }

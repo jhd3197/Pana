@@ -3,11 +3,15 @@
 // jaguars prowl, crouch and pounce, and a farol dazes them once in a while.
 // Guácharos fly in flocks and scatter from a beam; spiders hang from the
 // ceiling until a pana walks under and their bite slows; cuaimas lie coiled
-// by the loot, strike and poison, but never leave home for long.
+// by the loot, strike and poison, but never leave home for long. In the
+// library El Lector hunts by ear (lector.js) and La Estatua only moves unseen
+// (estatua.js); neither cares about light.
 import { clamp } from '../../../engine/random.js';
 import { locKey } from '../../../engine/i18n.js';
 import { floorOf } from './deck.js';
 import { distance } from './layout.js';
+import { updateLector } from './lector.js';
+import { updateEstatua } from './estatua.js';
 
 export const KINDS = {
   mummy: { hp: 60, speed: 2.6, reach: 1.7, windup: .65, radius: 2.1, damage: 12, cooldown: 1.15, light: 'freeze' },
@@ -18,7 +22,16 @@ export const KINDS = {
   bat: { hp: 14, speed: 6.2, reach: 1.3, windup: .3, radius: 1.2, damage: 5, cooldown: 1.3, light: 'scatter', flying: true },
   spider: { hp: 30, speed: 4.3, reach: 1.4, windup: .28, radius: 1.3, damage: 8, cooldown: 1, light: 'none', slows: 2.5 },
   snake: { hp: 40, speed: 1.6, reach: 2.4, windup: .35, radius: 2.5, damage: 16, cooldown: 1.6, light: 'none', poison: 5, home: 3.5 },
+  // speed is the Lector's homing pace; it wanders and searches slower (lector.js).
+  lector: { hp: 80, speed: 3.6, reach: 1.6, windup: .55, radius: 1.7, damage: 15, cooldown: 1.3, light: 'none', blind: true },
+  estatua: { hp: 400, speed: 0, reach: 1.5, windup: .5, radius: 1.6, damage: 24, cooldown: 2.6, light: 'none', stone: true },
 };
+// How many Lectores may walk one floor at once (later jornadas allow two),
+// and Estatuas: never more than two.
+export const lectorCap = level => (level || 1) >= 5 ? 2 : 1;
+export const ESTATUA_CAP = 2;
+// A hit on an enemy: stone only staggers (true when it took the damage).
+export function wound(e, amount) { if (KINDS[e.kind]?.stone) return false; e.hp -= amount; return true; }
 const DIFFICULTY = { easy: { hp: .75, damage: .65, speed: .85 }, normal: { hp: 1, damage: 1, speed: 1 }, hard: { hp: 1.35, damage: 1.45, speed: 1.15 } };
 export const scaleFor = g => DIFFICULTY[g.options.difficulty] || DIFFICULTY.normal;
 export const holds = (p, kind) => !!p?.hands?.some(h => h?.kind === kind);
@@ -44,7 +57,9 @@ export function lightOn(g, e) {
 export function spawnEnemy(g, kind, x, z, extra = {}) {
   const live = g.enemies.filter(e => e.hp > 0);
   if (!KINDS[kind]) return null;
-  if (['mummy', 'phantom', 'bat', 'spider'].includes(kind) && live.length >= 18) return null;
+  if (['mummy', 'phantom', 'bat', 'spider', 'lector'].includes(kind) && live.length >= 18) return null;
+  const here = n => live.filter(e => e.kind === kind && floorOf(e.x) === floorOf(x)).length >= n;
+  if ((kind === 'lector' && here(lectorCap(g.level))) || (kind === 'estatua' && here(ESTATUA_CAP))) return null;
   if (!g.layout.walkable(x, z, g, .5)) return null;
   const k = KINDS[kind], s = scaleFor(g), roster = g.players.filter(p => !p.spectator).length;
   const hp = (k.hp + (k.scale || 0) * Math.max(0, roster - 1)) * s.hp * (1 + .22 * Math.max(0, (g.level || 1) - 1));
@@ -65,7 +80,7 @@ function targetFor(g, e) {
   return best;
 }
 
-function walk(g, e, target, speed, dt) {
+export function walk(g, e, target, speed, dt) {
   let nav = g.paths.get(e.id);
   if (!nav || nav.until < g.time || distance(nav.goal, target) > 3) { nav = { path: g.layout.findPath(e, target, g), goal: { x: target.x, z: target.z }, until: g.time + 1 + (e.id % 5) * .1 }; g.paths.set(e.id, nav); }
   while (nav.path.length && distance(e, nav.path[0]) < .6) nav.path.shift();
@@ -84,6 +99,15 @@ export function updateEnemies(g, dt) {
     const target = targetFor(g, e);
     // A spider waits on the ceiling until someone walks under it.
     if (e.hanging) { if (target && distance(target, e) < 4.5) { e.hanging = false; e.cooldown = .6; g.event('spider', locKey('¡Cayó una araña del techo!'), { enemy: e.id }); } continue; }
+    // A statue wakes, silently, once its room has been entered.
+    if (!e.awake && k.stone) { if (!g.woke[e.room]) continue; e.awake = true; }
+    if (k.blind || k.stone) {
+      e.lit = 'dark';
+      const damage = k.damage * s.damage * (1 + .1 * tier) * (.75 + .15 * (g.level || 1)), stunned = e.stun > 0;
+      if (k.blind) updateLector(g, e, k, k.speed * s.speed * (1 + .08 * tier), damage, dt, { walk, stunned });
+      else updateEstatua(g, e, k, damage, dt, { stunned });
+      continue;
+    }
     if (!e.awake) {
       if (target && distance(target, e) < (e.kind === 'jaguar' ? 7 : 10)) { e.awake = true; g.event('boss', e.kind === 'jaguar' ? locKey('¡El jaguar de oro despertó!') : locKey('El guardián del sol se levanta.'), { enemy: e.id, boss: e.kind }); }
       else continue;
