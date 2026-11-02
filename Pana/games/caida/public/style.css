@@ -109,6 +109,8 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 .rack-actions>.pk-btn{min-width:150px;justify-content:space-between}
 #chant{font-size:14px;justify-content:center}
 .activity{width:220px;padding:10px 14px;border-radius:var(--pk-r)}
+/* The log grows upward from the buttons; on short screens it stops under the score panel (newest first). */
+@media(min-width:721px){.activity{max-height:calc(100vh - 430px);overflow:hidden}}
 .panel-heading{display:flex;justify-content:space-between;gap:10px;white-space:nowrap;font:900 10px var(--pk-sans);letter-spacing:1.2px;color:var(--pk-muted)}
 .activity ol{list-style:none;margin:6px 0 0;padding:0}
 .activity li{padding:6px 0;border-top:1px solid var(--pk-line);font-size:12px;font-weight:700;line-height:1.35;color:var(--pk-muted)}
