@@ -24,19 +24,7 @@ const roomOptions=createRoomOptions($('room-options'),{title:loc('Ludo'),fields:
   change:options=>room.action('options',{options}),reset:()=>room.action('options',{options:defaultLudoOptions()})});
 const menu=createGameMenu({ pad: { buttons: true, keys: { x: ['Space', loc('Agitar el dado; suelta para tirar')], rt: ['Space', loc('Agitar el dado; suelta para tirar')] } },title:loc('Ludo · Pana'),sound,orientation:'libre',
   note:()=>room.members.size>1?loc('La partida continúa mientras estás en el menú.'):loc('La partida está en pausa. Los bots te esperan.'),
-  controls:[[loc('Mantén Espacio'),loc('Agitar el dado; suelta para tirar')],[loc('Arrastra y suelta en la mesa'),loc('Lanzar el dado con más fuerza')],['1 2 3 4',loc('Mover una ficha disponible')],[loc('Ratón / toque'),loc('Tocar una ficha marcada o su botón')],['M',loc('Activar o silenciar el sonido')]],
-  tips:[
-    loc('Cada pana tiene cuatro fichas. Gana quien lleva las cuatro hasta el centro.'),
-    loc('¿Quién empieza? Todos sacuden el cacho a la vez y lo tapan: sale primero el dado más alto. Si hay empate arriba, solo los empatados sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.'),
-    loc('Agita el dado manteniendo el botón o Espacio y suéltalo, o lánzalo arrastrando sobre la mesa. Cuanto más lo agitas, más fuerte vuela; la fuerza no cambia el número.'),
-    loc('El anfitrión elige si sales con seis o con uno y seis. Al salir, la ficha queda en la casilla de salida.'),
-    loc('Salida asistida: si todas tus fichas pendientes están en el patio, tras un límite aleatorio de tres a cinco intentos fallidos sale un seis. Se aplica a todos; la sala puede elegir azar clásico.'),
-    loc('Un único movimiento legal se hace solo al caer el dado. Si solo puedes sacar fichas del patio, sale la primera automáticamente.'),
-    loc('Un seis permite volver a tirar. Si la sala activa la regla, el tercer seis seguido pierde ese lanzamiento y termina el turno; los movimientos anteriores se conservan.'),
-    loc('Las casillas con doble borde y un círculo son seguras: aquí no se come. En las demás, caer sobre fichas rivales las devuelve a su patio. La sala puede dar otra tirada al capturar.'),
-    loc('Las fichas pueden compartir casilla y no forman barreras. El pasillo de tu color es privado. Debes sacar el número exacto para llegar a casa.'),
-    loc('Si no tienes movimiento, el turno pasa automáticamente. Los puestos vacíos juegan con bots; un pana que llega hereda las fichas de un bot.'),
-  ],invite:()=>room.offline?null:inviteUrl(code),
+  invite:()=>room.offline?null:inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({id:'invite',className:'pk-btn'}),menu.createButton({id:'menu',className:'pk-btn'}));
 $('lobby-invite-slot').replaceWith(menu.createInviteButton({id:'lobby-invite',className:'pk-btn'}));
