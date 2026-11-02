@@ -133,7 +133,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
     setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'camp' : world.run.theme === 'biblioteca' ? 'biblioteca' : 'mina');
     // Scares squeeze the fog in; the candles fade with it.
-    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog; }
+    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog; hemi.intensity = look.hemi[2] * (.2 + .8 * Math.min(1, Math.max(mood.light, mood.farol))); }
     world.candles({ level: mood.light, out: mood.out, near: scene.fog.near, far: scene.fog.far });
     world.update(t, state, dt, me);
     sky.update(t); shopSign.visible = vf === 0;
