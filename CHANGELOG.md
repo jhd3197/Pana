@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia deja la pantalla limpia: mantén Tab (o View en el mando) para ver el mapa, la brújula, la jornada y al equipo.**
+  Durante la expedición solo quedan la vitalidad, el cansancio, lo que llevas
+  en las manos, el punto de mira y los avisos. Al soltar Tab se cierra; en
+  táctil, el botón Mapa lo abre y lo cierra.
 - **Reliquia ahora suena a biblioteca abandonada: pasos en tablas y piedra, puertas que crujen y susurros a tu espalda.**
   Tus pasos suenan a madera en la biblioteca y a piedra en la mina, al
   caminar o correr. Los armarios crujen al abrirlos, los baúles y las gavetas
