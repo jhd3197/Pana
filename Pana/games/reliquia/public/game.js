@@ -8,6 +8,7 @@ import { roomCode } from '/engine/game-shell.js';
 import { holdButton, drawIcons } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { createToast } from '/engine/hud.js';
+import { createHoldOverlay } from '/engine/hold-overlay.js';
 import { elapsedClock } from '/engine/live-room.js';
 import { createLookControls } from '/engine/play/first-person.js';
 import { pressJump } from '/engine/play/jump.js';
@@ -45,15 +46,17 @@ function jump(){if(playing())jumpPress=pressJump(jumpPress);}
 function clearInput() { keys.clear(); touch.clear(); }
 const solo = () => room.offline || room.members.size === 1;
 const playing = () => state.phase === 'playing' && !menu.isOpen;
+// Map, compass, the jornada's numbers and the team: only while Tab / View is held.
+const intel = createHoldOverlay({ keys: ['Tab'], enabled: () => playing(), change: on => hud.info(on) });
 
 const menu = createGameMenu({
-  pad: { move: 'wasd', look: loc('Mirar'), keys: { rt: ['KeyV', loc('Usar lo de la mano derecha')], a: ['Space', loc('Saltar')], lt: ['KeyF', loc('Usar lo de la mano izquierda')], x: ['KeyE', loc('Agarrar o abrir; mantén para girar')], b: ['KeyQ', loc('Soltar')], y: ['KeyG', loc('Lanzar')], rb: ['KeyR', loc('Arrastrar a un pana')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver al equipo')] } },
+  pad: { move: 'wasd', look: loc('Mirar'), keys: { rt: ['KeyV', loc('Usar lo de la mano derecha')], a: ['Space', loc('Saltar')], lt: ['KeyF', loc('Usar lo de la mano izquierda')], x: ['KeyE', loc('Agarrar o abrir; mantén para girar')], b: ['KeyQ', loc('Soltar')], y: ['KeyG', loc('Lanzar')], rb: ['KeyR', loc('Arrastrar a un pana')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver el mapa y la expedición')] } },
   title: 'Reliquia', heading: loc('Un respiro'), resumeLabel: loc('Volver a la mina'), sound, notify,
   note: () => solo() ? loc('La expedición está en pausa.') : loc('Tus panas siguen en la mina.'),
   options: [{ ...SCARES, get: () => scares, set: v => { if (saveScares(v)) { scares = v; view.shakeScale = shakeFor(v); } } }],
   actions: [{ id: 'offline', label: loc('Abrir expedición local'), kind: 'link', visible: () => failed, run: () => room.practice() }],
   invite: () => inviteUrl(code),
-  onOpen() { clearInput(); looking.release(); }, onClose() {},
+  onOpen() { clearInput(); looking.release(); intel.release(); }, onClose() {},
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
@@ -140,7 +143,7 @@ function receive(next) {
   if (phase !== state.phase) {
     phase = state.phase; menu.close(); clearInput(); document.body.classList.toggle('playing', phase === 'playing');
     if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; if (qs.has('debug') && Number(qs.get('jornada')) > 1) queueMicrotask(() => window.reliquia?.jornada(Number(qs.get('jornada')))); lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
-    if (phase !== 'playing') looking.release();
+    if (phase !== 'playing') looking.release(); intel.release();
   }
   // Local practice and a fresh host start a new count.
   const top = Math.max(0, ...state.events.map(e => e.id)); if (top < lastEvent) lastEvent = top;
@@ -157,6 +160,7 @@ $('practice').onclick = $('offline-inline').onclick = () => room.practice();
 drawIcons();
 const pads = [];
 for (const button of document.querySelectorAll('[data-move]')) pads.push(holdButton(button, { paused: () => !playing(), down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) }));
+pads.push(holdButton($('t-intel'), { paused: () => !playing(), down: () => intel.toggle('touch') }));
 pads.push(holdButton($('t-grab'), { paused: () => !playing(), down: () => { touch.add('e'); act('interact'); }, up: () => touch.delete('e') }));
 let touchBark = 0;
 for (const [id, run] of [['t-jump', jump], ['t-use', () => act('use', { hand: 0 })], ['t-left', () => act('use', { hand: 1 })], ['t-throw', () => act('throw')], ['t-drop', () => act('drop')], ['t-bark', () => { act('bark', { line: touchBark }); touchBark = (touchBark + 1) % BARKS.length; }]])
@@ -164,7 +168,7 @@ for (const [id, run] of [['t-jump', jump], ['t-use', () => act('use', { hand: 0 
 addEventListener('keydown', e => {
   if (e.target instanceof HTMLInputElement || menu.isOpen) return;
   const key = e.key.toLowerCase();
-  if (key === 'tab') { e.preventDefault(); if (state.phase === 'playing') hud.board(true, state, room); return; }
+  if (key === 'tab') return;
   if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(key)) e.preventDefault();
   if (!playing()) return;
   keys.add(key); if (e.repeat) return;
@@ -173,7 +177,7 @@ addEventListener('keydown', e => {
   if (/^[1-7]$/.test(key)) act('bark', { line: Number(key) - 1 });
   if (key === 'm') toggleMute();
 });
-addEventListener('keyup', e => { const key = e.key.toLowerCase(); keys.delete(key); if (key === 'tab') hud.board(false, state, room); });
+addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
 addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 function input() {
   if (!playing()) return { x: 0, z: 0, hold: false, h: view.heading, pitch: view.pitch };
@@ -200,11 +204,12 @@ function frame(now) {
   fx.update(dt, { state, me: p, heading: view.heading, paused: menu.isOpen, scares, run: view.world.run });
   if (p && state.phase === 'playing' && !p.downed && !p.spectator) { const speed = p.moving ? Math.hypot(p.vx, p.vz) : 0; feet.update(dt, { speed, height: p.jumpHeight || 0, sprint: speed > 5.4, surface, volume: .8 }, stepSink); }
   else feet.reset();
+  intel.check();
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }
 show('loading', false); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
+addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
 if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money,
   get state() { return state; }, get me() { return me(); },
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += .05) room.game.update(Math.min(.05, seconds - t), room.inputs); room.publish(); },
@@ -217,6 +222,8 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
   // Skip ahead to jornada n (2 is the first library): host only.
   jornada(n) { const g = room.game; if (!room.isHost || !g || g.phase !== 'playing') return false; while (g.level < n) g.completeLevel(); room.publish(); return g.level; },
   fx, samples,
+  // The Tab / View layer: reliquia.info (open?) and reliquia.showInfo(true | false).
+  get info() { return hud.infoOpen; }, showInfo(on) { intel.release(); if (on) intel.toggle('debug'); },
 };
 
 await prepareScene({ renderer: view.renderer, scene: view.scene, camera: view.camera });

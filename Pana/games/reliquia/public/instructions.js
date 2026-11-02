@@ -22,7 +22,7 @@ export default {
     { action: loc('Arrastrar a un pana caído'), keyboard: 'R', gamepad: 'RB' },
   ] }, { title: loc('El equipo'), rows: [
     { action: loc('¿Nos vamos ya? · ¡Una sala más! · y otros gritos'), keyboard: '1 – 7', touch: loc('Botón Grito') },
-    { action: loc('Ver al equipo'), keyboard: 'Tab', gamepad: 'View' },
+    { action: loc('Ver el mapa, la brújula, la jornada y al equipo mientras lo mantienes (en táctil, toca para abrir y cerrar)'), keyboard: 'Tab', gamepad: 'View', touch: loc('Botón Mapa') },
     { action: loc('Activar o silenciar el sonido'), keyboard: 'M' },
     { action: loc('Soltar el ratón y abrir el menú'), keyboard: 'Esc', gamepad: 'Start', touch: loc('Botón Menú') },
   ] }],

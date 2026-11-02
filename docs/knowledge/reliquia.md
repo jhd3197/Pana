@@ -340,6 +340,25 @@ thud with a library thud, the thrown book landing) go through
 `scareSound(mode, e.roll)`: Suaves plays about half of them, quieter and
 11 m off, and drops the synth breath; Apagados plays none.
 
+## HUD
+
+On screen during play: vitality (heart, number, bar), the stamina line, the
+two hand slots, the aim dot, the E prompt and the passing pieces (toast,
+shouts, boss bar, the montacargas vote, downed card). Everything else, the
+map, the compass with its tags, the jornada and room, la codicia, the quota,
+mangos, the montacargas line, what you carry, artifact effects and the team,
+lives in `#intel`, shown only while Tab or the pad's View is held
+(`engine/hold-overlay.js`; the pad presses Tab through `createGameMenu({ pad })`),
+or toggled by the touch Mapa button. `hud.js` only fills `#intel` while it is
+open. While it is open the aim dot, prompt, vote, boss bar and downed card are
+`visibility: hidden`, so nothing stacks under it. `engine/tests/hud-layout.browser.js`
+checks it closed and held (`HOLD`). Debug: `reliquia.info`,
+`reliquia.showInfo(true | false)`.
+
+The minimap paints its own backdrop with `fillRect`. A CSS background on that
+2D canvas inside the fixed, transformed panel drew a tall dark box below the
+panel under software WebGL.
+
 ## Networking
 
 Host simulation at 20 Hz on `LiveRoom` (`reliquia-v3`). Input:
