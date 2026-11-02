@@ -13,6 +13,12 @@ becomes the GitHub release's notes.
   del mercado, carros y carretillas, muros y esquinas de casa, y un portal de
   columnas en cada costado. Los muros bajos, bancos y fuentes dejan pasar los
   tiros; lo alto los para. Tres plazas por ronda: Clásica, Mercado y Fiesta.
+- **Alrededor de La Plaza de Pepazo ahora hay un pueblo: fachadas coloniales, iglesia, mercado y bombillos sobre la cancha.**
+  Casas de colores con balcones, postigos y un portal de arcos cierran los
+  cuatro lados, y la iglesia con su campanario y atrio de piedra preside el
+  norte. En la calle hay faroles, bancos, materos, árboles, puestos con toldos,
+  un camión de frutas y motos; el piso tiene rosetón y franjas. La plaza se
+  dibuja con menos de la mitad de llamadas que antes.
 
 - **En Captura la bandera de Pepazo quien lleva la bandera corre más lento, y la ayuda dice cuántas capturas ganan.**
   Con la bandera caminas y corres un 15% más lento (los bots también), así que

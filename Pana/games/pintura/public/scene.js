@@ -15,11 +15,7 @@ import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
 import { createSky } from '/engine/worlds/sky.js';
-import { house, church } from '/engine/models/props/plaza-buildings.js';
-import { barrel, marketStall, streetLamp } from '/engine/models/props/plaza.js';
-import { parkBench, basketballHoop } from '/engine/models/props/pueblo.js';
-import { araguaney } from '/engine/models/vegetation/araguaney.js';
-import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { splatTexture, pavingTexture } from '/engine/models/props/paintball.js';
 import { rng } from '/engine/random.js';
@@ -32,7 +28,7 @@ import { traceRay } from '/engine/play/projectile.js';
 import { createPose, createSpectateCamera, followPose, overheadPose } from '/engine/play/spectate.js';
 import { traceLob, groundAt } from '/engine/play/lob.js';
 import { guideRibbon, guideBeads, guideRing } from '/engine/play/aim-guide.js';
-import { SIZE, SPREAD, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK, SHOT_HEIGHT, shotCover } from './rules.js';
+import { SIZE, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK, SHOT_HEIGHT, shotCover } from './rules.js';
 // The shared courts' factory (engine/worlds/arenas.js) loads on first use: see setMap.
 let arenasLoad = null; const loadArenas = () => arenasLoad ??= import('/engine/worlds/arenas.js').catch(error => { arenasLoad = null; throw error; });
 
@@ -88,10 +84,12 @@ export function createScene(canvas) {
   // Hits splat as glossy blobs, four shapes per colour.
   const hitTextures = [11, 12, 13, 14].map(seed=>splatTexture(seed)).concat(splatTexture(11,'stripe'),splatTexture(11,'dots')), hitMaterials = new Map();
   const splatMaterial = (color, id, pattern) => { const index=pattern==='stripe'?4:pattern==='dots'?5:id%4; const key = `${color}:${index}:${glow}`; if (!hitMaterials.has(key)) hitMaterials.set(key, new THREE.MeshStandardMaterial({ color, map: hitTextures[index], transparent: true, alphaTest: .4, roughness: .3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, ...(glow ? { emissive: color, emissiveIntensity: 1.1 } : {}) })); return hitMaterials.get(key); };
-  const box = (w, h, d, color, x, y, z) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material(color)); mesh.position.set(x, y, z); mesh.castShadow = mesh.receiveShadow = true; defaultCourt.add(mesh); return mesh; };
+  // The court's fence, lines and clutter go into `kit`, baked into one tinted batch below.
+  const kit = new THREE.Group();
+  const box = (w, h, d, color, x, y, z, parent = kit) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material(color)); mesh.position.set(x, y, z); mesh.castShadow = mesh.receiveShadow = true; parent.add(mesh); return mesh; };
   const fence = SIZE + 1, span = fence * 2 - 1;
-  box(200, .3, 200, '#dcb985', 0, -.3, 0);
-  const paving = pavingTexture(), court = box(span, .2, span, '#ffffff', 0, -.08, 0); paving.repeat.multiplyScalar(span / 37);
+  box(200, .3, 200, '#dcb985', 0, -.3, 0, defaultCourt);
+  const paving = pavingTexture(), court = box(span, .2, span, '#ffffff', 0, -.08, 0, defaultCourt); paving.repeat.multiplyScalar(span / 37);
   court.material = new THREE.MeshStandardMaterial({ map: paving, roughness: .9 });
   for (let i = -SIZE; i < SIZE; i += 2) for (const z of [-SIZE, SIZE]) box(1.1, .02, .13, '#fff3e0', i, .04, z);
   for (const side of [-1, 1]) {
@@ -112,41 +110,34 @@ export function createScene(canvas) {
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); geometry.computeVertexNormals();
     defaultCourt.add(new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .8, side: THREE.DoubleSide })));
   }
-  const scenery = new THREE.Group(), cameraBounds = [];
-  // The pueblo around the court spreads with it.
-  function place(model, x, z, angle = 0) { model.position.set(x * SPREAD, 0, z * SPREAD); model.rotation.y = angle; scenery.add(model); cameraBounds.push(new THREE.Box3().setFromObject(model)); }
-  const colors = [0xe3ad54, 0x5c9da7, 0xe79874, 0x8ba776];
-  for (let i = 0; i < 4; i++) {
-    const x = [-18, -10.5, 10.5, 18][i]; place(house({ w: 7, h: 7 + i % 2, seed: i, color: colors[i], label: ['CAFÉ COCO', 'BUENA GENTE', 'LA BODEGUITA', 'MÁS PANAS'][i] }), x, -27); // i18n-ignore: world signage
-    for (const side of [-1, 1]) place(house({ w: 7, h: 6 + i % 2, seed: i + 4, color: colors[(i + 1) % 4] }), side * 28, -15 + i * 9, -side * Math.PI / 2);
-  }
-  place(church(), 0, -28);
-  for (const side of [-1, 1]) {
-    for (const [i, z] of [-19, -3, 14].entries()) place(i % 2 ? mangoTree({ seed: i + 3 }) : araguaney({ seed: i + 8 }), side * 22.5, z);
-    place(marketStall({ seed: side + 3 }), side * 13, 24, Math.PI); place(parkBench(), side * 7, 21, Math.PI);
-    place(streetLamp(), side * 20.5, -12); place(streetLamp(), side * 20.5, 11);
-    place(basketballHoop(), side * 17, 21, Math.PI); place(barrel(), side * 21.5, 20);
-  }
-  // Old battles left their mark on the paving (plaza-props.js marks the cover).
+  const cameraBounds = [];
+  // Old battles left their mark on the paving (plaza-props.js marks the cover): one
+  // vertex-coloured mesh per splat shape, so 48 marks are four draws.
   const splatTextures = [1, 2, 3, 4].map(seed=>splatTexture(seed)), paint = [PALETTE.rojo, PALETTE.azul, PALETTE.amarillo, PALETTE.turquesa, PALETTE.verde];
-  const decal = (color, n) => new THREE.MeshStandardMaterial({ color, map: splatTextures[n % 4], transparent: true, alphaTest: .4, roughness: .3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
-  const r = rng(77);
+  const r = rng(77), marks = [[], [], [], []];
   for (let k = 0; k < 48; k++) {
-    const size = 1 + r() * 1.8, mark = new THREE.Mesh(new THREE.PlaneGeometry(size, size), decal(paint[k % paint.length], k));
-    mark.rotation.set(-Math.PI / 2, 0, r() * 6); mark.position.set((r() - .5) * span, .025 + k * .0004, (r() - .5) * span); defaultCourt.add(mark);
+    const size = 1 + r() * 1.8, plane = new THREE.PlaneGeometry(size, size).rotateZ(r() * 6).rotateX(-Math.PI / 2), c = new THREE.Color(paint[k % paint.length]);
+    plane.translate((r() - .5) * span, .025 + k * .0004, (r() - .5) * span);
+    plane.setAttribute('color', new THREE.Float32BufferAttribute(Array.from({ length: plane.attributes.position.count }, () => [c.r, c.g, c.b]).flat(), 3)); marks[k % 4].push(plane);
   }
-  // Paint buckets and tyre stacks wait outside the fence.
-  for (const [k, [x, z]] of [[-20.6, -6], [20.6, 4], [-20.4, 9], [20.5, -9], [-6, 20.5], [7, -20.6]].map(([x, z]) => [Math.abs(x) > 20 ? Math.sign(x) * (fence + 1.6) : x * SPREAD, Math.abs(z) > 20 ? Math.sign(z) * (fence + 1.6) : z * SPREAD]).entries()) {
+  marks.forEach((planes, n) => {
+    defaultCourt.add(new THREE.Mesh(mergeGeometries(planes), new THREE.MeshStandardMaterial({ vertexColors: true, map: splatTextures[n], transparent: true, alphaTest: .4, roughness: .3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })));
+    planes.forEach(g => g.dispose());
+  });
+  // Paint buckets and tyre stacks wait on the verge outside the fence, between its lamps and benches.
+  for (const [k, [x, z]] of [[-1, -6.75], [1, 2.25], [-1, 15.75], [1, -15.75], [-6.75, 1], [6.75, -1]].map(([x, z]) => [Math.abs(x) === 1 ? x * (fence + 1.6) : x, Math.abs(z) === 1 ? z * (fence + 1.6) : z]).entries()) {
     if (k % 2) {
-      for (let t = 0; t < 3; t++) { const tyre = new THREE.Mesh(new THREE.TorusGeometry(.42, .17, 10, 22), material('#2b2b2b')); tyre.rotation.x = Math.PI / 2; tyre.position.set(x, .17 + t * .32, z); tyre.castShadow = true; defaultCourt.add(tyre); }
+      for (let t = 0; t < 3; t++) { const tyre = new THREE.Mesh(new THREE.TorusGeometry(.42, .17, 8, 16), material('#2b2b2b')); tyre.rotation.x = Math.PI / 2; tyre.position.set(x, .17 + t * .32, z); tyre.castShadow = true; kit.add(tyre); }
     } else for (let b = 0; b < 3; b++) {
-      const color = paint[(k + b) % 3], bucket = new THREE.Mesh(new THREE.CylinderGeometry(.3, .26, .55, 16), material(color)); bucket.position.set(x + (b - 1) * .7, .275, z + (b % 2) * .4); bucket.castShadow = true; defaultCourt.add(bucket);
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(.31, .31, .06, 16), material('#f4f1ea')); rim.position.set(bucket.position.x, .56, bucket.position.z); defaultCourt.add(rim);
+      const color = paint[(k + b) % 3], bucket = new THREE.Mesh(new THREE.CylinderGeometry(.3, .26, .55, 12), material(color)); bucket.position.set(x + (b - 1) * .7, .275, z + (b % 2) * .4); bucket.castShadow = true; kit.add(bucket);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(.31, .31, .06, 12), material('#f4f1ea')); rim.position.set(bucket.position.x, .56, bucket.position.z); kit.add(rim);
     }
   }
-  const surroundings = bake(scenery); defaultCourt.add(surroundings);
-  const originalGeometry = new Set(); scenery.traverse(o => { if (o.geometry) originalGeometry.add(o.geometry); }); originalGeometry.forEach(g => g.dispose());
-  const defaultCameraBounds = [...cameraBounds];
+  defaultCourt.add(bake(kit, { tint: true })); kit.traverse(o => o.geometry?.dispose());
+  // The town round the court (facades, church, street, lights, paving pattern) is
+  // plaza-town.js, imported the first time La Plaza stands: see setMap.
+  let town = null, townLoad = null;
+  const loadTown = () => townLoad ??= import('./plaza-town.js').catch(error => { townLoad = null; throw error; });
   let crates = null, variant = 0;
   // The shared courts (Puerto, Hato, Ruinas) come from engine/worlds/arenas.js, about 28
   // modules El Puerto (the default) never needs: import() when one is picked. setMap
@@ -157,7 +148,11 @@ export function createScene(canvas) {
     id = paintArenaInfo(id).id; if (mapId === id && variant === layout) return mapReady;
     environment?.dispose(); environment = null; crates?.dispose(); crates = null; mapId = id; variant = layout; scene.userData.mapId = id;
     defaultCourt.visible = id === 'plaza'; cameraBounds.length = 0; mapReady = Promise.resolve();
-    if (id === 'plaza') { crates = createPlazaProps(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...defaultCameraBounds, ...crates.bounds); }
+    if (id === 'plaza') {
+      crates = createPlazaProps(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...crates.bounds);
+      if (town) cameraBounds.push(...town.bounds);
+      else mapReady = loadTown().then(({ createPlazaTown }) => { if (disposed || town) return; town = createPlazaTown({ paving }); defaultCourt.add(town.group); if (mapId === 'plaza') cameraBounds.push(...town.bounds); }).catch(() => {}); // retried on the next pick
+    }
     else if (id === 'muelle' || id === 'noche' || id === 'terminal') stand((id === 'muelle' ? createMuelle : id === 'noche' ? createNoche : createTerminal)(layout));
     else mapReady = loadArenas().then(({ createArenaEnvironment }) => { if (!disposed && mapId === id && variant === layout && !environment) stand(createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) })); }).catch(() => {}); // a failed fetch retries on the next pick
     light({ ...DAY, ...environment?.lighting });
@@ -488,6 +483,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { disposed = true; unbind(); ctfProps.dispose(); domProps.dispose(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); thrownMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { disposed = true; unbind(); ctfProps.dispose(); domProps.dispose(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); town?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); thrownMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }

@@ -49,7 +49,7 @@ export function createPlazaProps(cover) {
       const t = .35;
       for (const s of [-1, 1]) { box(g, w, h, t, C.stone, 0, 0, s * (d - t) / 2); box(g, t, h, d - 2 * t, C.stone, s * (w - t) / 2, 0, 0); }
       for (const s of [-1, 1]) { box(g, w + .02, .12, t * .6, PALETTE.azul, 0, h * .55, s * (d - t) / 2); box(g, t * .6, .12, d - 2 * t, PALETTE.azul, s * (w - t) / 2, h * .55, 0); }
-      box(g, w - 2 * t, h - .25, d - 2 * t, C.water, 0, 0, 0, .25);
+      box(g, w - 2 * t, h - .25, d - 2 * t, C.water, 0, 0, 0, .06);
       cyl(g, .3, .4, h + .1, C.stone, 0, 0, 0, 10); cyl(g, .75, .45, .14, C.stone, 0, h + .1, 0, 12);
     },
     bench(g, w, d, h) {
