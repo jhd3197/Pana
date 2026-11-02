@@ -17,8 +17,7 @@ import { loc, locKey } from '/engine/i18n.js';
 export default {
   id: 'remada',
   title: locKey('¡Remada!'),
-  howto: locKey('Rema alternando A y D para llegar primero a la meta, a 120 metros. Con ritmo vas más rápido que machacando: rema cuando el canalete termina su jalón.'),
-  keys: [['A D / ← →', locKey('remar alternando')]],
+  goal: locKey('Llega primero a la meta, a 120 metros.'),
   touch: { action: null },
   icon: 'canoe',
   time: REMADA.time,

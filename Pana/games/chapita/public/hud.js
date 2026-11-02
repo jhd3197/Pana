@@ -1,7 +1,7 @@
-// The HUD around the street: scoreboard, house rules, who pitches to whom,
+// The HUD around the street: scoreboard, who pitches to whom,
 // the big shouts and the results card. Text only, never HTML from names.
 import { fillRoster } from '/engine/results.js';
-import { HOUSE_RULES, ABUELO, teamSeats, styleText, STRIKES, BALLS, OUTS } from './rules.js';
+import { ABUELO, teamSeats, styleText, STRIKES, BALLS, OUTS } from './rules.js';
 import { TEAM_COLORS } from './scene.js';
 import { loc, locn, locKey } from '/engine/i18n.js';
 
@@ -41,7 +41,6 @@ export function renderScoreboard(state) {
   $('inning').textContent = inningText(state);
   document.querySelectorAll('.diamond i').forEach(i => i.classList.toggle('on', state.bases?.[Number(i.dataset.base)] !== null && state.bases?.[Number(i.dataset.base)] !== undefined));
   pips($('balls'), state.balls, BALLS - 1); pips($('strikes'), state.strikes, STRIKES - 1); pips($('outs'), state.outs, OUTS - 1);
-  $('house-rules').replaceChildren(...(state.rules || []).map(id => { const li = el('li'); li.append(el('b', '', loc('Regla:')), ' ', loc(HOUSE_RULES[id])); return li; }));
 }
 
 export function matchupText(state, mySeat) {

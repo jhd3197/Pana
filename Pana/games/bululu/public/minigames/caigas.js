@@ -26,8 +26,7 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 export default {
   id: 'caigas',
   title: locKey('¡No te caigas!'),
-  howto: locKey('Salta el tronco cuando pase por debajo. Se pone cada vez más rápido… ¡y a veces cambia de dirección!'),
-  keys: [[locKey('Espacio / W'), locKey('saltar')]],
+  goal: locKey('Salta el tronco y no te caigas.'),
   touch: { pad: 'none', action: 'jump' },
   icon: 'jump',
   time: 30,

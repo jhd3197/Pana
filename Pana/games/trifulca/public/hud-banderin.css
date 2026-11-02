@@ -49,18 +49,10 @@ body:has(#tutorial:not([hidden])) .fight-feedback--right { top: 200px; }
 .tutorial-rule { color: var(--pk-muted); font-size: 11px; line-height: 1.4; }
 .tutorial-dots { grid-row: 1; margin: 0 0 3px; }
 .tutorial-dots li { flex: 1; width: auto; height: 6px; border-radius: 0; transform: skewX(-16deg); }
-.tutorial-keys { background: #2ad1b218; color: var(--aguante); padding: 9px 10px; align-items: center; }
-.tutorial-keys::before { content: 'Haz:'; font-weight: 900; font-size: 12px; }
-.tutorial-keys .pk-kbd { font-size: 14px; }
+.lesson-caps { background: #2ad1b218; color: var(--aguante); padding: 9px 10px; align-items: center; }
+.lesson-caps::before { content: 'Haz:'; font-weight: 900; font-size: 12px; }
+.lesson-caps .pk-kbd { font-size: 14px; }
 .tutorial-foot button { border-radius: 0; }
-.keys, .pana-pad-prompts { bottom: 18px; background: var(--hud-plate); padding: 7px; gap: 6px; box-shadow: 5px 5px var(--hud-ink); flex-wrap: wrap; width: max-content; max-width: calc(100vw - 40px); }
-.keys span, .pana-pad-prompts > span { border: 0; border-radius: 0; padding: 8px 12px; background: #ffffff0c; display: flex; flex-direction: column; justify-content: center; gap: 5px; font-size: 11px; font-weight: 900; text-align: center; }
-.keys span .pk-kbd, .pana-pad-prompts kbd { border-radius: 0; padding: 5px 8px; background: var(--pk-text); color: var(--hud-ink); border: 0; min-width: 16px; text-align: center; }
-.keys [data-key='golpe'] kbd, .pana-pad-prompts > span:nth-child(2) kbd { background: var(--pad-a); }
-.keys [data-key='esquivar'] kbd, .pana-pad-prompts > span:nth-child(3) kbd { background: var(--pad-b); }
-.keys [data-key='agarrar'] kbd, .pana-pad-prompts > span:nth-child(4) kbd { background: var(--pad-x); }
-.pana-pad-prompts > span:nth-child(5) kbd { background: var(--pad-y); }
-.keys span.is-lesson, .pana-pad-prompts > span.is-lesson { box-shadow: inset 0 0 0 2px var(--aguante); background: #2ad1b21c; }
 .me { border: 0; border-radius: 0; background: var(--hud-plate); box-shadow: 4px 4px var(--hud-ink); }
 body:has(#bars:not([hidden])) .me { bottom: 18px; }
 .me b { font: 400 20px var(--pk-display); }.me span { font-size: 11px; }
@@ -86,7 +78,7 @@ body[data-phase='intro'] .bets, body[data-phase='intro'] .role { z-index: 7; }
 @media (max-width: 900px) {
  #bars { width: calc(100vw - 32px); gap: 12px; grid-template-columns: minmax(0,1fr) 72px minmax(0,1fr); }
  .clock b { width: 70px; height: 64px; font-size: 38px; }.fighter-portrait { width: 40px; height: 40px; }.caidas { gap: 5px; }.caidas i { width: 10px; height: 10px; }
- .fighter-name { gap: 7px; }.keys,.pana-pad-prompts { max-width: 96vw; }.pana-pad-prompts > span { padding: 6px; font-size: 10px; }.me { display: none; }
+ .fighter-name { gap: 7px; }.me { display: none; }
  .tutorial { width: 260px; padding: 12px 14px; }.tutorial p { font-size: 12px; }.tutorial h2 { font-size: 23px; }
 }
 @media (max-width: 600px) {
@@ -97,10 +89,9 @@ body[data-phase='intro'] .bets, body[data-phase='intro'] .role { z-index: 7; }
  .fight-feedback { top: 225px; }.fight-feedback--left { left: 14px; }.fight-feedback--right { right: 14px; }.fight-feedback b { font-size: 22px; }.fight-feedback span { font-size: 15px; }
  .intro { grid-template-columns: 1fr 40px 1fr; inset: 62px 0 0; }.intro-side { padding: 15px; }.intro-side b { font-size: 28px; }.intro-side .pk-display { font-size: 15px; }.intro-side small { font-size: 11px; }.intro-vs { font-size: 55px; }.intro-vs small { max-width: 100px; font-size: 9px; }
  .verdict { padding: 16px; }.fight-stats th,.fight-stats td { padding: 8px 4px; }.fight-stats th:first-child { font-size: 11px; }.fight-stats td { font-size: 20px; }
- .pana-pad-prompts { flex-wrap: wrap; gap: 3px; padding: 4px; }.pana-pad-prompts > span { flex-direction: row; font-size: 9px; }
 }
 @media (max-height: 600px) and (min-width: 601px) {
- #bars { top: 58px; }.fighter-portrait { width: 30px; height: 30px; }.fighter-name b { font-size: 16px; }.meter { height: 18px; }.clock b { height: 55px; font-size: 34px; }.tutorial { top: 190px; padding: 10px; gap: 4px; }.tutorial-rule { display: none; }.tutorial h2 { font-size: 20px; }.tutorial p { font-size: 11px; }.tutorial-keys { padding: 4px; }.call { top: 170px; }.fight-feedback { top: 175px; }.intro-side .fighter-portrait { width: 100px; height: 100px; }
+ #bars { top: 58px; }.fighter-portrait { width: 30px; height: 30px; }.fighter-name b { font-size: 16px; }.meter { height: 18px; }.clock b { height: 55px; font-size: 34px; }.tutorial { top: 190px; padding: 10px; gap: 4px; }.tutorial-rule { display: none; }.tutorial h2 { font-size: 20px; }.tutorial p { font-size: 11px; }.lesson-caps { padding: 4px; }.call { top: 170px; }.fight-feedback { top: 175px; }.intro-side .fighter-portrait { width: 100px; height: 100px; }
 }
 @media (prefers-reduced-motion: reduce) {
  .meter i,.meter em,.call,.intro-side,.prompt,.tutorial { animation: none !important; transition: none !important; }
@@ -108,7 +99,6 @@ body[data-phase='intro'] .bets, body[data-phase='intro'] .role { z-index: 7; }
 
 .caidas { position: relative; }
 .caidas::after { content: attr(data-label); position: absolute; top: 22px; right: 0; white-space: nowrap; font: 900 9px var(--pk-sans); color: var(--pk-text); text-shadow: 1px 1px var(--hud-ink); }
-.keys span { align-items: center; min-width: 55px; padding: 7px 9px; }
 .tutorial-dots li { background: #ffffff26; }
 .tutorial-dots li.is-done { background: var(--aguante); }.tutorial-dots li.is-now { background: var(--gold); }
 @media (max-width: 600px) { .caidas::after { top: -2px; left: 42px; right: auto; }.side--right .caidas::after { left: auto; right: 42px; } }
@@ -117,15 +107,9 @@ body:has(#verdict:not([hidden])) .call { visibility: hidden; }
 .verdict { background: var(--pk-night); }
 .intro-team { background: var(--hud-plate); }
 @media (max-width: 600px) {
- .keys { max-width: 96vw; width: 96vw; gap: 3px; box-sizing: border-box; }
- .keys span { min-width: 0; flex: 1; padding: 6px 3px; font-size: 10px; }
- .keys span .pk-kbd { font-size: 10px; padding: 5px; }
- .keys span small { font-size: 9px; }
  .topbar { left: 12px; right: 12px; top: 10px; }.topbar .pk-logo { font-size: 24px; }
  #game-nav { gap: 4px; }#game-nav .pk-btn { padding: 8px; font-size: 11px; }#voice { max-width: 42px; }
 }
-
-.keys [data-key="dale"] kbd { background: var(--pad-y); }
 
 .fighter-meters span:first-child { color: var(--mareo); }
 .fighter-meters span:last-child { color: var(--aguante); }

@@ -116,12 +116,12 @@
   </div>
 
   <section id="shop" class="shop tl-stage" role="region" aria-label="Taller de Panas" hidden>
-    <div class="tl-head"><small>TALLER DE PANAS</small><div class="tl-name"><button type="button" id="loadout-prev" class="tl-arr sk" aria-label="Vehículo anterior"></button><button type="button" id="loadout-name" class="tl-plate sk" aria-label="Abrir el garaje"></button><button type="button" id="loadout-next" class="tl-arr sk" aria-label="Vehículo siguiente"></button></div><button type="button" id="loadout-garage" class="tl-gbtn sk" data-tab="carro">Garaje <em id="loadout-count"></em><kbd>G</kbd></button></div>
-    <nav id="loadout-vehicles" class="tl-tabs" aria-label="Tu kit"><kbd>Q</kbd><button type="button" class="tl-tab sk" data-vehicle="car" aria-pressed="true">Carro</button><button type="button" class="tl-tab sk" data-vehicle="boat" aria-pressed="false">Lancha</button><button type="button" class="tl-tab sk" data-vehicle="air" aria-pressed="false">Avioneta</button><kbd>E</kbd></nav>
+    <div class="tl-head"><small>TALLER DE PANAS</small><div class="tl-name"><button type="button" id="loadout-prev" class="tl-arr sk" aria-label="Vehículo anterior"></button><button type="button" id="loadout-name" class="tl-plate sk" aria-label="Abrir el garaje"></button><button type="button" id="loadout-next" class="tl-arr sk" aria-label="Vehículo siguiente"></button></div><button type="button" id="loadout-garage" class="tl-gbtn sk" data-tab="carro">Garaje <em id="loadout-count"></em></button></div>
+    <nav id="loadout-vehicles" class="tl-tabs" aria-label="Tu kit"><button type="button" class="tl-tab sk" data-vehicle="car" aria-pressed="true">Carro</button><button type="button" class="tl-tab sk" data-vehicle="boat" aria-pressed="false">Lancha</button><button type="button" class="tl-tab sk" data-vehicle="air" aria-pressed="false">Avioneta</button></nav>
     <p class="shop-wallet tl-coins sk" aria-label="Mangos disponibles"><span class="mango-symbol" aria-hidden="true"></span><b id="shop-coins">0</b></p>
     <div class="tl-stats sk"><header class="shop-head hd"><h2 id="shop-title">Tu carro</h2><span id="shop-level"></span></header><dl id="shop-stats" class="shop-stats"></dl></div>
     <div id="shop-tabs" class="shop-tabs tl-slots" role="tablist" aria-label="Piezas del kit"></div>
-    <dialog id="loadout-drawer" class="tl-drawer" aria-labelledby="loadout-drawer-title"><div class="hd"><button id="loadout-back" type="button" class="tl-back">‹ Atrás <kbd>Esc</kbd></button><b id="loadout-drawer-title"></b><small>Pasa por encima para comparar · clic para equipar</small></div><div id="shop-body" class="shop-body tl-opts"></div><p id="loadout-message" role="status"></p></dialog>
+    <dialog id="loadout-drawer" class="tl-drawer" aria-labelledby="loadout-drawer-title"><div class="hd"><button id="loadout-back" type="button" class="tl-back">‹ Atrás</button><b id="loadout-drawer-title"></b><small>Pasa por encima para comparar · clic para equipar</small></div><div id="shop-body" class="shop-body tl-opts"></div><p id="loadout-message" role="status"></p></dialog>
   </section>
 
   <!-- ---------- race ---------- -->
@@ -160,12 +160,12 @@
         <button id="item-slot-1" class="slot pk-slot" aria-pressed="false" aria-label="Objeto 2 vacío">
           <span class="slot-key">2</span><span id="item-icon-1" class="item-icon">+</span><i id="item-n-1"></i><small id="item-label-1">Vacío</small>
         </button>
-        <button id="swap-item" class="swap" title="Cambiar objeto" aria-label="Cambiar objeto"><span aria-hidden="true">⇄</span><kbd class="pk-kbd">Q</kbd></button>
+        <button id="swap-item" class="swap" title="Cambiar objeto" aria-label="Cambiar objeto"><span aria-hidden="true">⇄</span></button>
       </div>
       <p id="item-status" role="status" aria-live="polite"></p>
       <div class="item-actions">
-        <button id="throw-front" class="pk-btn pk-btn--primary"><span>Adelante</span><kbd class="pk-kbd">Espacio</kbd></button>
-        <button id="throw-back" class="pk-btn"><span>Atrás</span><kbd class="pk-kbd">X</kbd></button>
+        <button id="throw-front" class="pk-btn pk-btn--primary"><span>Adelante</span></button>
+        <button id="throw-back" class="pk-btn"><span>Atrás</span></button>
       </div>
     </section>
 
@@ -179,23 +179,13 @@
         <circle cx="60" cy="56" r="7" fill="#f3e9d7" stroke="#16161a" stroke-width="3"/>
       </svg>
       <div id="boost"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <small id="drift-hint" hidden></small>
+      <small id="drift-cue" hidden></small>
     </div>
 
     <div id="combo" hidden>
       <small class="pk-eyebrow">Estilo</small>
       <b class="combo-pts">0</b>
       <span class="combo-mult">×1</span>
-    </div>
-
-    <div class="keys pk-hints" data-pana-hint>
-      <span><kbd class="pk-kbd">W</kbd> Acelerar</span>
-      <span><kbd class="pk-kbd">S</kbd> Frenar</span>
-      <span><kbd class="pk-kbd">A D</kbd> Girar</span>
-      <span><kbd class="pk-kbd">Shift</kbd> Derrape</span>
-      <span><kbd class="pk-kbd">Espacio</kbd> Objeto adelante</span>
-      <span><kbd class="pk-kbd">X</kbd> Objeto atrás · control X</span>
-      <span><kbd class="pk-kbd">Esc</kbd> Pausa</span>
     </div>
 
     <div class="touch-drive pk-touch-zone" aria-label="Conducir">
@@ -217,7 +207,6 @@
     <div id="p2-hud" class="p2-hud" hidden>
       <span class="pk-eyebrow">Jugador 2</span><b id="p2-pos" class="pk-place">1<sup>º</sup></b>
       <span id="p2-lap"></span><span id="p2-item"></span>
-      <small class="p2-keys">Flechas · Shift der. derrapa · Enter objeto · Punto atrás · Coma cambia · Retroceso rescate</small>
     </div>
     <p id="net-status" class="net-status pk-panel" role="status" aria-live="polite" hidden></p>
 

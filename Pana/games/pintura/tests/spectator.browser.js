@@ -5,7 +5,7 @@ import { launch, openGame, waitFor } from '../../../tests/browser-kit.js';
 // with its square label, next / previous (keys and a controller's LB / RB), the
 // overhead view, and back to first person on respawn. Watching sends nothing new:
 // the same input shape goes out and nothing about it lands in the room state.
-// PANA_SHOTS=<folder> also saves spectator-follow.png, spectator-overhead.png and hints-gamepad.png.
+// PANA_SHOTS=<folder> also saves spectator-follow.png, spectator-overhead.png and spectator-gamepad.png.
 const shots = process.env.PANA_SHOTS;
 const browser = await launch();
 try {
@@ -21,7 +21,7 @@ try {
     if (room.link) { const send = room.link.send.bind(room.link); room.link.send = (type, data) => { spy.sends.push(type); return send(type, data); }; }
     document.activeElement?.blur();
   });
-  // The hints and chips come in a controller's buttons, as control-hints.browser.js does it.
+  // The chips come in a controller's buttons.
   await page.evaluate(async () => (await import('/engine/settings.js')).setSettings({ inputHints: 'gamepad' }));
   await waitFor(page, () => document.documentElement.dataset.panaInput === 'gamepad');
 
@@ -47,16 +47,16 @@ try {
   // Then the follow camera, with the label and the switch keys of the controller.
   await waitFor(page, () => pinturaDebug.spectate.spectator.mode === 'watch' && document.body.classList.contains('spectating') && !document.getElementById('spectate').hidden);
   const label = () => page.evaluate(() => ({ text: document.getElementById('spectate-name').textContent, target: pinturaDebug.spectate.spectator.target, shot: pinturaDebug.spectate.spectator.shot,
-    keys: [...document.querySelectorAll('#spectate [data-key]')].filter(k => k.checkVisibility()).map(k => k.textContent), hints: [...document.querySelectorAll('#spectate-hints [data-hint] b')].filter(b => b.checkVisibility()).map(b => b.textContent), banner: document.getElementById('respawn').getBoundingClientRect().top,
-    radius: [...document.querySelectorAll('#spectate, #spectate .spectate-btn, #spectate-swatch, #spectate-hints')].map(n => getComputedStyle(n).borderRadius) }));
+    keys: [...document.querySelectorAll('#spectate [data-key]')].filter(k => k.checkVisibility()).map(k => k.textContent), banner: document.getElementById('respawn').getBoundingClientRect().top,
+    radius: [...document.querySelectorAll('#spectate, #spectate .spectate-btn, #spectate-swatch')].map(n => getComputedStyle(n).borderRadius) }));
   let seen = await label();
   const name = await page.evaluate(t => pinturaDebug.room.state.players.find(p => p.id === t)?.name, seen.target);
   assert.equal(seen.shot, 'follow'); assert.ok(seen.text.includes(name), `watching ${name}: ${seen.text}`);
   assert.deepEqual(seen.keys, ['LB', 'RB', 'A'], `controller chips: ${seen.keys}`);
-  assert.ok(seen.hints.includes('LB / RB') && seen.hints.includes('A'), `controller hints: ${seen.hints}`);
+  assert.equal(await page.locator('#spectate-hints').count(), 0, 'no controls line while watching: they live in Instrucciones');
   assert.ok(seen.radius.every(r => r === '0px'), `square: ${seen.radius}`);
   assert.ok(seen.banner < 160, `the out banner moves up out of the view: ${seen.banner}`);
-  if (shots) { await mkdir(shots, { recursive: true }); await page.screenshot({ path: `${shots}/hints-gamepad.png` }); }
+  if (shots) { await mkdir(shots, { recursive: true }); await page.screenshot({ path: `${shots}/spectator-gamepad.png` }); }
   // Behind the watched pana, settled, the crosshair gone.
   const followGap = () => page.evaluate(() => { const { world, spectate } = pinturaDebug, at = world.avatars.get(spectate.spectator.target)?.group.position, p = world.camera.position; return at ? Math.hypot(at.x - p.x, at.z - p.z) : 99; });
   await waitFor(page, () => { const { world, spectate } = pinturaDebug, at = world.avatars.get(spectate.spectator.target)?.group.position, p = world.camera.position; return !!at && Math.hypot(at.x - p.x, at.z - p.z) < 4.5 && p.y < at.y + 4; });

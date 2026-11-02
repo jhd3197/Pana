@@ -43,18 +43,6 @@ const teamRoster = createLobbyRoster($('lobby-roster'), { onMove: (from, to) => 
 room.state.players[0] = { id: null, name: loadName(), avatar: loadAvatar() };
 const menu = createGameMenu({ pad: { move: 'arrows', moveLabel: loc('Afinar la dirección'), cursor: loc('Dirigir la bola'), keys: { a: ['Space', loc('Fuerza: mantén y suelta para lanzar')], y: ['KeyC', loc('Cámara')] } }, title: loc('Bolas Criollas'), orientation: 'libre', sound,
   note: () => room.offline ? loc('La partida está en pausa.') : loc('La sala sigue jugando mientras estás en el menú.'),
-  controls: [[loc('Ratón / dedo'), loc('Toca la cancha para dirigir la bola')], ['← →', loc('Afina la dirección')], [loc('Mantén Espacio / Enter'), loc('La fuerza sube y baja; suelta para lanzar')], ['C', loc('Cambia la cámara')], ['M', loc('Sonido')], ['Esc', loc('Menú')]],
-  tips: [
-    loc('Reglas de la casa: dos equipos de tres, rojos y verdes. Cada pana lanza dos o cuatro bolas; los bots cubren los puestos libres. Los compañeros rotan sus lanzamientos.'),
-    loc('El mingo se coloca automáticamente al comenzar la mano. Arrima tu bola lo más cerca posible o usa un boche rastrero para desplazar las otras bolas. Por el aire permite superar una bola: ajusta Altura antes de cargar y mira el aro azul de caída. El mingo también se mueve con los golpes.'),
-    loc('Antes de la primera mano, una moneda decide qué equipo lanza el mingo: cara para los rojos, sello para los verdes. El anfitrión puede cambiarlo en Más ajustes: al azar, el orden de la mesa o que empiece el equipo que perdió la última partida.'),
-    loc('Juega el equipo que está más lejos del mingo. Si ya no le quedan bolas, juega el otro. Un empate de distancia alterna el equipo que lanza.'),
-    loc('Al gastar todas las bolas, el equipo más cercano suma un tanto por cada bola más cerca del mingo que la mejor del rival. A igual distancia, la mano no da tantos.'),
-    loc('Las bolas que cruzan la línea quedan fuera. Si sale el mingo, la mano es nula: nadie suma. El anfitrión abre la siguiente mano o la revancha.'),
-    loc('Gana quien llegue a la meta elegida, 12 o 24 tantos. Esta versión casual usa una cancha compacta, mingo automático, boches rastreros y por el aire.'),
-    loc('La línea de tiro indica dónde frenaría la bola si no chocara. En Fácil muestra también los choques y dónde quedan las bolas; en Difícil y Experto se acorta. Cambiar a rastrero aumenta la velocidad: suelta antes si quieres mantener la misma distancia.'),
-    loc('La dificultad también afina a los bots rivales: en Difícil y Experto sacan con boche las bolas que se pegan al mingo. Los bots de tu equipo juegan siempre en Normal.'),
-  ],
   invite: () => inviteUrl(code),
   options: [{ id: 'view', label: loc('Cámara'), choices: VIEWS, get: () => view, set: setView }],
   onOpen() { clearInput(); render(room.state); }, onClose() { render(room.state); },
@@ -146,7 +134,7 @@ function render(g) {
   // The court's surroundings follow the state, not the frame loop (hidden tabs don't draw).
   if (g.mapId && world.venue !== g.mapId) world.setVenue(g.mapId);
   mapPicker.update(g.mapId, lobby && (!room.connected || room.isHost));
-  $('guide-note').textContent = g.difficulty === 'normal' ? loc('El blanco indica dónde frena sin choques. Mantén y suelta para ajustar la distancia.') : difficultyInfo(g.difficulty).note;
+  $('guide-note').textContent = g.difficulty === 'normal' ? loc('El blanco indica dónde frena sin choques.') : difficultyInfo(g.difficulty).note;
   $('side-controls').hidden = lobby; $('power-bar').hidden = lobby || !charge.active;
   $('lobby-roster').hidden = !lobby;
   if (lobby) teamRoster.update(TEAM_NAMES.map((title, team) => ({ id: team, title: loc(title), color: team ? '#299e72' : '#ed5949', seats: g.players.map((player, key) => ({ key, player: { ...player, bot: player.id === null } })).filter(s => s.key % 2 === team) })), { ownId: room.id, hostId: room.hostId, enabled: room.connected, canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
@@ -160,7 +148,7 @@ function render(g) {
   $('loft-control').hidden = shot.mode !== 'aire'; $('loft').disabled = !active || charge.active;
   for (const id of ['aim-left', 'aim-right']) $(id).disabled = !active || charge.active;
   $('shoot').classList.toggle('is-charging', charge.active);
-  $('shoot').firstChild.textContent = (charge.active ? loc('Suelta para lanzar') : loc('Mantén para lanzar')) + ' ';
+  $('shoot').firstChild.textContent = charge.active ? loc('Suelta para lanzar') : loc('Mantén para lanzar');
   for (const button of $('shot-options').children) { button.setAttribute('aria-pressed', String(button.dataset.mode === shot.mode)); button.disabled = !active || charge.active; }
   $('results').hidden = !result;
   if (result) {

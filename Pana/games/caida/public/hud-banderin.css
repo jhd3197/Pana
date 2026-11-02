@@ -8,7 +8,7 @@
 .banderin .activity { position:fixed; right:20px; top:28%; width:240px; padding:14px 20px; clip-path:var(--hud-angle); }
 .banderin .panel-heading { font-size:10px; letter-spacing:.08em; }
 .banderin #history { font-size:11px; }
-.banderin .rack-help { background:var(--hud-panel); padding:12px; font-size:12px; }
+.banderin .rack-info { background:var(--hud-panel); padding:12px; font-size:12px; }
 .banderin #turn-status { background:var(--pk-yellow); color:var(--pk-night); padding:10px 20px; font-family:var(--pk-display); box-shadow:4px 4px 0 var(--hud-edge); }
 .banderin .rack-actions { gap:10px; }
 .banderin #play { font:26px var(--pk-display); min-height:54px; }

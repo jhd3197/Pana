@@ -34,16 +34,6 @@ const roomOptions = createRoomOptions($('room-options'), { title: 'La Rueda de T
 const menu = createGameMenu({ pad: { keys: { left: ['ArrowLeft', loc('Mano izquierda')], x: ['ArrowLeft', loc('Mano izquierda')], right: ['ArrowRight', loc('Mano derecha')], b: ['ArrowRight', loc('Mano derecha')], up: ['ArrowUp', loc('Bailar ↑')], y: ['ArrowUp', loc('Bailar ↑')], down: ['ArrowDown', loc('Bailar ↓')], a: ['Space', loc('Palo, charrasca y caracol; aplaudir')], rb: ['Space', loc('Palo, charrasca y caracol; aplaudir')], lb: ['KeyQ', loc('¡Quiero entrar!')], rt: ['KeyE', loc('Relevo')] } }, title: 'La Rueda de Tambor · Pana', sound, orientation: 'libre', // i18n-ignore: game name
  
   note: () => room.members.size > 1 ? loc('La rueda sigue sonando mientras estás en el menú.') : loc('La rueda está en pausa.'),
-  controls: [[loc('← → (o F J)'), loc('Mano: un cuero con cada mano')], [loc('Espacio'), loc('Palo, charrasca y caracol (mantén en las notas largas)')],
-    [loc('← → ↑ ↓ y Espacio'), loc('Bailar lo que canta el MCP')], [loc('Espacio'), loc('En la gente: aplaudir en el golpe')], ['1 – 4', loc('Echar un dicho')],
-    ['Q', loc('¡Quiero entrar! (una vez por canción)')], ['E', loc('Relevo: entrar al centro en el ¡Golpe!')], ['M', loc('Activar o silenciar el sonido')]],
-  tips: [
-    loc('Cada quien oye la música en su compu y se juzga contra ella: el retraso de Discord no importa. Ajusta el golpe una vez en la sala.'),
-    loc('Los tamboreros llenan el Sabor. Con mucho Sabor el MCP canta con calma; si el tambor se cae, los llamados vienen más rápido y más apretados.'),
-    loc('Los bailadores siguen al MCP: ¡Cadera!, ¡Vuelta!, ¡Pañuelo!, ¡Pégate!, ¡Abajo! y ¡Golpe!. Tres fallas y te saca de la rueda.'),
-    loc('En la gente aplaude en el golpe: la Bulla le da más tiempo a los que bailan.'),
-    loc('Al final de cada canción los tamboreros y la gente cambian de lugar. Todos bailan.'),
-  ],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));

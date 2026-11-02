@@ -6,7 +6,14 @@ import { LightningTrial } from './lightning-trial.js';
 import { loc } from '/engine/i18n.js';
 const $=id=>document.getElementById(id), trial=new LightningTrial(loadAvatar());
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-const menu=createGameMenu({title:loc('Prueba de rayos · Bochinche'),sound,controls:[['K',loc('Lanzar rayo')],['R',loc('Reiniciar prueba')]],note:()=>loc('Práctica local. La prueba se pausa al abrir el menú.')});
+const menu=createGameMenu({title:loc('Prueba de rayos · Bochinche'),sound,
+  // The lab sits beside Bochinche's index.html: it names its own Instrucciones page, not the game's instructions.js.
+  instructions:{goal:loc('Prueba cómo se siente un rayo antes de llevarlo a la pelea.'),
+    howTo:[loc('Cada lanzamiento coloca a los panas en el mismo sitio. Cambia una capa y vuelve a probar. Los ajustes se aplican al siguiente golpe.')],
+    sections:[{title:loc('Prueba de rayos'),rows:[
+      {action:loc('Lanzar rayo'),keyboard:'K',touch:loc('Botón Lanzar rayo')},
+      {action:loc('Golpe sin efectos'),keyboard:loc('Clic'),touch:loc('Botón Golpe sin efectos')},
+      {action:loc('Reiniciar prueba'),keyboard:'R',touch:loc('Botón Reiniciar')}]}]},note:()=>loc('Práctica local. La prueba se pausa al abrir el menú.')});
 $('menu-slot').append(menu.createButton({className:'pk-btn'}));
 let world=null, effects=null;
 const phases={ready:loc('Listo para probar'),charge:loc('Cargando…'),impact:loc('¡Contacto!'),done:loc('Prueba terminada')};

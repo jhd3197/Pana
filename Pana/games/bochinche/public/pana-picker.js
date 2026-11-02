@@ -25,7 +25,7 @@ export function createPanaPicker({ avatar, pick }) {
     <article class="boch-prev"><div class="boch-art"><span class="boch-key"></span><img alt=""></div><div class="boch-info"><small translate="no"></small><b></b><p></p>
     <div class="boch-fx"><span>${loc('Lo deja')}</span><em></em></div><div class="boch-stats"></div><div class="boch-trajes"><span>${loc('Traje')}</span></div></div></article>
     <div class="boch-grid" role="listbox" aria-label="${loc('Panas')}"></div>
-    <footer class="boch-go"><button type="button" class="boch-chip" data-random>${loc('¡Sorpréndeme!')} <kbd>R</kbd></button><button type="button" class="boch-ok" data-ok>${loc('¡Listo!')} <kbd>Enter</kbd></button></footer>`;
+    <footer class="boch-go"><button type="button" class="boch-chip" data-random>${loc('¡Sorpréndeme!')}</button><button type="button" class="boch-ok" data-ok>${loc('¡Listo!')}</button></footer>`;
   const $ = s => root.querySelector(s), art = $('.boch-art'), grid = $('.boch-grid'), trajes = $('.boch-trajes');
   const tiles = PANAS.map(p => {
     const b = el('button', 'boch-tile', grid); b.type = 'button'; b.dataset.pana = p.id; b.setAttribute('role', 'option');

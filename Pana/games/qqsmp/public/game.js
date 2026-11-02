@@ -35,14 +35,6 @@ const roomOptions = createRoomOptions($('room-options'), { title: '¿Quién quie
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
 const menu = createGameMenu({ pad: { buttons: true }, title: '¿Quién quiere ser mi pana? · Pana', sound, orientation: 'libre', // i18n-ignore: game name
   note: () => room.members.size > 1 ? loc('El concurso sigue mientras estás en el menú.') : loc('El concurso está en pausa. Los bots te esperan.'),
-  controls: [[loc('1 – 4 o A – D'), loc('Marcar una respuesta')], [loc('Ratón / toque'), loc('Respuestas y comodines')], ['M', loc('Activar o silenciar el sonido')]],
-  tips: [
-    loc('Todos responden a la vez. Nadie ve lo que marcaste hasta la revelación: decir «puse la B» en la llamada puede ser verdad o un farol.'),
-    loc('Responder rápido da mangos extra. Esperar a ver qué dicen los demás te cuesta.'),
-    loc('Acierta y subes un escalón. Falla y bajas al último escalón seguro (4 y 8).'),
-    loc('Comodines, uno de cada uno: Copiarse (marca lo mismo que otro pana sin ver qué puso), Mitad y mitad, Doble o nada y Plantarse.'),
-    loc('En la final cada quien apuesta en secreto parte de sus mangos. El total más alto se lleva el Mango de oro.'),
-  ],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));

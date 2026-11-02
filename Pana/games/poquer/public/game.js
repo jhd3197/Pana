@@ -12,7 +12,7 @@ import { sound } from '/engine/fx.js';
 import { PokerConnection } from './network.js';
 import { createScene } from './scene.js';
 import { renderCards } from './cards.js';
-import { HANDS, tablePlayers, messageText } from './rules.js';
+import { tablePlayers, messageText } from './rules.js';
 import { loc, locn } from '/engine/i18n.js';
 
 const $ = id => document.getElementById(id), code = roomCode();
@@ -33,15 +33,6 @@ const roomOptions = createRoomOptions($('room-options'), { title: loc('Póquer')
 const menu = createGameMenu({ pad: { buttons: true }, title: loc('Póquer · Pana'), orientation: 'libre', sound,
   options: [{ id: 'view', label: loc('Cámara'), choices: [['plaza', loc('En la plaza')], ['mesa', loc('Sobre la mesa')]], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? loc('La práctica está en pausa.') : loc('La mesa online sigue. Tienes {n} segundos por turno.', { n: room.state.options.turnSeconds }),
-  controls: [[loc('Ratón / dedo'), loc('Elige retirarte, igualar o subir')], [loc('Apuesta total'), loc('Escribe el total que quieres apostar en esta calle')], ['M', loc('Sonido')], ['Esc', loc('Menú')]],
-  tips: [loc('¿Quién reparte primero? Al empezar la partida todos sacuden el cacho a la vez: el dado más alto se lleva el botón del repartidor. Si hay empate arriba, solo los empatados sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.'),
-    loc('Texas reparte dos cartas privadas; Omaha reparte cuatro y exige usar exactamente dos de tu mano y tres de la mesa. Las fichas, ciegas y límites los elige el anfitrión.'),
-    loc('Hay cuatro rondas de apuestas: antes del flop, flop (tres cartas), turn (cuarta) y river (quinta). Puedes pasar si no debes fichas, igualar, subir o retirarte.'),
-    loc('Subir indica tu apuesta total en esta calle, incluyendo lo que ya pusiste. La subida mínima es la última subida completa. Puedes apostar todas tus fichas aunque no alcancen ese mínimo.'),
-    loc('Si alguien va con todo, los pozos secundarios se reparten entre quienes aportaron a cada uno. Una subida incompleta no reabre la opción de subir a quien ya actuó.'),
-    loc('De menor a mayor: {hands}. El as también sirve para la escalera A-2-3-4-5. Si las mejores cinco cartas empatan, comparten el pozo.', { hands: HANDS.map(hand => loc(hand, { $ctx: 'mano' })).join(', ') }),
-    loc('Al vencer el tiempo elegido pasas si puedes, o te retiras. Si pierdes la conexión, te retiras de esa mano salvo que ya hayas ido con todo. Quien llega con una mano en curso espera la siguiente.'),
-    loc('Con recompras, la siguiente mano repone la cantidad inicial a quien quedó en cero. Sin recompras, observa hasta que el anfitrión cambie los ajustes. En límite fijo hay hasta cuatro apuestas por calle; en turn y river la apuesta se duplica.')],
   invite: () => inviteUrl(code), onOpen() { render(room.state); }, onClose() { render(room.state); }, canOpen: () => room.state.phase !== 'finished',
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));

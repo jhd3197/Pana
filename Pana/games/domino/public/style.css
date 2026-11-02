@@ -11,7 +11,6 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--pk-yellow);outline-
 .topbar{position:fixed;top:0;right:0;z-index:6;padding:20px 24px;pointer-events:none}
 #game-nav{display:flex;gap:8px;pointer-events:auto}
 #game-nav .pk-btn{min-height:40px;padding:8px 14px;font-size:14px}
-#game-nav kbd{display:inline-flex;align-items:center;min-width:24px;height:22px;padding:0 6px;border:1px solid var(--pk-line-strong);border-bottom-width:3px;border-radius:0;background:var(--pk-deep);color:var(--pk-yellow);font:900 11px var(--pk-sans)}
 .in-lobby #invite{display:none}
 
 /* lobby */
@@ -75,12 +74,10 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
 /* bottom rack: help left, banner + hand center, actions right */
 .rack-panel{position:fixed;z-index:4;left:24px;right:24px;bottom:22px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:16px;pointer-events:none}
 .rack-panel>*{pointer-events:auto}
-.rack-help{justify-self:start;display:grid;gap:5px;max-width:240px;padding:10px 14px;border-radius:var(--pk-r);font-size:12px;font-weight:700;color:var(--pk-muted)}
+.rack-info{justify-self:start;display:grid;gap:5px;max-width:240px;padding:10px 14px;border-radius:var(--pk-r);font-size:12px;font-weight:700;color:var(--pk-muted)}
 .you{display:flex;flex-wrap:wrap;gap:0 8px;align-items:baseline}
 .you strong{color:var(--pk-text);font-size:13px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .you span{font-size:11px}
-.rack-keys{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:11px}
-.rack-keys .pk-kbd{min-width:22px;height:22px;font-size:11px}
 .rack-center{display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:none}
 .rack-center>*{pointer-events:auto}
 .turn-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px}
@@ -92,7 +89,6 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
 .rack-actions{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .rack-actions>.pk-btn{min-width:150px}
 .rack-actions .pk-btn{justify-content:space-between}
-.rack-actions .pk-kbd{min-width:22px;height:22px;font-size:11px}
 #camera-view{font-size:13px;min-height:38px;justify-content:center;color:var(--pk-muted)}
 #camera-view[aria-pressed="true"]{color:var(--pk-yellow)}
 
@@ -147,7 +143,7 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
 .result-card>.pk-btn--primary{margin-top:6px}
 
 @media(max-height:760px) and (min-width:721px){.domino{width:46px;height:92px}.pip-face{padding:4px}.hand{min-height:96px}.rack-center{gap:10px}.hud-right{top:72px}}
-@media(max-width:1100px) and (min-width:721px){.rack-help{max-width:190px}.rack-actions{min-width:120px}.hand{gap:7px}.domino{width:44px;height:88px}.hud-right{width:210px}.activity-panel{width:190px}.rack-actions>.pk-btn{min-width:120px}}
+@media(max-width:1100px) and (min-width:721px){.rack-info{max-width:190px}.rack-actions{min-width:120px}.hand{gap:7px}.domino{width:44px;height:88px}.hud-right{width:210px}.activity-panel{width:190px}.rack-actions>.pk-btn{min-width:120px}}
 @media(max-width:720px){
   #invite{display:none}
   .topbar{padding:12px}
@@ -167,8 +163,7 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
   .seat-card .seat-badge{width:38px;height:38px;font-size:11px}.seat-card b{font-size:12px}.seat-note{font-size:10px}
   .rack-panel{left:8px;right:8px;bottom:12px;grid-template-columns:1fr auto;gap:8px}
   .rack-center{grid-column:1/-1;grid-row:1;gap:10px}
-  .rack-help{grid-row:2;max-width:none;align-self:stretch;padding:8px 10px;font-size:11px}
-  .rack-keys{display:none}
+  .rack-info{grid-row:2;max-width:none;align-self:stretch;padding:8px 10px;font-size:11px}
   .rack-actions{grid-row:2;gap:6px}.rack-actions>.pk-btn{min-width:0}
   .rack-actions .pk-btn{min-height:38px;padding:6px 12px;font-size:13px}
   #camera-view{font-size:12px}

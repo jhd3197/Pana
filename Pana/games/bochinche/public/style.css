@@ -16,7 +16,6 @@ body { --pk-game: #ff8a3d; --bash-p1: var(--pk-yellow); --bash-p2: var(--pk-teal
 #timer { font: 32px var(--pk-display); font-variant-numeric: tabular-nums; line-height: 1; }
 #score { font-size: 10px; color: var(--pk-muted); }
 #event:empty { display: none; }
-.key-guide { position: fixed; bottom: 24px; width: 100%; text-align: center; font-size: 12px; color: var(--pk-night); pointer-events: none; }
 .connection { position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; color: var(--pk-night); font-size: 10px; }
 #touch { display: none; position: fixed; left: 16px; right: 16px; bottom: 24px; pointer-events: none; }
 .touch-actions { display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; pointer-events: auto; }
@@ -24,7 +23,6 @@ body { --pk-game: #ff8a3d; --bash-p1: var(--pk-yellow); --bash-p2: var(--pk-teal
 @media (pointer: coarse) {
   #touch { display: flex; justify-content: space-between; align-items: end; }
   .pk-dpad { pointer-events: auto; }
-  .key-guide { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .shield-track span { transition: none; } }
 

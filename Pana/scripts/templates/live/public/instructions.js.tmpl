@@ -1,0 +1,14 @@
+// The pause menu's Instrucciones page (engine/controls-page.js). Instructions
+// never go on the HUD: keep how to play and the controls here.
+import { loc } from '/engine/i18n.js';
+
+export default {
+  goal: loc('Recoge más mangos que nadie antes de que termine la ronda.'),
+  howTo: [loc('Recoge todos los mangos que puedas antes de que termine la ronda.')],
+  sections: [{ title: loc('Moverte'), rows: [
+    { action: loc('Correr'), keyboard: loc('W A S D / Flechas'), gamepad: 'Stick izq. / Cruceta', touch: loc('Flechas en pantalla') },
+  ] }, { title: loc('Siempre'), rows: [
+    { action: loc('Activar o silenciar el sonido'), keyboard: 'M' },
+  ] }],
+  tips: [loc('Si estás solo, unos bots corren contigo.')],
+};

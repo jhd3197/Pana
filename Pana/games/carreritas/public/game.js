@@ -1094,15 +1094,6 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
   options: [{ id: 'camera', label: loc('Cámara'), choices: [['dinamica', loc('Dinámica')], ['suave', loc('Suave · sin inclinación')]], get: () => cameraStyle,
     set(value) { if (!['dinamica', 'suave'].includes(value)) return; cameraStyle = value; try { localStorage.setItem('carreritas:camera', value); } catch { /* session preference */ } } }],
   note: () => mode === 'race' ? (race.state === 'end' ? loc('La carrera terminó.') : race.netRace ? loc('Carrera online: no se detiene.') : loc('La carrera está en pausa.')) : loc('Estás en el garaje.'),
-  controls: [['W / ↑', loc('Acelerar')], ['S / ↓', loc('Frenar')], ['A D / ← →', loc('Girar')], ['Shift / K', loc('Saltar y derrapar · truco en el aire')], ['Espacio / E', loc('Lanzar objeto adelante')],
-    ['X', loc('Lanzar objeto atrás')], ['1 2', loc('Elegir objeto')], ['Q', loc('Cambiar objeto')], ['R', loc('Pedir rescate al zamuro')], ['C', loc('Mirar atrás')], ['H', loc('Claxon')], ['M', loc('Sonido')], ['Esc', loc('Pausa')]],
-  tips: [loc('Mantén el botón de derrape y gira. La ayuda corrige si te acercas al borde; gira al otro lado para abrir la curva.'),
-    loc('Suelta el botón de derrape al salir de la curva: el carro se estabiliza y las chispas dan turbo. No hace falta esperar a las moradas.'),
-    loc('Puedes acelerar antes del ¡YA!. Desde el final del "1" sales con arranque cohete; desde el "3" el motor se ahoga y sale flojito un momento.'),
-    loc('Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'),
-    loc('Sales y vuelves del rescate como fantasma durante 3 segundos. Los roces entre carros ya no te lanzan al aire.'),
-    loc('Cada carro tiene su talento: lee su ficha y combina cauchos con derrapes, rebufo o piruetas.'),
-    loc('Calidad Rápida reduce sombras, lluvia y detalles para equipos lentos. No cambia la física ni reduce el retraso de internet.')],
   actions: [
     { id: 'restart', label: loc('Reiniciar carrera'), kind: 'secondary', visible: () => mode === 'race' && !race.netRace && (!race.cup || ['loading', 'racing'].includes(race.cup.session.status)), run: () => startRace(race.playerIndex, race.playerWheel) },
     { id: 'to-garage', label: loc('Volver al garaje'), kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
@@ -1121,7 +1112,6 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
 });
 $('race').querySelector('.hud-corner').append(menu.createButton({ id: 'pause', label: loc('Pausa'), className: 'pause-button pk-btn pk-btn--sm' }));
 $('garage').querySelector('.bar').append(menu.createButton({ id: 'settings', label: loc('Ajustes'), className: 'toggle pk-btn pk-btn--sm' }));
-for (const kbd of document.querySelectorAll('#pause kbd, #settings kbd')) kbd.classList.add('pk-kbd');
 
 $('again').onclick = () => {
   if (!race.netRace) {
@@ -1659,10 +1649,10 @@ function presentRace(dt) {
   boost.classList.toggle('turbo', p.boost > 0);
   const charge = p.drift ? String(driftLevel(p.driftT)) : '';
   if (boost.dataset.drift !== charge) boost.dataset.drift = charge;
-  const driftHint = $('drift-hint');
-  driftHint.hidden = !p.drift;
+  const driftCue = $('drift-cue');
+  driftCue.hidden = !p.drift;
   const driftText = p.drift ? (Number(charge) ? loc('Suelta: turbo') : loc('Derrape asistido')) : '';
-  if (driftHint.textContent !== driftText) driftHint.textContent = driftText;
+  if (driftCue.textContent !== driftText) driftCue.textContent = driftText;
   const driftButton = document.querySelector('.touch-drift');
   const driftAction = p.drift && Number(charge) ? loc('¡Suelta!') : loc('Derrape');
   if (driftButton.textContent !== driftAction) {

@@ -32,8 +32,7 @@ function whirlpool() {
 export default {
   id: 'remolino',
   title: locKey('¡Remolino!'),
-  howto: locKey('Un remolino crece en la laguna y te jala. Rema alternando A y D para alejarte del centro y empuja a los demás con Espacio. ¡Gana el último que quede fuera!'),
-  keys: [['A D / ← →', locKey('remar alternando')], [locKey('Espacio'), locKey('¡salpicón! empuja al de al lado')]],
+  goal: locKey('Sé el último que quede fuera del remolino.'),
   touch: { action: locKey('Salpicón') },
   icon: 'whirl',
   time: REMOLINO.time,
@@ -95,7 +94,7 @@ export default {
       if (!me) return null;
       const c = sim.canoes[me.i], left = loc('Quedan {n}', { n: sim.canoes.filter(o => o.out == null).length });
       if (c.out != null) return { text: loc('Te tragó el remolino · {left}', { left }), tone: 'bad' };
-      if (c.cd > 0) return { text: loc('Rema A D alternando para alejarte · salpicón en {s} s · {left}', { s: Math.ceil(c.cd), left }), tone: '' };
+      if (c.cd > 0) return { text: loc('Aléjate del centro · salpicón en {s} s · {left}', { s: Math.ceil(c.cd), left }), tone: '' };
       const [x, z] = [Math.cos(c.a) * c.r, Math.sin(c.a) * c.r];
       const near = sim.canoes.some(o => o !== c && o.out == null && Math.hypot(Math.cos(o.a) * o.r - x, Math.sin(o.a) * o.r - z) < REMOLINO.reach + 2 * REMOLINO.radius);
       return near ? { text: loc('¡Salpicón listo! Espacio empuja al de al lado · {left}', { left }), tone: 'go' } : { text: loc('Salpicón listo: acércate a otra curiara · {left}', { left }), tone: 'ok' };

@@ -31,7 +31,6 @@ const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIE
 const touchButtons=[];
 function clearInput(){keys.clear();for(const b of touchButtons)b.release();touch.clear();}
 const menu=createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', loc('Avanzar')], lt: ['KeyS', loc('Frenar')], a: ['Space', loc('Saltar troncos')], rb: ['ShiftLeft', loc('Remate')], ls: ['ShiftLeft', loc('Remate')], y: ['KeyR', loc('Volver al camino')] } },title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?loc('La carrera sigue mientras abres el menú.'):loc('La carrera está en pausa.'),
-  controls:[['W / ↑',loc('Avanzar')],['A D / ← →',loc('Girar')],['S / ↓',loc('Frenar')],['Shift',loc('Remate: gasta resistencia')],['Espacio',loc('Saltar troncos')],['R',loc('Volver al camino')],['M',loc('Sonido')],['Esc',loc('Menú')]],
   invite:()=>inviteUrl(code),actions:[{id:'local-race',label:loc('Abrir carrera local'),run:()=>room.practice()}],onOpen(){paused=true;clearInput();},onClose(){paused=false;}});
 const navButton='pk-btn pk-btn--sm game-menu-button';
 $('game-nav').append(menu.createInviteButton({id:'invite',label:loc('Invitar'),className:navButton}),menu.createSoundButton({id:'sound',className:navButton}),menu.createButton({id:'menu',className:navButton}));

@@ -23,8 +23,6 @@ const roomOptions = createRoomOptions($('room-options'), { title: {{nameJs}}, fi
 const menu = createGameMenu({ title: {{titleJs}}, sound, orientation: 'libre', // i18n-ignore: the game's name
   pad: { buttons: true, keys: { x: ['Space', loc('Tirar el dado')] } },
   note: () => room.members.size > 1 ? loc('La partida sigue mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
-  controls: [[loc('Espacio'), loc('Tirar el dado')], [loc('Ratón / toque'), loc('Botón Tirar dado')], ['M', loc('Activar o silenciar el sonido')]],
-  tips: [loc('Tira el dado en tu turno. El primero en llegar a la meta de la sala gana.'), loc('Los puestos vacíos juegan con bots; un pana que llega toma su silla.')],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));

@@ -46,8 +46,7 @@ function digSite(scene) {
 export default {
   id: 'embuste',
   title: locKey('¡Embuste!'),
-  howto: locKey('Uno de los panas es una momia que finge trabajar. Gira tu malacate con Espacio y mira bien: la momia suelta arena. Al final, elige con ← → y vota con Espacio. Si te toca ser la momia, gira sin apuro: así casi no suelta arena. Pero si no giras, se nota.'),
-  keys: [[locKey('Espacio'), locKey('girar · votar')], ['← →', locKey('elegir a quién')]],
+  goal: locKey('Descubre a la momia que finge trabajar.'),
   touch: { action: locKey('¡Dale!') },
   icon: 'mummy',
   time: TIME,

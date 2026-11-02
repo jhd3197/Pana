@@ -202,9 +202,11 @@ export function createHud({ me, voice = () => true }) {
     const touch = matchMedia('(pointer: coarse)').matches, words = { J: loc('Golpe'), 'J mantener': loc('Golpe mantener'), K: loc('Cubrir'), Espacio: loc('Esquivar'), L: loc('Agarrar'), D: loc('Derecha'), '→': loc('hacia él') };
     const keyNames = { Espacio: SPACE, 'J mantener': loc('J mantener') };
     const pad = inputState().device === 'gamepad';
-    $('tutorial-keys').replaceChildren(...lesson[2].map(k => {
+    // The step's own keys: a prompt for this lesson only, gone with the card.
+    $('lesson-caps').replaceChildren(...lesson[2].map(k => {
       const label = keyNames[k] ?? k;
       const cap = el('kbd', 'pk-kbd', pad ? k === 'D' ? loc('Stick izq.') : k === '→' ? loc('Derecha') : deviceText(label) : touch ? words[k] || label : label);
+      cap.dataset.prompt = '';
       if (pad) cap.dataset.padKey = '';
       return cap;
     }));
@@ -230,27 +232,13 @@ export function createHud({ me, voice = () => true }) {
     if (text && node.textContent !== text) { node.textContent = text; node.classList.remove('is-on'); void node.offsetWidth; node.classList.add('is-on'); }
   }
 
-  // The key bar lights each button while it is pressed.
-  function keys(c) {
-    const bar = $('keys'); if (bar.hidden) return;
-    const on = { golpe: c.g || c.gp !== lastKeys.gp, cubrir: c.b, esquivar: c.e !== lastKeys.e, agarrar: c.a !== lastKeys.a, dale: c.t !== lastKeys.t, patada: c.k !== lastKeys.k, barrida: c.s !== lastKeys.s, volteo: c.v !== lastKeys.v, mover: !!(c.sx || c.sy) };
-    for (const span of bar.children) {
-      const k = span.dataset.key;
-      if (on[k]) { span.classList.add('is-on'); clearTimeout(span._t); span._t = setTimeout(() => span.classList.remove('is-on'), c.g || c.b || k === 'mover' ? 90 : 220); }
-    }
-    lastKeys = { gp: c.gp, e: c.e, a: c.a, t: c.t, k: c.k, s: c.s, v: c.v };
-  }
-  let lastKeys = {};
-
-  function roleText(phase, mode, myBody, mine) {
-    if (phase === 'intro') return myBody ? (myBody.bench ? loc('Esperas en la esquina: tu pareja te da el relevo con L') : loc('¡Prepárate! Golpe J · Cubrirse K · Esquivar Espacio · Agarrar L')) : loc('Apuesta y dale agua a tu esquina: acércate y pulsa J');
+  function roleText(phase, myBody, mine) {
+    if (phase === 'intro') return myBody ? (myBody.bench ? loc('Esperas en la esquina: tu pareja te da el relevo con L') : loc('¡Prepárate!')) : loc('Apuesta y dale agua a tu esquina: acércate y pulsa J');
     if (phase === 'fight') {
-      if (!myBody) return loc('Eres el ring: J empuja pa\' dentro · L ¡cálmate! (mareo alto) · T ¡dale!');
+      if (!myBody) return loc('Eres el ring');
       if (myBody.out) return loc('Quedaste fuera: mira cómo termina');
       if (myBody.bench) return loc('En la esquina: recuperas el aire. Tu pareja te toca con L');
-      if (mode === 'libre') return loc('J golpe (mantén: trompón) · K cubrirse · Espacio esquivar · L junto a una silla o caja: agarrarla, L otra vez: lanzarla · I patada · U barrida · O volteo');
-      if (mode === 'parejas') return loc('J golpe (mantén: trompón) · K cubrirse · Espacio esquivar · L junto a tu pareja: relevo · I patada · U barrida · O volteo');
-      return loc('J golpe (mantén: trompón) · K cubrirse · Espacio esquivar · L agarrar · I patada · U barrida · O volteo');
+      return '';
     }
     return phase === 'after' && myBody && !mine?.mano ? loc('L: mano de caballero') : '';
   }
@@ -280,15 +268,10 @@ export function createHud({ me, voice = () => true }) {
     const betting = phase === 'intro' && mine && !inFight;
     $('bets').hidden = !betting;
     if (betting) bets(mine, state.fight?.odds || {});
-    $('role').textContent = state.tutorial ? '' : deviceText(roleText(phase, state.options.modo, fighting ? myBody : null, mine));
+    $('role').textContent = state.tutorial ? '' : deviceText(roleText(phase, fighting ? myBody : null, mine));
     tutorialCard(state.tutorial);
-    const lessonAction = state.tutorial && !state.tutorial.done ? { mover: 'mover', jab: 'golpe', trompon: 'golpe', cubrir: 'cubrir', esquivar: 'esquivar', contra: 'golpe', agarrar: 'agarrar', pararse: 'golpe' }[TUTORIAL[state.tutorial.step].id] : '';
-    for (const cap of $('keys').children) cap.classList.toggle('is-lesson', cap.dataset.key === lessonAction);
-    const helpLabels = { mover: loc('Moverte'), golpe: loc('Golpe'), cubrir: loc('Cubrirte'), esquivar: loc('Esquivar'), agarrar: loc('Agarrar') };
-    for (const cap of document.querySelectorAll('.pana-pad-prompts > span')) cap.classList.toggle('is-lesson', !!lessonAction && cap.textContent.includes(helpLabels[lessonAction]));
     prompt(myBody);
-    $('keys').hidden = !(phase === 'fight' && myBody && !myBody.bench && !myBody.out);
-    $('role').hidden = !$('keys').hidden && phase === 'fight';
+    $('role').hidden = !$('role').textContent;
     // The verdict after a fight.
     const verdict = phase === 'after' && state.result && !replaying;
     $('verdict').hidden = !verdict;
@@ -328,5 +311,5 @@ export function createHud({ me, voice = () => true }) {
       if (feedItems[0].t <= 0) { feedItems = feedItems.filter(f => f.t > 0); drawFeed(); }
     }
   }
-  return { react, update, tick, call, keys };
+  return { react, update, tick, call };
 }

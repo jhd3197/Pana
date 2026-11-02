@@ -3,7 +3,7 @@
 import { MOVES, DICHOS } from './rules.js';
 import { STATION_INFO, songFor, songBeats, chart } from './songs.js';
 import { createLane } from './lane.js';
-import { loc, locn, locKey } from '/engine/i18n.js';
+import { loc, locn } from '/engine/i18n.js';
 
 const ROLE = { dancer: loc('Bailando en el centro'), drum: loc('Tambor'), crowd: loc('En la gente'), out: loc('Fuera de la rueda') };
 // The stations' interface names; one Spanish word can mean something else elsewhere.
@@ -20,7 +20,7 @@ export function createHud($, { onDicho }) {
   const lane = createLane($('lane'));
   DICHOS.forEach((text, i) => {
     const button = document.createElement('button'); button.className = 'pk-btn pk-btn--sm'; button.type = 'button';
-    button.innerHTML = `<kbd class="pk-kbd">${i + 1}</kbd> `; button.append(text); button.onclick = () => onDicho(i);
+    button.append(text); button.onclick = () => onDicho(i);
     $('dichos').append(button);
   });
   let shoutTimer = 0, flashSeen = null;
@@ -57,7 +57,7 @@ export function createHud($, { onDicho }) {
     if (role === 'dancer') {
       const cs = judge.current(), call = cs?.call;
       $('call-name').textContent = call ? callName(call) : loc('¡Baila!');
-      $('call-hint').textContent = call ? callHint(call) : loc('Espera el llamado del MCP');
+      $('call-cue').textContent = call ? callHint(call) : loc('Espera el llamado del MCP');
       const until = call ? call.beat * spb - t : 9, lead = 3 * spb;
       $('call-ring').style.transform = `translate(-50%, -50%) scale(${call ? Math.max(.6, 1 + Math.max(0, until) / lead * 1.4) : 0})`;
       $('call').classList.toggle('now', !!call && Math.abs(until) <= call.w);
@@ -71,10 +71,9 @@ export function createHud($, { onDicho }) {
     // A drummer (and every pana in ¡Golpe!) gets the lane.
     $('drum').hidden = role !== 'drum';
     if (role === 'drum') {
-      const info = golpe ? { lanes: 2, hint: locKey('← y → (o F y J): repite el golpe del MCP') } : STATION_INFO[p.station];
+      const info = golpe ? { lanes: 2 } : STATION_INFO[p.station];
       $('station-name').textContent = golpe ? loc('Tu tambor: repite lo que toca el MCP') : `${stationName(p.station)}: ${loc(info.what)}`;
       $('combo').textContent = judge.combo >= 4 ? loc('{n} seguidos', { n: judge.combo }) : '';
-      $('station-hint').textContent = loc(info.hint);
       lane.draw(laneView(state, judge, t ?? 0, spb, info, golpe));
     }
     $('crowd').hidden = !['crowd', 'out'].includes(role);

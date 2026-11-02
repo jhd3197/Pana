@@ -8,16 +8,11 @@ const make = (tag, text) => { const node = document.createElement(tag); node.tex
 export const line = l => l == null ? '' : Array.isArray(l) ? loc(l[0], l[1]) : loc(String(l));
 export function setLine(el, l) { el.line = l; el.textContent = line(l); }
 export function setLines(el, lines, tags) { el.lines = lines; el.replaceChildren(...lines.map((l, i) => make(tags[i] || 'span', line(l)))); }
-// A minigame's keys: [[key, what to do]], each as a kbd and its words.
-export function setKeys(el, keys = []) {
-  el.keys = keys;
-  el.replaceChildren(...keys.map(([k, what]) => { const span = make('span', ''); span.append(make('kbd', loc(k)), ` ${loc(what)}`); span.firstChild.className = 'pk-kbd'; return span; }));
-}
 export function readPresentation() {
   return {
     plank: $('plank').line ?? locKey('¡A JUGAR!'), sign: $('sign').line ?? '', count: $('count').line ?? '',
     toast: visible('toast') ? $('toast').lines : null,
-    miniIntro: visible('mini-intro') ? { title: $('mini-title').line, howto: $('mini-howto').line, keys: $('mini-keys').keys } : null,
+    miniIntro: visible('mini-intro') ? { title: $('mini-title').line, goal: $('mini-goal').line } : null,
     winner: visible('winner') ? $('winner').lines : null,
     results: visible('results'),
   };
@@ -32,7 +27,6 @@ export function writePresentation(state) {
   $('mini-intro').classList.toggle('hidden', !state.miniIntro);
   if (state.miniIntro) {
     setLine($('mini-title'), state.miniIntro.title);
-    setLine($('mini-howto'), state.miniIntro.howto);
-    setKeys($('mini-keys'), state.miniIntro.keys);
+    setLine($('mini-goal'), state.miniIntro.goal);
   }
 }

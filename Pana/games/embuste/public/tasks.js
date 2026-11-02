@@ -57,7 +57,7 @@ function malacate(body, done) {
 
 // ---- Encender faroles: repeat the order they flash ----
 function faroles(body, done, step, rand) {
-  const row = el('div', { className: 'task-row' }), status = el('p', { className: 'task-hint', textContent: loc('Mira el orden…') });
+  const row = el('div', { className: 'task-row' }), status = el('p', { className: 'task-cue', textContent: loc('Mira el orden…') });
   const lamps = [0, 1, 2, 3].map(i => el('button', { className: 'lantern-btn', ariaLabel: loc('Farol {n}', { n: i + 1 }) }));
   row.append(...lamps); body.append(row, status);
   const order = Array.from({ length: 4 }, () => Math.floor(rand() * 4));
@@ -107,7 +107,7 @@ function reliquia(body, done, step, rand) {
 // ---- Arreglar la tabla: nail when the marker crosses the beam ----
 function tabla(body, done) {
   const [c, x] = canvas(body, 400, 200), btn = el('button', { className: 'pk-btn pk-btn--primary task-big', textContent: loc('¡Clavar!') });
-  const status = el('p', { className: 'task-hint', textContent: loc('Clava cuando la marca esté sobre la viga.') });
+  const status = el('p', { className: 'task-cue', textContent: loc('Clava cuando la marca esté sobre la viga.') });
   body.append(el('div', { className: 'task-row' }, btn), status);
   const beams = [90, 200, 310]; let nails = 0, pos = 0, dir = 1, flash = 0, finished = false;
   const unpress = press(btn, () => {
@@ -130,7 +130,7 @@ function tabla(body, done) {
 // ---- Llenar agua: hold to fill, let go in the green band ----
 function agua(body, done) {
   const [c, x] = canvas(body, 360, 240), btn = el('button', { className: 'pk-btn pk-btn--primary task-big', textContent: loc('Mantén para llenar') });
-  const status = el('p', { className: 'task-hint', textContent: loc('Suelta cuando el agua llegue a la franja verde.') });
+  const status = el('p', { className: 'task-cue', textContent: loc('Suelta cuando el agua llegue a la franja verde.') });
   body.append(el('div', { className: 'task-row' }, btn), status);
   let level = 0, held = false, finished = false;
   const unhold = holder(btn, v => {
@@ -155,7 +155,7 @@ function agua(body, done) {
 // ---- Hacer arepas: flip each side when it turns golden ----
 function arepas(body, done) {
   const [c, x] = canvas(body, 360, 240), btn = el('button', { className: 'pk-btn pk-btn--primary task-big', textContent: loc('¡Voltear!') });
-  const status = el('p', { className: 'task-hint', textContent: loc('Voltea cuando esté dorada, ni antes ni después.') });
+  const status = el('p', { className: 'task-cue', textContent: loc('Voltea cuando esté dorada, ni antes ni después.') });
   body.append(el('div', { className: 'task-row' }, btn), status);
   let cook = 0, side = 0, finished = false;
   const unpress = press(btn, () => {
@@ -180,7 +180,7 @@ function arepas(body, done) {
 // ---- Sintonizar la radio: match the wave with the dial ----
 function radio(body, done, step, rand) {
   const [c, x] = canvas(body, 400, 200), slider = el('input', { type: 'range', min: 0, max: 100, value: 10, className: 'task-slider', ariaLabel: loc('Dial de la radio') });
-  const status = el('p', { className: 'task-hint', textContent: loc('Gira el dial hasta que las dos ondas coincidan.') });
+  const status = el('p', { className: 'task-cue', textContent: loc('Gira el dial hasta que las dos ondas coincidan.') });
   body.append(el('div', { className: 'task-row' }, slider), status);
   const target = 30 + rand() * 60; let lock = 0, finished = false;
   const stop = loop((dt, t) => {
@@ -196,7 +196,7 @@ function radio(body, done, step, rand) {
 
 // ---- Limpiar jeroglíficos: rub the sand away ----
 function jeroglificos(body, done, step, rand) {
-  const [c, x] = canvas(body, 400, 260), status = el('p', { className: 'task-hint', textContent: loc('Frota la arena con el dedo o el ratón.') });
+  const [c, x] = canvas(body, 400, 260), status = el('p', { className: 'task-cue', textContent: loc('Frota la arena con el dedo o el ratón.') });
   body.append(status);
   const sand = document.createElement('canvas'); sand.width = 400; sand.height = 260; const s = sand.getContext('2d');
   s.fillStyle = COL.sand; s.fillRect(0, 0, 400, 260);
@@ -230,7 +230,7 @@ function jeroglificos(body, done, step, rand) {
 // ---- Subir provisiones: three crates out of the curiara, then onto the shelf ----
 function provisiones(body, done, step) {
   const loading = step === 0;
-  const status = el('p', { className: 'task-hint', textContent: loading ? loc('Saca las tres cajas de la curiara.') : loc('Acomoda las tres cajas en la despensa.') });
+  const status = el('p', { className: 'task-cue', textContent: loading ? loc('Saca las tres cajas de la curiara.') : loc('Acomoda las tres cajas en la despensa.') });
   const row = el('div', { className: 'task-row' });
   let left = 3;
   for (let i = 0; i < 3; i++) {
@@ -243,7 +243,7 @@ function provisiones(body, done, step) {
 }
 
 export const TASK_UI = { malacate, faroles, reliquia, tabla, agua, arepas, radio, jeroglificos, provisiones };
-export const HINTS = {
+export const CUES = {
   malacate: loc('Mantén pulsado para subir el balde de la mina.'), faroles: loc('Fíjate en el orden en que se prenden.'), reliquia: loc('Arrastra cada pedazo a su lugar.'),
   tabla: loc('Tres clavos, cada uno sobre su viga.'), agua: loc('Llena el balde sin que se desborde.'), arepas: loc('Dos lados, bien doraditas.'),
   radio: loc('El bote llama por la radio. Sintonízalo.'), jeroglificos: loc('Debajo de la arena hay un símbolo.'), provisiones: loc('Una tarea larga: la curiara y luego la cocina.'),
