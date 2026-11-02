@@ -150,3 +150,18 @@ test('the library deals Lectores into its shelves and archives, capped; the mine
   assert.ok(spawnEnemy(g, 'lector', stop.x, stop.z - 8));
   assert.equal(spawnEnemy(g, 'lector', stop.x, stop.z - 10), null, 'one at a time on jornada 2');
 });
+
+test('its pose is finite at any time; the tell tilts the head hard toward the sound', async () => {
+  const { createReaderPose } = await import('../../../engine/models/props/reader-pose.js');
+  const m = createReaderPose({ seed: 5 });
+  for (const mode of ['prowl', 'listen', 'hunt', 'search']) for (const t of [0, .016, 1, 9.5, 1e5, NaN, -2, Infinity]) {
+    const p = m.update(t, { mode, moving: mode === 'hunt', look: .7 });
+    for (const [k, v] of Object.entries(p)) assert.ok(Number.isFinite(v), `${mode} ${t} ${k}=${v}`);
+  }
+  for (let t = 0; t < 400; t += 1 / 30) { const p = m.update(1e3 + t, { mode: ['prowl', 'hunt', 'listen'][Math.floor(t / 7) % 3], moving: Math.floor(t / 7) % 3 === 1, winding: t % 11 < .5, look: Math.sin(t) }); for (const v of Object.values(p)) assert.ok(Number.isFinite(v)); }
+  const a = createReaderPose({ seed: 8 }); let p;
+  for (let t = 0; t < 2; t += 1 / 30) p = a.update(t, { mode: 'prowl' });
+  const idle = Math.abs(p.headRz);
+  for (let t = 2; t < 2.3; t += 1 / 30) p = a.update(t, { mode: 'listen', look: .9 });
+  assert.ok(p.headRz > .55 && p.headRy > .7, `head cocked toward the sound (${p.headRz.toFixed(2)}, ${p.headRy.toFixed(2)}; idle ${idle.toFixed(2)})`);
+});

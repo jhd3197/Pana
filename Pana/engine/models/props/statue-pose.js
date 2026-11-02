@@ -16,8 +16,8 @@
 import { rng } from '../../random.js';
 
 export const STATUE_POSES = [
-  { spineRx: .28, spineRz: 0, headRx: .55, headRy: 0, headRz: .08, lArmRx: -1.05, lArmRz: .42, lElbow: -1.75, rArmRx: -1.05, rArmRz: -.42, rElbow: -1.75, lHandRx: -.2, rHandRx: -.2, sheetRx: .05 },
-  { spineRx: .22, spineRz: .06, headRx: .45, headRy: -.2, headRz: .18, lArmRx: -1.0, lArmRz: .38, lElbow: -1.7, rArmRx: -.12, rArmRz: -.08, rElbow: -.35, lHandRx: -.2, rHandRx: .3, sheetRx: .02 },
+  { spineRx: .22, spineRz: 0, headRx: .6, headRy: 0, headRz: .08, lArmRx: -.62, lArmRz: -.38, lElbow: -2.25, rArmRx: -.62, rArmRz: .38, rElbow: -2.25, lHandRx: -.35, rHandRx: -.35, sheetRx: .05 },
+  { spineRx: .2, spineRz: .06, headRx: .5, headRy: -.2, headRz: .18, lArmRx: -.6, lArmRz: -.36, lElbow: -2.2, rArmRx: -.12, rArmRz: -.08, rElbow: -.35, lHandRx: -.35, rHandRx: .3, sheetRx: .02 },
   { spineRx: .14, spineRz: -.04, headRx: -.12, headRy: .1, headRz: .22, lArmRx: -1.3, lArmRz: -.06, lElbow: -.22, rArmRx: -1.18, rArmRz: .1, rElbow: -.3, lHandRx: -.15, rHandRx: -.1, sheetRx: .1 },
   { spineRx: .38, spineRz: .08, headRx: -.25, headRy: -.08, headRz: -.15, lArmRx: -1.62, lArmRz: -.12, lElbow: -.5, rArmRx: -1.1, rArmRz: .16, rElbow: -.7, lHandRx: -.65, rHandRx: -.6, sheetRx: .18 },
   { spineRx: -.12, spineRz: 0, headRx: -.32, headRy: 0, headRz: .1, lArmRx: -2.75, lArmRz: .2, lElbow: -.55, rArmRx: -2.7, rArmRz: -.2, rElbow: -.6, lHandRx: -.5, rHandRx: -.5, sheetRx: -.08 },
