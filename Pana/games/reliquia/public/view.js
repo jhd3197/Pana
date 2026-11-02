@@ -31,7 +31,7 @@ const CAMP_LOOK = { background: 0xf6d6a4, fog: [45, 150], hemi: [0xfff1d6, 0x8a6
 // library is whiter and dimmer; candles are small warm accents with a short
 // reach. Both stay readable within the farol's 8 m.
 const DEEP_LOOK = { background: 0x0a0710, fog: [3.5, 24], hemi: [0x5c5088, 0x2a1d12, .5], sun: 0, exposure: 1.15, dust: .45, lamp: 0xfff0d8, hand: 0xffa850, lampPower: 58, candle: [0xffa24a, 5.5, 11] };
-const LIBRARY_LOOK = { background: 0x18202a, fog: [2.5, 21], hemi: [0x74849e, 0x0c0c10, 1.55], sun: 0, exposure: 1.25, dust: 1, lamp: 0xe4ebf4, hand: 0xd8dde6, lampPower: 28, lampDecay: 1.25, handPower: .35, candle: [0xff9e52, 1.6, 4.5] };
+const LIBRARY_LOOK = { background: 0x18202a, fog: [2.5, 21], hemi: [0x74849e, 0x0c0c10, 1.8], sun: 0, exposure: 1.1, dust: 1, lamp: 0xe4ebf4, hand: 0xd8dde6, lampPower: 25, lampDecay: 1.15, handPower: .35, candle: [0xff9e52, 1.6, 4.5] };
 
 function label(text, color, { bubble = false } = {}) {
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 96;

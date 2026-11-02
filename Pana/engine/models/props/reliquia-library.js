@@ -31,7 +31,9 @@ export const LIBRARY_COLORS = { dark: 0x342a2e, mid: 0x44383c, light: 0x54474b, 
 const WOOD = LIBRARY_COLORS;
 const BOOK_COLORS = [0x4a2a2c, 0x2e3a2c, 0x2c3446, 0x4a3e2c, 0x3c2a36, 0x5a5448, 0x2a2826, 0x46342c, 0x34444a, 0x50464a];
 const owned = (m) => { m.userData.reliquiaOwned = true; return m; };
-const std = (color, extra = {}) => owned(new THREE.MeshStandardMaterial({ color, roughness: .9, ...extra }));
+// Matte Lambert: old dusty wood, cloth and iron have no sheen, and a
+// specular highlight would turn dark wood pale in a headlamp.
+const std = (color, { roughness, metalness, ...extra } = {}) => owned(new THREE.MeshLambertMaterial({ color, ...extra }));
 function part(parent, geometry, material, x = 0, y = 0, z = 0) { const m = new THREE.Mesh(geometry, material); m.position.set(x, y, z); parent.add(m); return m; }
 const box = (parent, material, w, h, d, x, y, z) => part(parent, new THREE.BoxGeometry(w, h, d), material, x, y + h / 2, z);
 const cyl = (parent, material, r0, r1, h, x, y, z, seg = 8) => part(parent, new THREE.CylinderGeometry(r0, r1, h, seg), material, x, y + h / 2, z);
@@ -150,7 +152,7 @@ export function bookcases(cases, { seed = 1 } = {}) {
     const variant = c.variant || 'plain', low = variant === 'low', H = low ? 1.3 : c.height ?? 3.4, single = c.double === false, D = single ? .42 : .8, sides = single ? [1] : [1, -1];
     const fill = (c.fill ?? .6) * (variant === 'collapsed' ? .45 : 1);
     // Leaning: a collapsed case tips toward one face.
-    const tip = variant === 'collapsed' ? (c.tip || (r() < .5 ? -1 : 1)) * (.1 + r() * .08) : 0;
+    const tip = variant === 'collapsed' ? (c.tip || (r() < .5 ? -1 : 1)) * (.12 + r() * .07) : 0;
     parent.position.set(c.x, 0, c.z); parent.rotation.set(tip, c.h || 0, 0, 'YXZ'); parent.updateMatrix();
     const put = (list, x, y, z, sx, sy, sz, color, rz = 0, ry = 0, rx = 0) => {
       tmp.position.set(x, y, z); tmp.rotation.set(rx, ry, rz); tmp.scale.set(sx, sy, sz); tmp.updateMatrix();

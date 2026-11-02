@@ -243,13 +243,24 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
       return v === 'pillar' && length < 2.6 ? 'arched' : v;
     };
     const deskSpots = new Set(run.spots.filter(sp => sp.floor === f && sp.desk).map(sp => `${sp.x.toFixed(2)},${sp.z.toFixed(2)}`));
+    // Variants first: a collapsed case tips into an aisle, and the case across
+    // that aisle keeps the ladder somebody was climbing when it went.
+    const shelves = run.solids.filter(s => s.floor === f && s.kind === 'shelf'), variants = new Map(), tips = new Map(), ladderSide = new Map();
+    for (const s of shelves) { const along = s.axis === 'x'; variants.set(s, variantFor(s, along, along ? s.rect[2] - s.rect[0] : s.rect[3] - s.rect[1])); }
+    for (const s of shelves) if (variants.get(s) === 'collapsed') {
+      const cz = (s.rect[1] + s.rect[3]) / 2, cx = (s.rect[0] + s.rect[2]) / 2;
+      const across = shelves.find(q => q !== s && q.room === s.room && q.axis === 'x' && Math.abs(Math.abs((q.rect[1] + q.rect[3]) / 2 - cz) - 3) < .1 && q.rect[0] < s.rect[2] && q.rect[2] > s.rect[0] && variants.get(q) !== 'collapsed');
+      const toward = across ? Math.sign((across.rect[1] + across.rect[3]) / 2 - cz) : (R() < .5 ? -1 : 1);
+      tips.set(s, toward);
+      if (across) { variants.set(across, 'ladder'); ladderSide.set(across, { side: -toward, x: Math.max(across.rect[0] + .6, Math.min(across.rect[2] - .6, cx + (R() - .5))) }); }
+    }
     for (const s of run.solids.filter(s => s.floor === f)) {
       const [a, b, c, d] = s.rect, x = (a + c) / 2, z = (b + d) / 2, along = s.axis === 'x', length = along ? c - a : d - b;
       if (s.kind === 'shelf') {
-        const height = s.tall ? 3.8 : 3.3, variant = variantFor(s, along, length), h = along ? 0 : Math.PI / 2, top = variant === 'low' ? 1.3 : height;
-        cases.push({ x, z, h, length, height: top, variant, fill: styles.get(s.room).fill, room: s.room });
+        const height = s.tall ? 3.8 : 3.3, variant = variants.get(s), h = along ? 0 : Math.PI / 2, top = variant === 'low' ? 1.3 : height;
+        cases.push({ x, z, h, length, height: top, variant, fill: styles.get(s.room).fill, room: s.room, tip: tips.get(s) });
         // A rolling ladder leans on one face.
-        if (variant === 'ladder') { const t = (R() - .5) * (length - 1), side = R() < .5 ? -1 : 1, lad = libraryLadder({ height: Math.min(3.3, height - .1) }); place(statics, lad, along ? x + t : x + side * .95, 0, along ? z + side * .95 : z + t, along ? (side > 0 ? 0 : Math.PI) : (side > 0 ? Math.PI / 2 : -Math.PI / 2)); }
+        if (variant === 'ladder') { const pin = ladderSide.get(s), t = pin ? pin.x - x : (R() - .5) * (length - 1), side = pin ? pin.side : R() < .5 ? -1 : 1, lad = libraryLadder({ height: Math.min(3.3, height - .1) }); place(statics, lad, along ? x + t : x + side * .95, 0, along ? z + side * .95 : z + t, along ? (side > 0 ? 0 : Math.PI) : (side > 0 ? Math.PI / 2 : -Math.PI / 2)); }
         // Webs: fans at the ends up to the ceiling, in the corners of the arches.
         for (const end of [-1, 1]) if (R() < .5) webs.push({ x: along ? (end < 0 ? a + .05 : c - .05) : x - end * .4, y: WEB_TOP, z: along ? z + end * .4 : (end < 0 ? b + .05 : d - .05), h: along ? end * -Math.PI / 2 : (end < 0 ? 0 : Math.PI), size: Math.min(1.4, WEB_TOP - top + .5), tilt: (R() - .5) * .3 });
         if (variant === 'arched' || variant === 'pillar') for (const face of [-1, 1]) for (let k = 0; k < 2; k++) if (R() < .5) {

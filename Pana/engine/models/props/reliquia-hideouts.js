@@ -16,10 +16,10 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rng } from '/engine/models/core/primitives.js';
 
 // Cold, dusty colours: grey-brown wood, dull brass, pale linen.
-export const HIDEOUT_COLORS = { wood: 0x3a3034, dark: 0x2a2226, light: 0x4c4044, brass: 0x6e6448, iron: 0x26262a, linen: 0x7a7e84, dust: 0x8a8c90, niche: 0x0c0b0d };
+export const HIDEOUT_COLORS = { wood: 0x2e2628, dark: 0x221c1e, light: 0x3c3234, brass: 0x6e6448, iron: 0x26262a, linen: 0x7a7e84, dust: 0x8a8c90, niche: 0x0c0b0d };
 const BOOKS = [0x4a2a2c, 0x2e3a2c, 0x2c3446, 0x4a3e2c, 0x3c2a36, 0x5a5448, 0x2a2826, 0x46342c, 0x34444a];
 let shared = null;
-const material = () => shared ??= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .92, metalness: 0 });
+const material = () => shared ??= new THREE.MeshLambertMaterial({ vertexColors: true });
 const glowMap = (() => { let t = null; return () => {
   if (t) return t;
   const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);

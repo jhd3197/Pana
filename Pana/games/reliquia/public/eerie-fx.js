@@ -22,7 +22,7 @@ export function createEerieFx({ view, ambience, dread = () => {} }) {
   // ---- Shapes: one pale figure and one book, made once and reused.
   // Pale and cold: the figure is grey-blue, lit from within just enough to
   // read in the dark, never warm.
-  const ghostMat = new THREE.MeshStandardMaterial({ color: 0x9aa2ae, emissive: 0x1c222c, roughness: 1, transparent: true, opacity: 0, depthWrite: false });
+  const ghostMat = new THREE.MeshStandardMaterial({ color: 0x9aa2ae, emissive: 0x2a323e, roughness: 1, transparent: true, opacity: 0, depthWrite: false });
   const eyeMat = new THREE.MeshBasicMaterial({ color: 0xdfe8f4, transparent: true, opacity: 0 });
   const ghost = mummy(); ghost.name = 'Silueta';
   ghost.traverse(o => { if (o.isMesh) { const eye = o.material.emissiveIntensity >= 1 && o.material.emissive?.getHex(); o.material.dispose?.(); o.material = eye ? eyeMat : ghostMat; o.castShadow = false; } });
