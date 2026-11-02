@@ -2,7 +2,7 @@ import { cleanKit, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO, range
 import { createMelee, startSwing, stepMelee, swingHit, throwStart, stepThrown, aimThrow, inHand } from '../../../engine/play/melee.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, validOptions, teamPlay, roundTime, livesOf, objectivePlay } from './options.js';
-import { isCtf, ctfReset, ctfStep, ctfDrop, ctfOutcome, ctfGoal } from './ctf.js';
+import { isCtf, ctfReset, ctfStep, ctfDrop, ctfOutcome, ctfGoal, carrierSlow } from './ctf.js';
 import { isDom, domReset, domStep, domOutcome, domBotGoal } from './domination.js';
 import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/worlds/arena-layouts.js';
 import { MUELLE_COVERS, MUELLE_SPAWNS, MUELLE_SIZE } from './muelle-layout.js';
@@ -437,8 +437,8 @@ export class Arena {
       p.ax = input.ax; p.az = input.az;
       // A scope (La Lejana, El Zamuro) or a Mira steadies the shot and halves the walk while it is up.
       p.aim = input.aim && stats.aims;
-      // Shift sprints 45% faster for up to three seconds; sprinting holds fire.
-      const walk = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (p.aim ? .5 : 1);
+      // Shift sprints 45% faster for up to three seconds; sprinting holds fire. A flag carrier is slower (ctf.js).
+      const walk = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (p.aim ? .5 : 1) * carrierSlow(this, p);
       const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, regen: 5, move: axisMove((x, z) => blocked(x, z, RADIUS, this.mapId, this.variant)) }).sprinting; p.sprint = sprinting;
       p.walk = !!(input.x || input.z);
       if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < stats.magazine && (stats.reserve == null || p.reserve > 0)) p.reload = stats.reload;

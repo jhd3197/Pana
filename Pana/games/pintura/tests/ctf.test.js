@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Arena, blocked, spawnsFor, boundsFor, VARIANTS, RADIUS } from '../public/rules.js';
-import { FLAG_STANDS, standsFor, ctfStep, ctfOutcome, ctfGoal, CTF_RULES } from '../public/ctf.js';
+import { Arena, blocked, spawnsFor, boundsFor, VARIANTS, RADIUS, cleanInput } from '../public/rules.js';
+import { FLAG_STANDS, standsFor, ctfStep, ctfOutcome, ctfGoal, CTF_RULES, FLAG_CARRIER_SLOW } from '../public/ctf.js';
 import { createFlag, stepFlags, takeFlag } from '../../../engine/play/objectives.js';
 import { PAINT_ARENAS } from '../../../engine/worlds/arena-layouts.js';
 import { validOptions, DEFAULT_OPTIONS } from '../public/options.js';
@@ -165,4 +165,29 @@ test('a bots-only round plays to the end: flags are captured', () => {
   let n = 0; for (; n < 20 * 300 && g.phase === 'playing'; n++) g.step(.05);
   assert.equal(g.phase, 'finished', `ended after ${n * .05} s`);
   assert.ok(g.flagEvents.some(e => e.type === 'capture') || g.outcome.reason === 'time');
+});
+
+test('a flag carrier walks and runs 15% slower than a pana without the flag; bots too', () => {
+  assert.equal(FLAG_CARRIER_SLOW, .85);
+  // An open 6 m run along x, clear of cover in this layout and far from both stands.
+  const g = match(), [a] = g.players, open = (x, z) => [0, 1, 2, 3, 4, 5, 6].every(d => !blocked(x + d, z, RADIUS, 'plaza', g.variant));
+  let start = null; for (let z = -8; z <= 8 && !start; z += .5) for (let x = -20; x <= 14 && !start; x += .5) if (open(x, z)) start = { x, z };
+  assert.ok(start, 'an open run on the plaza');
+  const run = (input, carrying, bot = false) => {
+    g.players.forEach((p, i) => Object.assign(p, { x: -24 + i, z: 24 }));
+    Object.assign(a, { ...start, ax: 1, az: 0, stamina: 1, bot, slow: 0, aim: false, shield: 0, respawn: 0 });
+    g.flags[1] = Object.assign(g.flags[1], carrying ? { state: 'carried', carrier: a.id, x: a.x, z: a.z } : { state: 'home', carrier: null, x: g.flags[1].homeX, z: g.flags[1].homeZ });
+    for (let i = 0; i < 6; i++) g.step(.05, new Map([[a.id, input]]));
+    assert.equal(carrying, g.flags[1].state === 'carried', 'the flag stays with its carrier');
+    return a.x - start.x;
+  };
+  for (const input of [{ x: 1, z: 0 }, { x: 1, z: 0, sprint: true }]) {
+    const free = run(input, false), carrier = run(input, true);
+    assert.ok(free > 1, `the pana moves (${free})`);
+    assert.ok(Math.abs(carrier / free - FLAG_CARRIER_SLOW) < .01, `carrier ${carrier} vs ${free}`);
+  }
+  // A bot's choice (rules.js bot) goes through the same walk: a carrying bot is slowed too.
+  a.bot = true; g.bot = () => cleanInput({ x: 1, z: 0 });
+  const botFree = run({}, false, true), botCarrier = run({}, true, true);
+  assert.ok(botFree > 1 && Math.abs(botCarrier / botFree - FLAG_CARRIER_SLOW) < .01, `bot carrier ${botCarrier} vs ${botFree}`);
 });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES, PEPAS, calloutTitle, seesCallout } from '../public/hud-model.js';
+import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES, PEPAS, calloutTitle, seesCallout, rulesTip } from '../public/hud-model.js';
 
 const player = (id, score, extra = {}) => ({ id, name: `P${id}`, color: `c${id}`, score, hits: 0, team: id % 2, ...extra });
 
@@ -71,4 +71,11 @@ test('the shooter sees every callout; a headshot also reaches its victim and who
   assert.equal(seesCallout(head, 1), true); assert.equal(seesCallout(head, 2), true);
   assert.equal(seesCallout(head, 3, 1), true); assert.equal(seesCallout(head, 3, 4), false); assert.equal(seesCallout(head, 3), false);
   assert.equal(seesCallout({ ...head, type: 'hit' }, 1), false);
+});
+
+test('the rules tip names the room capture limit, not a fixed three', () => {
+  assert.match(rulesTip({ mode: 'ctf', flagGoal: 5 }), /En bandera gana el equipo que llegue a 5 capturas\.$/);
+  assert.match(rulesTip({ mode: 'ctf', flagGoal: 1 }), /llegue a 1 captura\.$/);
+  assert.match(rulesTip({}), /llegue a 3 capturas\.$/, 'the default limit');
+  assert.doesNotMatch(rulesTip({ flagGoal: 5 }), /tres capturas/);
 });

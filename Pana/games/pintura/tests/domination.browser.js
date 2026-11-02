@@ -88,6 +88,9 @@ try {
     world.draw = (state, id, dt, aim) => { draw(state, id, dt, aim); world.camera.position.set(0, 58, 46); world.camera.lookAt(0, 0, 0); world.camera.updateMatrixWorld(); world.renderer.render(world.scene, world.camera); };
   });
   await waitFor(a, () => ['A', 'B', 'C'].every(id => pinturaDebug.world.scene.getObjectByName(`Zona ${id}`)?.visible === true));
+  // From above, B (inside the shed) draws over its roof: the ring and the letter skip the depth test.
+  await waitFor(a, () => { const B = pinturaDebug.world.scene.getObjectByName('Zona B'), board = B.getObjectByName('Letra zona B'), ring = B.children.find(m => m.geometry?.type === 'RingGeometry');
+    return board.visible && board.material.depthTest === false && ring.material.depthTest === false && ring.renderOrder > 2; });
   await frames(a); await shot(a, 'puerto-zones');
   // Fast-forward the practice round to its end with the bots playing.
   await stage(() => {

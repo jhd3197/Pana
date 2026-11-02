@@ -21,7 +21,7 @@ import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
 import { createCombatHud } from './combat-hud.js';
-import { calloutTitle, seesCallout } from './hud-model.js';
+import { calloutTitle, seesCallout, rulesTip } from './hud-model.js';
 import { createCtfHud } from './ctf-hud.js';
 import { createDomHud } from './domination-hud.js';
 import { sfx, createSteps } from './sounds.js';
@@ -67,7 +67,7 @@ $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-ar
 const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
 // One copy of the help text: the pause menu and the settings dialog's "Cómo se juega" layer.
 const controls = [[loc('WASD / Flechas'), loc('Caminar hacia donde miras')], [loc('Ratón'), loc('Mirar y apuntar (haz clic en la cancha para capturarlo)')], [loc('Clic / Enter'), loc('Disparar pintura')], [loc('Clic derecho / F'), loc('Apuntar (La Lejana mira por la mira telescópica)')], [loc('Clic derecho / F / V'), loc('Con La Chancleta: lanzarla en arco (vuelve sola a tu mano)')], ['Z / X', loc('Arma anterior o siguiente (las de pescozón van al final)')], [loc('Espacio'), loc('Saltar')], ['Shift', loc('Correr (no puedes disparar corriendo)')], ['Tab', loc('Ver la tabla')], ['Q / E', loc('Girar sin ratón')], ['R', loc('Recargar')], ['1 – 6', loc('Chispa / Trueno / Gemelas / Cohetón / Lejana / Bazuca')], ['G', loc('Mantén para cargar la granada y suelta para lanzarla')], ['M', loc('Sonido')], ['Esc', loc('Soltar el ratón y abrir el menú')]];
-const tips = [loc('Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie. En bandera gana el equipo con tres capturas.'),
+const tips = [rulesTip(DEFAULT_OPTIONS),
   loc('Las barricadas frenan las bolas. Tienes doce por carga; recargas con R o automáticamente al vaciarla.'),
   loc('Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.'),
   loc('En teléfono camina con las flechas y arrastra el dedo por la pantalla para mirar. Mantén Pinta: la mira se pega al rival visible que tengas delante.'),
@@ -336,6 +336,7 @@ function render(state) {
   difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase !== 'playing');
   $('round-minutes').textContent = loc('{n} min', { n: roundTime(state.options) / 60 });
   const ctf = state.options?.mode === 'ctf', dom = state.options?.mode === 'dom'; $('win-target').textContent = ctf ? state.options.flagGoal || 3 : dom ? state.options.domGoal || 200 : TARGET;
+  tips[0] = rulesTip(state.options); // the help tip names the room's capture limit
   $('win-target-label').textContent = ctf ? loc('banderas para ganar') : dom ? loc('puntos para ganar') : loc('pintadas para ganar');
   const lobby = state.phase === 'lobby', finished = state.phase === 'finished';
   $('lobby').hidden = !lobby; $('hud').hidden = lobby || finished; document.body.classList.toggle('in-lobby', lobby);
