@@ -15,6 +15,7 @@ import { createSky } from '/engine/worlds/sky.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
 import { Puffs, Shockwaves } from '/engine/fx.js';
 import { pixelRatio, bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
+import { dustMotes } from '/engine/models/props/reliquia-library.js';
 import { createExpeditionWorld, itemModel } from './scene.js';
 import { floorOf, HEIGHT } from './deck.js';
 import { ITEMS } from './items.js';
@@ -24,7 +25,10 @@ import { holds, alive, cartValue, liftView } from './rules.js';
 export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
 const EYE = 1.45, POOL = 5;
 const CAMP_LOOK = { background: 0xf6d6a4, fog: [45, 150], hemi: [0xfff1d6, 0x8a6a4a, 2.1], sun: 3, exposure: 1.05 };
-const DEEP_LOOK = { background: 0x0d0814, fog: [5, 30], hemi: [0x7a6aa8, 0x3a2a1c, .7], sun: 0, exposure: 1.2 };
+// Underground: the mine is a dark violet black; the buried library a
+// sepia murk with low, close fog. Both stay readable within the farol's 8 m.
+const DEEP_LOOK = { background: 0x0a0710, fog: [3.5, 24], hemi: [0x5c5088, 0x2a1d12, .5], sun: 0, exposure: 1.15, dust: .45 };
+const LIBRARY_LOOK = { background: 0x332c20, fog: [2, 17], hemi: [0x8a7a5c, 0x2a1c0e, .55], sun: 0, exposure: 1.15, dust: 1 };
 
 function label(text, color, { bubble = false } = {}) {
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 96;
@@ -50,9 +54,15 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const sun = new THREE.DirectionalLight(0xffd9a0, CAMP_LOOK.sun); sun.castShadow = true; sun.shadow.mapSize.setScalar(shadowSize(1024));
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 120 }); sun.shadow.bias = -.0008; sun.shadow.normalBias = .05; scene.add(sun, sun.target);
   // Headlamp and the farol in your hand ride on the camera.
-  const headlamp = new THREE.SpotLight(0xfff0d8, 0, 26, .5, .55, 1.4); headlamp.position.set(0, .05, 0); headlamp.target.position.set(0, -.25, -5); camera.add(headlamp, headlamp.target);
+  const headlamp = new THREE.SpotLight(0xfff0d8, 0, 24, .44, .42, 1.35); headlamp.position.set(0, .05, 0); headlamp.target.position.set(0, -.25, -5); camera.add(headlamp, headlamp.target);
   const handLight = new THREE.PointLight(0xffa850, 0, 12, 1.6); handLight.position.set(.3, -.2, -.4); camera.add(handLight);
   const pool = Array.from({ length: POOL }, () => { const l = new THREE.PointLight(0xffa04a, 0, 11, 1.7); scene.add(l); return l; });
+  // Dust drifting through the headlamp's beam.
+  const motes = dustMotes(); motes.visible = false; camera.add(motes);
+  // What a scare does to the light, set by eerie-fx.js every frame: the
+  // torches and candles (light), your own lamps (farol), the fog distance
+  // (fog, a multiplier) and candles blown out around a point (out).
+  const mood = { light: 1, farol: 1, fog: 1, out: null };
   let world = createExpeditionWorld({ seed, depth }); scene.add(world.group);
   const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign); // i18n-ignore: signage painted in the world
   const puffs = new Puffs(scene), waves = new Shockwaves(scene);
@@ -67,12 +77,12 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const splats = new Map(), shots = new Map(), darts = new Map();
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
   const avatars = new Map(), enemies = new Map(), carts = new Map();
-  let dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', poolAt = 0, swingT = [0, 0];
+  let dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', look = CAMP_LOOK, poolAt = 0, swingT = [0, 0], shakeScale = 1;
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
   function setLook(name) {
     if (name === lookName) return; lookName = name;
-    const look = name === 'camp' ? CAMP_LOOK : DEEP_LOOK;
+    look = name === 'camp' ? CAMP_LOOK : name === 'biblioteca' ? LIBRARY_LOOK : DEEP_LOOK;
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sun.intensity = look.sun; sky.mesh.visible = name === 'camp'; renderer.toneMappingExposure = look.exposure;
@@ -121,7 +131,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     const t = performance.now() / 1000, vf = me ? floorOf(me.x) : 0;
     // Riders sink and rise with the cage through the shaft.
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
-    setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'camp' : 'deep');
+    setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'camp' : world.run.theme === 'biblioteca' ? 'biblioteca' : 'mina');
+    // Scares squeeze the fog in; the candles fade with it.
+    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog; }
+    world.candles({ level: mood.light, out: mood.out, near: scene.fog.near, far: scene.fog.far });
     world.update(t, state, dt, me);
     sky.update(t); shopSign.visible = vf === 0;
     // Other panas.
@@ -227,7 +240,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       sway += ((moving ? 1 : 0) - sway) * (1 - Math.exp(-dt * 8)); bob += dt * (me.stamina < .98 && moving ? 13 : 9) * sway;
       lift += ((me.downed || downedLook ? -1 : 0) - lift) * (1 - Math.exp(-dt * 5));
       fov += ((me.vx ** 2 + me.vz ** 2 > 40 ? 82 : innerWidth < innerHeight ? 80 : 74) - fov) * (1 - Math.exp(-dt * 5)); camera.fov = fov;
-      shake = Math.max(0, shake - dt * 2.5); const jolt = shake * shake * .06;
+      shake = Math.max(0, shake - dt * 2.5); const jolt = shake * shake * .06 * shakeScale;
       camera.position.set(me.x, (me.y || 0) + rideY(me) + EYE + lift * 1 + Math.abs(Math.sin(bob)) * .05 * sway, me.z);
       camera.rotation.set(pitch + (Math.random() - .5) * jolt, h + Math.PI + (Math.random() - .5) * jolt, Math.sin(bob) * .01 * sway + lift * -.35 + (me.reversed > 0 ? Math.sin(t * 2) * .06 : 0));
       // Paws: bob with the stride, swing on use, hide when both hands grip a treasure.
@@ -240,8 +253,9 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         hands[i].rotation.set(-s * 1.2, 0, s * (i ? -.4 : .4));
       }
       pawMaterial.color.set(normalizeAvatar(me.avatar).fur);
-      headlamp.intensity = lookName === 'camp' ? 0 : 55;
-      handLight.intensity = holds(me, 'farol') ? 9 : holds(me, 'sunCrown') ? 12 : 0;
+      headlamp.intensity = lookName === 'camp' ? 0 : 58 * mood.farol;
+      handLight.intensity = (holds(me, 'farol') ? 9 : holds(me, 'sunCrown') ? 12 : 0) * (.4 + .6 * mood.farol);
+      motes.visible = lookName !== 'camp'; motes.userData.tick(t); motes.userData.strength(look.dust * mood.farol); motes.userData.scale(canvas.clientHeight * renderer.getPixelRatio());
       handLight.color.set(holds(me, 'sunCrown') ? 0xffd36a : 0xffa850);
       sun.position.set(me.x - 20, 40, me.z + 25); sun.target.position.set(me.x, 0, me.z);
     }
@@ -250,14 +264,15 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (poolAt <= 0 && me) {
       poolAt = .25;
       const sources = [];
-      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : 0xff9a3a, power: 7, d: Math.hypot(l.x - me.x, l.z - me.z) });
+      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? 0xffa24a : 0xff9a3a, power: l.kind === 'candelabra' ? 5.5 : 7, d: Math.hypot(l.x - me.x, l.z - me.z) });
       for (const p of state.players) if (p.id !== me.id && alive(p) && floorOf(p.x) === vf && (holds(p, 'farol') || holds(p, 'sunCrown'))) sources.push({ x: p.x, y: 1.4, z: p.z, color: holds(p, 'sunCrown') ? 0xffd36a : 0xffa850, power: 8, d: Math.hypot(p.x - me.x, p.z - me.z) - 6 });
       sources.sort((a, b) => a.d - b.d);
       pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); } });
     }
     // La codicia shows in the world: torches gutter and dust sifts from the ceiling.
     const greed = Math.min(4, Math.floor((state.codicia || 0) / 25));
-    pool.forEach((light, i) => { light.intensity = vf === 0 ? 0 : (light.userData.power || 0) * (1 - greed * .1) * (.85 + Math.sin(t * (9 + greed * 4) + i * 2) * (.1 + greed * .06)); });
+    // A slow, uneven breathing on every flame, under the quick gutter.
+    pool.forEach((light, i) => { light.intensity = vf === 0 ? 0 : (light.userData.power || 0) * mood.light * (1 - greed * .1) * (.85 + Math.sin(t * (9 + greed * 4) + i * 2) * (.1 + greed * .06)) * (.9 + .1 * Math.sin(t * 1.3 + i * 1.7) * Math.sin(t * .37 + i)); });
     dustAt -= dt;
     if (me && vf > 0 && greed > 0 && dustAt <= 0) {
       dustAt = 1.6 / greed;
@@ -276,7 +291,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   function resize() { canvas.style.width = '100vw'; canvas.style.height = '100dvh'; renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); camera.aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight); camera.updateProjectionMatrix(); }
   addEventListener('resize', resize); resize();
   return {
-    renderer, scene, camera, puffs, waves, avatars, enemies, draw, bark,
+    renderer, scene, camera, puffs, waves, avatars, enemies, draw, bark, mood,
+    get look() { return lookName; },
+    // The Sustos setting scales every camera shake (0 turns it off).
+    set shakeScale(v) { shakeScale = v; },
     get world() { return world; },
     get heading() { return h; }, set heading(v) { h = v; },
     get pitch() { return pitch; }, set pitch(v) { pitch = v; },
@@ -291,7 +309,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       for (const [id, a] of avatars) removeAvatar(a, id);
       for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
       disposeSprite(shopSign);
-      world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
+      motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
       [ballGeometry, dartGeometry, splatGeometry, ringGeometry, pawGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial, pawMaterial].forEach(m => m.dispose());
       renderer.dispose();
     },

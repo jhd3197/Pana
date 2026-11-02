@@ -219,7 +219,8 @@ function furnish(run, room, f, depth, R, id) {
   // Torches in two opposite corners light every room a little.
   const corner = (sx, sz) => ({ x: cx + sx * (room.w / 2 - 1.2), z: cz + sz * (room.d / 2 - 1.2) });
   const lit = R() < .5 ? [[-1, -1], [1, 1]] : [[1, -1], [-1, 1]];
-  for (const [sx, sz] of lit) { const p = corner(sx, sz); light(p.x, p.z, library ? 'candelabra' : d === 1 ? 'mineLamp' : 'brazier'); }
+  // The library lights all four corners with candles (they are dim).
+  for (const [sx, sz] of library ? [[-1, -1], [1, 1], [1, -1], [-1, 1]] : lit) { const p = corner(sx, sz); light(p.x, p.z, library ? 'candelabra' : d === 1 ? 'mineLamp' : 'brazier'); }
   if (!library && (d > 1 || R() < .5)) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
   switch (room.kind) {
     case 'entrada':

@@ -3,6 +3,7 @@
 // prop comes from the shared model library (Pana Studio). Collision never
 // reads this file: it all comes from layout.js, built from the same deck.
 import * as THREE from 'three';
+import { rng } from '/engine/random.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { ruinShell, RUIN_PALETTES } from '/engine/models/props/reliquia-ruins.js';
 import * as treasure from '/engine/models/props/reliquia-treasure.js';
@@ -19,6 +20,7 @@ import { lajaRock } from '/engine/models/props/amazonas.js';
 import { rockyCliff } from '/engine/models/props/mountain.js';
 import { china } from '/engine/models/props/china.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
+import { bookcases, bookcaseDoor, libraryLadder, readingTable, scribeDesk, lectern, candelabra, candleStick, chandelier, tornCurtain, cobwebs, candleFlames } from '/engine/models/props/reliquia-library.js';
 import { createPaintMarker } from '/engine/models/props/paintball.js';
 import { marketStall } from '/engine/models/props/plaza.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -33,7 +35,7 @@ import { ITEMS, ARTIFACTS } from './items.js';
 import { TRUCK, TABLE, HEIGHT, CAGE, floorOf, inRect } from './deck.js';
 
 const PALETTES = ['sol', 'jade', 'maldita'];
-export const paletteFor = floor => RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
+export const paletteFor = (floor, theme = 'mina') => theme === 'biblioteca' ? RUIN_PALETTES.biblioteca : RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
 const FACTORIES = { ...treasure, mineCart: () => mineCart({ load: 'gold' }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
 const GLOW = { tool: 0xfff1d6, treasure: 0xffc23d, big: 0xffd36a };
 
@@ -119,26 +121,36 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
       case 'candles': return graveCandles({ count: 6, seed: d.z | 0 });
       case 'altar': return sunSeal({ size: 2.2 });
       case 'mineLamp': return mineLanternPost({});
+      case 'candelabra': return candelabra({ arms: 3, seed: d.x | 0 });
+      case 'ladder': return libraryLadder({ height: 3.3 });
+      case 'lectern': return lectern({ seed: d.z | 0 });
+      case 'bigLectern': return lectern({ big: true });
+      case 'chandelier': return chandelier({ ceiling: HEIGHT, drop: 1.5, seed: d.x | 0 });
       default: return null;
     }
   }
   function buildFloor(f) {
     if (floorsBuilt.has(f) || f < 1 || f > floors) return floorsBuilt.get(f);
     const root = new THREE.Group(); root.name = `Piso ${f}`; group.add(root);
-    const statics = new THREE.Group(), palette = paletteFor(depth), x0 = f * L.SPACING - 60;
+    const library = run.theme === 'biblioteca', statics = new THREE.Group(), palette = paletteFor(depth, run.theme), x0 = f * L.SPACING - 60;
     const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
-    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell };
+    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [] };
     root.add(floor.shell);
+    // Candle flames of the whole floor go in one instanced shader.
+    const flamePoints = [], flamesOf = (model, x, y, z, h = 0) => { for (const p of model.userData.flames || []) flamePoints.push(new THREE.Vector3(p.x * Math.cos(h) + p.z * Math.sin(h) + x, p.y + y, -p.x * Math.sin(h) + p.z * Math.cos(h) + z)); };
     for (const d of run.decor.filter(d => d.floor === f)) {
       if (d.kind === 'brazier') { const b = place(root, brazier({ seed: d.x | 0, lit: true }), d.x, 0, d.z); floor.braziers.push(b); animated.push(b); continue; }
       const model = decorModel(d); if (!model) continue;
       if (d.kind === 'vein') { model.rotation.z = Math.PI / 2; model.position.y = 1.6; }
+      flamesOf(model, d.x, 0, d.z, d.h);
       place(statics, model, d.x, model.position.y, d.z, d.h);
     }
+    if (library) furnishLibrary(f, statics, root, floor, flamesOf);
     // Skulls and crystals give the dark corners a little colour (crystals are
     // instanced with their own shader, so they stay out of the static batch).
     for (const r of run.rooms.filter(r => r.floor === f)) {
       const k = (r.x * 7 + r.z * 3) | 0;
+      if (library) { if (k % 3 === 0) place(statics, skull({ size: .3 }), r.rect[0] + 1.6, 0, r.rect[3] - 1.4, k); continue; }
       if (f > 1 && k % 3 === 0) place(statics, skull({ size: .35 }), r.rect[0] + 1, 0, r.rect[3] - 1.1, k);
       if (k % 2 === 0) place(root, crystalCluster({ size: .9, color: (k >> 1) % 8, seed: k }), r.rect[2] - .8, 0, r.rect[1] + .8, k);
     }
@@ -170,6 +182,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
     for (const stop of run.lifts.filter(l => l.floor === f)) place(root, treasure.liftShaft(), stop.x, 0, stop.z, stop.h);
     for (const pad of run.cargo.filter(c => c.floor === f)) place(root, treasure.cargoLift({ button: Math.sign(pad.bx - pad.x) || 1 }), pad.x, 0, pad.z);
     const batch = bake(statics, { cellSize: 26 }); statics.traverse(o => o.geometry?.dispose()); root.add(batch);
+    if (flamePoints.length) { floor.flames = candleFlames(flamePoints); root.add(floor.flames); }
     floorsBuilt.set(f, floor);
     return floor;
   }
@@ -177,6 +190,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
   // and timber sets in the mine, jaguar reliefs, hanging roots and doorway
   // pillars deeper down. Nothing here collides; it all hugs the walls.
   function dress(f, statics, root) {
+    if (run.theme === 'biblioteca') return;
     const openings = [...run.corridors, ...run.stubs].filter(c => c.floor === f).map(c => c.rect);
     for (const room of run.rooms.filter(r => r.floor === f)) {
       const [x0, z0, x1, z1] = room.rect, k = (room.x * 3 + room.z * 7) | 0, spots = [];
@@ -201,6 +215,91 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
         place(statics, ruinColumn({ seed: (a * 5 + b) | 0, radius: .32, height: HEIGHT }), a, 0, b);
       }
     }
+  }
+  // La biblioteca sepultada: the dealt bookcases, tables and desks, then
+  // cases along every free stretch of wall, webs in the corners, torn
+  // curtains by the doorways and the bookcase that hides the secret room.
+  function furnishLibrary(f, statics, root, floor, flamesOf) {
+    const cases = [], webs = [], seed = f * 31 + depth * 7, R = rng(seed);
+    for (const s of run.solids.filter(s => s.floor === f)) {
+      const [a, b, c, d] = s.rect, x = (a + c) / 2, z = (b + d) / 2, along = s.axis === 'x';
+      if (s.kind === 'shelf') {
+        const height = s.tall ? 3.8 : 3.3;
+        cases.push({ x, z, h: along ? 0 : Math.PI / 2, length: along ? c - a : d - b, height, room: s.room });
+        // Somebody left candles burning on the floor along the stacks.
+        if (along && R() < .45) { const sx = a + .3 + R() * (c - a - .6), sz = z + (R() < .5 ? -1 : 1) * .55, stick = candleStick({ seed: (sx * 7) | 0 }); flamesOf(stick, sx, 0, sz); place(statics, stick, sx, 0, sz, R() * 6); }
+        // Webs strung from the cases' ends up to the ceiling.
+        if (R() < .6) webs.push({ x: along ? a + .05 : x - .4, y: HEIGHT - .02, z: along ? z - .4 : b + .05, h: along ? -Math.PI / 2 : 0, size: Math.min(1.3, HEIGHT - height + .5), tilt: (R() - .5) * .3 });
+        if (R() < .4) webs.push({ x: along ? c - .05 : x + .4, y: HEIGHT - .02, z: along ? z + .4 : d - .05, h: along ? Math.PI / 2 : Math.PI, size: Math.min(1.3, HEIGHT - height + .5), tilt: (R() - .5) * .3 });
+      }
+      if (s.kind === 'table') {
+        place(statics, readingTable({ length: c - a - .2, width: d - b, seed: (x * 3) | 0 }), x, 0, z, 0);
+        for (const dx of [-1.4, 1.1]) if (R() < .75) { const stick = candleStick({ seed: (x + dx) | 0 }), sz = z + (R() - .5) * .4; flamesOf(stick, x + dx, .81, sz); place(statics, stick, x + dx, .81, sz); }
+      }
+      if (s.kind === 'desk') place(statics, scribeDesk({ seed: (x * 5 + z) | 0 }), x, 0, z, s.h || 0);
+    }
+    // Wall cases: single-sided, backs to the bricks, never across an opening,
+    // a seal, a dart lane or the cargo lift.
+    const openings = [...run.corridors, ...run.stubs].filter(c => c.floor === f).map(c => c.rect);
+    for (const room of run.rooms.filter(r => r.floor === f)) {
+      const [x0, z0, x1, z1] = room.rect;
+      const walls = [
+        { along: 'x', fixed: z0, into: 1, from: x0, to: x1 }, { along: 'x', fixed: z1, into: -1, from: x0, to: x1 },
+        { along: 'z', fixed: x0, into: 1, from: z0, to: z1 }, { along: 'z', fixed: x1, into: -1, from: z0, to: z1 },
+      ];
+      for (const w of walls) {
+        let spans = [[w.from + 1.9, w.to - 1.9]];
+        const cut = (a, b) => { spans = spans.flatMap(([p, q]) => [[p, Math.min(q, a)], [Math.max(p, b), q]]).filter(([p, q]) => q - p >= 1.6); };
+        for (const o of openings) {
+          const near = w.along === 'x' ? o[1] - .8 < w.fixed && o[3] + .8 > w.fixed : o[0] - .8 < w.fixed && o[2] + .8 > w.fixed;
+          if (near) { if (w.along === 'x') cut(o[0] - .6, o[2] + .6); else cut(o[1] - .6, o[3] + .6); }
+        }
+        for (const q of run.seals.filter(q => q.room === room.id)) if (w.along === 'x') cut(q.x - 3.4, q.x + 3.4);
+        for (const p of run.plates.filter(p => p.room === room.id)) if (w.along === 'z') cut(p.z - 1.2, p.z + 1.2);
+        for (const pad of run.cargo.filter(c => c.floor === f && inRect(c.x, c.z, room.rect))) { if (w.along === 'x') cut(pad.x - 2.4, pad.x + 2.4); else cut(pad.z - 2.4, pad.z + 2.4); }
+        for (const [p, q] of spans) for (let a = p; a < q - 1.2;) {
+          const len = Math.min(q - a, 2.4 + R() * 1.2), mid = a + len / 2, off = w.fixed + w.into * .23, height = 3.2 + R() * .7;
+          cases.push(w.along === 'x' ? { x: mid, z: off, h: w.into > 0 ? 0 : Math.PI, length: len, height, double: false, room: room.id } : { x: off, z: mid, h: w.into > 0 ? Math.PI / 2 : -Math.PI / 2, length: len, height, double: false, room: room.id });
+          a += len + .15;
+        }
+      }
+      // Webs in the ceiling corners; a dead chandelier in the big rooms.
+      for (const [cx, cz, ax, az] of [[x0, z0, 1, 1], [x1, z0, -1, 1], [x0, z1, 1, -1], [x1, z1, -1, -1]]) if (R() < .85) webs.push(cornerWeb(cx, cz, ax, az, HEIGHT - .02, .9 + R() * .9, R));
+      if (room.w >= 16 && room.kind !== 'estanterias' && !run.decor.some(d => d.kind === 'chandelier' && d.room === room.id)) place(statics, chandelier({ ceiling: HEIGHT, drop: 1.3, seed: room.x | 0 }), room.x + (R() - .5) * 2, 0, room.z + (R() - .5) * 2, R() * 3);
+    }
+    // Corridors: webs up high, and torn curtains drawn aside at each end.
+    for (const c of run.corridors.filter(c => c.floor === f)) {
+      const [x0, z0, x1, z1] = c.rect;
+      if (R() < .8) { const t = .3 + R() * .4; webs.push(c.horizontal ? cornerWeb(x0 + (x1 - x0) * t, z0, 0, 1, HEIGHT - .02, 1.1, R, 1) : cornerWeb(x0, z0 + (z1 - z0) * t, 1, 0, HEIGHT - .02, 1.1, R, 1)); }
+      if (c.hidden) continue;
+      for (const end of [0, 1]) if (R() < .5) {
+        const side = R() < .5 ? -1 : 1, curtain = tornCurtain({ width: 1.2, height: 3.7, seed: (x0 * 3 + z0 + end * 7) | 0, color: R() < .6 ? 0x4a1a1e : 0x2c3326 });
+        if (c.horizontal) place(root, curtain, end ? x1 - .7 : x0 + .7, 0, side < 0 ? z0 + .2 : z1 - .2, 0);
+        else place(root, curtain, side < 0 ? x0 + .2 : x1 - .2, 0, end ? z1 - .7 : z0 + .7, Math.PI / 2);
+      }
+    }
+    // The secret room hides behind a bookcase that swings open into its passage.
+    for (const hid of run.hidden.filter(h => h.floor === f)) {
+      const corridor = run.corridors.find(c => c.id === hid.corridor), room = run.rooms.find(r => r.floor === f && r.id !== hid.room && (r.id === corridor?.a || r.id === corridor?.b));
+      if (!room) continue;
+      const [x0, z0, x1, z1] = room.rect, gaps = [Math.abs(hid.x - x1), Math.abs(hid.x - x0), Math.abs(hid.z - z0), Math.abs(hid.z - z1)], min = Math.min(...gaps);
+      const face = [{ x: -1, z: 0, at: [x1, hid.z] }, { x: 1, z: 0, at: [x0, hid.z] }, { x: 0, z: 1, at: [hid.x, z0] }, { x: 0, z: -1, at: [hid.x, z1] }][gaps.indexOf(min)];
+      const door = bookcaseDoor({ width: 4, height: 3.7, seed: hid.x | 0 });
+      place(root, door, face.at[0] + face.x * .22, 0, face.at[1] + face.z * .22, Math.atan2(face.x, face.z));
+      floor.doors.push({ id: hid.id, door, open: 0 });
+    }
+    // One set of instanced cases per room, so the rooms out of view are culled.
+    for (const room of new Set(cases.map(c => c.room))) root.add(bookcases(cases.filter(c => c.room === room), { seed: seed + root.children.length }));
+    if (webs.length) root.add(cobwebs(webs));
+  }
+  // A web card across the corner between two walls running along ax and az
+  // from (x, z); with `flat`, one web along a single wall (ax or az).
+  function cornerWeb(x, z, ax, az, top, size, R, flat) {
+    const p1 = flat ? { x, z } : { x: x + ax * size * .7, z }, p2 = flat ? { x: x + ax * size, z: z + az * size } : { x, z: z + az * size * .7 };
+    const dx = p2.x - p1.x, dz = p2.z - p1.z, len = Math.hypot(dx, dz) || 1, h = Math.atan2(-dz, dx);
+    if (flat) return { x: p1.x + az * .02, y: top, z: p1.z + ax * .02, h, size: len, tilt: 0 };
+    const n = { x: Math.sin(h), z: Math.cos(h) }, toCorner = (x - (p1.x + p2.x) / 2) * n.x + (z - (p1.z + p2.z) / 2) * n.z;
+    return { x: p1.x, y: top, z: p1.z, h, size: len, tilt: (toCorner < 0 ? 1 : -1) * (.5 + R() * .25) };
   }
   // The cage's square at a stop: no floor slabs, no ceiling.
   function inShaft(f, x, z, pad = 0) { const stop = run.lifts.find(l => l.floor === f); return !!stop && Math.abs(x - stop.x) < CAGE + pad && Math.abs(z - stop.z) < CAGE + pad; }
@@ -272,6 +371,8 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
       for (const [id, seal] of floor.seals) { seal.height = THREE.MathUtils.damp(seal.height, state.open?.[id] ? -HEIGHT - .4 : 0, 2.2, dt); seal.slab.position.y = seal.height; }
       for (const [id, model] of floor.winches) { const w = state.winches?.[id]; model.userData.wheel.rotation.z = -(w?.progress || 0) * Math.PI * 2 - (w?.latched > 0 ? t * 2 : 0); }
       for (const [id, chest] of floor.chests) { const open = !!state.chests?.[id]; chest.open = THREE.MathUtils.damp(chest.open, open ? 1 : 0, 6, dt); chest.model.userData.lid.rotation.x = -chest.open * 1.9; }
+      for (const d of floor.doors) { d.open = THREE.MathUtils.damp(d.open, revealedNow[d.id] ? 1 : 0, 1.6, dt); d.door.userData.hinge.rotation.y = d.open * 1.45; }
+      if (floor.flames) floor.flames.userData.tick(t);
       for (const { id, plate } of floor.plates) plate.userData.glyph.material.emissiveIntensity = (state.plates?.[id] || 0) > (state.time || 0) ? 1.4 : .15 + Math.sin(t * 3 + id) * .1;
     }
     const ride = liftView(state.lift), at = run.lifts.find(l => l.floor === ride.floor);
@@ -298,5 +399,14 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
     owned.forEach(m => m.dispose?.()); haloMaterials.forEach(m => m.dispose()); halo.dispose();
     materials.forEach(m => { if (m.map && m.map !== halo) m.map.dispose?.(); });
   }
-  return { group, update, dispose, buildFloor, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
+  // The candles' shader inputs, from the view: fog, a global level (lights
+  // dying in a scare) and a blow-out around a point.
+  function candles({ level = 1, out = null, near = 4, far = 24 } = {}) {
+    for (const floor of floorsBuilt.values()) {
+      const u = floor.flames?.userData; if (!u) continue;
+      u.level(level); u.fog(near, far);
+      if (out) u.blowOut(out.x, out.z, out.r, out.amount); else u.blowOut(0, 0, 1, 0);
+    }
+  }
+  return { group, update, dispose, buildFloor, candles, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
 }
