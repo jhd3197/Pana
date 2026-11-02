@@ -1,5 +1,5 @@
 // Collision and navigation for a generated run, renderer-free. The static
-// footprint (rooms, corridors, stairs, pits) is rasterised once per seed into
+// footprint (rooms, corridors, stairs, pits, bookcases) is rasterised once per seed into
 // a 0.25 m bitmap per floor; what changes during a run (closed seals, fake
 // walls, collapsed tunnels) comes from the state at query time.
 import { generateRun, floorOf, inRect, SPACING, CAGE } from './deck.js';
@@ -27,6 +27,8 @@ export function layoutFor(seed = 1, depth = 1) {
     };
     for (const r of rects) fill(r, 1);
     for (const p of pits) fill(p.rect, 2, (x, z) => !inRect(x, z, p.island) && !bridges.some(b => inRect(x, z, b.rect)));
+    // Bookcases and reading tables are walls as far as anyone can tell.
+    for (const s of run.solids || []) if (s.floor === f) fill(s.rect, 0);
     grids.push({ x0, z0, w, h, bits, obstacles: run.obstacles.filter(o => o.floor === f) });
   }
   const cell = (x, z) => {

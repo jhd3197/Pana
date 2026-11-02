@@ -3,7 +3,7 @@
 // loot back to the truck to bank it, and la codicia rises with every
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
-import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, FLOOR_NAMES, CAGE } from './deck.js';
+import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, CAGE } from './deck.js';
 import { layoutFor, distance } from './layout.js';
 import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from './items.js';
 import { spawnEnemy, updateEnemies, holds } from './enemies.js';
@@ -603,7 +603,7 @@ export class Expedition {
       riders.forEach(p => { p.riding = false; });
       if (lift.to > this.deepest) {
         this.deepest = lift.to; riders.forEach(p => { p.stats.unaMas++; });
-        this.event('descend', locKey('¡Bajaron al piso {floor}: {place}!'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to, place: FLOOR_NAMES[lift.to] || locKey('el oro profundo') } });
+        this.event('descend', locKey('¡Bajaron al piso {floor}: {place}!'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to, place: jornadaName(this.level) } });
       }
       this.event('lift-arrive', riders.length ? '' : lift.to ? locKey('El montacargas llegó al piso {floor}.') : locKey('El montacargas llegó al campamento.'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to } });
       const done = lift.to === 0 && lift.from === 1 && riders.length && this.delivered >= this.quota;

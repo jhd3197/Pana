@@ -20,7 +20,7 @@ import { createView } from './view.js';
 import { createHud, money } from './hud.js';
 import { sfx } from './sounds.js';
 import { createAmbience } from './ambience.js';
-import { floorOf, FLOOR_NAMES } from './deck.js';
+import { floorOf, jornadaName } from './deck.js';
 import { ITEMS, say } from './items.js';
 import { loc } from '/engine/i18n.js';
 
@@ -104,7 +104,7 @@ function handle(e) {
     case 'lost': sfx.lost(); break;
     case 'curse': sfx.curse(); view.shake(.3); break;
     case 'seal': sfx.seal(); view.shake(.5); break;
-    case 'descend': if (e.players?.includes(room.id)) shout(loc('Piso {n}: {place}', { n: e.floor, place: FLOOR_NAMES[e.floor] ? loc(FLOOR_NAMES[e.floor]) : loc('el oro profundo') }), { tone: 'yellow' }); break;
+    case 'descend': if (e.players?.includes(room.id)) shout(loc('Jornada {n} · {place}', { n: state.level, place: loc(jornadaName(state.level)) }), { tone: 'yellow' }); break;
     case 'trap': if (near) sfx.trap(); break;
     case 'hurt': if (mine) { sfx.hurt(); view.shake(.35); } break;
     case 'down': sfx.down(); break;
