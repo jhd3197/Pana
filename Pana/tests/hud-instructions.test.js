@@ -32,7 +32,7 @@ function walk(dir, keep, out = []) {
 
 // Games still moving their instructions off the HUD. Empty it, never grow it.
 export const PENDING = new Set(['billar', 'bochinche', 'bululu', 'caida', 'capis', 'carreritas', 'chapita', 'cocina',
-  'criollas', 'curiara', 'domino', 'embuste', 'escondidas', 'galope', 'lancha', 'ludo', 'parapente', 'pintura', 'poquer',
+  'criollas', 'curiara', 'embuste', 'escondidas', 'galope', 'lancha', 'ludo', 'parapente', 'pintura', 'poquer',
   'qqsmp', 'reliquia', 'stop', 'tambor', 'trifulca']);
 
 // `game:#id` or `game:.class` → why it is not an instruction.
