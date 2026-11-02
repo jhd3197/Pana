@@ -145,7 +145,7 @@ function receive(next) {
   view.reseed(state.seed, state.level || 1);
   if (phase !== state.phase) {
     phase = state.phase; menu.close(); clearInput(); document.body.classList.toggle('playing', phase === 'playing');
-    if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
+    if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; if (qs.has('debug') && Number(qs.get('jornada')) > 1) queueMicrotask(() => window.reliquia?.jornada(Number(qs.get('jornada')))); lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
     if (phase !== 'playing') looking.release();
   }
   // Local practice and a fresh host start a new count.
@@ -216,6 +216,8 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
   face(h, pitch) { view.heading = h; if (pitch !== undefined) view.pitch = pitch; },
   // Force a scare now: silhouette, jumpscare, bookFall, flicker, candleOut, slam, thud, whisper, heartbeat, fogSurge, farolStutter.
   scare(kind) { fx.force(kind, { state, me: me(), heading: view.heading }); },
+  // Skip ahead to jornada n (2 is the first library): host only.
+  jornada(n) { const g = room.game; if (!room.isHost || !g || g.phase !== 'playing') return false; while (g.level < n) g.completeLevel(); room.publish(); return g.level; },
   fx,
 };
 

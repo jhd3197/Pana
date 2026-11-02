@@ -220,6 +220,8 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
   // cases along every free stretch of wall, webs in the corners, torn
   // curtains by the doorways and the bookcase that hides the secret room.
   function furnishLibrary(f, statics, root, floor, flamesOf) {
+    // Webs hang from just under the rough ceiling slabs, never inside them.
+    const WEB_TOP = HEIGHT - .4;
     const cases = [], webs = [], seed = f * 31 + depth * 7, R = rng(seed);
     for (const s of run.solids.filter(s => s.floor === f)) {
       const [a, b, c, d] = s.rect, x = (a + c) / 2, z = (b + d) / 2, along = s.axis === 'x';
@@ -229,8 +231,8 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
         // Somebody left candles burning on the floor along the stacks.
         if (along && R() < .45) { const sx = a + .3 + R() * (c - a - .6), sz = z + (R() < .5 ? -1 : 1) * .55, stick = candleStick({ seed: (sx * 7) | 0 }); flamesOf(stick, sx, 0, sz); place(statics, stick, sx, 0, sz, R() * 6); }
         // Webs strung from the cases' ends up to the ceiling.
-        if (R() < .6) webs.push({ x: along ? a + .05 : x - .4, y: HEIGHT - .02, z: along ? z - .4 : b + .05, h: along ? -Math.PI / 2 : 0, size: Math.min(1.3, HEIGHT - height + .5), tilt: (R() - .5) * .3 });
-        if (R() < .4) webs.push({ x: along ? c - .05 : x + .4, y: HEIGHT - .02, z: along ? z + .4 : d - .05, h: along ? Math.PI / 2 : Math.PI, size: Math.min(1.3, HEIGHT - height + .5), tilt: (R() - .5) * .3 });
+        if (R() < .6) webs.push({ x: along ? a + .05 : x - .4, y: WEB_TOP, z: along ? z - .4 : b + .05, h: along ? -Math.PI / 2 : 0, size: Math.min(1.3, WEB_TOP - height + .4), tilt: (R() - .5) * .3 });
+        if (R() < .4) webs.push({ x: along ? c - .05 : x + .4, y: WEB_TOP, z: along ? z + .4 : d - .05, h: along ? Math.PI / 2 : Math.PI, size: Math.min(1.3, WEB_TOP - height + .4), tilt: (R() - .5) * .3 });
       }
       if (s.kind === 'table') {
         place(statics, readingTable({ length: c - a - .2, width: d - b, seed: (x * 3) | 0 }), x, 0, z, 0);
@@ -264,13 +266,13 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
         }
       }
       // Webs in the ceiling corners; a dead chandelier in the big rooms.
-      for (const [cx, cz, ax, az] of [[x0, z0, 1, 1], [x1, z0, -1, 1], [x0, z1, 1, -1], [x1, z1, -1, -1]]) if (R() < .85) webs.push(cornerWeb(cx, cz, ax, az, HEIGHT - .02, .9 + R() * .9, R));
+      for (const [cx, cz, ax, az] of [[x0, z0, 1, 1], [x1, z0, -1, 1], [x0, z1, 1, -1], [x1, z1, -1, -1]]) { R(); webs.push(cornerWeb(cx, cz, ax, az, WEB_TOP, .9 + R() * .9, R)); }
       if (room.w >= 16 && room.kind !== 'estanterias' && !run.decor.some(d => d.kind === 'chandelier' && d.room === room.id)) place(statics, chandelier({ ceiling: HEIGHT, drop: 1.3, seed: room.x | 0 }), room.x + (R() - .5) * 2, 0, room.z + (R() - .5) * 2, R() * 3);
     }
     // Corridors: webs up high, and torn curtains drawn aside at each end.
     for (const c of run.corridors.filter(c => c.floor === f)) {
       const [x0, z0, x1, z1] = c.rect;
-      if (R() < .8) { const t = .3 + R() * .4; webs.push(c.horizontal ? cornerWeb(x0 + (x1 - x0) * t, z0, 0, 1, HEIGHT - .02, 1.1, R, 1) : cornerWeb(x0, z0 + (z1 - z0) * t, 1, 0, HEIGHT - .02, 1.1, R, 1)); }
+      if (R() < .8) { const t = .3 + R() * .4; webs.push(c.horizontal ? cornerWeb(x0 + (x1 - x0) * t, z0, 0, 1, WEB_TOP, 1.1, R, 1) : cornerWeb(x0, z0 + (z1 - z0) * t, 1, 0, WEB_TOP, 1.1, R, 1)); }
       if (c.hidden) continue;
       for (const end of [0, 1]) if (R() < .5) {
         const side = R() < .5 ? -1 : 1, curtain = tornCurtain({ width: 1.2, height: 3.7, seed: (x0 * 3 + z0 + end * 7) | 0, color: R() < .6 ? 0x4a1a1e : 0x2c3326 });

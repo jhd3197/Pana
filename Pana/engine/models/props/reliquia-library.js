@@ -278,9 +278,9 @@ export function bookcaseDoor({ width = 4, height = 3.6, seed = 10 } = {}) {
 // ---------- Cobwebs ----------
 // list: [{ x, y, z, h, size = 1, tilt = 0 }], each a web card filling a
 // corner: its top-left corner at the point, spreading down and along +x.
-export function cobwebs(list, { opacity = .42 } = {}) {
+export function cobwebs(list, { opacity = .55 } = {}) {
   const geometry = new THREE.PlaneGeometry(1, 1).translate(.5, -.5, 0);
-  const material = owned(new THREE.MeshLambertMaterial({ map: webTexture(), color: 0xa49e90, transparent: true, opacity, alphaTest: .04, depthWrite: false, side: THREE.DoubleSide }));
+  const material = owned(new THREE.MeshLambertMaterial({ map: webTexture(), color: 0xbab4a6, transparent: true, opacity, alphaTest: .04, depthWrite: false, side: THREE.DoubleSide }));
   const mesh = instanced(geometry, material, list.length), m = new THREE.Object3D();
   for (const w of list) { m.position.set(w.x, w.y, w.z); m.rotation.set(w.tilt || 0, w.h || 0, 0, 'YXZ'); m.scale.setScalar(w.size || 1); push(mesh, m); }
   finish(mesh); mesh.receiveShadow = false; mesh.renderOrder = 2; mesh.name = 'Telarañas';
