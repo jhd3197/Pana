@@ -12,7 +12,7 @@ import { sound } from '/engine/fx.js';
 import { floorOf } from './deck.js';
 
 export function createAmbience() {
-  let graph = null, stepAt = 0, eventIn = 2, cricketIn = 1, clockIn = 6, ticks = 0;
+  let graph = null, near = 0, stepAt = 0, eventIn = 2, cricketIn = 1, clockIn = 6, ticks = 0;
   const steps = new Map(), voices = new Map();
 
   // Lazily, once audio is unlocked: a split after the game's output into a
@@ -121,7 +121,8 @@ export function createAmbience() {
     graph.wet.gain.setTargetAtTime(deep ? library ? .42 : .55 : .06, now, .4);
     graph.wind.gain.setTargetAtTime(library ? .05 + tier * .015 : 0, now, 1.5);
     graph.bed.gain.setTargetAtTime(deep ? .05 + tier * .015 : 0, now, .8);
-    graph.drone.gain.setTargetAtTime(deep ? .012 + tier * .01 : 0, now, 1.2);
+    // presence.js swells the drone while a mummy closes in (0…1).
+    graph.drone.gain.setTargetAtTime(deep ? .012 + tier * .01 + near * .03 : 0, now, 1.2);
     if (!playing) return;
     // Footsteps: yours on your stride, others' from where they walk.
     for (const p of state.players) {
@@ -165,5 +166,5 @@ export function createAmbience() {
   }
   // The scare layers, placed like everything else (pan -1…1).
   function eerie(name, { pan = 0, gain = 1, strength = 1 } = {}) { if (SOUNDS[name]) voice((ctx, out, t) => SOUNDS[name](ctx, out, t, strength), { pan, gain }); }
-  return { update, eerie };
+  return { update, eerie, set presence(v) { near = Math.max(0, Math.min(1, v || 0)); } };
 }

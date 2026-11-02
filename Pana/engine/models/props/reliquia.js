@@ -1,6 +1,7 @@
 // Canonical expedition models, shared by Reliquia and Studio. Metres, +Y up.
 import * as THREE from 'three';
 import { bake } from '/engine/models/core/static-batch.js';
+import { gauntMummy } from './gaunt-mummy.js';
 const material = (color, extra = {}) => {
   const m = new THREE.MeshStandardMaterial({ color, roughness: 0.85, ...extra });
   m.userData.reliquiaOwned = true; return m;
@@ -8,7 +9,10 @@ const material = (color, extra = {}) => {
 function part(parent, geometry, mat, x = 0, y = 0, z = 0) { const m = new THREE.Mesh(geometry, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m; }
 const box = (g, mat, w, h, d, x, y, z) => part(g, new THREE.BoxGeometry(w, h, d), mat, x, y, z);
 const ring = (g, mat, r, tube, x, y, z) => part(g, new THREE.TorusGeometry(r, tube, 5, 16), mat, x, y, z);
-export function mummy({ guardian = false } = {}) {
+// gaunt: the tall, starved Reliquia mummy (gaunt-mummy.js); without it the
+// classic wrapped mummy every other game uses, unchanged.
+export function mummy({ guardian = false, gaunt = false, seed = 1 } = {}) {
+  if (gaunt && !guardian) return gauntMummy({ seed });
   const group = new THREE.Group(); group.name = guardian ? 'Guardián del sol' : 'Momia del templo';
   const cloth = material(guardian ? 0xbba981 : 0xd6c49b), band = material(0x9c8d6f), dark = material(0x263a35), gold = material(0xc49b4f, { metalness: 0.55 }), jade = material(0x70e2bd, { emissive: 0x269d7c, emissiveIntensity: 1 });
   const torso = new THREE.Group(); torso.position.y = 1.25; group.add(torso);

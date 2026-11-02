@@ -23,6 +23,7 @@ import { createHud, money } from './hud.js';
 import { sfx } from './sounds.js';
 import { createAmbience } from './ambience.js';
 import { createSamples } from './samples.js';
+import { createPresence } from './presence.js';
 import { floorOf, jornadaName } from './deck.js';
 import { ITEMS, say } from './items.js';
 import { loc } from '/engine/i18n.js';
@@ -33,7 +34,8 @@ const qs = new URLSearchParams(location.search), code = roomCode();
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
 const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience(), samples = createSamples();
 // Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
-let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares);
+let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares); view.scares = scares;
+const presence = createPresence({ view, ambience, samples });
 const fx = createEerieFx({ view, ambience, samples, dread: v => { const r = Math.round(v * 20) / 20; if (r !== dreadShown) { dreadShown = r; $('dread').style.opacity = r; } } });
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
@@ -53,7 +55,7 @@ const menu = createGameMenu({
   pad: { move: 'wasd', look: loc('Mirar'), keys: { rt: ['KeyV', loc('Usar lo de la mano derecha')], a: ['Space', loc('Saltar')], lt: ['KeyF', loc('Usar lo de la mano izquierda')], x: ['KeyE', loc('Agarrar o abrir; mantén para girar')], b: ['KeyQ', loc('Soltar')], y: ['KeyG', loc('Lanzar')], rb: ['KeyR', loc('Arrastrar a un pana')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver el mapa y la expedición')] } },
   title: 'Reliquia', heading: loc('Un respiro'), resumeLabel: loc('Volver a la mina'), sound, notify,
   note: () => solo() ? loc('La expedición está en pausa.') : loc('Tus panas siguen en la mina.'),
-  options: [{ ...SCARES, get: () => scares, set: v => { if (saveScares(v)) { scares = v; view.shakeScale = shakeFor(v); } } }],
+  options: [{ ...SCARES, get: () => scares, set: v => { if (saveScares(v)) { scares = v; view.shakeScale = shakeFor(v); view.scares = v; } } }],
   actions: [{ id: 'offline', label: loc('Abrir expedición local'), kind: 'link', visible: () => failed, run: () => room.practice() }],
   invite: () => inviteUrl(code),
   onOpen() { clearInput(); looking.release(); intel.release(); }, onClose() {},
@@ -202,6 +204,7 @@ function frame(now) {
   heard.state = state; heard.me = p; heard.heading = view.heading; heard.paused = menu.isOpen; heard.theme = theme; heard.floor = p ? view.world.floors.get(floorOf(p.x)) : null; heard.run = view.world.run;
   samples.update(dt, heard);   // wind, drips, chandeliers, and hiding spots creaking as a search starts
   fx.update(dt, { state, me: p, heading: view.heading, paused: menu.isOpen, scares, run: view.world.run });
+  presence.update(dt, { state, me: p, heading: view.heading, paused: menu.isOpen, scares });   // mummies felt before seen
   if (p && state.phase === 'playing' && !p.downed && !p.spectator) { const speed = p.moving ? Math.hypot(p.vx, p.vz) : 0; feet.update(dt, { speed, height: p.jumpHeight || 0, sprint: speed > 5.4, surface, volume: .8 }, stepSink); }
   else feet.reset();
   intel.check();
