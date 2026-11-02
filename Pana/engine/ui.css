@@ -334,10 +334,6 @@ button.pana-hint-button:hover { background: rgba(46, 37, 88, .95); }
 /* Keyboard reminders include legacy unmarked keycaps. Pad labels opt out. */
 :is([data-pana-input=gamepad],[data-pana-input=touch]) :is([data-pana-hint],kbd:not([data-pad-key])) { display: none !important; }
 [data-pana-input=gamepad] :is(.pk-touch,.pk-dpad) { display: none !important; }
-.pana-pad-prompts { position: fixed; z-index: 25; left: 50%; bottom: max(10px,env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 16px; width: max-content; max-width: min(1050px,94vw); padding: 8px 14px; background: #0d0b21e8; color: #f3e9d7; font: 800 12px Nunito,sans-serif; pointer-events: none; }
-.pana-pad-prompts[hidden] { display: none; }
-.pana-pad-prompts > span { display: inline-flex; align-items: center; gap: 6px; }
-.pana-pad-prompts kbd { color: #ffc629; font: 900 11px Nunito,sans-serif; border: 1px solid #67577f; padding: 3px 5px; }
 @media (max-width: 1150px) {
   .pana-settings-workspace { grid-template-columns: 86px minmax(0, 1fr) minmax(260px, 30%); gap: 0 18px; }
   .pana-setting-row { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
@@ -414,4 +410,38 @@ button.pana-hint-button:hover { background: rgba(46, 37, 88, .95); }
 }
 @media (prefers-reduced-motion: reduce) {
   .pana-hud-button.pana-hud-button, .pana-hud-button.pana-hud-button::before { transition: none; }
+}
+
+/* Instrucciones (engine/controls-page.js): goal, how to play and tips on the
+   left, the controls of the device in use on the right. Square, like Ajustes. */
+.pana-menu[data-tab=help] { background: repeating-linear-gradient(-62deg, rgba(255, 255, 255, .025) 0 60px, transparent 60px 120px), radial-gradient(ellipse at 75% 40%, #2b2160, #120e2c 60%, #0b0920); }
+.pana-help { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 0 clamp(24px, 4vw, 64px); max-width: 1280px; }
+.pana-help.is-single { grid-template-columns: minmax(0, 860px); }
+.pana-help-about, .pana-help-controls { min-width: 0; }
+.pana-help-title { margin: 22px 0 10px; color: var(--pm-muted); font: 900 13px/1 Nunito, system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+.pana-help-about > .pana-help-title:first-child, .pana-help-devices + .pana-help-title { margin-top: 0; }
+.pana-help-goal { margin: 0; padding: 14px 18px; background: rgba(14, 11, 36, .75); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); color: var(--pm-yellow); font: 800 18px/1.4 Nunito, system-ui, sans-serif; }
+.pana-help-copy { margin: 0 0 10px; color: #d9d3f0; font: 700 16px/1.5 Nunito, system-ui, sans-serif; }
+.pana-help-tips { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.pana-help-tips li { padding: 10px 14px; background: rgba(14, 11, 36, .75); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); color: #d9d3f0; font: 700 15px/1.45 Nunito, system-ui, sans-serif; }
+.pana-help-devices { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 18px; }
+.pana-help-devices [role=radio] { padding: 10px 16px 8px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; color: var(--pm-muted); font: 900 14px Nunito, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.pana-help-devices [role=radio]:hover { color: var(--pm-text); }
+.pana-help-devices [role=radio][aria-checked=true] { color: var(--pm-yellow); border-bottom-color: var(--pm-yellow); }
+.pana-help-rows { display: grid; gap: 6px; margin-bottom: 8px; }
+.pana-help-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 48px; padding: 6px 14px 6px 18px; background: rgba(14, 11, 36, .75); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
+.pana-help-action { color: var(--pm-text); font: 800 16px/1.3 Nunito, system-ui, sans-serif; }
+.pana-help-keys { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 5px; }
+.pana-help-or { color: var(--pm-muted); font-size: 13px; }
+.pana-help-touch { color: var(--pm-teal); font: 900 14px/1.3 Nunito, system-ui, sans-serif; text-align: right; }
+/* Keys stay visible here whatever device is in use (ui.css hides stray keycaps elsewhere). */
+[data-pana-input] .pana-menu .pana-help-keys kbd { display: inline-flex !important; }
+@media (max-width: 900px) {
+  .pana-help { grid-template-columns: minmax(0, 1fr); }
+  .pana-help-controls { margin-top: 22px; }
+}
+@media (max-width: 480px) {
+  .pana-help-row { grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 10px 12px; }
+  .pana-help-keys { justify-content: flex-start; }
+  .pana-help-touch { text-align: left; }
 }

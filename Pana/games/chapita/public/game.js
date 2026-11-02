@@ -36,12 +36,6 @@ const roomOptions = createRoomOptions($('room-options'), { title: 'Chapita', fie
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
 const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', loc('Lanzar, batear o atrapar')], rt: ['Space', loc('Lanzar, batear o atrapar')], lb: ['KeyQ', loc('Curva a la izquierda')], rb: ['KeyE', loc('Curva a la derecha')], y: ['KeyC', loc('Chapita plana o doblada')] } }, title: loc('Chapita · Pana'), sound, orientation: 'libre',
   note: () => room.members.size > 1 ? loc('La caimanera sigue mientras estás en el menú.') : loc('La caimanera está en pausa. Los bots te esperan.'),
-  controls: [['1 · 2 · 3', loc('Planea, cae de golpe o curva (pitcher)')], [loc('Flechas'), loc('Apuntar: alto, medio, bajo; izquierda o derecha')], ['Q · E', loc('Hacia dónde rompe la curva')], ['C', loc('Chapita plana o doblada')],
-    ['W · S', loc('Cambiar la altura del palo (si no, va sola)')], [loc('Espacio'), loc('Lanzar, batear o atrapar')], ['Z', loc('Batear de zurdo')], ['M', loc('Activar o silenciar el sonido')]],
-  tips: [loc('Al bate, mira el aro en el plato: otro aro se va cerrando y se pone verde cuando llega la chapita. Batea ahí, en el tercer tic. El palo busca la altura solo.'),
-    loc('Donde cae es el batazo: pasar la acera es sencillo, el carro es doble, el poste es triple y por encima de las casas, ¡jonrón!'),
-    loc('Si no llega a la acera, es out. Si un pana la atrapa en el aire, también. Fallar una atrapada de cerca es un chapazo… y sale un tuyuyo.'),
-    loc('El cuarto bate tiene más chance. Poncharte dos veces y pegarle a la tercera es un Willy Mays. Los bots de vieja escuela tiran muchas que caen; los de nueva escuela, curvas.')],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));

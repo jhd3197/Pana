@@ -59,9 +59,10 @@ Every game and the hub use one pause menu and one settings store:
   changes made in another tab. `bindSound(sound)` and
   `bindRenderer(renderer, max)` keep the fx.js sound and a renderer in step.
 - `engine/ui.js` — `createGameMenu(options)` builds a native modal `<dialog>`
-  with the tabs Juego (resume, game actions, invite, exit), Ajustes (shared
-  settings, device instructions and game options). It owns Esc, focus and input
-  blocking; the game only decides what pausing means.
+  with the tabs Juego (resume, game actions, invite, exit), Instrucciones (how
+  to play and the controls, `engine/controls-page.js`) and Mis ajustes (shared
+  settings and game options). It owns Esc, focus and input blocking; the game
+  only decides what pausing means.
 - `engine/ui.css` — scoped `.pana-*` styles. Pages link it before their own
   stylesheet; ui.js injects it if a page forgot.
 
@@ -76,14 +77,13 @@ renderer.setPixelRatio(pixelRatio(2)); bindRenderer(renderer, 2);
 const menu = createGameMenu({
   title: 'Mi juego', heading: 'Pausa', sound,
   note: () => 'La partida está en pausa.',
-  controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   actions: [{ id: 'restart', label: 'Reiniciar', visible: () => playing, run: restart }],
   options: [{ id: 'sky', label: 'Luz', choices: [['day', 'Día']], get, set }],
   invite: () => inviteUrl(code),     // optional: adds "Copiar invitación"
   onOpen() { paused = true; clearHeldKeys(); },
   onClose() { paused = false; },
 });
-hud.append(menu.createButton({ id: 'menu' }));      // "Menú Esc"
+hud.append(menu.createButton({ id: 'menu' }));      // "Menú"
 // Optional: menu.createSoundButton(), menu.createInviteButton()
 // In the game's keydown handler: if (key === 'm') toggleMute();
 ```
@@ -108,8 +108,57 @@ shows **Orientación** (Según el juego / Horizontal / Vertical, saved as
 screen with "Jugar así" (and, where the browser can lock it, "Pantalla completa").
 `<html data-pana-orientation>` carries the wanted orientation for CSS. The game's
 landscape layout still has to work: test both with a touch emulator.
-Mark keyboard reminders with `data-pana-hint` so the "Ayudas de controles"
-setting can hide them.
+
+## Instrucciones: how to play lives in the menu, never on the HUD
+
+**Instructions never go on the HUD; they live in the pause-menu 'Instrucciones'
+page (`engine/controls-page.js`).** No controls line along the bottom, no keycaps
+next to HUD buttons, no "pulsa X para" text, no hint panel, no one-time hint strip.
+Players who want to know open the menu (Esc, Start, the Menú button) and pick
+Instrucciones, or the lobby's Reglas button (`menu.open('controls')` lands there).
+
+A game declares the page as data in `public/instructions.js`, beside its
+`index.html`; the menu imports it the first time the tab opens, so it costs the
+first load nothing:
+
+```js
+import { loc } from '/engine/i18n.js';
+export default {
+  goal: loc('Llega primero a la meta.'),
+  howTo: [loc('Cada vuelta suma…')],
+  sections: [{ title: loc('Moverte'), rows: [
+    { action: loc('Caminar'), keyboard: 'W A S D / Flechas', gamepad: 'Stick izq.', touch: loc('Joystick') },
+    { action: loc('Saltar'), keyboard: loc('Espacio'), gamepad: 'A', touch: loc('Botón Saltar') },
+  ] }],
+  tips: [loc('…')],
+};
+```
+
+- Each row is one action and its key per device. `" / "` separates
+  alternatives (one keycap each). A missing or `null` key leaves the row out on
+  that device. Gamepad keys use Xbox names (`A`, `RT`, `Stick izq.`, `Cruceta`)
+  and show the connected pad's own (`formatPadLabel`: Cruz, R2… on a
+  PlayStation pad). With no gamepad keys at all, the page shows the menu's
+  `pad` setup (`padHelp`).
+- The page opens on the device in use (`onInputDevice`: keyboard by default,
+  touch on a phone, the pad once one is used, the "Ayudas en pantalla" override
+  included) and follows it live; its Ratón y teclado / Mando / Pantalla táctil
+  switch lets the player look at another.
+- `createGameMenu({ instructions })` takes the data, a function or a module URL
+  instead of the file. A page without `instructions.js` falls back to the older
+  `controls`/`tips` options. The settings workspace no longer has its own "Cómo
+  se juega" tabs.
+- Test IDs: `#pana-tab-help`, `#pana-panel-help` (`[data-ready]` once drawn),
+  `.pana-help-controls[data-device]`, `[data-help-device]`.
+- `tests/hud-instructions.test.js` requires `instructions.js` in every game and
+  fails on `<kbd>`, `data-pana-hint`, hint/help/legend/keys-named elements and
+  controls phrases in a game's files; its `ALLOWED` list names the few
+  contextual prompts that look like hints, each with why.
+  `engine/tests/hud-layout.browser.js` enters play in every game and fails on a
+  visible controls-list text or two HUD pieces overlapping.
+- Contextual prompts are not instructions: "E abrir" while you face a door, "Tu
+  turno", a capture bar, a countdown. They appear only while they apply, are a
+  few words, and never list controls.
 
 ## Shared input settings
 
@@ -140,11 +189,10 @@ hub and `/ajustes.html` reload at once (`game: false` from `createGameMenu`
 with `pause: false`), a game shows a "Recargar ahora" note in the detail panel
 because reloading restarts the match. See `pana-i18n.md`.
 
-Inside a game, each device category opens on **Cómo se juega** (that
-device's controls and the game's tips), then its tuning tabs and **Ayudas**
-(hint device and visibility). The hub has no help tabs. The category
-initially shown follows the active device. Legacy `open('controls')` calls
-route to Ajustes.
+Each device category opens on its tuning tabs, then **Ayudas** (which
+device's names menus show). How to play is the Instrucciones tab, not a
+settings tab. The category initially shown follows the active device. Legacy
+`open('controls')` calls open Instrucciones.
 
 `pana:settings` stores independent `mouseSensitivity`, `mouseVertical`,
 `mouseInvertY`, `touchSensitivity`, `touchInvertY`, `padDeadzone`,
@@ -166,11 +214,10 @@ Mouse hover never changes the device; trusted clicks and key presses do.
 Disconnect releases translated keys. Window blur suspends the
 controller translator until focus returns.
 
-The root carries `data-pana-input` and `data-pana-pad-family`. Keyboard hint
-groups and legacy keycaps hide for controller/touch input; controller keycaps
-use `data-pad-key`. Gameplay controller prompts come from each game's real
-`pad` mapping. Device instructions remain visible in their own settings page
-even when another device navigates there. `padFamily` can
+The root carries `data-pana-input` and `data-pana-pad-family`. Keycaps outside
+the menu hide for controller/touch input; controller keycaps use
+`data-pad-key`. No controller button bar is drawn during play: the pad's
+buttons are listed on the Instrucciones page. `padFamily` can
 override ID-based Xbox/PlayStation/Nintendo/generic labels without changing
 the browser's standard button indices. Controller navigation targets the
 lobby's start action before other primary buttons such as an armory button.
@@ -232,7 +279,7 @@ starts from the big control nearest the bottom middle of the screen, and A
 stays with the buttons. `createLookControls` turns the camera with the right
 stick, so first-person games need no `cursor`. `{ native: true, help }` is for
 a game that reads the pad itself (Trifulca): the menus still work, and `help`
-fills the instructions in Ajustes → Mando. Carreritas is native too:
+fills the Mando column of Instrucciones when the game's instructions.js names no buttons. Carreritas is native too:
 controls.js drives the car, and the
 engine owns the garage menus and Start, so its own pad code no longer
 toggles the pause. Without a main button, a menu starts the pad on its
@@ -266,8 +313,8 @@ workspace is lazy too; neither adds to a game's static module budget.
   that closing the menu restores focus to its Play button.
 - Stable test IDs: `#pana-menu-dialog`, `#pana-resume`, `#pana-copy-room`,
   `#pana-set-sound`, `#pana-set-volume`, `#pana-set-quality`,
-  `#pana-set-hints`, `#pana-tab-<game|settings|controls>`, plus each action's
-  own `id`.
+  `#pana-set-hints`, `#pana-tab-<game|help|settings>`, `#pana-panel-help`,
+  plus each action's own `id`.
 
 ## Shared room settings
 

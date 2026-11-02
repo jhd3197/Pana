@@ -147,7 +147,6 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .hud-corner { position: absolute; top: 24px; right: 30px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
 .hud-corner > .pk-btn { pointer-events: auto; }
 .pause-button { background: var(--pk-hud); }
-.pause-button kbd { margin-left: 2px; }
 .minimap { pointer-events: none; }
 .mm-head { display: none; }
 #mm { display: block; position: static; width: 230px; height: 150px; }
@@ -199,7 +198,6 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .item-actions { display: flex; gap: 8px; margin-top: 12px; }
 .item-actions .pk-btn { flex: 1; min-height: 40px; padding: 6px 10px; justify-content: space-between; gap: 6px; font: 800 13px var(--pk-sans); letter-spacing: 0; box-shadow: none; }
 .item-actions .pk-btn--primary { box-shadow: 3px 3px 0 var(--pk-yellow-edge); }
-.item-actions .pk-kbd { min-width: 0; height: 20px; font-size: 10px; padding: 0 5px; }
 .item-actions .pk-btn:disabled, .swap:disabled { opacity: .4; cursor: default; }
 .item button:active:not(:disabled) { transform: scale(.97); }
 .item .slot:active:not(:disabled) { transform: var(--skew) scale(.97); }
@@ -233,7 +231,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 #boost[data-drift="1"] i.on { background: var(--drift-1); }
 #boost[data-drift="2"] i.on { background: var(--drift-2); }
 #boost[data-drift="3"] i.on { background: var(--drift-3); }
-#drift-hint:not([hidden]) { display: block; margin-top: 5px; color: var(--pk-text); font-size: 11px; font-weight: 800; line-height: 1.3; white-space: nowrap; }
+#drift-cue:not([hidden]) { display: block; margin-top: 5px; color: var(--pk-text); font-size: 11px; font-weight: 800; line-height: 1.3; white-space: nowrap; }
 
 /* combo meter: the live drift-style pot and its chain, bottom centre */
 #combo { position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%); display: flex; align-items: baseline; gap: 10px; padding: 9px 24px 3px; pointer-events: none; }
@@ -252,11 +250,6 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 #combo.banked::before { background: var(--pk-yellow); }
 #combo.banked .combo-pts { color: var(--hud-ink); }
 #race.split #combo { left: 25%; }
-
-/* key reminders: only during the countdown and the first seconds (race-hud.js) */
-.keys { position: absolute; bottom: 104px; left: 50%; transform: translateX(-50%); grid-template-columns: repeat(3, auto); gap: 7px 16px; pointer-events: none; opacity: 0; transition: opacity .5s; }
-#race.hints .keys { opacity: 1; }
-.keys span { display: flex; align-items: center; gap: 6px; }
 
 /* alerts: lap shouts (engine/kit.js shout) become a band with a plate, milestone
    toasts a badge over the gauge, danger is coral and nothing else is */
@@ -288,11 +281,10 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .incoming-arrow { width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 18px solid #fff; transition: transform .1s; }
 #incoming-text { padding: 10px 24px 6px 16px; font: 400 32px/1 var(--pk-display); color: #fff; }
 .p2-hud { position: absolute; top: 24px; right: 30px; display: grid; grid-template-columns: auto auto; gap: 2px 12px; align-items: center; padding: 10px 18px; pointer-events: none; }
-.p2-hud .pk-eyebrow, .p2-keys { grid-column: 1 / -1; }
-.p2-keys { max-width: 260px; color: var(--pk-muted); font-size: 10px; }
+.p2-hud .pk-eyebrow { grid-column: 1 / -1; }
 #race.split .hud-corner { display: none; }
 #race.split::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; margin-left: -2px; background: var(--hud-ink); pointer-events: none; }
-#race.split #board, #race.split .keys { display: none; }
+#race.split #board { display: none; }
 #race.split #speedo { right: calc(50% + 16px); bottom: 110px; }
 #race.split .coins { left: auto; right: calc(50% + 16px); }
 
@@ -340,9 +332,6 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .launch { width: 270px; right: 24px; }
   .result { grid-template-columns: minmax(0, 1fr) 340px; padding: 32px 32px 0; }
 }
-@media (max-width: 1100px) {
-  .keys { display: none; }
-}
 @media (max-width: 760px) {
   .bar { height: 60px; padding: 0 16px; gap: 10px; }
   .brand { font-size: 26px; }
@@ -386,7 +375,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   #item-status { font-size: 12px; }
   #speedo { right: 12px; bottom: 14px; width: 104px; padding: 8px 10px 6px; }
   #speedo .gauge { width: 72px; height: 58px; }
-  #drift-hint:not([hidden]) { font-size: 9px; }
+  #drift-cue:not([hidden]) { font-size: 9px; }
   #boost { gap: 2px; }
   #boost i { width: 8px; height: 6px; }
   .item-actions .pk-btn { min-height: 44px; padding: 6px 8px; }
@@ -424,8 +413,6 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .slot .item-icon { font-size: 26px; }
   .slot.selected .item-icon { font-size: 34px; }
   .item-actions .pk-btn { min-height: 40px; }
-  .item-actions kbd, .swap kbd { display: none; }
-  .keys { display: none; }
 }
 
 @media (max-height: 600px) and (min-width: 761px) {
@@ -463,7 +450,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .slot .item-icon { font-size: 22px; }
   .slot.selected .item-icon { font-size: 28px; }
   .item-actions .pk-btn { min-height: 34px; }
-  #speedo, .keys, #board, #combo { display: none; }
+  #speedo, #board, #combo { display: none; }
   .coins { top: 12px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); padding: 6px 12px 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -520,9 +507,6 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 
 .mode-trophy { display: inline-block; width: 9px; height: 9px; margin-left: 5px; border-radius: var(--pk-radius-round); background: var(--trophy); vertical-align: middle; }
 .mode-legacy { display: block; color: var(--pk-muted); font-size: 9px; }
-
-/* Full input reference belongs in the shared pause menu, not over the road. */
-body:has(#race:not(.hidden)) .pana-pad-prompts, #race .keys, #race .p2-keys { display: none !important; }
 
 /* Keep this game's eight seats and settings inside the shared sala columns. */
 #pana-lobby-shell.prototype-sala .pk-game-lobby-layout{min-width:0;grid-template-columns:minmax(0,1fr) minmax(300px,360px);margin:0;padding:0;overflow:visible}

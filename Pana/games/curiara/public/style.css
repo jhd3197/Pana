@@ -31,8 +31,6 @@ button,a,input{-webkit-tap-highlight-color:transparent}
 .pk-room-code{margin-left:auto;color:var(--pk-teal);font-size:13px;white-space:nowrap}
 .pk-room-code b{font-weight:900}
 .practice{align-self:flex-start;text-decoration:underline}
-.lobby-hint{position:fixed;z-index:4;right:24px;bottom:22px}
-body:not(.in-lobby) .lobby-hint{display:none}
 
 /* HUD */
 #hud{position:fixed;inset:0;pointer-events:none}
@@ -80,7 +78,6 @@ body:not(.in-lobby) .lobby-hint{display:none}
 .splash-state{color:var(--pk-muted);white-space:nowrap}
 .splash-state.is-ready{color:var(--pk-teal)}
 .role{font-size:11px}
-.keyboard-hints{position:absolute;right:20px;bottom:22px;font-size:12px}
 .countdown{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;font:400 150px/1 var(--pk-display);color:var(--pk-yellow);text-shadow:0 7px 0 var(--pk-coral),0 0 2px var(--pk-night)}
 .notice{position:fixed;z-index:12;top:150px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 32px);justify-content:center;text-align:center;pointer-events:none}
 .spray{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .5s;background:radial-gradient(circle at 30% 40%,var(--spray) 0 4%,transparent 9%),radial-gradient(circle at 62% 30%,var(--spray) 0 6%,transparent 12%),radial-gradient(circle at 48% 66%,var(--spray) 0 5%,transparent 11%),radial-gradient(circle at 78% 58%,var(--spray) 0 3%,transparent 8%),radial-gradient(circle at 18% 72%,var(--spray) 0 4%,transparent 10%);filter:blur(2px)}
@@ -97,7 +94,7 @@ body:not(.in-lobby) .lobby-hint{display:none}
 
 @media(max-height:780px){#leaderboard .pk-row:nth-child(n+5):not(.is-me){display:none}}
 @media(pointer:coarse){
-  .keyboard-hints,.lobby-hint,#game-nav kbd{display:none}
+  #game-nav kbd{display:none}
   /* one big stroke button under each thumb; ciar and salpicón beside them */
   .touch-controls{position:absolute;bottom:max(16px,env(safe-area-inset-bottom));left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-end;gap:16px;pointer-events:none}
   .touch-controls>div{pointer-events:auto}

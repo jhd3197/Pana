@@ -1,10 +1,9 @@
 // The live parts of the race HUD that are more than text: the standings that
 // slide in only when the player's place changes, the speed needle with its
-// peak mark, and the key reminders that show for the first seconds only.
+// peak mark.
 // game.js loads it with the first race (lazyRace) and calls update() once per
 // drawn frame.
 const SHOW_S = 3;        // standings stay up this long after a place change
-const HINT_S = 6;        // key reminders fade out this far into the race
 const WINDOW = 5;        // up to this many racers the whole field is listed
 const ARC = 209.4;       // length of the gauge arc (r 50, 240°), in SVG units
 const PEAK_HOLD = 1.5, PEAK_FALL = 0.25;   // the peak mark waits, then sinks
@@ -66,7 +65,6 @@ export function createRaceHud(doc = document) {
     update(race, order, dt) {
       const p = race.player;
       if (root.dataset.mode !== race.mode) root.dataset.mode = race.mode;
-      root.classList.toggle('hints', race.state === 'count' || race.clock < HINT_S);
 
       // Standings: only when the player's place changes during the race.
       const place = order.indexOf(p);

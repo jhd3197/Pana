@@ -20,6 +20,12 @@ becomes the GitHub release's notes.
   abajo con los libros regados, telarañas finas en las esquinas, en los arcos
   y colgando del techo, polvo en el aire, alfombras gastadas, lámparas de
   araña con velitas y neblina baja solo en la sala de lectura y algún rincón.
+- **Las instrucciones de cada juego viven ahora en el menú de pausa, no en la pantalla.**
+  El menú tiene una página Instrucciones con el objetivo, cómo se juega, los
+  controles y consejos. Muestra las teclas del teclado, los botones de tu mando
+  (con sus nombres de Xbox o PlayStation) o los controles táctiles, según lo que
+  estés usando, y cambia sola si agarras otro. Durante la partida ya no aparece
+  la barra de botones del mando ni la tecla Esc junto a Menú.
 
 - **Reliquia tiene un nivel nuevo, La biblioteca sepultada, y toda la mina da más miedo.**
   La jornada 2 (y luego cada tres) baja a una biblioteca vieja bajo la mina:

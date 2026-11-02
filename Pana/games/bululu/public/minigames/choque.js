@@ -43,8 +43,7 @@ function wedge(k, material) {
 export default {
   id: 'choque',
   title: locKey('¡Choque de carritos!'),
-  howto: locKey('Empuja a los demás carritos al agua. Cada uno que tumbes es un punto. Al final, el borde de la tarima se cae… ¡quédate en el centro!'),
-  keys: [[locKey('WASD / flechas'), locKey('manejar')], [locKey('Espacio'), locKey('turbo')]],
+  goal: locKey('Tumba a los demás carritos al agua y quédate en el centro.'),
   touch: { action: locKey('Turbo') },
   icon: 'car',
   time: TIME,
@@ -342,7 +341,7 @@ export default {
       const soon = TIME - CRUMBLE - clock;
       if (me.falling) return { text: loc('¡Al agua! Vuelves enseguida'), tone: 'bad' };
       if (soon > 0 && soon < 4) return { text: loc('¡El borde se cae en {n}! Vete al centro', { n: Math.ceil(soon) }), tone: 'bad' };
-      const turbo = me.cool > 0 ? loc('Turbo en {n} s', { n: Math.ceil(me.cool) }) : loc('Turbo listo (Espacio)');
+      const turbo = me.cool > 0 ? loc('Turbo en {n} s', { n: Math.ceil(me.cool) }) : loc('Turbo listo');
       return { text: clock >= TIME - CRUMBLE ? loc('El borde se está cayendo · {turbo}', { turbo }) : loc('Empuja a los demás fuera · {turbo}', { turbo }), tone: me.cool > 0 ? '' : 'ok' };
     }
     return { scene, camera, update, outro, actors, hint, scores: () => actors.map((a) => a.score) };

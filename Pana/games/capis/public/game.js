@@ -49,11 +49,6 @@ $('seed-new').onclick = () => { seed = newSeed(); preview(); };
 const menu = createGameMenu({ title: 'Capis a Pintazos · Pana', sound, orientation: 'libre', // i18n-ignore: the game's name
   pad: { move: 'wasd', keys: { a: ['Space', loc('Cargar y disparar')], b: ['Enter', loc('Saltar')], y: ['KeyZ', loc('Ver todo el mapa')] } },
   note: () => loc('La partida está en pausa.'),
-  controls: [[loc('A D / ← →'), loc('Caminar')], [loc('W S / ↑ ↓ / ratón'), loc('Apuntar')], [loc('Espacio / clic'), loc('Mantén para cargar, suelta para disparar')],
-    [loc('1–5 / Q E / Tab'), loc('Cambiar de arma')],
-    ['Enter', loc('Saltar')], ['Z', loc('Ver todo el mapa')], ['M', loc('Activar o silenciar el sonido')]],
-  tips: [loc('El viento empuja la pintura: mira la flecha antes de disparar.'), loc('La tierra pintada resbala: los capis se deslizan cuesta abajo.'),
-    loc('Un capi con 100 % de pintura o que cae al río queda fuera.'), loc('La Bazuca, La Lejana, La Licuadora y El Trueno tienen pocos tiros por equipo; La Piñita nunca se acaba.'), loc('Después de disparar tienes 3 segundos para cubrirte.')],
 });
 $('game-nav').append(menu.createButton({ id: 'menu', className: 'pk-btn' }));
 $('rules').onclick = () => menu.open('controls');

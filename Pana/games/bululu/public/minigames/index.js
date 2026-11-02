@@ -23,7 +23,7 @@ const loaded = new Map(), pending = new Map();
 
 export const MINIGAMES = ENTRIES.map(([id, title]) => ({ id, title }));
 
-// The full definition (create, howto, keys, input…), loading it if needed.
+// The full definition (create, goal, input…), loading it if needed.
 export function loadMinigame(id) {
   if (loaded.has(id)) return Promise.resolve(loaded.get(id));
   if (!pending.has(id)) {

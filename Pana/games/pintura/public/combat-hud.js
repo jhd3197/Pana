@@ -1,6 +1,5 @@
 import { loc, locn } from '/engine/i18n.js';
 import { icon } from '/engine/icons.js';
-import { keyFor } from '/engine/control-hints.js';
 import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, ATTACHMENTS, OPTICS } from './armory-data.js';
 import { TARGET } from './rules.js';
 import { livesOf } from './options.js';
@@ -9,6 +8,15 @@ import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES } from './hud-model.j
 // Pepazo's Banderín HUD: the race to the goal, your aguante and pepas, the reload
 // prompt, your streak and the arrow that points at whoever painted you. game.js hands
 // it the room state each render; hud-model.js holds the arithmetic, hud-banderin.css the look.
+// The key of a contextual prompt on the device in use ({ keyboard, gamepad,
+// touch }), the pad's own button names once engine/gamepad.js is loaded
+// (the pause menu loads it), or null on a device with no key for it.
+let padFormat = text => text;
+if (globalThis.document) import('/engine/gamepad.js').then(m => { padFormat = text => m.formatPadLabel(text); }).catch(() => {});
+export function keyFor(keys) {
+  const device = globalThis.document?.documentElement.dataset.panaInput || 'keyboard', key = keys?.[device in keys ? device : 'keyboard'];
+  return key == null || key === '' ? null : device === 'gamepad' ? padFormat(key) : key;
+}
 // Under the pepas: the marker's name and class, and an icon per fitted part.
 // Out of pepas: the reload key of the device in use (a phone has its Recargar button).
 function emptyText() { const key = keyFor({ keyboard: 'R', gamepad: 'X', touch: null }); return key ? loc('Sin pepas · {key} para recargar', { key }) : loc('Sin pepas · toca Recargar'); }

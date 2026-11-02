@@ -46,15 +46,9 @@
     </div>
     <div id="top-actions" class="top-actions">
       <p id="online-status" class="pk-panel hidden" role="status"></p>
-      <button id="look" class="pk-btn look">Ver tablero <kbd class="pk-kbd" data-pana-hint>Tab</kbd></button>
-    </div>
-    <div class="legend" aria-label="Casillas">
-      <div class="pk-panel"><span class="tile blue">+3</span>Gana 3</div>
-      <div class="pk-panel"><span class="tile red">−3</span>Pierde 3</div>
-      <div class="pk-panel"><span class="tile yellow">?</span>Evento loco</div>
+      <button id="look" class="pk-btn look">Ver tablero</button>
     </div>
     <div id="cards" class="cards"></div>
-    <div class="keys" data-pana-hint>Espacio: tirar / saltar · A D: moverte · Tab: ver tablero · L: luz · M: sonido · Esc: pausa</div>
   </div>
 
   <div id="toast" class="toast hidden"></div>
@@ -63,7 +57,7 @@
   <!-- race minigames: how far down the course each pana is -->
   <div id="progress" class="progress" aria-hidden="true" hidden></div>
   <!-- what to do right now in a minigame (your role, the phase, a cue) -->
-  <p id="mini-hint" class="mini-hint" role="status" hidden></p>
+  <p id="mini-cue" class="mini-cue" role="status" hidden></p>
   <div id="count"></div>
   <div id="prompt" class="prompt hidden"></div>
   <div id="winner" class="winner pk-modal hidden"></div>
@@ -110,7 +104,7 @@
       <div class="pk-lobby-cta">
         <button id="online" class="pk-btn pk-btn--teal">Jugar online</button>
         <span id="invite" class="hidden"></span>
-        <button id="start" class="pk-btn pk-btn--primary pk-btn--lg play">¡A jugar! <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+        <button id="start" class="pk-btn pk-btn--primary pk-btn--lg play">¡A jugar!</button>
         <button id="practice" class="pk-btn hidden">Jugar con bots</button>
       </div>
       <label id="practice-pick" class="practice-pick">Practicar un minijuego
@@ -123,8 +117,7 @@
   <div id="mini-intro" class="panel pk-modal mini-intro hidden">
     <span class="pk-ribbon">Minijuego</span>
     <h2 id="mini-title" class="pk-title"></h2>
-    <p id="mini-howto" class="pk-copy"></p>
-    <div id="mini-keys" class="mkeys"></div>
+    <p id="mini-goal" class="pk-copy"></p>
     <p class="prize">El ganador se lleva <b>+10 monedas</b></p>
     <!-- online: every pana says ¡Listo! for themselves -->
     <div id="mini-ready" class="mready" hidden></div>

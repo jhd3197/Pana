@@ -32,9 +32,6 @@ body { --pk-game: #e8453c; --chapita-away: #e8453c; --chapita-home: #2f7fe0; --c
 .count .pk-pips > i.on { background: var(--pk-coral); }
 #balls > i.on { background: var(--pk-teal); }
 
-.house-rules { position: fixed; left: 16px; top: 74px; z-index: 3; margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-width: 240px; }
-.house-rules li { padding: 5px 10px; border-radius: var(--pk-r-sm); background: var(--pk-hud); border: 1px solid var(--pk-line); font-size: 12px; font-weight: 800; }
-.house-rules li b { color: var(--pk-yellow); }
 .matchup { position: fixed; left: 50%; top: 118px; transform: translateX(-50%); z-index: 3; margin: 0; padding: 6px 14px 5px; border: 3px solid var(--pk-bubble-ink); border-radius: 0;
   background: var(--pk-bubble-paper); color: var(--pk-bubble-ink); font: 800 14px/1.25 var(--pk-sans); text-align: center; max-width: min(560px, calc(100vw - 32px)); box-shadow: 4px 4px 0 rgba(0, 0, 0, .25); }
 .matchup:empty { display: none; }
@@ -63,7 +60,6 @@ body { --pk-game: #e8453c; --chapita-away: #e8453c; --chapita-home: #2f7fe0; --c
 /* The batter must see the plate: the bat controls sit in the corner, thumb-side. */
 #bat-panel { left: auto; right: 16px; transform: none; width: min(300px, calc(100vw - 32px)); }
 #heights { width: 100%; box-sizing: border-box; justify-content: center; }
-.hint { margin: 0; color: var(--pk-muted); font-size: 12px; }
 #swing { font-size: 22px; }
 
 .catch-panel { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 3; display: grid; justify-items: center; gap: 10px; }
@@ -77,18 +73,15 @@ body { --pk-game: #e8453c; --chapita-away: #e8453c; --chapita-home: #2f7fe0; --c
 @media (max-width: 720px), (max-height: 520px) {
   .scoreboard { top: 62px; padding: 6px 10px; gap: 10px; }
   .score-teams { min-width: 130px; }
-  .house-rules { display: none; }
   .matchup { top: 150px; font-size: 12px; }
   .action-panel { bottom: 12px; padding: 10px; gap: 8px; }
   .pitch-choices .pk-seg > button { padding: 5px 8px; font-size: 12px; min-height: 30px; }
   .aim { grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(3, 28px); }
-  .hint { display: none; }
   #bat-panel { width: 230px; right: 10px; bottom: 10px; padding: 8px; gap: 6px; }
   #bat-panel .panel-head h2 { font-size: 14px; }
   #heights > button { padding: 4px 8px; min-height: 30px; font-size: 12px; }
   #swing { font-size: 18px; min-height: 56px; }
   #pitch-panel { left: auto; right: 10px; transform: none; width: min(470px, calc(100vw - 20px)); }
-  [data-pana-hint] { display: none; }
 }
 #results .pk-results-card { max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; }
 

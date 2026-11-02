@@ -14,6 +14,16 @@ The app lives in `Pana/` (server, web, games, engine, scripts, tests). Docs are 
 > in `engine/` (`engine/play/` for mechanics) and add its row to that map in the
 > same change.
 
+## Instructions never go on the HUD
+
+They live in the pause-menu 'Instrucciones' page (`engine/controls-page.js`),
+filled from the game's `public/instructions.js` (goal, how to play, controls per
+device, tips). No controls line, keycaps, "pulsa X para" text or hint panel
+during play; `tests/hud-instructions.test.js` fails on them. A short prompt that
+reacts to the game's state ("E abrir" at a door, "Tu turno", a countdown) is not
+an instruction and may stay while it applies. HUD pieces never stack on each
+other (`engine/tests/hud-layout.browser.js`).
+
 ## Every game is 3D
 
 - The playable view is a Three.js scene with a **perspective camera** and the
@@ -68,6 +78,7 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Loading, loops, teardown, room code in the URL | `engine/game-shell.js` (`bootGame`, `roomCode`) | |
 | Table stage, camera framing | `engine/worlds/table-world.js` (`createTableWorld`) | |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | `docs/knowledge/pana-ui.md` |
+| How to play, controls per device | `engine/controls-page.js` (the menu's Instrucciones tab, from `public/instructions.js`) | pana-ui.md, "Instrucciones"; never on the HUD |
 | Main renderer, picture settings, frame stats | `engine/settings.js` (`rendererOptions`, `bindRenderer`, `shadowSize`), `engine/perf.js`, `npm run perf -- <game>` | pana-kit.md, "Picture settings" |
 | Room codes and invite links | `engine/invite.js` (`inviteUrl`, `roomFromUrl`, `newRoomCode`) | |
 | Player text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`), `npm run i18n` | `docs/knowledge/pana-i18n.md` |

@@ -105,7 +105,7 @@ try {
   const paint=async p=>p.evaluate(()=>{
     for(let i=0;i<78;i++)updateRace(1/60);
     renderer.render(race.scene,race.camera);
-    const hint=document.getElementById('drift-hint'),box=hint.getBoundingClientRect();
+    const hint=document.getElementById('drift-cue'),box=hint.getBoundingClientRect();
     return {drift:race.player.drift,text:hint.textContent,visible:!hint.hidden,inBounds:box.x>=0&&box.right<=innerWidth&&box.y>=0&&box.bottom<=innerHeight};
   });
   await prepare(page);
@@ -114,7 +114,7 @@ try {
   assert.ok(keyboard.drift&&keyboard.visible&&keyboard.inBounds&&keyboard.text==='Suelta: turbo',JSON.stringify(keyboard));
   await page.screenshot({path:`${output}/keyboard-drift.png`});
   for(const key of ['w','Shift','d'])await page.keyboard.up(key);
-  const release=await page.evaluate(()=>{updateRace(1/60);return race.player.boost>0&&!race.player.drift&&document.getElementById('drift-hint').hidden;});
+  const release=await page.evaluate(()=>{updateRace(1/60);return race.player.boost>0&&!race.player.drift&&document.getElementById('drift-cue').hidden;});
   assert.ok(release,'release the physical Shift key to collect the boost');
   const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   mobile.on('pageerror',e=>errors.push(String(e)));

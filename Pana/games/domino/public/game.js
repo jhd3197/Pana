@@ -49,16 +49,6 @@ const menu = createGameMenu({
   title: loc('Dominó · Pana'), sound: audio,
   options: [{ id: 'view', label: loc('Cámara'), choices: [['plaza', loc('Plaza')], ['mesa', loc('Mesa')]], get: () => view, set: setView }],
   note: () => room.members.size > 1 ? loc('La mesa sigue jugando mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
-  controls: [['1 2 3 4 5 6 7 8 9 0', loc('Elegir una ficha de tu mano')], ['A B', loc('Elegir una punta si la ficha cabe en ambas')], ['P', loc('Pasar, solo si no tienes jugada')], ['H', loc('Pedir una pista')], ['M', loc('Activar o silenciar el sonido')], ['Esc', loc('Abrir o cerrar el menú')]],
-  tips: [
-    loc('Mesa clásica de cuatro o ampliada de seis. Los puestos alternos forman dos equipos; Individual reparte puntos a cada pana.'),
-    loc('Siete o diez fichas por pana. La mesa amplía el juego a doble nueve o doble doce cuando hace falta; las sobrantes se apartan, no hay robo.'),
-    loc('La salida puede ser doble seis, ganador anterior (primera mano: doble seis), o un pana al azar. En Más ajustes, ¿Quién empieza? decide la primera mano con el cacho: todos sacuden, tapan y sale el dado más alto.'),
-    loc('Juega una ficha que coincida con una punta. Si sirve en ambas, elige A o B. No puedes pasar si tienes jugada.'),
-    loc('Gana quien se queda sin fichas y suma los puntos que quedaron a sus rivales. Una capicúa es la última ficha que podía jugarse en ambas puntas.'),
-    loc('Con Pase anotado, cada paso da diez puntos al equipo o pana anterior. El anfitrión elige si una tranca puntúa o se reparte sin puntuar.'),
-    loc('Con reloj, al agotarse el turno se juega una ficha legal automáticamente. Los ajustes muestran el tiempo y la meta de la partida.'),
-  ],
   invite: () => inviteUrl(code),
   canOpen: () => !$('result').open,
 });
@@ -181,7 +171,7 @@ function renderHand(state) {
   $('pass').hidden = !myTurn || moves.length > 0;
   $('round-result').hidden = !ended;
   $('end-actions').hidden = !selected;
-  $('instruction').textContent = seat < 0 && state.phase !== 'lobby' ? loc('Entras cuando se libere un puesto.') : ended ? loc('Una mano más, un cuento más.') : state.phase === 'lobby' ? loc('Reparte las fichas para empezar.') : selected ? loc('Elige dónde colocar tu ficha.') : myTurn ? !state.chain.length && state.openingTile ? loc('Abre la partida con el doble seis.') : moves.length ? loc('Toca una ficha marcada para jugarla.') : 'No tienes jugada. Canta paso.' : loc('Ve pensando tu próxima jugada.');
+  $('turn-note').textContent = seat < 0 && state.phase !== 'lobby' ? loc('Entras cuando se libere un puesto.') : ended ? loc('Una mano más, un cuento más.') : state.phase === 'lobby' ? loc('Reparte las fichas para empezar.') : selected ? loc('Elige dónde colocar tu ficha.') : myTurn ? !state.chain.length && state.openingTile ? loc('Abre la partida con el doble seis.') : moves.length ? loc('Toca una ficha marcada para jugarla.') : 'No tienes jugada. Canta paso.' : loc('Ve pensando tu próxima jugada.');
   if (selected) {
     const ends = legalEnds(state, hand.find(t => t.id === selected));
     $('play-left').textContent = loc('Punta A · {n}', { n: state.chain[0]?.a }); $('play-left').disabled = !ends.includes('left');

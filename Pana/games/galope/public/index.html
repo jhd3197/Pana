@@ -32,7 +32,6 @@
       <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la salida…</button></div>
     </div>
   </section>
-  <div class="pk-hints lobby-hint" data-pana-hint><span><b>WASD</b> cabalgar</span><span><b>Shift</b> remate</span><span><b>Espacio</b> saltar</span></div>
   <main id="hud" class="hidden">
     <div class="race-top">
       <div class="pk-place position"><b id="place">1</b><sup>º</sup><span id="field-size" class="pk-eyebrow">de 6</span></div>
@@ -43,13 +42,12 @@
     </div>
     <ol id="leaderboard" class="pk-roster" aria-label="Posiciones"></ol>
     <div class="minimap pk-panel"><div class="map-head"><b translate="no">La vuelta del estero</b><small id="map-length"></small></div><canvas id="map" width="220" height="190" aria-label="Mapa del circuito"></canvas></div>
-    <div id="jump-cue" class="jump-cue hidden" aria-hidden="true"><span class="pk-banner pk-banner--yellow">¡Tronco!</span><span class="pk-chip" id="jump-key">Espacio para saltar</span></div>
+    <div id="jump-cue" class="jump-cue hidden" aria-hidden="true"><span class="pk-banner pk-banner--yellow">¡Tronco!</span><span class="pk-chip" id="jump-key"></span></div>
     <div class="riding-status pk-panel">
       <div class="stamina-head"><span class="pk-eyebrow" id="horse-name">Fuerza de Castaño</span><span><span id="gait">AL PASO</span> · <span id="stamina-label">100%</span></span></div>
       <div id="stamina-pips" class="pk-pips stamina-pips" aria-hidden="true"></div>
       <div class="stamina-foot"><p id="riding-tip">Guarda fuerzas para el remate.</p><span class="speed"><b id="speed">0</b> km/h</span></div>
     </div>
-    <div class="pk-hints keyboard-hints" data-pana-hint><span><b>W ↑</b> avanzar</span><span><b>A D</b> girar</span><span><b>S ↓</b> frenar</span><span><b>Shift</b> remate</span><span><b>Espacio</b> saltar</span><span><b>R</b> volver al camino</span></div>
     <div class="touch-controls pk-touch-zone"><div class="touch-steer"><button class="pk-touch pk-touch--lg" data-icon="left" data-input="left" aria-label="Girar a la izquierda"></button><button class="pk-touch pk-touch--lg" data-icon="right" data-input="right" aria-label="Girar a la derecha"></button></div><div class="touch-actions"><button class="pk-touch" data-input="brake" aria-label="Frenar">Freno</button><button class="pk-touch" data-icon="jump" data-input="jump" aria-label="Saltar"></button><button class="pk-touch" data-input="sprint" aria-label="Remate: gasta resistencia">Remate</button><button class="pk-touch pk-touch--go" data-input="go" aria-label="Avanzar">¡Arre!</button></div></div>
   </main>
   <div id="countdown" class="countdown hidden" role="status" aria-live="polite"></div>

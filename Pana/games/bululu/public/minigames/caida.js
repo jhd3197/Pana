@@ -63,8 +63,7 @@ function spotPlate(caption) {
 export default {
   id: 'caida',
   title: locKey('¡Caída!'),
-  howto: locKey('Cuando la carta nueva tenga el mismo número que la de antes, ¡dale primero! Si le das sin caída, pierdes un punto.'),
-  keys: [[locKey('Espacio'), locKey('¡dale!')]],
+  goal: locKey('Dale primero cuando caiga una carta del mismo número.'),
   touch: { pad: 'none', action: locKey('¡Dale!') },
   icon: 'card',
   time: TIME,

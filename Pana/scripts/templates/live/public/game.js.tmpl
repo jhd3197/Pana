@@ -24,8 +24,6 @@ const roomOptions = createRoomOptions($('room-options'), { title: {{nameJs}}, fi
 const menu = createGameMenu({ title: {{titleJs}}, sound, orientation: 'libre', // i18n-ignore: the game's name
   pad: { move: 'wasd' },
   note: () => room.members.size > 1 ? loc('La ronda sigue mientras estás en el menú.') : loc('La ronda está en pausa.'),
-  controls: [[loc('W A S D / flechas'), loc('Correr')], [loc('Toque'), loc('Flechas en pantalla')], ['M', loc('Activar o silenciar el sonido')]],
-  tips: [loc('Recoge todos los mangos que puedas antes de que termine la ronda.'), loc('Si estás solo, unos bots corren contigo.')],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));

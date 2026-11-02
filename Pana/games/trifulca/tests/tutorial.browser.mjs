@@ -66,7 +66,7 @@ try {
     navigator.getGamepads = () => [__pad]; dispatchEvent(new Event('gamepadconnected'));
   });
   await waitFor(page, () => document.documentElement.dataset.panaInput === 'gamepad');
-  assert.equal(await page.locator('#keys').isVisible(), false, 'only the shared controller guide is shown');
+  assert.equal(await page.locator('#keys, .pana-pad-prompts').count(), 0, 'no controls bar: they live in Instrucciones');
   await page.locator('#menu').click();
   const counts = await page.evaluate(() => trifulcaDebug.controls.read().e);
   await page.evaluate(() => { __pad.buttons[1] = { pressed: true, value: 1 }; trifulcaDebug.controls.read(); });

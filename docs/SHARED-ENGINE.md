@@ -654,7 +654,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Toast | `engine/hud.js` (`createToast`) | Billar, Caída, Capis a Pintazos, Cocina, Criollas, Curiara, Dominó, Embuste, Escondidas, Lancha, Parapente, Reliquia |
 | Touch controls | `engine/touch.js` | 17 games |
 | Gamepad | `engine/gamepad.js` | Carreritas, Trifulca; `ui`, `first-person`, `settings` and `game-entry` read pads for every game |
-| One-time control hints: a small square line of keys for the device in use (keyboard, controller glyphs, touch), live switch on device change, gone on the first press, click or touch, at most once per session (`sessionStorage`, memory fallback); `pad.prompts: false` hides gamepad.js's always-on button bar | `engine/control-hints.js` (`mountControlHints`, `keyFor`; `.pk-control-hints` in `kit.css`) | Pepazo |
+| Instrucciones page in the pause menu: goal, how to play, controls per device (keyboard, controller with its own button names, touch) switching live with the device in use, tips; never on the HUD | `engine/controls-page.js` (`mountControlsPage`, `normalizeInstructions`, `sectionsFor`; `.pana-help-*` in `ui.css`), data in each game's `public/instructions.js` | all games (through `engine/ui.js`) |
 | River HUD, minimap, guide | `engine/river/hud.js`, `minimap.js`, `guide.js` | Curiara, Lancha (`river/hud` also Galope) |
 | Combat HUD (Banderín style: race, pepas, hit arrow, KO plate) | `games/pintura/public/combat-hud.js`, `hud-model.js`, `hud-banderin.css` | Pepazo only (game-local) |
 | Minimap | one per game | Bululú, Carreritas, Curiara, Embuste, Escondidas, Galope, Lancha, Pepazo, Reliquia each draw their own (Curiara and Lancha share `river/minimap`) |

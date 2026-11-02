@@ -53,10 +53,9 @@
       </section>
     </aside>
     <section class="rack-panel" aria-label="Tus fichas">
-      <div class="rack-help pk-panel">
+      <div class="rack-info pk-panel">
         <div class="you"><strong id="your-name">Tú</strong><span id="hand-count">7 fichas</span></div>
-        <span id="instruction">Reparte las fichas para empezar.</span>
-        <span class="rack-keys" data-pana-hint><kbd class="pk-kbd">1–0</kbd> ficha <kbd class="pk-kbd">A</kbd><kbd class="pk-kbd">B</kbd> punta</span>
+        <span id="turn-note">Reparte las fichas para empezar.</span>
       </div>
       <div class="rack-center">
         <div class="turn-row"><div id="turn-status" role="status" aria-live="polite">La mesa te espera.</div><div id="end-actions" hidden><button id="play-left" class="end-button pk-btn pk-btn--primary"></button><button id="play-right" class="end-button pk-btn pk-btn--primary"></button><button id="cancel-selection" class="pk-btn pk-btn--sm">Cancelar</button></div></div>
@@ -65,9 +64,9 @@
       <div class="rack-actions">
         <section class="activity-panel pk-panel" aria-label="Últimas jugadas"><div class="panel-heading"><span>EN LA MESA</span><span id="move-count">0 JUGADAS</span></div><ol id="activity"></ol></section>
         <button id="round-result" class="pk-btn pk-btn--primary" hidden>Ver resultado</button>
-        <button id="pass" class="pk-btn" hidden>Pasar <kbd class="pk-kbd" data-pana-hint>P</kbd></button>
+        <button id="pass" class="pk-btn" hidden>Pasar</button>
         <details id="quick-chat" class="pk-panel"><summary>Chat rápido</summary><div id="chat-buttons"></div></details>
-        <button id="hint" class="pk-btn" disabled>Pista <kbd class="pk-kbd" data-pana-hint>H</kbd></button>
+        <button id="hint" class="pk-btn" disabled>Pista</button>
         <button id="camera-view" class="pk-btn" title="Cambiar entre la plaza y una vista más alta de la mesa">◈ Vista de mesa</button>
       </div>
     </section>
