@@ -26,8 +26,8 @@
     <div id="room-options"></div>
     <div class="seed-card" data-room-extra>
       <label class="pk-eyebrow" for="seed-input">Número del mapa</label>
-      <div class="seed-row"><input id="seed-input" type="number" min="1" max="99999" inputmode="numeric" aria-describedby="seed-help"><button id="seed-new" class="pk-btn pk-btn--ghost" type="button">Otro mapa</button></div>
-      <small id="seed-help" class="pk-copy">Cada partida trae un mapa nuevo. Escribe un número para repetir uno.</small>
+      <div class="seed-row"><input id="seed-input" type="number" min="1" max="99999" inputmode="numeric" aria-describedby="seed-note"><button id="seed-new" class="pk-btn pk-btn--ghost" type="button">Otro mapa</button></div>
+      <small id="seed-note" class="pk-copy">Cada partida trae un mapa nuevo. Escribe un número para repetir uno.</small>
     </div>
     <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando…</button></div>
   </section>
@@ -54,13 +54,6 @@
       <span id="weapon-note" class="weapon-note"></span>
     </section>
     <div id="labels" class="labels" aria-hidden="true"></div>
-    <div class="pk-hints hints" data-pana-hint>
-      <span><b>A D</b> <span>Caminar</span></span>
-      <span><b>W S / ↑ ↓ / ratón</b> <span>Apuntar</span></span>
-      <span><b>Espacio / clic</b> <span>Mantén para cargar, suelta para disparar</span></span>
-      <span><b>1–5 / Q E / Tab</b> <span>Cambiar de arma</span></span>
-      <span><b>Enter</b> <span>Saltar</span> · <b>Z</b> <span>Ver todo el mapa</span></span>
-    </div>
     <div id="touch" class="pk-touch-zone">
       <div class="touch-move"><button id="left" class="pk-touch" data-icon="left" aria-label="Izquierda"></button><button id="right" class="pk-touch" data-icon="right" aria-label="Derecha"></button></div>
       <div class="touch-act">

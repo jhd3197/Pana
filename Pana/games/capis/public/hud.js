@@ -16,15 +16,15 @@ export function createHud($, { human = 0, pick = () => {} } = {}) {
   const teamNames = [loc('Tus capis'), loc('La máquina')];
   let rows = new Map(), tags = new Map(), shownTime = '', shownWind = null, shownWeapons = '';
 
-  // The weapon picker: one square button per weapon (key, icon, name, shots
+  // The weapon picker: one square button per weapon (icon, name, shots
   // left), the one in the active capi's paws lit, empty ones greyed out.
   const buttons = new Map();
-  for (const [i, w] of WEAPONS.entries()) {
-    const button = el('button', 'weapon-btn'), key = el('b', 'weapon-key', String(i + 1)), art = el('span', 'weapon-icon');
+  for (const w of WEAPONS) {
+    const button = el('button', 'weapon-btn'), art = el('span', 'weapon-icon');
     const name = el('span', 'weapon-name', w.name), ammo = el('span', 'weapon-ammo pk-num');
     art.innerHTML = ICONS[WEAPON_ICONS[w.id]]; name.translate = false;
     button.type = 'button'; button.dataset.weapon = w.id; button.setAttribute('role', 'radio');
-    button.append(key, art, name, ammo); button.onclick = () => pick(w.id);
+    button.append(art, name, ammo); button.onclick = () => pick(w.id);
     $('weapon-list').append(button); buttons.set(w.id, { button, ammo });
   }
   function weapons(match) {
