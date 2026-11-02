@@ -13,7 +13,7 @@ Written by whoever learned the lesson, human or AI, for whoever comes next.
 | Starting a game | `AGENTS.md`, then `.\dev.ps1 new-game <id> -Kind table\|live` (`Pana/scripts/templates/`) |
 | Three.js version and renderer migrations | `three-renderer.md` |
 | Hub and launcher | `launcher.md` |
-| Shared UI and look | `pana-kit.md` (kit, results, icons, colours, touch), `pana-ui.md` (menu, settings, invites); NPC barks come from `Pana/engine/play/frases.js` (dichos by mood, seeded `pickLine`, `crude` lines opt-in) and show in `engine/play/seat-bubbles.js` |
+| Shared UI and look | `pana-kit.md` (kit, results, icons, colours, touch), `pana-ui.md` (menu, settings, invites, the Instrucciones page), `hud-instructions-audit.md` (which instruction each game had on its HUD and where it went); NPC barks come from `Pana/engine/play/frases.js` (dichos by mood, seeded `pickLine`, `crude` lines opt-in) and show in `engine/play/seat-bubbles.js` |
 | Languages (Idioma) | `pana-i18n.md` (`loc()`, locale files, multiplayer text, what stays Spanish, `npm run i18n`) |
 | Sound and music | `fx.md` (SFX voice budget), `shared-sfx.md` (steps, shots, impacts, UI, vehicle motor and tyres), `shared-player.md` (walker, jump, footsteps), `music.md` (songs) |
 | Large images and textures | `asset-packs.md` (per-game release ZIPs, cache, editing and publishing) |

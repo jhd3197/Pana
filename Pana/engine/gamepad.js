@@ -13,8 +13,8 @@
 //     playing: () => state.phase === 'play',       // false: the whole page is a menu
 //   } });
 //   pad: { native: true, help: [['A', 'Golpe'], …] } // the game reads the pad itself in play
-//   pad: { …, prompts: false }                     // no always-on button bar in play: the game
-//                                                  // shows one-time hints (engine/control-hints.js)
+//   No button bar is drawn during play: padHelp(pad) fills the pause menu's
+//   Instrucciones page (engine/controls-page.js) when a game declares no pad keys.
 //   padControls({ playing: () => false, menu: () => settings.open() })  // a page that is all menu;
 //                                                  // Start (☰) runs `menu`, B clicks [data-pad-back]
 //
@@ -59,8 +59,6 @@ function publishInput(force=false){
   root.dataset.panaInput=state.device;root.dataset.panaPadFamily=state.family;
   if(changed||force){
     for(const fn of inputListeners)fn(state);
-    // Explicit hint preferences also work without a connected controller.
-    queueMicrotask(()=>showPrompts(menuScope()));
   }
 }
 function activate(device){if(detected!==device){detected=device;publishInput();}}
@@ -260,14 +258,7 @@ export function padLook(fn) { lookers.add(fn); return () => lookers.delete(fn); 
 
 // ---------- the loop ----------
 
-let before = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false,promptNode=null;
-function showPrompts(scope){
-  if(!promptNode){promptNode=document.createElement('div');promptNode.className='pana-pad-prompts';promptNode.setAttribute('aria-label',loc('Controles del mando'));document.body.append(promptNode);}
-  // prompts: false — the game shows its own control hints (engine/control-hints.js).
-  const state=inputState();promptNode.hidden=!!scope||setup.prompts===false||state.device!=='gamepad'||!getSettings().hints;
-  const signature=JSON.stringify([padHelp(),state.family]);if(promptNode.dataset.signature===signature)return;promptNode.dataset.signature=signature;
-  promptNode.replaceChildren(...padHelp().map(([key,label])=>{const row=document.createElement('span'),cap=document.createElement('kbd');cap.dataset.padKey='';cap.textContent=formatPadLabel(key);row.append(cap,document.createTextNode(label));return row;}));
-}
+let before = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false;
 function holdKeys(codes) {
   for (const code of keysDown) if (!codes.has(code)) sendKey('keyup', code);
   for (const code of codes) if (!keysDown.has(code)) sendKey('keydown', code);
@@ -318,7 +309,7 @@ function menuPages(scope, step) {
 function frame(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
   const raw=activePad(),pad = readPad(raw);
-  if (!pad) { release(); before = null; running = false;connected=false;padId='';activate(lastPointer);publishInput(true);if(promptNode)promptNode.hidden=true;return; }
+  if (!pad) { release(); before = null; running = false;connected=false;padId='';activate(lastPointer);publishInput(true);return; }
   if(!connected||padId!==(raw.id||'')){connected=true;padId=raw.id||'';publishInput(true);}
   if(suspended||document.hidden){release();before=null;requestAnimationFrame(frame);return;}
   const was = before?.held || {}, edge = name => pad.held[name] && !was[name];
@@ -328,7 +319,6 @@ function frame(now) {
   const steering=(raw.axes||[]).some(v=>Math.abs(v)>getSettings().padDeadzone+.01);
   if(held||steering)activate('gamepad');
   const scope = menuScope();
-  showPrompts(scope);
 
   const testing=scope?.querySelector('[data-pad-test-active]');
   if(testing){

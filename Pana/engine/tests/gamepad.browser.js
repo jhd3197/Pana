@@ -40,7 +40,7 @@ try {
   console.log('PASS A starts the race; RT and the stick press the game keys');
 
   assert.equal(await page.locator('html').getAttribute('data-pana-input'), 'gamepad');
-  assert.equal(await page.locator('.pana-pad-prompts').isVisible(), true);
+  assert.equal(await page.locator('.pana-pad-prompts').count(), 0, 'no controller button bar over play');
   assert.equal(await page.locator('kbd:not([data-pad-key]):visible').count(), 0, 'PC keycaps disappear while playing with a pad');
   await page.keyboard.press('h'); await frames();
   assert.equal(await page.locator('html').getAttribute('data-pana-input'), 'keyboard', 'real keyboard takes over from an idle pad');
@@ -54,12 +54,13 @@ try {
   await press('start');
   await page.locator('dialog.pana-menu[open]').waitFor();
   await press('rb');
-  await page.locator('[data-settings-category=pad]').waitFor();
+  await page.locator('dialog.pana-menu [data-tab=help][aria-selected=true]').waitFor();
+  await page.locator('.pana-help-controls[data-device=gamepad]').waitFor();
   const panel = await page.locator('dialog.pana-menu [role=tabpanel]:not([hidden])').innerText();
-  assert.match(panel, /Cómo se juega/i); assert.match(panel, /Avanzar/);
+  assert.match(panel, /Instrucciones|Mando/i); assert.match(panel, /Avanzar/);
   await press('b');
   await page.waitForFunction(() => !document.querySelector('dialog.pana-menu[open]'));
-  console.log('PASS Start opens the menu, RB changes tab, B closes it');
+  console.log('PASS Start opens the menu, RB opens Instrucciones with pad buttons, B closes it');
   assert.deepEqual(page.errors, []);
   await page.evaluate(async () => {
     let resets = 0, pulses = 0;

@@ -28,7 +28,7 @@ the same tokens.
 | `pk-title`, `pk-title--yellow` | Big display title; shadow is `--pk-game` |
 | `pk-heading`, `pk-eyebrow`, `pk-copy`, `pk-num`, `pk-place` | Type roles |
 | `pk-btn` + `--primary --lg --teal --coral --danger --ghost --sm --block` | Buttons. Square, with a hard diagonal offset shadow; primary is yellow with its edge colour as the shadow |
-| `pk-kbd` | Key cap; inside a primary button it turns ink |
+| `pk-kbd` | Key cap, for menus and dialogs only (never on the HUD); inside a primary button it turns ink |
 | `pk-panel`, `pk-panel--solid`, `pk-well`, `pk-modal` | Surfaces. `pk-panel` is the HUD card over a 3D scene |
 | `pk-stats` > `pk-stat` (`<b>`+`<span>`) | Stat tiles; number uses the game accent |
 | `pk-readout` | HUD label over number (VUELTA 2/3) |
@@ -41,7 +41,6 @@ the same tokens.
 | `pk-slots` > `pk-slot` (`.is-active`, `pk-slot-n`, `pk-slot-count`) | Inventory |
 | `pk-banner(--yellow/--teal)`, `pk-pop` | Tilted shout; `shout(text)` in kit.js |
 | `pk-toast` | Milestone toast; `createFeats(el)` in engine/feats.js (opt-in per game) |
-| `pk-hints` | Bottom-right key reminders (also mark `data-pana-hint`) |
 | `pk-lobby`, `pk-lobby-top`, `pk-field`, `pk-lobby-foot`, `pk-lobby-room`, `pk-lobby-cta`, `pk-avatars`, `pk-check` | Game launcher column over the live scene |
 | `pk-loading` | Full-screen loading card |
 | `pk-touch` (`--go --coral --sm --lg`, `data-icon="left/right/up/down/jump"`), `pk-dpad`, `pk-touch-zone` | On-screen touch controls (engine/touch.js). See "Touch controls" below |
@@ -177,9 +176,16 @@ right, at the bottom edge, in both orientations.
   `¡JUGAR!` + `Invitar panas ↗` at the bottom. The 3D scene stays visible
   on the right.
 - **HUD:** dark `pk-panel` cards in the corners. Place/score top-left, map
-  or timer top-right, inventory bottom-left, the contextual action (yellow
-  button with a `pk-kbd`) bottom-center, key hints bottom-right. Shouts
-  in the upper middle.
+  or timer top-right, inventory bottom-left, the contextual action (a yellow
+  button that appears only when it applies) bottom-center. Shouts in the
+  upper middle. One element per region: nothing stacks on top of another
+  (`engine/tests/hud-layout.browser.js` checks it at four screen sizes).
+- **Instructions never go on the HUD; they live in the pause-menu
+  'Instrucciones' page (`engine/controls-page.js`),** filled from the game's
+  `public/instructions.js`. No controls line, no keycaps, no "pulsa X para"
+  text during play. A prompt that reacts to the game's state and is needed
+  right now ("E abrir" at a door, "Tu turno", a countdown) is not an
+  instruction and may stay while it applies.
 - **Pause / settings:** the shared menu; do not build one.
 - **Results:** the shared results screen below; do not build one.
 
