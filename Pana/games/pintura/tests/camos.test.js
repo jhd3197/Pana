@@ -5,7 +5,7 @@ import path from 'node:path';
 import { CAMOS, camoById, isStart, unlockedSet, camoState, progressText, swatch } from '../public/camos.js';
 import { cleanKit, MARKERS, START_CAMOS, FALLBACK_CAMO, CAMO_IDS, ownsCamo } from '../public/armory-data.js';
 import { Arena } from '../public/rules.js';
-import { PAINT_CAMOS, PAINT_SOLIDS } from '../../../engine/play/paint-arsenal.js';
+import { PAINT_CAMOS, PAINT_SOLIDS } from '../../../engine/models/props/paint-arsenal.js';
 
 // The gateway contract (pana.sh gateway/camos.json holds the same table).
 const CONTRACT = {

@@ -379,7 +379,7 @@ weapon between 2 and 5).
   less; **Goteo de pintura** `drip` paints +1 pepazo and recovers 25% slower;
   **Correa** `strap` brings a thrown chancla back 40% sooner (1.5 s), the others
   recover 15% faster, −4% mobility. Melee weapons take only these three and
-  markers only theirs (`PAINT_MOUNTS` in `engine/play/paint-arsenal.js`); the
+  markers only theirs (`PAINT_MOUNTS` in `engine/models/props/paint-arsenal.js`); the
   armory lists only the kind that fits.
 - Switching weapon mid-swing drops the blow but keeps 0.3 s of wait; while the
   chancla is away the server ignores a weapon change (the client keeps sending
@@ -561,8 +561,11 @@ Team and flag lobbies show the shared avatar roster, with four orange and four t
 attachment slots, one armor slot, three grenades and cosmetics. `kitStats`
 composes real tradeoffs and still honors pistol-only, fast-reload and room
 toughness options. Marker names, classes, mounts, Mira kinds and bores come
-from `engine/play/paint-arsenal.js` (no Three.js), the same table the models
-are built from.
+from `engine/play/paint-arsenal.js`, which adds the class names players read
+(through `loc()`) to the plain table in `engine/models/props/paint-arsenal.js`
+that the models are built from (no Three.js). Models may not import `play/`,
+so data-only readers (`camos.js`, the server's `camo-trust.js`) import the
+models file directly.
 
 Attachment slots are positional: `kit.attachments` is always
 `[slot 0, slot 1, slot 2]`, each an id or `null`, so every consumer filters
@@ -694,7 +697,7 @@ equal):
 | `mangos` | `caribe` 240, `tricolor` 300, `llanero` 360, `rumba` 420, `pepazo` 480 | bought with mangos on pana.sh |
 
 The patterned ten take pattern, scale and colours from `PAINT_CAMOS`, the solid
-six from `PAINT_SOLIDS` (`engine/play/paint-arsenal.js`; `caribe` the pattern is
+six from `PAINT_SOLIDS` (`engine/models/props/paint-arsenal.js`; `caribe` the pattern is
 not `liso-caribe`). `camoState(id, data)` gives the armory's state (`owned`,
 `locked`, `buyable`, `cantAfford`) and its text ("7/15 pintadas con La
 Parrandera"; the client writes its own progress text from the marker names).

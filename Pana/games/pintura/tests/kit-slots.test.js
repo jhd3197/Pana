@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Arena } from '../public/rules.js';
 import { ATTACHMENT_SLOTS, ATTACHMENT_RULES, ATTACHMENTS, MARKERS, MELEE, canAttach, changeWeapon, cleanKit, kitStats, setSlot, slotsOf } from '../public/armory-data.js';
-import { PAINT_MOUNTS } from '../../../engine/play/paint-arsenal.js';
+import { PAINT_MOUNTS } from '../../../engine/models/props/paint-arsenal.js';
 
 test('attachment slots keep their position', () => {
   assert.equal(ATTACHMENT_SLOTS, 3);

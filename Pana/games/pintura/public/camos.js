@@ -4,9 +4,9 @@
 //   kills  — painting people with one specific marker unlocks it; once owned it
 //            goes on any weapon.
 //   mangos — bought with the shared mango currency through pana.sh.
-// Looks (pattern, scale, colours) come from engine/play/paint-arsenal.js, which the
+// Looks (pattern, scale, colours) come from engine/models/props/paint-arsenal.js, which the
 // model draws. Pure data and text: armory.js loads this with the camo tab.
-import { PAINT_CAMOS, PAINT_SOLIDS } from '../../../engine/play/paint-arsenal.js';
+import { PAINT_CAMOS, PAINT_SOLIDS } from '../../../engine/models/props/paint-arsenal.js';
 import { loc, locKey } from '../../../engine/i18n.js';
 import { weaponOf, START_CAMOS } from './armory-data.js';
 
