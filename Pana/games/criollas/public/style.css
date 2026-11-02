@@ -51,6 +51,8 @@ button:disabled { cursor: default; opacity: .5; }
 #loft-value { min-width: 44px; font-variant-numeric: tabular-nums; }
 #toast { position: absolute; z-index: 30; left: 50%; top: 75px; transform: translateX(-50%); padding: 14px 20px; }
 #recovery { position: absolute; z-index: 20; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 20px; }
+/* The game-name tag gives way to the scoreboard when the screen narrows. */
+@media (max-width: 1180px) { .game-header > span { display: none; } }
 @media (max-width: 700px) {
   .game-header { padding: 8px 12px; height: 56px; gap: 10px; }.game-header > span { font-size: 9px; letter-spacing: .04em; }
   .game-header .pk-logo { font-size: 27px; }.game-header nav .pk-btn { font-size: 12px; padding: 8px; }
