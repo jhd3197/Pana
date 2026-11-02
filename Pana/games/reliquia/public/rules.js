@@ -3,7 +3,8 @@
 // loot back to the truck to bank it, and la codicia rises with every
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
-import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, CAGE } from './deck.js';
+import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, CAGE, SPOTS } from './deck.js';
+import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
 import { layoutFor, distance } from './layout.js';
 import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from './items.js';
 import { spawnEnemy, updateEnemies, holds } from './enemies.js';
@@ -22,6 +23,15 @@ export { holds };
 export const BARKS = [locKey('¿Nos vamos ya?'), locKey('¡Una sala más!'), locKey('¡Agárrala por el otro lado!'), locKey('¡No toques eso!'), locKey('¡Suelta, suelta, suelta!'), locKey('¡Pásame el farol!'), locKey('Ábrela.')];
 const REACH = 2.5, GRAVITY = 14, REVIVE = 2.4, CART_SIZE = 14, BOARD = 1.5, SHAFT = 14, CARGO = 3;
 const GREED = { soft: .65, normal: 1, fierce: 1.5 };
+// What E says at each hiding spot, and where on it the crosshair aims.
+export const SEARCH = {
+  trunk: [locKey('Mantén E: abrir el baúl'), .45], drawer: [locKey('Mantén E: registrar los cajones'), .75], sheet: [locKey('Mantén E: quitar la sábana'), .7],
+  wardrobe: [locKey('Mantén E: abrir el armario'), 1.1], debris: [locKey('Mantén E: escarbar entre los libros caídos'), .3], shelf: [locKey('Mantén E: correr el estante'), 1.1],
+  ladder: [locKey('Mantén E: correr la escalera'), 1.2], lantern: [locKey('Mantén E: encender el candil'), 1.35],
+};
+// How far a spot reaches toward the crosshair, and where its contents land.
+const spotSize = sp => SPOTS[sp.kind].wall ? (sp.len || SPOTS[sp.kind].wall[0]) / 2 : SPOTS[sp.kind].r + .1;
+export const spotFront = sp => { const d = SPOTS[sp.kind].wall ? SPOTS[sp.kind].wall[1] / 2 + .45 : SPOTS[sp.kind].r + .4; return { x: sp.x + Math.sin(sp.h) * d, z: sp.z + Math.cos(sp.h) * d }; };
 
 // One explorer's own movement for dt: the host's simulation and a guest's
 // prediction (engine/predict.js). It only writes p; the state decides the rest.
@@ -99,6 +109,8 @@ export function interaction(s, p) {
     offer(target, { x: cart.x, y: .7, z: cart.z }, .95, 3);
   }
   for (const c of L.run.chests) if (!s.chests[c.id]) offer({ kind: 'chest', id: c.id, text: locKey('Abrir el cofre'), press: true }, { x: c.x, y: .5, z: c.z }, .65);
+  // Hiding spots: hold E a moment to search one.
+  for (const sp of L.run.spots) if (!s.spots?.[sp.id] && sp.floor === f) offer({ kind: 'search', id: sp.id, text: SEARCH[sp.kind][0], progress: (s.searching?.[sp.id] || 0) / sp.need, hold: true }, { x: sp.x, y: SEARCH[sp.kind][1], z: sp.z }, spotSize(sp));
   for (const item of visibleItems(s)) {
     if (item.state === 'air') continue;
     const info = ITEMS[item.kind];
@@ -145,7 +157,9 @@ export function visibleItems(s) {
 export function compassTarget(s, p) {
   const f = floorOf(p.x), boss = s.enemies.filter(e => floorOf(e.x) === f).sort((a, b) => b.maxHp - a.maxHp)[0];
   if (boss && (Math.floor(s.time / 15) + p.seat) % 3 === 2) return { x: boss.x, z: boss.z, boss: true };
-  const best = visibleItems(s).filter(i => floorOf(i.x) === f && i.state === 'ground').sort((a, b) => valueOf(b.kind) - valueOf(a.kind))[0];
+  // Treasure still hidden in an unsearched spot counts too.
+  const hidden = layoutFor(s.seed, s.level).run.spots.filter(sp => sp.floor === f && !s.spots?.[sp.id] && !sp.decoy && sp.content.length).map(sp => ({ x: sp.x, z: sp.z, value: sp.content.reduce((n, k) => n + valueOf(k), 0) }));
+  const best = [...visibleItems(s).filter(i => floorOf(i.x) === f && i.state === 'ground').map(i => ({ x: i.x, z: i.z, value: valueOf(i.kind) })), ...hidden].sort((a, b) => b.value - a.value)[0];
   return best ? { x: best.x, z: best.z, boss: false } : null;
 }
 export const tier = s => Math.min(4, Math.floor(s.codicia / 25));
@@ -170,7 +184,7 @@ export class Expedition {
   constructor(seed = 1, options = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) };
     Object.assign(this, { phase: 'lobby', outcome: '', payout: 0, time: 0, seed: seed >>> 0 || 1, rng: seed >>> 0 || 1, players: [], enemies: [], items: [], darts: [], shots: [], splats: [],
-      touched: {}, chests: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, carts: [], haul: 0,
+      touched: {}, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, carts: [], haul: 0,
       lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       level: 1, mangos: 0, quota: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null }, origin: seed >>> 0 || 1,
       director: createDirector(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0 });
@@ -370,6 +384,27 @@ export class Expedition {
     this.greed(2); this.event('chest', '', { player: p.id, chest: id, lucky });
     return true;
   }
+  // A searched spot gives up what it hides, once: treasure tumbles out toward
+  // the pana, a lit lantern shows its corner (or the secret passage), and now
+  // and then something nasty comes out instead.
+  openSpot(p, sp) {
+    if (this.spots[sp.id]) return false;
+    this.spots[sp.id] = 1; delete this.searching[sp.id];
+    const front = spotFront(sp), at = sp.reveal || front;
+    sp.content.forEach((kind, i) => {
+      if (sp.reveal) { this.spawnItem(kind, at.x + (i - (sp.content.length - 1) / 2) * .35, at.z, { state: 'ground', y: 0, cursed: !!ITEMS[kind].artifact }); return; }
+      const a = sp.h + (i - (sp.content.length - 1) / 2) * .5, speed = 1.4 + i * .3;
+      this.spawnItem(kind, front.x, front.z, { state: 'air', y: .9, vx: Math.sin(a) * speed, vz: Math.cos(a) * speed, vy: 3, cursed: !!ITEMS[kind].artifact });
+    });
+    if (sp.reveals && !this.revealed[sp.reveals]) { this.revealed[sp.reveals] = 1; this.paths.clear(); this.event('reveal', locKey('¡El candil alumbró un pasadizo detrás del estante!'), { wall: sp.reveals, player: p.id }); }
+    if (sp.trap) { const e = spawnEnemy(this, sp.trap, front.x, front.z, { room: sp.room, born: this.time - 1 }); if (e) e.awake = true; }
+    const first = sp.content[0], value = sp.content.reduce((n, k) => n + valueOf(k), 0);
+    this.greed(sp.decoy || !value ? .3 : 1.5);
+    const text = sp.trap ? locKey('¡Algo salió de ahí adentro!') : sp.reveals ? '' : !first ? (sp.kind === 'lantern' ? locKey('El candil alumbra un rincón vacío.') : locKey('Nada. Solo polvo.'))
+      : sp.decoy ? locKey('{Item}. No vale casi nada.') : sp.content.length > 1 ? locKey('¡{name} encontró {item} y algo más!') : locKey('¡{name} encontró {item}!');
+    this.event('search', text, { player: p.id, spot: sp.id, item: first, found: !!value && !sp.decoy, trap: sp.trap, vars: { name: p.name, item: first } });
+    return true;
+  }
   use(p, hand) {
     if (p.cooldown > 0 || p.grip != null || p.stun > 0) return false;
     const held = p.hands[hand], kind = held?.kind;
@@ -449,7 +484,7 @@ export class Expedition {
   update(dt, inputs = new Map()) {
     if (this.phase !== 'playing') return;
     dt = clamp(Number.isFinite(dt) ? dt : 0, 0, .05); this.time += dt; this.lastInputs = inputs;
-    const L = this.layout, run = L.run, used = new Set(), reviving = new Set();
+    const L = this.layout, run = L.run, used = new Set(), reviving = new Set(), searched = new Set();
     let leaving = false;
     for (const p of this.players) {
       for (const key of ['cooldown', 'swing', 'invulnerable', 'hit', 'interactCooldown', 'stun', 'reversed']) p[key] = Math.max(0, p[key] - dt);
@@ -470,6 +505,7 @@ export class Expedition {
           if (q.revive >= reviveTime(p)) { this.getUp(q, p); this.event('bark', '', { player: p.id, text: locKey('¡Párate, que no es pa\' tanto!') }); }
         }
         if (target?.kind === 'rubble') { this.rubble[target.id] += dt; if (this.rubble[target.id] >= 5) { delete this.rubble[target.id]; this.event('cleared', locKey('¡Despejaron el túnel!')); } }
+        if (target?.kind === 'search') { const sp = run.spots.find(q => q.id === target.id); searched.add(sp.id); if (searchStep(this.searching, sp.id, dt, sp.need)) this.openSpot(p, sp); }
         if (target?.kind === 'leave') leaving = true;
         if ((target?.kind === 'ride' || target?.kind === 'call') && !used.has('lift')) { used.add('lift'); const key = `${target.kind}:${target.to ?? floorOf(p.x)}`; if (this.lift.hold?.key !== key) this.lift.hold = { key, progress: 0 }; this.lift.hold.progress += dt; }
         // Hold E as something flies at you to catch it.
@@ -492,6 +528,7 @@ export class Expedition {
       }
       if (p.floor !== floorOf(p.x)) p.floor = floorOf(p.x);
     }
+    decaySearches(this.searching, searched, dt, { done: id => this.spots[id] });
     // Wheels latch for twelve seconds; both latched open the way down.
     for (const seal of run.seals) for (const w of seal.winches || []) {
       const s = this.winches[w.id] ||= { progress: 0, latched: 0 };
@@ -618,7 +655,7 @@ export class Expedition {
     // A new deck for the next jornada; the camp's own pieces stay as they are.
     const campLoot = Object.fromEntries(Object.entries(this.touched).filter(([id]) => this.layout.run.loot.find(l => l.id === +id)?.floor === 0));
     this.level++; this.seed = levelSeed(this.origin, this.level);
-    Object.assign(this, { touched: campLoot, chests: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, enemies: [], darts: [], shots: [], splats: [],
+    Object.assign(this, { touched: campLoot, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, enemies: [], darts: [], shots: [], splats: [],
       codicia: 0, deepest: 0, director: createDirector(), collapseIn: 30, stalkerRest: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null } });
     this.items = this.items.filter(i => floorOf(i.x) === 0); this.paths.clear();
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));

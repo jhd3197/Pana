@@ -8,6 +8,18 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En la biblioteca de Reliquia las reliquias ya no están a la vista: hay que registrar gavetas, baúles, armarios y muebles tapados.**
+  Mantén E un momento para abrir un baúl, sacar las gavetas de un escritorio,
+  quitarle la sábana a un sillón, abrir un armario, escarbar entre libros
+  caídos, correr un estante o una escalera y ver el nicho de atrás, o encender
+  un candil viejo que alumbra su rincón (y uno junto a la estantería secreta
+  abre el pasadizo). Algunos guardan oro, otros un libro viejo que no vale
+  nada, otros solo polvo, y de vez en cuando sale algo de adentro. La
+  biblioteca ahora es fría, vieja y abandonada en vez de naranja: estanterías
+  de madera oscura con arcos, pilares de piedra, escaleras, una que se vino
+  abajo con los libros regados, telarañas finas en las esquinas, en los arcos
+  y colgando del techo, polvo en el aire, alfombras gastadas, lámparas de
+  araña con velitas y neblina baja solo en la sala de lectura y algún rincón.
 - **Las instrucciones de cada juego viven ahora en el menú de pausa, no en la pantalla.**
   El menú tiene una página Instrucciones con el objetivo, cómo se juega, los
   controles y consejos. Muestra las teclas del teclado, los botones de tu mando

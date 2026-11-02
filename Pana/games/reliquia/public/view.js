@@ -25,10 +25,13 @@ import { holds, alive, cartValue, liftView } from './rules.js';
 export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
 const EYE = 1.45, POOL = 5;
 const CAMP_LOOK = { background: 0xf6d6a4, fog: [45, 150], hemi: [0xfff1d6, 0x8a6a4a, 2.1], sun: 3, exposure: 1.05 };
-// Underground: the mine is a dark violet black; the buried library a
-// sepia murk with low, close fog. Both stay readable within the farol's 8 m.
-const DEEP_LOOK = { background: 0x0a0710, fog: [3.5, 24], hemi: [0x5c5088, 0x2a1d12, .5], sun: 0, exposure: 1.15, dust: .45 };
-const LIBRARY_LOOK = { background: 0x332c20, fog: [2, 17], hemi: [0x8a7a5c, 0x2a1c0e, .55], sun: 0, exposure: 1.15, dust: 1 };
+// Underground: the mine is a dark violet black; the buried library cold and
+// grey-blue, a thin haze (no thick fog: the mist is a few rooms' accent), a
+// faint moonlight-cold hemisphere over near-black floors. The farol in the
+// library is whiter and dimmer; candles are small warm accents with a short
+// reach. Both stay readable within the farol's 8 m.
+const DEEP_LOOK = { background: 0x0a0710, fog: [3.5, 24], hemi: [0x5c5088, 0x2a1d12, .5], sun: 0, exposure: 1.15, dust: .45, lamp: 0xfff0d8, hand: 0xffa850, lampPower: 58, candle: [0xffa24a, 5.5, 11] };
+const LIBRARY_LOOK = { background: 0x18202a, fog: [2.5, 21], hemi: [0x74849e, 0x0c0c10, 1.8], sun: 0, exposure: 1.1, dust: 1, lamp: 0xe4ebf4, hand: 0xd8dde6, lampPower: 25, lampDecay: 1.15, handPower: .35, candle: [0xff9e52, 1.6, 4.5] };
 
 function label(text, color, { bubble = false } = {}) {
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 96;
@@ -86,6 +89,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sun.intensity = look.sun; sky.mesh.visible = name === 'camp'; renderer.toneMappingExposure = look.exposure;
+    headlamp.color.set(look.lamp || 0xfff0d8); headlamp.decay = look.lampDecay ?? 1.35;
   }
   function heldModel(slot, held, i) {
     const key = held ? `${held.id}:${held.kind}:${held.pile?.length || 0}` : '';
@@ -253,10 +257,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         hands[i].rotation.set(-s * 1.2, 0, s * (i ? -.4 : .4));
       }
       pawMaterial.color.set(normalizeAvatar(me.avatar).fur);
-      headlamp.intensity = lookName === 'camp' ? 0 : 58 * mood.farol;
-      handLight.intensity = (holds(me, 'farol') ? 9 : holds(me, 'sunCrown') ? 12 : 0) * (.4 + .6 * mood.farol);
+      headlamp.intensity = lookName === 'camp' ? 0 : (look.lampPower || 58) * mood.farol;
+      handLight.intensity = (holds(me, 'farol') ? 9 : holds(me, 'sunCrown') ? 12 : 0) * (.4 + .6 * mood.farol) * (look.handPower ?? 1);
       motes.visible = lookName !== 'camp'; motes.userData.tick(t); motes.userData.strength(look.dust * mood.farol); motes.userData.scale(canvas.clientHeight * renderer.getPixelRatio());
-      handLight.color.set(holds(me, 'sunCrown') ? 0xffd36a : 0xffa850);
+      handLight.color.set(holds(me, 'sunCrown') ? 0xffd36a : look.hand || 0xffa850);
       sun.position.set(me.x - 20, 40, me.z + 25); sun.target.position.set(me.x, 0, me.z);
     }
     // The light pool: the nearest braziers, lamps and other panas' faroles.
@@ -264,10 +268,11 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (poolAt <= 0 && me) {
       poolAt = .25;
       const sources = [];
-      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? 0xffa24a : 0xff9a3a, power: l.kind === 'candelabra' ? 5.5 : 7, d: Math.hypot(l.x - me.x, l.z - me.z) });
-      for (const p of state.players) if (p.id !== me.id && alive(p) && floorOf(p.x) === vf && (holds(p, 'farol') || holds(p, 'sunCrown'))) sources.push({ x: p.x, y: 1.4, z: p.z, color: holds(p, 'sunCrown') ? 0xffd36a : 0xffa850, power: 8, d: Math.hypot(p.x - me.x, p.z - me.z) - 6 });
+      const [candleColor, candlePower, candleReach] = look.candle || DEEP_LOOK.candle;
+      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z) });
+      for (const p of state.players) if (p.id !== me.id && alive(p) && floorOf(p.x) === vf && (holds(p, 'farol') || holds(p, 'sunCrown'))) sources.push({ x: p.x, y: 1.4, z: p.z, color: holds(p, 'sunCrown') ? 0xffd36a : look.hand || 0xffa850, power: 8, reach: 11, d: Math.hypot(p.x - me.x, p.z - me.z) - 6 });
       sources.sort((a, b) => a.d - b.d);
-      pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); } });
+      pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); light.distance = s.reach; } });
     }
     // La codicia shows in the world: torches gutter and dust sifts from the ceiling.
     const greed = Math.min(4, Math.floor((state.codicia || 0) / 25));
@@ -277,7 +282,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (me && vf > 0 && greed > 0 && dustAt <= 0) {
       dustAt = 1.6 / greed;
       const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 5;
-      puffs.spawn({ x: me.x + Math.cos(a) * r, y: 4.3, z: me.z + Math.sin(a) * r }, { color: 0xc9b48a, count: 3 + greed, spread: .5, size: .35, rise: -2.6, life: 1.4 });
+      puffs.spawn({ x: me.x + Math.cos(a) * r, y: 4.3, z: me.z + Math.sin(a) * r }, { color: lookName === 'biblioteca' ? 0x9ca2aa : 0xc9b48a, count: 3 + greed, spread: .5, size: .35, rise: -2.6, life: 1.4 });
     }
     puffs.update(dt); waves.update(dt);
     camera.updateProjectionMatrix();

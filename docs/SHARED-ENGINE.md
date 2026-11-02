@@ -528,6 +528,30 @@ for (const e of eerie.update(dt, { active: underground, time, codicia, mode })) 
 Used by: Reliquia (`games/reliquia/public/eerie-fx.js` turns events into
 lights, sounds and shapes). Tests: `engine/tests/eerie.test.js`.
 
+### Hiding spots (search to find)
+
+`engine/play/hiding-spots.js` (pure, seeded, no Three.js): places a player has
+to search before they give up what they hide. `dealHidingSpots(rng, places,
+{ treasures, lesser, junk, traps })` deals a level's treasures into the places
+(harder places more often, the first one easy; extras share a place), then
+fills the rest with junk decoys, minor finds, a rare trap or nothing.
+`searchStep(store, id, dt, need)` adds a held key's progress and is true once,
+when the search completes; `decaySearches(store, held, dt)` fades the ones
+nobody holds. Host and guests deal the same spots from the seed, so a snapshot
+only carries which are open.
+
+```js
+const { spots } = dealHidingSpots(rng(seed), places, { treasures: ['mask', 'cup'], junk: ['oldBook'], traps: ['spider'] });
+if (searchStep(state.searching, spot.id, dt, spot.need)) open(spot);
+decaySearches(state.searching, held, dt, { done: id => state.spots[id] });
+```
+
+Used by: Reliquia (the library's drawers, trunks, dust sheets, wardrobes,
+heaps of books, rolling shelves and ladders, old lanterns; `deck.js` places
+them, `rules.js` searches them). Models: `props/reliquia-hideouts.js`
+(`userData.open(t)` poses each piece from shut to searched). Tests:
+`engine/tests/hiding-spots.test.js`, `games/reliquia/tests/hiding.test.js`.
+
 ### Music
 
 `engine/music.js` (+ `music-tracks.js`): songs, styles, the lobby song.
@@ -682,11 +706,17 @@ Used by: Bochinche.
   (Cocina, Escondidas), `bolas-world` (Bululú, Criollas), the island set
   (Bululú), the coastal set (Carreritas, Parapente), `colonial-street`
   (Trifulca).
-- **Dusty interiors**: `props/reliquia-library` builds a whole level's
-  bookcases in three instanced meshes per call (`bookcases`), every candle
+- **Dusty interiors**: `props/reliquia-library` builds a room's bookcases
+  in a few instanced meshes per call (`bookcases`, with variants: plain,
+  arched, between stone pillars, with a ladder, collapsed, low), every small
   flame in one shader (`candleFlames`: flicker, dim and blow-out uniforms),
-  cobweb cards (`cobwebs`), dust motes for a lamp beam (`dustMotes`) and a
-  hinged secret bookcase (`bookcaseDoor`). Used by: Reliquia's library.
+  sheer cobwebs that sway on one uniform (`cobwebs`: corner fans, sagging
+  ceiling sheets, hanging drapes), dust motes around the eye (`dustMotes`),
+  worn rugs (`rugs`), piles of books (`bookPiles`), low drifting mist for a
+  few chosen rooms (`groundMist`), lit chandeliers and hanging lanterns, a
+  glowing tall window and a hinged secret bookcase (`bookcaseDoor`).
+  `props/reliquia-hideouts` has the searchable furniture (see "Hiding
+  spots"). Used by: Reliquia's library.
 - **Large runtime asset packs** (audio, big images, voice packs) are not engine
   modules. They ship as release ZIPs pinned in `server/src/asset-packs.json`
   and are served by the server. Add a file there, not to Git:

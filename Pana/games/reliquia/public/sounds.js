@@ -10,6 +10,8 @@ export const sfx = {
   shot() { sound.sweep(900, 300, .1, 'sine', .08); },
   splat() { sound.splat(); },
   chest() { sound.chestOpen('gold'); },
+  // A hiding spot searched: wood scraping, then a glint if something was there.
+  search(found, junk) { sound.sweep(240, 120, .22, 'sawtooth', .025); sound.sweep(180, 90, .3, 'triangle', .04); if (found) { sound.tone(1175, .18, .1, 'sine', .06); sound.tone(1568, .26, .16, 'sine', .05); } else if (junk) sound.tone(330, .18, .12, 'triangle', .04); },
   bank(big) { sound.chestOpen(big ? 'gold' : 'purple'); sound.tone(784, .1, .12, 'square', .04); sound.tone(1046, .2, .2, 'square', .04); },
   throw() { sound.whoosh(); },
   bonk() { sound.bonk(1); sound.boing(); },

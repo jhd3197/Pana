@@ -199,20 +199,83 @@ under library names, `roomName(kind, theme)`); the seals work as in the mine.
 - **Secret room.** In the library the fake wall is drawn as a bookcase
   (`bookcaseDoor`) that swings 83° into its passage when the echo mask
   reveals it.
-- **Look.** `RUIN_PALETTES.biblioteca` lays planks (`stoneTexture('plank')`,
-  no glyphs); `LIBRARY_LOOK` in `view.js` is a sepia fog (2–17 m) with a
-  dimmer hemisphere. Cases, webs and flames are instanced per room (three
-  meshes per room for the cases), candle flames are one shader per floor
-  (`candleFlames`: flicker, a global level and blow-outs as uniforms), and
-  the five pooled point lights pick the nearest candelabra. Measured on an
-  RTX 4090 at Equilibrada: a stacks room draws ~225 calls and ~245 k
-  triangles, a few ms of CPU.
+- **Look: old, abandoned, cold (not Halloween).** Desaturated grey-blue:
+  `LIBRARY_LOOK` in `view.js` is a thin blue-grey haze (fog 2.5–21 m, colour
+  `0x18202a`), a cold hemisphere over a near-black ground, a whiter and dimmer
+  headlamp (`lampPower` 25, decay 1.15, so things a metre away do not blow
+  out) and a hand farol at a third. Candelabra are small warm accents: the
+  pooled point lights use 1.6 power and a 4.5 m reach in the library, and a
+  room keeps only two candelabra (two corners stay dark). `RUIN_PALETTES.biblioteca`
+  is cold grey-blue stone over dark worn planks (the plank texture has
+  scuffs and grit in the seams). Wood is dark plum-brown (`LIBRARY_COLORS`).
+- **Shelf variants.** `furnishLibrary` (scene.js) gives every room a main
+  variant (arched, plain or between stone pillars) and a shelf density, then
+  mixes in ladder sections, low cases and, in half the stacks rooms, one
+  collapsed case that leans into an aisle with its books spilled across the
+  floor; the case across that aisle gets the ladder somebody was climbing.
+  Collision never changes: every variant sits inside its solid rect.
+  Books come in runs of a quarter metre (a seven-spine texture), leaning
+  books and flat stacks, with gaps and empty shelves.
+- **Webs, dust, mist.** `cobwebs()` draws corner fans (room corners, case
+  ends, the corners of arches, over trunks and heaps), sheets sagging under
+  the ceiling and across aisles from case top to case top, and long drapes
+  hanging in the open, over the reading tables and from chandeliers: three
+  instanced meshes per floor, Lambert with a faint cold emissive so they read
+  in the dark, swaying on one uniform. `dustMotes()` is a pool of 520 pale
+  motes around the eye, faint everywhere and bright in the beam. Low ground
+  mist (`groundMist`) is an accent, not a fog: always in the reading hall and
+  in a stacks room with a collapsed case, never more than one room in three.
+- **Furniture.** Lit chandeliers in the big rooms (some dead), lanterns over
+  the stacks' nave and in corridors, worn rugs (`rugs`, one draw call),
+  piles of books against the wall cases with a candle on some, and in the
+  reading hall two tall windows with a faint cold glow (an emissive plane,
+  no light), torn curtains and worn armchairs. No skulls, pumpkins or garlands.
+- **Budget** (headless Chromium, software WebGL, 1280 × 720, seed 9): a
+  stacks aisle went from 235 draw calls / 261 k triangles to 177 / 260 k, the
+  reading hall from 320 / 332 k to 345 / 341 k. Arch panels are flat shapes
+  (extruded they cost 48 k triangles in one room); hiding-spot models farther
+  than 26 m (Manhattan) are not drawn. Long sessions of the library crash
+  headless software WebGL after a minute or so on dev too; shoot screenshots
+  in short sessions.
 - **Sound.** Steps are `wood` boards (others' steps squeal now and then);
   timber groans, page rustles, a falling book, wind through broken windows
   and a clock that ticks and stops replace drips and pebbles.
 
 Try it: `/g/reliquia/?debug&jornada=2` deals jornada 2 at once when the
-host starts; `reliquia.jornada(n)` skips ahead from the console.
+host starts; `reliquia.jornada(n)` skips ahead from the console and
+`reliquia.spot('wardrobe')` (or an index) stands you in front of a hiding spot.
+
+## Hiding spots (the library)
+
+Relics worth searching for (`HIDE_FROM`, Bs. 60 and up, small or hand-sized)
+do not lie in plain sight in the library: `furnish()` collects them per room
+and `hideSpots()` places the room's spots and deals them with
+`engine/play/hiding-spots.js`. Tools, big treasures, cheap coins, the sealed
+chamber's scatter and the cursed piece on its lectern stay in sight, plus an
+old book or two (`oldBook`, junk worth Bs. 10).
+
+- **Kinds** (`SPOTS` in `deck.js`): trunk, drawer (a writing desk, or a
+  copyist's desk), sheet (furniture under a dust sheet), wardrobe, debris (a
+  heap of fallen books; at the dead end of a capped aisle it counts as hard),
+  shelf and ladder (roll aside off a niche in the wall), lantern (lit, it
+  shows its dark corner). Free pieces are obstacle circles placed with
+  room around them (in the stacks only in the nave on a row line, never in an
+  aisle mouth; around the pit only in the rim's dark corners); wall pieces
+  are solid rects with their backs to a wall, kept off doorways, dart lanes
+  and each other, and the wall cases are cut around them.
+- **Dealing.** Treasures prefer hard spots (the first of a room an easy
+  one); a room gets about one spot per 70 m² and never fewer than its relics
+  plus one, so extras share a spot. Leftover spots hold junk (35 %), a minor
+  find (20 %), a trap (8 %: a spider or a mummy comes out) or nothing.
+- **Searching.** Hold E (0.7–1.2 s by kind): `interaction()` offers
+  `search` with a progress bar, `update()` steps `searching` and
+  `openSpot()` runs once: the contents tumble out toward the pana (a lantern
+  lays them in its corner), a trap springs, a lantern by the secret bookcase
+  opens the passage (`revealed`). Snapshots carry `spots` (open) and
+  `searching` (progress); `completeLevel` clears both. The crooked compass
+  also points at unsearched spots that hide treasure. The scene poses each
+  model with `userData.open(t)` and keeps it open; a creak plays while you
+  hold E on a spot, and "Nada. Solo polvo." only shows to the searcher.
 
 ## Scares (all jornadas)
 
@@ -278,10 +341,14 @@ reach every client.
 ## Verification
 
 ```powershell
-node --test Pana/games/reliquia/tests/rules.test.js Pana/games/reliquia/tests/options.test.js
+node --test Pana/games/reliquia/tests/rules.test.js Pana/games/reliquia/tests/options.test.js Pana/games/reliquia/tests/library.test.js Pana/games/reliquia/tests/hiding.test.js Pana/engine/tests/hiding-spots.test.js
 npm run test:browser -- reliquia
 ```
 
+`tests/hiding.test.js` covers the spots: same seed same spots, every spot
+reachable with its front clear (depths 2, 5, 8), plain-sight relics, decoys
+and empties, the quota still reachable, a search opening exactly once, the
+lantern opening the passage and the opened state in a guest's snapshot.
 The rules tests cover reachability across seeds, handfuls and one weapon, throwing,
 bonks and catches, two-pana carrying to the truck, tipping, the idol
 bonus, the montacargas (riding, calling, busy, seals), farol freezing, collapses and digging, drag to
