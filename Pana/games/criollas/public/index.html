@@ -32,7 +32,7 @@
     </section>
     <section id="side-controls" class="side-controls" hidden aria-label="Cámara">
       <button id="camera" type="button" class="pk-btn camera-btn" aria-label="Cámara"></button>
-      <span class="side-label">Cámara <kbd class="pk-kbd" data-pana-hint>C</kbd></span>
+      <span class="side-label">Cámara</span>
     </section>
     <section id="power-bar" class="pk-power" hidden aria-label="Fuerza del lanzamiento">
       <div class="pk-power-control"><span id="power-label">Fuerza</span><div id="power" class="pk-charge" role="meter" aria-labelledby="power-label" aria-valuemin="10" aria-valuemax="100" aria-valuenow="10"><i class="pk-charge-fill"></i><i class="pk-charge-marker"></i></div><span id="power-value" aria-hidden="true">10%</span><span>Suelta</span></div>
@@ -42,10 +42,9 @@
       <div class="shot-row">
         <div class="pk-seg" id="shot-options"><button data-mode="arrime" aria-pressed="true">Arrime</button><button data-mode="boche" aria-pressed="false">Rastrero</button><button data-mode="aire" aria-pressed="false">Por el aire</button></div>
         <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
-        <button id="shoot" class="pk-btn pk-btn--primary">Mantén para lanzar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+        <button id="shoot" class="pk-btn pk-btn--primary">Mantén para lanzar</button>
       </div>
       <label id="loft-control" hidden>Altura <input id="loft" type="range" min="1.2" max="4" step="0.1" value="2.5"><output id="loft-value">2.5 m</output></label>
-      <p class="control-hint" data-pana-hint>Toca la cancha para apuntar · ← → dirección · Mantén Espacio: la fuerza sube y baja, suelta para lanzar</p>
       <p id="guide-note" class="guide-note"></p>
     </section>
     <div id="recovery" class="pk-panel" hidden><p id="recovery-copy" role="status"></p><button id="fallback" class="pk-btn pk-btn--primary">Jugar con bots</button></div>
