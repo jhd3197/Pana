@@ -62,8 +62,6 @@ const menu = createGameMenu({ title: 'Bochinche · Pana', sound, orientation: 'h
   note: () => room.members.size > 1 ? loc('La ronda sigue mientras estás en el menú.') : loc('La ronda está en pausa.'),
   options: [{ id: 'hud', label: loc('Diseño del HUD'), choices: HUD_LAYOUTS.map(([id, label]) => [id, loc(label)]), get: () => hudLayout,
     set: (value) => { hudLayout = value; document.body.dataset.hud = value; try { localStorage.setItem('bochinche:hud', value); } catch {} } }],
-  controls: [[loc('A D / flechas'), loc('Moverse')], [loc('Espacio'), loc('Saltar · dos saltos')], [loc('J + dirección'), loc('Golpe / ataque aéreo')], ['K', loc('El poder de tu pana')], ['K + lado', loc('Candela')], ['K + abajo', loc('Hielo')], ['K + arriba', loc('Volver al escenario')], ['J + toque lateral', loc('Jonrón')], [loc('Shift + dirección'), loc('Escudo / esquivar')], ['L', loc('Agarrar · dirección para lanzar')], ['I', loc('Agarrar objetos')]],
-  tips: [loc('Cuanto más daño acumulas, más lejos te mandan los golpes.'), loc('Gana quien conserve vidas. Si empatan al sonar la campana, hay muerte súbita.'), loc('Escoge tu pana y tu estilo en la sala: cada pana tiene su poder en K.')],
   invite: () => room.offline ? null : inviteUrl(code),
 
 });

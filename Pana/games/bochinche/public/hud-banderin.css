@@ -83,7 +83,6 @@
 .banderin .hud-bubble i { position: absolute; inset: 0; }
 .banderin .hud-bubble i::after { content: ""; position: absolute; right: -24px; top: 50%; margin-top: -10px; border: 10px solid transparent; border-left-color: var(--c); }
 
-.banderin .key-guide { bottom: 7px; font-size: 10px; }
 .banderin .connection { bottom: 2px; opacity: .7; }
 .banderin .styles button { border-top: 8px solid var(--pk-game); min-height: 96px; background: var(--hud-panel); color: var(--pk-cream); }
 .banderin .styles button[data-style="1"] { border-top-color: var(--pk-teal); }
