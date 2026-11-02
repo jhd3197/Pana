@@ -136,6 +136,67 @@ leap .45 s and recover; a beam dazes one for 1.6 s, then it is immune 6 s.
 The vault jaguar sleeps until someone comes within 7 m or lifts vault loot.
 Rooms wake their sleepers the first time a pana enters (1.5 m inside).
 
+### El Lector and La Estatua (the library's own)
+
+Two hunters only the library deals (`libraryHaunts` in `deck.js`, from their
+own seeded stream after the rest of the deck, so adding them changed no
+existing layout). Per floor: one Estatua against a wall of a `lectura`,
+`estanterias`, `archivo` or `copistas` room (sometimes two from jornada 5),
+and usually one Lector sleeper in a stacks, archive or copyists' room (up to
+two from jornada 5, `lectorCap`); never the entrance, a sealed room or within
+3.2 m of a corridor mouth. Director waves in the library swap a mummy wave for
+one Lector 12 % of the time (+2 % per codicia tier), never past the cap. The
+mine deals neither.
+
+- **El Lector** (`lector.js`, model `props/blind-librarian.js` + pose
+  `reader-pose.js`): blind, it hunts by ear on the shared noise board
+  (`engine/play/noise.js`, `g.noise`, never in a snapshot). `NOISE` in
+  `rules.js` is each noise's reach: running (stamina draining) 10 m, landing a
+  jump 8, a search tick 7 and its opening 10, a chest 11, a melee hit 10 (a
+  miss 4), getting hurt 8, a shot 6, a rolling carrito 8, darts 9, the
+  laughing idol and a cave-in 30, anything landing `5 + 0.55 · impact` m and
+  an `oldBook` ×1.35. Walking (4.6 m/s, the non-sprint pace; there is no
+  crouch), standing still and riding are silent. A wall between muffles a
+  noise to 60 % of its reach. On a new noise it stops dead (`listen`, 0.7 s:
+  the head turns toward it, `e.look`, and cocks hard), then homes in at
+  3.6 m/s (`hunt`), searches 3 m around the spot for 6 s at 2 m/s and wanders
+  at 1.3 m/s with pauses (`prowl`). It claws (windup 0.55 s, 15 damage before
+  scaling, a bit over a mummy) anyone within 1.1 m or anyone noisy in the last
+  0.8 s within its 1.6 m reach. Light does nothing (`lit` stays `dark`); hits
+  stagger it as usual. A thrown book is the lure: throw it away from you and
+  stand or walk.
+- **La Estatua** (`estatua.js`, model `props/library-statue.js` + poses
+  `statue-pose.js`): placed when the jornada is dealt (`placeStatues`, asleep,
+  no spawn puff) so it is in the room from the start like decor; it wakes
+  silently with its room. Each tick the host checks every standing pana on
+  its floor (`seenBy`): inside the view cone of `engine/play/sight.js` (the
+  heading `p.h` and `p.pitch` players already send, 62° each side and 41° up
+  and down, wider than the 74° camera on any screen up to 21:9, plus the
+  statue's own width) within 30 m, and a clear sight ray from the eyes to its
+  middle or either shoulder (`layout.sightClear`: walls, bookcases, wardrobes,
+  fake walls and rubble block; reading tables, desks and pits do not). Light
+  and the dark do not matter, nor does holding Tab. Seen by anyone, it is
+  frozen, wind-up included. Unseen, within 26 m of a pana, it strides
+  1.5–2.5 m along `findPath` with `moveBody` (never through a solid) every
+  0.6–1.1 s, stopping a metre short, and takes a new pose (`e.pose`: far,
+  reaching, close); within 1.5 m it raises its arms (0.5 s) and strikes once
+  (24 before scaling), then stands 2.6 s. Melee and paint only stagger it
+  (`wound()` refuses stone; 0.9 s): the answer is to keep eyes on it or leave.
+  The view snaps it to each host position (no lerp) with a little dust.
+- **Cues** (`presence.js`, existing clips only): the Lector's tell is a page
+  turning where it stands, a slow low creak while it stands listening within
+  8 m, a low chain while it walks within 10 m; each Estatua stride is the
+  trunk lid at half speed under a low book thud, within 24 m. Suaves: half
+  the level, creaks and chains at half rate, no thud layer, three dust motes
+  instead of six; apagados: no cues and no dust. Behaviour is the same in
+  every mode (a unit test runs the Lector under all three).
+- **Perf.** No lights; geometry and materials shared; one tinted bake per
+  pivot (under 20 draws each). A frozen statue costs no pose work; the
+  sight check is a dot product per pana and, only inside the cone, at most
+  three 0.2 m-step rays over the bitmap.
+- Debug: `reliquia.spawn('lector' | 'estatua', ahead, side)`; suite
+  `tests/enemies.browser.mjs`, unit tests `lector.test.js`, `estatua.test.js`.
+
 Guácharos (`bat`) fly at 2 m in flocks (waves double their count), orbit,
 dive to peck, and scatter 1.6 s from a beam. Spiders hang on the ceiling
 (`hanging`) until a pana is within 4.5 m; their bite slows (×0.6, 2.5 s).
@@ -219,7 +280,8 @@ under library names, `roomName(kind, theme)`); the seals work as in the mine.
   ends), some rows have a 2 m gap only panas squeeze through. Chests in the
   stacks sit in the nave on a row line, never in an aisle mouth.
 - **Enemies.** Mummies wait in the aisles, one phantom haunts every stack
-  room, spiders hang over them; the archive keeps a cuaima by its loot.
+  room, spiders hang over them; the archive keeps a cuaima by its loot. El
+  Lector and La Estatua are the library's own (see Enemies).
 - **Secret room.** In the library the fake wall is drawn as a bookcase
   (`bookcaseDoor`) that swings 83° into its passage when the echo mask
   reveals it.
