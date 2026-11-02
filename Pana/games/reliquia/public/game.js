@@ -21,6 +21,7 @@ import { createView } from './view.js';
 import { createHud, money } from './hud.js';
 import { sfx } from './sounds.js';
 import { createAmbience } from './ambience.js';
+import { createSamples } from './samples.js';
 import { floorOf, jornadaName } from './deck.js';
 import { ITEMS, say } from './items.js';
 import { loc } from '/engine/i18n.js';
@@ -29,14 +30,17 @@ const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.
 const notify = createToast($('toast'), { ms: 3400 });
 const qs = new URLSearchParams(location.search), code = roomCode();
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
-const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience();
+const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience(), samples = createSamples();
 // Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
 let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares);
-const fx = createEerieFx({ view, ambience, dread: v => { const r = Math.round(v * 20) / 20; if (r !== dreadShown) { dreadShown = r; $('dread').style.opacity = r; } } });
+const fx = createEerieFx({ view, ambience, samples, dread: v => { const r = Math.round(v * 20) / 20; if (r !== dreadShown) { dreadShown = r; $('dread').style.opacity = r; } } });
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
-let jumpPress = 0, creakAt = 0;
+let jumpPress = 0;
+const heard = {};   // what samples.js reads each frame, reused
 const feet = createFootsteps();   // steps by distance walked, plus take-off and landing
+// Recorded steps on boards and stone once they load; the synth meanwhile and on dirt.
+const stepSink = { step: (surface, o) => samples.step(surface, o) || sfxLib.step(surface, o), jump: sfxLib.jump, land: sfxLib.land };
 function jump(){if(playing())jumpPress=pressJump(jumpPress);}
 function clearInput() { keys.clear(); touch.clear(); }
 const solo = () => room.offline || room.members.size === 1;
@@ -90,7 +94,7 @@ function handle(e) {
     case 'hit': if (near) sfx.hit(); break;
     case 'shot': if (near) sfx.shot(); break;
     // A searched hiding spot: what it gave is news for everyone; dust only for you.
-    case 'search': if (said && (mine || e.found || e.trap)) notify(said); if (near) sfx.search(e.found, !e.found && !!e.item); if (e.trap) { sfx.awaken(); view.shake(.3); } if (e.found) { const sp = view.world.run.spots.find(s => s.id === e.spot); if (sp) view.waves.sparkle({ x: sp.x, y: 1, z: sp.z }, { color: 0xd8dde6, count: 8 }); } break;
+    case 'search': if (said && (mine || e.found || e.trap)) notify(said); if (near) { sfx.search(e.found, !e.found && !!e.item); samples.searched(e.spot); } if (e.trap) { sfx.awaken(); view.shake(.3); } if (e.found) { const sp = view.world.run.spots.find(s => s.id === e.spot); if (sp) view.waves.sparkle({ x: sp.x, y: 1, z: sp.z }, { color: 0xd8dde6, count: 8 }); } break;
     case 'chest': sfx.chest(); { const c = view.world.run.chests.find(c => c.id === e.chest); if (c) view.waves.sparkle({ x: c.x, y: 1, z: c.z }, { color: 0xffd36a, count: 10 }); } break;
     case 'bank': sfx.bank(e.big); popCounter($('haul')); break;
     case 'throw': if (near) sfx.throw(); break;
@@ -189,12 +193,13 @@ function frame(now) {
   // Keep the eyes on your pana after the run ends; never draw your own body.
   view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
   const theme = view.world.run.theme;
-  ambience.update(state, p, view.heading, dt, theme);
+  const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : 'stone' : 'dirt';
+  ambience.update(state, p, view.heading, dt, theme, !samples.ownSteps(surface));
+  heard.state = state; heard.me = p; heard.heading = view.heading; heard.paused = menu.isOpen; heard.theme = theme; heard.floor = p ? view.world.floors.get(floorOf(p.x)) : null; heard.run = view.world.run;
+  samples.update(dt, heard);   // wind, drips, chandeliers, and hiding spots creaking as a search starts
   fx.update(dt, { state, me: p, heading: view.heading, paused: menu.isOpen, scares, run: view.world.run });
-  if (p && state.phase === 'playing' && !p.downed && !p.spectator) { const speed = p.moving ? Math.hypot(p.vx, p.vz) : 0; feet.update(dt, { speed, height: p.jumpHeight || 0, sprint: speed > 5.4, surface: floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : 'stone' : 'dirt', volume: .8 }, sfxLib); }
+  if (p && state.phase === 'playing' && !p.downed && !p.spectator) { const speed = p.moving ? Math.hypot(p.vx, p.vz) : 0; feet.update(dt, { speed, height: p.jumpHeight || 0, sprint: speed > 5.4, surface, volume: .8 }, stepSink); }
   else feet.reset();
-  // Holding E on a hiding spot: the wood creaks while you search.
-  creakAt -= dt; if (creakAt <= 0 && p && playing() && (keys.has('e') || touch.has('e'))) { creakAt = interaction(state, p)?.kind === 'search' ? .6 : .2; if (creakAt > .5) ambience.eerie('creak', { gain: .5, pan: (Math.random() - .5) * .3 }); }
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }

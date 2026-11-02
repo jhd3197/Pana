@@ -8,6 +8,14 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia ahora suena a biblioteca abandonada: pasos en tablas y piedra, puertas que crujen y susurros a tu espalda.**
+  Tus pasos suenan a madera en la biblioteca y a piedra en la mina, al
+  caminar o correr. Los armarios crujen al abrirlos, los baúles y las gavetas
+  suenan a madera vieja, los estantes y las pilas de libros a páginas y golpes
+  sordos. Hay viento muy bajito, goteras de vez en cuando y la cadena de una
+  lámpara de araña que se mueve si pasas cerca. Los sustos suman susurros,
+  una puerta lejana y un libro que cae a lo lejos; con Sustos suaves llegan
+  menos y siempre de lejos, y con Sustos apagados no suenan.
 - **En la biblioteca de Reliquia las reliquias ya no están a la vista: hay que registrar gavetas, baúles, armarios y muebles tapados.**
   Mantén E un momento para abrir un baúl, sacar las gavetas de un escritorio,
   quitarle la sábana a un sillón, abrir un armario, escarbar entre libros

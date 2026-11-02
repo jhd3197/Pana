@@ -112,7 +112,8 @@ export function createAmbience() {
   }
   const play = (name, at, extra) => voice((ctx, out, t) => SOUNDS[name](ctx, out, t, extra), at);
 
-  function update(state, me, heading, dt, theme = 'mina') {
+  // ownSteps false: your own feet are played elsewhere (recorded steps in samples.js).
+  function update(state, me, heading, dt, theme = 'mina', ownSteps = true) {
     if (!sound.ctx) return;
     if (!graph) build();
     const playing = state.phase === 'playing' && me && !sound.muted, deep = playing && floorOf(me.x) > 0, tier = Math.min(4, Math.floor((state.codicia || 0) / 25)), now = graph.ctx.currentTime;
@@ -125,7 +126,7 @@ export function createAmbience() {
     // Footsteps: yours on your stride, others' from where they walk.
     for (const p of state.players) {
       const self = p.id === me.id, body = self ? me : p;
-      if (!body.moving || p.downed || p.riding || floorOf(p.x) !== floorOf(me.x)) { steps.delete(p.id); continue; }
+      if (!body.moving || p.downed || p.riding || floorOf(p.x) !== floorOf(me.x) || (self && !ownSteps)) { steps.delete(p.id); continue; }
       const fast = Math.hypot(body.vx || 0, body.vz || 0) > 5.5, interval = fast ? .3 : .42;
       const left = (steps.get(p.id) ?? interval * Math.random()) - dt;
       // In the library every step finds a board; some of them squeal.

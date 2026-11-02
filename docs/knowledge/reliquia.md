@@ -315,7 +315,30 @@ every 2–7 s; the camp has birds and cicadas instead. Footsteps follow every
 moving pana (0.42 s walking, 0.3 s running), others' panned and faded by
 distance. Creatures each have their own clock: mummy groans, spider
 skitter, cuaima hiss, guácharo screeches, jaguar growls and a roar on the
-pounce. From tier 3 your heartbeat joins in. Everything is synthesized.
+pounce. From tier 3 your heartbeat joins in.
+
+Recorded clips (`public/audio/*.mp3`, CC0, credited in `audio/SOURCE.md`)
+play through `samples.js` on `engine/sample-bank.js`, after the cave split,
+so they echo too. They load when a run starts; until a set has decoded your
+own steps stay synthesised (`sfx.step`) and the rest is silent. Your steps
+are `step_wood_*` in a library jornada and `step_stone_*` in the mine
+(the camp keeps the synth `dirt`), on the distance ticker of
+`engine/play/footsteps.js`; while the clips play, `ambience.js` skips your
+own synthesised board knock so a footfall never doubles (others' steps stay
+synthesised). A search makes its spot's sound once, when its progress first
+appears in the synced `searching` (`searchesStarted`), so every pana's
+search is heard where it stands: wardrobes and ladders creak, trunks and
+drawers (rate 1.25) open, shelves and dust sheets rustle pages, a heap of
+books thuds then rustles, a lantern chinks; a finished search settles
+softly. Underground a drip comes every 8–20 s (half as loud among the
+books), a chandelier within 14 m chinks its chain every 6–18 s (positions
+in `floor.chandeliers`), and `wind_loop` is a quiet bed (0.03–0.045) that
+fades in when a run starts and out on pause, mute or the end. The levels
+are low on purpose: only scares should make anyone jump. Scare layers
+(whispers 2 m behind a shoulder, a far door creak with a slam, a far book
+thud with a library thud, the thrown book landing) go through
+`scareSound(mode, e.roll)`: Suaves plays about half of them, quieter and
+11 m off, and drops the synth breath; Apagados plays none.
 
 ## Networking
 

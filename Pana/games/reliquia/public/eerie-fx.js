@@ -1,7 +1,8 @@
 // What a scare looks and sounds like on this screen. engine/eerie.js decides
 // when (seeded, with cooldowns, scaled by la codicia, depth, being alone and
 // hurt); this turns each event into light (view.mood), sound
-// (ambience.eerie) and the odd shape: a pale figure far down an aisle that
+// (ambience.eerie, plus recorded whispers and far falls from samples.js,
+// which follow Sustos) and the odd shape: a pale figure far down an aisle that
 // is gone when you look straight at it, a book thrown off a shelf, and the
 // rare jump scare. Nothing here is synced: every pana gets their own.
 import * as THREE from 'three';
@@ -15,7 +16,7 @@ const GRAVITY = 9.8;
 const flick = t => (Math.sin(t * 37) * Math.sin(t * 23 + 1.3) > .1 ? 1 : .25);
 const ease = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
 
-export function createEerieFx({ view, ambience, dread = () => {} }) {
+export function createEerieFx({ view, ambience, samples = null, dread = () => {} }) {
   const eerie = createEerie({ seed: 1 });
   let level = -1, time = 0, mode = 'normal', theme = 'mina';
   const effects = [];
@@ -53,6 +54,7 @@ export function createEerieFx({ view, ambience, dread = () => {} }) {
 
   // ---- Events into effects ----
   function start(e, me, heading, state) {
+    samples?.scare(e, mode);
     const s = e.strength, side = e.side, behind = { x: me.x - Math.sin(heading) * 6 + Math.cos(heading) * side * 3, z: me.z - Math.cos(heading) * 6 - Math.sin(heading) * side * 3 };
     switch (e.kind) {
       case 'flicker': effects.push({ kind: 'flicker', t: 0, dur: 2.6, s }); ambience.eerie('gutter', { pan: side * .3, gain: .7 }); break;
@@ -61,14 +63,15 @@ export function createEerieFx({ view, ambience, dread = () => {} }) {
       case 'fogSurge': effects.push({ kind: 'fog', t: 0, dur: 6, s }); ambience.eerie(theme === 'biblioteca' ? 'wind' : 'sub', { pan: side * .5, strength: .7 }); break;
       case 'slam': ambience.eerie('slam', { pan: side * .6, gain: .9 }); shake(.25 * s); view.puffs.spawn({ x: behind.x, y: 1.5, z: behind.z }, { color: theme === 'biblioteca' ? 0x9aa0a8 : 0xb0a080, count: 6, spread: 1.2, size: .6, rise: -.6, life: 1.2 }); break;
       case 'thud': ambience.eerie('thud', { pan: side * .95, gain: .75 }); break;
-      case 'whisper': ambience.eerie('whisperNear', { pan: side * .9, gain: .9 }); ambience.eerie('breath', { pan: side * .35, gain: .8 }); break;
+      // Suaves keeps whispers far: no breath at your neck.
+      case 'whisper': ambience.eerie('whisperNear', { pan: side * .9, gain: mode === 'suaves' ? .35 : .9 }); if (mode !== 'suaves') ambience.eerie('breath', { pan: side * .35, gain: .8 }); break;
       case 'heartbeat': effects.push({ kind: 'heart', t: 0, dur: 6.5, s, next: 0, beats: 0 }); break;
       case 'silhouette': { const at = spotAhead(me, heading, 7.5, 12, state); if (at) { showFigure(at, me); ambience.eerie('sub', { strength: .45 }); } break; }
-      case 'bookFall': throwBook(me, heading, state); break;
+      case 'bookFall': throwBook(me, heading, state, e.roll); break;
       case 'jumpscare': effects.push({ kind: 'scare', t: 0, dur: mode === 'suaves' ? 1.6 : 2.1, s, soft: mode === 'suaves', shown: false }); ambience.eerie('sub', { strength: mode === 'suaves' ? .4 : 1 }); break;
     }
   }
-  function throwBook(me, heading, state) {
+  function throwBook(me, heading, state, roll = 0) {
     const fx = Math.sin(heading), fz = Math.cos(heading);
     let best = null, score = -1;
     for (const s of view.world.run.solids || []) {
@@ -84,7 +87,7 @@ export function createEerieFx({ view, ambience, dread = () => {} }) {
     book.position.set(best.x, 1.7 + Math.random() * .9, best.z); book.rotation.set(0, Math.random() * 3, 0); book.visible = true;
     bookV.set(best.nx * (1.8 + Math.random()), .8 + Math.random(), best.nz * (1.8 + Math.random())); spin.set(Math.random() * 8 - 4, Math.random() * 6 - 3, Math.random() * 8 - 4);
     ambience.eerie('pages', { pan: pan(me, heading, best.x, best.z), gain: .7 });
-    book.userData.landed = null;
+    book.userData.landed = null; book.userData.roll = roll;
   }
 
   // ---- Per frame ----
@@ -122,7 +125,7 @@ export function createEerieFx({ view, ambience, dread = () => {} }) {
     if (book.visible && book.userData.landed != null) { if (time - book.userData.landed > 8) book.visible = false; }
     else if (book.visible) {
       bookV.y -= GRAVITY * dt; book.position.addScaledVector(bookV, dt); book.rotation.x += spin.x * dt; book.rotation.z += spin.z * dt;
-      if (book.position.y <= .03) { book.position.y = .03; book.rotation.set(0, book.rotation.y, 0); ambience.eerie('book', { pan: pan(me, heading, book.position.x, book.position.z), gain: .9 }); view.puffs.spawn({ x: book.position.x, y: .1, z: book.position.z }, { color: theme === 'biblioteca' ? 0xa0a6ae : 0xb8a888, count: 5, spread: .4, size: .35, rise: .6, life: .8 }); bookV.set(0, 0, 0); book.userData.landed = time; }
+      if (book.position.y <= .03) { book.position.y = .03; book.rotation.set(0, book.rotation.y, 0); ambience.eerie('book', { pan: pan(me, heading, book.position.x, book.position.z), gain: .9 }); samples?.scare({ kind: 'bookLand', roll: book.userData.roll, x: book.position.x, z: book.position.z }, mode); view.puffs.spawn({ x: book.position.x, y: .1, z: book.position.z }, { color: theme === 'biblioteca' ? 0xa0a6ae : 0xb8a888, count: 5, spread: .4, size: .35, rise: .6, life: .8 }); bookV.set(0, 0, 0); book.userData.landed = time; }
     }
     dread(dreadLevel);
   }

@@ -10,6 +10,7 @@ sound by what it is, never by how it is built.
 |---|---|
 | `engine/sfx.js` | `sfx.step(surface, {sprint, foot, volume})`, `jump`, `land`, `shot(kind)`, `impact(surface)`, `splat`, `boom(size, {volume, far})`, `debris(size)` (earth raining back after a blast), `patter(count)` (drops landing), `hitConfirm`, `hurt`, `reload(kind, seconds)`, `reloaded`, `dry`, `swap`, `swish`, `swing(material)` and `smack(material)` (a melee swing and its blow: `wood`, `slap`, `squish`, `swish`, `clang`, `rattle`), `pop` (something back in the hand), `tick`, `confirm`, `back`, `count(n)`, `go`, `boing` (a cartoon hop), `squeak` (a startled small animal), `splash(size)` (falling into water), `chime` (your turn), `sting(win)` (match won or lost; effects, not music). Also exports the two primitives `burst` (filtered noise that glides and decays) and `pitch` (a falling or rising thump) for building a new sound. |
 | `engine/vehicle-audio.js` | `createMotor(sound, {profile, topSpeed})`, `createTyres(sound)`, `vehicleSfx.skid / boost / crash(power, kind)`. |
+| `engine/sample-bank.js` | `createSampleBank(sound, base, sets)`: a game's own short clips (`public/audio/*.mp3`) on the same graph; `play(set, {gain, rate, jitter, at, listener, range, pan, priority})`, `bed(set).set(level, seconds)`, `preload`, `ready`. Pure `pickVariant`, `distanceGain`, `panFor`. |
 | `engine/vehicle-revs.js` | The pure half: `PROFILES` and `stepRevs` (gearbox, shift cut, rev slew). Unit-tested in Node. |
 
 Surfaces for `step`: `concrete stone tile wood metal dirt grass sand water`.
@@ -50,5 +51,7 @@ to `PROFILES` in `vehicle-revs.js` (the test checks it fires in an audible band)
 - Check a change without a speaker: render with an `OfflineAudioContext`, then look at peak, RMS and the dominant frequency. All sounds peak under 0.35 at a master volume of 0.5.
 
 ## Used by
+
+Recorded clips (`sample-bank.js`): Reliquia (steps, searches, wind, drips, chains, sampled scares). Keep each clip small and mono, list it in the game's `audio/SOURCE.md`, and start gains low (steps ~0.15, beds ~0.04): normalised clips are much louder than the synth.
 
 Carreritas (tyres, boost, crash, drift skid; its car motor is still the older `sound.startEngine` in `engine/fx.js`, players preferred it to `createMotor`), Pepazo (everything on foot, every gun and every melee weapon), Capis a Pintazos (every sound it makes).
