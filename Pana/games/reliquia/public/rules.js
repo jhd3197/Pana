@@ -493,7 +493,9 @@ export class Expedition {
   }
   damage(p, amount, source = null) {
     if (!alive(p) || p.invulnerable > 0) return;
-    p.hp = Math.max(0, p.hp - amount); p.hit = .35; p.revive = 0; this.noisy('hurt', p, p.id);
+    p.hp = Math.max(0, p.hp - amount); p.hit = .35; p.revive = 0;
+    // A blow from something is loud; poison and the heart's drain are not.
+    if (source) this.noisy('hurt', p, p.id);
     if (source) this.event('hurt', '', { player: p.id, enemy: source.id ?? null });
     if (!p.hp) this.down(p);
   }
