@@ -226,7 +226,13 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
   // Skip ahead to jornada n (2 is the first library): host only.
   jornada(n) { const g = room.game; if (!room.isHost || !g || g.phase !== 'playing') return false; while (g.level < n) g.completeLevel(); room.publish(); return g.level; },
   // Spawn an enemy `ahead` metres in front of you (`side` to the right): host only.
-  spawn(kind, ahead = 3, side = 0) { const g = room.game, p = g?.players.find(p => p.id === room.id); if (!room.isHost || !p) return null; const h = p.h, x = p.x + Math.sin(h) * ahead - Math.cos(h) * side, z = p.z + Math.cos(h) * ahead + Math.sin(h) * side; const e = spawnEnemy(g, kind, x, z, { born: g.time - 9, awake: true, h: h + Math.PI }); room.publish(); return e && { id: e.id, x: e.x, z: e.z }; },
+  // (or on the nearest open floor around that point).
+  spawn(kind, ahead = 3, side = 0) {
+    const g = room.game, p = g?.players.find(p => p.id === room.id); if (!room.isHost || !p) return null;
+    const h = p.h, x = p.x + Math.sin(h) * ahead - Math.cos(h) * side, z = p.z + Math.cos(h) * ahead + Math.sin(h) * side;
+    let e = null; for (let r = 0; r < 3 && !e; r += .5) for (let a = 0; a < 8 && !e; a++) e = spawnEnemy(g, kind, x + Math.cos(a * .785) * r, z + Math.sin(a * .785) * r, { born: g.time - 9, awake: true, h: h + Math.PI });
+    room.publish(); return e && { id: e.id, x: e.x, z: e.z };
+  },
   fx, samples,
   // The Tab / View layer: reliquia.info (open?) and reliquia.showInfo(true | false).
   get info() { return hud.infoOpen; }, showInfo(on) { intel.release(); if (on) intel.toggle('debug'); },
