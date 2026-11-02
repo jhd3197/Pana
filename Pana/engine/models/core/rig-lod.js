@@ -17,8 +17,9 @@ import * as THREE from 'three';
 // code that toggles their `visible` keeps working); it costs nothing per frame
 // while the choice stays. A pivot that is hidden (or inside a hidden group)
 // collapses its part of the far copy. Meshes hidden at build time (a dizzy
-// effect, an open mouth's teeth) are left out of it and not drawn while far,
-// so a far model is always one draw; list in `keep` what must still show.
+// effect, an open mouth's teeth) and see-through parts it cannot merge (glass
+// under 0.6 opacity) are left out of it and not drawn while far, so a far
+// model is always one draw; list in `keep` what must still show.
 // Build it before tinting materials per frame: the colours are baked; tint
 // `lod.material` (color, emissive) for the far copy instead. Rebuild it after
 // changing the model's outfit.
@@ -39,8 +40,8 @@ export function createRigLod(root, { pivots = [], cell = 0, roughness = .8, keep
   root.traverse(o => {
     if (!o.isMesh || o.isInstancedMesh || kept(o)) return;
     const g = o.geometry, at = g.attributes, materials = [o.material].flat();
-    if (!shown(o)) { hidden.push(o); return; }
-    if (!at.position || materials.every(skip)) return;
+    // Hidden now, or nothing to merge (see-through glass, an optic's lens): not drawn while far.
+    if (!shown(o) || !at.position || materials.every(skip)) { hidden.push(o); return; }
     let p = o.parent, pivot = 0;
     for (; p; p = p.parent) { const i = bones.indexOf(p); if (i >= 0) { pivot = i; break; } }
     sources.push(o); shadows ||= o.castShadow;

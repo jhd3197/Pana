@@ -674,7 +674,7 @@ Used by: Bochinche.
 
 | Piece | Module | Used by |
 |---|---|---|
-| One-draw far copy of a jointed model (a pana and what it holds) | `engine/models/core/rig-lod.js` (`createRigLod`) | Capis a Pintazos |
+| One-draw far copy of a jointed model (a pana and what it holds; give each swappable prop its own pivot and hide the unused ones) | `engine/models/core/rig-lod.js` (`createRigLod`) | Capis a Pintazos |
 | Which copy to show at a distance, with hysteresis (pure) | `engine/models/core/lod-band.js` (`chooseFar`) | Capis a Pintazos |
 
 `createRigLod(root, { pivots, cell })` merges every mesh visible under `root`

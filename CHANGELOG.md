@@ -27,7 +27,9 @@ becomes the GitHub release's notes.
   Piñita detrás de una loma o bajo un techo. Caminan hacia el rival cuando
   está lejos, abren paso cuando una loma los encierra y afinan la puntería con
   los turnos, así casi ninguna partida llega al límite de 60 turnos; en fácil
-  siguen fallando más que en experto.
+  siguen fallando más que en experto. La Piñita ahora va en las dos patas,
+  frente al pecho, y en la vista de todo el mapa cada capi lleva el arma que
+  tiene en la mano.
 
 - **Pepazo tiene modo Dominación.**
   Tres zonas por mapa (A, B y C): párate en una para tomarla y cada zona tuya

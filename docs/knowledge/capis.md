@@ -278,10 +278,22 @@ in how it flies, how much it hurts and what it does to the ground:
   least 14 units; La Licuadora's arc continues into the ground as the tunnel
   it will bore; El Trueno shows its middle pellet.
 - **In the paws**: every capi carries all five models, only the picked one
-  shown, each with its tip at the muzzle (`HELD` scales; La Piñita is held
-  up at the barrel's tip). Pepazo's markers are `bakePaintKit` once per
-  team and weapon (at most 6 draws each); the grenade is `createPaintGrenade`.
-  The far copy (`rig-lod.js`) is built with La Bazuca and keeps it.
+  shown, each with its tip at the muzzle (`HELD` scales). Pepazo's markers are
+  `bakePaintKit` once per team and weapon (at most 6 draws each); the grenade
+  is `createPaintGrenade` at ×1.45. La Piñita has no grips, so it is not at
+  the muzzle: `GRENADE_HOLD` sits it 0.37 ahead of the shoulder and 0.24
+  below, 0.12 towards the camera (not on the near shoulder), both paws
+  reaching round it and hugging inwards; it follows 40 % of the aim and of
+  the lowered barrel's drop, so it rises to the chin and drops to the belly
+  instead of swinging across the face. Each paw's end stays 0.09 to 0.16 from
+  its centre (its radius is 0.16) at every aim (`inspect().grip`). It leaves
+  the paws while it flies and the thrower retreats. A shot still starts at
+  the rules' muzzle.
+- **Far away each capi shows what it holds.** The far copy (`rig-lod.js`) is
+  built with all five weapons, each its own pivot; the four not in the paws
+  are hidden, and a hidden pivot collapses its part, so the whole-map view
+  stays one draw a capi (77 draws at 1280x720, seed 6; the play view 79).
+  The optics' glass (see-through, not merged) is hidden while far.
 - **In flight**: La Bazuca's rocket with smoke and drops; La Piñita tumbling,
   its lamp blinking faster as the fuse runs down (and a "Mecha: n s" note);
   La Lejana's glowing slug with a white streak; La Licuadora's spinning bit
