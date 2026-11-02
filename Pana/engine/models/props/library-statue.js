@@ -16,9 +16,9 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { rng } from '/engine/random.js';
 import { statuePose } from './statue-pose.js';
 
-const PALETTE = { stone: 0x4f545a, stone2: 0x464a50, dark: 0x34373c, dust: 0x5a5e63, crack: 0x202226, hollow: 0x111214, sheet: 0x77746d, sheet2: 0x6a6761 };
+const PALETTE = { stone: 0x42464c, stone2: 0x3b3f44, dark: 0x2d3034, dust: 0x4c5055, crack: 0x202226, hollow: 0x111214, sheet: 0x77746d, sheet2: 0x6a6761 };
 const MATS = {};
-const mat = name => MATS[name] ||= Object.assign(new THREE.MeshStandardMaterial({ color: PALETTE[name], roughness: name.startsWith('sheet') ? 1 : .9, metalness: 0, side: name.startsWith('sheet') ? THREE.DoubleSide : THREE.FrontSide }), { userData: { reliquiaOwned: true, shared: true } });
+const mat = name => MATS[name] ||= Object.assign(new THREE.MeshStandardMaterial({ color: PALETTE[name], roughness: 1, metalness: 0, side: name.startsWith('sheet') ? THREE.DoubleSide : THREE.FrontSide }), { userData: { reliquiaOwned: true, shared: true } });
 const GEOS = new Map();
 const geo = (key, make) => { if (!GEOS.has(key)) GEOS.set(key, make()); return GEOS.get(key); };
 const cyl = (rt, rb, h, seg = 10, open = false) => geo(`c${rt},${rb},${h},${seg},${open}`, () => new THREE.CylinderGeometry(rt, rb, h, seg, 1, open));
