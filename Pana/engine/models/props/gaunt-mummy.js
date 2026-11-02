@@ -15,7 +15,7 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { rng } from '/engine/random.js';
 import { createGauntPose } from './gaunt-pose.js';
 
-const PALETTE = { wrap: 0x5d564b, rag: 0x48433b, soot: 0x2a2723, mildew: 0x4a5045, stain: 0x3b2e25, bone: 0x7a7264, dry: 0x4f4538, hollow: 0x060607 };
+const PALETTE = { wrap: 0x4a453d, rag: 0x3a3631, soot: 0x221f1c, mildew: 0x3b4038, stain: 0x30251e, bone: 0x655e52, dry: 0x40382e, hollow: 0x050506 };
 const MATS = {};
 const mat = name => MATS[name] ||= Object.assign(new THREE.MeshStandardMaterial({ color: PALETTE[name], roughness: .95, metalness: 0 }), { userData: { reliquiaOwned: true, shared: true } });
 const GEOS = new Map();
