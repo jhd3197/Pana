@@ -5,6 +5,7 @@
 //   const report = await page.evaluate(hudReport);
 //   report.overlaps  → [['#score', '#timer', 1200], …]
 //   report.lists     → ['#keys: "W A S D moverte · Espacio saltar"']
+//   report.empties   → ['div.keys (180×240)']   a painted box with nothing in it
 
 // Runs inside the page (page.evaluate(hudReport)); keep it self-contained.
 export function hudReport() {
@@ -68,5 +69,22 @@ export function hudReport() {
     const text = el.innerText.replace(/\s+/g, ' ').trim();
     if (caps.length >= 3 || LIST.test(text)) lists.push(`${label(el)}: "${text.slice(0, 80)}"`);
   }
-  return { pieces: top.map(p => label(p.el)), overlaps, lists };
+  // An empty panel: a box that paints a background or a border but shows
+  // nothing in it (no text, picture, canvas, control or painted child). These
+  // are leftovers from removed content; hide them until they have something.
+  const MEDIA = 'img, svg, canvas, video, input, select, textarea, progress, meter, [role=progressbar], [role=meter], [role=img], .pk-bar, .pk-pips, [class*=swatch]';  // a colour swatch is its own content
+  const pseudo = (el, which) => { const c = getComputedStyle(el, which).content; return c && c !== 'none' && c !== 'normal' && c !== '""'; };
+  const hasContent = el => !!el.innerText?.trim() || pseudo(el, '::before') || pseudo(el, '::after') || el.matches(MEDIA) ||
+    [...el.querySelectorAll('*')].some(child => shown(child) && (child.matches(MEDIA) || getComputedStyle(child).backgroundImage !== 'none' ||
+      pseudo(child, '::before') || pseudo(child, '::after') ||
+      (paintsItself(child, getComputedStyle(child)) && child.getBoundingClientRect().width > 2 && child.getBoundingClientRect().height > 2)));
+  const empties = [];
+  for (const { el } of top) for (const node of [el, ...el.querySelectorAll('*')]) {
+    if (!shown(node) || node.closest(SKIP) || (node !== el && pinned(node))) continue;
+    const style = getComputedStyle(node), r = node.getBoundingClientRect();
+    if (!onScreen(r) || r.width < 24 || r.height < 24 || r.width * r.height < 4000) continue;
+    if (style.backgroundImage !== 'none' || !paintsItself(node, style) || node.matches(MEDIA)) continue;
+    if (!hasContent(node)) empties.push(`${label(node)} (${Math.round(r.width)}×${Math.round(r.height)})`);
+  }
+  return { pieces: top.map(p => label(p.el)), overlaps, lists, empties };
 }

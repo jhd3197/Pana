@@ -333,3 +333,15 @@ Menu data: game.js:34 `createGameMenu` (pad at 34), controls at 37, tips at 40.
 | index.html:26 `#rules` | Lobby | "Tutorial: cómo se pelea" | lobby | Lobby |
 
 Menu data: game.js:29 `createGameMenu` with `pad.help` at 29, controls at 32, tips at 35.
+
+## Empty boxes in headless captures
+
+Headless Chrome screenshots of Lancha, Galope, Curiara, Escondidas and Billar
+sometimes show a flat box (dark, or pale blue in Billar) over the 3D view.
+No DOM element is there: the page background shows through a patch of the
+WebGL canvas that the capture did not composite, while the game's own frame
+buffer holds the scene at those pixels. It is a capture artifact, not a HUD
+panel. Real empty panels are caught by `engine/tests/hud-layout.browser.js`,
+which fails on a visible box that paints a background or border with no text,
+picture, canvas, control or painted child inside (colour swatches and
+`role=img` count as content).
