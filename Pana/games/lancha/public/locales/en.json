@@ -9,7 +9,7 @@
   "¡Remolino! Acelera hacia afuera; por el borde te lleva la corriente.": "Whirlpool! Speed to the outside; along the edge the current carries you.",
   "¡Se ahogó el motor! Ya arranca otra vez…": "The engine stalled! Starting up again…",
   "¡Sostenlo!": "Hold it down!",
-  "¡Turbo listo! Espacio en una recta.": "Turbo ready! Space on a straight.",
+  "¡Turbo listo! Úsalo en una recta.": "Turbo ready! Use it on a straight.",
   "¡Turbo!": "Turbo!",
   "¡Volaste!": "Airborne!",
   "{jumps} saltos · {turbos} turbos": "{jumps} jumps · {turbos} turbos",
@@ -62,7 +62,6 @@
   "Sigue las flechas doradas en el agua: marcan el chorro, el carril rápido del raudal y esquivan los caimanes.": "Follow the golden arrows on the water: they mark the fast current, the quick lane through the rapids and steer clear of the caimans.",
   "Sin gas": "Off the gas",
   "Sostén el acelerador todo el tiempo: machacarlo hace que la lancha vaya más lenta. Gira el motor para seguir el río.": "Hold the throttle the whole time: mashing it makes the boat slower. Turn the motor to follow the river.",
-  "Sostén W para acelerar. No lo machaques: sostenido vas más rápido.": "Hold W to accelerate. Don't mash it: holding it is faster.",
   "Sostener W": "Hold W",
   "Turbo (gasta media barra)": "Turbo (uses half the bar)"
 }

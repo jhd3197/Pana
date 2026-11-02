@@ -118,8 +118,7 @@ function driveTip(b) {
   const drop = RIVER.drops.find(d => b.s > d.s - d.span - 70 && b.s < d.s - d.span + 2);
   if (drop) return loc('Raudal adelante: el carril rápido salta más alto. ¡Cae derecho!');
   if (b.channel === 'branch') return loc('Atajo del igapó: corto, angosto y lleno de troncos.');
-  if (state.options.throttle !== 'auto' && b.throttle === 0 && !b.back && state.phase === 'racing') return loc('Sostén W para acelerar. No lo machaques: sostenido vas más rápido.');
-  if (b.meter >= TURBO.cost && b.turbo <= 0) return loc('¡Turbo listo! Espacio en una recta.');
+  if (b.meter >= TURBO.cost && b.turbo <= 0) return loc('¡Turbo listo! Úsalo en una recta.');
   if (RIVER.buoys.some(x => Math.abs(x.s - b.s) < 70)) return loc('Río abierto: pasa entre las boyas y sigue las flechas doradas.');
   return '';
 }
