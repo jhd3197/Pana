@@ -20,7 +20,7 @@ export const ZONE_IDS = ['A', 'B', 'C'];
 // the spawns; tests/domination.test.js checks reach, spacing and overlap on every map.
 export const DOM_ZONES = {
   terminal: [{ x: -34, z: 0 }, { x: 0, z: 0 }, { x: 34, z: 0 }],
-  plaza: [{ x: 4.5, z: -10.5 }, { x: -4.5, z: -1 }, { x: 2, z: 10.5 }],
+  plaza: [{ x: -14, z: -12 }, { x: 5, z: -2 }, { x: 14, z: 12 }],
   puerto: [{ x: 4.5, z: -11 }, { x: -9, z: 3 }, { x: 2.5, z: 11 }],
   hato: [{ x: -3, z: -10.5 }, { x: 9.5, z: -4 }, { x: -6.5, z: 10.5 }],
   ruinas: [{ x: 12.5, z: -18 }, { x: 7, z: -3 }, { x: 1.5, z: 12 }],

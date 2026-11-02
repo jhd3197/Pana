@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La Plaza de Pepazo es ahora una plaza de pueblo de verdad, igual para los dos equipos.**
+  Una glorieta en el centro, fuentes bajas, bancos, materos, árboles, kioscos
+  del mercado, carros y carretillas, muros y esquinas de casa, y un portal de
+  columnas en cada costado. Los muros bajos, bancos y fuentes dejan pasar los
+  tiros; lo alto los para. Tres plazas por ronda: Clásica, Mercado y Fiesta.
+
 - **En Captura la bandera de Pepazo quien lleva la bandera corre más lento, y la ayuda dice cuántas capturas ganan.**
   Con la bandera caminas y corres un 15% más lento (los bots también), así que
   los defensores pueden alcanzarte. El consejo de Cómo se juega ya no dice

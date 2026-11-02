@@ -56,8 +56,9 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   run: El Puerto's four barrel groups (3 x 2.6 m boxes, drums filling 25%) now
   collide drum by drum, and the drums are mirrored between the bases.
 - All collision cover comes from `coverFor(mapId)`; scene geometry reads the
-  same bounds. Courts are 54 m (`SIZE` 27): each map's cover is spread 1.5×
-  from the centre (boxes 1.15× larger) plus an eight-piece outer `RING`.
+  same bounds. Courts are 54 m (`SIZE` 27): each shared map's cover is spread
+  1.5× from the centre (boxes 1.15× larger) plus an eight-piece outer `RING`;
+  La Plaza has its own rows at court scale (see "La Plaza" below).
   `sizeFor(mapId)` gives each court's half-width; Muelle uses 32. A rules test
   keeps ≥2.2 m between all cover, room around every spawn and one connected court.
 - The `bots` room option (Más ajustes: Auto / 0 / 1 / 2 / 3 / 5 / 7) sets how
@@ -84,17 +85,19 @@ Callouts: ≥25 m Tiro largo, ≤4 m A quemarropa, streaks 2–5+, Venganza.
 
 Each map has `VARIANTS` (3) fixed layouts; `start()` sets `variant` to
 `(round - 1) % 3`, so the lobby and first round always use layout 0. Shared
-maps: 0 spread, 1 rotated a quarter (spawns and ring are symmetric), 2 adds
-2.6 m crate stacks from `FILL` wherever they keep 2.4 m passages and room around
-spawns. Muelle hand-writes `STACK_SETS`. Everything reading cover passes the
+maps (Puerto Coco, Hato, Ruinas): 0 spread, 1 rotated a quarter (spawns and
+ring are symmetric), 2 adds 2.6 m crate stacks from `FILL` wherever they keep
+2.4 m passages and room around spawns. La Plaza hand-writes Clásica, Mercado and
+Fiesta (`VARIANT_NAMES.plaza`). Muelle hand-writes `STACK_SETS`. Everything reading cover passes the
 variant (`coverFor`, `blocked`, scene, minimap, touch assist); the scene rebuilds
 cover only when map or variant changes. A rules test checks all fifteen layouts.
 
 ## Rendering and proof
 
-The court uses real shared pueblo houses, church, market stalls, benches,
-streetlights, araguaneyes, mango trees and crate geometry. Crates are fitted to
-the authoritative `COVER` bounds, so artwork never changes movement or shots.
+The plaza's surroundings (outside the fence) use real shared pueblo houses,
+church, market stalls, benches, streetlights, araguaneyes and mango trees. The
+cover inside is drawn by `plaza-props.js`, one prop per row fitted to its box,
+so artwork never changes movement or shots.
 The paint marker is a canonical Studio asset in `engine/models/props/paintball.js`.
 
 Look input is `engine/play/first-person.js` (`createLookControls`), shared with Escondidas: it owns pointer lock, drag-to-look and the saved sensitivity (`pana:look-sensitivity`); the scene keeps yaw/pitch. Shift sprints 45% faster while `stamina` lasts (3 s, refills in 5 s) and holds fire; Tab shows the round table.
@@ -108,7 +111,7 @@ stains, knockout pose) lives under `avatar.group`, so hiding that one group in
 suite asserts no own-body mesh renders in first person and the rival still
 sees it. A staged shot that puts the pana within about 1.5 m of a crate stack
 shows the crate's wood and coral band at the right screen edge: that is cover,
-not the own body (the plaza stack at x -11, z 21.5 sits next to x -14, z 22).
+not the own body (the plaza's back booth at x -11, z 21.5 sits next to x -14, z 22).
 Shots stay level: the server only receives `world.forward()` as the aim, so
 pitch is cosmetic and clamped. WASD is yaw-relative (`world.movement`); Q/E turn.
 The mouse uses pointer lock. Esc releases the lock before the page sees the
@@ -149,6 +152,51 @@ This took the first load from 161 to 133 modules (1456 to 1029 KB). The next
 candidate is the armory's 3D preview and test range (`armory.js` `init`,
 `rebuild`, the range), which only matter once the armory opens; the kit state
 `armory.js` holds is needed at boot, so it would have to be split first.
+
+## La Plaza
+
+`public/plaza-layout.js` is renderer-free and holds `PLAZA_COVERS`, one array
+per layout, already at court scale (no `SPREAD`, no `RING`). Each row carries a
+`kind` and `public/plaza-props.js` draws that prop inside exactly the row's box
+(one tinted bake, paint marks merged per texture); only overhead parts reach
+past it: the glorieta's roof, awnings, canopies and the portico's lintel at
+3.2 m. Everything else drawn on the court is flat paint.
+
+| Kind | Footprint × height m | Shots | Where (Clásica) |
+|---|---|---|---|
+| `kiosk` glorieta | 4.6 × 4.6 × 1.3 | stops | the centre |
+| `fountain` | 4.2 × 4.2 × 0.8 | pass | the spine, z ±10.2 |
+| `bench` | 2.4 × 0.7 × 0.85 | pass | z ±5.2, facing the glorieta |
+| `planter` | 1.6 × 1.6 × 0.7 | pass | (±6, ±5.4) |
+| `tree` (trunk only) | 0.6 × 0.6 × 3.2 | stops | (±5, ±10) |
+| `stall` closed booth | 3.2 × 1.8 × 2.3 | stops | square sides, base backs |
+| `car` | 2 × 4.4 × 1.5 | stops | flank streets (±21.5, ±7.5) |
+| `cart` | 1.6 × 1.1 × 1 | pass | behind each base |
+| `wall` | 3.6 × 0.6 × 1 low; 0.8 × 3.6 × 2.6 tall | pass / stops | beside each flag; x ±14 |
+| `corner` building corner | 3.6 × 0.8 × 2.8 | stops | (±10.5, ±16) |
+| `pillar` portico | 1 × 1 × 3.2 | stops | x ±17.5, z ±4, ±11, ±18 |
+| `crate` drink stack, `stage` tarima | 2 × 2.4 × 2.4; 4.6 × 3.4 × 1.2 | stops | Fiesta only |
+
+- Fair by construction: every layout is mirrored in x and z (so also turned
+  half a turn), spawn `i` faces spawn `i ^ 1`, the flag stands and zones A/C
+  are each other's half turn. `tests/plaza-layout.test.js` proves it, checks
+  every kind and that a bot finds a hidden pana from all eight spawns on every
+  layout (2.4–8 s of game time).
+- Layouts: Clásica (low fountains on the spine, cars in the flank streets),
+  Mercado (booths close the flank streets, carts in the square, booths in the
+  cross streets) and Fiesta (a 1.2 m tarima replaces each fountain, so the
+  spine stops shots; drink crates fill the flank streets).
+- Open on purpose, and other tests rely on it: the alley inside the fence
+  (|x| or |z| over 23.3; the browser suite walks it), the lane at z ±14 in
+  Clásica (weapon duels from x −20 to 20), x ±14 from z 7 to 22 (melee and
+  throw duels) and the run at z 20 from x −20 to −10 (sprint test).
+- No standing on cover: Pepazo is a flat court, so the glorieta is a solid
+  1.3 m plinth and the portico's lintel is scenery, like El Puerto's mezzanine.
+- Objectives: flag stands (0, ±18); zones A (−14, −12), B (5, −2), C (14, 12).
+  B sits beside the glorieta, outside its roof: its mean distance to each
+  team's spawns differs by 0.1 m. The spawns stay the eight of before.
+- `npm run collision-report -- plaza` measures every prop filling 100% of its
+  box on all three layouts, with no collision fixes.
 
 ## Muelle de La Guaira
 
