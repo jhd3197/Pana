@@ -11,13 +11,13 @@ export const COUNT_IN = 4; // beats of sticks before beat 0
 // Station order is also the order a new drummer is offered: Palo is the
 // easiest, so a pana's first turn on the drums starts there.
 export const STATIONS = ['palo', 'mano', 'charrasca', 'caracol'];
-// Station names show through stationName() (hud.js); `what`, `hint` and the
+// Station names show through stationName() (hud.js); `what` and the
 // tempo are locKey() and shown with loc(). Song titles stay Spanish.
 export const STATION_INFO = {
-  palo: { name: 'Palo', what: locKey('el tambor largo con palos'), lanes: 1, hint: locKey('Espacio en el contratiempo') },
-  mano: { name: 'Mano', what: locKey('el culo e\' puya'), lanes: 2, hint: locKey('← y → (o F y J), cada mano su cuero') },
-  charrasca: { name: 'Charrasca', what: locKey('la charrasca de metal'), lanes: 1, hint: locKey('Mantén Espacio y suelta en el golpe') },
-  caracol: { name: 'Caracol', what: locKey('el caracol'), lanes: 1, hint: locKey('Mantén Espacio en los momentos grandes') },
+  palo: { name: 'Palo', what: locKey('el tambor largo con palos'), lanes: 1 },
+  mano: { name: 'Mano', what: locKey('el culo e\' puya'), lanes: 2 },
+  charrasca: { name: 'Charrasca', what: locKey('la charrasca de metal'), lanes: 1 },
+  caracol: { name: 'Caracol', what: locKey('el caracol'), lanes: 1 },
 };
 
 export const SONGS = [

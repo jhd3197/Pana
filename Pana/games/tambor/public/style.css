@@ -45,7 +45,6 @@ body { --pk-game: #ff5a3d; --tb-sabor: #ff8a3d; --tb-bulla: #2ad1b2; --tb-perfec
 .drum-head { display: flex; justify-content: space-between; width: 100%; gap: 12px; font-size: 14px; }
 #combo { color: var(--tb-perfect); font-weight: 900; }
 #lane { width: 320px; height: 230px; max-width: 80vw; border-radius: var(--pk-r); background: var(--pk-deep); }
-.hint { color: var(--pk-muted); font-size: 12px; font-weight: 700; text-align: center; }
 .crowd-panel { width: min(340px, calc(100vw - 24px)); }
 .crowd-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .dichos { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
