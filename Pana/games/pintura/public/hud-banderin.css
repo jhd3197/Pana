@@ -95,6 +95,7 @@ body.scored #hud .crosshair i { background: var(--pk-coral); }
 /* Knockout callout, round banner and the 3-2-1: yellow plates with ink, like the rest of the family. */
 #hud .callout b { justify-self: center; padding: calc(6 * var(--u)) calc(30 * var(--u)) calc(2 * var(--u)); background: var(--pk-yellow); color: var(--ink); text-shadow: none; box-shadow: calc(6 * var(--u)) calc(6 * var(--u)) 0 var(--ink); transform: skewX(-10deg); font-size: clamp(30px, calc(64 * var(--u)), 72px); }
 #hud .callout--long b { background: var(--callout-long); }
+#hud .callout--head b { background: var(--callout-head); color: #fff; }
 #hud .callout span { justify-self: center; padding: calc(6 * var(--u)) calc(16 * var(--u)) calc(4 * var(--u)); background: var(--glass); text-shadow: none; box-shadow: calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--ink); transform: skewX(-10deg); }
 body.round-start #hud .variant { border-radius: 0; border: 0; background: var(--pk-night); box-shadow: calc(5 * var(--u)) calc(5 * var(--u)) 0 var(--ink); transform: translateX(-50%) skewX(-10deg); }
 body.counting #hud .countdown { color: var(--pk-yellow); -webkit-text-stroke: calc(10 * var(--u)) var(--ink); paint-order: stroke fill; text-shadow: calc(8 * var(--u)) calc(8 * var(--u)) 0 var(--ink); }

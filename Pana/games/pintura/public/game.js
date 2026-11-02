@@ -21,6 +21,7 @@ import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
 import { createCombatHud } from './combat-hud.js';
+import { calloutTitle, seesCallout } from './hud-model.js';
 import { createCtfHud } from './ctf-hud.js';
 import { createDomHud } from './domination-hud.js';
 import { sfx, createSteps } from './sounds.js';
@@ -192,10 +193,10 @@ function flash(name) { document.body.classList.remove(name); void document.body.
 // Knockout callouts: the distance always, plus the moments worth shouting about.
 function callout(e, state) {
   const victim = state.players.find(p => p.id === e.victim)?.name || loc('un pana');
-  const title = e.revenge ? loc('¡Venganza!') : e.streak >= 5 ? loc('¡Imparable!') : e.streak === 4 ? loc('¡Cuádruple!') : e.streak === 3 ? loc('¡Triple!') : e.streak === 2 ? loc('¡Doble pepazo!')
-    : e.thrown ? loc('¡Chancletazo!') : WEAPONS.find(m => m.id === e.weapon)?.melee ? loc('¡Pescozón!') : e.direct ? loc('¡Bazucazo!') : e.headshot ? loc('¡A la cabeza!') : MARKERS.find(m => m.id === e.weapon)?.scope ? loc('¡Francotirador!') : loc('¡Pepazo!');
-  $('callout-title').textContent = title; $('callout-detail').textContent = e.distance >= 25 ? loc('{victim} · {distance} m · ¡Tiro largo!', { victim, distance: e.distance }) : e.distance <= 4 ? loc('{victim} · {distance} m · ¡A quemarropa!', { victim, distance: e.distance }) : loc('{victim} · {distance} m', { victim, distance: e.distance });
-  $('callout').classList.toggle('callout--long', e.distance >= 25); flash('called');
+  const { title, extra } = calloutTitle(e, { melee: WEAPONS.find(m => m.id === e.weapon)?.melee, scope: MARKERS.find(m => m.id === e.weapon)?.scope });
+  const detail = e.distance >= 25 ? loc('{victim} · {distance} m · ¡Tiro largo!', { victim, distance: e.distance }) : e.distance <= 4 ? loc('{victim} · {distance} m · ¡A quemarropa!', { victim, distance: e.distance }) : loc('{victim} · {distance} m', { victim, distance: e.distance });
+  $('callout-title').textContent = loc(title); $('callout-detail').textContent = extra ? `${detail} · ${loc(extra)}` : detail;
+  $('callout').classList.toggle('callout--long', e.distance >= 25); $('callout').classList.toggle('callout--head', !!e.headshot); flash('called');
   clearTimeout(callout.timer); callout.timer = setTimeout(() => document.body.classList.remove('called'), 1900);
 }
 function feedLine(e, state) {
@@ -215,7 +216,9 @@ function announce(e, state) {
   // Every rival you paint counts for that weapon's camo (pana.sh unlocks it), knockout blows too.
   if (mine && !me && !(teamsOn(state) && state.players.find(p => p.id === e.victim)?.team === myPana()?.team)) hitFeats.weaponHit(e.weapon);
   if (mine && e.type === 'hit') { sfx.hitTick(); flash('hitmark'); navigator.vibrate?.(18); hitFeats.hit(state.players.find(p => p.id === e.victim)?.name || loc('un pana')); }
-  if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); flash('scored'); combat.streak(e.streak || 1); callout(e, state); }
+  if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); flash('scored'); combat.streak(e.streak || 1); }
+  // A headshot is also called on the screen of the pana it took out and of whoever watches the shooter.
+  if (seesCallout(e, room.id, spectate.spectator.active ? spectate.spectator.target : null)) callout(e, state);
   if (me) {
     document.body.style.setProperty('--paint-hurt', `${e.color}aa`); flash('painted');
     combat.hit(e, state, room.id, world.forward());

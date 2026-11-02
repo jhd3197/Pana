@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MARKERS, kitStats, cleanKit, rangedDamage } from '../public/armory-data.js';
-import { Arena, cleanInput, BOT_ID, EYE, CHEST_Y } from '../public/rules.js';
+import { Arena, cleanInput, BOT_ID, EYE, CHEST_Y, HEAD_AIM, HEAD_WIDTH } from '../public/rules.js';
+import { aimedPitch } from '../../../engine/play/head-zone.js';
 
 // Two panas on the open plaza lane at z = -14, the shooter at x = -20 facing +x.
 // Past the plaza's 54 m the duel moves to El Terminal's 116 m court with the cover taken away.
@@ -26,10 +27,12 @@ test('the two new markers are pickable everywhere a weapon id is checked', () =>
   assert.equal(cleanInput({ weapon: 'laser' }).weapon, null);
 });
 
-// One La Lejana shot at `gap` metres; `pitch` adds a first-person pitch (0 = level, head height).
-function snipe(gap, { toughness, armor, pitch } = {}) {
+// One La Lejana shot at `gap` metres; `pitch` is the first-person pitch (0 = level, head
+// height; by default at the chest, a body hit; null = no look, the server derives one).
+const chestPitch = gap => -Math.atan((EYE - CHEST_Y) / gap);
+function snipe(gap, { toughness, armor, pitch = chestPitch(gap) } = {}) {
   const d = duel('sniper', { gap, toughness, armor });
-  fire(d.g, { aim: true, ...(pitch === undefined ? {} : { pitch }) }); idle(d.g, 12);
+  fire(d.g, { aim: true, pitch }); idle(d.g, 12);
   return { ...d, out: d.g.events.find(e => e.type === 'out') };
 }
 
@@ -49,9 +52,9 @@ test('La Lejana body hits fade with range: 3 pepazos close, 2 mid, 1 from 50 m',
 test('La Lejana: one close body hit knocks out at aguante 3, two within 9 m at aguante 5', () => {
   assert.equal(snipe(6).b.hits, 1);
   const { g, b } = duel('sniper', { gap: 9, toughness: 5 });
-  fire(g, { aim: true }); idle(g, 6);
+  fire(g, { aim: true, pitch: chestPitch(9) }); idle(g, 6);
   assert.equal(b.paint, 3); assert.equal(b.hits, 0);
-  idle(g, 26); fire(g, { aim: true }); idle(g, 6);
+  idle(g, 26); fire(g, { aim: true, pitch: chestPitch(9) }); idle(g, 6);
   assert.equal(b.hits, 1, 'two close body hits knock out');
   assert.equal(snipe(30, { armor: 'wind' }).b.hits, 1, 'Cortaviento (aguante 2) falls to one mid-range shot');
 });
@@ -63,18 +66,39 @@ test('a La Lejana headshot knocks out in one hit at any range and any aguante', 
     assert.equal(out.headshot, true); assert.equal(out.direct, false); assert.equal(out.impact.zone, 'head');
   }
   // Aiming at the chest from first person is a body hit; a jumping rival lifts the head band.
-  const chest = -Math.atan((EYE - CHEST_Y) / 30);
-  assert.equal(snipe(30, { toughness: 5, pitch: chest }).b.paint, 2);
+  assert.equal(snipe(30, { toughness: 5, pitch: chestPitch(30) }).b.paint, 2);
   const hop = duel('sniper', { gap: 20, toughness: 5 }); hop.b.jumpHeight = .5;
   fire(hop.g, { aim: true, pitch: 0 }); idle(hop.g, 6); assert.equal(hop.b.hits, 0, 'level shot under a jumping head');
 });
 
-test('shots without a pitch (no first person) are always body hits; other markers ignore it', () => {
+test('without a look (Ver la cancha, any camera) the server derives the pitch: centred on the rival is the head', () => {
   assert.equal(cleanInput({}).look, false); assert.equal(cleanInput({ pitch: null }).look, false); assert.equal(cleanInput({ pitch: .2 }).look, true);
-  const { b, out } = snipe(6, { toughness: 5 });
-  assert.equal(b.paint, 3); assert.equal(b.impact.zone, 'body'); assert.equal(out, undefined);
+  // A line through the rival's centre line is aimed at the head: one hit at any range and aguante.
+  for (const gap of [6, 30, 60]) {
+    const { b, out } = snipe(gap, { toughness: 5, pitch: null });
+    assert.equal(b.hits, 1, `centred shot at ${gap} m`); assert.equal(out.headshot, true); assert.equal(out.impact.zone, 'head');
+  }
+  // The same shot passing beside the centre line still paints the body, with its usual falloff.
+  const wide = duel('sniper', { gap: 30, toughness: 5 }); wide.b.z += HEAD_WIDTH + .15;
+  fire(wide.g, { aim: true }); idle(wide.g, 12);
+  assert.equal(wide.b.hits, 0); assert.equal(wide.b.paint, 2); assert.equal(wide.b.impact.zone, 'body');
+  // A rival jumping over the line lifts the head; no rival in the cone means no head at all.
+  const { pitch } = aimedPitch({ x: 0, z: 0, y0: EYE }, { x: 1, z: 0 }, [{ id: 2, x: 20, z: 0, jumpHeight: .5 }], { head: HEAD_AIM });
+  assert.ok(Math.abs(EYE + Math.tan(pitch) * 20 - HEAD_AIM - .5) < 1e-9);
+  assert.equal(aimedPitch({ x: 0, z: 0, y0: EYE }, { x: 1, z: 0 }, [{ id: 2, x: 0, z: 20 }]), null);
+  // Other markers never reach a head, look or not.
   const pistol = duel('pistol', { gap: 10, toughness: 5 }); fire(pistol.g, { pitch: 0 }); idle(pistol.g, 6);
   assert.equal(pistol.b.paint, 1); assert.equal(pistol.b.impact.zone, 'body');
+  const plain = duel('pistol', { gap: 10, toughness: 5 }); fire(plain.g); idle(plain.g, 6);
+  assert.equal(plain.b.paint, 1); assert.equal(plain.b.impact.zone, 'body');
+});
+
+test('a derived head pitch only counts on the rival it was aimed at', () => {
+  // A nearer rival inside the cone takes the aim; a farther one the ball reaches instead is a body hit.
+  const { g, a, b } = duel('sniper', { gap: 30, toughness: 5 });
+  g.add(3, { name: 'C', avatar: {} }); const c = g.players.find(p => p.id === 3); Object.assign(c, { x: a.x + 12, z: a.z + 1.3, shield: 0, connected: true, respawn: 0 });
+  fire(g, { aim: true }); assert.equal(g.balls[0].aimed, c.id); idle(g, 12);
+  assert.equal(b.hits, 0); assert.equal(b.impact.zone, 'body');
 });
 
 test('bots with La Lejana aim at the chest, so their hits are body hits', () => {

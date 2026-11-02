@@ -303,9 +303,22 @@ The overview camera (`Ver la cancha`) never spectates: it already shows the cour
 - La Lejana (`headshot`) knocks out with one head hit at any range. The shot is
   a ray from the eye (`EYE` 1.55 m plus the shooter's jump) at the input's
   pitch; where the flat sweep meets the victim it is a head hit at `HEAD_Y`
-  1.4 m or higher (plus the victim's jump), else body. Only inputs with a real
-  pitch (`look`, first person; other views send `pitch: null`) can reach a head.
-  Bots holding it pitch at the chest (`CHEST_Y` 1.1 m), so theirs are body hits.
+  1.4 m or higher (plus the victim's jump), else body. First person sends its
+  look pitch (`look`). Other views (Ver la cancha) send `pitch: null`, so the
+  server derives one (`aimedPitch` in `engine/play/head-zone.js`, from positions
+  it already has): the closest rival within `HEAD_CONE` 0.12 rad of the ball's
+  real flight line is the aimed one; a line passing within `HEAD_WIDTH` 0.25 m
+  of their centre aims at `HEAD_AIM` 1.6 m (plus their jump), wider at the
+  chest. The head only counts on that rival (`ball.aimed`); a ball that reaches
+  someone else is a body hit. Hip fire's spread still bends the line, so from
+  the court a centred shot needs the jitter on your side. Bots holding it pitch
+  at the chest (`CHEST_Y` 1.1 m), so theirs are body hits.
+- The knockout callout (`calloutTitle` in `hud-model.js`): a headshot's
+  "¡A la cabeza!" beats every streak and revenge title, which move to the end of
+  the detail line. It used to sit under them, so after your first knockout of a
+  life a headshot never showed. The shooter sees every callout; a headshot also
+  shows on the screen of the pana it took out and of anyone out of the round
+  watching the shooter (`seesCallout`).
   `Arena.hit(victim, owner, color, impact, damage)` clamps paint at the
   victim's toughness; La Bazuca's `direct` rocket passes `Infinity`.
 - Aim is an input flag (`aim`, right mouse, F, LT, or the Mira toggle on

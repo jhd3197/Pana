@@ -33,5 +33,18 @@ try {
   await page.screenshot({path:'Pana/games/pintura/qa/knockout-fall.png'});
   assert.equal(await page.evaluate(()=>{const {game,avatar,b,draw,after}=knockoutProof;b.respawn=0;b.paint=0;pinturaDebug.room.state=game.view();draw(game.view(),71,1/60);return avatar.knockout===null && avatar.body.position.distanceTo(after)>.1;}),true);
   await page.screenshot({path:'Pana/games/pintura/qa/knockout-reset.png'});
+  // A La Lejana shot with no look pitch (Ver la cancha) through a rival's centre on a streak: the
+  // server's derived pitch makes it a head hit and the callout says so over the streak title.
+  const head = await page.evaluate(async()=>{
+    const {Arena}=await import('/g/pintura/rules.js'), {room}=pinturaDebug, game=new Arena('plaza');
+    game.add(1,{name:'Prueba'});game.add(72,{name:'Luis'});game.selectKit(1,{weapon:'sniper'});game.start();game.go();
+    Object.defineProperty(game,'cover',{value:[]}); // the open lane, nothing in between
+    const [a,b]=game.players;Object.assign(a,{x:-20,z:-14,shield:0,streak:1});Object.assign(b,{x:-8,z:-14,shield:0});
+    room.game=game;room.local=true;game.eventSerial=1e4;
+    game.step(.05,new Map([[1,{ax:1,az:0,fire:true,aim:true}]]));for(let i=0;i<8;i++)game.step(.05,new Map([[1,{ax:1,az:0}]]));
+    room.publish();
+    return {headshot:game.events.at(-1)?.headshot,title:document.getElementById('callout-title').textContent,detail:document.getElementById('callout-detail').textContent,called:document.body.classList.contains('called')};
+  });
+  assert.deepEqual(head,{headshot:true,title:'¡A la cabeza!',detail:'Luis · 12 m · ¡Doble pepazo!',called:true});
   console.log('ok: real sculpt falls, keeps its skinned bone hierarchy and restores on respawn',result);
 } finally { await browser.close(); }
