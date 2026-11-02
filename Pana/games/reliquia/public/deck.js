@@ -11,7 +11,8 @@
 // exit (north), with side rooms and sometimes a hidden one off it.
 import { rng } from '../../../engine/random.js';
 import { locKey } from '../../../engine/i18n.js';
-import { SMALL, BIG_POOL, ARTIFACTS } from './items.js';
+import { SMALL, BIG_POOL, ARTIFACTS, ITEMS, valueOf } from './items.js';
+import { dealHidingSpots } from '../../../engine/play/hiding-spots.js';
 
 export const CELL = 26, SPACING = 220, ROWS = 4, COLS = [-1, 0, 1], HEIGHT = 4.6;
 export const CAMP = { x: 0, z: 12 }, TRUCK = { x: 9, z: 20, h: -Math.PI / 2 }, TRUCK_RADIUS = 4.6;
@@ -47,6 +48,23 @@ export const roomName = (kind, theme = 'mina') => (theme === 'biblioteca' && LIB
 export const jornadaName = level => themeFor(level) === 'biblioteca' ? LIBRARY_NAME : FLOOR_NAMES[Math.min(FLOOR_NAMES.length - 1, level)];
 // Bookcases are solid rectangles cut out of the walkable bitmap (layout.js).
 const SHELF = .8;
+// Hiding spots (engine/play/hiding-spots.js): what a pana searches in the
+// library. `r` is the obstacle (0: a solid rect or an existing desk), `need`
+// the seconds of holding E, `hard` how tucked away it is (treasures prefer
+// the hard ones). Wall pieces (`wall`) stand in a solid rect against a wall.
+export const SPOTS = {
+  trunk: { r: .55, need: .8, hard: .15 },
+  drawer: { r: .65, need: .7, hard: .25 },
+  sheet: { r: .75, need: .9, hard: .35 },
+  wardrobe: { wall: [1.3, .62], need: 1, hard: .5 },
+  debris: { r: .5, need: 1.2, hard: .6 },
+  shelf: { wall: [2.6, .5], need: 1.1, hard: .8 },
+  ladder: { wall: [2.2, .5], need: .9, hard: .7 },
+  lantern: { r: .3, need: .7, hard: .9 },
+};
+// Relics worth at least this much hide in the library's spots; cheaper
+// pieces, tools, big treasures and the cursed altar piece stay in sight.
+const HIDE_FROM = 60;
 
 export const rectOf = r => [r.x - r.w / 2, r.z - r.d / 2, r.x + r.w / 2, r.z + r.d / 2];
 export const inRect = (x, z, [x0, z0, x1, z1], pad = 0) => x > x0 - pad && x < x1 + pad && z > z0 - pad && z < z1 + pad;
@@ -60,9 +78,9 @@ const cache = new Map();
 export function generateRun(seed = 1, { depth = 1 } = {}) {
   const floors = 1, key = `${seed}:${depth}`, theme = themeFor(depth), library = theme === 'biblioteca';
   if (cache.has(key)) return cache.get(key);
-  const run = { seed, floors, depth, theme, solids: [], rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
+  const run = { seed, floors, depth, theme, solids: [], spots: [], rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
     sleepers: [], obstacles: [], lights: [], decor: [], pits: [], bridges: [] };
-  const id = { loot: 0, chest: 0, plate: 0, sleeper: 0 };
+  const id = { loot: 0, chest: 0, plate: 0, sleeper: 0, spot: 0 };
   // ---- Camp: outdoors, the truck and the mine mouth at its north edge.
   run.rooms.push({ id: 'camp', floor: 0, kind: 'camp', x: 0, z: 14, w: 36, d: 32, name: FLOOR_NAMES[0], rect: CAMP_RECT });
   // The mine mouth is a short gallery with the montacargas at its end.
@@ -175,7 +193,7 @@ export function generateRun(seed = 1, { depth = 1 } = {}) {
 function furnish(run, room, f, depth, R, id) {
   // `f` places things on the floor; `d` (the jornada's depth) decides how much.
   const [x0, z0, x1, z1] = room.rect, cx = room.x, cz = room.z, d = depth, deep = Math.min(1, d / 4), library = run.theme === 'biblioteca';
-  const taken = [];
+  const taken = [], desks = [], caps = [];
   // Keep every doorway and stair mouth clear for three metres into the room.
   const mouths = [...run.corridors.filter(c => c.a === room.id || c.b === room.id), ...run.stubs.filter(s => inRect(s.rect[0] + 2.2, s.a, room.rect, .2))]
     .map(c => c.horizontal ? [c.rect[0] - 3, c.rect[1] - .6, c.rect[2] + 3, c.rect[3] + .6] : [c.rect[0] - .6, c.rect[1] - 3, c.rect[2] + .6, c.rect[3] + 3]);
@@ -190,7 +208,11 @@ function furnish(run, room, f, depth, R, id) {
     }
     return null;
   };
-  const loot = (kind, p = spot(.5)) => { if (p) run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: p.x, z: p.z, h: R() * 6.28 }); };
+  // In the library a relic worth searching for goes into a hiding spot (dealt
+  // at the end of the room); what stays in sight is cheap.
+  const stash = [], hides = kind => library && !ITEMS[kind].tool && ITEMS[kind].size !== 'big' && valueOf(kind) >= HIDE_FROM;
+  const loot = (kind, p) => { if (hides(kind)) { stash.push(kind); return; } p ??= spot(.5); if (p) run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: p.x, z: p.z, h: R() * 6.28 }); };
+  const tableLoot = (kind, x, z, y) => { if (hides(kind)) stash.push(kind); else run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x, z, y, h: R() * 6 }); };
   const small = n => { for (let i = 0; i < n; i++) loot(SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + d)))]); };
   // A spot inside a sub-rectangle of the room (the stacks' nave).
   const spotIn = ([a, b, c, e], r = .8) => { for (let i = 0; i < 40; i++) { const x = a + R() * (c - a), z = b + R() * (e - b); if (free(x, z, r)) { taken.push({ x, z, r }); return { x, z }; } } return null; };
@@ -219,8 +241,8 @@ function furnish(run, room, f, depth, R, id) {
   // Torches in two opposite corners light every room a little.
   const corner = (sx, sz) => ({ x: cx + sx * (room.w / 2 - 1.2), z: cz + sz * (room.d / 2 - 1.2) });
   const lit = R() < .5 ? [[-1, -1], [1, 1]] : [[1, -1], [-1, 1]];
-  // The library lights all four corners with candles (they are dim).
-  for (const [sx, sz] of library ? [[-1, -1], [1, 1], [1, -1], [-1, 1]] : lit) { const p = corner(sx, sz); light(p.x, p.z, library ? 'candelabra' : d === 1 ? 'mineLamp' : 'brazier'); }
+  // The library keeps a candelabrum in two corners; the other two stay dark.
+  for (const [sx, sz] of lit) { const p = corner(sx, sz); light(p.x, p.z, library ? 'candelabra' : d === 1 ? 'mineLamp' : 'brazier'); }
   if (!library && (d > 1 || R() < .5)) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
   switch (room.kind) {
     case 'entrada':
@@ -320,7 +342,7 @@ function furnish(run, room, f, depth, R, id) {
           else shelfX(cx + a, cx + b, z, { tall: R() < .5 });
         }
       }
-      for (const aisle of [-4.5, -1.5, 1.5, 4.5]) for (const s of [-1, 1]) if (R() < .35) solid([cx + s * 8.4 - SHELF / 2, cz + aisle - 1.5, cx + s * 8.4 + SHELF / 2, cz + aisle + 1.5], 'shelf', { tall: true });
+      for (const aisle of [-4.5, -1.5, 1.5, 4.5]) for (const s of [-1, 1]) if (R() < .35 && solid([cx + s * 8.4 - SHELF / 2, cz + aisle - 1.5, cx + s * 8.4 + SHELF / 2, cz + aisle + 1.5], 'shelf', { tall: true })) caps.push({ s, aisle });
       for (let i = 0; i < 4; i++) decor('ladder', cx + (R() < .5 ? -1 : 1) * (3 + R() * 4), cz + [-6, -3, 0, 3, 6][Math.floor(R() * 5)] + (R() < .5 ? -.75 : .75), 0);
       for (let i = 0; i < 1 + d; i++) sleeper(); sleeper('phantom'); ceiling(2);
       small(4 + d); loot(R() < .5 ? 'mask' : 'cup'); if (R() < .5) { const z = cz + [-6, -3, 3, 6][Math.floor(R() * 4)]; chest(spotIn([cx - .3, z - .1, cx + .3, z + .1])); }
@@ -331,7 +353,7 @@ function furnish(run, room, f, depth, R, id) {
       for (const sz of [-1, 1]) for (const sx of [-1, 1]) {
         const x = cx + sx * 5, z = cz + sz * 3.5;
         if (!solid([x - 2.6, z - .6, x + 2.6, z + .6], 'table')) continue;
-        for (let i = 0; i < 2; i++) if (R() < .7) run.loot.push({ id: id.loot++, kind: SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + d)))], floor: f, room: room.id, x: x + (R() - .5) * 4, z: z + (R() - .5) * .5, y: .86, h: R() * 6 });
+        for (let i = 0; i < 2; i++) if (R() < .7) tableLoot(SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + d)))], x + (R() - .5) * 4, z + (R() - .5) * .5, .86);
       }
       for (const sz of [-1, 1]) { const z = cz + sz * (room.d / 2 - 2.2); if (!mouths.some(m => inRect(cx, z, m, .6))) { run.obstacles.push({ x: cx, z, r: .5, floor: f }); decor('lectern', cx, z, sz < 0 ? 0 : Math.PI); taken.push({ x: cx, z, r: .9 }); } }
       decor('chandelier', cx, cz, 0);
@@ -351,7 +373,8 @@ function furnish(run, room, f, depth, R, id) {
       for (const sz of [-1, 1]) for (const sx of [-6.5, -3, 3, 6.5]) {
         const x = cx + sx, z = cz + sz * 3.5;
         if (!solid([x - .8, z - .45, x + .8, z + .45], 'desk', { h: sz < 0 ? 0 : Math.PI })) continue;
-        if (R() < .3) run.loot.push({ id: id.loot++, kind: SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + d)))], floor: f, room: room.id, x: x + (R() - .5) * .8, z, y: .8, h: R() * 6 });
+        if (R() < .3) tableLoot(SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + d)))], x + (R() - .5) * .8, z, .8);
+        desks.push({ x, z, h: sz < 0 ? 0 : Math.PI });
       }
       for (let i = 0; i < 2 + d; i++) sleeper(); small(3); loot(R() < .5 ? 'cup' : 'idol'); chest();
       break;
@@ -360,5 +383,92 @@ function furnish(run, room, f, depth, R, id) {
       loot(ARTIFACTS[Math.floor(R() * ARTIFACTS.length)]);
       guard(); ceiling(1);
       break;
+  }
+  if (library) hideSpots();
+
+  // ---- Hiding spots: places to search, dealt with the room's relics ----
+  function hideSpots() {
+    const places = [], facing = p => Math.atan2(cx - p.x, cz - p.z);
+    const add = (kind, p, extra = {}) => { if (p) places.push({ id: `sp${id.spot++}`, kind, floor: f, room: room.id, x: p.x, z: p.z, h: p.h ?? facing(p), need: SPOTS[kind].need, hard: SPOTS[kind].hard, ...extra }); return !!p; };
+    // A free-standing piece: an obstacle circle, like a chest, with room around it.
+    // In the stacks a free-standing piece sits in the nave on a row line, never
+    // in an aisle mouth (enemies path into every aisle).
+    const anywhere = r => room.kind === 'puente' ? null : room.kind === 'estanterias' ? (() => { const z = cz + [-6, -3, 3, 6][Math.floor(R() * 4)]; return spotIn([cx - .3, z - .1, cx + .3, z + .1], r); })() : spot(r, 2);
+    const loose = (kind, p = anywhere(SPOTS[kind].r + .75), extra) => {
+      if (!p) return false;
+      // A pana must fit where they stand to search it.
+      const h = extra?.h ?? facing(p), d = SPOTS[kind].r + .9;
+      if (!run.obstacles.every(o => o.floor !== f || Math.hypot(o.x - p.x - Math.sin(h) * d, o.z - p.z - Math.cos(h) * d) > o.r + .6)) return false;
+      run.obstacles.push({ x: p.x, z: p.z, r: SPOTS[kind].r, floor: f, spot: true }); return add(kind, p, extra); };
+    // A wall piece (wardrobe, shelf, ladder): a solid rect with its back to a
+    // wall, never across a doorway, a dart lane or another piece, and a pana's
+    // width clear in front of it.
+    const wallPiece = kind => {
+      const [len, dep] = SPOTS[kind].wall;
+      for (let i = 0; i < 30; i++) {
+        const side = Math.floor(R() * 4), alongX = side < 2, t = (R() - .5) * Math.max(0, (alongX ? room.w : room.d) - len - 3.4);
+        const n = [[0, 1], [0, -1], [1, 0], [-1, 0]][side], wx = alongX ? cx + t : side === 2 ? x0 : x1, wz = alongX ? (side === 0 ? z0 : z1) : cz + t;
+        const rect = alongX ? [wx - len / 2, Math.min(wz, wz + n[1] * dep), wx + len / 2, Math.max(wz, wz + n[1] * dep)] : [Math.min(wx, wx + n[0] * dep), wz - len / 2, Math.max(wx, wx + n[0] * dep), wz + len / 2];
+        const mx = (rect[0] + rect[2]) / 2, mz = (rect[1] + rect[3]) / 2, front = { x: mx + n[0] * (dep / 2 + .8), z: mz + n[1] * (dep / 2 + .8) };
+        if (!alongX && run.plates.some(p => p.room === room.id && Math.abs(p.z - mz) < len / 2 + 1)) continue;
+        if (!free(mx, mz, len / 2) || !free(front.x, front.z, .7) || !solid(rect, 'spot')) continue;
+        taken.push({ x: mx, z: mz, r: len / 2 }, { ...front, r: .7 });
+        return add(kind, { x: mx, z: mz, h: Math.atan2(n[0], n[1]) }, { wall: true, rect, len });
+      }
+      return false;
+    };
+    // An old lantern in one of the two dark corners: lit, it shows what lies
+    // in the corner behind it.
+    const dark = [[-1, -1], [1, 1], [1, -1], [-1, 1]].filter(([a, b]) => !lit.some(([c, e]) => a === c && b === e));
+    const lantern = () => {
+      for (const [sx, sz] of dark) {
+        const p = corner(sx, sz), reveal = { x: p.x + sx * .55, z: p.z + sz * .55 };
+        if (!free(p.x, p.z, .9) || !free(reveal.x, reveal.z, .3)) continue;
+        run.obstacles.push({ x: p.x, z: p.z, r: SPOTS.lantern.r, floor: f, spot: true }); taken.push({ ...p, r: .9 }, { ...reveal, r: .4 });
+        return add('lantern', p, { reveal });
+      }
+      return false;
+    };
+    switch (room.kind) {
+      case 'entrada': loose('trunk', undefined, { hard: 0 }); if (R() < .5) loose('sheet'); break;
+      case 'estanterias':
+        // Dead ends: a heap of fallen books where a capped aisle ends.
+        for (const c of caps.slice(0, 2)) { const p = { x: cx + c.s * 7.3, z: cz + c.aisle }; if (free(p.x, p.z, .55)) { taken.push({ ...p, r: .55 }); loose('debris', p, { h: c.s > 0 ? -Math.PI / 2 : Math.PI / 2, hard: .85 }); } }
+        lantern(); wallPiece(R() < .5 ? 'ladder' : 'shelf');
+        loose('trunk');
+        break;
+      case 'lectura': loose('sheet'); loose('sheet'); loose('drawer'); wallPiece('wardrobe'); if (R() < .6) lantern(); break;
+      case 'archivo': wallPiece('wardrobe'); wallPiece('wardrobe'); loose('trunk'); loose('debris'); if (R() < .5) wallPiece('shelf'); break;
+      case 'copistas':
+        for (const desk of desks.sort(() => R() - .5).slice(0, 3)) add('drawer', desk, { desk: true });
+        loose('debris'); wallPiece('wardrobe');
+        break;
+      case 'idolo': loose('debris'); loose('sheet'); break;
+      case 'santuario': if (!wallPiece('wardrobe')) loose('trunk'); break;
+      // Around the sunken pit only the rim's dark corners have room.
+      case 'puente': for (const [sx, sz] of dark) { const p = corner(sx, sz); if (free(p.x, p.z, 1)) { taken.push({ ...p, r: 1 }); loose(R() < .5 ? 'trunk' : 'debris', p); } } break;
+      case 'oculta': loose('trunk'); wallPiece('wardrobe'); break;
+      default: loose('trunk'); loose('debris');
+    }
+    // A place per relic up to what the room holds (big rooms more), and always
+    // one to search in vain; extra relics share a place with another.
+    const cap = Math.max(2, Math.round(room.w * room.d / 70));
+    for (let i = 0; i < 8 && places.length < Math.min(cap, stash.length + 1); i++) loose(['debris', 'trunk', 'sheet'][Math.floor(R() * 3)]);
+    const { spots, left } = dealHidingSpots(R, places, { treasures: stash.sort((a, b) => valueOf(b) - valueOf(a)), lesser: ['coins', 'pearl'], junk: ['oldBook'], traps: ['spider', 'mummy'] });
+    run.spots.push(...spots);
+    for (const kind of left) { const p = spot(.5); if (p) run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: p.x, z: p.z, h: R() * 6.28 }); }
+    // An old book or two lie about in plain sight: worth next to nothing.
+    if (R() < .6) loot('oldBook');
+    // Beside the bookcase that hides a secret room: a lantern that, lit, shows the way.
+    for (const wall of run.hidden.filter(h => h.floor === f && h.room !== room.id)) {
+      const c = run.corridors.find(c => c.id === wall.corridor); if (!c || (c.a !== room.id && c.b !== room.id)) continue;
+      for (const s of [-1, 1]) {
+        const p = c.horizontal ? { x: wall.x < cx ? x0 + .7 : x1 - .7, z: s < 0 ? c.rect[1] - 1.1 : c.rect[3] + 1.1 } : { x: s < 0 ? c.rect[0] - 1.1 : c.rect[2] + 1.1, z: wall.z < cz ? z0 + .7 : z1 - .7 };
+        if (!inRect(p.x, p.z, room.rect, -.4) || !free(p.x, p.z, .35)) continue;
+        run.obstacles.push({ x: p.x, z: p.z, r: SPOTS.lantern.r, floor: f, spot: true }); taken.push({ ...p, r: .6 });
+        run.spots.push({ id: `sp${id.spot++}`, kind: 'lantern', floor: f, room: room.id, x: p.x, z: p.z, h: facing(p), need: SPOTS.lantern.need, hard: 1, content: [], decoy: false, trap: null, reveals: wall.id });
+        break;
+      }
+    }
   }
 }

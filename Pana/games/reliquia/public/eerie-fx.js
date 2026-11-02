@@ -20,12 +20,14 @@ export function createEerieFx({ view, ambience, dread = () => {} }) {
   let level = -1, time = 0, mode = 'normal', theme = 'mina';
   const effects = [];
   // ---- Shapes: one pale figure and one book, made once and reused.
-  const ghostMat = new THREE.MeshStandardMaterial({ color: 0xa9ad9f, emissive: 0x262a22, roughness: 1, transparent: true, opacity: 0, depthWrite: false });
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xe8fff4, transparent: true, opacity: 0 });
+  // Pale and cold: the figure is grey-blue, lit from within just enough to
+  // read in the dark, never warm.
+  const ghostMat = new THREE.MeshStandardMaterial({ color: 0x9aa2ae, emissive: 0x1c222c, roughness: 1, transparent: true, opacity: 0, depthWrite: false });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xdfe8f4, transparent: true, opacity: 0 });
   const ghost = mummy(); ghost.name = 'Silueta';
   ghost.traverse(o => { if (o.isMesh) { const eye = o.material.emissiveIntensity >= 1 && o.material.emissive?.getHex(); o.material.dispose?.(); o.material = eye ? eyeMat : ghostMat; o.castShadow = false; } });
   ghost.visible = false; view.scene.add(ghost);
-  const book = new THREE.Mesh(new THREE.BoxGeometry(.24, .05, .17), new THREE.MeshStandardMaterial({ color: 0x5a2420, roughness: .9 }));
+  const book = new THREE.Mesh(new THREE.BoxGeometry(.24, .05, .17), new THREE.MeshStandardMaterial({ color: 0x3a2a2e, roughness: .9 }));
   book.visible = false; view.scene.add(book);
   const bookV = new THREE.Vector3(), spin = new THREE.Vector3(), outAt = { x: 0, z: 0, r: 7, amount: 0 };
   const figure = { on: false, t: 0, away: false, fade: 0, close: false };
@@ -57,7 +59,7 @@ export function createEerieFx({ view, ambience, dread = () => {} }) {
       case 'farolStutter': effects.push({ kind: 'stutter', t: 0, dur: 1.3, s }); break;
       case 'candleOut': effects.push({ kind: 'out', t: 0, dur: 7, s, x: me.x, z: me.z }); for (let i = 0; i < 3; i++) setTimeout(() => ambience.eerie('gutter', { pan: (i - 1) * .6, gain: .8 }), i * 140); break;
       case 'fogSurge': effects.push({ kind: 'fog', t: 0, dur: 6, s }); ambience.eerie(theme === 'biblioteca' ? 'wind' : 'sub', { pan: side * .5, strength: .7 }); break;
-      case 'slam': ambience.eerie('slam', { pan: side * .6, gain: .9 }); shake(.25 * s); view.puffs.spawn({ x: behind.x, y: 1.5, z: behind.z }, { color: 0xb0a080, count: 6, spread: 1.2, size: .6, rise: -.6, life: 1.2 }); break;
+      case 'slam': ambience.eerie('slam', { pan: side * .6, gain: .9 }); shake(.25 * s); view.puffs.spawn({ x: behind.x, y: 1.5, z: behind.z }, { color: theme === 'biblioteca' ? 0x9aa0a8 : 0xb0a080, count: 6, spread: 1.2, size: .6, rise: -.6, life: 1.2 }); break;
       case 'thud': ambience.eerie('thud', { pan: side * .95, gain: .75 }); break;
       case 'whisper': ambience.eerie('whisperNear', { pan: side * .9, gain: .9 }); ambience.eerie('breath', { pan: side * .35, gain: .8 }); break;
       case 'heartbeat': effects.push({ kind: 'heart', t: 0, dur: 6.5, s, next: 0, beats: 0 }); break;
@@ -120,7 +122,7 @@ export function createEerieFx({ view, ambience, dread = () => {} }) {
     if (book.visible && book.userData.landed != null) { if (time - book.userData.landed > 8) book.visible = false; }
     else if (book.visible) {
       bookV.y -= GRAVITY * dt; book.position.addScaledVector(bookV, dt); book.rotation.x += spin.x * dt; book.rotation.z += spin.z * dt;
-      if (book.position.y <= .03) { book.position.y = .03; book.rotation.set(0, book.rotation.y, 0); ambience.eerie('book', { pan: pan(me, heading, book.position.x, book.position.z), gain: .9 }); view.puffs.spawn({ x: book.position.x, y: .1, z: book.position.z }, { color: 0xb8a888, count: 5, spread: .4, size: .35, rise: .6, life: .8 }); bookV.set(0, 0, 0); book.userData.landed = time; }
+      if (book.position.y <= .03) { book.position.y = .03; book.rotation.set(0, book.rotation.y, 0); ambience.eerie('book', { pan: pan(me, heading, book.position.x, book.position.z), gain: .9 }); view.puffs.spawn({ x: book.position.x, y: .1, z: book.position.z }, { color: theme === 'biblioteca' ? 0xa0a6ae : 0xb8a888, count: 5, spread: .4, size: .35, rise: .6, life: .8 }); bookV.set(0, 0, 0); book.userData.landed = time; }
     }
     dread(dreadLevel);
   }

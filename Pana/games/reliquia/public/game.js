@@ -35,7 +35,7 @@ let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares);
 const fx = createEerieFx({ view, ambience, dread: v => { const r = Math.round(v * 20) / 20; if (r !== dreadShown) { dreadShown = r; $('dread').style.opacity = r; } } });
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
-let jumpPress = 0;
+let jumpPress = 0, creakAt = 0;
 const feet = createFootsteps();   // steps by distance walked, plus take-off and landing
 function jump(){if(playing())jumpPress=pressJump(jumpPress);}
 function clearInput() { keys.clear(); touch.clear(); }
@@ -87,7 +87,7 @@ function lobby() {
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.
 const SHOUTS = { seal: [loc('¡Se abrió la bajada!'), 'teal'], boss: [loc('¡Despertó algo grande!'), 'coral'], guardian: [loc('¡Guardián vencido!'), 'yellow'], jaguar: [loc('¡Jaguar vencido!'), 'yellow'],
   curse: [loc('¡Maldición!'), 'coral'], collapse: [loc('¡Derrumbe!'), 'coral'], stalker: [loc('¡Los están cazando!'), 'coral'], down: [loc('¡Pana caído!'), 'coral'], reveal: [loc('¡Sala escondida!'), 'teal'] };
-const QUIET = new Set(['pick', 'hit', 'swing', 'shot', 'hurt', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch']);
+const QUIET = new Set(['pick', 'hit', 'swing', 'shot', 'hurt', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch', 'search']);
 function handle(e) {
   const mine = e.player === room.id, p = me(), seat = state.players.find(q => q.id === e.player)?.seat ?? 0;
   const near = p && e.player != null ? (() => { const q = state.players.find(q => q.id === e.player); return q && floorOf(q.x) === floorOf(p.x) ? Math.max(.25, 1 - Math.hypot(q.x - p.x, q.z - p.z) / 30) : 0; })() : 1;
@@ -101,6 +101,8 @@ function handle(e) {
     case 'swing': if (near) sfx.swing(); break;
     case 'hit': if (near) sfx.hit(); break;
     case 'shot': if (near) sfx.shot(); break;
+    // A searched hiding spot: what it gave is news for everyone; dust only for you.
+    case 'search': if (said && (mine || e.found || e.trap)) notify(said); if (near) sfx.search(e.found, !e.found && !!e.item); if (e.trap) { sfx.awaken(); view.shake(.3); } if (e.found) { const sp = view.world.run.spots.find(s => s.id === e.spot); if (sp) view.waves.sparkle({ x: sp.x, y: 1, z: sp.z }, { color: 0xd8dde6, count: 8 }); } break;
     case 'chest': sfx.chest(); { const c = view.world.run.chests.find(c => c.id === e.chest); if (c) view.waves.sparkle({ x: c.x, y: 1, z: c.z }, { color: 0xffd36a, count: 10 }); } break;
     case 'bank': sfx.bank(e.big); popCounter($('haul')); break;
     case 'throw': if (near) sfx.throw(); break;
@@ -204,6 +206,8 @@ function frame(now) {
   fx.update(dt, { state, me: p, heading: view.heading, paused: menu.isOpen, scares, run: view.world.run });
   if (p && state.phase === 'playing' && !p.downed && !p.spectator) { const speed = p.moving ? Math.hypot(p.vx, p.vz) : 0; feet.update(dt, { speed, height: p.jumpHeight || 0, sprint: speed > 5.4, surface: floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : 'stone' : 'dirt', volume: .8 }, sfxLib); }
   else feet.reset();
+  // Holding E on a hiding spot: the wood creaks while you search.
+  creakAt -= dt; if (creakAt <= 0 && p && playing() && (keys.has('e') || touch.has('e'))) { creakAt = interaction(state, p)?.kind === 'search' ? .6 : .2; if (creakAt > .5) ambience.eerie('creak', { gain: .5, pan: (Math.random() - .5) * .3 }); }
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }
@@ -216,6 +220,8 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
   face(h, pitch) { view.heading = h; if (pitch !== undefined) view.pitch = pitch; },
   // Force a scare now: silhouette, jumpscare, bookFall, flicker, candleOut, slam, thud, whisper, heartbeat, fogSurge, farolStutter.
   scare(kind) { fx.force(kind, { state, me: me(), heading: view.heading }); },
+  // Stand in front of a hiding spot (the nth on this floor, or of a kind) and look at it.
+  spot(which = 0) { const run = view.world.run, list = run.spots.filter(s => typeof which !== 'string' || s.kind === which), sp = typeof which === 'number' ? run.spots[which] : list[0]; if (!sp) return null; const d = (sp.wall ? .75 : .9) + 1, x = sp.x + Math.sin(sp.h) * d, z = sp.z + Math.cos(sp.h) * d, h = Math.atan2(sp.x - x, sp.z - z); this.place(room.id, x, z, h); view.heading = h; view.pitch = -.3; return sp; },
   // Skip ahead to jornada n (2 is the first library): host only.
   jornada(n) { const g = room.game; if (!room.isHost || !g || g.phase !== 'playing') return false; while (g.level < n) g.completeLevel(); room.publish(); return g.level; },
   fx,

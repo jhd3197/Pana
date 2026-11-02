@@ -19,8 +19,8 @@ export const RUIN_PALETTES = {
   sol: { floor: 0xd8b27a, bricks: [0xe0a85c, 0xcf8f4a, 0xeabd78], band: 0x3fbfa0, ceiling: 0x6b4a33, glyph: 0x5fffd0 },
   jade: { floor: 0x9cc8a0, bricks: [0x6fae8e, 0x5d9a7c, 0x82bf9c], band: 0xe8b04a, ceiling: 0x34503f, glyph: 0xffd36a },
   maldita: { floor: 0xc9a0b8, bricks: [0xa7769a, 0x936486, 0xb98bab], band: 0xffc23d, ceiling: 0x3c2840, glyph: 0xff7adf },
-  // La biblioteca sepultada: worn oak boards, soot-dark stone, a timber band.
-  biblioteca: { floor: 0x7a5434, bricks: [0x5d544a, 0x51493f, 0x675c50], band: 0x3a2618, ceiling: 0x2a2018, glyph: 0xc8964a, planks: true, glyphs: false },
+  // La biblioteca sepultada: cold, worn dark boards, grey-blue stone, a dark timber band.
+  biblioteca: { floor: 0x5a5250, bricks: [0x4a5260, 0x434a56, 0x535b67], band: 0x2a2226, ceiling: 0x1c1f26, glyph: 0x8a96a8, planks: true, glyphs: false },
 };
 
 // Stone surfaces, painted once and shared: light grey grain, chips, cracks
@@ -43,6 +43,9 @@ export function stoneTexture(kind = 'brick') {
       g.fillStyle = 'rgba(40,40,40,.7)'; for (const x of [end - 6, end + 6]) for (const y of [y0 + 6, y0 + h / 4 - 6]) g.fillRect(x, y, 2, 2);
     }
     for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(255,250,240,${r() * .12})`; g.fillRect(r() * w, r() * h, 1, 1); }
+    // Wear and dust: pale scuffed patches, grit along the seams.
+    for (let i = 0; i < 7; i++) { const x = r() * w, y = r() * h, gr = g.createRadialGradient(x, y, 0, x, y, 8 + r() * 22); gr.addColorStop(0, `rgba(235,235,240,${.18 + r() * .16})`); gr.addColorStop(1, 'rgba(235,235,240,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }
+    for (let b = 1; b < 4; b++) for (let i = 0; i < 30; i++) { g.fillStyle = `rgba(220,222,228,${r() * .3})`; g.fillRect(r() * w, b * h / 4 + 2 + r() * 2, 1 + r() * 2, 1); }
     const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4;
     textures.set(kind, texture); return texture;
   }

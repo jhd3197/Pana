@@ -10,6 +10,8 @@ export const ITEMS = {
   emerald: { name: locKey('Esmeralda'), size: 'small', value: 70, model: 'emerald' },
   pearl: { name: locKey('Perla de Cubagua'), size: 'small', value: 60, model: 'pearl' },
   cup: { name: locKey('Copa de oro'), size: 'small', value: 90, model: 'goldCup' },
+  // Junk: what a library hides more often than treasure.
+  oldBook: { name: locKey('Libro viejo'), size: 'small', value: 10, junk: true, model: 'oldBook' },
   // One-hand treasures: worth more, and they can be thrown across a room.
   mask: { name: locKey('Máscara de oro'), size: 'hand', value: 160, model: 'goldMask' },
   idol: { name: locKey('Ídolo tallado'), size: 'hand', value: 130, model: 'carvedIdol' },

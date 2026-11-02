@@ -20,7 +20,8 @@ import { lajaRock } from '/engine/models/props/amazonas.js';
 import { rockyCliff } from '/engine/models/props/mountain.js';
 import { china } from '/engine/models/props/china.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
-import { bookcases, bookcaseDoor, libraryLadder, readingTable, scribeDesk, lectern, candelabra, candleStick, chandelier, tornCurtain, cobwebs, candleFlames } from '/engine/models/props/reliquia-library.js';
+import { bookcases, bookcaseDoor, libraryLadder, readingTable, scribeDesk, lectern, candelabra, candleStick, chandelier, hangingLantern, armchair, tallWindow, tornCurtain, cobwebs, candleFlames, rugs, groundMist, bookPiles } from '/engine/models/props/reliquia-library.js';
+import { writingDesk, travelTrunk, drapedFurniture, oldWardrobe, bookHeap, rollingShelf, rollingLadder, oldLantern, oldBook } from '/engine/models/props/reliquia-hideouts.js';
 import { createPaintMarker } from '/engine/models/props/paintball.js';
 import { marketStall } from '/engine/models/props/plaza.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -36,8 +37,8 @@ import { TRUCK, TABLE, HEIGHT, CAGE, floorOf, inRect } from './deck.js';
 
 const PALETTES = ['sol', 'jade', 'maldita'];
 export const paletteFor = (floor, theme = 'mina') => theme === 'biblioteca' ? RUIN_PALETTES.biblioteca : RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
-const FACTORIES = { ...treasure, mineCart: () => mineCart({ load: 'gold' }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
-const GLOW = { tool: 0xfff1d6, treasure: 0xffc23d, big: 0xffd36a };
+const FACTORIES = { ...treasure, oldBook, mineCart: () => mineCart({ load: 'gold' }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
+const GLOW = { tool: 0xfff1d6, treasure: 0xffc23d, big: 0xffd36a, junk: 0x9aa4b0 };
 
 // One prototype per item kind; every copy on the map is a cheap clone.
 const prototypes = new Map();
@@ -51,7 +52,7 @@ export function itemModel(kind) {
   }
   return prototypes.get(kind).clone();
 }
-export const glowColor = kind => ITEMS[kind].artifact ? treasure.ARTIFACT_AURA[kind] : ITEMS[kind].tool ? GLOW.tool : ITEMS[kind].size === 'big' ? GLOW.big : GLOW.treasure;
+export const glowColor = kind => ITEMS[kind].artifact ? treasure.ARTIFACT_AURA[kind] : ITEMS[kind].junk ? GLOW.junk : ITEMS[kind].tool ? GLOW.tool : ITEMS[kind].size === 'big' ? GLOW.big : GLOW.treasure;
 
 export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {}) {
   const L = layoutFor(seed, depth), run = L.run, floors = run.floors;
@@ -125,7 +126,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
       case 'ladder': return libraryLadder({ height: 3.3 });
       case 'lectern': return lectern({ seed: d.z | 0 });
       case 'bigLectern': return lectern({ big: true });
-      case 'chandelier': return chandelier({ ceiling: HEIGHT, drop: 1.5, seed: d.x | 0 });
+      case 'chandelier': return chandelier({ ceiling: HEIGHT, drop: 1.5, seed: d.x | 0, lit: true });
       default: return null;
     }
   }
@@ -134,7 +135,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
     const root = new THREE.Group(); root.name = `Piso ${f}`; group.add(root);
     const library = run.theme === 'biblioteca', statics = new THREE.Group(), palette = paletteFor(depth, run.theme), x0 = f * L.SPACING - 60;
     const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
-    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [] };
+    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [], spots: new Map(), webs: null, mist: null };
     root.add(floor.shell);
     // Candle flames of the whole floor go in one instanced shader.
     const flamePoints = [], flamesOf = (model, x, y, z, h = 0) => { for (const p of model.userData.flames || []) flamePoints.push(new THREE.Vector3(p.x * Math.cos(h) + p.z * Math.sin(h) + x, p.y + y, -p.x * Math.sin(h) + p.z * Math.cos(h) + z)); };
@@ -150,7 +151,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
     // instanced with their own shader, so they stay out of the static batch).
     for (const r of run.rooms.filter(r => r.floor === f)) {
       const k = (r.x * 7 + r.z * 3) | 0;
-      if (library) { if (k % 3 === 0) place(statics, skull({ size: .3 }), r.rect[0] + 1.6, 0, r.rect[3] - 1.4, k); continue; }
+      if (library) continue;
       if (f > 1 && k % 3 === 0) place(statics, skull({ size: .35 }), r.rect[0] + 1, 0, r.rect[3] - 1.1, k);
       if (k % 2 === 0) place(root, crystalCluster({ size: .9, color: (k >> 1) % 8, seed: k }), r.rect[2] - .8, 0, r.rect[1] + .8, k);
     }
@@ -216,39 +217,68 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
       }
     }
   }
-  // La biblioteca sepultada: the dealt bookcases, tables and desks, then
-  // cases along every free stretch of wall, webs in the corners, torn
-  // curtains by the doorways and the bookcase that hides the secret room.
+  // La biblioteca sepultada: the dealt bookcases (each room its own mix of
+  // shelf variants), tables and desks, then cases along every free stretch
+  // of wall, a tall window or two in the reading hall, webs everywhere (fans
+  // in corners and arches, sheets sagging across aisles, strands hanging from
+  // the ceiling), a few small flames, rugs, piles of books, and low mist only
+  // in the rooms chosen for it. The hiding spots get their own models.
   function furnishLibrary(f, statics, root, floor, flamesOf) {
     // Webs hang from just under the rough ceiling slabs, never inside them.
-    const WEB_TOP = HEIGHT - .4;
-    const cases = [], webs = [], seed = f * 31 + depth * 7, R = rng(seed);
+    const WEB_TOP = HEIGHT - .32;
+    const cases = [], webs = [], rugList = [], piles = [], mist = [], seed = f * 31 + depth * 7, R = rng(seed);
+    const rooms = run.rooms.filter(r => r.floor === f);
+    // Every room its own style: a main shelf variant, how full the shelves are,
+    // and (in the stacks) maybe one collapsed case.
+    const styles = new Map(rooms.map(r => [r.id, { main: ['arched', 'plain', 'pillar', 'arched'][Math.floor(R() * 4)], fill: .72 + R() * .25, collapse: r.kind === 'estanterias' && R() < .5, collapsed: false }]));
+    // Low ground mist is an accent: always the reading hall, a stacks room
+    // with a fallen case, never more than one room in three.
+    const misty = new Set(rooms.filter(r => r.kind === 'lectura').map(r => r.id));
+    for (const r of rooms) if (styles.get(r.id).collapse && misty.size < Math.ceil(rooms.length / 3)) misty.add(r.id);
+    const variantFor = (s, along, length) => {
+      const st = styles.get(s.room);
+      if (st.collapse && !st.collapsed && along && R() < .35) { st.collapsed = true; return 'collapsed'; }
+      const roll = R();
+      const v = roll < .62 ? st.main : roll < .78 ? 'ladder' : roll < .88 ? 'low' : ['arched', 'plain', 'pillar'][Math.floor(R() * 3)];
+      return v === 'pillar' && length < 2.6 ? 'arched' : v;
+    };
+    const deskSpots = new Set(run.spots.filter(sp => sp.floor === f && sp.desk).map(sp => `${sp.x.toFixed(2)},${sp.z.toFixed(2)}`));
     for (const s of run.solids.filter(s => s.floor === f)) {
-      const [a, b, c, d] = s.rect, x = (a + c) / 2, z = (b + d) / 2, along = s.axis === 'x';
+      const [a, b, c, d] = s.rect, x = (a + c) / 2, z = (b + d) / 2, along = s.axis === 'x', length = along ? c - a : d - b;
       if (s.kind === 'shelf') {
-        const height = s.tall ? 3.8 : 3.3;
-        cases.push({ x, z, h: along ? 0 : Math.PI / 2, length: along ? c - a : d - b, height, room: s.room });
-        // Somebody left candles burning on the floor along the stacks.
-        if (along && R() < .45) { const sx = a + .3 + R() * (c - a - .6), sz = z + (R() < .5 ? -1 : 1) * .55, stick = candleStick({ seed: (sx * 7) | 0 }); flamesOf(stick, sx, 0, sz); place(statics, stick, sx, 0, sz, R() * 6); }
-        // Webs strung from the cases' ends up to the ceiling.
-        if (R() < .6) webs.push({ x: along ? a + .05 : x - .4, y: WEB_TOP, z: along ? z - .4 : b + .05, h: along ? -Math.PI / 2 : 0, size: Math.min(1.3, WEB_TOP - height + .4), tilt: (R() - .5) * .3 });
-        if (R() < .4) webs.push({ x: along ? c - .05 : x + .4, y: WEB_TOP, z: along ? z + .4 : d - .05, h: along ? Math.PI / 2 : Math.PI, size: Math.min(1.3, WEB_TOP - height + .4), tilt: (R() - .5) * .3 });
+        const height = s.tall ? 3.8 : 3.3, variant = variantFor(s, along, length), h = along ? 0 : Math.PI / 2, top = variant === 'low' ? 1.3 : height;
+        cases.push({ x, z, h, length, height: top, variant, fill: styles.get(s.room).fill, room: s.room });
+        // A rolling ladder leans on one face.
+        if (variant === 'ladder') { const t = (R() - .5) * (length - 1), side = R() < .5 ? -1 : 1, lad = libraryLadder({ height: Math.min(3.3, height - .1) }); place(statics, lad, along ? x + t : x + side * .95, 0, along ? z + side * .95 : z + t, along ? (side > 0 ? 0 : Math.PI) : (side > 0 ? Math.PI / 2 : -Math.PI / 2)); }
+        // Webs: fans at the ends up to the ceiling, in the corners of the arches.
+        for (const end of [-1, 1]) if (R() < .5) webs.push({ x: along ? (end < 0 ? a + .05 : c - .05) : x - end * .4, y: WEB_TOP, z: along ? z + end * .4 : (end < 0 ? b + .05 : d - .05), h: along ? end * -Math.PI / 2 : (end < 0 ? 0 : Math.PI), size: Math.min(1.4, WEB_TOP - top + .5), tilt: (R() - .5) * .3 });
+        if (variant === 'arched' || variant === 'pillar') for (const face of [-1, 1]) for (let k = 0; k < 2; k++) if (R() < .5) {
+          const inner = variant === 'pillar' ? length - 1.04 : length, bays = Math.max(1, Math.round(inner / .95)), bayW = (inner - .1) / bays, bay = Math.floor(R() * bays), right = R() < .5;
+          const u = -inner / 2 + .05 + (bay + (right ? 1 : 0)) * bayW + (right ? -.04 : .04), wy = top - .2, fz = face * .41;
+          webs.push({ x: along ? x + u : x + fz, y: wy, z: along ? z + fz : z - u, h: h + (right ? Math.PI : 0), size: .35 + R() * .35, tilt: 0 });
+        }
+        // Somebody left a candle burning on the floor here and there.
+        if (along && R() < .16) { const sx = a + .3 + R() * (c - a - .6), sz = z + (R() < .5 ? -1 : 1) * .55, stick = candleStick({ seed: (sx * 7) | 0 }); flamesOf(stick, sx, 0, sz); place(statics, stick, sx, 0, sz, R() * 6); }
+        if (variant === 'collapsed' && misty.has(s.room)) mist.push({ x, z, w: length + 2, d: 4 });
       }
       if (s.kind === 'table') {
         place(statics, readingTable({ length: c - a - .2, width: d - b, seed: (x * 3) | 0 }), x, 0, z, 0);
-        for (const dx of [-1.4, 1.1]) if (R() < .75) { const stick = candleStick({ seed: (x + dx) | 0 }), sz = z + (R() - .5) * .4; flamesOf(stick, x + dx, .81, sz); place(statics, stick, x + dx, .81, sz); }
+        if (R() < .4) { const stick = candleStick({ seed: x | 0 }), sz = z + (R() - .5) * .4, sx = x + (R() < .5 ? -1.4 : 1.1); flamesOf(stick, sx, .855, sz); place(statics, stick, sx, .855, sz); }
+        // A ripped web hanging off a corner of the table.
+        if (R() < .7) webs.push({ type: 'drape', x: a + .15, y: .86, z, w: .9, size: .7, h: Math.PI / 2 });
       }
-      if (s.kind === 'desk') place(statics, scribeDesk({ seed: (x * 5 + z) | 0 }), x, 0, z, s.h || 0);
+      if (s.kind === 'desk' && !deskSpots.has(`${x.toFixed(2)},${z.toFixed(2)}`)) place(statics, scribeDesk({ seed: (x * 5 + z) | 0 }), x, 0, z, s.h || 0);
     }
     // Wall cases: single-sided, backs to the bricks, never across an opening,
-    // a seal, a dart lane or the cargo lift.
+    // a seal, a dart lane, the cargo lift or a hiding spot against the wall.
     const openings = [...run.corridors, ...run.stubs].filter(c => c.floor === f).map(c => c.rect);
-    for (const room of run.rooms.filter(r => r.floor === f)) {
-      const [x0, z0, x1, z1] = room.rect;
+    for (const room of rooms) {
+      const [x0, z0, x1, z1] = room.rect, st = styles.get(room.id);
       const walls = [
         { along: 'x', fixed: z0, into: 1, from: x0, to: x1 }, { along: 'x', fixed: z1, into: -1, from: x0, to: x1 },
         { along: 'z', fixed: x0, into: 1, from: z0, to: z1 }, { along: 'z', fixed: x1, into: -1, from: z0, to: z1 },
       ];
+      let windows = room.kind === 'lectura' ? 2 : 0;
       for (const w of walls) {
         let spans = [[w.from + 1.9, w.to - 1.9]];
         const cut = (a, b) => { spans = spans.flatMap(([p, q]) => [[p, Math.min(q, a)], [Math.max(p, b), q]]).filter(([p, q]) => q - p >= 1.6); };
@@ -259,23 +289,69 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
         for (const q of run.seals.filter(q => q.room === room.id)) if (w.along === 'x') cut(q.x - 3.4, q.x + 3.4);
         for (const p of run.plates.filter(p => p.room === room.id)) if (w.along === 'z') cut(p.z - 1.2, p.z + 1.2);
         for (const pad of run.cargo.filter(c => c.floor === f && inRect(c.x, c.z, room.rect))) { if (w.along === 'x') cut(pad.x - 2.4, pad.x + 2.4); else cut(pad.z - 2.4, pad.z + 2.4); }
+        for (const sp of run.spots.filter(sp => sp.room === room.id && (sp.wall || sp.kind === 'lantern'))) {
+          const near = w.along === 'x' ? Math.abs(sp.z - w.fixed) < 1.6 : Math.abs(sp.x - w.fixed) < 1.6, half = (sp.len || 1) / 2 + .3;
+          if (near) { if (w.along === 'x') cut(sp.x - half, sp.x + half); else cut(sp.z - half, sp.z + half); }
+        }
+        // The reading hall's tall windows take the middle of a long stretch.
+        if (windows && w.along === 'x') {
+          const longest = spans.reduce((best, sp) => sp[1] - sp[0] > (best ? best[1] - best[0] : 0) ? sp : best, null);
+          if (longest && longest[1] - longest[0] >= 4.4) {
+            const mid = (longest[0] + longest[1]) / 2, pane = tallWindow({ width: 1.5, height: 2.6, seed: (mid * 3) | 0 });
+            place(root, pane, mid, 0, w.fixed + w.into * .08, w.into > 0 ? 0 : Math.PI); cut(mid - 1.2, mid + 1.2); windows--;
+            webs.push({ type: 'drape', x: mid + .4, y: WEB_TOP, z: w.fixed + w.into * .5, w: 1.1, size: 1.6, h: w.into > 0 ? 0 : Math.PI });
+          }
+        }
         for (const [p, q] of spans) for (let a = p; a < q - 1.2;) {
           const len = Math.min(q - a, 2.4 + R() * 1.2), mid = a + len / 2, off = w.fixed + w.into * .23, height = 3.2 + R() * .7;
-          cases.push(w.along === 'x' ? { x: mid, z: off, h: w.into > 0 ? 0 : Math.PI, length: len, height, double: false, room: room.id } : { x: off, z: mid, h: w.into > 0 ? Math.PI / 2 : -Math.PI / 2, length: len, height, double: false, room: room.id });
+          const pick = R() < .68 ? st.main : ['arched', 'plain', 'pillar'][Math.floor(R() * 3)], variant = pick === 'pillar' && len < 2.6 ? 'arched' : pick;
+          cases.push(w.along === 'x' ? { x: mid, z: off, h: w.into > 0 ? 0 : Math.PI, length: len, height, double: false, variant, fill: st.fill, room: room.id, pillarHeight: HEIGHT } : { x: off, z: mid, h: w.into > 0 ? Math.PI / 2 : -Math.PI / 2, length: len, height, double: false, variant, fill: st.fill, room: room.id, pillarHeight: HEIGHT });
+          // Webs in the corners of the arches of a wall case.
+          if (variant === 'arched' || variant === 'pillar') for (let k = 0; k < 2; k++) if (R() < .5) {
+            const inner = variant === 'pillar' ? len - 1.04 : len, bays = Math.max(1, Math.round(inner / .95)), bayW = (inner - .1) / bays, right = R() < .5, u = -inner / 2 + .05 + (Math.floor(R() * bays) + (right ? 1 : 0)) * bayW + (right ? -.04 : .04), front = w.fixed + w.into * .45;
+            const along = w.along === 'x', sx = along ? (w.into > 0 ? u : -u) : 0, sz = along ? 0 : (w.into > 0 ? -u : u);
+            webs.push({ x: along ? mid + sx : front, y: height - .2, z: along ? front : mid + sz, h: (along ? (w.into > 0 ? 0 : Math.PI) : (w.into > 0 ? Math.PI / 2 : -Math.PI / 2)) + (right ? Math.PI : 0), size: .35 + R() * .35, tilt: 0 });
+          }
+          // Piles of books against the wall cases; now and then a candle on one.
+          if (R() < .35) { const t = a + .4 + R() * (len - .8); piles.push({ x: w.along === 'x' ? t : off + w.into * .5, z: w.along === 'x' ? off + w.into * .5 : t, h: R() * 3, n: 3 + Math.floor(R() * 8), candle: R() < .3 }); }
           a += len + .15;
         }
       }
-      // Webs in the ceiling corners; a dead chandelier in the big rooms.
-      for (const [cx, cz, ax, az] of [[x0, z0, 1, 1], [x1, z0, -1, 1], [x0, z1, 1, -1], [x1, z1, -1, -1]]) { R(); webs.push(cornerWeb(cx, cz, ax, az, WEB_TOP, .9 + R() * .9, R)); }
-      if (room.w >= 16 && room.kind !== 'estanterias' && !run.decor.some(d => d.kind === 'chandelier' && d.room === room.id)) place(statics, chandelier({ ceiling: HEIGHT, drop: 1.3, seed: room.x | 0 }), room.x + (R() - .5) * 2, 0, room.z + (R() - .5) * 2, R() * 3);
+      // Webs: fans in the ceiling corners, sheets sagging under the ceiling and
+      // across the aisles, strands hanging down in the open.
+      for (const [cx, cz, ax, az] of [[x0, z0, 1, 1], [x1, z0, -1, 1], [x0, z1, 1, -1], [x1, z1, -1, -1]]) { R(); webs.push(cornerWeb(cx, cz, ax, az, WEB_TOP, 1.1 + R() * 1.1, R)); }
+      for (let i = 0; i < Math.min(3, 1 + Math.floor(room.w * room.d / 150)); i++) webs.push({ type: 'sheet', x: room.x + (R() - .5) * (room.w - 4), y: WEB_TOP + .1, z: room.z + (R() - .5) * (room.d - 4), w: 2.5 + R() * 3, d: 1.8 + R() * 2, sag: .4 + R() * .5, h: R() * 3 });
+      if (room.kind === 'estanterias') for (const aisle of [-4.5, -1.5, 1.5, 4.5]) for (const sx of [-1, 1]) if (R() < .45) webs.push({ type: 'sheet', x: room.x + sx * (3.5 + R() * 3), y: 3.62, z: room.z + aisle, w: 1.6 + R() * 1.8, d: 3, sag: .45 + R() * .3, h: 0 });
+      for (let i = 0; i < 3 + Math.floor(room.w * room.d / 90); i++) webs.push({ type: 'drape', x: room.x + (R() - .5) * (room.w - 3), y: WEB_TOP + .1, z: room.z + (R() - .5) * (room.d - 3), w: .5 + R() * .9, size: 1.2 + R() * 1.1, h: R() * 3 });
+      // Light: a chandelier in the big rooms (most still lit), a lantern over
+      // the stacks' nave. Small flames only, never a lamp of their own.
+      if (room.w >= 16 && !run.decor.some(d => d.kind === 'chandelier' && d.room === room.id)) {
+        const stacks = room.kind === 'estanterias', lamp = chandelier({ ceiling: HEIGHT, drop: 1.4, seed: room.x | 0, lit: R() < .7 }), lx = room.x + (stacks ? 0 : (R() - .5) * 2), lz = room.z + (stacks ? (R() < .5 ? -1.5 : 1.5) : (R() - .5) * 2);
+        flamesOf(lamp, lx, 0, lz); place(statics, lamp, lx, 0, lz, R() * 3);
+        webs.push({ type: 'drape', x: lx + .3, y: WEB_TOP + .1, z: lz, w: 1, size: 1.5, h: R() * 3 });
+      }
+      if (room.kind === 'estanterias') for (const sz of [-1, 1]) if (R() < .6) { const lamp = hangingLantern({ ceiling: HEIGHT, drop: 1.3 + R() * .4 }), lz = room.z + sz * (4.5 + R() * 2); flamesOf(lamp, room.x, 0, lz); place(statics, lamp, room.x, 0, lz); }
+      // Rugs: worn and faded, in the reading hall, the entrance and some crossings.
+      const rugColor = () => [0x4a5468, 0x5a3a42, 0x4e4a40][Math.floor(R() * 3)];
+      if (room.kind === 'lectura') { rugList.push({ x: room.x, z: room.z, w: 2.6, d: room.d - 5, color: rugColor() }); rugList.push({ x: room.x + (R() < .5 ? -1 : 1) * 5, z: room.z, w: 3.4, d: 2.2, h: R() * .2, color: rugColor() }); }
+      else if (room.kind === 'entrada' || (room.kind === 'estanterias' && R() < .6) || R() < .3) rugList.push({ x: room.x + (room.kind === 'estanterias' ? 0 : (R() - .5) * 4), z: room.z + (room.kind === 'estanterias' ? 0 : (R() - .5) * 4), w: 2.2 + R(), d: 3 + R() * 1.4, h: room.kind === 'estanterias' ? 0 : R() * .4, color: rugColor() });
+      // The reading hall: worn armchairs by the walls, low mist over the floor.
+      if (room.kind === 'lectura') for (const sd of [-1, 1]) {
+        const ax = room.x + sd * (room.w / 2 - 1.5), az = room.z + (R() - .5) * 3;
+        if (run.obstacles.some(o => o.floor === f && Math.hypot(o.x - ax, o.z - az) < o.r + 1) || run.solids.some(q => q.floor === f && inRect(ax, az, q.rect, .8)) || openings.some(o => inRect(ax, az, o, 1.5))) continue;
+        place(statics, armchair({ seed: (ax * 3) | 0 }), ax, 0, az, sd > 0 ? -Math.PI / 2 : Math.PI / 2);
+      }
+      if (misty.has(room.id) && room.kind !== 'estanterias') for (const [u, v] of [[-.28, -.25], [.28, -.25], [-.28, .25], [.28, .25], [0, 0]]) mist.push({ x: room.x + u * room.w, z: room.z + v * room.d, w: room.w * .5, d: room.d * .5 });
     }
-    // Corridors: webs up high, and torn curtains drawn aside at each end.
+    // Corridors: webs up high, a sheet across, a lantern, torn curtains at the ends.
     for (const c of run.corridors.filter(c => c.floor === f)) {
       const [x0, z0, x1, z1] = c.rect;
-      if (R() < .8) { const t = .3 + R() * .4; webs.push(c.horizontal ? cornerWeb(x0 + (x1 - x0) * t, z0, 0, 1, WEB_TOP, 1.1, R, 1) : cornerWeb(x0, z0 + (z1 - z0) * t, 1, 0, WEB_TOP, 1.1, R, 1)); }
+      if (R() < .9) { const t = .3 + R() * .4; webs.push(c.horizontal ? cornerWeb(x0 + (x1 - x0) * t, z0, 0, 1, WEB_TOP, 1.3, R, 1) : cornerWeb(x0, z0 + (z1 - z0) * t, 1, 0, WEB_TOP, 1.3, R, 1)); }
+      if (R() < .7) webs.push({ type: 'sheet', x: (x0 + x1) / 2, y: WEB_TOP + .1, z: (z0 + z1) / 2, w: c.horizontal ? 2.5 : 4, d: c.horizontal ? 4 : 2.5, sag: .5 + R() * .4 });
+      if (R() < .5) { const lamp = hangingLantern({ ceiling: HEIGHT, drop: 1.4 }), lx = (x0 + x1) / 2, lz = (z0 + z1) / 2; flamesOf(lamp, lx, 0, lz); place(statics, lamp, lx, 0, lz); }
       if (c.hidden) continue;
       for (const end of [0, 1]) if (R() < .5) {
-        const side = R() < .5 ? -1 : 1, curtain = tornCurtain({ width: 1.2, height: 3.7, seed: (x0 * 3 + z0 + end * 7) | 0, color: R() < .6 ? 0x4a1a1e : 0x2c3326 });
+        const side = R() < .5 ? -1 : 1, curtain = tornCurtain({ width: 1.2, height: 3.7, seed: (x0 * 3 + z0 + end * 7) | 0, color: R() < .6 ? 0x3a2e34 : 0x2e3238 });
         if (c.horizontal) place(root, curtain, end ? x1 - .7 : x0 + .7, 0, side < 0 ? z0 + .2 : z1 - .2, 0);
         else place(root, curtain, side < 0 ? x0 + .2 : x1 - .2, 0, end ? z1 - .7 : z0 + .7, Math.PI / 2);
       }
@@ -290,9 +366,34 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
       place(root, door, face.at[0] + face.x * .22, 0, face.at[1] + face.z * .22, Math.atan2(face.x, face.z));
       floor.doors.push({ id: hid.id, door, open: 0 });
     }
+    // The hiding spots: searched ones stay open (drawers out, sheets off, doors ajar).
+    for (const sp of run.spots.filter(sp => sp.floor === f)) {
+      const model = spotModel(sp); if (!model) continue;
+      place(root, model, sp.x, 0, sp.z, sp.h);
+      floor.spots.set(sp.id, { model, t: 0, x: sp.x, z: sp.z });
+      if ((sp.kind === 'debris' || sp.kind === 'trunk' || sp.kind === 'sheet') && R() < .4) webs.push({ x: sp.x - Math.cos(sp.h) * .45, y: 1, z: sp.z + Math.sin(sp.h) * .45, h: sp.h + Math.PI / 2, size: .55, tilt: .5 });
+    }
     // One set of instanced cases per room, so the rooms out of view are culled.
     for (const room of new Set(cases.map(c => c.room))) root.add(bookcases(cases.filter(c => c.room === room), { seed: seed + root.children.length }));
-    if (webs.length) root.add(cobwebs(webs));
+    floor.cases = cases;
+    if (piles.length) { const books = bookPiles(piles, { seed }); root.add(books); books.userData.tops.forEach((top, i) => { if (!piles[i].candle) return; const stick = candleStick({ seed: i }); flamesOf(stick, top.x, top.y, top.z); place(statics, stick, top.x, top.y, top.z); }); }
+    if (webs.length) { floor.webs = cobwebs(webs); root.add(floor.webs); }
+    if (rugList.length) root.add(rugs(rugList));
+    if (mist.length) { floor.mist = groundMist(mist); root.add(floor.mist); }
+  }
+  function spotModel(sp) {
+    const seed = (sp.x * 7 + sp.z * 3) | 0;
+    switch (sp.kind) {
+      case 'trunk': return travelTrunk({ seed });
+      case 'drawer': return writingDesk({ seed });
+      case 'sheet': return drapedFurniture({ seed, width: 1.1, height: 1.05, depth: .95 });
+      case 'wardrobe': return oldWardrobe({ seed });
+      case 'debris': return bookHeap({ seed });
+      case 'shelf': return rollingShelf({ seed, length: sp.len || 2.6 });
+      case 'ladder': return rollingLadder({ length: sp.len || 2.2 });
+      case 'lantern': return oldLantern({ seed });
+      default: return null;
+    }
   }
   // A web card across the corner between two walls running along ax and az
   // from (x, z); with `flat`, one web along a single wall (ax or az).
@@ -375,6 +476,13 @@ export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {})
       for (const [id, chest] of floor.chests) { const open = !!state.chests?.[id]; chest.open = THREE.MathUtils.damp(chest.open, open ? 1 : 0, 6, dt); chest.model.userData.lid.rotation.x = -chest.open * 1.9; }
       for (const d of floor.doors) { d.open = THREE.MathUtils.damp(d.open, revealedNow[d.id] ? 1 : 0, 1.6, dt); d.door.userData.hinge.rotation.y = d.open * 1.45; }
       if (floor.flames) floor.flames.userData.tick(t);
+      floor.webs?.userData.tick(t); floor.mist?.userData.tick(t);
+      // Searched spots open (and stay open); far ones are not drawn.
+      for (const [id, sp] of floor.spots) {
+        const want = state.spots?.[id] ? 1 : 0;
+        if (sp.t !== want) { sp.t = Math.abs(want - sp.t) < .01 ? want : THREE.MathUtils.damp(sp.t, want, 3.2, dt); sp.model.userData.open(sp.t); }
+        sp.model.visible = !viewer || Math.abs(sp.x - viewer.x) + Math.abs(sp.z - viewer.z) < 26;
+      }
       for (const { id, plate } of floor.plates) plate.userData.glyph.material.emissiveIntensity = (state.plates?.[id] || 0) > (state.time || 0) ? 1.4 : .15 + Math.sin(t * 3 + id) * .1;
     }
     const ride = liftView(state.lift), at = run.lifts.find(l => l.floor === ride.floor);
