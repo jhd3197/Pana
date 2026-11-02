@@ -7,6 +7,8 @@ import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { mummy } from '/engine/models/props/reliquia.js';
+import { blindLibrarian } from '/engine/models/props/blind-librarian.js';
+import { libraryStatue } from '/engine/models/props/library-statue.js';
 import { mineCart } from '/engine/models/props/mine.js';
 import { jaguar } from '/engine/models/fauna/jaguar.js';
 import { guacharo, caveSpider, cuaima } from '/engine/models/fauna/cave-creatures.js';
@@ -121,6 +123,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (e.kind === 'bat') { const b = guacharo({ seed: e.id }); b.scale.setScalar(1.3); return b; }
     if (e.kind === 'spider') { const sp = caveSpider({ seed: e.id }); sp.scale.setScalar(1.15); return sp; }
     if (e.kind === 'snake') { const sn = cuaima({ seed: e.id }); sn.scale.setScalar(1.6); return sn; }
+    if (e.kind === 'lector') return blindLibrarian({ seed: e.id });
+    if (e.kind === 'estatua') return libraryStatue({ seed: e.id, pose: e.pose ?? 0 });
     if (e.kind === 'jaguar' || e.kind === 'stalker') { const cat = jaguar({ gold: e.kind === 'jaguar', melanistic: e.kind === 'stalker', seed: e.id, pace: 1.4 }); cat.scale.setScalar(e.kind === 'jaguar' ? 1.55 : 1.25); return cat; }
     // Mummies and phantoms are the gaunt figure; the guardian stays stone and gold.
     const m = mummy({ guardian: e.kind === 'guardian', gaunt: true, seed: e.id });
@@ -172,10 +176,24 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       if (!a) {
         const root = new THREE.Group(), model = enemyModel(e), ring = new THREE.Mesh(ringGeometry, dangerMaterial);
         ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; root.add(model); scene.add(root, ring);
-        root.position.set(e.x, 0, e.z); a = { root, model, ring, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), pose: { frozen: false, look: 0, lit: 'dark', scares }, speed: 0, x: e.x, z: e.z }; enemies.set(e.id, a);
-        puffs.spawn({ x: e.x, y: .6, z: e.z }, { color: e.kind === 'phantom' ? 0x9fd8ff : lookName === 'biblioteca' ? 0x8e949c : 0xd8c49a, count: 6, spread: .8, size: .7, rise: 1.2, life: .7 });
+        root.position.set(e.x, 0, e.z); root.rotation.y = e.h || 0;
+        a = { root, model, ring, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), stone: e.kind === 'estatua', pose: { frozen: false, look: 0, lit: 'dark', scares, mode: 'prowl', pose: 0 }, speed: 0, x: e.x, z: e.z, steps: e.steps || 0 }; enemies.set(e.id, a);
+        // A statue was there all along: no puff when it first appears.
+        if (!a.stone) puffs.spawn({ x: e.x, y: .6, z: e.z }, { color: e.kind === 'phantom' ? 0x9fd8ff : lookName === 'biblioteca' ? 0x8e949c : 0xd8c49a, count: 6, spread: .8, size: .7, rise: 1.2, life: .7 });
       }
       a.root.visible = floorOf(e.x) === vf;
+      // Stone does not glide: it is wherever the host says, at once, and a
+      // stride leaves a little dust behind (none on Sustos apagados).
+      if (a.stone) {
+        if ((e.steps || 0) !== a.steps) {
+          a.steps = e.steps || 0;
+          if (scares !== 'apagados' && a.root.visible) puffs.spawn({ x: a.root.position.x, y: .15, z: a.root.position.z }, { color: 0x8e949c, count: scares === 'suaves' ? 3 : 6, spread: .5, size: .35, rise: .4, life: .9 });
+        }
+        a.root.position.set(e.x, 0, e.z); a.root.rotation.y = e.h || 0;
+        a.pose.pose = e.pose ?? 0; a.model.userData.animate(t, a.pose);
+        a.ring.visible = e.windup > 0 && a.root.visible; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(1.6);
+        continue;
+      }
       const target = new THREE.Vector3(e.x, 0, e.z);
       a.root.position.lerp(target, Math.min(1, dt * (e.mode === 'leap' ? 30 : 12)));
       const turn = Math.atan2(Math.sin(e.h - a.root.rotation.y), Math.cos(e.h - a.root.rotation.y)); a.root.rotation.y += turn * Math.min(1, dt * 10);
@@ -195,12 +213,14 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         // Walking only when it actually covers ground (snapshots come at 20 Hz: smoothed).
         const step = dt > 0 ? Math.hypot(e.x - a.x, e.z - a.z) / dt : 0; a.x = e.x; a.z = e.z;
         a.speed += (Math.min(6, step) - a.speed) * (1 - Math.exp(-dt * 6));
-        const pose = a.pose; pose.frozen = !!e.frozen; pose.lit = e.lit || 'dark'; pose.scares = scares;
+        const pose = a.pose; pose.frozen = !!e.frozen; pose.lit = e.lit || 'dark'; pose.scares = scares; pose.mode = e.mode;
         // The head finds you: the yaw from its body to your eyes.
-        if (me) { const yaw = Math.atan2(me.x - a.root.position.x, me.z - a.root.position.z) - a.root.rotation.y; pose.look = Math.atan2(Math.sin(yaw), Math.cos(yaw)); } else pose.look = 0;
+        // The Lector is blind: its head turns toward the sound it heard instead.
+        if (e.kind === 'lector') pose.look = e.look || 0;
+        else if (me) { const yaw = Math.atan2(me.x - a.root.position.x, me.z - a.root.position.z) - a.root.rotation.y; pose.look = Math.atan2(Math.sin(yaw), Math.cos(yaw)); } else pose.look = 0;
         a.model.userData.animate(t + e.id, !e.frozen && e.windup <= 0 && a.speed > .35, e.windup > 0, pose);
         a.model.position.y = e.hit > 0 ? .1 : 0;
-        a.ring.visible = e.windup > 0; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(e.kind === 'guardian' ? 3.8 : 2.1);
+        a.ring.visible = e.windup > 0; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(e.kind === 'guardian' ? 3.8 : e.kind === 'lector' ? 1.7 : 2.1);
       }
       a.ring.visible &&= a.root.visible;
       dangerMaterial.opacity = .55 + Math.sin(t * 16) * .25;

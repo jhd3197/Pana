@@ -8,6 +8,14 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La biblioteca de Reliquia tiene dos monstruos propios: El Lector, un bibliotecario ciego que caza por el oído, y La Estatua, que solo se mueve cuando nadie la mira.**
+  El Lector va adonde oyó el último ruido: correr, saltar, registrar, abrir
+  cofres o pelear lo atraen, y caminar despacio o quedarse quieto no. Antes de
+  venir se para en seco y ladea la cabeza; un libro viejo lanzado lejos lo
+  despista, y el farol no le hace nada. La Estatua espera en una sala como
+  cualquier estatua; si nadie del equipo la tiene a la vista avanza a saltos
+  con un roce de piedra, y los golpes apenas la aturden. Con Sustos suaves sus
+  señales son más leves; con Sustos apagados no suenan, pero hacen lo mismo.
 - **En Pepazo el mapa de la esquina ahora muestra lo que tienes alrededor, y manteniendo Tab ves la cancha completa.**
   El mapa es cuadrado, sigue a tu pana y cubre unos 30 m a cada lado; tus
   compañeros, las zonas y las banderas que quedan fuera aparecen como

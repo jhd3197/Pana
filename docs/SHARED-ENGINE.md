@@ -555,6 +555,37 @@ for (const e of eerie.update(dt, { active: underground, time, codicia, mode })) 
 Used by: Reliquia (`games/reliquia/public/eerie-fx.js` turns events into
 lights, sounds and shapes). Tests: `engine/tests/eerie.test.js`.
 
+### Noise and hearing (hunting by ear)
+
+`engine/play/noise.js` (pure, no Three.js): a host's ears for creatures that
+hunt by sound. `createNoiseBoard()`; `emitNoise(board, { x, z, floor, radius,
+kind, source, time })` where something loud happens (a steady source updates
+its own entry instead of piling up); `hearNoise(board, at, { floor, since,
+time, muffled })` is the newest noise that reaches a listener (`muffled(n)`
+may shrink one behind walls); `noisySince(board, source, since)` says whether
+a player made noise just now; `pruneNoises(board, time)`. Keep the board out
+of snapshots.
+
+```js
+emitNoise(g.noise, { x: p.x, z: p.z, floor, radius: 10, kind: 'run', source: p.id, time: g.time });
+const heard = hearNoise(g.noise, enemy, { floor, since: enemy.heardAt, time: g.time });
+```
+
+Used by: Reliquia (El Lector, `games/reliquia/public/lector.js`; the noise
+reaches are `NOISE` in `rules.js`). Tests: `games/reliquia/tests/lector.test.js`.
+
+### On a player's screen (view cone)
+
+`engine/play/sight.js` (pure): `watcher(p, eyeHeight, out)` turns what a
+player publishes (`x`, `z`, `y`, heading `h`, `pitch`) into an eye with a
+cached sin/cos; `inViewCone(eye, { x, z, y0, y1, r }, { half, vhalf, range })`
+says whether a body could be on that player's screen, with a field of view
+(`VIEW`) wider than any real one so it errs on "seen". Pair it with the game's
+own occlusion ray (Reliquia: `layout.sightClear`).
+
+Used by: Reliquia (La Estatua only moves unseen, `estatua.js`). Tests:
+`games/reliquia/tests/estatua.test.js`.
+
 ### Hiding spots (search to find)
 
 `engine/play/hiding-spots.js` (pure, seeded, no Three.js): places a player has

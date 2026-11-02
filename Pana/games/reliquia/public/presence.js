@@ -6,9 +6,17 @@
 // already loads and the synth layers in ambience.js: no new sounds.
 // Sustos: suaves keeps half the whispers, quieter, ticks half as often and no
 // breath sound; apagados none of it.
+//
+// The library's own two are felt too, from the same clips. El Lector: when it
+// stops to listen a page turns where it stands (the tell, heard), it breathes
+// in slow creaks while it stands listening within 8 m, and a low chain ticks
+// as it walks within 10 m. La Estatua: every stride it takes grinds, a trunk
+// lid dragged at half speed under a low book thud, within 24 m. Suaves: the
+// same at half the level, fewer creaks, no thud under the grind; apagados:
+// none. What they do never changes with the setting.
 import { floorOf } from './deck.js';
 
-const NOTICE = 11, LURCH = 9, CLOSE = 3.6, DRONE = 14;
+const NOTICE = 11, LURCH = 9, CLOSE = 3.6, DRONE = 14, LISTEN = 8, PROWL = 10, GRIND = 24;
 
 export function createPresence({ view, ambience, samples }) {
   const watched = new Map();
@@ -20,7 +28,10 @@ export function createPresence({ view, ambience, samples }) {
     let closest = 0; hush = Math.max(0, hush - dt);
     if (!on) watched.clear();
     else for (const e of state.enemies) {
-      if (e.kind !== 'mummy' || e.hp <= 0 || floorOf(e.x) !== floorOf(me.x)) continue;
+      if (e.hp <= 0 || floorOf(e.x) !== floorOf(me.x)) continue;
+      if (e.kind === 'lector') { closest = Math.max(closest, lector(e, me, dt, soft)); continue; }
+      if (e.kind === 'estatua') { statue(e, me, soft); continue; }
+      if (e.kind !== 'mummy') continue;
       const dx = e.x - me.x, dz = e.z - me.z, d = Math.hypot(dx, dz);
       let w = watched.get(e.id);
       if (!w) { w = { noticed: false, x: e.x, z: e.z, still: 1, tickIn: 1 + Math.random() * 2, breathIn: 1.5 + Math.random() * 3 }; watched.set(e.id, w); }
@@ -52,6 +63,34 @@ export function createPresence({ view, ambience, samples }) {
     for (const [id] of watched) if (!state.enemies.some(e => e.id === id)) watched.delete(id);
     swell += (closest * (soft ? .5 : 1) - swell) * (1 - Math.exp(-dt * 1.5));
     ambience.presence = swell;
+  }
+  // El Lector: a page at the tell, creaks while it listens, a chain as it walks.
+  function lector(e, me, dt, soft) {
+    const d = Math.hypot(e.x - me.x, e.z - me.z);
+    let w = watched.get(e.id);
+    if (!w) { w = { mode: e.mode, x: e.x, z: e.z, still: 1, tickIn: 1 + Math.random() * 2, creakIn: 2 + Math.random() * 3 }; watched.set(e.id, w); }
+    if (Math.hypot(e.x - w.x, e.z - w.z) > .01) { w.still = 0; w.x = e.x; w.z = e.z; } else w.still += dt;
+    if (e.mode === 'listen' && w.mode !== 'listen' && d < 18) samples.near('page', e.x, e.z, { gain: soft ? .05 : .1, rate: .72 + Math.random() * .08, range: 18, priority: 1 });
+    w.mode = e.mode;
+    if (w.still > .3 && d < LISTEN) {
+      w.creakIn -= dt * (soft ? .5 : 1);
+      if (w.creakIn <= 0) { samples.near('creak', e.x, e.z, { gain: soft ? .025 : .05, rate: .55 + Math.random() * .1, range: 10, priority: 0 }); w.creakIn = 3.5 + Math.random() * 3; }
+    }
+    if (w.still < .3 && d < PROWL) {
+      w.tickIn -= dt * (soft ? .5 : 1);
+      if (w.tickIn <= 0) { samples.near('chain', e.x, e.z, { gain: soft ? .03 : .06, rate: .55 + Math.random() * .1, range: 12, priority: 0 }); w.tickIn = (e.mode === 'hunt' ? .7 : 1.4) + Math.random() * 1.2; }
+    }
+    return e.mode === 'hunt' ? 1 - d / DRONE : 0;
+  }
+  // La Estatua: each stride grinds stone on stone.
+  function statue(e, me, soft) {
+    let w = watched.get(e.id);
+    if (!w) { w = { steps: e.steps || 0 }; watched.set(e.id, w); }
+    if ((e.steps || 0) === w.steps) return;
+    w.steps = e.steps || 0;
+    if (Math.hypot(e.x - me.x, e.z - me.z) > GRIND) return;
+    samples.near('trunk', e.x, e.z, { gain: soft ? .09 : .18, rate: .48 + Math.random() * .06, range: GRIND, priority: 2 });
+    if (!soft) samples.near('thud', e.x, e.z, { gain: .07, rate: .55 + Math.random() * .08, range: 16, priority: 1 });
   }
   return { update, get swell() { return swell; } };
 }

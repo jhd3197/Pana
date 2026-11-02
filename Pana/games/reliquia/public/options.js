@@ -14,8 +14,10 @@ export const validOptions = patch => applyRoomOptions(FIELDS, DEFAULT_OPTIONS, p
 
 // "Sustos" is each player's own setting (not the room's): how hard the
 // scares hit on this screen. Suaves: no blackouts, softer stingers, flicker
-// and shake at 40 %, whispers only far off. Apagados: no jump scares,
-// flicker, shake or recorded scare sounds.
+// and shake at 40 %, whispers only far off; the Lector's and the Estatua's
+// cues at half (presence.js) and less dust. Apagados: no jump scares,
+// flicker, shake, recorded scare sounds or creature cues. Only what this
+// screen shows and plays: no enemy behaves differently.
 export const SCARES = { id: 'sustos', label: loc('Sustos'), default: 'normal', choices: [['normal', loc('Normales')], ['suaves', loc('Suaves')], ['apagados', loc('Apagados')]] };
 const SCARE_KEY = 'pana:reliquia:sustos';
 const store = () => { try { return globalThis.localStorage || null; } catch { return null; } };

@@ -7,7 +7,8 @@ import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, CAGE, SPOTS } 
 import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
 import { layoutFor, distance } from './layout.js';
 import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from './items.js';
-import { spawnEnemy, updateEnemies, holds } from './enemies.js';
+import { spawnEnemy, updateEnemies, holds, wound } from './enemies.js';
+import { createNoiseBoard, emitNoise, pruneNoises } from '../../../engine/play/noise.js';
 import { createDirector, updateDirector, random } from './director.js';
 import { clamp } from '../../../engine/random.js';
 import { resetJump } from '../../../engine/play/jump.js';
@@ -23,6 +24,11 @@ export { holds };
 export const BARKS = [locKey('¿Nos vamos ya?'), locKey('¡Una sala más!'), locKey('¡Agárrala por el otro lado!'), locKey('¡No toques eso!'), locKey('¡Suelta, suelta, suelta!'), locKey('¡Pásame el farol!'), locKey('Ábrela.')];
 const REACH = 2.5, GRAVITY = 14, REVIVE = 2.4, CART_SIZE = 14, BOARD = 1.5, SHAFT = 14, CARGO = 3;
 const GREED = { soft: .65, normal: 1, fierce: 1.5 };
+// How far each noise carries (m), for what hunts by ear (El Lector). Walking,
+// standing still and riding make none; running, landing a jump, a book or a
+// treasure hitting the boards, searching and fighting do. `book` multiplies
+// a falling book's reach.
+export const NOISE = { run: 10, land: 8, search: 7, open: 10, chest: 11, hit: 10, swing: 4, hurt: 8, shot: 6, splat: 6, cart: 8, dart: 9, laugh: 30, collapse: 30, drop: 5, book: 1.35 };
 // What E says at each hiding spot, and where on it the crosshair aims.
 export const SEARCH = {
   trunk: [locKey('Mantén E: abrir el baúl'), .45], drawer: [locKey('Mantén E: registrar los cajones'), .75], sheet: [locKey('Mantén E: quitar la sábana'), .7],
@@ -198,7 +204,7 @@ export class Expedition {
       touched: {}, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, carts: [], haul: 0,
       lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       level: 1, mangos: 0, quota: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null }, origin: seed >>> 0 || 1,
-      director: createDirector(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0 });
+      director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0 });
     this.paths = new Map();
   }
   get layout() { return layoutFor(this.seed, this.level); }
@@ -219,6 +225,9 @@ export class Expedition {
     if (this.phase === 'playing') p.hands.forEach((h, i) => h && this.drop(p, i));
     this.players = this.players.filter(q => q.id !== id); delete this.ledger[id];
   }
+  // A noise where something loud happened (engine/play/noise.js): the host's
+  // ears, never in a snapshot. `source` is the pana who made it, if any.
+  noisy(kind, at, source = null, radius = NOISE[kind]) { emitNoise(this.noise, { x: at.x, z: at.z, floor: floorOf(at.x), radius, kind, source, time: this.time }); }
   event(kind, text = '', extra = {}) { this.events.push({ id: ++this.eventId, kind, text, ...extra }); this.events = this.events.slice(-16); }
   start(seed = this.seed) {
     const roster = this.players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar }));
@@ -226,7 +235,7 @@ export class Expedition {
     Object.assign(this, new Expedition(seed, this.options)); this.ledger = ledger; this.eventId = eventId;
     roster.forEach(p => this.addPlayer(p.id, p.name, p.avatar)); this.phase = 'playing';
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));
-    this.quota = quotaFor(1, this.players.length);
+    this.quota = quotaFor(1, this.players.length); this.placeStatues();
     this.event('start', locKey('Jornada 1: bajen, llenen el carrito y súbanlo por la carga hasta juntar Bs. {quota}.'), { vars: { quota: this.quota } });
   }
   accept(id, seq, action, data = {}) {
@@ -392,7 +401,7 @@ export class Expedition {
       const a = chest.h + (i - count / 2) * .6;
       this.spawnItem(kind, chest.x, chest.z, { state: 'air', y: .9, vx: Math.sin(a) * 2.2, vz: Math.cos(a) * 2.2, vy: 4.5, cursed: !!ITEMS[kind].artifact });
     }
-    this.greed(2); this.event('chest', '', { player: p.id, chest: id, lucky });
+    this.greed(2); this.noisy('chest', chest, p.id); this.event('chest', '', { player: p.id, chest: id, lucky });
     return true;
   }
   // A searched spot gives up what it hides, once: treasure tumbles out toward
@@ -400,7 +409,7 @@ export class Expedition {
   // and then something nasty comes out instead.
   openSpot(p, sp) {
     if (this.spots[sp.id]) return false;
-    this.spots[sp.id] = 1; delete this.searching[sp.id];
+    this.spots[sp.id] = 1; delete this.searching[sp.id]; this.noisy('open', sp, p.id);
     const front = spotFront(sp), at = sp.reveal || front;
     sp.content.forEach((kind, i) => {
       if (sp.reveal) { this.spawnItem(kind, at.x + (i - (sp.content.length - 1) / 2) * .35, at.z, { state: 'ground', y: 0, cursed: !!ITEMS[kind].artifact }); return; }
@@ -436,7 +445,7 @@ export class Expedition {
       const fx = Math.sin(p.h), fz = Math.cos(p.h), pitch = clamp(p.pitch || 0, -.6, .6);
       const speed = marker ? 32 : 26, spread = marker ? (random(this) - .5) * .06 : 0, sx = Math.sin(p.h + spread), sz = Math.cos(p.h + spread);
       this.shots.push({ id: ++this.shotId, owner: p.id, seat: p.seat, marker, x: p.x + fx * .6, z: p.z + fz * .6, y: 1.4 + (p.y || 0), vx: sx * speed * Math.cos(pitch), vz: sz * speed * Math.cos(pitch), vy: Math.sin(pitch) * speed, life: 1.2 });
-      this.event('shot', '', { player: p.id }); return true;
+      this.noisy('shot', p, p.id); this.event('shot', '', { player: p.id }); return true;
     }
     // Everything else is a melee swing: fists, the machete, a gold mask…
     const heart = holds(p, 'jaguarHeart');
@@ -450,12 +459,14 @@ export class Expedition {
       if (d > reach) continue;
       const ahead = ((e.x - p.x) * Math.sin(p.h) + (e.z - p.z) * Math.cos(p.h)) / (d || 1);
       if (ahead < .35 || !this.layout.lineClear(p, e, this, .1)) continue;
-      hits++; e.hp -= damage; e.hit = .2; e.awake = true;
-      if (!['guardian', 'jaguar', 'stalker'].includes(e.kind)) { e.stun = .3; this.layout.moveBody(e, Math.sin(p.h) * .6, Math.cos(p.h) * .6, this, .5); }
+      hits++; e.hit = .2; e.awake = true;
+      // Stone only staggers: a statue takes no damage and does not budge.
+      if (!wound(e, damage)) e.stun = Math.max(e.stun, .9);
+      else if (!['guardian', 'jaguar', 'stalker'].includes(e.kind)) { e.stun = .3; this.layout.moveBody(e, Math.sin(p.h) * .6, Math.cos(p.h) * .6, this, .5); }
       if (e.hp <= 0) this.defeated(e, p);
       if (hits >= 3) break;
     }
-    this.event(hits ? 'hit' : 'swing', '', { player: p.id, hand, item: kind || 'fist' });
+    this.noisy(hits ? 'hit' : 'swing', p, p.id); this.event(hits ? 'hit' : 'swing', '', { player: p.id, hand, item: kind || 'fist' });
     return true;
   }
   defeated(e, p) {
@@ -483,6 +494,8 @@ export class Expedition {
   damage(p, amount, source = null) {
     if (!alive(p) || p.invulnerable > 0) return;
     p.hp = Math.max(0, p.hp - amount); p.hit = .35; p.revive = 0;
+    // A blow from something is loud; poison and the heart's drain are not.
+    if (source) this.noisy('hurt', p, p.id);
     if (source) this.event('hurt', '', { player: p.id, enemy: source.id ?? null });
     if (!p.hp) this.down(p);
   }
@@ -502,8 +515,11 @@ export class Expedition {
       p.slow = Math.max(0, (p.slow || 0) - dt);
       if (p.poison > 0 && alive(p)) { p.poison = Math.max(0, p.poison - dt); p.venom = (p.venom || 0) + dt; if (p.venom >= 1) { p.venom = 0; this.damage(p, 2); } }
       if (!alive(p)) { p.moving = false; if (p.downed && !reviving.has(p.id)) p.revive = Math.max(0, p.revive - dt * .5); continue; }
-      const input = inputs.get(p.id) || {};
+      const input = inputs.get(p.id) || {}, stamina = p.stamina, airborne = (p.jumpHeight || 0) > 0;
       stepExplorer(p, input, dt, this);
+      // Running (stamina draining) and landing a jump are loud; walking is not.
+      if (p.moving && p.stamina < stamina - 1e-6) this.noisy('run', p, p.id);
+      if (airborne && !(p.jumpHeight > 0) && !p.riding) this.noisy('land', p, p.id);
       if (holds(p, 'jaguarHeart')) { p.drain += dt; if (p.drain > .5) { p.drain = 0; this.damage(p, 1); if (p.downed) { this.event('heart', locKey('El corazón de jaguar consumió a {name}.'), { player: p.id, vars: { name: p.name } }); continue; } } }
       if (input.hold) {
         const target = interaction(this, p);
@@ -516,7 +532,7 @@ export class Expedition {
           if (q.revive >= reviveTime(p)) { this.getUp(q, p); this.event('bark', '', { player: p.id, text: locKey('¡Párate, que no es pa\' tanto!') }); }
         }
         if (target?.kind === 'rubble') { this.rubble[target.id] += dt; if (this.rubble[target.id] >= 5) { delete this.rubble[target.id]; this.event('cleared', locKey('¡Despejaron el túnel!')); } }
-        if (target?.kind === 'search') { const sp = run.spots.find(q => q.id === target.id); searched.add(sp.id); if (searchStep(this.searching, sp.id, dt, sp.need)) this.openSpot(p, sp); }
+        if (target?.kind === 'search') { const sp = run.spots.find(q => q.id === target.id); searched.add(sp.id); this.noisy('search', sp, p.id); if (searchStep(this.searching, sp.id, dt, sp.need)) this.openSpot(p, sp); }
         if (target?.kind === 'leave') leaving = true;
         if ((target?.kind === 'ride' || target?.kind === 'call') && !used.has('lift')) { used.add('lift'); const key = `${target.kind}:${target.to ?? floorOf(p.x)}`; if (this.lift.hold?.key !== key) this.lift.hold = { key, progress: 0 }; this.lift.hold.progress += dt; }
         // Hold E as something flies at you to catch it.
@@ -533,7 +549,7 @@ export class Expedition {
       if (room && room.floor > 0 && !this.woke[room.id] && inRect(p.x, p.z, room.rect, -1.5)) {
         this.woke[room.id] = 1;
         let woke = 0;
-        for (const s of run.sleepers) if (s.room === room.id && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' }) && s.kind === 'mummy') woke++;
+        for (const s of run.sleepers) if (s.room === room.id && s.kind !== 'estatua' && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' }) && s.kind === 'mummy') woke++;
         if (woke && room.kind !== 'guardian' && room.kind !== 'boveda') this.event('awaken', locKey('Las vendas se mueven. Prepárense.'), { room: room.id });
         if (room.kind === 'boveda') this.event('vault', locKey('La bóveda de oro. Algo grande respira en la oscuridad…'), { room: room.id });
       }
@@ -547,7 +563,7 @@ export class Expedition {
       if (seal.winches.every(q => this.winches[q.id]?.latched > 0)) this.openSeal(seal);
     }
     this.lifting(dt, used.has('lift')); this.cargoTick(dt); this.carry(dt); this.pushing(dt); this.dragging(dt); this.flying(dt); this.traps(dt); this.paint(dt); this.truckZone(dt); this.artifacts(dt); this.collapses(dt);
-    updateEnemies(this, dt); this.stalk(dt);
+    updateEnemies(this, dt); this.stalk(dt); pruneNoises(this.noise, this.time);
     // Who trails the expedition the most: "el cobarde".
     const standing = this.players.filter(alive);
     if (standing.length > 1 && standing.some(p => floorOf(p.x) > 0)) {
@@ -614,6 +630,7 @@ export class Expedition {
       const speed = 4.4 * (1 + .12 * (pushers.length - 1)) * (1 - load), ux = length > 1 ? mx / length : mx, uz = length > 1 ? mz / length : mz;
       cart.vx = ux * speed; cart.vz = uz * speed;
       this.layout.moveBody(cart, cart.vx * dt, cart.vz * dt, this, .6);
+      if (length > .2) this.noisy('cart', cart, pushers[0].id);
       if (length > .2) { const want = Math.atan2(ux, uz), turn = Math.atan2(Math.sin(want - cart.h), Math.cos(want - cart.h)); cart.h += clamp(turn, -dt * 3, dt * 3); }
       pushers.forEach((p, i) => {
         const side = pushers.length > 1 ? (i ? .55 : -.55) : 0, back = cart.h + Math.PI;
@@ -667,7 +684,7 @@ export class Expedition {
     const campLoot = Object.fromEntries(Object.entries(this.touched).filter(([id]) => this.layout.run.loot.find(l => l.id === +id)?.floor === 0));
     this.level++; this.seed = levelSeed(this.origin, this.level);
     Object.assign(this, { touched: campLoot, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, enemies: [], darts: [], shots: [], splats: [],
-      codicia: 0, deepest: 0, director: createDirector(), collapseIn: 30, stalkerRest: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null } });
+      codicia: 0, deepest: 0, director: createDirector(), noise: createNoiseBoard(), collapseIn: 30, stalkerRest: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null } });
     this.items = this.items.filter(i => floorOf(i.x) === 0); this.paths.clear();
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));
     let left = 0;
@@ -677,7 +694,7 @@ export class Expedition {
       p.x = stop.x + (i % 3 - 1) * 1.2; p.z = 3 + Math.floor(i / 3) * 1.2; p.h = 0;
       p.downed = false; p.hp = 1; p.revive = 0; p.invulnerable = 2;
     });
-    this.quota = quotaFor(this.level, this.players.filter(p => !p.spectator).length);
+    this.quota = quotaFor(this.level, this.players.filter(p => !p.spectator).length); this.placeStatues();
     this.event('level', left ? locKey('¡Jornada {level} lista! Subieron Bs. {value}. Los que se quedaron abajo llegaron con lo justo. La jornada {next} pide Bs. {quota}.')
       : locKey('¡Jornada {level} lista! Subieron Bs. {value}. La jornada {next} pide Bs. {quota}.'), { level: done, value: delivered, left, vars: { level: done, value: delivered, next: this.level, quota: this.quota } });
   }
@@ -748,7 +765,7 @@ export class Expedition {
       if (item.thrower != null && this.time - item.thrownAt > .2) for (const p of this.players) {
         if (p.id === item.thrower || !alive(p) || floorOf(p.x) !== floorOf(item.x)) continue;
         if (Math.hypot(p.x - item.x, p.z - item.z) < .6 && item.y > .6 && item.y < 1.9) {
-          p.stun = .6; this.damage(p, 6); item.vx *= -.2; item.vz *= -.2; item.thrower = null;
+          p.stun = .6; this.damage(p, 6); this.noisy('hit', p); item.vx *= -.2; item.vz *= -.2; item.thrower = null;
           this.event('bonk', locKey('¡A {name} le cayó {item} en la cabeza!'), { player: p.id, item: item.kind, vars: { name: p.name, item: item.kind } });
         }
       }
@@ -764,7 +781,12 @@ export class Expedition {
         item.lost = true; const thrower = this.players.find(p => p.id === item.thrower);
         if (thrower) thrower.stats.dropped += valueOf(item.kind);
         this.event('lost', locKey('¡{Item} se fue al abismo!'), { item: item.kind, vars: { item: item.kind } });
-      } else if (!this.layout.overPit(item.x, item.z) && item.y <= ground) { item.y = ground; item.state = 'ground'; item.vx = item.vz = item.vy = 0; item.thrower = null; }
+      } else if (!this.layout.overPit(item.x, item.z) && item.y <= ground) {
+        // It hits the boards: the harder it lands the farther it carries; a book thuds loudest.
+        const impact = Math.hypot(item.vx, item.vy, item.vz), book = item.kind === 'oldBook';
+        this.noisy(book ? 'book' : 'drop', item, item.thrower, (NOISE.drop + impact * .55) * (book ? NOISE.book : 1));
+        item.y = ground; item.state = 'ground'; item.vx = item.vz = item.vy = 0; item.thrower = null;
+      }
     }
     this.items = this.items.filter(i => !i.lost);
   }
@@ -778,6 +800,7 @@ export class Expedition {
       const restless = lucky && random(this) < dt / 3;
       if (!pressed && !restless) continue;
       this.plates[plate.id] = this.time + Math.max(1.2, 3 - t * .45) - (lucky ? 1 : 0);
+      this.noisy('dart', plate);
       for (const d of plate.darts) this.darts.push({ id: ++this.shotId, x: d.x, z: d.z, vx: d.dx * 15, life: plate.len / 15, floor: plate.floor });
       this.event('trap', pressed ? locKey('¡Losa! ¡Dardos!') : '', { plate: plate.id, player: pressed?.id });
     }
@@ -794,7 +817,7 @@ export class Expedition {
       for (let i = 0; i < steps && s.life > 0; i++) {
         const nx = s.x + s.vx * dt / steps, nz = s.z + s.vz * dt / steps; s.y += s.vy * dt / steps; s.vy -= 4 * dt / steps;
         const enemy = this.enemies.find(e => e.hp > 0 && Math.hypot(e.x - nx, e.z - nz) < (e.kind === 'guardian' || e.kind === 'jaguar' ? 1.3 : .7) && s.y < 3.2);
-        if (enemy) { enemy.hp -= s.marker ? 5 : 6; enemy.stun = Math.max(enemy.stun, (enemy.kind === 'mummy' || enemy.kind === 'phantom' ? 1.2 : .7) * (s.marker ? .5 : 1)); enemy.hit = .2; enemy.awake = true; if (enemy.hp <= 0) this.defeated(enemy, this.players.find(p => p.id === s.owner)); this.splat(s, nx, nz, 0, 0, true); s.life = 0; break; }
+        if (enemy) { wound(enemy, s.marker ? 5 : 6); this.noisy('splat', { x: nx, z: nz }); enemy.stun = Math.max(enemy.stun, (enemy.kind === 'mummy' || enemy.kind === 'phantom' ? 1.2 : .7) * (s.marker ? .5 : 1)); enemy.hit = .2; enemy.awake = true; if (enemy.hp <= 0) this.defeated(enemy, this.players.find(p => p.id === s.owner)); this.splat(s, nx, nz, 0, 0, true); s.life = 0; break; }
         if (!this.layout.walkable(nx, nz, this, .05) && !this.layout.overPit(nx, nz)) {
           const blockedX = !this.layout.walkable(nx, s.z, this, .05);
           this.splat(s, s.x, s.z, blockedX ? Math.sign(s.vx) : 0, blockedX ? 0 : Math.sign(s.vz)); s.life = 0; break;
@@ -852,7 +875,7 @@ export class Expedition {
         if (p.laughIn <= 0) {
           p.laughIn = 14 + random(this) * 8;
           for (const e of this.enemies) if (floorOf(e.x) === floorOf(p.x) && distance(e, p) < 30) { e.awake = true; e.called = p.id; }
-          this.event('laugh', locKey('¡JA, JA, JA! El ídolo se ríe a carcajadas.'), { player: p.id });
+          this.noisy('laugh', p, p.id); this.event('laugh', locKey('¡JA, JA, JA! El ídolo se ríe a carcajadas.'), { player: p.id });
           this.wave(floorOf(p.x), 2, p);
         }
       }
@@ -872,7 +895,7 @@ export class Expedition {
       && !this.players.some(p => inRect(p.x, p.z, c.rect, 2)) && !this.items.some(i => inRect(i.x, i.z, c.rect, 1)));
     if (!options.length) return;
     const c = options[Math.floor(random(this) * options.length)];
-    this.rubble[c.id] = 0; this.paths.clear();
+    this.rubble[c.id] = 0; this.paths.clear(); this.noisy('collapse', { x: (c.rect[0] + c.rect[2]) / 2, z: (c.rect[1] + c.rect[3]) / 2 });
     this.event('collapse', locKey('¡Se derrumbó un túnel en el piso {floor}! Mantén E en las piedras para despejarlo.'), { corridor: c.id, floor: c.floor, vars: { floor: c.floor } });
   }
   // From la codicia's third quarter a black jaguar hunts the team, following
@@ -906,6 +929,8 @@ export class Expedition {
     if (floor <= 0) return false;
     // The Director's waves mix creatures by depth: guácharos come in flocks.
     if (!kind) { const roll = random(this); kind = roll < .3 ? 'bat' : floor > 1 && roll < .3 + .1 * Math.min(3, floor) ? 'spider' : 'mummy'; if (kind === 'bat') count = Math.min(6, count * 2 + 1); }
+    // In the library, now and then a Lector comes instead (never past its cap).
+    if (kind === 'mummy' && this.layout.run.theme === 'biblioteca' && random(this) < .12 + .02 * tier(this)) { kind = 'lector'; count = 1; }
     const L = this.layout, live = this.players.filter(p => alive(p) && floorOf(p.x) === floor); if (!live.length) return false;
     const rooms = L.run.rooms.filter(r => r.floor === floor && (!r.hidden || this.revealed[r.hidden]));
     let spawned = 0;
@@ -920,11 +945,17 @@ export class Expedition {
     if (spawned && kind === 'mummy') this.event('wave', locKey('Se oyen pasos entre las piedras…'), { floor });
     if (spawned && kind === 'bat') this.event('wave', locKey('¡Guácharos! Alumbren con el farol.'), { floor });
     if (spawned && kind === 'spider') this.event('wave', locKey('Algo corre por el techo…'), { floor });
+    if (spawned && kind === 'lector') this.event('wave', locKey('Alguien pasa las páginas en la oscuridad…'), { floor });
     return spawned > 0;
   }
-  snapshot() { const { paths, lastInputs, ...state } = this; return clone(state); }
+  snapshot() { const { paths, lastInputs, noise, ...state } = this; return clone(state); }
+  // La Estatua stands in its room from the start of the jornada, asleep
+  // (and, to anyone who looks, just a statue) until someone walks in.
+  placeStatues() {
+    for (const s of this.layout.run.sleepers) if (s.kind === 'estatua') { const e = spawnEnemy(this, 'estatua', s.x, s.z, { room: s.room, awake: false, h: s.h ?? 0, pose: s.pose ?? 0, born: this.time - 1 }); if (e) e.mode = 'still'; }
+  }
   restore(snapshot, members) {
-    Object.assign(this, clone(snapshot)); this.paths = new Map();
+    Object.assign(this, clone(snapshot)); this.paths = new Map(); this.noise = createNoiseBoard();
     for (const p of [...this.players]) if (!members.has(p.id)) this.removePlayer(p.id);
     for (const p of members.values()) if (!this.players.some(q => q.id === p.id)) this.addPlayer(p.id, p.name, p.avatar || {});
   }
