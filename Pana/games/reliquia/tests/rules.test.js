@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Expedition, interaction, visibleItems, titles, compassTarget, stepExplorer, tier, liftPanel, cartValue } from '../public/rules.js';
+import { Expedition, interaction, visibleItems, titles, compassTarget, spreadTags, stepExplorer, tier, liftPanel, cartValue } from '../public/rules.js';
 import { layoutFor, distance } from '../public/layout.js';
 import { TRUCK, TABLE, floorOf } from '../public/deck.js';
 import { ITEMS, HANDFUL } from '../public/items.js';
@@ -307,4 +307,17 @@ test('guácharos scatter from a beam, spiders drop and slow, cuaimas poison but 
   assert.ok(a.poison > 0, 'the strike poisons'); const hp = a.hp; step(g, 1.5); assert.ok(a.hp < hp, 'poison keeps biting');
   place(g, 1, at.x, at.z - 14); step(g, 3);
   assert.ok(Math.hypot(snake.x - snake.homeX, snake.z - snake.homeZ) < 4, 'it never wanders far from its loot');
+});
+
+test('compass tags never sit on each other and stay on the strip', () => {
+  const overlaps = (tags, xs, gap) => tags.some((t, i) => tags.some((u, j) => i < j && Math.abs(xs[i] - xs[j]) < (t.w + u.w) / 2 + gap - 1e-9));
+  // Same bearing, pinned to one edge, and the old 10%..90% clamp's pile-up.
+  for (const want of [[200, 200, 200, 200], [0, 0, 0, 0], [352, 352, 340, 352], [35, 40, 317, 320]]) {
+    const tags = want.map((x, i) => ({ x, w: [91, 49, 49, 70][i] })), xs = spreadTags(tags, 352);
+    assert.ok(!overlaps(tags, xs, 4), `${want} → ${xs}`);
+    tags.forEach((t, i) => assert.ok(xs[i] - t.w / 2 >= -1e-9 && xs[i] + t.w / 2 <= 352 + 1e-9, `${want}: tag ${i} leaves the strip`));
+  }
+  // Tags with room keep their bearing, and the left-to-right order holds.
+  assert.deepEqual(spreadTags([{ x: 300, w: 40 }, { x: 60, w: 40 }], 400), [300, 60]);
+  const xs = spreadTags([{ x: 101, w: 60 }, { x: 100, w: 60 }], 400); assert.ok(xs[1] < xs[0]);
 });

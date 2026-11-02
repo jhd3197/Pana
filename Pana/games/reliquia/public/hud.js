@@ -3,7 +3,7 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { loc, locn, formatNumber } from '/engine/i18n.js';
 import { setBar } from '/engine/kit.js';
 import { ARTIFACT_AURA } from '/engine/models/props/reliquia-treasure.js';
-import { interaction, compassTarget, titles, tier, holds, alive, cartValue } from './rules.js';
+import { interaction, compassTarget, spreadTags, titles, tier, holds, alive, cartValue } from './rules.js';
 import { layoutFor, distance } from './layout.js';
 import { jornadaName, TRUCK, floorOf, inRect } from './deck.js';
 import { ITEMS, heldValue, itemName, say } from './items.js';
@@ -38,25 +38,24 @@ export function createHud() {
   function compass(state, p, heading) {
     const L = layoutFor(state.seed, state.level), f = floorOf(p.x), tags = [];
     const stop = L.run.lifts.find(l => l.floor === f);
-    if (f === 0) tags.push(['truck', loc('CAMIÓN'), TRUCK]);
-    if (stop) tags.push(['down', loc('MONTACARGAS'), stop]);
-    const pad = L.run.cargo.find(c => c.floor === f && f > 0); if (pad) tags.push(['boss', loc('CARGA'), pad]);
+    if (f === 0) tags.push(['truck', 'truck', loc('CAMIÓN'), TRUCK]);
+    if (stop) tags.push(['lift', 'down', loc('MONTACARGAS'), stop]);
+    const pad = L.run.cargo.find(c => c.floor === f && f > 0); if (pad) tags.push(['cargo', 'boss', loc('CARGA'), pad]);
     const seal = L.run.seals.find(s => s.floor === f);
-    if (seal && !state.open[seal.id]) tags.push(['goal', loc('SELLO'), seal]);
-    if (holds(p, 'compass')) { const t = compassTarget(state, p); if (t) tags.push([t.boss ? 'boss' : 'goal', t.boss ? loc('¿TESORO?') : loc('TESORO'), t]); }
-    const place = (node, bearing, pin) => {
-      const rel = Math.atan2(Math.sin(bearing - heading), Math.cos(bearing - heading)), x = 50 - rel / Math.PI * 100;
-      node.hidden = !pin && Math.abs(rel) > Math.PI / 2; node.style.left = `${pin ? Math.max(10, Math.min(90, x)) : x}%`;
-    };
+    if (seal && !state.open[seal.id]) tags.push(['seal', 'goal', loc('SELLO'), seal]);
+    if (holds(p, 'compass')) { const t = compassTarget(state, p); if (t) tags.push(['treasure', t.boss ? 'boss' : 'goal', t.boss ? loc('¿TESORO?') : loc('TESORO'), t]); }
+    const rel = bearing => Math.atan2(Math.sin(bearing - heading), Math.cos(bearing - heading));
     const node = (key, text, className) => {
       let n = compassNodes.get(key);
       if (!n) { n = Object.assign(document.createElement('span'), { className }); $('compass-strip').append(n); compassNodes.set(key, n); }
       if (n.textContent !== text) n.textContent = text; if (n.className !== className) n.className = className; return n;
     };
-    MARKS.forEach((text, i) => place(node(text, text, `compass-mark${text === 'N' ? ' is-north' : ''}`), Math.PI - i * Math.PI / 4));
-    const used = new Set();
-    for (const [kind, text, at] of tags) { used.add(kind); place(node(`tag-${kind}`, text, `compass-tag is-${kind}`), Math.atan2(at.x - p.x, at.z - p.z), true); }
-    for (const kind of ['truck', 'down', 'goal', 'boss']) if (!used.has(kind) && compassNodes.has(`tag-${kind}`)) compassNodes.get(`tag-${kind}`).hidden = true;
+    MARKS.forEach((text, i) => { const n = node(text, text, `compass-mark${text === 'N' ? ' is-north' : ''}`), r = rel(Math.PI - i * Math.PI / 4); n.hidden = Math.abs(r) > Math.PI / 2; n.style.left = `${50 - r / Math.PI * 100}%`; });
+    // Tags stay on the strip (behind you pins them to its edge) and never sit on each other.
+    const width = $('compass-strip').clientWidth, shown = tags.map(([key, kind, text]) => { const n = node(`tag-${key}`, text, `compass-tag is-${kind}`); n.hidden = false; return n; });
+    const xs = spreadTags(tags.map(([, , , at], i) => ({ x: Math.max(0, Math.min(1, .5 - rel(Math.atan2(at.x - p.x, at.z - p.z)) / Math.PI)) * width, w: shown[i].offsetWidth })), width);
+    shown.forEach((n, i) => { n.style.left = `${xs[i]}px`; });
+    for (const [key, n] of compassNodes) if (key.startsWith('tag-') && !shown.includes(n)) n.hidden = true;
   }
 
   function minimap(state, p) {
