@@ -124,7 +124,14 @@ turns to face the court centre. The menu's "Ver la cancha" overview keeps
 world-axis keys and plane-projected mouse aim at the same 1.1 m height as
 `screen()`; keep those equal. Splats from balls stopped by cover are placed
 vertically on that face. `minimap.js` draws the HUD map (cover, team, and
-rivals with a clear line of sight); it is a 2D overlay, not scene drawing.
+rivals with a clear line of sight); it is a 2D overlay, not scene drawing. It
+is square, north-up and centred on you, showing `MINIMAP_RADIUS` (30 m) each
+way: a whole-court map was too far out to read on El Puerto. Teammates,
+domination zones and flags out of that window become arrows clamped to its
+edge (`clampToEdge`); rivals out of it are not drawn at all. Holding Tab (View
+on a controller, through the menu's pad map) draws the whole court, same rules,
+into `#board-map` inside the scoreboard, shaped like the court's bounds. The
+projection is pure and tested in `tests/minimap.test.js`.
 
 The scene uses the saved shared pana sculpt, including its Three.js addons
 import-map entry. `bindRenderer` sets full-window inline canvas dimensions;
@@ -333,7 +340,7 @@ the pad sent), not a direction captured before the first frame set the yaw.
   imports nothing but `locKey`. `combat-hud.js` draws it into the `#hud` ids
   that `game.js` already reads; `hud-banderin.css` is the look (Banderín:
   night chips and yellow plates skewed 10deg with hard ink shadows, sized from
-  `--u`, 1px of a 1600x900 screen). `minimap.js` is a round map in the same style.
+  `--u`, 1px of a 1600x900 screen). `minimap.js` is a square map in the same style.
 - The one knockout line lives in the killfeed (yours in yellow, the one that took
   you out with a coral bar), so `combat.duplicate()` keeps the bottom pill quiet
   for those two messages. Team scores are in the race row, not the pill.

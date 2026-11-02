@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Pepazo el mapa de la esquina ahora muestra lo que tienes alrededor, y manteniendo Tab ves la cancha completa.**
+  El mapa es cuadrado, sigue a tu pana y cubre unos 30 m a cada lado; tus
+  compañeros, las zonas y las banderas que quedan fuera aparecen como
+  flechitas en el borde. Al mantener Tab (View en el control) la tabla trae
+  el mapa de toda la cancha, y los rivales solo salen si los tienes a la vista.
 - **Reliquia deja la pantalla limpia: mantén Tab (o View en el mando) para ver el mapa, la brújula, la jornada y al equipo.**
   Durante la expedición solo quedan la vitalidad, el cansancio, lo que llevas
   en las manos, el punto de mira y los avisos. Al soltar Tab se cierra; en

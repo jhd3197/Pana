@@ -26,7 +26,7 @@ export default {
     { action: loc('Cambiar de pana'), keyboard: 'Q / E', gamepad: 'LB / RB', touch: loc('Flechas del nombre') },
     { action: loc('Ver la cancha desde arriba'), keyboard: loc('Espacio'), gamepad: 'A', touch: loc('Botón Cámara') },
   ] }, { title: loc('Siempre'), rows: [
-    { action: loc('Ver la tabla'), keyboard: 'Tab', gamepad: 'View' },
+    { action: loc('Ver la tabla y el mapa completo'), keyboard: 'Tab', gamepad: 'View' },
     { action: loc('Activar o silenciar el sonido'), keyboard: 'M' },
     { action: loc('Soltar el ratón y abrir el menú'), keyboard: 'Esc', gamepad: 'Start', touch: loc('Botón Menú') },
   ] }],
@@ -34,7 +34,7 @@ export default {
     loc('Las barricadas frenan las bolas. Tienes doce por carga; recargas con R o automáticamente al vaciarla.'),
     loc('Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.'),
     loc('En teléfono camina con las flechas y arrastra el dedo por la pantalla para mirar. Mantén Pinta: la mira se pega al rival visible que tengas delante.'),
-    loc('El mapa de la esquina muestra a tu equipo y solo a los rivales que tienes a la vista.'),
+    loc('El mapa de la esquina muestra lo que tienes alrededor (unos 30 m): tu equipo y solo los rivales que tienes a la vista. Mantén Tab para ver la cancha completa.'),
     loc('Mantén G para cargar la granada: los puntos marcan su arco y el anillo, hasta dónde pinta. Mira hacia arriba para lanzarla más alto. La mecha corre al soltarla.'),
     loc('La Lejana pinta dos pepazos por tiro, pero sin la mira se desvía. El cohete de La Bazuca saca de una si pega directo: apunta adelante del rival.'),
     loc('Si estás solo, tres bots entran contigo; con amigos la cancha es de ustedes. En Más ajustes eliges cuántos bots juegan. Puedes invitar hasta ocho panas.'),

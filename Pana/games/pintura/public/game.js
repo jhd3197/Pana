@@ -37,7 +37,7 @@ import { loc, locn } from '/engine/i18n.js';
 const $ = id => document.getElementById(id), code = roomCode();
 const params = new URLSearchParams(location.search);
 const held = new Set(), pads = []; let aim = null, firing = false, jumpPress = 0, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastKiller = '', wasReloading = false, lastDry = 0; const seenShots = new Map();
-const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
+const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'), $('board-map'));
 const hitFeats = createHitFeats(createFeats($('toast'))), combat = createCombatHud(document), ctfHud = createCtfHud(document), domHud = createDomHud(document);
 // A released grenade rides three inputs (150 ms), so a server tick that only keeps the latest input still sees it.
 let weapon = 'pistol', queuedGrenade = null, grenadeSends = 0, lastWeapon = '', throwSends = 0;
@@ -65,7 +65,7 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),
   notes: { facil: loc('Los bots fallan seguido y disparan menos.'), normal: loc('Bots con buena mano, pero se les va alguna.'), dificil: loc('Los bots apuntan fino y no sueltan el gatillo.'), experto: loc('Casi no fallan: muévete y cúbrete.') } });
-const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
+const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla y el mapa completo')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
  
   options: [{ id: 'weapon', label: loc('Marcadora (si la sala permite todas)'), choices: WEAPONS.map(m=>[m.id,m.name]), get: () => weapon, set: value => armory.setWeapon(value) },
     { id: 'view', label: loc('Cámara'), choices: [['primera', loc('Primera persona')], ['cancha', loc('Ver la cancha')]], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
@@ -132,7 +132,8 @@ addEventListener('keydown', event => {
 });
 addEventListener('keyup', event => { const key = event.key.toLowerCase(); held.delete(key); if (key === 'g') grenadeCharge.release('g'); if (key === 'tab') showBoard(false); });
 function cycle(step) { if (room.state.options?.weapons !== 'pistol') armory.setWeapon(cycleWeapon(armory.kit.weapon, step)); }
-// Hold Tab: everyone's knockouts, times painted and current streak.
+// Hold Tab (View on a controller): everyone's knockouts, times painted and
+// current streak, beside the whole court's map (minimap.js draws it each frame).
 function showBoard(open) {
   $('scoreboard').hidden = !open; if (!open) return;
   const state = room.state, teams = teamPlay(state.options);
@@ -368,7 +369,7 @@ function frame(now) {
   document.body.classList.toggle('first-person', cameraView === 'primera' && room.state.phase === 'playing');
   world.setAim(active() && aiming()); world.aimGrenade(grenadeAim());
   armory.update(dt); spectate.update(dt, room.state, room.id, lastKiller?.id ?? null); world.draw(room.state, room.id, dt, aim);
-  const scoped = world.scope.scoped; scopeView.set(scoped ? world.scope.amount : 0); document.body.classList.toggle('scoped', scoped); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward()); ctfHud.frame(world.camera, myPana()); domHud.frame(world.camera, myPana()); requestAnimationFrame(frame);
+  const scoped = world.scope.scoped; scopeView.set(scoped ? world.scope.amount : 0); document.body.classList.toggle('scoped', scoped); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward(), !$('scoreboard').hidden); ctfHud.frame(world.camera, myPana()); domHud.frame(world.camera, myPana()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); spectate.dispose(); room.dispose(); world.dispose(); }, { once: true });
