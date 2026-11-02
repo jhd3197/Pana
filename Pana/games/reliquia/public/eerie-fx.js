@@ -25,7 +25,7 @@ export function createEerieFx({ view, ambience, samples = null, dread = () => {}
   // read in the dark, never warm.
   const ghostMat = new THREE.MeshStandardMaterial({ color: 0x9aa2ae, emissive: 0x2a323e, roughness: 1, transparent: true, opacity: 0, depthWrite: false });
   const eyeMat = new THREE.MeshBasicMaterial({ color: 0xdfe8f4, transparent: true, opacity: 0 });
-  const ghost = mummy(); ghost.name = 'Silueta';
+  const ghost = mummy({ gaunt: true, seed: 3 }); ghost.name = 'Silueta';
   ghost.traverse(o => { if (o.isMesh) { const eye = o.material.emissiveIntensity >= 1 && o.material.emissive?.getHex(); o.material.dispose?.(); o.material = eye ? eyeMat : ghostMat; o.castShadow = false; } });
   ghost.visible = false; view.scene.add(ghost);
   const book = new THREE.Mesh(new THREE.BoxGeometry(.24, .05, .17), new THREE.MeshStandardMaterial({ color: 0x3a2a2e, roughness: .9 }));

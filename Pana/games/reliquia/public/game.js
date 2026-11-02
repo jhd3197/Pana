@@ -33,7 +33,7 @@ const qs = new URLSearchParams(location.search), code = roomCode();
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
 const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience(), samples = createSamples();
 // Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
-let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares);
+let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares); view.scares = scares;
 const fx = createEerieFx({ view, ambience, samples, dread: v => { const r = Math.round(v * 20) / 20; if (r !== dreadShown) { dreadShown = r; $('dread').style.opacity = r; } } });
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
@@ -53,7 +53,7 @@ const menu = createGameMenu({
   pad: { move: 'wasd', look: loc('Mirar'), keys: { rt: ['KeyV', loc('Usar lo de la mano derecha')], a: ['Space', loc('Saltar')], lt: ['KeyF', loc('Usar lo de la mano izquierda')], x: ['KeyE', loc('Agarrar o abrir; mantén para girar')], b: ['KeyQ', loc('Soltar')], y: ['KeyG', loc('Lanzar')], rb: ['KeyR', loc('Arrastrar a un pana')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver el mapa y la expedición')] } },
   title: 'Reliquia', heading: loc('Un respiro'), resumeLabel: loc('Volver a la mina'), sound, notify,
   note: () => solo() ? loc('La expedición está en pausa.') : loc('Tus panas siguen en la mina.'),
-  options: [{ ...SCARES, get: () => scares, set: v => { if (saveScares(v)) { scares = v; view.shakeScale = shakeFor(v); } } }],
+  options: [{ ...SCARES, get: () => scares, set: v => { if (saveScares(v)) { scares = v; view.shakeScale = shakeFor(v); view.scares = v; } } }],
   actions: [{ id: 'offline', label: loc('Abrir expedición local'), kind: 'link', visible: () => failed, run: () => room.practice() }],
   invite: () => inviteUrl(code),
   onOpen() { clearInput(); looking.release(); intel.release(); }, onClose() {},

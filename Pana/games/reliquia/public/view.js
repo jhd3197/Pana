@@ -80,7 +80,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const splats = new Map(), shots = new Map(), darts = new Map();
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
   const avatars = new Map(), enemies = new Map(), carts = new Map();
-  let dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', look = CAMP_LOOK, poolAt = 0, swingT = [0, 0], shakeScale = 1;
+  let scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', look = CAMP_LOOK, poolAt = 0, swingT = [0, 0], shakeScale = 1;
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
   function setLook(name) {
@@ -122,7 +122,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (e.kind === 'spider') { const sp = caveSpider({ seed: e.id }); sp.scale.setScalar(1.15); return sp; }
     if (e.kind === 'snake') { const sn = cuaima({ seed: e.id }); sn.scale.setScalar(1.6); return sn; }
     if (e.kind === 'jaguar' || e.kind === 'stalker') { const cat = jaguar({ gold: e.kind === 'jaguar', melanistic: e.kind === 'stalker', seed: e.id, pace: 1.4 }); cat.scale.setScalar(e.kind === 'jaguar' ? 1.55 : 1.25); return cat; }
-    const m = mummy({ guardian: e.kind === 'guardian' });
+    // Mummies and phantoms are the gaunt figure; the guardian stays stone and gold.
+    const m = mummy({ guardian: e.kind === 'guardian', gaunt: true, seed: e.id });
     if (e.kind === 'phantom') m.traverse(o => { if (o.material) { o.material = o.material.clone(); Object.assign(o.material, { transparent: true, opacity: .45, depthWrite: false }); o.material.emissive?.set(0x4a9dff); o.material.emissiveIntensity = .8; } });
     return m;
   }
@@ -171,8 +172,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       if (!a) {
         const root = new THREE.Group(), model = enemyModel(e), ring = new THREE.Mesh(ringGeometry, dangerMaterial);
         ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; root.add(model); scene.add(root, ring);
-        root.position.set(e.x, 0, e.z); a = { root, model, ring, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind) }; enemies.set(e.id, a);
-        puffs.spawn({ x: e.x, y: .6, z: e.z }, { color: e.kind === 'phantom' ? 0x9fd8ff : 0xd8c49a, count: 6, spread: .8, size: .7, rise: 1.2, life: .7 });
+        root.position.set(e.x, 0, e.z); a = { root, model, ring, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), pose: { frozen: false, look: 0, lit: 'dark', scares }, speed: 0, x: e.x, z: e.z }; enemies.set(e.id, a);
+        puffs.spawn({ x: e.x, y: .6, z: e.z }, { color: e.kind === 'phantom' ? 0x9fd8ff : lookName === 'biblioteca' ? 0x8e949c : 0xd8c49a, count: 6, spread: .8, size: .7, rise: 1.2, life: .7 });
       }
       a.root.visible = floorOf(e.x) === vf;
       const target = new THREE.Vector3(e.x, 0, e.z);
@@ -191,7 +192,13 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         a.root.position.y = e.mode === 'leap' ? Math.sin(Math.min(1, (e.modeT || 0) / .45) * Math.PI) * 1.6 : 0;
         a.ring.visible = e.mode === 'crouch' || e.mode === 'leap'; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(2);
       } else {
-        a.model.userData.animate(t + e.id, !e.frozen && e.windup <= 0, e.windup > 0);
+        // Walking only when it actually covers ground (snapshots come at 20 Hz: smoothed).
+        const step = dt > 0 ? Math.hypot(e.x - a.x, e.z - a.z) / dt : 0; a.x = e.x; a.z = e.z;
+        a.speed += (Math.min(6, step) - a.speed) * (1 - Math.exp(-dt * 6));
+        const pose = a.pose; pose.frozen = !!e.frozen; pose.lit = e.lit || 'dark'; pose.scares = scares;
+        // The head finds you: the yaw from its body to your eyes.
+        if (me) { const yaw = Math.atan2(me.x - a.root.position.x, me.z - a.root.position.z) - a.root.rotation.y; pose.look = Math.atan2(Math.sin(yaw), Math.cos(yaw)); } else pose.look = 0;
+        a.model.userData.animate(t + e.id, !e.frozen && e.windup <= 0 && a.speed > .35, e.windup > 0, pose);
         a.model.position.y = e.hit > 0 ? .1 : 0;
         a.ring.visible = e.windup > 0; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(e.kind === 'guardian' ? 3.8 : 2.1);
       }
@@ -300,6 +307,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     get look() { return lookName; },
     // The Sustos setting scales every camera shake (0 turns it off).
     set shakeScale(v) { shakeScale = v; },
+    // The Sustos setting, for how the mummies twitch and whether their eyes gutter.
+    set scares(v) { scares = v; },
     get world() { return world; },
     get heading() { return h; }, set heading(v) { h = v; },
     get pitch() { return pitch; }, set pitch(v) { pitch = v; },
