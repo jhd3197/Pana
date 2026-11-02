@@ -31,13 +31,13 @@ export function pickSpawn(spawns, { rng = Math.random, ...options } = {}) {
 
 // Free-for-all keeps every pana at least this many metres from every other one
 // at round start, and respawns this far from the nearest living rival whenever
-// a spawn allows it. Where a court's spawns cannot fit the round at this gap
-// (El Puerto's bases hold four spawns 6 m apart), the spread falls back to the
-// largest gap the court allows.
+// a spawn allows it. Every court fits 2-8 panas at this gap (El Puerto's bases
+// hold four pads 6 m apart, so it adds three wider pads per half); a court
+// that could not would fall back to the largest gap it allows.
 export const MIN_SPAWN_GAP = 20;
 
 const apart = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
-// Every way to choose `count` of `size` indices, in a fixed order (8 spawns: at most 70).
+// Every way to choose `count` of `size` indices, in a fixed order (8 spawns: at most 70; El Puerto's 14: 3432).
 function subsets(size, count) {
   const out = [], pick = [];
   const walk = from => {

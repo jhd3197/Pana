@@ -13,11 +13,12 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   pepazos knock a pana out for 2.5 seconds; `paint` counts hits taken and `stains` keeps
   their colours. After 4 s without a hit one pepazo washes off every 1.5 s; respawn clears both. Spawn protection lasts 1.5 seconds and firing cancels it.
 - Spawns (`public/spawn-picker.js`). Free-for-all round start uses `spreadSpawns`: an
-  exact search over the 8 spawns keeps every pair at least `MIN_SPAWN_GAP` (20 m)
-  apart, drawing among sets within 6 m of the widest spread. When no set reaches
-  20 m it takes the widest one (`fallback`); only El Puerto falls short (3-4 panas
-  18 m, 5-8 panas 6 m, since each base holds four spawns 6 m apart), and there people
-  get the most isolated spots before bots (one pana with four bots gets a base alone).
+  exact search over the court's spawns (8, El Puerto 14) keeps every pair at least
+  `MIN_SPAWN_GAP` (20 m) apart, drawing among sets within 6 m of the widest spread.
+  Every court reaches 20 m for 2-8 panas (El Puerto at least 22.4 m); should a
+  court fall short, it takes the widest set (`fallback`) and people get the most
+  isolated spots before bots. `tests/spawn-picker.test.js` asserts the empty
+  fallback table and brute-forces the widest spread of every court.
   The lobby parks panas on the same spread; a late arrival lands like a respawn.
   `arena.spawnReport` holds `{ arena, count, minGap, fallback }`; `PANA_LOG_SPAWNS=1`
   prints it once per round. Free-for-all respawns use `pickRespawn`: 20 m from the
@@ -188,8 +189,13 @@ Puerto; `puerto` is already Puerto Coco). It is the only rectangular court:
 `boundsFor(id)` gives `{ x, z }` half-extents (58 × 32 here, square elsewhere)
 and every fence test in `rules.js` goes through it; `sizeFor` is the larger
 one, for whatever frames the whole court. Even spawns are the west (orange)
-base, odd the east, so team seats and the two flag homes land in their own
-base. `public/terminal-layout.js` lists only the west half of each yard
+half, odd the east, so team seats and the two flag homes land in their own
+base. The first eight are each base's four pads, only 6 m apart, so a third
+free-for-all pana used to share a base: six more pads follow in pairs mirrored
+through the centre (back corners at (∓55, ∓27) and (∓55, ±27), forward pads at
+(∓34, ∓12)), clear of every yard at 2 m and 12 m off domination zone A/C.
+Team and flag rounds may respawn on them too, always in their own half; the
+search for 8 panas over 14 spawns tries 3432 sets, about 8 ms per round start. `public/terminal-layout.js` lists only the west half of each yard
 (Pasillos, Fortaleza, Laberinto) and mirrors it, so both teams always get the
 same map. Container sizes match the library `shippingContainer` (2.65 m per
 level, box = length + .3), so models and collision agree. Base barrels and
