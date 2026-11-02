@@ -31,13 +31,13 @@ function walk(dir, keep, out = []) {
 }
 
 // Games still moving their instructions off the HUD. Empty it, never grow it.
-export const PENDING = new Set(['billar', 'bochinche', 'bululu', 'caida', 'capis', 'carreritas', 'chapita', 'cocina',
-  'criollas', 'curiara', 'embuste', 'escondidas', 'galope', 'lancha', 'ludo', 'parapente', 'pintura', 'poquer',
-  'qqsmp', 'reliquia', 'stop', 'tambor', 'trifulca']);
+export const PENDING = new Set([]);
 
 // `game:#id` or `game:.class` → why it is not an instruction.
 export const ALLOWED = {
   'domino:#hint': 'the Pista button: a move the player asks for, not a controls line',
+  'caida:#hint': 'the Pista button: a move the player asks for, not a controls line',
+  'trifulca:hud.js': "builds the tutorial card's caps: the keys of the step on screen, gone with the card",
 };
 
 // An id or class named like an instructions element.
