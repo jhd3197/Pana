@@ -19,11 +19,7 @@
   pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; min-width: 260px; white-space: nowrap;
 }
 .pk-qe-shake.is-shaking { animation: pk-qe-rattle .09s linear infinite; }
-.pk-qe-shake[hidden], .pk-qe-hint[hidden], .pk-qe-order[hidden] { display: none; }
-.pk-qe-hint {
-  position: absolute; left: 50%; bottom: calc(max(28px, env(safe-area-inset-bottom)) + 66px); transform: translateX(-50%);
-  margin: 0; padding: 4px 12px; border-radius: 0; background: var(--pk-hud); color: var(--pk-muted); font: 800 13px var(--pk-sans); white-space: nowrap;
-}
+.pk-qe-shake[hidden], .pk-qe-order[hidden] { display: none; }
 .pk-qe-order {
   position: absolute; left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); transform: translateX(-50%);
   display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: min(720px, calc(100vw - 32px));
@@ -41,7 +37,6 @@
   .pk-qe-head { top: max(var(--pk-qe-top-phone, 58px), env(safe-area-inset-top)); padding: 8px 12px 10px; }
   .pk-qe-say { font-size: 20px; }
   .pk-qe-shake { min-width: 220px; font-size: 20px; padding: 14px 20px; }
-  .pk-qe-shake .pk-kbd, .pk-qe-hint { display: none; }
 }
 
 .pk-qe-value {
