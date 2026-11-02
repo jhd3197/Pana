@@ -5,7 +5,7 @@ import { sound, popCounter } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { inviteUrl } from '/engine/invite.js';
 import { roomCode } from '/engine/game-shell.js';
-import { holdButton, drawIcons, isTouch } from '/engine/touch.js';
+import { holdButton, drawIcons } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { createToast } from '/engine/hud.js';
 import { elapsedClock } from '/engine/live-room.js';
@@ -46,18 +46,6 @@ const menu = createGameMenu({
   pad: { move: 'wasd', look: loc('Mirar'), keys: { rt: ['KeyV', loc('Usar lo de la mano derecha')], a: ['Space', loc('Saltar')], lt: ['KeyF', loc('Usar lo de la mano izquierda')], x: ['KeyE', loc('Agarrar o abrir; mantén para girar')], b: ['KeyQ', loc('Soltar')], y: ['KeyG', loc('Lanzar')], rb: ['KeyR', loc('Arrastrar a un pana')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver al equipo')] } },
   title: 'Reliquia', heading: loc('Un respiro'), resumeLabel: loc('Volver a la mina'), sound, notify,
   note: () => solo() ? loc('La expedición está en pausa.') : loc('Tus panas siguen en la mina.'),
-  controls: [['W A S D', loc('Caminar hacia donde miras')], [loc('Ratón'), loc('Mirar (haz clic en la pantalla para capturarlo)')], [loc('Espacio'), loc('Saltar')], [loc('Clic / V'), loc('Usar lo de la mano derecha')], [loc('Clic derecho / F'), loc('Usar lo de la mano izquierda')],
-    ['E', loc('Agarrar, abrir; mantén para girar ruedas, levantar panas o atrapar lo que te lanzan')], ['Q', loc('Soltar')], ['G', loc('Lanzar lo que tienes en la mano')], ['R', loc('Arrastrar a un pana caído')],
-    ['Shift', loc('Correr')], ['1 – 7', loc('¿Nos vamos ya? · ¡Una sala más! · y otros gritos')], ['Tab', loc('Ver al equipo')], ['M', loc('Sonido')], ['Esc', loc('Soltar el ratón y abrir el menú')]],
-  tips: [loc('Apunta con el punto del centro a lo que quieres usar: palancas, carrito, tesoros, la tienda.'),
-    loc('Cada jornada pide una cuota: llenen el carrito, empújenlo a la plataforma de carga y apriétenle el botón amarillo. Cuando la carga subida alcance la cuota, el montacargas los sube y la jornada termina.'),
-    loc('El que se quede abajo cuando el montacargas suba vuelve al campamento con un hilito de vida.'),
-    loc('Cada mano lleva un tesoro, una herramienta o un puñado de cuatro piezas: échalas al carrito (E) o lánzalas adentro (G).'),
-    loc('Solo puedes llevar un arma a la vez: al agarrar otra, sueltas la que tenías.'),
-    loc('Los tesoros grandes piden dos, tres o cuatro panas: cada uno agarra un lado (E) y caminan juntos. Solo se arrastran despacito.'),
-    loc('El farol congela a las momias que alumbra. En la oscuridad corren más.'),
-    loc('Cada tesoro que levantan sube la codicia: más trampas, momias bravas, túneles que se derrumban y un jaguar negro que los caza.'),
-    loc('Al final de cada piso se abre la bajada. ¿Se van con lo que tienen o bajan un piso más?'), loc('Si caen todos, del camión solo se salva una parte.')],
   options: [{ ...SCARES, get: () => scares, set: v => { if (saveScares(v)) { scares = v; view.shakeScale = shakeFor(v); } } }],
   actions: [{ id: 'offline', label: loc('Abrir expedición local'), kind: 'link', visible: () => failed, run: () => room.practice() }],
   invite: () => inviteUrl(code),
@@ -161,7 +149,6 @@ $('start').onclick = () => { sound.unlock(); room.action('start'); }; $('again')
 $('practice').onclick = $('offline-inline').onclick = () => room.practice();
 // Touch: hold buttons for moving and grabbing, taps for the rest.
 drawIcons();
-if (isTouch()) { $('hand-0').querySelector('.pk-slot-n').textContent = loc('Usar'); $('hand-1').querySelector('.pk-slot-n').textContent = loc('Izq.'); }
 const pads = [];
 for (const button of document.querySelectorAll('[data-move]')) pads.push(holdButton(button, { paused: () => !playing(), down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) }));
 pads.push(holdButton($('t-grab'), { paused: () => !playing(), down: () => { touch.add('e'); act('interact'); }, up: () => touch.delete('e') }));

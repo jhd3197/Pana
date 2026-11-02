@@ -96,7 +96,6 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
 .bag em{font-style:normal;color:var(--pk-text)}.bag strong{color:var(--rel-gold)}
 .effects{margin:0;min-height:0;font:800 11px var(--pk-sans);color:var(--rel-jade)}
 .effects:empty{display:none}
-.controls{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:14px;width:max-content;max-width:60vw}
 
 /* touch */
 #touch{display:none;position:fixed;inset:auto 16px 16px;pointer-events:none;justify-content:space-between;align-items:end}
@@ -104,14 +103,14 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
 .touch-actions{display:grid;grid-template-columns:repeat(3,auto);gap:8px;align-items:end;justify-items:end}
 .touch-actions .pk-touch{min-width:64px;padding:0 10px;font-size:14px}
 #t-use{grid-column:3;grid-row:2/4;min-height:100px}
-@media (pointer:coarse){#touch{display:flex}.pk-hints{display:none}.carry{bottom:auto;top:16px;left:auto;right:16px;width:200px}.team{display:none}.map-wrap{display:none}.compass{top:64px}.place{width:200px}.hands .pk-slot{min-height:44px}}
+@media (pointer:coarse){#touch{display:flex}.carry{bottom:auto;top:16px;left:auto;right:16px;width:200px}.team{display:none}.map-wrap{display:none}.compass{top:64px}.place{width:200px}.hands .pk-slot{min-height:44px}}
 @media (max-width:640px){
   .topbar{top:8px;right:8px}#game-nav #invite,#game-nav #sound{display:none}
   .compass{top:8px;left:8px;right:96px;width:auto;transform:none;height:38px}
   .place,.carry{top:54px!important;width:calc(50vw - 12px)!important}
   .place{left:8px}.carry{right:8px;left:auto;bottom:auto}
   .haul .pk-num{font-size:15px}.vital .pk-num{font-size:16px}
-  .hands .pk-slot{min-height:38px;padding:16px 6px 4px;font-size:10px}.hands .pk-slot-n{font-size:9px}
+  .hands .pk-slot{min-height:38px;padding:16px 6px 4px;font-size:10px}
   .effects{display:none}.choice{top:auto;bottom:250px}.boss{top:auto;bottom:240px}
   .touch-actions{gap:6px}.touch-actions .pk-touch{min-width:54px;height:46px;padding:0 6px;font-size:11px}#t-use{min-width:60px;height:98px}
   #touch .pk-dpad{--pk-touch:50px;gap:3px}#touch{inset:auto 8px 12px}
