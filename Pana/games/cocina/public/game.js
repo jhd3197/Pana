@@ -63,16 +63,12 @@ const menu = createGameMenu({
   orientation: 'vertical',
   title: 'Pana Cocina', heading: loc('¿Y la sazón?'), resumeLabel: loc('Volver a cocinar'), // i18n-ignore: game name sound, notify,
   note: () => room.offline || room.members.size === 1 ? loc('Tu turno está pausado.') : loc('La cocina sigue para los demás panas.'),
-  controls: [['W A S D / ↑ ← ↓ →', loc('Moverte')], [loc('E / Espacio'), loc('Recoger, dejar o apagar un fuego')], ['Shift', loc('Un empujoncito')], ['M', loc('Sonido')]],
-  tips: [loc('Busca un cajón de ingredientes, déjalos en una tabla y recoge la preparación. Llévala al fogón; cuando esté verde, recoge el plato y sírvelo en el mostrador.'),
-    loc('La mesa «Para tu pana» permite pasar platos.')],
   actions: [{ id: 'offline', label: loc('Abrir cocina local'), kind: 'link', visible: () => canGoOffline, run: () => room.practice() }],
   invite: () => inviteUrl(code),
   onOpen() { paused = true; keys.clear(); touch.clear(); },
   onClose() { paused = false; },
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
-$('menu').querySelector('kbd')?.classList.add('pk-kbd');
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
 const room = new KitchenRoom({ code, name, avatar, onState: receive, onNotice: text => notify(say(text)), onStatus(text, failed = false) {
   $('connection').textContent = text; show('practice', failed); canGoOffline = failed; menu.update(); if (failed) notify(text); updateUI();
@@ -185,8 +181,9 @@ function updateUI() {
     $('held-next').textContent = !player?.held ? loc('Busca ingredientes para un pedido.') : ({ raw: loc('Llévalos a una tabla de preparar.'), prepared: loc('Al fogón. ¡Que agarre color!'), cooked: loc('¡Al mostrador para servir!'), burnt: loc('Llévalo al cubo de basura.') })[player.held.stage];
   }
   const near = player && nearestStation(player), station = near && state.stations.find(s => s.id === near.id);
-  $('action-label').textContent = station?.fire ? loc('Apagar fuego') : near ? station?.item ? station.item.stage === 'cooked' || near.type === 'prep' && station.item.stage === 'prepared' ? loc('Recoger plato') : loc('Revisar preparación') : loc(near.label) : loc('Acércate a una estación');
-  $('action').disabled = !near || !room.connected;
+  $('action-label').textContent = station?.fire ? loc('Apagar fuego') : near ? station?.item ? station.item.stage === 'cooked' || near.type === 'prep' && station.item.stage === 'prepared' ? loc('Recoger plato') : loc('Revisar preparación') : loc(near.label) : '';
+  // A prompt only while there is something to do here: no generic "go near a station".
+  show('action', !!near && state.phase === 'playing'); $('action').disabled = !near || !room.connected;
   if (state.phase === 'results') {
     $('result-stars').textContent = '★'.repeat(stars(state.score)) + '☆'.repeat(3 - stars(state.score));
     $('result-copy').textContent = state.served ? [loc('La plaza se fue contenta.'), state.burnt ? locn(state.burnt, 'Se quemó {n} plato; en el próximo turno sale mejor.', 'Se quemaron {n} platos; en el próximo turno salen mejor.') : loc('¡Y ningún plato quemado!'), loc('Estrellas: 350 / 850 / 1500 puntos.')].join(' ') : loc('El secreto es recoger, preparar, cocinar y servir. ¡Vamos otra vez!');
