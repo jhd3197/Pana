@@ -5,7 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMatch, tickMatch, takeEvents, fire, explode, drill, selectWeapon, canUse, ammoLeft, launch, flightOptions, center, RULES } from '../public/rules.js';
 import { WEAPONS, WEAPON_IDS, weaponOf, reachOf, startingAmmo, BASIC_WEAPON, FIRST_WEAPON } from '../public/weapons.js';
-import { pickTarget, drillPlan, bestShot, createBot } from '../public/bot.js';
+import { pickTarget, drillPlan, digPlan, bestShot, createBot, aimErrorOf, keepOf, planShot, clearance, FAR } from '../public/bot.js';
+import { rng } from '../../../engine/random.js';
 import { fillHeights, solidAt, carve } from '../../../engine/play/terrain-mask.js';
 import { simulateFlight } from '../../../engine/play/ballistic.js';
 import { PAINT_WEAPONS, PAINT_GRENADES } from '../../../engine/play/paint-arsenal.js';
@@ -161,7 +162,7 @@ test('the same shots on the same seed dig and paint the same', () => {
 });
 
 test('the bot weighs its weapons: La Bazuca for a good hit, La Lejana to finish, La Piñita when the rest are spent', () => {
-  const m = flatMatch([[10, 14, 18], [42, 56, 62]]), capy = m.capys.find(c => c.id === '0-2');
+  const m = flatMatch([[10, 14, 18], [42, 75, 95]]), capy = m.capys.find(c => c.id === '0-2');
   assert.equal(pickTarget(m, capy).weapon, 'bazooka', 'a clean hit, fresh rivals: La Bazuca');
   m.capys.find(c => c.id === '1-0').paint = 45;
   const finish = pickTarget(m, capy);
@@ -171,17 +172,78 @@ test('the bot weighs its weapons: La Bazuca for a good hit, La Lejana to finish,
   assert.ok(basic.feasible && basic.weapon === 'grenade', `with only La Piñita and La Licuadora left: ${basic.weapon}`);
 });
 
-test('the bot fires El Trueno into a close group and bounces La Piñita behind cover', () => {
-  const m = flatMatch([[10, 14, 18], [31, 33.5, 62]]), capy = m.capys.find(c => c.id === '0-2');
-  m.ammo[0].bazooka = 0;
-  assert.equal(pickTarget(m, capy).weapon, 'scatter', 'two rivals side by side, close');
+test('an exposed rival at range: La Lejana; a close one: not', () => {
+  const m = flatMatch([[10, 14, 18], [54, 80, 95]]), capy = m.capys.find(c => c.id === '0-2');
+  const pick = pickTarget(m, capy);
+  assert.equal(pick.weapon, 'sniper', `a rival 36 away in the open (picked ${pick.weapon})`); assert.equal(pick.rival.id, '1-0');
+  const near = flatMatch([[10, 14, 18], [28, 75, 95]]);
+  assert.notEqual(pickTarget(near, near.capys.find(c => c.id === '0-2')).weapon, 'sniper', 'ten away: a blast forgives more');
+});
+
+test('the bot fires El Trueno into a close group, even with La Bazuca in hand, and bounces La Piñita behind cover', () => {
+  for (const xs of [[31, 33.5, 62], [38, 40.5, 62]]) {
+    const m = flatMatch([[10, 14, 18], xs]), capy = m.capys.find(c => c.id === '0-2');
+    assert.equal(pickTarget(m, capy).weapon, 'scatter', `two rivals side by side at ${xs[0] - 18}`);
+    m.ammo[0].bazooka = 0;
+    assert.equal(pickTarget(m, capy).weapon, 'scatter', 'and with La Bazuca spent');
+  }
   // A rival tucked under a thick roof that opens away from us: only a bounce gets in.
   const c = flatMatch([[10, 14, 18], [44, 80, 86]]), shooter = c.capys.find(k => k.id === '0-2');
   fillHeights(c.mask, x => x > 40 && x < 46 ? 17 : 10);
   carve(c.mask, 44.6, 11.6, 1.5); carve(c.mask, 46, 11.6, 1.5);
   c.capys.find(k => k.id === '1-0').y = 10;
   const pick = pickTarget(c, shooter);
-  assert.ok(!pick.feasible || pick.weapon === 'grenade', `under cover: ${pick.feasible ? pick.weapon : 'nothing feasible'}`);
+  assert.ok(pick.feasible && pick.weapon === 'grenade', `under cover: ${pick.feasible ? pick.weapon : 'nothing feasible'}`);
+});
+
+test('La Piñita is not the default: a direct weapon that lands wins unless the throw is clearly better', () => {
+  // A lone rival in the open, close: both land; La Bazuca or El Trueno, never the grenade.
+  for (const difficulty of ['facil', 'normal', 'experto']) {
+    const m = flatMatch([[10, 14, 18], [34, 80, 95]]), capy = m.capys.find(c => c.id === '0-2');
+    const pick = pickTarget(m, capy, { difficulty });
+    assert.ok(pick.weapon === 'bazooka' || pick.weapon === 'scatter', `${difficulty}: ${pick.weapon}`);
+  }
+  // Scarce shots are worth keeping early, and spent later.
+  const m = flatMatch();
+  assert.ok(keepOf(m, 0, 'sniper') > 0); assert.equal(keepOf(m, 0, 'grenade'), 0);
+  m.turn.n = 30; assert.equal(keepOf(m, 0, 'sniper'), 0, 'by turn 30 every shot is there to spend');
+});
+
+test('the aim error: by difficulty, shrinking as the match goes on and while behind', () => {
+  for (const turn of [1, 10, 20, 40]) {
+    assert.ok(aimErrorOf('facil', turn) > aimErrorOf('normal', turn) && aimErrorOf('normal', turn) > aimErrorOf('experto', turn), `turn ${turn}: easier misses more`);
+    assert.ok(aimErrorOf('facil', turn + 5) <= aimErrorOf('facil', turn), 'never grows');
+    assert.ok(aimErrorOf('facil', turn, true) < aimErrorOf('facil', turn), 'tighter while behind');
+  }
+  assert.ok(aimErrorOf('facil', 40) < aimErrorOf('facil', 1) * .25, 'a long match: a quarter of it or less');
+  assert.equal(aimErrorOf('facil', 40), aimErrorOf('facil', 60), 'it settles');
+  // The same seed and difficulty plan the same shot; an easy bot's shots spread wider.
+  const m = flatMatch([[10, 14, 18], [42, 75, 95]]), capy = m.capys.find(c => c.id === '0-2');
+  const spread = d => { const r = rng(9), angles = Array.from({ length: 30 }, () => planShot(m, capy, { difficulty: d, random: r, target: '1-0', weapon: 'bazooka' }).angle); return Math.max(...angles) - Math.min(...angles); };
+  assert.ok(spread('facil') > spread('experto') * 4, `fácil ${spread('facil').toFixed(3)} vs experto ${spread('experto').toFixed(3)}`);
+  const again = d => planShot(m, capy, { difficulty: d, random: rng(4), target: '1-0', weapon: 'bazooka' });
+  assert.deepEqual(again('normal'), again('normal'));
+});
+
+test('far from every rival the bot walks up first; shut in, it blasts the ground in the way, never at its own feet', () => {
+  const m = flatMatch([[10, 14, 18], [80, 90, 100]]), capy = m.capys.find(c => c.id === '0-2');
+  m.turn.capy = capy.id; m.turn.team = 0;
+  const bot = createBot({ team: 0, difficulty: 'normal', seed: 3 }), x0 = capy.x;
+  let fired = null;
+  for (let t = 0; t < 30 && !fired; t += DT) { const input = bot.input(m); if (Number.isFinite(input.fire)) fired = input; tickMatch(m, DT, input); }
+  assert.ok(80 - x0 > FAR && capy.x - x0 > 10, `walked from ${x0} to ${capy.x.toFixed(1)}`);
+  assert.ok(fired, 'and fired before the clock ran out');
+  // A rival behind a hill no lob gets over: the first ground on the line to it, a safe way off.
+  const h = flatMatch([[10, 14, 18], [40, 80, 86]]), shooter = h.capys.find(c => c.id === '0-2');
+  fillHeights(h.mask, x => x > 26 && x < 34 ? 30 : 10);
+  const dig = digPlan(h, shooter, h.capys.find(c => c.id === '1-0'));
+  assert.ok(dig && dig.target.x > 22 && dig.target.x < 34, `blasts the hill: ${JSON.stringify(dig?.target)}`);
+  assert.ok(clearance(h, shooter, BASIC_WEAPON, dig) > 1, 'outside its own reach');
+  // Boxed in a pit: the throw it takes keeps clear of its own team when any throw can.
+  const p = flatMatch([[10, 14, 30], [70, 80, 86]]), boxed = p.capys.find(c => c.id === '0-2');
+  fillHeights(p.mask, x => Math.abs(x - 30) < 2.5 ? 10 : Math.abs(x - 30) < 5 ? 16 : 10);
+  const shot = planShot(p, boxed, { difficulty: 'experto', random: rng(1), target: '1-0', weapon: BASIC_WEAPON });
+  assert.ok(clearance(p, boxed, BASIC_WEAPON, shot) > -1, `its throw lands ${clearance(p, boxed, BASIC_WEAPON, shot).toFixed(1)} outside its own reach`);
 });
 
 test('no shot at all: the bot bores towards the rival or lobs La Piñita, and never spends scarce shots on hopeless ones', () => {
@@ -209,7 +271,11 @@ test('the bot\'s search with every weapon stays light', () => {
   const t0 = performance.now();
   for (let i = 0; i < 5; i++) pickTarget(m, capy);
   const each = (performance.now() - t0) / 5;
-  assert.ok(each < 120, `pickTarget took ${each.toFixed(1)} ms`);
+  assert.ok(each < 60, `pickTarget took ${each.toFixed(1)} ms`);
+  // Its flights are simulated once a turn: a second look from the same spot with the same cache is far cheaper.
+  const cache = new Map(), t1 = performance.now(); pickTarget(m, capy, { cache }); const first = performance.now() - t1;
+  const t2 = performance.now(); pickTarget(m, capy, { cache }); const second = performance.now() - t2;
+  assert.ok(second < first * .6 + 1, `again from the same spot: ${second.toFixed(1)} ms (first ${first.toFixed(1)} ms)`);
   const s = bestShot(m, capy, center(m.capys[3]), { weapon: 'grenade' });
   assert.ok(Number.isFinite(s.miss));
 });
