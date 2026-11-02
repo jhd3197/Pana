@@ -40,8 +40,6 @@ state = room.state;
 const roomOptions = createRoomOptions($('room-options'), { title: 'Lancha', fields: FIELDS, change: patch => room.action('options', { options: patch }), reset: () => room.action('options', { options: cleanOptions() }) });
 function clearInput() { keys.clear(); for (const b of touchButtons) b.release(); touch.clear(); }
 const menu = createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', loc('Acelerar')], a: ['KeyW', loc('Acelerar')], lt: ['KeyS', loc('Frenar o retroceder')], b: ['KeyS', loc('Frenar o retroceder')], x: ['Space', loc('Turbo')], rb: ['Space', loc('Turbo')] } }, title: 'Lancha', sound, orientation: 'libre', note: () => room.members.size > 1 ? loc('La carrera sigue mientras abres el menú.') : loc('La carrera está en pausa.'),
-  controls: [['W / ↑ sostenido', loc('Acelerar')], ['A D / ← →', loc('Girar el motor')], ['S / ↓', loc('Frenar; sostenido, retroceder')], ['Espacio', loc('Turbo (gasta media barra)')], ['M', loc('Sonido')], ['Esc', loc('Menú')]],
-  tips: [loc('Sostén W todo el tiempo: machacarlo hace que la lancha vaya más lenta.'), loc('Sigue las flechas doradas en el agua: marcan el chorro, el carril rápido del raudal y esquivan los caimanes.'), loc('En el Orinoco las boyas marcan el canal: coral a la izquierda, verde a la derecha.'), loc('El chorro, los saltos derechos y la estela de las toninas llenan el turbo.'), loc('Cae derecho de los raudales o se te ahoga el motor.')],
   invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: loc('Abrir carrera local'), run: () => goLocal() }],
   onOpen() { paused = true; clearInput(); if (room.members.size <= 1) music.pause(); }, onClose() { paused = false; music.resume(); } });
 const navButton = 'pk-btn pk-btn--sm game-menu-button';
@@ -123,7 +121,7 @@ function driveTip(b) {
   if (state.options.throttle !== 'auto' && b.throttle === 0 && !b.back && state.phase === 'racing') return loc('Sostén W para acelerar. No lo machaques: sostenido vas más rápido.');
   if (b.meter >= TURBO.cost && b.turbo <= 0) return loc('¡Turbo listo! Espacio en una recta.');
   if (RIVER.buoys.some(x => Math.abs(x.s - b.s) < 70)) return loc('Río abierto: pasa entre las boyas y sigue las flechas doradas.');
-  return loc('Busca el chorro: el agua rápida llena el turbo.');
+  return '';
 }
 // What just happened to this pana's lancha, from the snapshot's counters.
 let seen = null;

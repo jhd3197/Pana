@@ -22,8 +22,6 @@ button,a,input{-webkit-tap-highlight-color:transparent}
 .pk-room-code{margin-left:auto;color:var(--pk-teal);font-size:13px;white-space:nowrap}
 .pk-room-code b{font-weight:900}
 .practice{align-self:flex-start;text-decoration:underline}
-.lobby-hint{position:fixed;z-index:4;right:24px;bottom:22px}
-body:not(.in-lobby) .lobby-hint{display:none}
 
 /* HUD */
 #hud{position:fixed;inset:0;pointer-events:none}
@@ -70,7 +68,6 @@ body:not(.in-lobby) .lobby-hint{display:none}
 .motor{color:var(--pk-teal)}
 .motor.is-dead{color:var(--motor-dead)}
 .throttle-state{color:var(--pk-muted);white-space:nowrap}
-.keyboard-hints{position:absolute;right:20px;bottom:22px;font-size:12px}
 .countdown{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;font:400 150px/1 var(--pk-display);color:var(--pk-yellow);text-shadow:0 7px 0 var(--pk-coral),0 0 2px var(--pk-night)}
 .notice{position:fixed;z-index:12;top:150px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 32px);justify-content:center;text-align:center;pointer-events:none}
 .flash{position:fixed;inset:0;pointer-events:none;background:var(--spray);opacity:0}
@@ -85,7 +82,6 @@ body:not(.in-lobby) .lobby-hint{display:none}
 
 @media(max-height:780px){#leaderboard .pk-row:nth-child(n+5):not(.is-me){display:none}}
 @media(pointer:coarse){
-  .keyboard-hints,.lobby-hint{display:none}
   /* Steering under the left thumb, gas under the right. */
   .touch-controls{position:absolute;bottom:max(16px,env(safe-area-inset-bottom));left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-end;gap:16px;pointer-events:none}
   .touch-controls>div{pointer-events:auto}
