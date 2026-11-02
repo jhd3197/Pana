@@ -27,8 +27,7 @@ const COATS = ['bay', 'palomino', 'grey', 'bay'];
 export default {
   id: 'coleo',
   title: locKey('¡Coleo!'),
-  howto: locKey('Ponte justo detrás del toro y jálale la cola para tumbarlo. Cada toro tumbado es un punto. Si jalas al aire, tu caballo tropieza.'),
-  keys: [['A D / ← →', locKey('moverte')], [locKey('Espacio'), locKey('jalar la cola')]],
+  goal: locKey('Tumba más toros que nadie jalándoles la cola.'),
   touch: { action: locKey('Jalar') },
   icon: 'bull',
   time: TIME,

@@ -167,8 +167,7 @@ function bushes(scene, r) {
 export default {
   id: 'chinazo',
   title: locKey('¡Chinazo!'),
-  howto: locKey('Las iguanas se están comiendo los mangos. Apunta, estira la china y suéltala: la piedra tarda un poquito, así que apunta adelante de las que corren. Cada iguana vale 1 y la dorada vale 3. ¡Ojo con la guacamaya: te quita 2!'),
-  keys: [[locKey('Ratón'), locKey('apuntar')], [locKey('Clic'), locKey('estirar y soltar')], [locKey('WASD + Espacio'), locKey('sin ratón')]],
+  goal: locKey('Tumba a las iguanas antes de que se coman los mangos.'),
   icon: 'iguana',
   input: 'aim',
   aspect: 16 / 9,   // the sim tests hits through its own copy of this camera, the same on every screen
