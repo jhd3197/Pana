@@ -32,7 +32,7 @@
 .banderin .fighter-style svg { width: 14px; height: 14px; }
 .banderin .pips { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; }
 .banderin .stocks { display: flex; gap: 4px; min-height: 14px; }
-.banderin .stocks i { width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--boch-ink); transition: transform .3s, opacity .3s; }
+.banderin .stocks i { width: 14px; height: 14px; border-radius: var(--pk-radius-round); background: var(--c); box-shadow: 0 0 0 2px var(--boch-ink); transition: transform .3s, opacity .3s; }
 .banderin .stocks i.is-lost { transform: scale(0); opacity: 0; }
 .banderin .shield-track { flex: 0 1 60px; height: 4px; background: rgba(255, 255, 255, .12); overflow: hidden; }
 .banderin .shield-track span { display: block; height: 100%; background: var(--c); transform-origin: left; transition: transform .1s linear; }
@@ -51,7 +51,7 @@
 .banderin .hud-tag { position: fixed; left: 0; top: 0; display: grid; justify-items: center; gap: 2px; pointer-events: none; translate: -50% -110%; }
 .banderin .hud-tag b { font: 34px/1 var(--pk-display); color: var(--pc); paint-order: stroke fill; -webkit-text-stroke: 6px var(--boch-ink); }
 .banderin .hud-tag span { display: flex; gap: 3px; }
-.banderin .hud-tag i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--boch-ink); }
+.banderin .hud-tag i { width: 9px; height: 9px; border-radius: var(--pk-radius-round); background: var(--c); box-shadow: 0 0 0 2px var(--boch-ink); }
 
 /* Moments: banners, the KO flash, hit pops, item calls and off-screen bubbles. */
 .banderin .hud-fx { position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
@@ -77,7 +77,7 @@
 .banderin .hud-item b { display: block; font: 22px/1 var(--pk-display); color: #ff9a1f; }
 .banderin .hud-item small { font: 800 13px/1.2 var(--pk-sans); color: var(--pk-muted); }
 @keyframes boch-slide { from { opacity: 0; transform: skewX(-10deg) translateX(-120px); } }
-.banderin .hud-bubble { position: absolute; left: -38px; top: -38px; width: 76px; height: 76px; display: grid; place-items: center; border-radius: 50%; background: rgba(14, 11, 36, .85); box-shadow: 0 0 0 4px var(--c), 4px 4px 0 4px var(--boch-ink); }
+.banderin .hud-bubble { position: absolute; left: -38px; top: -38px; width: 76px; height: 76px; display: grid; place-items: center; border-radius: var(--pk-radius-round); background: rgba(14, 11, 36, .85); box-shadow: 0 0 0 4px var(--c), 4px 4px 0 4px var(--boch-ink); }
 .banderin .hud-bubble img { width: 58px; height: 58px; object-fit: contain; }
 .banderin .hud-bubble small { position: absolute; bottom: -16px; padding: 2px 6px; background: var(--boch-ink); font: 16px/1 var(--pk-display); color: var(--pc); }
 .banderin .hud-bubble i { position: absolute; inset: 0; }

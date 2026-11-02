@@ -30,7 +30,7 @@ function label(text, color, { bubble = false } = {}) {
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 96;
   const ctx = canvas.getContext('2d'); ctx.font = `800 ${bubble ? 38 : 34}px Nunito, sans-serif`;
   const width = Math.min(500, ctx.measureText(text).width + 40);
-  ctx.fillStyle = bubble ? '#fffaf0f2' : '#14102ae0'; ctx.beginPath(); ctx.roundRect(256 - width / 2, 10, width, 70, 22); ctx.fill();
+  ctx.fillStyle = bubble ? '#fffaf0f2' : '#14102ae0'; ctx.fillRect(256 - width / 2, 10, width, 70);
   if (bubble) { ctx.beginPath(); ctx.moveTo(240, 78); ctx.lineTo(256, 94); ctx.lineTo(272, 78); ctx.fill(); }
   ctx.fillStyle = bubble ? '#2b1d12' : color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 256, 46, 480);
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;

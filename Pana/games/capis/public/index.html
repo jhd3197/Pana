@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e8569b">
+  <meta name="description" content="Artillería de pintura entre chigüires. Apunta con la bazuca, mide el viento y tumba a los capis rivales al río.">
+  <title translate="no">Capis a Pintazos · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/engine/game-lobby.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <canvas id="world" aria-label="La orilla del llano en tres dimensiones"></canvas>
+  <header class="topbar"><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a><nav id="game-nav" aria-label="Opciones"></nav></header>
+  <!-- game-entry supplies the shared Carreritas side-settings lobby. -->
+  <section id="lobby" class="pk-lobby" aria-labelledby="lobby-title">
+    <span class="pk-ribbon">TÚ VS LA MÁQUINA</span>
+    <h1 id="lobby-title" class="pk-title" translate="no">Capis a Pintazos</h1>
+    <p class="pk-copy" data-room-description>Tres capis por equipo en la orilla del llano. Por turnos, apunta la bazuca de pintura, mide el viento y tumba a los rivales al río o píntalos enteros.</p>
+    <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
+    <p id="lobby-seed" class="pk-copy lobby-seed" translate="no"></p>
+    <div id="room-options"></div>
+    <div class="seed-card" data-room-extra>
+      <label class="pk-eyebrow" for="seed-input">Número del mapa</label>
+      <div class="seed-row"><input id="seed-input" type="number" min="1" max="99999" inputmode="numeric" aria-describedby="seed-help"><button id="seed-new" class="pk-btn pk-btn--ghost" type="button">Otro mapa</button></div>
+      <small id="seed-help" class="pk-copy">Cada partida trae un mapa nuevo. Escribe un número para repetir uno.</small>
+    </div>
+    <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando…</button></div>
+  </section>
+  <main id="hud" hidden>
+    <section class="turn-panel pk-panel" aria-label="Turno">
+      <span id="turn-who" class="pk-eyebrow"></span>
+      <b id="turn-time" class="pk-num" aria-live="off"></b>
+      <span id="turn-note" class="pk-copy"></span>
+    </section>
+    <section class="wind-panel pk-panel" aria-label="Viento">
+      <span class="pk-eyebrow">Viento</span>
+      <div class="wind-gauge"><span id="wind-arrow" class="wind-arrow" aria-hidden="true"><i class="wind-shaft"></i><i class="wind-head"></i></span><b id="wind-value" class="pk-num"></b></div>
+    </section>
+    <section class="teams-panel pk-panel" aria-label="Equipos">
+      <ol id="team-0" class="team-list"></ol>
+      <ol id="team-1" class="team-list"></ol>
+      <span id="map-seed" class="map-seed" translate="no"></span>
+    </section>
+    <section id="power-bar" class="pk-power" hidden aria-label="Fuerza del tiro">
+      <div class="pk-power-control"><span id="power-label">Fuerza</span><div id="power" class="pk-charge" role="meter" aria-labelledby="power-label" aria-valuemin="5" aria-valuemax="100" aria-valuenow="5"><i class="pk-charge-fill"></i><i class="pk-charge-marker"></i></div><span id="power-value" aria-hidden="true">5%</span><span>Suelta</span></div>
+    </section>
+    <section id="weapons" class="weapon-bar pk-panel" aria-label="Armas del capi">
+      <div id="weapon-list" class="weapon-list" role="radiogroup" aria-label="Elige el arma"></div>
+      <span id="weapon-note" class="weapon-note"></span>
+    </section>
+    <div id="labels" class="labels" aria-hidden="true"></div>
+    <div class="pk-hints hints" data-pana-hint>
+      <span><b>A D</b> <span>Caminar</span></span>
+      <span><b>W S / ↑ ↓ / ratón</b> <span>Apuntar</span></span>
+      <span><b>Espacio / clic</b> <span>Mantén para cargar, suelta para disparar</span></span>
+      <span><b>1–5 / Q E / Tab</b> <span>Cambiar de arma</span></span>
+      <span><b>Enter</b> <span>Saltar</span> · <b>Z</b> <span>Ver todo el mapa</span></span>
+    </div>
+    <div id="touch" class="pk-touch-zone">
+      <div class="touch-move"><button id="left" class="pk-touch" data-icon="left" aria-label="Izquierda"></button><button id="right" class="pk-touch" data-icon="right" aria-label="Derecha"></button></div>
+      <div class="touch-act">
+        <button id="aim-up" class="pk-touch pk-touch--sm" data-icon="up" aria-label="Apuntar más alto"></button>
+        <button id="aim-down" class="pk-touch pk-touch--sm" data-icon="down" aria-label="Apuntar más bajo"></button>
+        <button id="jump" class="pk-touch" data-icon="jump" aria-label="Saltar"></button>
+        <button id="zoom" class="pk-touch pk-touch--sm">Mapa</button>
+        <button id="fire" class="pk-touch pk-touch--go pk-touch--lg">¡Pinta!</button>
+      </div>
+    </div>
+  </main>
+  <div id="toast" class="pk-toast" role="status" aria-live="polite"></div>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">FIN DE LA PARTIDA</span><h2 id="result-title" class="pk-title"></h2><p id="result-copy" class="pk-copy"></p><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra partida</button><button id="same-map" class="pk-btn pk-btn--ghost pk-btn--block">Revancha en este mapa</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
+  <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">Preparando Capis a Pintazos</h2><p>Llenando las bazucas de pintura…</p></div></div>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
+</body>
+</html>

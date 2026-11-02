@@ -135,10 +135,19 @@ const SHOTS = {
   },
   // Soft thwip for slingshots, darts and toys.
   pellet: v => { burst({ dur: .06, f0: 2200, f1: 900, q: 1.4, vol: .14 * v, priority: 2 }); pitch({ dur: .07, f0: 520, f1: 190, vol: .08 * v, priority: 2 }); },
+  // A rotary gun: a short, buzzy tick light enough to repeat twenty times a second.
+  minigun: v => {
+    const j = jit(.1);
+    burst({ dur: .018, f0: 3600 * j, type: 'highpass', vol: .1 * v, priority: 2 });
+    pitch({ dur: .035, f0: 190 * j, f1: 120, type: 'sawtooth', vol: .05 * v, priority: 2 });
+    punch(v, 120, .03, .05);
+  },
+  // A pump sprayer: a soft hiss of droplets, almost no punch.
+  spray: v => { burst({ dur: .07, f0: 5200 * jit(.1), f1: 3800, q: .6, vol: .05 * v, priority: 1 }); burst({ dur: .05, f0: 1500, q: 1.2, vol: .025 * v, priority: 1 }); },
   // A bright zap for energy toys.
   zap: v => { pitch({ dur: .14, f0: 1600, f1: 260, type: 'sawtooth', vol: .09 * v, priority: 2 }); burst({ dur: .05, f0: 4200, type: 'highpass', vol: .1 * v, priority: 2 }); },
 };
-const WEAPON_ALIAS = { chispa: 'pistol', trueno: 'scatter', gemelas: 'rapid', coheton: 'rocket', lejana: 'sniper', bazuca: 'bazooka', shotgun: 'scatter', smg: 'rapid', launcher: 'rocket', rifle: 'sniper' };
+const WEAPON_ALIAS = { chispa: 'pistol', trueno: 'scatter', gemelas: 'rapid', coheton: 'rocket', lejana: 'sniper', bazuca: 'bazooka', shotgun: 'scatter', smg: 'rapid', launcher: 'rocket', rifle: 'sniper', slingshot: 'pellet', sprayer: 'spray' };
 
 // ---------- reloads: a sequence laid out over `dur` seconds ----------
 const click = (delay, v = 1, f = 1700) => { pitch({ dur: .02, f0: f, f1: f * .55, type: 'square', vol: .045 * v, delay, priority: 1 }); burst({ dur: .02, f0: 3400, q: 1.5, vol: .06 * v, delay, priority: 1 }); };
@@ -175,8 +184,34 @@ const RELOAD = {
 };
 const RELOAD_FOR = { pistol: 'hopper', rapid: 'hopper', scatter: 'pump', rocket: 'tube', sniper: 'bolt', bazooka: 'tube' };
 
+// ---------- melee ----------
+// A close-range weapon by what it is made of: the air it cuts on the swing and the
+// sound of the blow. `wood` a bat's thud, `slap` a sandal, `squish` a wet paint
+// roller, `swish` a brush, `clang` a metal bucket, `rattle` a maraca's seeds.
+const SWINGS = {
+  wood: v => burst({ dur: .2, f0: 380, f1: 1500, q: 1.1, vol: .11 * v, priority: 1 }),
+  slap: v => burst({ dur: .13, f0: 900, f1: 2600, q: 1.3, vol: .08 * v, priority: 1 }),
+  squish: v => burst({ dur: .24, f0: 300, f1: 1100, q: .8, vol: .1 * v, priority: 1 }),
+  swish: v => { burst({ dur: .12, f0: 2400, f1: 5200, q: .9, vol: .07 * v, priority: 1 }); burst({ dur: .1, f0: 3000, q: 1, vol: .04 * v, delay: .04, priority: 0 }); },
+  clang: v => { burst({ dur: .28, f0: 260, f1: 900, q: 1, vol: .12 * v, priority: 1 }); pitch({ dur: .12, f0: 1300, f1: 1250, type: 'triangle', vol: .015 * v, delay: .05, priority: 0 }); },
+  rattle: v => { for (let i = 0; i < 4; i++) burst({ dur: .03, f0: rnd(4200, 6200), q: 2.5, vol: .05 * v, delay: i * .035, priority: 0 }); burst({ dur: .14, f0: 900, f1: 2200, q: 1, vol: .05 * v, priority: 1 }); },
+};
+const SMACKS = {
+  wood: v => { pitch({ dur: .14, f0: 150, f1: 55, vol: .22 * v, priority: 2 }); burst({ dur: .07, f0: 700, f1: 380, q: 1.6, vol: .16 * v, priority: 2 }); pitch({ dur: .06, f0: 420, f1: 260, type: 'triangle', vol: .08 * v, priority: 2 }); },
+  slap: v => { burst({ dur: .045, f0: 2600, f1: 1400, q: .7, vol: .26 * v, priority: 2 }); burst({ dur: .03, f0: 6000, type: 'highpass', vol: .1 * v, priority: 2 }); pitch({ dur: .05, f0: 260, f1: 140, vol: .1 * v, priority: 2 }); },
+  squish: v => { burst({ dur: .18, f0: 1200, f1: 380, q: 1.4, vol: .18 * v, priority: 2 }); pitch({ dur: .12, f0: 220, f1: 90, vol: .1 * v, priority: 2 }); for (let i = 0; i < 2; i++) burst({ dur: .05, f0: rnd(1500, 2300), q: 2.5, vol: .05 * v, delay: .07 + i * .05, priority: 0 }); },
+  swish: v => { burst({ dur: .08, f0: 3200, f1: 1800, q: 1, vol: .14 * v, priority: 2 }); burst({ dur: .07, f0: 1300, f1: 600, q: .9, vol: .1 * v, delay: .02, priority: 2 }); },
+  clang: v => { pitch({ dur: .45, f0: 640 * jit(.05), f1: 600, type: 'triangle', vol: .09 * v, priority: 2 }); pitch({ dur: .35, f0: 1510, f1: 1480, vol: .04 * v, priority: 2 }); burst({ dur: .05, f0: 3800, q: 3, vol: .14 * v, priority: 2 }); pitch({ dur: .12, f0: 120, f1: 60, vol: .16 * v, priority: 2 }); },
+  rattle: v => { for (let i = 0; i < 6; i++) burst({ dur: .03, f0: rnd(3800, 6400), q: 2.5, vol: .07 * v, delay: i * .028, priority: 1 }); pitch({ dur: .08, f0: 300, f1: 160, type: 'triangle', vol: .1 * v, priority: 2 }); },
+};
+
 // ---------- the library ----------
 export const sfx = {
+  // A melee swing cutting the air, and the blow landing (material: see SWINGS).
+  swing(material = 'wood', { volume = 1 } = {}) { if (!sound.ctx || sound.muted) return; (SWINGS[material] || SWINGS.wood)(clamp(volume, 0, 1.5)); },
+  smack(material = 'wood', { volume = 1 } = {}) { if (!sound.ctx || sound.muted) return; (SMACKS[material] || SMACKS.wood)(clamp(volume, 0, 1.5)); },
+  // Something small back in the hand: a quick rising pop.
+  pop(volume = 1) { pitch({ dur: .07, f0: 420, f1: 1100, type: 'triangle', vol: .08 * volume, priority: 2 }); burst({ dur: .03, f0: 2600, q: 2, vol: .05 * volume, delay: .03, priority: 1 }); },
   // One footfall. foot (0/1) alternates the pitch; sprint hits harder and quicker.
   step(surface = 'concrete', { sprint = false, volume = 1, foot = 0 } = {}) {
     if (!sound.ctx || sound.muted) return;
@@ -212,16 +247,36 @@ export const sfx = {
   },
   splat(volume = 1) { sfx.impact('paint', { volume }); },
   // An explosion: a crack, a fireball's roar, a deep drop, debris and a long rumble.
-  // size 0.5..1.5 (a grenade ~.8, a rocket 1, a bazooka 1.2); volume falls with distance.
-  boom(size = 1, { volume = 1 } = {}) {
+  // size 0.5..1.5 (a grenade ~.8, a rocket 1, a bazooka 1.2); volume falls with distance;
+  // far 0..1 takes the crack and the debris away first, as distance does, leaving the rumble.
+  boom(size = 1, { volume = 1, far = 0 } = {}) {
     if (!sound.ctx || sound.muted) return;
-    const k = clamp(size, .4, 1.5), v = clamp(volume, 0, 1.5) * (.7 + k * .2), j = jit(.06);
-    burst({ dur: .06, f0: 3000 * j, type: 'highpass', vol: .18 * v, priority: 2 });
-    burst({ dur: .9 * k, f0: 900 * j, f1: 120, q: .6, type: 'lowpass', vol: .24 * v, priority: 2 });
+    const k = clamp(size, .4, 1.5), v = clamp(volume, 0, 1.5) * (.7 + k * .2), j = jit(.06), near = 1 - clamp(far);
+    burst({ dur: .06, f0: 3000 * j, type: 'highpass', vol: .18 * v * near, priority: 2 });
+    burst({ dur: .9 * k, f0: (900 - 500 * (1 - near)) * j, f1: 120, q: .6, type: 'lowpass', vol: .24 * v, priority: 2 });
     pitch({ dur: .9 * k, f0: 82 * j, f1: 24, vol: .28 * v, priority: 2 });
     pitch({ dur: .3, f0: 160, f1: 45, type: 'triangle', vol: .12 * v, priority: 2 });
-    for (let i = 0; i < 3; i++) burst({ dur: .04, f0: rnd(1500, 4000), q: 3, vol: rnd(.03, .05) * v, delay: .12 + i * .13 + rnd(0, .05), priority: 0 });
-    burst({ dur: 1.6 * k, f0: 320, f1: 70, q: .7, type: 'lowpass', vol: .1 * v, delay: .1, priority: 1 });
+    for (let i = 0; i < 3; i++) burst({ dur: .04, f0: rnd(1500, 4000), q: 3, vol: rnd(.03, .05) * v * near, delay: .12 + i * .13 + rnd(0, .05), priority: 0 });
+    burst({ dur: 1.6 * k, f0: 320, f1: 70, q: .7, type: 'lowpass', vol: .1 * v * (1 + .6 * (1 - near)), delay: .1, priority: 1 });
+  },
+  // Earth thrown up by a blast raining back down: a soft thud, then clods pattering.
+  debris(size = 1, { volume = 1, delay = .25 } = {}) {
+    if (!sound.ctx || sound.muted) return;
+    const k = clamp(size, .4, 1.5), v = clamp(volume, 0, 1.5);
+    pitch({ dur: .18, f0: 120 * jit(), f1: 50, vol: .12 * v * k, delay, priority: 1 });
+    burst({ dur: .3, f0: 420, f1: 160, q: .8, type: 'lowpass', vol: .1 * v, delay, priority: 1 });
+    const n = Math.round(4 + 4 * k);
+    for (let i = 0; i < n; i++) burst({ dur: .03 + rnd(0, .03), f0: rnd(500, 1400), q: 2, vol: rnd(.025, .05) * v, delay: delay + .1 + i * .07 + rnd(0, .06), priority: 0 });
+  },
+  // Drops of paint landing all around: short wet blips.
+  patter(count = 6, { volume = 1, delay = 0 } = {}) {
+    if (!sound.ctx || sound.muted) return;
+    const v = clamp(volume, 0, 1.5);
+    for (let i = 0; i < clamp(count, 1, 10); i++) {
+      const at = delay + i * .055 + rnd(0, .05);
+      pitch({ dur: .04, f0: rnd(600, 900), f1: rnd(250, 380), vol: .035 * v, delay: at, priority: 0 });
+      burst({ dur: .03, f0: rnd(1800, 2800), q: 2.5, vol: .025 * v, delay: at, priority: 0 });
+    }
   },
   // The tick that confirms you hit someone.
   hitConfirm() { pitch({ dur: .04, f0: 1400, type: 'square', vol: .09, priority: 3 }); pitch({ dur: .06, f0: 2100, type: 'square', vol: .08, delay: .04, priority: 3 }); pitch({ dur: .08, f0: 260, f1: 110, vol: .14, priority: 3 }); burst({ dur: .04, f0: 3200, q: 1, vol: .1, priority: 3 }); },
@@ -248,6 +303,32 @@ export const sfx = {
   tick(n = 0) { pitch({ dur: .03, f0: 1200 + (n % 12) * 60, type: 'triangle', vol: .05, priority: 1 }); },
   confirm() { pitch({ dur: .06, f0: 660, type: 'triangle', vol: .06, priority: 2 }); pitch({ dur: .1, f0: 990, type: 'triangle', vol: .06, delay: .05, priority: 2 }); },
   back() { pitch({ dur: .06, f0: 520, f1: 380, type: 'triangle', vol: .05, priority: 2 }); },
+  // A cartoon spring: a hop with bounce in it.
+  boing(volume = 1) {
+    pitch({ dur: .24, f0: 150, f1: 520, type: 'triangle', vol: .09 * volume, priority: 1 });
+    pitch({ dur: .2, f0: 300, f1: 1000, vol: .035 * volume, delay: .02, priority: 0 });
+  },
+  // A small animal's startled squeak (a capybara hit by paint).
+  squeak(volume = 1) {
+    const j = jit(.08);
+    pitch({ dur: .07, f0: 1500 * j, f1: 2100 * j, type: 'triangle', vol: .07 * volume, priority: 2 });
+    pitch({ dur: .1, f0: 1900 * j, f1: 1300 * j, type: 'triangle', vol: .06 * volume, delay: .08, priority: 2 });
+  },
+  // Something heavy falling into water: the plop, the rush and the drips.
+  splash(size = 1, { volume = 1 } = {}) {
+    const v = clamp(volume, 0, 1.5), k = clamp(size, .4, 1.5);
+    pitch({ dur: .16, f0: 260, f1: 90, vol: .16 * v, priority: 2 });
+    burst({ dur: .55 * k, f0: 1500, f1: 300, q: .6, type: 'lowpass', vol: .2 * v, priority: 2 });
+    burst({ dur: .35, f0: 2600, f1: 5200, q: .8, vol: .05 * v, delay: .05, priority: 1 });
+    for (let i = 0; i < 4; i++) pitch({ dur: .05, f0: rnd(700, 1300), f1: rnd(1400, 2200), vol: .03 * v, delay: .25 + i * .09 + rnd(0, .04), priority: 0 });
+  },
+  // Your turn: two bright notes.
+  chime() { pitch({ dur: .14, f0: 784, type: 'triangle', vol: .07, priority: 3 }); pitch({ dur: .3, f0: 1175, type: 'triangle', vol: .07, delay: .11, priority: 3 }); },
+  // The end of a match: a rising run for a win, a falling one for a loss.
+  sting(win = true) {
+    const notes = win ? [523, 659, 784, 1047] : [440, 370, 311, 262];
+    notes.forEach((f, i) => pitch({ dur: i === notes.length - 1 ? .5 : .16, f0: f, f1: win || i < notes.length - 1 ? f : f * .94, type: 'triangle', vol: .08, delay: i * .13, priority: 3 }));
+  },
   // The 3-2-1 beeps and the brighter GO.
   count(n = 1) { pitch({ dur: .14, f0: 660 + (3 - clamp(n, 1, 3)) * 0, type: 'square', vol: .08, priority: 3 }); pitch({ dur: .14, f0: 330, type: 'sine', vol: .08, priority: 3 }); },
   go() { pitch({ dur: .16, f0: 880, type: 'square', vol: .085, priority: 3 }); pitch({ dur: .34, f0: 1320, type: 'square', vol: .085, delay: .1, priority: 3 }); pitch({ dur: .4, f0: 440, type: 'triangle', vol: .09, delay: .1, priority: 3 }); },

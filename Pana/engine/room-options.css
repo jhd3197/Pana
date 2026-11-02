@@ -1,40 +1,106 @@
+/* Primary choices in the lobby's settings column (sala.css restyles them there). */
 .pk-room-primary { display: grid; gap: 20px; }
-.pk-room-field[hidden], .pk-room-more[hidden] { display: none !important; }
+.pk-room-field[hidden], .pk-room-more[hidden], .pk-room-help[hidden] { display: none !important; }
 .pk-room-field { min-width: 0; margin: 0; padding: 0; border: 0; }
-.pk-room-field legend { padding: 0; margin-bottom: 12px; color: var(--pk-text); font: 900 17px var(--pk-sans); }
-.pk-room-field .pk-seg { display: flex; gap: 3px; flex-wrap: wrap; padding: 5px; border-radius: 15px; background: var(--pk-purple); }
-.pk-room-field .pk-seg button { flex: 1; min-height: 46px; border-radius: 11px; padding: 10px 14px; font: 900 15px var(--pk-sans); }
-.pk-room-field .pk-seg button[aria-pressed="true"] { background: var(--pk-yellow); color: var(--pk-night); }
-.pk-room-field .pk-seg button:disabled { cursor: default; opacity: .8; }
-.pk-room-more { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 20px; border: 2px solid var(--pk-line); border-radius: 15px; padding: 16px; background: transparent; color: var(--pk-text); font: 900 16px var(--pk-sans); cursor: pointer; }
+/* :where() keeps these out of the dialog's skinned cards without raising their weight over sala.css. */
+:where(.pk-room-primary) .pk-room-field legend { padding: 0; margin-bottom: 12px; color: var(--pk-text); font: 900 17px var(--pk-sans); }
+:where(.pk-room-primary) .pk-room-field .pk-seg { display: flex; gap: 3px; flex-wrap: wrap; padding: 5px; border-radius: 0; background: var(--pk-purple); }
+:where(.pk-room-primary) .pk-room-field .pk-seg button { flex: 1; min-height: 46px; border-radius: 0; padding: 10px 14px; font: 900 15px var(--pk-sans); }
+:where(.pk-room-primary) .pk-room-field .pk-seg button[aria-pressed="true"] { background: var(--pk-yellow); color: var(--pk-night); }
+:where(.pk-room-primary) .pk-room-field .pk-seg button:disabled { cursor: default; opacity: .8; }
+.pk-room-more { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 20px; border: 2px solid var(--pk-line); border-radius: 0; padding: 16px; background: transparent; color: var(--pk-text); font: 900 16px var(--pk-sans); cursor: pointer; }
 .pk-room-more small { margin-left: auto; color: var(--pk-muted); font-size: 12px; }
-.pk-room-dialog { width: min(1000px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 28px; border: 2px solid var(--pk-line); border-radius: 28px; background: var(--pk-purple); color: var(--pk-text); box-shadow: 0 16px 0 #0005; font-family: var(--pk-sans); }
-.pk-room-dialog::backdrop { background: #0e0b24bb; }
-.pk-room-heading { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
-.pk-room-heading .pk-title { margin: 4px 0 0; font-size: 40px; }
-.pk-room-heading .pk-eyebrow { margin: 0; }
-.pk-room-heading>.pk-copy { margin-left: auto; max-width: 340px; font-size: 14px; }
-.pk-room-close { flex: 0 0 44px; padding: 10px; }
-.pk-room-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.pk-room-grid .pk-room-field { padding: 18px; border: 2px solid transparent; border-radius: 22px; background: var(--pk-raised); }
-.pk-room-grid .pk-room-field legend { float: left; width: 100%; }
-.pk-room-grid .pk-room-field .pk-seg { clear: both; background: var(--pk-night); }
-.pk-room-grid .is-changed { border-color: var(--pk-yellow); }
-.pk-room-footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; }
-.pk-room-extras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
-.pk-room-extras:empty { display: none; }
-.pk-room-extras>[data-room-extra] { min-width: 0; margin: 0; padding: 18px; border-radius: 22px; background: var(--pk-raised); }
-.pk-room-extras>[data-room-help] { grid-column: 1 / -1; justify-self: start; }
-.pk-room-extras select { width: 100%; }
 .pk-room-primary>[data-room-primary] { min-width: 0; }
-.pk-room-dialog button:focus-visible, .pk-room-primary button:focus-visible, .pk-room-more:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 4px; }
-@media (max-width: 650px) {
-  .pk-room-dialog { padding: 18px; border-radius: 20px; }
-  .pk-room-heading { flex-wrap: wrap; gap: 12px; }
-  .pk-room-heading>.pk-copy { order: 3; margin: 0; max-width: none; }
-  .pk-room-close { margin-left: auto; }
-  .pk-room-heading .pk-title { font-size: 32px; }
-  .pk-room-grid { grid-template-columns: 1fr; }
-  .pk-room-extras { grid-template-columns: 1fr; }
-  .pk-room-field .pk-seg button { padding: 10px 8px; font-size: 14px; }
+.pk-room-primary button:focus-visible, .pk-room-more:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 4px; }
+
+/* "Más ajustes": a compact dialog in the lobby room panel's language. The look
+   comes from the game skin in kit.css (.pk-skin-panel, -plate, -card, -label,
+   -chips, -btn, -go, -link, set by room-options.js); this file only lays it out:
+   a one-row header, one grid of equal cards (schema fields first, then adopted
+   extras) and a tight footer. The panel's leaning plate reaches a little past
+   the box (--pk-skin-reach) so the content stays on it at every height. */
+.pk-room-dialog {
+  --pk-skin-fill: var(--pk-purple);
+  --dialog-lean: calc((100dvh - 24px) * .0437); /* how far a full-height plate leans out at each corner */
+  --pk-skin-reach: clamp(0px, calc(var(--dialog-lean) - 10px), 34px);
+  box-sizing: border-box; width: min(940px, calc(100vw - 24px - 2 * (var(--pk-skin-reach) + var(--dialog-lean)))); max-height: calc(100dvh - 24px);
+  margin: auto; padding: 14px 16px 14px; color: var(--pk-text); font-family: var(--pk-sans); overflow: visible;
+}
+.pk-room-dialog.pk-skin-panel::before { inset: 0 calc(-1 * var(--pk-skin-reach)); }
+.pk-room-dialog[open] { display: flex; flex-direction: column; }
+.pk-room-dialog::backdrop { background: #0e0b24bb; }
+.pk-room-dialog button:focus-visible, .pk-room-dialog select:focus-visible, .pk-room-dialog a:focus-visible { outline: 2px solid var(--pk-yellow); outline-offset: 2px; }
+
+.pk-room-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.pk-room-names { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.pk-room-names .pk-skin-label { letter-spacing: .1em; white-space: nowrap; }
+.pk-room-title { margin: 0 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pk-room-notice { margin: 0 0 0 auto; max-width: 320px; font: 700 12px/1.3 var(--pk-sans); color: var(--pk-muted); text-align: right; }
+.pk-room-close { flex: none; width: 36px; min-height: 36px; padding: 0; }
+.pk-room-close svg { width: 16px; height: 16px; }
+
+/* The grid scrolls; its padding leaves room for the cards' lean and hard shadow. */
+.pk-room-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; align-content: start; min-height: 0; overflow: auto; margin: -4px -12px -8px -8px; padding: 4px 12px 8px 8px; }
+.pk-room-grid > .pk-room-field, .pk-room-grid > .pk-room-card { box-sizing: border-box; min-width: 0; margin: 0; padding: 8px 10px 10px; }
+.pk-room-grid > [data-pana-roster], .pk-room-grid > p.pk-room-card { grid-column: 1 / -1; }
+.pk-room-grid > [data-pana-roster] { min-width: 0; }
+.pk-room-dialog .pk-room-field legend { float: left; width: 100%; margin: 0 0 6px; padding: 0; }
+.pk-room-dialog .pk-room-field.is-changed legend { color: var(--pk-yellow); }
+.pk-room-card .pk-eyebrow { margin: 0; font: 800 11px/1.3 var(--pk-sans); letter-spacing: .06em; }
+.pk-room-dialog .pk-skin-chips { clear: both; }
+.pk-room-dialog .pk-skin-chips > button { flex: 1 1 auto; min-width: 30px; min-height: 34px; padding: 6px 8px; text-wrap: balance; }
+/* Adopted lobby fields (map, bot aim, roles) shrink to the same card. */
+.pk-room-card.pk-field, .pk-room-card > .pk-field { display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin: 0; }
+.pk-room-card select, .pk-room-card .pk-select { width: 100%; min-height: 34px; padding: 5px 10px; border: 0; border-radius: 0; background-color: var(--pk-skin-chip); color: var(--pk-text); font-size: 13px; }
+.pk-room-card small.pk-copy, .pk-room-card > p.pk-copy { margin: 0; font: 700 11px/1.35 var(--pk-sans); color: var(--pk-muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.pk-room-card .pk-difficulty small.pk-copy { -webkit-line-clamp: 1; }
+/* A text card keeps its plate unclipped, so it shows its few lines in full. */
+.pk-room-grid > p.pk-room-card { padding: 8px 10px; font: 700 11px/1.35 var(--pk-sans); color: var(--pk-muted); }
+
+.pk-room-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--pk-line); }
+.pk-room-footer .pk-skin-btn { min-height: 38px; padding: 7px 14px; }
+.pk-room-footer .pk-btn.pk-skin-go { min-width: 112px; min-height: 38px; margin-right: 4px; padding: 9px 20px 5px; font-size: 20px; }
+.pk-room-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-right: auto; min-width: 0; }
+.pk-room-links .pk-skin-link { width: auto; }
+
+/* The help layer replaces the grid and footer inside the same dialog. */
+.pk-room-dialog.is-help > .pk-room-grid, .pk-room-dialog.is-help > .pk-room-footer { display: none; }
+.pk-room-help { min-height: 0; overflow: auto; margin: -4px -12px -8px -8px; padding: 4px 12px 8px 8px; }
+.pk-room-help-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.pk-room-help-head h3 { margin: 0; font-size: 20px; }
+.pk-room-back { min-height: 34px; padding: 5px 12px 5px 8px; gap: 4px; }
+.pk-room-back svg { width: 16px; height: 16px; }
+.pk-room-help-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; align-items: start; }
+/* Help cards run tall: a gentler lean keeps their corners inside the scroller. */
+.pk-room-help-body > div { --pk-skin-lean: -1.5deg; display: grid; gap: 8px; min-width: 0; padding: 10px 14px; }
+.pk-room-keys { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; align-items: center; margin: 0; }
+.pk-room-keys dt { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; color: var(--pk-muted); font: 800 11px var(--pk-sans); }
+.pk-room-keys .pk-kbd { min-width: 22px; height: 22px; padding: 0 6px; border: 0; border-radius: 0; background: var(--pk-skin-chip); box-shadow: 2px 2px var(--pk-skin-shade); font-size: 11px; }
+.pk-room-keys dd { margin: 0; font: 700 13px/1.3 var(--pk-sans); color: var(--pk-text); }
+/* ui.css hides key hints for pad and touch players; here the caps are the content.
+   Touch players get the tips alone when there are any (keys mean nothing there). */
+[data-pana-input] .pk-room-keys .pk-kbd { display: inline-flex !important; }
+[data-pana-input=touch] .pk-room-help-keys:not(:only-child) { display: none; }
+.pk-room-tips { display: grid; gap: 6px; margin: 0; padding-left: 16px; font: 700 13px/1.4 var(--pk-sans); color: var(--pk-muted); }
+
+@media (max-width: 899px) {
+  .pk-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pk-room-help-body { grid-template-columns: 1fr; }
+}
+/* Below 801px the plates stand straight (kit.css), so the panel needs no reach. */
+@media (max-width: 800px) {
+  .pk-room-dialog { --dialog-lean: 0px; --pk-skin-reach: 0px; }
+}
+@media (max-width: 599px) {
+  .pk-room-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); padding: 12px 12px 10px; }
+  .pk-room-heading { flex-wrap: wrap; gap: 6px 10px; margin-bottom: 10px; }
+  .pk-room-names { flex: 1; flex-wrap: wrap; gap: 4px 12px; }
+  .pk-room-title { font-size: 21px; }
+  .pk-room-notice { order: 3; flex-basis: 100%; max-width: none; margin: 0; text-align: left; }
+  .pk-room-grid { grid-template-columns: 1fr; gap: 6px; }
+  .pk-room-footer { gap: 6px 10px; }
+  .pk-room-footer .pk-skin-btn { padding: 7px 10px; }
+  .pk-room-footer .pk-btn.pk-skin-go { min-width: 96px; margin-left: auto; }
+  /* Help links get their own row so Reset and Done always share one. */
+  .pk-room-links:not(:empty) { order: -1; flex-basis: 100%; margin: 0; }
 }

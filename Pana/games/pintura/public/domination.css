@@ -1,0 +1,23 @@
+/* Domination (domination-hud.js): three square zone chips under the race bar, the
+   in-zone banner and the world markers. Banderín look: square, hard ink shadow.
+   --c is the owner's colour, --claim the colour turning it, --p the progress 0..1. */
+#hud .dom-zones { display: flex; justify-content: center; gap: calc(6 * var(--u)); }
+#hud .dom-zones[hidden], #hud .dom-banner[hidden], #hud .dom-mark[hidden] { display: none; }
+#hud .dom-chip { position: relative; display: grid; place-items: center; width: calc(34 * var(--u)); height: calc(30 * var(--u)); background: var(--glass); box-shadow: calc(3 * var(--u)) calc(3 * var(--u)) 0 var(--ink), inset 0 0 0 calc(2 * var(--u)) var(--c); overflow: hidden; }
+#hud .dom-chip:not([data-owner="none"]) { background: color-mix(in srgb, var(--c) 78%, var(--pk-night)); }
+#hud .dom-chip b { position: relative; z-index: 1; font: 900 max(12px, calc(16 * var(--u))) / 1 var(--pk-sans); color: #fff; text-shadow: calc(1.5 * var(--u)) calc(1.5 * var(--u)) 0 var(--ink); }
+#hud .dom-chip.mine { box-shadow: calc(3 * var(--u)) calc(3 * var(--u)) 0 var(--ink), inset 0 0 0 calc(2 * var(--u)) var(--pk-yellow); }
+/* The capture bar along the bottom edge, in the colour of the team turning the zone. */
+#hud .dom-bar { position: absolute; left: 0; bottom: 0; height: calc(5 * var(--u)); width: calc(var(--p, 0) * 100%); background: var(--claim); box-shadow: 0 calc(-1 * var(--u)) 0 var(--ink); }
+#hud .dom-chip.contested, #hud .dom-mark.contested { animation: dom-contest .5s steps(2) infinite; }
+@keyframes dom-contest { 50% { background: var(--pk-coral, #ed615c); } }
+#hud .dom-banner { position: fixed; z-index: 5; left: 50%; top: calc(150 * var(--u)); transform: translateX(-50%) skewX(-10deg); margin: 0; padding: calc(6 * var(--u)) calc(14 * var(--u)); background: var(--pk-yellow); color: var(--ink); box-shadow: calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--ink); font: 900 max(11px, calc(14 * var(--u))) / 1 var(--pk-sans); text-transform: uppercase; letter-spacing: .04em; pointer-events: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#hud .dom-banner[data-kind="contested"] { background: var(--pk-coral, #ed615c); color: #fff; }
+#hud .dom-banner[data-kind="held"] { background: var(--pk-teal); }
+#hud .dom-mark { position: fixed; z-index: 3; left: 0; top: 0; display: flex; align-items: center; gap: calc(4 * var(--u)); padding: calc(3 * var(--u)) calc(6 * var(--u)) calc(5 * var(--u)); background: var(--glass); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink), inset 0 0 0 calc(2 * var(--u)) var(--c); pointer-events: none; will-change: transform; overflow: hidden; }
+#hud .dom-mark:not([data-owner="none"]) { background: color-mix(in srgb, var(--c) 70%, var(--pk-night)); }
+#hud .dom-mark .dom-letter { font: 900 max(11px, calc(14 * var(--u))) / 1 var(--pk-sans); color: #fff; }
+#hud .dom-mark small { font: 800 max(10px, calc(11 * var(--u))) / 1 var(--pk-sans); color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#hud .dom-mark .dom-bar { height: calc(3 * var(--u)); }
+@media (max-width: 600px) { #hud .dom-banner { top: 128px; } }
+@media (max-height: 520px) { #hud .dom-banner { top: 74px; } }

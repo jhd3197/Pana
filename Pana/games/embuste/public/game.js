@@ -97,7 +97,7 @@ function practice() {
 // ---------- actors ----------
 function label(text, color) {
   const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
-  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#0e0b24d8'; ctx.beginPath(); ctx.roundRect(8, 7, 240, 48, 8); ctx.fill();
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#0e0b24d8'; ctx.fillRect(8, 7, 240, 48);
   ctx.fillStyle = color; ctx.font = '800 25px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 128, 32, 224);
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true })); sprite.scale.set(2.6, 0.65, 1); sprite.position.y = 3.1; sprite.renderOrder = 5; return sprite;

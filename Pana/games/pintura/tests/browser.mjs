@@ -29,6 +29,19 @@ async function toSouthLane(p, x, edge = false) {
   else if (Math.abs(me.x - x) > 1) await walk(p, me.x < x ? 'd' : 'a', me.x < x ? `x > ${x}` : `x < ${x}`);
   await walk(p, 'w', 'z < -25.5');
 }
+// Runs in the page: how many meshes of player id's pana render (every ancestor visible),
+// and which other rendered meshes (not the held marker) stand inside that pana's body
+// when this client watches through its eyes.
+function bodyInView(id) {
+  const { world, room } = pinturaDebug, avatar = world.avatars.get(id), seen = o => { for (let x = o; x; x = x.parent) if (!x.visible) return false; return true; };
+  let shown = 0; avatar.group.traverse(o => { if (o.isMesh && seen(o)) shown++; });
+  const inBody = [], me = room.state.players.find(p => p.id === id);
+  if (id === room.id && world.view === 'primera') world.scene.traverse(o => {
+    if (!o.isMesh || !seen(o)) return; for (let x = o; x; x = x.parent) if (x === world.camera || x === avatar.group) return;
+    const at = o.getWorldPosition(o.position.clone()); if (at.y > .3 && at.y < 2 && Math.hypot(at.x - me.x, at.z - me.z) < .6) inBody.push(o.name || o.type);
+  });
+  return { shown, inBody };
+}
 async function open(name, room = code, mobile = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1 });
   await context.addInitScript(name => { localStorage.setItem('pana:name', name); localStorage.setItem('pana:settings', JSON.stringify({ sound: false, quality: 'baja' })); localStorage.setItem('pana:avatar', JSON.stringify({ outfit: 'hoodie', outfitColor: '#3775cc', hat: 'gorra' })); }, name);
@@ -43,37 +56,125 @@ try {
   assert.ok(await b.locator('#start').isDisabled()); await wait(a, () => pinturaDebug.world.avatars.size === 2);
   // Guest-authored loadout travels through the real room and remains server-owned.
   await b.locator('#open-armory').click();
+  // Markers are picked by class: a chip per class, then its markers (only La Chispa's class shows first).
   await b.locator('[data-slot="weapon"]').click();
+  // The weapon preview is the gun alone: the pana stays out of it, the gun and its parents show.
+  const shows = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  await wait(b, `(${shows})(pinturaDebug.armory.preview) && !pinturaDebug.armory.body.visible`);
+  assert.equal(await b.locator('#armory-choices [data-id="rocket"]').count(), 0);
+  assert.equal(await b.locator('#armory-classes [data-class="granadas"]').count(), 0, 'a class without markers has no chip');
+  await b.locator('#armory-classes [data-class="lanzadores"]').click();
+  assert.match(await b.locator('#armory-choices [data-id="revolver"]').textContent(), /El Tambor/);
   await b.locator('#armory-choices [data-id="rocket"]').click();
+  assert.match(await b.locator('#armory-class').textContent(), /Lanzadores/);
   await b.locator('#armory-parts-back').click();
-  await b.locator('[data-slot="attachments"]').first().click();
-  await b.locator('#armory-choices [data-id="hopper"]').click();
-  await b.locator('#armory-choices [data-id="barrel"]').click();
-  assert.equal(await b.locator('#armory-choices [data-id="stock"]').isDisabled(),true);
-  await b.locator('#armory-parts-back').click();
+  // Attachment slots are explicit: a part lands in the slot that was clicked and stays there.
+  const slotButton = i => b.locator(`[data-slot="attachments"][data-index="${i}"]`);
+  const savedKit = () => b.evaluate(() => JSON.parse(localStorage.getItem('pintura:kit')));
+  await slotButton(1).click(); assert.equal(await slotButton(1).getAttribute('aria-pressed'), 'true');
+  assert.match(await b.locator('#armory-parts-back').textContent(), /Accesorio 2/);
+  await b.locator('#armory-choices [data-id="hopper"]').click(); await b.locator('#armory-parts-back').click();
+  assert.equal(await slotButton(1).locator('b').textContent(), 'Tolva grande'); assert.equal(await slotButton(0).locator('b').textContent(), 'Sin accesorio');
+  assert.deepEqual((await savedKit()).attachments, [null, 'hopper', null]);
+  await slotButton(0).click(); await b.locator('#armory-choices [data-id="stock"]').click(); await b.locator('#armory-parts-back').click();
+  const guestId=await b.evaluate(()=>pinturaDebug.room.id);
+  const seen = (want) => wait(a, ([id, want]) => JSON.stringify(pinturaDebug.room.state.players.find(p => p.id === id).kit.attachments) === want, [guestId, JSON.stringify(want)]);
+  await seen(['stock', 'hopper', null]);
+  // La Bazuca has a mount for every part (its stock is a pair of sliding rods): the parts stay put.
+  await b.locator('[data-slot="weapon"]').click(); await b.locator('#armory-choices [data-id="bazooka"]').click();
+  assert.equal(await b.locator('#armory-note').textContent(), '');
+  assert.deepEqual((await savedKit()).attachments, ['stock', 'hopper', null]); await b.locator('#armory-parts-back').click();
+  // The third slot takes the Mira, which names the kind this marker carries.
+  await slotButton(2).click(); assert.match(await b.locator('#armory-parts-back').textContent(), /Accesorio 3/);
+  assert.match(await b.locator('#armory-choices [data-id="optic"]').textContent(), /Holográfica/);
+  await b.locator('#armory-choices [data-id="optic"]').click(); await b.locator('#armory-parts-back').click();
+  await slotButton(0).click(); await b.locator('#armory-choices [data-id="barrel"]').click(); await b.locator('#armory-parts-back').click();
+  await b.locator('[data-slot="weapon"]').click(); await b.locator('#armory-choices [data-id="rocket"]').click(); await b.locator('#armory-parts-back').click();
+  await seen(['barrel', 'hopper', 'optic']);
+  // The preview holds the real model with all three parts and its Mira kind.
+  assert.equal(await b.evaluate(() => pinturaDebug.armory.preview.userData.optic), 'holo');
+  // Clearing slot 0 leaves slots 1 and 2 where they were.
+  await slotButton(0).click(); await b.locator('#armory-choices [data-id=""]').click(); await b.locator('#armory-parts-back').click();
+  assert.equal(await slotButton(0).locator('b').textContent(), 'Sin accesorio'); assert.equal(await slotButton(1).locator('b').textContent(), 'Tolva grande'); assert.equal(await slotButton(2).locator('b').textContent(), 'Mira');
+  assert.deepEqual((await savedKit()).attachments, [null, 'hopper', 'optic']);
   await b.locator('[data-slot="armor"]').click();await b.locator('#armory-choices [data-id="padded"]').click();
+  // On armor the body is the point: the pana comes back wearing the vest, and the gun
+  // leaves the view so it does not hide the vest.
+  await wait(b, `pinturaDebug.armory.body.visible && pinturaDebug.armory.body.getObjectByName('El Acolchado')?.visible && !(${shows})(pinturaDebug.armory.preview)`);
+  await b.locator('#armory-parts-back').click();
+  await b.locator('[data-slot="weapon"]').click();
+  await wait(b, `(${shows})(pinturaDebug.armory.preview) && !pinturaDebug.armory.body.visible`);
   await b.locator('#armory-parts-back').click();
   await b.locator('[data-slot="grenade"]').click();await b.locator('#armory-choices [data-id="pegajosa"]').click();
   await b.locator('#armory-close').click();
-  const guestId=await b.evaluate(()=>pinturaDebug.room.id);
-  await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && p.kit.attachments.length===2 && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
+  await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && JSON.stringify(p.kit.attachments)==='[null,"hopper","optic"]' && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
+  // Camuflajes: a fixed set. A solid one is everyone's and reaches the room; without pana.sh a
+  // patterned one is locked in the armory, and the room swaps it for a solid one if sent anyway.
+  await b.locator('#open-armory').click(); await b.locator('[data-slot="camo"]').click();
+  await b.locator('#armory-choices .armory-camo[data-id="liso-uva"] .armory-choice').click();
+  await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-uva', guestId);
+  assert.equal((await savedKit()).camo, 'liso-uva');
+  assert.equal(await b.evaluate(() => pinturaDebug.armory.preview.userData.camo?.pattern), 'solid');
+  await wait(b, () => !pinturaDebug.armory.body.visible);
+  assert.equal(await b.locator('#armory-choices input[type="color"]').count(), 0, 'no free colour picker');
+  const locked = b.locator('#armory-choices .armory-camo[data-id="selva"]');
+  assert.equal(await locked.getAttribute('data-state'), 'locked'); assert.match(await locked.textContent(), /pana\.sh/);
+  await locked.locator('.armory-choice').dispatchEvent('click'); assert.equal((await savedKit()).camo, 'liso-uva', 'a locked camo is not picked');
+  assert.match(await b.locator('#armory-note').textContent(), /pana.sh/);
+  await locked.locator('.armory-choice').hover(); await wait(b, () => pinturaDebug.armory.preview.userData.camo?.pattern === 'woodland');
+  await b.locator('#armory-parts-back').click(); await b.locator('#armory-close').click();
+  await b.evaluate(() => pinturaDebug.room.selectKit({ ...pinturaDebug.armory.kit, camo: 'selva' }));
+  await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-mango', guestId);
+  await wait(b, () => /camuflaje todavía no es tuyo/.test(document.getElementById('toast').textContent));
+  await b.evaluate(() => pinturaDebug.room.selectKit({ ...pinturaDebug.armory.kit, camo: 'liso-uva' }));
+  await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-uva', guestId);
+  console.log('ok: a solid camo reaches the room and the preview, a locked one is refused and announced');
   // The routes below walk the plaza's outer lane; El Puerto is the default map.
   await a.evaluate(() => pinturaDebug.room.selectMap('plaza')); await wait(b, () => pinturaDebug.room.state.mapId === 'plaza');
   await a.screenshot({ path: `${out}/lobby.png` }); await a.locator('#start').click(); await wait(b, () => pinturaDebug.room.state.phase === 'playing');
   // Both clients load the court, then the room counts 3-2-1: input only counts after ¡YA!
   await wait(b, () => { const s = pinturaDebug.room.state; return !s.loading && !s.countdown; });
   assert.equal(await a.evaluate(() => pinturaDebug.world.view), 'primera');
+  // First person hides every part of the pana's own body (no mesh of it renders, and no
+  // stray mesh sits inside its body near the eye), while the other client still sees it.
+  const hostId = await a.evaluate(() => pinturaDebug.room.id);
+  await wait(a, () => pinturaDebug.world.camera.position.y > 1);
+  assert.deepEqual(await a.evaluate(bodyInView, hostId), { shown: 0, inBody: [] }, 'own body hidden in first person');
+  assert.ok((await b.evaluate(bodyInView, hostId)).shown > 5, 'the guest still sees the host');
   await b.evaluate(()=>pinturaDebug.room.selectKit({weapon:'rapid',armor:'wind'}));
-  await b.locator('#world').focus();await b.keyboard.press('g');
+  // A held throw: the guest looks up, holds G past 60% charge (the aim arc shows) and lets go.
+  // The paint grenade leaves the hand on a real arc over the cover and blows more than 12 m away.
+  await b.locator('#world').focus(); await b.evaluate(() => pinturaDebug.world.look(0, 1));
+  await b.keyboard.down('g'); await wait(b, () => pinturaDebug.grenade.power > .6);
+  await wait(b, () => pinturaDebug.world.scene.getObjectByName('Aim arc').visible && pinturaDebug.world.scene.getObjectByName('Aim ring').visible);
+  const thrownFrom = await b.evaluate(`(({ x, z }) => ({ x, z }))(${mine})`); await b.keyboard.up('g');
   await wait(a,id=>!pinturaDebug.room.state.players.find(p=>p.id===id).grenadeReady,guestId);
+  await wait(a, id => pinturaDebug.room.state.grenades.some(g => g.owner === id && g.y > 3), guestId);
+  const blast = await (await wait(a, () => pinturaDebug.room.state.splats.find(s => s.blast))).jsonValue();
+  assert.ok(Math.hypot(blast.x - thrownFrom.x, blast.z - thrownFrom.z) > 12, `grenade blew ${Math.hypot(blast.x - thrownFrom.x, blast.z - thrownFrom.z).toFixed(1)} m away`);
+  console.log('ok: a held-charge grenade lobs from the hand over the cover and blows more than 12 m away');
   assert.equal(await a.evaluate(id=>pinturaDebug.room.state.players.find(p=>p.id===id).kit.weapon,guestId),'rocket','mid-round kit edit is rejected');
-  console.log('ok: armory choices replicate, two-attachment cap, one grenade and mid-round kit lock');
+  // The refusal is said, not swallowed.
+  await wait(b, () => /plena ronda/.test(document.getElementById('toast').textContent));
+  // A number key changes the marker in the room and in the saved kit.
+  await a.locator('#world').focus(); await a.keyboard.press('3');
+  await wait(a, () => JSON.parse(localStorage.getItem('pintura:kit')).weapon === 'rapid' && pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).kit.weapon === 'rapid');
+  // 7 is La Metra (new markers are pickable mid-round); X steps to the next marker in class order, Z back.
+  await a.keyboard.press('7'); await wait(a, `${mine}.kit.weapon === 'smg'`);
+  await a.keyboard.press('x'); await wait(a, `${mine}.kit.weapon === 'pdw'`);
+  await a.keyboard.press('z'); await wait(a, `${mine}.kit.weapon === 'smg'`);
+  await a.keyboard.press('1'); await wait(a, `${mine}.kit.weapon === 'pistol'`);
+  assert.equal(await a.evaluate(() => JSON.parse(localStorage.getItem('pintura:kit')).weapon), 'pistol');
+  console.log('ok: markers by class, three armory slots stay put, the Mira names its kind, kits replicate, mid-round kit lock is announced, number keys and Z/X update the saved kit');
 
   // The guest crosses the court with the overview option (world-axis keys); the
   // host plays the default first-person view: turn, walk, then fire along the crosshair.
   await b.locator('#menu').click(); await b.locator('#pana-tab-settings').click();
   await b.locator('.pana-settings-nav button', { hasText: 'Pepazo' }).click();
   await b.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await b.keyboard.press('Escape');
+  // Out of first person the guest's own pana shows again.
+  await wait(b, fn => new Function(`return (${fn})`)()(pinturaDebug.room.id).shown > 5, bodyInView.toString());
+  console.log('ok: first person hides the own pana (body, kit, vest, marker), the rival still sees it, the overview shows it again');
   await b.locator('#world').focus(); await toSouthLane(b, 26, true);
   await wait(b, `!${mine}.walk`);
   await a.locator('#world').focus(); await a.evaluate(() => pinturaDebug.world.look(-pinturaDebug.world.yaw)); await toSouthLane(a, -10);
@@ -109,6 +210,48 @@ try {
   await b.locator('#start').click(); await wait(c, () => pinturaDebug.room.state.round === 2 && pinturaDebug.room.state.phase === 'playing' && pinturaDebug.room.state.mapId === 'muelle');
   console.log('ok: real round end agrees across clients, Otra ronda returns to the lobby and the next map is the host\'s pick');
   await b.close(); await c.close();
+  // Los del pescozón: La Chancleta from the armory, a swing that paints the bot in
+  // front, then the throw: it leaves the hand (the held model hides, the real
+  // sandal flies), paints a bot 12 m away and comes back to the hand.
+  const s = await open('Chancla', `${code}-melee`);
+  await s.locator('#open-armory').click(); await s.locator('[data-slot="weapon"]').click();
+  await s.locator('#armory-classes [data-class="melee"]').click();
+  assert.match(await s.locator('#armory-choices [data-id="sandal"]').textContent(), /La Chancleta/);
+  await s.locator('#armory-choices [data-id="sandal"]').click();
+  assert.match(await s.locator('#armory-class').textContent(), /Cuerpo a cuerpo/);
+  assert.match(await s.locator('#armory-stats').textContent(), /Golpes\/s/); assert.doesNotMatch(await s.locator('#armory-stats').textContent(), /Capacidad/);
+  await s.locator('#armory-parts-back').click(); await s.locator('[data-slot="attachments"][data-index="0"]').click();
+  assert.equal(await s.locator('#armory-choices [data-id="barrel"]').count(), 0, 'melee lists its own parts');
+  await s.locator('#armory-choices [data-id="tape"]').click(); await s.locator('#armory-parts-back').click(); await s.locator('#armory-close').click();
+  assert.equal(await s.evaluate(() => JSON.parse(localStorage.getItem('pintura:kit')).weapon), 'sandal');
+  // The positions below are on the plaza (open from x -14, z 22 down to z 10).
+  await s.evaluate(() => pinturaDebug.room.selectMap('plaza')); await wait(s, () => pinturaDebug.room.state.mapId === 'plaza');
+  await s.locator('#practice').click();
+  await wait(s, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing' && !pinturaDebug.room.state.loading && !pinturaDebug.room.state.countdown);
+  // The bots stand still; the pana looks down -z at the first one, `gap` metres away.
+  const place = gap => s.evaluate(gap => {
+    const g = pinturaDebug.room.game, [me, bot] = g.players;
+    g.bot = () => ({ x: 0, z: 0, ax: 0, az: 1, weapon: null, fire: false, alt: false, aim: false, reload: false, sprint: false, grenade: false, pitch: 0, charge: 0, jump: 0 });
+    g.players.slice(2).forEach(p => Object.assign(p, { x: 20, z: -20 }));
+    Object.assign(me, { x: -14, z: 22, shield: 0, respawn: 0 }); Object.assign(bot, { x: -14, z: 22 - gap, shield: 0, respawn: 0, paint: 0, hits: 0 });
+    pinturaDebug.world.look(-pinturaDebug.world.yaw, -pinturaDebug.world.pitch);
+  }, gap);
+  await s.locator('#world').focus(); await place(1.4);
+  await wait(s, `${mine}.kit.weapon === 'sandal' && ${mine}.melee.phase === 'ready'`);
+  await s.keyboard.press('Enter');
+  await wait(s, () => pinturaDebug.room.state.players[1].hits > 0 && pinturaDebug.room.state.players[0].smacks > 0);
+  assert.equal(await s.evaluate(() => pinturaDebug.room.state.players[0].ammo), 0, 'no ammo involved');
+  console.log('ok: La Chancleta picked by its class chip with melee stats and parts; a swing paints the bot in front');
+  await wait(s, () => !pinturaDebug.room.state.players[1].respawn); await place(12);
+  await wait(s, `${mine}.melee.phase === 'ready' && pinturaDebug.world.held.visible`);
+  await s.keyboard.press('v');
+  await wait(s, () => pinturaDebug.room.state.thrown.length > 0 && !pinturaDebug.world.held.visible && pinturaDebug.world.scene.getObjectByName('Thrown sandal')?.visible);
+  await wait(s, () => pinturaDebug.room.state.players[1].hits > 0);
+  assert.equal(await s.evaluate(() => pinturaDebug.room.state.events.filter(e => e.type === 'out').at(-1).thrown), true);
+  await wait(s, `${mine}.melee.phase === 'ready' && ${mine}.recalls > 0 && pinturaDebug.world.held.visible`);
+  assert.match(await s.locator('#aim').textContent(), /Lanzar/);
+  console.log('ok: V throws the chancla on an arc: it leaves the hand, paints a bot 12 m away and comes back');
+  await s.close();
   }
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` }); await m.locator('#practice').tap();
   await wait(m, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing' && !pinturaDebug.room.state.loading && !pinturaDebug.room.state.countdown); assert.ok(await m.locator('#fire').isVisible());

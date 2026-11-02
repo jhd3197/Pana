@@ -150,7 +150,7 @@ export function showPerf() {
   overlay = document.createElement('pre');
   overlay.className = 'pana-perf'; overlay.setAttribute('aria-hidden', 'true');
   overlay.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:2147483000;margin:0;padding:6px 8px;pointer-events:none;'
-    + 'font:12px/1.35 ui-monospace,Consolas,monospace;color:var(--pk-ink,#fff);background:rgba(13,11,33,.78);border-radius:4px;white-space:pre';
+    + 'font:12px/1.35 ui-monospace,Consolas,monospace;color:var(--pk-ink,#fff);background:rgba(13,11,33,.78);border-radius:0;white-space:pre';
   document.body.append(overlay);
   resetPerf(); startPerf(); paint(); timer = setInterval(paint, 500);
   const stop = onSettings(s => {

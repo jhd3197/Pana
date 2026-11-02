@@ -27,7 +27,7 @@ export async function createSala({ root, original, status, footer, actionTray, c
   if (!armory) kit.onclick = config.openKit;
   footer.insertBefore(kit, actionTray); footer.insertBefore(change, kit);
   const teams = document.getElementById('team-roster');
-  if (teams) { document.querySelector('#pana-room-dialog .pk-room-extras').prepend(teams); }
+  if (teams) { document.querySelector('#pana-room-dialog .pk-room-grid').prepend(teams); }
   const map = document.getElementById('map-choice');
   if (map) {
     const nav = document.createElement('div'); nav.className = 'sala-map';

@@ -13,6 +13,8 @@
 //     playing: () => state.phase === 'play',       // false: the whole page is a menu
 //   } });
 //   pad: { native: true, help: [['A', 'Golpe'], …] } // the game reads the pad itself in play
+//   pad: { …, prompts: false }                     // no always-on button bar in play: the game
+//                                                  // shows one-time hints (engine/control-hints.js)
 //   padControls({ playing: () => false, menu: () => settings.open() })  // a page that is all menu;
 //                                                  // Start (☰) runs `menu`, B clicks [data-pad-back]
 //
@@ -261,7 +263,8 @@ export function padLook(fn) { lookers.add(fn); return () => lookers.delete(fn); 
 let before = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false,promptNode=null;
 function showPrompts(scope){
   if(!promptNode){promptNode=document.createElement('div');promptNode.className='pana-pad-prompts';promptNode.setAttribute('aria-label',loc('Controles del mando'));document.body.append(promptNode);}
-  const state=inputState();promptNode.hidden=!!scope||state.device!=='gamepad'||!getSettings().hints;
+  // prompts: false — the game shows its own control hints (engine/control-hints.js).
+  const state=inputState();promptNode.hidden=!!scope||setup.prompts===false||state.device!=='gamepad'||!getSettings().hints;
   const signature=JSON.stringify([padHelp(),state.family]);if(promptNode.dataset.signature===signature)return;promptNode.dataset.signature=signature;
   promptNode.replaceChildren(...padHelp().map(([key,label])=>{const row=document.createElement('span'),cap=document.createElement('kbd');cap.dataset.padKey='';cap.textContent=formatPadLabel(key);row.append(cap,document.createTextNode(label));return row;}));
 }

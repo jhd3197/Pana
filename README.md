@@ -48,6 +48,7 @@ same room.
 | **¡Stop!** | The notebook word game: a letter, a secret sheet, ¡STOP!, then the table votes on what counts | 1–8, bots fill seats |
 | **La Rueda de Tambor** | A tambor party: drum the beat, dance the MCP's calls in the middle or get thrown out of the rueda; plus Relevo, Toque libre and ¡Golpe! | 1–8, bots fill drums and crowd |
 | **Pepazo** | Paintball between barricades: aim, paint your rivals, respawn | 1–8, bots fill in |
+| **Capis a Pintazos** | Turn-based paint artillery between capybaras on a Llanos riverbank: read the wind, lob the paint bazooka, dig craters and knock rivals into the river | 1 vs the machine |
 
 ## Screenshots
 

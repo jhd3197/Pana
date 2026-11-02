@@ -8,7 +8,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
 .topbar { position: fixed; top: 18px; left: 24px; right: 24px; display: flex; align-items: center; justify-content: space-between; z-index: 4; }
 .pk-logo { font-size: 34px; text-decoration: none; }
 #game-nav { display: flex; gap: 8px; }
-#welcome { position: fixed; left: 26px; top: 86px; bottom: 42px; width: 330px; max-width: none; padding: 22px; gap: 6px; overflow-y: auto; border-radius: 18px; background: var(--pk-night); box-shadow: 0 12px 40px #0002; }
+#welcome { position: fixed; left: 26px; top: 86px; bottom: 42px; width: 330px; max-width: none; padding: 22px; gap: 6px; overflow-y: auto; border-radius: 0; background: var(--pk-night); box-shadow: 0 12px 40px #0002; }
 #welcome .pk-title { font-size: 76px; margin: 16px 0 6px; line-height: 1; }
 #welcome .pk-copy { margin: 12px 0; }
 #welcome .pk-stats { margin: 20px 0; }
@@ -45,7 +45,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
 .race-line { height: 8px; background: #fff2; position: relative; }
 .race-line::after { content: ''; position: absolute; inset: 0 0 0 89.47%; background: color-mix(in srgb,var(--seat-color) 40%,transparent); }
 .race-line i { position: absolute; inset: 0 auto 0 0; width: var(--progress); background: var(--seat-color); }
-.race-line b { position: absolute; top: 50%; left: var(--progress); width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%,-50%); background: var(--seat-color); box-shadow: 0 0 0 3px var(--pk-night); z-index: 1; }
+.race-line b { position: absolute; top: 50%; left: var(--progress); width: 14px; height: 14px; border-radius: var(--pk-radius-round); transform: translate(-50%,-50%); background: var(--seat-color); box-shadow: 0 0 0 3px var(--pk-night); z-index: 1; }
 .yard .race-line b { background: var(--pk-night); box-shadow: 0 0 0 2px var(--seat-color); }
 .race-end { opacity: .35; }
 .home .race-end { opacity: 1; }
@@ -57,9 +57,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
 #turn { margin: 0; font-size: 24px; color: var(--pk-yellow); }
 #event { margin: 0; font-size: 12px; color: var(--pk-muted); text-align: right; max-width: 350px; }
 .play-controls { display: flex; align-items: stretch; gap: 12px; margin-top: 12px; }
-#die { position: relative; flex-shrink: 0; display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); place-items: center; width: 80px; height: 80px; padding: 12px; border-radius: 12px; background: var(--pk-text); color: var(--ludo-ink); box-shadow: 0 0 0 3px var(--ludo-ink),4px 4px 0 #0006; }
+#die { position: relative; flex-shrink: 0; display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); place-items: center; width: 80px; height: 80px; padding: 12px; border-radius: 0; background: var(--pk-text); color: var(--ludo-ink); box-shadow: 0 0 0 3px var(--ludo-ink),4px 4px 0 #0006; }
 #die.six { box-shadow: 0 0 0 3px var(--ludo-ink),0 0 0 7px var(--pk-yellow); }
-.pip { width: 12px; height: 12px; border-radius: 50%; visibility: hidden; background: currentColor; }
+.pip { width: 12px; height: 12px; border-radius: var(--pk-radius-round); visibility: hidden; background: currentColor; }
 .pip.on { visibility: visible; }
 .die-unknown { position: absolute; font: 34px var(--pk-display); inset: 0; display: grid; place-items: center; }
 #die.rolling { animation: ludo-die-shake .16s ease-in-out infinite alternate; }
@@ -75,7 +75,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
 .piece-button:not(:disabled) { background: color-mix(in srgb,var(--pk-yellow) 13%,var(--pk-night)); border-color: var(--pk-yellow); }
 .piece-button[data-kind="capture"]:not(:disabled) { border-color: var(--pk-coral); }
 .piece-title { white-space: nowrap; display: flex; gap: 5px; align-items: center; font: 15px var(--pk-display); }
-.piece-title i { width: 12px; height: 12px; background: var(--seat-color); border-radius: 50%; flex: none; }
+.piece-title i { width: 12px; height: 12px; background: var(--seat-color); border-radius: var(--pk-radius-round); flex: none; }
 .piece-title b { font-weight: 400; }
 .piece-title kbd { margin-left: auto; font: 900 10px var(--pk-sans); color: var(--pk-muted); }
 .piece-button small { display: block; font: 800 10px/1.3 var(--pk-sans); margin-top: 5px; white-space: normal; }

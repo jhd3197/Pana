@@ -35,25 +35,25 @@ body:not(.in-lobby) .lobby-hint{display:none}
 .position #field-size{grid-column:1/-1;-webkit-text-stroke:0;text-shadow:0 1px 3px #000a;color:var(--pk-text);margin-top:4px}
 .race-cards{display:grid;gap:6px;padding-bottom:6px}
 .race-pair{display:flex;gap:6px}
-.race-top .pk-readout{padding:6px 14px;border-radius:12px;min-width:0}
+.race-top .pk-readout{padding:6px 14px;border-radius:0;min-width:0}
 .race-top .pk-num{font-size:24px;white-space:nowrap}
 #leaderboard{position:absolute;left:24px;top:190px;gap:5px;min-width:200px;max-width:250px}
 #leaderboard .pk-row{min-height:30px;padding:5px 12px 5px 8px;font-size:13px}
 #leaderboard .pk-row-n{width:18px;text-align:center}
-.boat-dot{width:10px;height:10px;border-radius:50%;background:var(--boat);flex:none;box-shadow:0 0 0 2px var(--pk-night)}
+.boat-dot{width:10px;height:10px;border-radius:var(--pk-radius-round);background:var(--boat);flex:none;box-shadow:0 0 0 2px var(--pk-night)}
 .row-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .pk-row-end{white-space:nowrap}
-.minimap{position:absolute;right:20px;top:76px;padding:10px 12px;border-radius:14px}
+.minimap{position:absolute;right:20px;top:76px;padding:10px 12px;border-radius:0}
 .map-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}
 .map-head b{font:400 14px var(--pk-display);color:var(--pk-yellow);letter-spacing:.5px}
 .map-head small{font:800 10px var(--pk-sans);color:var(--pk-muted)}
-.minimap canvas{display:block;width:120px;height:206px;border-radius:8px;background:var(--pk-deep)}
+.minimap canvas{display:block;width:120px;height:206px;border-radius:0;background:var(--pk-deep)}
 .call{position:absolute;left:50%;top:30%;transform:translateX(-50%);font:400 44px/1 var(--pk-display);color:var(--pk-yellow);-webkit-text-stroke:2px var(--pk-night);text-shadow:0 5px 0 var(--pk-coral);white-space:nowrap;animation:call-in .35s ease-out}
 .call.is-soft{font-size:28px;color:var(--pk-text);text-shadow:0 3px 0 var(--pk-cocoa)}
 .call.is-teal{color:var(--pk-teal);text-shadow:0 5px 0 var(--pk-cocoa)}
 @keyframes call-in{from{opacity:0;transform:translateX(-50%) scale(.6)}}
 
-.drive-panel{position:absolute;left:24px;bottom:22px;width:min(440px,calc(100vw - 32px));display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;padding:12px 18px;border-radius:18px}
+.drive-panel{position:absolute;left:24px;bottom:22px;width:min(440px,calc(100vw - 32px));display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;padding:12px 18px;border-radius:0}
 .gauge{display:grid;justify-items:center;min-width:86px}
 .gauge b{font:400 46px/1 var(--pk-display);color:var(--pk-text)}
 .gauge span{font:800 11px var(--pk-sans);color:var(--pk-muted);letter-spacing:.06em}

@@ -1,0 +1,23 @@
+/* Capture the flag (ctf-hud.js): two square flag chips under the race bar, the
+   carrier banner and the world markers. Banderín look: square, hard ink shadow. */
+#hud .ctf-flags { display: flex; gap: calc(6 * var(--u)); }
+#hud .ctf-flags[hidden] { display: none; }
+#hud .ctf-chip { display: grid; grid-template-columns: auto auto; column-gap: calc(6 * var(--u)); align-items: center; min-width: calc(118 * var(--u)); padding: calc(4 * var(--u)) calc(8 * var(--u)); background: var(--glass); box-shadow: calc(3 * var(--u)) calc(3 * var(--u)) 0 var(--ink), inset calc(4 * var(--u)) 0 0 var(--c); }
+#hud .ctf-chip.mine { box-shadow: calc(3 * var(--u)) calc(3 * var(--u)) 0 var(--ink), inset calc(4 * var(--u)) 0 0 var(--c), inset 0 calc(-3 * var(--u)) 0 var(--pk-yellow); }
+#hud .ctf-chip .ctf-icon { grid-row: span 2; }
+#hud .ctf-chip b { font: 900 max(10px, calc(12 * var(--u))) / 1 var(--pk-sans); color: var(--c); text-transform: uppercase; letter-spacing: .06em; }
+#hud .ctf-chip small { padding: 0; background: none; text-transform: none; letter-spacing: 0; max-width: calc(130 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 max(10px, calc(11 * var(--u))) / 1.1 var(--pk-sans); color: #fff; }
+#hud .ctf-chip[data-state="carried"] { background: color-mix(in srgb, var(--c) 34%, var(--pk-night)); }
+#hud .ctf-chip[data-state="dropped"] small { color: var(--pk-yellow); }
+/* The flag glyph: a pole and a square cloth, drawn with borders (no icon font, no emoji). */
+#hud .ctf-icon { position: relative; width: calc(14 * var(--u)); height: calc(18 * var(--u)); border-left: calc(2 * var(--u)) solid #fff; }
+#hud .ctf-icon::after { content: ""; position: absolute; left: 0; top: 0; width: calc(11 * var(--u)); height: calc(8 * var(--u)); background: var(--c); box-shadow: 0 0 0 calc(1 * var(--u)) var(--ink); }
+#hud .ctf-banner { position: fixed; z-index: 5; left: 50%; top: calc(150 * var(--u)); transform: translateX(-50%) skewX(-10deg); margin: 0; padding: calc(6 * var(--u)) calc(14 * var(--u)); background: var(--pk-yellow); color: var(--ink); box-shadow: calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--ink); font: 900 max(11px, calc(14 * var(--u))) / 1 var(--pk-sans); text-transform: uppercase; letter-spacing: .04em; pointer-events: none; white-space: nowrap; }
+#hud .ctf-banner[data-kind="alarm"], #hud .ctf-banner[data-kind="blocked"] { background: var(--pk-coral, #ed615c); color: #fff; }
+#hud .ctf-banner[hidden], #hud .ctf-mark[hidden] { display: none; }
+#hud .ctf-mark { position: fixed; z-index: 3; left: 0; top: 0; display: flex; align-items: center; gap: calc(4 * var(--u)); padding: calc(3 * var(--u)) calc(6 * var(--u)); background: var(--glass); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--ink), inset 0 calc(-3 * var(--u)) 0 var(--c); pointer-events: none; will-change: transform; }
+#hud .ctf-mark b { font: 900 max(10px, calc(11 * var(--u))) / 1 var(--pk-sans); color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#hud .ctf-mark[data-state="dropped"] { background: var(--pk-yellow); } #hud .ctf-mark[data-state="dropped"] b { color: var(--ink); }
+#hud .ctf-mark--base { background: var(--c); } #hud .ctf-mark--base b { color: var(--ink); }
+@media (max-width: 600px) { #hud .ctf-chip { min-width: 0; } #hud .ctf-chip small { max-width: 84px; } #hud .ctf-banner { top: 128px; } }
+@media (max-height: 520px) { #hud .ctf-banner { top: 74px; } }

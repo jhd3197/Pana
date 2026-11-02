@@ -274,7 +274,7 @@ workspace is lazy too; neither adds to a game's static module budget.
 `engine/room-options.js` owns primary segmented choices and the prototype's
 “Más ajustes” native dialog. Each game supplies a pure field schema with `id`,
 `label`, `default`, typed `choices: [[value, label]]` and optional `advanced`.
-`createRoomOptions(container, { title, fields, change, reset })` calls `change`
+`createRoomOptions(container, { title, fields, change, reset, help })` calls `change`
 with a patch object, never a key/value pair. Load `room-options.css` with kit.css.
 Call `update(authoritativeValues, mayEdit)` from snapshots, and close the dialog
 when leaving the lobby. Guests can inspect options but cannot edit them.
@@ -287,8 +287,51 @@ fresh/practice state factories as well as migration snapshots.
 
 Escape closes this dialog without also opening the pause menu. Tab wraps among
 visible enabled buttons, inputs, selects and links; closing restores the
-trigger's focus. The two-column
-advanced panel becomes one scrollable column on phones. Shared entry docks
+trigger's focus.
+
+The dialog follows the lobby side panel's compact look: a one-row header (Más
+ajustes eyebrow, game title, host notice, close), one grid of equal cards with
+uppercase 11px labels and 34px segmented chips (3 columns from 900px, 2 from
+600px, 1 on phones; only the grid scrolls), then a thin footer: Restablecer
+sala, the adopted help buttons, Listo.
+
+### Game skin: the room panel's look for any panel or dialog
+
+The lobby room panel (`sala.css`) and "Más ajustes" wear one skin from
+`kit.css`, so a new popup gets the same look by using its classes, never by
+copying values. The tokens are `--pk-skin-shadow` (4px hard offset in
+`--pk-skin-shade`), `--pk-skin-lean` (-5deg), `--pk-skin-plate-lean` (-9deg),
+`--pk-skin-chip`/`-chip-hover`, `--pk-skin-well` and `--pk-skin-panel`;
+`sala.css` reads them too, so changing one changes both.
+
+| Class | Piece |
+|---|---|
+| `pk-skin-panel` | square leaning panel; the plate is a `::before`, so scrolling, hit areas and focus rings stay square. `--pk-skin-fill` sets its colour, `--pk-skin-reach` widens the plate past the box for tall panels |
+| `pk-skin-card` | the same plate for a card inside it (night fill); `.is-changed` adds the yellow ring |
+| `pk-skin-plate` | yellow title plate, display font, skewed like the lobby title |
+| `pk-skin-label` | uppercase muted 11px label |
+| `pk-skin-chips` | square chips (on a `.pk-seg`), yellow when `aria-pressed` |
+| `pk-btn pk-skin-btn` | square night button with the hard shadow (close, Volver, Restablecer) |
+| `pk-btn pk-skin-go` | yellow display-font skewed primary, like the start button (Listo) |
+| `pk-btn pk-skin-link` | small underlined muted text (help links) |
+
+Plates stand straight below 801px, like the lobby panel. The button classes
+carry a `:root` prefix so body themes such as `.banderin .pk-btn` cannot round
+them or swap their shadow. `room-options.js` puts the classes on its own markup
+and on adopted cards, chips and help links, so no game styles the dialog. Adopted `data-room-extra` nodes become
+cards of that grid after the schema fields (class `pk-room-card`); a team roster
+or a bare paragraph spans the whole row. Card copy is clamped (the difficulty
+note to one line, its full text in `title`). Keep choice labels short: chips
+wrap, but a card is about 280px wide on desktop.
+
+Pass `help: { controls, tips, title? }` (or a function returning it), the same
+arrays `createGameMenu` takes, and the adopted `#rules` button opens a "Cómo se
+juega" layer inside the dialog instead of leaving it: keys and tips, a Volver
+button, Escape returns to the settings first and closes the dialog second.
+Its click never reaches the game's own `#rules` handler. Touch players see only
+the tips when there are any. Games without `help` keep the old behaviour: the
+button closes the dialog and its own handler runs. Pepazo hoists its
+`controls`/`tips` into consts and passes them to both. Shared entry docks
 actual game start/practice controls in its footer so a long settings column
 cannot bury them. Six-player roster cards use three columns on desktop and two
 on phones. Table/live scaffolds include real validated example options.
@@ -302,8 +345,8 @@ authoritative update logic. After the game and scene initialize, entry calls
 | Hook | Destination |
 | --- | --- |
 | `data-room-primary` | Primary settings, before schema-generated choices |
-| `data-room-extra` | Más ajustes, after advanced schema choices |
-| `data-room-help` | Más ajustes; a help-button click closes it before the existing help handler runs |
+| `data-room-extra` | Más ajustes, a card in the grid after advanced schema choices |
+| `data-room-help` | Más ajustes footer; with `help` a button opens the in-dialog layer, without it a click closes the dialog before the existing help handler runs |
 | `data-pana-roster` | Left roster area; hides generic member cards while visible |
 | `data-room-personal` | Left roster area, for existing personal controls |
 

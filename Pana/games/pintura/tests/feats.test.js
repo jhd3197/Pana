@@ -57,3 +57,14 @@ test('a round win counts once until the next round resets', () => {
   feats.reset();
   assert.equal(feats.win(), true);
 });
+
+test('each rival painted reports one per-weapon event for the camo unlocks', () => {
+  const events = [];
+  const feats = createHitFeats(() => true, { now: () => 0, event: id => events.push(id) });
+  feats.hit('María');
+  assert.equal(feats.weaponHit('sniper'), true);
+  assert.equal(feats.weaponHit('bat'), true);
+  // Grenade blasts, unknown and missing ids count nothing.
+  for (const id of ['pinita', 'nope', null, undefined, 3]) assert.equal(feats.weaponHit(id), false);
+  assert.deepEqual(events, ['pintura.paint-hits', 'pintura.hits.sniper', 'pintura.hits.bat']);
+});

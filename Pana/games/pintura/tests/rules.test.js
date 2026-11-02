@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Arena, blocked, cleanInput, segmentBox, coverFor, COVER, SIZE } from '../public/rules.js';
 const arena = (options = { toughness: 1 }) => { const g = new Arena('plaza', 'normal', options); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); g.go(); return g; };
 test('inputs are finite, bounded and diagonal movement is normalized', () => {
-  assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, weapon: null, grenade: false, fire: false, aim: false, reload: false, sprint: false, jump: 0 });
+  assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, weapon: null, alt: false, grenade: false, pitch: 0, charge: 0, fire: false, aim: false, reload: false, sprint: false, jump: 0, look: false });
   const input = cleanInput({ x: 99, z: 99, ax: Infinity, az: NaN, fire: 'yes' }); assert.ok(Math.abs(Math.hypot(input.x, input.z) - 1) < 1e-9); assert.equal(input.fire, false);
 });
 test('movement stops at arena walls and cover, sliding along free axes', () => {
@@ -64,7 +64,9 @@ test('every Pepazo map has clear spawns, open passages and one connected court',
   for (const { id } of PAINT_ARENAS) for (const variant of [0, 1, 2]) {
     const cover = coverFor(id, variant), size = sizeFor(id);
     assert.ok(size >= SIZE && size >= 27, `${id}: the larger court`);
-    cover.forEach((a, i) => cover.slice(i + 1).forEach(b => assert.ok(Math.max(Math.abs(a.x - b.x) - (a.w + b.w) / 2, Math.abs(a.z - b.z) - (a.d + b.d) / 2) >= 2.2, `${id}: passage between ${a.x},${a.z} and ${b.x},${b.z}`)));
+    // Pieces split from one row by a collision fix (refs 'map:v:i.0', '.1'...) never had a passage between them.
+    const group = o => (o.ref || '').split('.')[0];
+    cover.forEach((a, i) => cover.slice(i + 1).forEach(b => (a.ref?.includes('.') && group(a) === group(b)) || assert.ok(Math.max(Math.abs(a.x - b.x) - (a.w + b.w) / 2, Math.abs(a.z - b.z) - (a.d + b.d) / 2) >= 2.2, `${id}: passage between ${a.x},${a.z} and ${b.x},${b.z}`)));
     for (const s of spawnsFor(id)) assert.equal(blocked(s.x, s.z, 2, id, variant), false, `${id}/${variant}: spawn ${s.x},${s.z} has room`);
     const key = (x, z) => `${x},${z}`, free = new Set();
     for (let x = 1 - size; x < size; x += .5) for (let z = 1 - size; z < size; z += .5) if (!blocked(x, z, .55, id, variant)) free.add(key(x, z));
@@ -79,7 +81,7 @@ test('the container yard is selectable, keeps bots inside and flags at its spawn
   for (let i = 0; i < 8; i++) g.add(i + 1, { name: `Pana ${i}`, avatar: {}, bot: i > 0 });
   g.start(); assert.equal(g.view().mapId, 'muelle');
   for (let i = 0; i < 900 && g.phase === 'playing'; i++) { g.step(.05); for (const p of g.players) assert.equal(blocked(p.x, p.z, .55, 'muelle'), false); }
-  const flags = new Arena('muelle', 'normal', { flag: true }); flags.add(1, { name: 'A' }); flags.add(2, { name: 'B' }); flags.start();
+  const flags = new Arena('muelle', 'normal', { mode: 'ctf' }); flags.add(1, { name: 'A' }); flags.add(2, { name: 'B' }); flags.start();
   for (const f of flags.flags) assert.equal(blocked(f.homeX, f.homeZ, 1.4, 'muelle'), false);
 });
 

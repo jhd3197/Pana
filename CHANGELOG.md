@@ -8,6 +8,210 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La Plaza de Pepazo es ahora una plaza de pueblo de verdad, igual para los dos equipos.**
+  Una glorieta en el centro, fuentes bajas, bancos, materos, árboles, kioscos
+  del mercado, carros y carretillas, muros y esquinas de casa, y un portal de
+  columnas en cada costado. Los muros bajos, bancos y fuentes dejan pasar los
+  tiros; lo alto los para. Tres plazas por ronda: Clásica, Mercado y Fiesta.
+
+- **En Captura la bandera de Pepazo quien lleva la bandera corre más lento, y la ayuda dice cuántas capturas ganan.**
+  Con la bandera caminas y corres un 15% más lento (los bots también), así que
+  los defensores pueden alcanzarte. El consejo de Cómo se juega ya no dice
+  "tres capturas": nombra el límite que eligió la sala.
+- **En Dominación de Pepazo las zonas se ven desde arriba aunque estén bajo techo.**
+  En Ver la cancha y la vista desde arriba del espectador, el anillo y la letra
+  de cada zona se dibujan sobre los techos: la zona B de El Puerto ya no se
+  esconde bajo el galpón.
+- **En Pepazo, el tiro a la cabeza con La Lejana cuenta desde cualquier cámara y siempre se anuncia.**
+  Desde Ver la cancha, un tiro que pasa por el centro del rival apuntado le da
+  en la cabeza y lo saca de una; "¡A la cabeza!" ahora gana a las rachas y la
+  venganza (que pasan a la línea de abajo), y también lo ven quien cayó y
+  quien está mirando al tirador.
+- **En Capis a Pintazos los bots mezclan sus armas y terminan las partidas.**
+  Ya no tiran La Piñita en cada turno: La Bazuca para un buen tiro, La Lejana
+  contra un capi expuesto de lejos, El Trueno contra dos capis juntos y La
+  Piñita detrás de una loma o bajo un techo. Caminan hacia el rival cuando
+  está lejos, abren paso cuando una loma los encierra y afinan la puntería con
+  los turnos, así casi ninguna partida llega al límite de 60 turnos; en fácil
+  siguen fallando más que en experto. La Piñita ahora va en las dos patas,
+  frente al pecho, y en la vista de todo el mapa cada capi lleva el arma que
+  tiene en la mano.
+
+- **Pepazo tiene modo Dominación.**
+  Tres zonas por mapa (A, B y C): párate en una para tomarla y cada zona tuya
+  suma un punto por segundo. Puntos y tiempo límite en el lobby, bots que
+  capturan y defienden, y anillos, marcadores y sonidos para cada zona.
+- **En Pepazo, cuando te pintan ves la ronda en vez de una pantalla quieta.**
+  La cámara voltea hacia quien te pintó y luego sigue a un pana vivo; cambias
+  de pana con Q / E (LB / RB en el control o los botones en pantalla) y con
+  Espacio (A) ves la cancha desde arriba. Al reaparecer vuelves a tu vista.
+
+- **Pepazo tiene modo Captura la bandera.**
+  Dos equipos, una bandera en cada base de todos los mapas: tómala, llévala a
+  la tuya y anota mientras la tuya esté en casa. Capturas y tiempo límite en
+  el lobby, bots que atacan, escoltan y defienden, y marcadores y sonidos de
+  cada bandera.
+
+- **En el todos contra todos de Pepazo nadie arranca al lado de otro pana.**
+  Al empezar la ronda cada pana (o bot) queda en su propio punto, a 20 m o más
+  de los demás en todas las canchas y de 2 a 8 panas: El Puerto suma tres puntos
+  de salida por mitad (las esquinas de cada base y uno adelantado). Al reaparecer
+  caes lejos del rival vivo más cercano.
+- **En El Puerto de Pepazo los barriles de cada base ya no tienen una caja invisible alrededor.**
+  Chocas con cada barril, no con una caja de 3 x 2,6 m, y las dos bases tienen
+  los barriles en espejo. `npm run collision-report -- --fix` propone y aplica
+  estos arreglos solo, y una prueba revisa que ninguna cancha tenga cajas así.
+- **En Capis a Pintazos ahora eliges entre cinco armas de Pepazo en cada turno.**
+  La Bazuca (cráter grande, mucho viento), La Piñita (rebota y explota a los
+  3 segundos, nunca se acaba), La Lejana (casi recta, sin viento, duele mucho
+  si le das al capi), La Licuadora (taladra un túnel largo que abre caminos o
+  tumba al rival) y El Trueno (cinco perdigones en abanico). Las cuatro
+  primeras tienen pocos tiros por equipo; se cambian con 1–5, Q E o Tab, o
+  tocando la barra de abajo, y la guía de tiro sigue el vuelo de cada una. La
+  máquina también escoge: guarda La Bazuca para un buen tiro, remata con La
+  Lejana y abre túneles cuando no tiene tiro.
+
+- **El corte del terreno de Capis a Pintazos ahora muestra capas de tierra de verdad.**
+  Bajo la grama hay tierra negra con raíces colgando, y debajo capas de
+  ceniza, arcilla, piedra pómez, ocre y una base oscura que ondulan, se
+  adelgazan y siguen la forma del cerro. Cada cráter las corta limpio y deja
+  el borde chamuscado, y cada tipo de mapa trae sus propios colores.
+
+- **Pepazo tiene un modo de depuración de colisiones para encontrar paredes invisibles.**
+  `?debugCollision=1` o F9 dibuja cada caja de colisión de la cancha (en rojo las
+  que no tienen nada visible que las llene) y Shift+F9 descarga el informe;
+  `npm run collision-report` revisa todas las canchas sin abrir el navegador.
+- **En Pepazo los disparos pasan por encima de los sacos, cajas y barriles bajos.**
+  Ya no hay paredes invisibles sobre la cobertura baja de El Puerto y la Cancha
+  de Noche: si ves a un rival por encima, le puedes dar, y los bots también.
+
+- **En Pepazo, La Lejana saca de una con un tiro a la cabeza y pega más fuerte de cerca.**
+  En primera persona, un tiro a la cabeza tumba a cualquiera a cualquier distancia.
+  Al cuerpo pinta 3 pepazos hasta 10 m y baja a 1 a partir de 50 m (antes, 2 siempre).
+- **Pepazo muestra los controles del aparato que usas, una sola vez.**
+  Con mando salen sus botones (RT, R2…), con teclado sus teclas y en teléfono
+  los gestos; cambia al vuelo si cambias de aparato y se va al primer toque.
+
+- **Todos los juegos y la lista de la portada usan el mismo estilo de esquinas rectas.**
+  Botones, fichas, menús de ajustes, salas, marcadores, resultados, avisos,
+  el editor de personaje y el Studio dejaron las esquinas redondeadas y las
+  sombras gruesas de abajo: ahora son cuadrados con la sombra sesgada del
+  banderín. Solo los avatares, los puntos de color y el joystick siguen redondos.
+
+- **Los mapas de Capis a Pintazos ahora son tierra de lado a lado, de cinco tipos.**
+  Cerros con mesetas, una montaña con un túnel y cuevas, islas unidas por
+  puentes de piedra, un valle con su laguna bajo un arco natural o un tepuy
+  en terrazas: el lobby dice cuál te tocó. Ya no son espejo: cada mapa se
+  mide para que los dos equipos arranquen parejos, y la máquina le apunta al
+  capi que puede pegar en vez de al más cercano.
+
+- **Capis a Pintazos estrena un mapa distinto en cada partida, y más grande.**
+  La orilla se genera de un número: colinas, un río en el medio, a veces El
+  Tepuyito con sus cuevas, islas, mesetas, arcos de piedra y cuevas, igual de
+  justa para los dos equipos. Elige mapa pequeño, mediano o grande, escribe
+  el número de un mapa para repetirlo (también `?seed=`) o pide la revancha en
+  el mismo mapa al terminar.
+
+- **El terreno de Capis a Pintazos ahora se ve hecho a mano.**
+  Bordes suaves sin escalones, tierra con vetas, piedritas y raíces, roca con
+  grietas, arena con su orilla mojada, una franja de grama con matas bajitas
+  en vez de la pared de púas, y un cielo de tarde que pasa de dorado a azul.
+
+- **Capis a Pintazos tiene una orilla nueva y los pintazos se sienten.**
+  El mapa ahora tiene playa, un arco de piedra, El Tepuyito en el medio con
+  cuevas a cada lado, un barranco sobre el río y un banco de arena, con
+  morichales, corocoras y el sol de la tarde llanera. Cada disparo salpica
+  gotas de pintura, terrones y chispas, la pintura chorrea por el cráter y el
+  río salpica cuando algo cae en él; el bombazo suena más lejos o más cerca.
+
+- **En Pepazo El Acolchado ahora parece un chaleco táctico de verdad.**
+  Lleva placas delante y detrás con ribete turquesa, correas, faja lateral con
+  hebillas y bolsillos de bolas con tapa mango; se mueve con tu pana al caminar.
+
+- **Pepazo abre más rápido: la primera carga baja de 161 a 133 módulos.**
+  Las canchas compartidas (Puerto, Hato y Ruinas) se descargan cuando el
+  anfitrión elige una, mientras la tarjeta de carga cubre la espera.
+
+- **En Capis a Pintazos la vista de todo el mapa (Z) va mucho más ligera.**
+  Los capis lejanos se dibujan como una sola pieza más sencilla que sigue sus
+  movimientos, con la bazuca y la pañoleta; de cerca siguen siendo tu pana con
+  todo detalle.
+
+- **En la armería de Pepazo la marcadora se ve sola, centrada y girando.**
+  Las marcadoras, accesorios, granadas y camuflajes se previsualizan sin tu
+  pana delante; tu pana solo aparece en Equipo, con el chaleco puesto, y en la
+  prueba de tiro.
+  En Equipo la marcadora se aparta y tu pana sale sola y centrada, para que
+  el chaleco se vea completo.
+
+- **En Pepazo tu marcadora lleva camuflaje: seis lisos para todos y diez estampados que se ganan pintando o con mangos.**
+  En la armería, Camuflaje muestra cada uno con su muestra y lo previsualiza en
+  la marcadora. Selva, Médanos, Bolívar, Caracas y Jaguar se ganan pintando
+  panas con una marcadora (por ejemplo 15 con La Parrandera) y luego van en
+  cualquier arma; Caribe, Tricolor, Llanero, Rumba y Pepazo se compran con
+  mangos en pana.sh. No hay selector de color libre, y la sala solo acepta los
+  camuflajes que pana.sh firma como tuyos. Uno que compras o desbloqueas en
+  plena sesión vale en la sala sin volver a entrar cuando pana.sh lo firma; si
+  todavía no puede, la armería te dice que entres de nuevo para estrenarlo.
+
+- **En Pepazo llegan Los del pescozón: El Bate, La Chancleta, El Rodillo, La Brocha, El Tobo y La Maraca, y la chancla se lanza.**
+  Se eligen en la armería como las marcadoras, con su alcance, pepazos por
+  golpe, golpes por segundo, movilidad y aguante, y tres accesorios propios
+  (cinta de agarre, goteo de pintura y correa). Cada golpe pinta a una sola
+  persona, la más cercana que tengas delante, sin gastar pepas. Con La
+  Chancleta, clic derecho, F, V, el botón Lanzar o el stick derecho la lanzan en
+  arco: sale de la mano, pinta a quien toque y vuelve sola a los 2,5 segundos.
+  Cada arma suena distinta al golpear.
+
+- **En Pepazo hay 18 marcadoras en ocho clases, cada una con su mira y tres espacios de accesorios.**
+  Llegan La Metra, La Licuadora, La China, El Tambor, La Corneta, La Fumigadora,
+  El Llanero, La Pulga, La Parrandera, El Tuqueque, El Zamuro y La Culebrona. En
+  la armería las eliges por clase con sus números reales (pepazos por segundo,
+  alcance, cargador) y cada pieza va en su sitio del modelo; la nueva Mira
+  (punto rojo, holográfica, láser, telescópica o de pines) acerca la vista,
+  endereza el tiro al apuntar y baja la sensibilidad. En plena ronda cambias con
+  1 a 9, Z y X (o [ y ]), la Y del control o las flechas junto a Mira en el teléfono, y el
+  marcador muestra la marcadora, su clase y sus accesorios. La China y La
+  Fumigadora pintan medio y un quinto de pepazo por tiro: se acumulan hasta
+  completar uno.
+
+- **En Pepazo la granada se lanza de verdad: mantén G para cargarla y mira arriba para lanzarla lejos.**
+  Qué estaba mal: salía de los pies, siempre a ras del suelo a 12 m/s sin
+  importar hacia dónde miraras, con un saltito falso dibujado encima de una
+  burbuja de 22 cm; la mecha (1,1 s) la paraba a pocos metros y la explosión
+  pintaba igual en todo el radio y nada un paso más allá. Ahora sale de la mano
+  en un arco 3D según tu mirada (unos 12 m sin carga y 28 m a plena carga hasta
+  el primer bote), rebota en el piso, las barricadas y la cerca, y unos puntos
+  con un anillo muestran dónde va a pintar. Es una granada de pintura de tu
+  color que gira, pita y parpadea antes de reventar; pinta dos pepazos en el
+  centro y uno en el borde. La Chispita rebota y rebota, La Pegajosa se pega
+  donde cae, la Prueba de la armería sigue funcionando y los bots solo la
+  lanzan cuando el tiro les cae encima a un rival.
+
+- **En Pepazo cada accesorio queda en el espacio donde lo pusiste.**
+  Tocas Accesorio 1 o 2 y eliges qué va ahí (o Ninguno); la armería avisa si
+  una pieza no cabe en tu marcadora o si intentas cambiar el kit en plena ronda,
+  cambiar de marcadora con los números queda guardado, y el cañón afinado hace más
+  rápidos los tiros de La Chispa, El Cohetón y La Bazuca.
+
+- **"Más ajustes" ahora se ve como el panel de la sala.**
+  Esquinas rectas, sombra dura, el título en placa amarilla, las mismas fichas
+  y botones que los ajustes de la sala, en todos los juegos; sigue igual de compacto.
+
+- **En Pepazo eliges cuántos bots juegan, y "Más ajustes" cabe de un vistazo.**
+  La nueva opción Bots (Auto, 0, 1, 2, 3, 5 o 7) vale online y en práctica; Auto sigue
+  igual que antes. El cuadro de ajustes de todos los juegos ahora es compacto,
+  y en Pepazo "Cómo se juega" se abre dentro de los ajustes sin cerrarlos.
+- **Nuevo juego: Capis a Pintazos, artillería de pintura por turnos contra la máquina.**
+  Tres capis por equipo en la orilla del llano: camina, apunta, carga la bazuca
+  de pintura y mide el viento; cada pintazo abre un cráter, la tierra pintada
+  resbala y un capi pintado al 100 % o que cae al río queda fuera.
+- **En Capis a Pintazos los capis son panas de verdad y cargan La Bazuca de Pepazo.**
+  Tu capi líder lleva tu pana con su ropa y gorra; cada capi tiene pañoleta de su equipo,
+  levanta la bazuca para apuntar, la carga con una gota de pintura en la punta,
+  retrocede con el disparo, vuela el cohete de Pepazo, se encoge al recibir un pintazo
+  y celebra al ganar.
+
 ## 0.8.0 - 2026-10-31
 
 - **En Ludo un 1 también da otra tirada.** Si sacas un 1 y mueves, vuelves a

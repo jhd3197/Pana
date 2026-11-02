@@ -806,7 +806,7 @@ export function makeBubble() {
       g.strokeStyle = '#16161a';
       g.lineWidth = 8;
       g.beginPath();
-      g.roundRect(14, 14, 484, 130, 40);
+      g.rect(14, 14, 484, 130);
       g.moveTo(220, 142);
       g.lineTo(256, 186);
       g.lineTo(290, 142);
