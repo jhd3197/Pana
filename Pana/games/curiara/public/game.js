@@ -46,8 +46,6 @@ const strokes = [], local = { seq: 0, last: null, side: 0, splash: 0, streak: 0,
 const clock = () => performance.now() / 1000;
 function clearInput() { keys.clear(); for (const b of touchButtons) b.release(); touch.clear(); }
 const menu = createGameMenu({ pad: { move: 'wasd', moveLabel: loc('↑ remo automático, ← → timón, ↓ ciar'), keys: { lb: ['KeyA', loc('Remar a la izquierda')], lt: ['KeyA', loc('Remar a la izquierda')], rb: ['KeyD', loc('Remar a la derecha')], rt: ['KeyD', loc('Remar a la derecha')], a: ['Space', loc('¡Salpicón!')] } }, title: 'Curiara', sound, orientation: 'libre', note: () => room.members.size > 1 ? loc('La carrera sigue mientras abres el menú.') : loc('La carrera está en pausa.'),
-  controls: [['W / ↑ sostenido', loc('Remo automático; A y D llevan el timón')], ['A / ←', loc('Remar a la izquierda')], ['D / →', loc('Remar a la derecha')], ['A D A D', loc('Alternar: recto y a toda')], ['D D / A A', loc('Mismo lado: girar al lado contrario')], ['S / ↓', loc('Ciar: frenar; con A o D, pivotar')], ['Espacio', loc('¡Salpicón! a la curiara de al lado')], ['M', loc('Sonido')], ['Esc', loc('Menú')]],
-  tips: [loc('¿Te cuesta el ritmo? Sostén W: la curiara rema sola y tú solo giras con A y D.'), loc('Machacar las teclas frena la curiara. Con calma se va más rápido.'), loc('Sigue las flechas doradas en el agua: marcan el chorro y esquivan los caimanes.'), loc('Rema justo cuando el anillo pasa por la zona dorada: ¡Remazo!'), loc('En Parejas, la proa rema y la popa lleva el timón (A/D sostenido), cía y lanza el salpicón. Si la popa toca A o D justo con la remada: ¡Ahora!')],
   invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: loc('Abrir carrera local'), run: () => goLocal() }],
   onOpen() { paused = true; clearInput(); if (room.members.size <= 1) music.pause(); }, onClose() { paused = false; music.resume(); } });
 const navButton = 'pk-btn pk-btn--sm game-menu-button';
@@ -179,10 +177,8 @@ function tipText(b) {
   if (b.sprayed > 0) return loc('¡Salpicón! No ves nada, sigue remando.');
   const caiman = RIVER.caimanesAt(state.time).find(c => c.s > b.s && c.s < b.s + 30 && Math.abs(c.offset - (b.offset || 0)) < 7);
   if (caiman && state.options.items) return loc('¡Caimán cruzando adelante! Sigue las flechas doradas para esquivarlo.');
-  if (b.paddle?.quality === 'chapoteo' && myRole() !== 'popa') return loc('Machacar frena la curiara. Alterna A y D con calma, o sostén W y rema solo.');
-  if (autoHeld() && myRole() !== 'popa') return loc('Remo automático: A y D llevan el timón. Con ritmo propio vas más rápido.');
-  if(state.options.paddling==='tap'&&myRole()!=='popa')return loc('Toca A y D para remar. Cada toque vale igual; evita machacar las teclas.');
-  if (myRole() === 'popa') return loc('Sostén A o D para el timón. Toca justo con la remada: ¡Ahora!');
+  if (b.paddle?.quality === 'chapoteo' && myRole() !== 'popa') return loc('Machacar frena la curiara. ¡Rema con calma!');
+  if (autoHeld() && myRole() !== 'popa') return loc('Remo automático.');
   if (b.whirl > .15) return loc('¡Remolino! Rema fuerte hacia afuera. Por el borde, la corriente te lleva.');
   if (b.boost > 0) return loc('¡La estela de las toninas te empuja!');
   if (b.eddy > .3) return loc('Remanso: el agua te frena. Rema hacia el chorro.');
@@ -190,7 +186,7 @@ function tipText(b) {
   if (drop) return loc('Raudal adelante: elige carril. El rápido cae de golpe; ¡llega recto!');
   if (b.channel === 'branch') return loc('Atajo del igapó: corto, lento y lleno de troncos.');
   if (b.tip > 60) return loc('Endereza la curiara: rema recto para calmarla.');
-  return loc('Alterna A y D en la zona dorada del anillo, o sostén W y rema solo.');
+  return '';
 }
 // What just happened to this pana's canoe, from the snapshot's counters.
 let seen = null;
@@ -232,7 +228,6 @@ function updateUI() {
   $('role').classList.toggle('hidden', role === 'solo'); $('role').textContent = role === 'popa' ? loc('Popa · timón') : loc('Proa · remo');
   const loaded = state.options.items && own && own.splashCd <= 0; $('splash-state').textContent = !state.options.items ? loc('Sin objetos') : loaded ? loc('Salpicón listo') : loc('Salpicón {s} s', { s: Math.ceil(own?.splashCd || 0) }); $('splash-state').classList.toggle('is-ready', !!loaded);
   document.querySelector('[data-input="splash"]').disabled=!state.options.items;
-  $('keys-hint').classList.toggle('hidden', role === 'popa'); $('helm-hint').classList.toggle('hidden', role !== 'popa');
   $('spray').classList.toggle('is-on', (own?.sprayed || 0) > 0);
   hud.leaderboard(ordered.map(b => ({ me: b === own, color: b.color, name: b === own ? loc('{name} · tú', { name: crewName(b) }) : crewName(b),
     end: b.finish !== null ? formatTime(b.finish) : b.capsized > 0 ? loc('volcó') : '' })));
