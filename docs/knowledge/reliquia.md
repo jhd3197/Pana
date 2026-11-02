@@ -105,7 +105,31 @@ small; enemy damage scales `0.75 + 0.15 · floor`.
 ## Enemies (`enemies.js`)
 
 Mummies freeze in a farol's beam (7.5 m, ~37°, clear line) and run 35 %
-faster in the dark (no farol, crown or brazier within 5 m). Phantoms come
+faster in the dark (no farol, crown or brazier within 5 m).
+
+The mummy (and the phantom, and the Silueta scare) is `mummy({ gaunt: true,
+seed: e.id })`: `engine/models/props/gaunt-mummy.js`, about 2.8 m (just over
+the classic mummy, 2.7 m, so it looms), thin, arms to the knees, dark grey
+wraps over ribs, a hollow face with two small cold emissive eyes; the
+guardian and every other game keep the classic `mummy()`, unchanged (the
+`momia.browser.mjs` suite pins its shape). Each pivot is one tinted bake, so
+a mummy is 20 draws and no lights. Its motion is
+`engine/models/props/gaunt-pose.js` (pure numbers, Node-tested): idle
+twitches and dead stops, an uneven lurch with one arm reaching, a jerky
+raise on the windup, and in a beam it holds the exact pose while only the
+head turns to you. `view.js` passes `{ frozen, look, lit, scares }` and
+only calls it walking when it covers ground (the snapshot speed, smoothed).
+On Sustos normales its eyes gutter out for a moment in the dark and the
+body darkens with them (the tinted materials' colour, no shader change);
+suaves and apagados tame the twitches and never flicker.
+
+`presence.js` makes a mummy felt before it is seen, per player: a whisper
+clip where it stands the first time it comes within 11 m (at most one
+every 4 s), a low chain or board creak every 1.4–3.2 s while it walks
+within 9 m, a dust puff and the synth breath within 3.6 m, and the drone
+swelling as the nearest one closes (`ambience.presence`, up to +0.03).
+Suaves: half the whispers, quieter, ticks at half rate, no breath sound;
+apagados: none. Phantoms come
 with the echo mask. The guardian slams (3.8 m ring) and is only slowed by
 light. Jaguars prowl, **crouch** (the telegraph: a ring at the landing spot),
 leap .45 s and recover; a beam dazes one for 1.6 s, then it is immune 6 s.

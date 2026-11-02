@@ -13,6 +13,15 @@ becomes the GitHub release's notes.
   compañeros, las zonas y las banderas que quedan fuera aparecen como
   flechitas en el borde. Al mantener Tab (View en el control) la tabla trae
   el mapa de toda la cancha, y los rivales solo salen si los tienes a la vista.
+- **Las momias de Reliquia ahora dan miedo: altas, flacas, con vendas sucias y dos ojitos fríos en una cara hueca.**
+  Se quedan casi quietas y de pronto se crispan, tuercen la cabeza y la
+  dejan ladeando despacio; cuando te persiguen avanzan a tirones, encorvadas,
+  con un brazo estirado hacia ti y la mirada fija. Antes de golpear alzan
+  los brazos a sacudidas y abren la mandíbula. Bajo el farol se congelan
+  y solo la cabeza te sigue. Antes de verlas se sienten: un susurro, una
+  cadena o una tabla con cada paso, su aliento frío y un zumbido grave que
+  crece. Con Sustos suaves todo es más leve y sin parpadeos; con Sustos
+  apagados no hay señales extra.
 - **Reliquia deja la pantalla limpia: mantén Tab (o View en el mando) para ver el mapa, la brújula, la jornada y al equipo.**
   Durante la expedición solo quedan la vitalidad, el cansancio, lo que llevas
   en las manos, el punto de mira y los avisos. Al soltar Tab se cierra; en

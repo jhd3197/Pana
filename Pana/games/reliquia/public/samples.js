@@ -108,5 +108,10 @@ export function createSamples() {
     else if (e.kind === 'bookLand') bank.play('thud', { gain: .2 * g, rate: between(.95, 1.08), at: placed(e.x, e.z), listener: ear, range: 16, priority: 1 });
   }
 
-  return { update, step, ownSteps, searched, scare, bank, get wind() { return wind.playing; } };
+  // One clip from a point in the room, heard from where you stand (presence.js).
+  function near(set, x, z, { gain = .1, rate = 1, range = 16, priority = 1 } = {}) {
+    if (!me) return; bank.play(set, { gain, rate, jitter: 0, at: placed(x, z), listener: ear, near: 2, range, priority });
+  }
+
+  return { update, step, ownSteps, searched, scare, near, bank, get wind() { return wind.playing; } };
 }
