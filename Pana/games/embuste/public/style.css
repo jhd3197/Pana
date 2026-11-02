@@ -152,6 +152,8 @@ body.ghost .dark{opacity:.25}
 .result-paper .pk-row.is-mummy .pk-row-name{color:var(--mummy)}
 
 @media(max-height:760px) and (min-width:721px){.pk-lobby{gap:12px;padding-top:22px;padding-bottom:22px}.lobby .pk-title{font-size:60px}.lobby .pk-copy{font-size:14px}.pk-stat{padding:9px 12px}}
+/* Mid-width screens: the dawn bar moves under the menu, left of the map, so the buttons never cover it. */
+@media(max-width:1180px) and (min-width:721px){.dawn{top:72px;left:auto;right:200px;transform:none;width:clamp(180px,24vw,300px)}}
 @media(max-width:720px){
   .topbar{top:10px;right:10px;left:10px}
   #game-nav{gap:6px}#game-nav .pk-btn{padding:6px 10px;font-size:12px}#game-nav kbd{display:none}
