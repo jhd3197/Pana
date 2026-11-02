@@ -27,6 +27,7 @@ export function hudReport() {
   function painted(el, out = []) {
     if (!shown(el) || el.matches(SKIP)) return out;
     const style = getComputedStyle(el), r = el.getBoundingClientRect();
+    if (inline(el) && style.position !== 'static') return out;   // a label pinned to the world
     if (paintsItself(el, style)) { if (onScreen(r)) out.push(r); return out; }
     for (const node of el.childNodes) {
       if (node.nodeType === 3 && node.textContent.trim()) {
