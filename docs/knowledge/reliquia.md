@@ -231,8 +231,8 @@ under library names, `roomName(kind, theme)`); the seals work as in the mine.
   reading hall two tall windows with a faint cold glow (an emissive plane,
   no light), torn curtains and worn armchairs. No skulls, pumpkins or garlands.
 - **Budget** (headless Chromium, software WebGL, 1280 × 720, seed 9): a
-  stacks aisle went from 235 draw calls / 261 k triangles to 177 / 258 k, the
-  reading hall from 320 / 332 k to 350 / 342 k. Arch panels are flat shapes
+  stacks aisle went from 235 draw calls / 261 k triangles to 177 / 260 k, the
+  reading hall from 320 / 332 k to 345 / 341 k. Arch panels are flat shapes
   (extruded they cost 48 k triangles in one room); hiding-spot models farther
   than 26 m (Manhattan) are not drawn. Long sessions of the library crash
   headless software WebGL after a minute or so on dev too; shoot screenshots
