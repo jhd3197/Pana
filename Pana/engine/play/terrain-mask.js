@@ -444,3 +444,12 @@ export function smoothTops(m, { extra = null, wide = 6, narrow = 1.5 } = {}) {
   };
   return { wide: blur(blur(raw, wide / 2), wide / 2), narrow: blur(blur(raw, narrow / 2), narrow / 2) };
 }
+
+// The slope (rise over run) along a row of tops, one a column `cell` wide,
+// measured over `reach` either side (one-sided at the ends): what the ground
+// shader thickens the topsoil by on a steep bank.
+export function topSlope(tops, cell, reach = .5) {
+  const n = tops.length, k = Math.max(1, Math.round(reach / cell)), out = new Float32Array(n);
+  for (let c = 0; c < n; c++) { const a = Math.max(0, c - k), b = Math.min(n - 1, c + k); out[c] = b > a ? (tops[b] - tops[a]) / ((b - a) * cell) : 0; }
+  return out;
+}

@@ -98,13 +98,16 @@ from the ground now, so a crater cuts through them and nothing pops or
 stretches: the field is copied into a start texture (depth, coverage, wide
 coverage, bare) and `smoothTops(mask, { extra, wide, narrow })`
 (terrain-mask.js, pure) gives the starting top per column smoothed wide and
-narrow, uploaded as a one-row half-float texture. A point's place down the
+narrow, uploaded as a one-row half-float texture with the narrow top's slope
+(`topSlope(tops, cell)`, terrain-mask.js) in its third channel. A point's place down the
 profile is `fold` x its depth under the smoothed top plus the rest level (the
 bands drape over hills and fold gently instead of running parallel to every
 bump), waved and thickened along x by noise; runs of seven bands of five
 kinds repeat every `period` units with shares, swaps and swells hashed per
 run, some contacts sharp, some graded, some with a thin dotted seam. The
-topsoil, the root fringe and the grass cover use the starting depth too, and
+topsoil, the root fringe and the grass cover use the starting depth too (the
+topsoil's thickness is meant at right angles to that slope, so a steep bank
+keeps it thick, at most 2.6 times deeper straight down), and
 where the coverage is now lower than at the start (a crater) the new face is
 scorched, charred right at the edge. Two texture taps more than the plain
 soil and about 30 value-noise lookups a pixel; no mesh, draw or pass added.
