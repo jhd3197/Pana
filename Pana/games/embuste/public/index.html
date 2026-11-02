@@ -55,16 +55,15 @@
     <div id="hidden-note" class="hidden-note pk-panel hidden" role="status"><b id="hidden-title"></b><span id="hidden-copy"></span></div>
     <div id="ghost-note" class="ghost-note pk-panel hidden"><b>Eres una momiita</b><span>Atraviesas paredes y puedes seguir haciendo tareas. En las reuniones no puedes hablar.</span></div>
     <div class="actions pk-touch-zone">
-      <button id="report" class="pk-btn pk-btn--coral action-button" disabled><kbd class="pk-kbd">R</kbd><span>Reportar</span></button>
-      <button id="wrap" class="pk-btn pk-btn--coral action-button mummy-only hidden" disabled><kbd class="pk-kbd">Q</kbd><span>Envolver</span><i id="wrap-cool" class="cool"></i></button>
-      <button id="sabotage" class="pk-btn action-button mummy-only hidden"><kbd class="pk-kbd">F</kbd><span>Sabotaje</span><i id="sabotage-cool" class="cool"></i></button>
-      <button id="disguise" class="pk-btn action-button mummy-only hidden"><kbd class="pk-kbd">C</kbd><span id="disguise-label">Disfraz</span></button>
-      <button id="vent" class="pk-btn pk-btn--teal action-button hidden"><kbd class="pk-kbd">V</kbd><span>Al otro lado</span></button>
-      <button id="use" class="pk-btn pk-btn--primary action-button use" disabled><kbd class="pk-kbd">E</kbd><span id="use-label">Usar</span><i id="use-fill"></i></button>
+      <button id="report" class="pk-btn pk-btn--coral action-button" disabled><kbd class="pk-kbd" data-prompt>R</kbd><span>Reportar</span></button>
+      <button id="wrap" class="pk-btn pk-btn--coral action-button mummy-only hidden" disabled><kbd class="pk-kbd" data-prompt>Q</kbd><span>Envolver</span><i id="wrap-cool" class="cool"></i></button>
+      <button id="sabotage" class="pk-btn action-button mummy-only hidden"><kbd class="pk-kbd" data-prompt>F</kbd><span>Sabotaje</span><i id="sabotage-cool" class="cool"></i></button>
+      <button id="disguise" class="pk-btn action-button mummy-only hidden"><kbd class="pk-kbd" data-prompt>C</kbd><span id="disguise-label">Disfraz</span></button>
+      <button id="vent" class="pk-btn pk-btn--teal action-button hidden"><kbd class="pk-kbd" data-prompt>V</kbd><span>Al otro lado</span></button>
+      <button id="use" class="pk-btn pk-btn--primary action-button use" disabled><kbd class="pk-kbd" data-prompt>E</kbd><span id="use-label">Usar</span><i id="use-fill"></i></button>
     </div>
     <div id="sabotage-menu" class="sabotage-menu pk-panel hidden" role="menu" aria-label="Sabotajes"></div>
     <div id="disguise-menu" class="sabotage-menu disguise-menu pk-panel hidden" role="menu" aria-label="Disfraces"></div>
-    <div class="controls pk-hints" data-pana-hint><span><b>W A S D</b> Moverte</span><span><b>E</b> Usar · mantén para reparar</span><span><b>R</b> Reportar</span></div>
     <div class="touch-controls pk-touch-zone pk-dpad" aria-label="Movimiento"><button class="pk-touch" data-icon="up" data-move="up" aria-label="Arriba"></button><button class="pk-touch" data-icon="left" data-move="left" aria-label="Izquierda"></button><button class="pk-touch" data-icon="down" data-move="down" aria-label="Abajo"></button><button class="pk-touch" data-icon="right" data-move="right" aria-label="Derecha"></button></div>
     <div id="disconnect" class="disconnect pk-panel hidden">Se cortó la conexión. <button id="offline-inline" class="pk-btn pk-btn--sm">Practicar con bots</button></div>
   </main>
@@ -72,7 +71,7 @@
   <section id="task" class="task-layer hidden" aria-labelledby="task-title">
     <div class="pk-modal task-card">
       <div class="task-head"><span class="pk-eyebrow" id="task-where"></span><h2 id="task-title" class="pk-heading"></h2><button id="task-close" class="pk-btn pk-btn--sm pk-btn--ghost" aria-label="Cerrar tarea">Salir</button></div>
-      <p id="task-hint" class="task-hint"></p>
+      <p id="task-cue" class="task-cue"></p>
       <div id="task-body" class="task-body"></div>
     </div>
   </section>
