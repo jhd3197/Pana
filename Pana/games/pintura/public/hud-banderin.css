@@ -100,7 +100,7 @@ body.round-start #hud .variant { border-radius: 0; border: 0; background: var(--
 body.counting #hud .countdown { color: var(--pk-yellow); -webkit-text-stroke: calc(10 * var(--u)) var(--ink); paint-order: stroke fill; text-shadow: calc(8 * var(--u)) calc(8 * var(--u)) 0 var(--ink); }
 
 /* Phones: the map and the killfeed drop under the top bar, the two panels ride above the touch controls. */
-@media (max-width: 600px) { #hud { --top: 104px; } #hud .race { top: 60px; } #hud .tm { min-width: calc(120 * var(--u)); } #hud .minimap { left: 12px; } #hud .killfeed { right: 12px; } }
+@media (max-width: 600px) { #hud { --top: 124px; } #hud .race { top: 60px; } #hud .tm { min-width: calc(120 * var(--u)); } #hud .minimap { left: 12px; } #hud .killfeed { right: 12px; } #hud .hop { right: 12px; } #hud .mypl { left: 12px; bottom: 132px; } #hud .streak { left: 12px; bottom: 222px; } }
 @media (pointer: coarse) {
   #hud .mypl { left: 12px; bottom: 196px; } #hud .hop { right: 12px; bottom: 152px; } #hud .streak { left: 12px; bottom: 282px; }
   #hud .reload-prompt { top: 46%; }
