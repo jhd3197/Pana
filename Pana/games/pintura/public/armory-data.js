@@ -20,7 +20,7 @@ export const MARKERS = [
  marker('rapid', locKey('Alterna las dos marcadoras. Mucha presión; recargar lleva tiempo.'), { magazine:18, reload:2.4, cadence:.16, mobility:1, spread:.045, speed:85, life:.44 }),
  marker('rocket', locKey('Un cohete de pintura, un pepazo por rival. Cuatro cargas por vida; no permite correr.'), { magazine:1, reserve:3, reload:3.2, cadence:1, mobility:.63, spread:0, speed:18, life:2.4, splash:4.5, heavy:true }),
  // La Lejana: 70 m of reach; aimed through the scope it flies dead straight, from the hip it
- // wanders (`spread`), and scoped you walk at half speed. A head hit (first person) knocks
+ // wanders (`spread`), and scoped you walk at half speed. A head hit (any camera) knocks
  // out at once (`headshot`); a body hit paints 3 pepazos up to 10 m, fading to 1 at 50 m
  // (`falloff`, see rangedDamage). `damage` is the mid-range 2 the armory's pace sums use.
  marker('sniper', locKey('Francotiradora: a la cabeza saca de una; al cuerpo pega más de cerca que de lejos. 70 m de alcance. Clic derecho para la mira; sin ella se desvía.'), { magazine:4, reload:2.6, cadence:1.25, mobility:.9, spread:.1, aimSpread:0, scope:3.5, damage:2, falloff:{ near:10, far:50, close:3, min:1 }, headshot:true, speed:140, life:.5 }),

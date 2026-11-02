@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES, PEPAS } from '../public/hud-model.js';
+import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES, PEPAS, calloutTitle, seesCallout } from '../public/hud-model.js';
 
 const player = (id, score, extra = {}) => ({ id, name: `P${id}`, color: `c${id}`, score, hits: 0, team: id % 2, ...extra });
 
@@ -53,4 +53,22 @@ test('a hit angle is clockwise from where you look', () => {
 test('the clock rounds up and never goes negative; kill lines are the ones rules.js says', () => {
   assert.equal(clock(179.2), '3:00'); assert.equal(clock(65), '1:05'); assert.equal(clock(-3), '0:00'); assert.equal(clock(), '0:00');
   assert.ok(KILL_LINES.has('{owner} pintó a {victim} · {distance} m') && KILL_LINES.size === 2);
+});
+
+test('a headshot callout beats streak and revenge titles, which move to the detail line', () => {
+  assert.deepEqual(calloutTitle({ headshot: true, streak: 1 }), { title: '¡A la cabeza!', extra: null });
+  assert.deepEqual(calloutTitle({ headshot: true, streak: 3 }, { scope: 3.5 }), { title: '¡A la cabeza!', extra: '¡Triple!' });
+  assert.deepEqual(calloutTitle({ headshot: true, streak: 2, revenge: true }), { title: '¡A la cabeza!', extra: '¡Venganza!' });
+  assert.equal(calloutTitle({ streak: 3 }, { scope: 3.5 }).title, '¡Triple!');
+  assert.equal(calloutTitle({ streak: 1 }, { scope: 3.5 }).title, '¡Francotirador!');
+  assert.equal(calloutTitle({ streak: 1, direct: true }).title, '¡Bazucazo!');
+  assert.equal(calloutTitle({ streak: 1 }).title, '¡Pepazo!');
+});
+
+test('the shooter sees every callout; a headshot also reaches its victim and whoever watches the shooter', () => {
+  const out = { type: 'out', owner: 1, victim: 2 }, head = { ...out, headshot: true };
+  assert.equal(seesCallout(out, 1), true); assert.equal(seesCallout(out, 2), false); assert.equal(seesCallout(out, 3, 1), false);
+  assert.equal(seesCallout(head, 1), true); assert.equal(seesCallout(head, 2), true);
+  assert.equal(seesCallout(head, 3, 1), true); assert.equal(seesCallout(head, 3, 4), false); assert.equal(seesCallout(head, 3), false);
+  assert.equal(seesCallout({ ...head, type: 'hit' }, 1), false);
 });

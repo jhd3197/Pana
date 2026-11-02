@@ -294,6 +294,29 @@ const damage = rangeDamage(stats.falloff, Math.hypot(ball.x - ball.x0, ball.z - 
 
 Used by: Pepazo (La Lejana's body hits: 3 up to 10 m, 1 from 50 m).
 
+### Head hits from any camera
+
+`engine/play/head-zone.js` (pure). A flat shot is a ray from the shooter's eye
+`y0` at `pitch`; `shotHeight(shot, travel)` is its height after `travel` flat
+metres and `headHit(shot, travel, head, lift)` is true when a pitched shot meets
+a victim at or over their head line (`lift`: their jump). A first-person client
+sends its look pitch. Any other view has none to send, so the server derives
+one with `aimedPitch(from, dir, targets, { cone, width, head, chest })`, never
+from new client data: the closest target inside `cone` radians of the shot's
+own flight line is the one aimed at; a line passing within `width` metres of
+its centre aims at its head (the head is narrower than the body), wider at its
+chest; no target in the cone returns null (a body hit). Store the returned
+`target` on the ball and only count the head on that victim, so a shot that
+reaches someone else is a body hit. Tests: `engine/tests/head-zone.test.js`.
+
+```js
+import { headHit, aimedPitch } from '../../../engine/play/head-zone.js'; // relative: rules.js also loads on the server
+const aimed = !input.look && aimedPitch({ x: p.x, z: p.z, y0: EYE }, { x: ball.vx, z: ball.vz }, rivals, { cone: .12, width: .25, head: 1.6, chest: 1.1 });
+const head = (ball.aimed == null || ball.aimed === victim.id) && headHit(ball, travel, HEAD_Y, victim.jumpHeight || 0);
+```
+
+Used by: Pepazo (La Lejana's one-shot head hits in first person and Ver la cancha).
+
 ### Scope and aim zoom
 
 `engine/play/scope.js`. `createScope({ zoom })` eases a 0..1 aim blend in and out
@@ -714,6 +737,7 @@ flowchart LR
   mangos -->|used by| carreritas
   outline["play/local-outline"]:::mod -->|used by| bochinche
   wfall["play/weapon-falloff"]:::mod -->|used by| pintura
+  headz["play/head-zone"]:::mod -->|used by| pintura
   premium["premium-tracks (game-local)"]:::mod -->|used by| carreritas
   spawn["spawn-picker (game-local)"]:::mod -->|used by| pintura
 ```

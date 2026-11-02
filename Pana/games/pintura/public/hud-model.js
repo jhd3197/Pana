@@ -42,3 +42,16 @@ export function hitAngle(me, from, forward) {
   while (a > Math.PI) a -= Math.PI * 2; while (a <= -Math.PI) a += Math.PI * 2;
   return a;
 }
+
+// The knockout callout's title. A headshot always wins: it is the moment worth shouting
+// about, so a streak or a revenge it beats moves to `extra`, the end of the detail line.
+// `gun`: the weapon's flags ({ melee, scope }) from the armory.
+export function calloutTitle(e, gun = {}) {
+  const run = e.revenge ? locKey('¡Venganza!') : e.streak >= 5 ? locKey('¡Imparable!') : e.streak === 4 ? locKey('¡Cuádruple!') : e.streak === 3 ? locKey('¡Triple!') : e.streak === 2 ? locKey('¡Doble pepazo!') : null;
+  if (e.headshot) return { title: locKey('¡A la cabeza!'), extra: run };
+  const how = e.thrown ? locKey('¡Chancletazo!') : gun.melee ? locKey('¡Pescozón!') : e.direct ? locKey('¡Bazucazo!') : gun.scope ? locKey('¡Francotirador!') : locKey('¡Pepazo!');
+  return { title: run || how, extra: null };
+}
+// Who sees a knockout's callout: the shooter always; a headshot also the pana it took out
+// and anyone out of the round watching the shooter (`watching`: the id they follow, or null).
+export const seesCallout = (e, id, watching = null) => e.type === 'out' && (e.owner === id || (!!e.headshot && (e.victim === id || (watching != null && watching === e.owner))));

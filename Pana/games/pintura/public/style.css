@@ -1,4 +1,4 @@
-body { --pk-game: #f28b42; --flash: #ffeaa8; --sky: #c4dfd0; --paint-hurt: #ed615c88; --pip: #fff4dc; --pip-painted: #ed615c; --callout-long: #ffd34d; margin: 0; overflow: hidden; background: var(--sky); color: var(--pk-text); font-family: var(--pk-sans); }
+body { --pk-game: #f28b42; --flash: #ffeaa8; --sky: #c4dfd0; --paint-hurt: #ed615c88; --pip: #fff4dc; --pip-painted: #ed615c; --callout-long: #ffd34d; --callout-head: #ff4b4b; margin: 0; overflow: hidden; background: var(--sky); color: var(--pk-text); font-family: var(--pk-sans); }
 * { box-sizing: border-box; } [hidden] { display: none !important; }
 #world { display: block; width: 100vw; height: 100dvh; touch-action: none; }
 .vignette { position: fixed; inset: 0; pointer-events: none; background: linear-gradient(90deg, #0005, transparent 55%); }
@@ -46,6 +46,7 @@ body.called .callout { display: grid; position: fixed; left: 50%; top: 24%; tran
 .callout b { font-family: var(--pk-display, var(--pk-sans)); font-size: clamp(34px, 5vw, 58px); color: var(--pk-game); text-shadow: 0 3px 0 #0006, 0 0 18px #0004; letter-spacing: .02em; }
 .callout span { font-weight: 900; font-size: clamp(15px, 2vw, 20px); color: #fff; text-shadow: 0 2px 0 #0007; }
 .callout--long b { color: var(--callout-long); }
+.callout--head b { color: var(--callout-head); }
 #toast { top: 14%; }   /* the knockout callout owns 24% */
 @keyframes callout-pop { 0% { opacity: 0; transform: translateX(-50%) scale(1.6); } 12% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-14px); } }
 .variant { display: none; }

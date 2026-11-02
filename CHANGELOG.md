@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Pepazo, el tiro a la cabeza con La Lejana cuenta desde cualquier cámara y siempre se anuncia.**
+  Desde Ver la cancha, un tiro que pasa por el centro del rival apuntado le da
+  en la cabeza y lo saca de una; "¡A la cabeza!" ahora gana a las rachas y la
+  venganza (que pasan a la línea de abajo), y también lo ven quien cayó y
+  quien está mirando al tirador.
 - **Pepazo tiene modo Dominación.**
   Tres zonas por mapa (A, B y C): párate en una para tomarla y cada zona tuya
   suma un punto por segundo. Puntos y tiempo límite en el lobby, bots que
