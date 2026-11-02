@@ -9,7 +9,7 @@
 // statue-pose.js's poses at once (weeping, reading, reaching, close,
 // strike); userData.animate(t, { pose }) only does that when the pose
 // changes, so a frozen statue costs nothing per frame. Each pivot is one
-// tinted bake: about 10 draws, no lights. Source geometry and materials are
+// tinted bake: about 13 draws, no lights. Source geometry and materials are
 // shared and never disposed; the baked meshes are each statue's own.
 import * as THREE from 'three';
 import { bake } from '/engine/models/core/static-batch.js';

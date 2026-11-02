@@ -6,7 +6,7 @@
 // sleeves end in pale hands with long fingers. Metres, +Y up, facing +Z.
 //
 // Each pivot is one tinted bake (bake({ tint: true }); every material is
-// double-sided, so one batch a pivot): about 13 draws, no
+// double-sided, so about one batch a pivot): under 20 draws, no
 // lights, no emissive. Source geometry and materials are shared by every
 // Lector and never disposed; the baked meshes are each one's own.
 // userData.animate(t, moving, winding, { mode, look, scares }) poses it from
