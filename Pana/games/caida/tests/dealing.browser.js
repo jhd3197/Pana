@@ -113,7 +113,7 @@ try {
     g.stock = deck().filter(c => !hand.includes(c.id)); g.table = []; g.turn = room.seat; g.scores.fill(0); g.phase = 'playing'; g.revision++; room.publish();
   });
   assert.match(await e.locator('#canto-name').textContent(), /Patrulla.*6/);
-  assert.match(await e.locator('#canto-help').textContent(), /Tres cartas seguidas/);
+  assert.match(await e.locator('#canto-note').textContent(), /Tres cartas seguidas/);
   await e.locator('#chant').click();
   assert.match(await e.locator('#announcement').textContent(), /Patrulla/);
   assert.equal(await e.locator('#chant').isVisible(), false);
