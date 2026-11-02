@@ -159,6 +159,25 @@ export default {
 - Contextual prompts are not instructions: "E abrir" while you face a door, "Tu
   turno", a capture bar, a countdown. They appear only while they apply, are a
   few words, and never list controls.
+  Their key cap is `<kbd data-prompt>`. A prompt with nothing to do right now
+  is hidden, not turned into advice ("Acércate a una estación" is gone from
+  Cocina; Escondidas shows "Copiar" only next to an object).
+
+### HUD layout check
+
+`engine/tests/hud-layout.browser.js` puts every game into a real round with
+`tests/play-kit.js` (`enterPlay`, one recipe per game in `PLAY`) and reads the
+HUD with `tests/hud-check.js` at 1280×720, 1920×1080, 1024×600 and 390×844.
+A HUD piece is an outermost visible fixed/absolute element; only the boxes that
+paint count (a transparent header spanning the screen paints just its buttons).
+Skipped: dialogs, toasts, shouts, the lobby, `[role=status]`/`[aria-live]`,
+`[data-hud-transient]` layers (Bochinche's hit flashes) and labels pinned to the
+3D world through an inline position (name and station tags). Fixes that held:
+move a centred panel under the menu buttons below ~1180 px instead of shrinking
+it, cap a growing log's height on short screens (Dominó's "En la mesa"), and
+hide a redundant title tag before the scoreboard reaches it (Bolas Criollas).
+`PANA_HUD_GAMES=a,b` narrows the run; `PANA_HUD_SHOTS=<dir>` saves a picture per
+game and size.
 
 ## Shared input settings
 
