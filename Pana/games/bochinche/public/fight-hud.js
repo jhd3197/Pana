@@ -31,6 +31,7 @@ const el = (tag, className, parent) => { const n = document.createElement(tag); 
 export function createFightHud({ hud = document.getElementById('hud'), screenOf = () => null } = {}) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const fx = el('div', 'hud-fx', hud), flash = el('div', 'hud-flash', fx), item = el('div', 'hud-item', fx);
+  fx.dataset.hudTransient = ''; // flashes and pickups over the stage, not a HUD piece
   item.hidden = true;
   const bubbles = [], tags = [];
   const rows = [0, 1, 2, 3, 4, 5].map(i => {
