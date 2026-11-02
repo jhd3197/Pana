@@ -27,13 +27,10 @@
 .banderin .fine-controls { gap:6px; }
 .banderin .fine-controls .pk-touch { width:40px;height:44px;min-width:40px;border-radius:0; }
 .banderin #shoot { min-width:0;min-height:48px;flex:1;padding:10px 14px;white-space:nowrap;font:20px var(--pk-display);box-shadow:none; }
-.banderin #shoot kbd { margin-left:10px;font:11px var(--pk-sans); }
-.banderin .charge-tip { grid-column:1 / -1;margin:0;text-align:right;font-size:12px;line-height:1.4;color:var(--pk-muted); }
 .banderin :is(.called-pocket,.shot-clock) { grid-column:1 / -1;margin:0; }
 @media(max-width:800px) {
  .banderin .play-controls { width:calc(100% - 24px);grid-template-columns:1fr;gap:12px;padding:14px; }
  .banderin .shot-controls { grid-column:1;grid-row:auto; }
- .banderin .charge-tip { text-align:center; }
 }
 @media(max-height:520px) and (orientation:landscape) {
  .banderin .player { width:auto;min-height:44px; }
@@ -42,5 +39,4 @@
  .banderin .shot-controls { width:100%;flex-wrap:nowrap; }
  .banderin #shoot { font-size:18px;padding:10px; }
  .banderin .fine-controls .pk-touch { width:32px;min-width:32px; }
- .banderin .charge-tip { font-size:11px; }
 }

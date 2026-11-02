@@ -50,20 +50,6 @@ const menu = createGameMenu({
   pad: { move: 'arrows', moveLabel: loc('Afinar el taco; con bola en mano, mover la blanca'), cursor: loc('Apuntar en la mesa'), keys: { a: ['Space', loc('Fuerza: mantén y suelta para tirar')], x: ['Enter', loc('Confirmar la bola en mano')], lb: ['ShiftLeft', loc('Afinar más fino')], y: ['KeyC', loc('Cámara')] } },
   title: 'Billar · Pana', orientation: 'libre', sound: audio, // i18n-ignore: game name
   note: () => room.members.size > 1 ? loc('La mesa sigue jugando mientras estás en el menú.') : loc('La mesa está en pausa.'),
-  controls: [[loc('Ratón / dedo'), loc('Toca la mesa para apuntar; detrás de la bola, arrastra a los lados para girar')], ['← →', loc('Afina la dirección del taco')], [loc('Mantener Tirar / Espacio / Enter'), loc('La fuerza sube y baja: suelta para tirar. Rojo es más fuerte')], [loc('Enter con bola en mano'), loc('Confirma la posición')], [loc('Flechas con bola en mano'), loc('Mueve la blanca antes de colocarla')], [loc('Efecto'), loc('Toca la bola blanca del panel para darle efecto')], ['C', loc('Cambia la cámara')], ['M', loc('Sonido')], ['Esc', loc('Menú')]],
-  tips: [
-    loc('¿Quién rompe? Al empezar la partida todos sacuden el cacho a la vez y lo tapan: rompe el dado más alto; si empatan arriba, solo ellos sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.'),
-    loc('Elige Individual para jugar uno contra uno, o Por equipos para dos grupos de uno, dos o tres panas. Los compañeros rotan después de cada tiro, incluso cuando el equipo sigue jugando. El anfitrión organiza los puestos antes de empezar.'),
-    loc('Toca primero una bola de tu grupo. Después del contacto, mete una bola o haz que cualquiera llegue a una banda. Si metes una de las tuyas sin falta, sigues tirando.'),
-    loc('Bola 8: la primera bola legal asigna lisas o rayadas. Vacía tu grupo antes de la ocho; meterla antes de tiempo o con falta pierde la mesa. En el saque, la ocho se repone.'),
-    loc('Bola 9: toca primero la bola de menor número. Una combinación legal que meta la nueve gana la mesa. Si entra con falta, la nueve vuelve a la mesa.'),
-    loc('Las faltas dan bola en mano. Con Cocina, coloca dentro de la zona amarilla y cruza su borde antes del primer contacto.'),
-    loc('Si activas Cantar tronera, elige el número que ves junto al agujero. Solo conserva turno una bola que entre en esa tronera; la ocho en otra tronera pierde la mesa.'),
-    loc('En práctica juegas todas las bolas y dejas la ocho para el final. Las faltas te dejan colocar la blanca y seguir.'),
-    loc('La dificultad cambia la guía: en Fácil ves adónde van las dos bolas y los rebotes; en Experto solo la dirección del taco. Pana Bot también afina la puntería.'),
-    loc('Efecto: arriba la blanca sigue después del choque, abajo regresa y a los lados cambia el rebote en las bandas.'),
-    loc('Si alguien sale, su puesto queda libre para otro pana. La mesa conserva las bolas y el turno. El anfitrión empieza la revancha, o desde el menú vuelve a la sala si nadie llega.'),
-  ],
   invite: () => inviteUrl(code), onOpen() { clearInput(); render(room.state); },
   actions: [{ id: 'back-to-lobby', label: loc('Volver a la sala'), run: () => room.action('setup'),
     visible: () => room.isHost && !['lobby', 'finished'].includes(room.state.phase) && !poolConnected(room.state) }],
@@ -107,7 +93,7 @@ function ownTurn() { return !menu.isOpen && !roomOptions.isOpen && room.connecte
 function chargeEnded() {
   power = .65;
   $('power-bar').hidden = true; $('shoot').classList.remove('is-charging');
-  $('shoot').firstChild.textContent = room.state.ballInHand ? `${loc('Colocar')} ` : `${loc('Tirar')} `;
+  $('shoot').firstChild.textContent = room.state.ballInHand ? loc('Colocar') : loc('Tirar');
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !ownTurn() || room.state.ballInHand;
   $('pocket').disabled = !ownTurn() || room.state.ballInHand;
 }
@@ -120,7 +106,7 @@ function beginCharge(source) {
   if (room.state.options.calledPocket && $('pocket').value === '') { notify(loc('Elige la tronera donde quieres meter la bola.')); return; }
   audio.unlock(); held = 0; drag = null;
   $('power-bar').hidden = false; $('shoot').classList.add('is-charging');
-  $('shoot').firstChild.textContent = `${loc('Soltar')} `;
+  $('shoot').firstChild.textContent = loc('Soltar');
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = true;
   $('pocket').disabled = true;
   charge.begin(source, { pocket: $('pocket').value === '' ? null : Number($('pocket').value) });
@@ -226,10 +212,9 @@ function render(state) {
   $('pocket').disabled = !active || charge.active || state.ballInHand;
   $('shot-clock').hidden = !state.options.shotSeconds || state.phase !== 'aiming';
   $('shot-clock').textContent = loc('Tiempo: {n} s', { n: Math.max(0, Math.ceil(state.options.shotSeconds - state.turnElapsed)) });
-  $('charge-tip').hidden = !active || state.ballInHand;
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !active || state.ballInHand || charge.active;
   $('side-controls').hidden = lobby || ended; $('power-bar').hidden = !charge.active;
-  $('shoot').firstChild.textContent = `${state.ballInHand ? loc('Colocar') : charge.active ? loc('Soltar') : loc('Tirar')} `;
+  $('shoot').firstChild.textContent = state.ballInHand ? loc('Colocar') : charge.active ? loc('Soltar') : loc('Tirar');
   if (state.revision !== lastRevision) {
     if (state.phase === 'rolling' && previousPhase !== 'rolling') audio.tone(360, 0, .06, 'triangle', .12);
     if (previousPhase === 'rolling' && state.phase !== 'rolling') { placement = null; $('pocket').value = ''; setSpin(0, 0); audio.tone(600, 0, .08, 'sine', .08); }
