@@ -14,7 +14,8 @@ import { pressJump } from '/engine/play/jump.js';
 import { difficultyInfo } from '/engine/play/difficulty.js';
 import { loc } from '/engine/i18n.js';
 import { ROOM_OPTIONS, defaultOptions, roomOptions } from './options.js';
-import { createMatch, tickMatch, takeEvents, activeCapy, alive, fire } from './rules.js';
+import { createMatch, tickMatch, takeEvents, activeCapy, alive, fire, canUse } from './rules.js';
+import { WEAPON_IDS, weaponOf } from './weapons.js';
 import { createBot } from './bot.js';
 import { createHud } from './hud.js';
 import { mapSeed, mapSize, SEED_LIMIT } from './map-rules.js';
@@ -30,7 +31,7 @@ const KIND_NAMES = { cerros: loc('Cerros'), cuevas: loc('Montaña de cuevas'), i
   terrazas: loc('Terrazas del tepuy'), suave: loc('Lomas suaves') };
 const mapLabel = m => loc('Mapa #{n} · {kind}', { n: m.seed, kind: KIND_NAMES[m.kind] || '' });
 let world = null, match = createMatch({ seed, size: options.size }), playing = false, bot = null, acc = 0, lastTick = 0;
-const hud = createHud($, { human: HUMAN }), notify = createToast($('toast'), { ms: 2600 });
+const hud = createHud($, { human: HUMAN, pick: id => choose(id) }), notify = createToast($('toast'), { ms: 2600 });
 
 // The lobby shows the map the match will be played on.
 function preview() {
@@ -49,9 +50,10 @@ const menu = createGameMenu({ title: 'Capis a Pintazos · Pana', sound, orientat
   pad: { move: 'wasd', keys: { a: ['Space', loc('Cargar y disparar')], b: ['Enter', loc('Saltar')], y: ['KeyZ', loc('Ver todo el mapa')] } },
   note: () => loc('La partida está en pausa.'),
   controls: [[loc('A D / ← →'), loc('Caminar')], [loc('W S / ↑ ↓ / ratón'), loc('Apuntar')], [loc('Espacio / clic'), loc('Mantén para cargar, suelta para disparar')],
+    [loc('1–5 / Q E / Tab'), loc('Cambiar de arma')],
     ['Enter', loc('Saltar')], ['Z', loc('Ver todo el mapa')], ['M', loc('Activar o silenciar el sonido')]],
   tips: [loc('El viento empuja la pintura: mira la flecha antes de disparar.'), loc('La tierra pintada resbala: los capis se deslizan cuesta abajo.'),
-    loc('Un capi con 100 % de pintura o que cae al río queda fuera.'), loc('Después de disparar tienes 3 segundos para cubrirte.')],
+    loc('Un capi con 100 % de pintura o que cae al río queda fuera.'), loc('La Bazuca, La Lejana, La Licuadora y El Trueno tienen pocos tiros por equipo; La Piñita nunca se acaba.'), loc('Después de disparar tienes 3 segundos para cubrirte.')],
 });
 $('game-nav').append(menu.createButton({ id: 'menu', className: 'pk-btn' }));
 $('rules').onclick = () => menu.open('controls');
@@ -81,7 +83,7 @@ $('same-map').onclick = start;
 
 // ---------- input ----------
 const keys = new Set(), touch = new Set();
-let jumps = 0, mouseAt = null, pendingFire = null, power = null;
+let jumps = 0, mouseAt = null, pendingFire = null, power = null, wanted = null;
 const held = (...names) => names.some(name => keys.has(name) || touch.has(name));
 const myTurn = () => playing && match.phase === 'aim' && activeCapy(match)?.team === HUMAN && !menu.isOpen;
 const charge = createShotCharge({ ready: myTurn, revision: () => match.turn?.n,
@@ -97,8 +99,18 @@ function input() {
     const dx = mouseAt.x - me.x, dy = mouseAt.y - (me.y + .7);
     if (Math.hypot(dx, dy) > .8) { out.face = dx < 0 ? -1 : 1; out.aimTo = Math.atan2(dy, Math.abs(dx)); }
   }
+  if (wanted) { out.weapon = wanted; wanted = null; }
   if (pendingFire != null) { out.fire = pendingFire; pendingFire = null; }
   return out;
+}
+// Take another weapon on your turn (the picker, 1-5, Q E, Tab); `step` cycles through the ones with shots left.
+function choose(id, step = 0) {
+  const me = activeCapy(match);
+  if (!myTurn() || !me) return;
+  if (step) { const at = WEAPON_IDS.indexOf(wanted || me.weapon); for (let k = 1; k <= WEAPON_IDS.length && !id; k++) { const next = WEAPON_IDS[(at + step * k + WEAPON_IDS.length * k) % WEAPON_IDS.length]; if (canUse(match, me.team, next)) id = next; } }
+  if (!id) return;
+  if (!canUse(match, me.team, id)) { sfx.dry(); notify(loc('Ya no quedan tiros de {name}.', { name: weaponOf(id).name })); return; }
+  wanted = id;
 }
 const typing = (event) => event.target.closest?.('input, textarea, select, [contenteditable], dialog');
 addEventListener('keydown', (event) => {
@@ -108,6 +120,8 @@ addEventListener('keydown', (event) => {
   if (key === 'z' && !event.repeat) world.wide = !world.wide;
   if ((key === 'enter' || key === 'j') && !event.repeat) { event.preventDefault(); jumps = pressJump(jumps); }
   if (key === ' ') { event.preventDefault(); if (!event.repeat) charge.begin(' '); }
+  if (/^[1-9]$/.test(key) && !event.repeat && WEAPON_IDS[key - 1]) choose(WEAPON_IDS[key - 1]);
+  if ((key === 'q' || key === 'e' || key === 'tab') && !event.repeat) { if (key === 'tab') event.preventDefault(); choose(null, key === 'q' || (key === 'tab' && event.shiftKey) ? -1 : 1); }
   if (/^(w|a|s|d|arrow(up|down|left|right))$/.test(key)) { event.preventDefault(); keys.add(key); if (/w|s|up|down/.test(key)) mouseAt = null; }
 });
 addEventListener('keyup', (event) => { const key = event.key.toLowerCase(); keys.delete(key); if (key === ' ') charge.release(' '); });
@@ -132,12 +146,15 @@ function handle(e) {
   world?.event(e);
   switch (e.type) {
     case 'turn': sfx.chime(); notify(match.turn.team === HUMAN ? loc('Tu turno: {name}', { name: nameOf(e.capy) }) : loc('Turno de la máquina: {name}', { name: nameOf(e.capy) })); break;
-    case 'fire': sfx.shot('bazuca'); break;
+    case 'fire': if (e.weapon === 'grenade') sfx.swish(1.2); else sfx.shot({ bazooka: 'bazuca', sniper: 'sniper', drill: 'minigun', scatter: 'scatter' }[e.weapon] || 'bazuca'); break;
+    case 'weapon': sfx.swap(); break;
+    case 'bounce': sfx.land('dirt', { power: .3, volume: .5 * heard(e.x, e.y).volume }); break;
+    case 'drill': { const { volume, far } = heard(e.x, e.y); sfx.debris(1.3, { volume: volume * .9 }); sfx.boom(.6, { volume: .5 * volume, far }); break; }
     case 'blast': {
-      // The boom, the wet splat, the earth raining back and the drops pattering down.
-      const { volume, far } = heard(e.x, e.y);
-      sfx.boom(1.2, { volume: .85 * volume, far }); sfx.splat(1.2 * volume);
-      sfx.debris(1.1, { volume: .9 * volume, delay: .3 }); sfx.patter(7, { volume: .8 * volume, delay: .45 });
+      // The boom, the wet splat, the earth raining back and the drops pattering down: as big as the crater.
+      const { volume, far } = heard(e.x, e.y), k = Math.min(1.2, .35 + (e.size ?? 3.5) / 4);
+      sfx.boom(k, { volume: .85 * volume, far }); sfx.splat(k * volume);
+      if (k > .6) { sfx.debris(k, { volume: .9 * volume, delay: .3 }); sfx.patter(Math.round(7 * k), { volume: .8 * volume, delay: .45 }); }
       break;
     }
     case 'hit': sfx.squeak(); sfx.splat(.5); world?.react(e.team === HUMAN ? 'ouch' : e.by === HUMAN ? 'cheer' : 'idle'); break;
@@ -181,7 +198,7 @@ export const { sceneReady } = bootGame({
   },
   frame: (dt, scene) => {
     step(dt); charge.update(); render();
-    scene.frame(dt, { playing, power: power ?? null, difficulty: difficultyInfo(options.difficulty), labels: playing ? hud.labels : null });
+    scene.frame(dt, { playing, power: power ?? null, weapon: activeCapy(match)?.weapon, difficulty: difficultyInfo(options.difficulty), labels: playing ? hud.labels : null });
   },
 });
-if (params.has('debug')) window.capisDebug = { get match() { return match; }, get world() { return world; }, start, fire: (p) => fire(match, p), options: () => options, get playing() { return playing; } };
+if (params.has('debug')) window.capisDebug = { get match() { return match; }, get world() { return world; }, start, fire: (p) => fire(match, p), choose, options: () => options, get playing() { return playing; } };

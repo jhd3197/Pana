@@ -68,7 +68,8 @@ Used by: Escondidas, Pepazo, Reliquia.
 
 `engine/play/terrain-mask.js` (pure): a grid of solid/air cells with a paint
 layer, row 0 at the bottom. `createMask`, `fillHeights`, `carve` (round
-crater), `fill`, `splash` (paint that fades to the rim), `drips` (seeded streaks
+crater), `carveLine` (a tunnel: a capsule along a segment, round at both
+ends; Capis' La Licuadora), `fill`, `splash` (paint that fades to the rim), `drips` (seeded streaks
 of paint running down from a blast and blobs thrown past its rim), `solidAt`,
 `groundBelow`, `surfaceY`, `slopeAt`, `circleHits`, `surfaceNormal`, `stainAt`,
 `markDirty`/`takeDirty`, and `paintRGBA` (texture bytes: grass on every top
@@ -225,16 +226,33 @@ Used by: Pepazo (Los del pescozón: six melee weapons; La Chancleta's throw).
 `stepFlight(ball, dt, { wind, solid, targets, bounds })` (gravity, a sideways
 wind push, the step swept against the ground predicate and round targets with
 `projectile.js`'s `segmentCircle`, so nothing tunnels) and
-`simulateFlight(start, opts)` (the whole arc and where it ends: the aim
-preview and a bot's shot search use the same flight). `FLIGHT` holds the
-default gravity (18) and wind force (7).
+`simulateFlight(start, opts)` (the whole arc and where it ends, with the
+velocity it struck at: the aim preview and a bot's shot search use the same
+flight). `FLIGHT` holds the default gravity (18) and wind force (7); pass
+`gravity` and `windForce` per weapon (a flat slug with no wind, a heavy
+shell). `stepBounce(ball, dt, { normal, restitution, friction, settle,
+maxBounces, ...flight })` is the same step for a thing that bounces off the
+side-view ground instead of bursting: on contact it backs up to free air and
+reflects off `normal(x, y)` (terrain-mask.js `surfaceNormal`) or off a round
+target, comes to rest (`ball.resting`) when slow on a floor, falls again if
+the ground under it goes, and stops after `maxBounces` wedged in a crevice.
+`simulateBounce(start, opts, { fuse })` runs it to the end of a fuse (it
+returns early once at rest): the grenade's preview and bot search.
 
 ```js
 const ball = { x, y, ...aimVelocity(angle, facing, power * 32) };
 const { hit, victim } = stepFlight(ball, dt, { wind, solid: (x, y) => solidAt(mask, x, y), targets });
 ```
 
-Used by: Capis a Pintazos (La Bazuca de pintura, its aim preview and the bot).
+```js
+const g = { x, y, vx, vy };
+const r = stepBounce(g, dt, { solid, normal: (x, y) => surfaceNormal(mask, x, y, .5), restitution: .45, friction: .7 });
+if (g.t >= fuse) explode(g.x, g.y);
+```
+
+Used by: Capis a Pintazos (all five weapons, their aim preview and the bot;
+La Piñita bounces with `stepBounce`, and the bot bisects its throw power with
+`lob.js` `solveLob` and values blasts with `falloff`).
 
 ### Thrown lobs in a 3D court (bounce, roll, blast falloff)
 
@@ -255,7 +273,9 @@ stepLob(grenade, dt, { boxes: cover, bounds: { x: 27, z: 27 }, restitution: .4 }
 const end = traceLob(start, opts, { dt: TICK, time: fuse, out: points, land: true }); // preview = server
 ```
 
-Used by: Pepazo (grenades: the server flight, the aim arc, bots and the armory range).
+Used by: Pepazo (grenades: the server flight, the aim arc, bots and the armory
+range); Capis a Pintazos (`falloff` for every blast's paint, `solveLob` for
+the bot's grenade throws).
 
 ### Damage falloff with range
 
@@ -398,8 +418,10 @@ rules and on the server): `PAINT_WEAPONS` (id → name, menu order),
 nickname and kind through `loc()`), `classOf(id)`, `PAINT_MOUNTS` (which
 attachments each model has a mount for), `PAINT_OPTICS` (the Mira kind each
 model draws: dot, holo, laser, scope, pin), `PAINT_KIT_BORE`, `PAINT_CAMOS`,
-`PAINT_SOLIDS` and `PAINT_CAMO_IDS` (every camo id, solids first). The kit
-re-exports all of it. Pepazo's `armory-data.js` builds its markers, attachment
+`PAINT_SOLIDS`, `PAINT_CAMO_IDS` (every camo id, solids first) and
+`PAINT_GRENADES` (Pepazo's thrown grenades by name; Capis'
+`tests/weapons.test.js` keeps them equal to `armory-data.js` `GRENADES`).
+The kit re-exports all but the last. Pepazo's `armory-data.js` builds its markers, attachment
 rules and optic tuning from it; `games/pintura/tests/paint-kit.browser.js`
 builds every marker with every allowed attachment set and keeps the model and
 the table in agreement.
@@ -410,7 +432,9 @@ held.position.set(0, -launcher.userData.bore * s, 0);   // barrel axis through t
 ```
 
 Used by: Pepazo (every marker in first and third person, the in-flight rocket),
-Capis a Pintazos (La Bazuca in every capi's hands, batched; the rocket in flight).
+Capis a Pintazos (its five weapons by these names: La Bazuca, La Lejana,
+La Licuadora and El Trueno batched in every capi's paws, La Piñita's
+`createPaintGrenade` held and in flight; the rocket in flight).
 
 ## Sound
 
@@ -552,7 +576,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | One square UI style: `--pk-r*` radius tokens are 0, hard offset shadows (`--pk-drop`, `--pk-skin-shadow`); real circles (avatars, dots, swatches, joystick, spinners, balls) opt out with `var(--pk-radius-round)` | `engine/kit.css`; guarded by `tests/ui-square.test.js` (pana-kit.md, "One square style") | every page and game; Capis allow-listed while it is restyled |
 | Game skin: the lobby room panel's look for any panel or dialog (`.pk-skin-panel`, `-card`, `-plate`, `-label`, `-chips`, `-btn`, `-go`, `-link`; `--pk-skin-*` tokens) | `engine/kit.css` (pana-ui.md, "Game skin") | the shared sala (`sala.css` reads the tokens) and "Más ajustes" in the 23 room-options games |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | ui: all 24; settings: 16 |
-| Icons (`lock` marks something not yours yet) | `engine/icons.js` | Billar, Bochinche, Bululú, Capis a Pintazos (through room options), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
+| Icons (`lock` marks something not yours yet; `weaponBazooka`, `weaponSniper`, `weaponDrill`, `weaponScatter` and `kitGrenade` for a weapon picker) | `engine/icons.js` | Billar, Bochinche, Bululú, Capis a Pintazos (room options, the weapon picker), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
 | Toast | `engine/hud.js` (`createToast`) | Billar, Caída, Capis a Pintazos, Cocina, Criollas, Curiara, Dominó, Embuste, Escondidas, Lancha, Parapente, Reliquia |
 | Touch controls | `engine/touch.js` | 17 games |
 | Gamepad | `engine/gamepad.js` | Carreritas, Trifulca; `ui`, `first-person`, `settings` and `game-entry` read pads for every game |

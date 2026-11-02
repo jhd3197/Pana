@@ -11,6 +11,9 @@ export const PAINT_WEAPONS = {
   smg: 'La Metra', minigun: 'La Licuadora', slingshot: 'La China', revolver: 'El Tambor', blunderbuss: 'La Corneta', sprayer: 'La Fumigadora', // i18n-ignore: proper names
   sixshooter: 'El Llanero', pdw: 'La Pulga', carbine: 'La Parrandera', bullpup: 'El Tuqueque', marksman: 'El Zamuro', lmg: 'La Culebrona', // i18n-ignore: proper names
 };
+// Pepazo's thrown grenades by name (games/pintura/public/armory-data.js GRENADES
+// holds their rules; a test keeps the names equal). Capis a Pintazos throws La Piñita.
+export const PAINT_GRENADES = { pinita: 'La Piñita', pegajosa: 'La Pegajosa', chispita: 'La Chispita' }; // i18n-ignore: proper names
 // The melee set, same kit and paint (Studio only for now).
 export const PAINT_MELEE = { bat: 'El Bate', sandal: 'La Chancleta', roller: 'El Rodillo', brush: 'La Brocha', bucket: 'El Tobo', maraca: 'La Maraca' }; // i18n-ignore: proper names
 // The arsenal by kind. `name` is the group's nickname, `kind` what it really is; a

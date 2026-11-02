@@ -4,8 +4,10 @@ Turn-based paint artillery between capybaras: two teams of three capis on a
 stretch of the Llanos generated for each match (hills, a cave mountain,
 islands and bridges, a valley, a tepuy), one player against the machine
 (`players: 1`, offline, no room and no `network.js`). Each turn a capi walks,
-jumps, aims and fires La Bazuca de pintura; the shell flies with the wind,
-digs a crater, paints the ground and the capis near it and knocks them back. A
+jumps, picks one of five weapons from Pepazo's arsenal (see "Weapons"), aims
+and fires; the shell flies its own way (with more or less wind, bouncing on a
+fuse, nearly straight), digs a crater or a tunnel, paints the ground and the
+capis near it and knocks them back. A
 capi with 100 % paint, or one that falls into the water, is out. The last team
 standing wins (or, after 60 turns, the one with more capis standing).
 
@@ -183,7 +185,10 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
 ## Files
 
 - `public/rules.js`: the match (pure): teams, turn order, timers, wind,
-  firing, blasts, damage, knockback, water, the winner.
+  the weapon in each capi's paws and each team's shots, firing, every
+  weapon's flight, blasts and tunnels, damage, knockback, water, the winner.
+- `public/weapons.js`: the arsenal as data (pure): names, models, flight,
+  crater or tunnel, paint, ammo, the one-line blurb.
 - `public/map-rules.js`: the map generator (plan, ground, spawns, checks,
   `rockAt` and `grassAt` for the painter).
 - `engine/play/terrain-gen.js`: the generic pieces (seeded streams, bumps,
@@ -198,7 +203,9 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   results.
 - `public/game.js`: wiring (keys, mouse, touch, the shot charge, sounds).
 - `tests/rules.test.js`, `tests/map-rules.test.js` (the generated maps over
-  many seeds), `tests/map-matches.test.js` (bot-against-bot matches),
+  many seeds), `tests/weapons.test.js` (each weapon's flight, crater or
+  tunnel, fuse, falloff, ammo, determinism and the bot's choice),
+  `tests/map-matches.test.js` (bot-against-bot matches),
   `tests/capis.browser.js`.
 - Cover art: `web/images/launcher/capis.jpg` (hero, kept under 100 KB so it stays in Git) and`capis-card.jpg` (hub tile), registered in `web/launcher-art.js`. `public/card.js` is now only the fallback live card.
 
@@ -225,24 +232,116 @@ Turns alternate teams; inside a team they rotate to the next capi still in.
 Firing is refused once the clock reaches zero, so neither a player nor the bot
 can shoot late.
 
+## Weapons (`weapons.js`)
+
+Five weapons, every name and model from Pepazo's shared arsenal
+(`engine/play/paint-arsenal.js`, `paintball-kit.js`). Each is clearly its own
+in how it flies, how much it hurts and what it does to the ground:
+
+| Weapon (model) | Flight | Crater | Paint (direct, then edge) | Shots a team | Use |
+|---|---|---|---|---|---|
+| La Bazuca (`bazooka`) | shell, speed 30, gravity 18, full wind | round, radius 3.5, paint runs down (drips) | 50, down to 25 %; knock 13 | 3 | the big hit |
+| La Piñita (Pepazo's grenade) | thrown, speed 36, 0.35 of the wind, bounces (restitution 0.3, friction 0.55), falls past the capis | round, 2.9, where it lies when its 3 s fuse ends | 45 inside 30 % of reach, down to 30 %; knock 10 | unlimited | behind cover, into a hole; the basic weapon |
+| La Lejana (`sniper`) | slug, speed 43 to 62 (70 % at no charge), gravity 2.5, no wind | a pinhole, 0.6 | 62 on a direct hit (a near miss barely stains); knock 7 | 2 | finishing an exposed capi at range |
+| La Licuadora (`minigun`) | shell, speed 32, gravity 18, half the wind | a tunnel 9.4 long, radius 1.05, along its flight (`carveLine`) | 8 to anyone in the tunnel; knock 4 | 3 | opening a way, dropping a rival down a shaft |
+| El Trueno (`scatter`) | five pellets in a fan 0.1 rad apart, speed 28, 0.6 of the wind | five small rounds, 1.4 | 20 each, down to 35 %; knock 6 | 3 | capis standing together |
+
+- **Why La Piñita is this strong.** It is what a team fires once the
+  scarce shots are gone, so it sets how long a match lasts. With a 28 throw,
+  a 2.6 crater and 40 paint, bot matches took 39 turns on small maps (the
+  one-weapon game: 18) and 8 of 20 ran to the turn limit: across a valley
+  the teams end up 55 to 70 apart and only La Bazuca reached. At 36, 2.9
+  and 45 (and less bounce, so it stops where it lands) they take 25 turns
+  with 3 of 20 at the limit.
+- **Shots per team, per match** (`RULES.ammo`), shared by the three capis.
+  La Piñita never runs out, so a team with nothing else still fires: a match
+  cannot stall on ammo. Firing a weapon the team has no shots of throws La
+  Piñita instead.
+- **The weapon persists per capi**: a capi keeps what it last held into its
+  next turn while its team has shots of it, else it starts with La Piñita.
+  Every capi starts with La Bazuca. Picking happens only while aiming
+  (`selectWeapon`, or `input.weapon` in `tickMatch`); a `weapon` event plays
+  the swap sound and switches the model.
+- **Damage** is one rule for every blast (`hurt`): `w.paint` times `lob.js`
+  `falloff(distance, crater + capi radius, { inner, min })`; a shell that
+  strikes a capi counts as a direct hit wherever its centre is. La Lejana's
+  slug flies among the capis' bodies, so it is judged by what it strikes.
+- **The picker** (`hud.js`, `#weapons`): a bottom bar of five square
+  buttons (key, icon from `engine/icons.js`, name, shots left as ×n), the
+  weapon in the active capi's paws lit (in the machine's colour on its turn),
+  empty ones greyed out, the weapon's one-liner under it. Keys 1 to 5 pick, Q
+  and E (or Tab, Shift+Tab) cycle through the ones with shots left, a tap
+  picks; on touch the bar moves under the turn panel and shows icons only.
+- **The aim preview** follows each flight: La Piñita's bounces up to where
+  its fuse runs out, with a ring of its blast there (on the levels whose guide
+  shows where a shot ends: `guide.ghost`); La Lejana's line always shows at
+  least 14 units; La Licuadora's arc continues into the ground as the tunnel
+  it will bore; El Trueno shows its middle pellet.
+- **In the paws**: every capi carries all five models, only the picked one
+  shown, each with its tip at the muzzle (`HELD` scales; La Piñita is held
+  up at the barrel's tip). Pepazo's markers are `bakePaintKit` once per
+  team and weapon (at most 6 draws each); the grenade is `createPaintGrenade`.
+  The far copy (`rig-lod.js`) is built with La Bazuca and keeps it.
+- **In flight**: La Bazuca's rocket with smoke and drops; La Piñita tumbling,
+  its lamp blinking faster as the fuse runs down (and a "Mecha: n s" note);
+  La Lejana's glowing slug with a white streak; La Licuadora's spinning bit
+  with smoke; El Trueno's pellets as one instanced draw. All pooled: nothing
+  is built during a match.
+- **Impact FX** reuse the same pools scaled by the crater (`e.size /
+  RULES.blast`): flash, fireball, paint, clods, sparks (white and faster for
+  La Lejana), shake and the camera's hold; a tunnel spits clods and dust all
+  along it, sparks where it bit in and paint at its end. The ground's shader
+  is untouched: a tunnel or a pinhole cuts the strata like any crater.
+
 ## The machine (`bot.js`)
 
-On its turn it first picks a target (`pickTarget`): every rival gets a quick
-search from where the bot stands (angles −0.2..1.4 rad every 0.1, powers
-0.2..1 every 0.05, about 290 real flights with the wind) and a score: how far
-the best landing misses, plus 0.03 a unit of distance (a long lob is harder to
-land), minus 1 for a rival already at 50 % paint. A miss under `FEASIBLE`
-(2.5) counts; the best score is the target and the bot does not walk. With no
-feasible shot at anyone it takes the nearest rival and, while that rival is
+**Choosing a weapon.** `pickTarget` weighs every weapon the team still has
+(La Lejana and La Bazuca first) against every rival, El Trueno only at a
+rival within 22 units or with a team-mate within 8: a coarse search with the
+weapon's real flight (La Bazuca and El Trueno 289 flights a rival, La Lejana
+111 slugs at full charge; La Piñita, per throw angle, bisects the power for
+the distance with `lob.js` `solveLob`, about 60 throws, each ending early
+once it rests), then `shotValue`: the paint the shot would land on each capi
+(all five pellets for El Trueno), half where aimed and half after a typical
+slip of 1.2 units (0.6 for El Trueno's fan) so a bigger blast forgives more,
+plus 40 for a rival it paints out, its own capis counted 1.5 times against
+it; a bounced throw's slip is 2 units (bounces scatter it more). Less `KEEP`,
+what a scarce shot is worth keeping (La Bazuca 0, El Trueno 4, La Lejana
+30), less 0.03 a unit of distance, plus a little noise by
+difficulty (about ±10 on fácil, ±0.6 on experto). A scarce weapon must also
+land close (La Bazuca 2.5, El Trueno's middle pellet 2, La Lejana a direct
+hit); La Piñita only has to paint someone. A search that could not beat the
+best found so far (all its paint on every rival in reach) is skipped. In
+practice: La Bazuca for a clean hit while it lasts, La Lejana to finish a
+capi at 38 % or more out in the open, El Trueno into a pair, La Piñita for
+the rest.
+
+**No shot.** With nothing feasible it walks towards the nearest rival (as
+below; to within 28 units once La Bazuca is spent: La Piñita carries less),
+looks again, and if still nothing bores with La Licuadora when its tunnel
+would end at the rival, or a wall stands within 15 units in the way and the
+tunnel gets it 4 units closer (`drillPlan`); else it lobs La Piñita. It never
+spends a scarce shot on a hopeless one. The fine search for the shot refines
+the coarse search's three best (two rounds of 5 × 5 around them) instead of
+searching the whole arc again.
+
+La Lejana is searched only within 0.3 rad of the straight line from the
+shoulder to the target (every 0.015 rad).
+
+**The cost.** 16 to 21 ms a turn on average and 50 to 75 ms at most on an
+idle machine, over the 110-match run (the one-weapon bot: 10 to 15 and 35
+to 48 on the same machine); a busy machine can multiply both.
+
+**Walking and aiming.** With
+
+no feasible shot at anyone it takes the nearest rival and, while that rival is
 more than 34 units away (`RANGE`), walks towards it for up to 45 % of the turn,
 then looks again from where it got. Before each step (five times a second) it
 runs its own next two seconds of walking through the real walker (`safeWalk`)
 and stops if that ends in the water: a steep bank or a painted slope carries
 a capi further than a look at the ground ahead suggests. Stuck against a bump
-it hops once, only if the hop lands dry. Then the fine search (every 0.05 rad
-and 0.025 power, about 1 000 flights, ~12 ms) at the target, penalising
-landings in the water or next to its own capis. The whole choice costs about
-25 ms once a turn. The difficulty's `aimError` (from
+it hops once, only if the hop lands dry. The shot's search penalises
+landings in the water or next to its own capis. The difficulty's `aimError` (from
 `engine/play/difficulty.js`) is scaled ×3 for the angle and ×1.6 for the
 power, as before: the choice of target makes it smarter, not more accurate. It
 turns the barrel at a player's speed, waits 0.9–2.2 s, and fires; with under
@@ -253,8 +352,12 @@ lob; one that only lands far still goes towards the rival, so it never stalls.
 stuck in a crater, the last rival out of range) would play forever, so after
 `RULES.turnLimit` (60) turns the match ends: the team with more capis standing
 wins, then the one with less paint, else a draw (`byCount`, `endedBy:
-'turns'`, a toast and its own line on the results card). In 80 bot-against-bot
-matches 4 end there, all on terrazas and cuevas maps.
+'turns'`, a toast and its own line on the results card). In the 110
+bot-against-bot matches of `map-matches.test.js` 17 end there (5 of 45
+medium, 3 of 20 small, 3 of 20 large, none of 15 normal, but 6 of 10 fácil:
+an easy bot's aiming error scatters La Piñita's bounces); the one-weapon game
+ended 4 of 80 there. A match can never stall on ammo: La Piñita never runs
+out.
 
 ## Map generation
 
@@ -349,6 +452,7 @@ matches 4 end there, all on terrazas and cuevas maps.
 | A D / ← → | left and right buttons | walk |
 | W S / ↑ ↓, or move the mouse | aim buttons | aim (the mouse also turns the capi) |
 | hold Space or the left button, release | hold ¡Pinta! | charge and fire |
+| 1 to 5, Q E or Tab (Shift+Tab back), or click the bar | tap the bar | pick a weapon |
 | Enter (or J) | jump button | jump |
 | Z | Mapa | whole-map view (the whole width, bottom a little under the water, sky above) |
 
@@ -356,7 +460,10 @@ Space is the fire key, so jump is Enter. Escape is the shared pause menu.
 
 ## Sound
 
-All from `engine/sfx.js`, no music: `shot('bazuca')`; a blast layers `boom`,
+All from `engine/sfx.js`, no music: each weapon's `shot` (`bazuca`,
+`sniper`, `minigun`, `scatter`; a `swish` for La Piñita's throw), `swap` on a
+pick, `dry` on an empty one, `land('dirt')` on a bounce, `debris` and a small
+`boom` for a tunnel; a blast (its layers scaled with the crater) layers `boom`,
 `splat`, `debris` (earth raining back, .3 s later) and `patter` (drops landing,
 .45 s), quieter and muffled (`boom({ far })`) the farther it is from the view
 (`world.hearing(x, y)`); `squeak` and a small `splat` (a capi is hit), `boing`
@@ -410,16 +517,28 @@ large one (5.1 MB before).
 
 ## Known gaps
 
-- One weapon. No team or player-vs-player online yet (the map is ready for
-  it: a room only needs to share `{ seed, size }`).
+- No team or player-vs-player online yet (the map is ready for it: a room
+  only needs to share `{ seed, size }`, and the weapons are pure rules).
+- No utility weapon (a jump or a teleport): five weapons, all of them shots.
+- The far copy of a capi (whole-map view) always shows La Bazuca, whatever
+  it holds; La Piñita in the paws sits at the barrel's tip with the paws on
+  grips that are not there.
+- The bot values a shot by the paint it lands, not by the knockback: it does
+  not aim to push a capi into the river on purpose. It uses La Licuadora only
+  to open a wall or drop a rival, never to dig a route it then walks.
+- El Trueno is the bot's rarest choice (a handful in 110 matches): teams
+  stand 5 to 8 apart, so a pair close enough for it is rare.
+- Fácil bots against each other often run to the turn limit (6 of 10): the
+  shared aiming error is kept as it was, and La Piñita's bounces magnify it.
 - The way between the teams has no overhangs and no cave mouths (see "Why
   the way across is plain ground"): caves, ledges and caps stand off it, and
   the tops of the `cuevas` massif above its tunnel mouths and of the `valle`
   floor are reached only by the front capis' crest or a blast.
 - The bot hops once when stuck and never plans a route with hops, through a
   tunnel on purpose or back up a slope: it walks straight towards its target.
-- About 5 % of bot matches on `terrazas` and `cuevas` end at the turn limit
-  (a capi stuck in a deep crater out of everyone's range).
+- About 10 % of experto bot matches end at the turn limit (the one-weapon
+  game: 5 %), most on `terrazas`, `cuevas` and `valle` (a capi stuck in a
+  deep crater or across a valley out of everyone's range).
 - Fairness is measured at the start only: a crater can change who has the
   high ground, as it should.
 - The drips and blobs keep the cell grid's shapes under the blur: at the
@@ -445,8 +564,14 @@ bytes, every kind on every size with its landmark, land across the map, dry
 spawns with headroom and room to walk, nothing floating but tunnel roofs, the
 teams walking (or hopping) to each other both ways, every cave reachable,
 interest, fairness by measure, the mirrored fallback always passing,
-generation time, re-rolls, kinds and fairness as diagnostics; 80
-bot-against-bot matches that must all finish with no stuck turn; each kind's
+generation time, re-rolls, kinds and fairness as diagnostics; 110
+bot-against-bot matches (medium, small and large on experto, normal and
+fácil) that must all finish with no stuck turn and no team firing past its
+ammo, every weapon fired at least once, at most 20 % at the turn limit,
+reporting turns, endings, the weapons fired and the paint each put on
+rivals, and the bot's thinking time; `weapons.test.js` for every weapon's
+flight, crater or tunnel size, fuse, falloff, ammo, persistence,
+determinism and the bot's choice in set scenes; each kind's
 landmark, a lob between the front capis on every kind, the turn limit, turns,
 clock, blast, damage, water, winner, the bot's choice of target),
 `npm test -- terrain-gen side-walker` and
@@ -462,5 +587,8 @@ raises it and that its tip is the rules' muzzle, that the capi on its turn is
 the full pana in the play view while in the whole-map view every capi is one
 draw and the frame stays under 140 draws; it starts from the lobby, walks with D, holds and
 releases Space, waits for the crater and the paint, the machine's turn and
-shot, then a win, the results card, a rematch on the same map and the way
-back to the lobby with a new one.
+shot, the weapon picker (square buttons, keys 2, E, Q, Tab and a tap,
+the model in the paws following), a charged La Piñita, then each weapon
+fired once with no errors and the play view under 150 draws, then a win,
+the results card, a rematch on the same map and the way back to the lobby
+with a new one.

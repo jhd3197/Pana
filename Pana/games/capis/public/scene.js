@@ -3,38 +3,42 @@
 // earth by one terrain shader (engine/play/terrain-material.js: a smooth
 // outline, procedural soil, rock, sand and grass, the paint on top); the capis are
 // panas (the shared studio character, the player's own look on our lead
-// capi) with a team bandana, each holding Pepazo's La Bazuca; the world
-// behind is real 3D scenery (backdrop.js).
+// capi) with a team bandana, each holding the weapon it picked from Pepazo's
+// arsenal (weapons.js); the world behind is real 3D scenery (backdrop.js).
 import * as THREE from 'three';
 import { rendererOptions, bindRenderer } from '/engine/settings.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
-import { bakePaintKit, createPaintRocket } from '/engine/models/props/paintball-kit.js';
+import { bakePaintKit, createPaintRocket, createPaintGrenade } from '/engine/models/props/paintball-kit.js';
 import { createRigLod } from '/engine/models/core/rig-lod.js';
 import { chooseFar } from '/engine/models/core/lod-band.js';
 import { createLocalMarker } from '/engine/play/local-outline.js';
 import { Puffs } from '/engine/fx.js';
 import { createBlastFx } from '/engine/play/blast-fx.js';
-import { guideRibbon, pathLength } from '/engine/play/aim-guide.js';
+import { guideRibbon, guideRing, pathLength } from '/engine/play/aim-guide.js';
 import { createRecoil, shakeAt } from '/engine/play/recoil.js';
 import { takeDirty, solidAt } from '/engine/play/terrain-mask.js';
 import { createTerrain } from '/engine/play/terrain-material.js';
 import { createSpray } from '/engine/play/spray.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
-import { simulateFlight, aimVelocity } from '/engine/play/ballistic.js';
-import { RULES, TEAM_COLORS, alive, muzzle, flightOptions, activeCapy } from './rules.js';
+import { simulateFlight, simulateBounce } from '/engine/play/ballistic.js';
+import { RULES, TEAM_COLORS, alive, muzzle, flightOptions, activeCapy, launch } from './rules.js';
+import { WEAPONS, weaponOf } from './weapons.js';
 import { aiming, bodyPose, barrelPose } from './poses.js';
 import { createBackdrop } from './backdrop.js';
 import { rockAt, grassAt, strataPalette } from './map-rules.js';
 
 const FRONT = 1;               // the depth where capis and shells move
 const SLAB = [-2.6, .55];      // the earth's back and front faces
-const DASHES = 18, HUMAN = 0;
+const DASHES = 24, HUMAN = 0;
 // A pana is 2.16 units tall: ×.8 a capi stands 1.7, its 1.4 body disc plus the head.
 const CAPY_SCALE = .8, HEAD = 2.05;
 // La Bazuca in the hands: its scale, and how far towards the camera it rides (the near shoulder).
 const LAUNCHER = .6, NEAR = .36;
+// Each weapon's model in the paws at its own scale (Pepazo's markers by model id; La Piñita
+// is held up at the muzzle, ready to throw).
+const HELD = { bazooka: LAUNCHER, sniper: .52, minigun: .58, scatter: .62, grenade: 2.2 };
 // The body turns a little towards the camera (78 % of a quarter turn) so the
 // face reads past the barrel; La Bazuca itself stays exactly in the side plane.
 const TURN_IN = .78;
@@ -120,7 +124,8 @@ export function createCapisScene(canvas, match) {
   // La Bazuca per team that every capi's launcher clones.
   const cloth = TEAM_COLORS.map(color => new THREE.MeshStandardMaterial({ color, roughness: .6 }));
   const bandanaGeo = new THREE.TorusGeometry(.5, .1, 8, 24), knotGeo = new THREE.ConeGeometry(.16, .42, 4);
-  const launchers = TEAM_COLORS.map(color => bakePaintKit({ weapon: 'bazooka', color }));
+  // One batched model per weapon and team (La Piñita is small and stays as built); every capi clones them.
+  const launchers = TEAM_COLORS.map(color => Object.fromEntries(WEAPONS.map(w => [w.id, w.model === 'grenade' ? createPaintGrenade({ color }) : bakePaintKit({ weapon: w.model, color })])));
   const stain = TEAM_COLORS.map(color => new THREE.Color(color));
   function buildCapi(c) {
     const avatar = buildCharacter(lookFor(c)), root = new THREE.Group(), turn = new THREE.Group();
@@ -131,14 +136,22 @@ export function createCapisScene(canvas, match) {
     // The team bandana round the neck, knotted at the back (sculpt units, inside the body).
     const bandana = new THREE.Mesh(bandanaGeo, cloth[c.team]); bandana.name = 'Pañoleta'; bandana.position.set(0, 1.8, .02); bandana.rotation.x = Math.PI / 2 + .25; avatar.body.add(bandana);
     const knot = new THREE.Mesh(knotGeo, cloth[c.team]); knot.position.set(0, 1.92, -.5); knot.rotation.x = -2.2; avatar.body.add(knot);
-    // La Bazuca pivots on the shoulder (rules.js `shoulder`); `kick` slides it back on a shot.
-    const gun = new THREE.Group(), kick = new THREE.Group(), kit = launchers[c.team], launcher = kit.clone();
+    // The weapon pivots on the shoulder (rules.js `shoulder`); `kick` slides it back on a shot.
+    // Every weapon's model is there, only the one in the paws shown; each sits with its tip at the muzzle.
+    const gun = new THREE.Group(), kick = new THREE.Group(), held = {};
     gun.rotation.order = 'YXZ'; root.add(gun); gun.add(kick);
-    launcher.scale.setScalar(LAUNCHER); launcher.position.set(0, -kit.userData.bore * LAUNCHER, RULES.muzzle - kit.userData.tip * LAUNCHER); kick.add(launcher);
+    for (const w of WEAPONS) {
+      const kit = launchers[c.team][w.id], model = kit.clone(), k = HELD[w.model];
+      model.scale.setScalar(k);
+      if (w.model === 'grenade') model.position.set(0, 0, RULES.muzzle);
+      else model.position.set(0, -kit.userData.bore * k, RULES.muzzle - kit.userData.tip * k);
+      model.visible = w.id === 'bazooka'; model.name = w.name; kick.add(model); held[w.id] = model;
+    }
+    const launcher = held.bazooka;
     const tip = new THREE.Object3D(); tip.position.z = RULES.muzzle; kick.add(tip);
     const ears = avatar.head.children.filter(o => o.name === 'Cupped ear').map(o => ({ o, z: o.rotation.z }));
     const lod = createRigLod(root, { pivots: [turn, avatar.body, avatar.head, ...avatar.arms, ...avatar.legs, kick], cell: LOD_CELL });
-    return { avatar, root, turn, gun, kick, launcher, tip, coat, ears, bandana, lod, seed: c.slot * 1.7 + c.team * 2.9 };
+    return { avatar, root, turn, gun, kick, launcher, held, weapon: 'bazooka', tip, coat, ears, bandana, lod, seed: c.slot * 1.7 + c.team * 2.9 };
   }
   const capis = new Map();
   function setMatch(next) {
@@ -163,11 +176,22 @@ export function createCapisScene(canvas, match) {
   const marker = createLocalMarker({ color: '#ffc629' }); marker.group.scale.setScalar(3); scene.add(marker.group);
   const aimArrow = guideRibbon('#fff6d8', .14, { segments: 1, opacity: .95 }); aimArrow.rotation.x = Math.PI / 2; scene.add(aimArrow);
   const dashes = Array.from({ length: DASHES }, () => { const d = guideRibbon('#ffffff', .12, { segments: 1, opacity: .85 }); d.rotation.x = Math.PI / 2; scene.add(d); return d; });
+  // Where La Piñita will burst and how far it reaches, standing towards the camera.
+  const ring = guideRing('#ffe58a', { inner: .86, opacity: .8 }); ring.rotation.x = Math.PI / 2; scene.add(ring);
 
   // ---------- the shot: flash, charge, rocket, effects ----------
   const puffs = new Puffs(scene), fx = createBlastFx(scene, puffs), feel = createRecoil(), gunFeel = createRecoil({ recover: 3 });
   // La Bazuca's rocket in flight, one per team colour.
   const rockets = TEAM_COLORS.map(color => { const r = createPaintRocket({ color }); r.scale.setScalar(ROCKET); r.visible = false; scene.add(r); return r; });
+  // The other shells, one each (El Trueno's five pellets are one instanced draw): La Piñita
+  // with its blinking fuse lamp, La Lejana's long glowing slug, La Licuadora's spinning bit.
+  const grenades = TEAM_COLORS.map(color => { const g = createPaintGrenade({ color }); g.scale.setScalar(2.4); g.visible = false; scene.add(g); return g; });
+  const shellMat = new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: .6, roughness: .3 });
+  const slug = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), shellMat); slug.scale.set(.13, .13, .55); slug.visible = false; scene.add(slug);
+  const bitMat = new THREE.MeshStandardMaterial({ color: '#c9d0cf', metalness: .7, roughness: .3 });
+  const bit = new THREE.Mesh(new THREE.ConeGeometry(.28, 1.1, 10).rotateX(Math.PI / 2), bitMat); bit.visible = false; scene.add(bit);
+  const pellets = new THREE.InstancedMesh(new THREE.SphereGeometry(.16, 10, 8), shellMat, 8); pellets.count = 0; pellets.frustumCulled = false; scene.add(pellets);
+  const one = new THREE.Object3D();
   // The muzzle flash, and a drop of paint that swells at the barrel's tip while the shot charges.
   // The flash is a soft glow and a streak along the barrel, both on the shared glow texture.
   const glow = glowTexture();
@@ -201,21 +225,36 @@ export function createCapisScene(canvas, match) {
     }
     if (e.type === 'blast') {
       // The blast: flash, fireball, a ring standing towards the camera, then
-      // paint, clods of earth, sparks and dust flying out of the crater.
-      const from = { x: e.x, y: e.y, z: FRONT }, paint = TEAM_COLORS[team];
-      fx.boom({ x: e.x, y: e.y, z: FRONT, size: 1.1, color: paint, ground: e.y, front: true });
-      puffs.spawn(from, { color: paint, count: 16, spread: 2.4, size: .5, rise: 3, life: 1.1 });
-      puffs.spawn(from, { color: '#dccaa6', count: 10, spread: 3, size: .65, rise: 1.6, life: 1.6 });
-      drops.burst(from, { count: 46, color: paint, speed: 12, dir: UP, cone: 1.25, size: .13, life: 1.6, spread: .8 });
-      drops.burst(from, { count: 18, color: '#ffffff', speed: 8, dir: UP, cone: 1.4, size: .08, life: 1.1, spread: .6 });
-      CLODS.forEach((color, i) => clods.burst(from, { count: i === 2 ? 6 : 9, color, speed: 10, dir: UP, cone: 1.15, size: .16, life: 2.2, spread: 1.2 }));
-      sparks.burst(from, { count: 18, color: '#ffc861', speed: 13, cone: Math.PI, size: .08, life: .35 });
-      ringBudget = 10;
-      feel.shake(shakeAt(Math.hypot(e.x - focus.x, e.y - focus.y), 1.35, 36)); hold = .9; holdAt = { x: e.x, y: e.y };
+      // paint, clods of earth, sparks and dust flying out of the crater, all
+      // as big as the weapon's crater (La Bazuca's is the full one).
+      const from = { x: e.x, y: e.y, z: FRONT }, paint = TEAM_COLORS[team], k = Math.max(.25, (e.size ?? RULES.blast) / RULES.blast), n = v => Math.max(2, Math.round(v * k));
+      fx.boom({ x: e.x, y: e.y, z: FRONT, size: 1.1 * Math.max(.4, k), color: paint, ground: e.y, front: true });
+      puffs.spawn(from, { color: paint, count: n(16), spread: 2.4 * k, size: .5, rise: 3 * k, life: 1.1 });
+      puffs.spawn(from, { color: '#dccaa6', count: n(10), spread: 3 * k, size: .65, rise: 1.6, life: 1.6 });
+      drops.burst(from, { count: n(46), color: paint, speed: 12 * Math.sqrt(k), dir: UP, cone: 1.25, size: .13, life: 1.6, spread: .8 * k });
+      drops.burst(from, { count: n(18), color: '#ffffff', speed: 8, dir: UP, cone: 1.4, size: .08, life: 1.1, spread: .6 });
+      CLODS.forEach((color, i) => clods.burst(from, { count: n(i === 2 ? 6 : 9), color, speed: 10 * Math.sqrt(k), dir: UP, cone: 1.15, size: .16, life: 2.2, spread: 1.2 * k }));
+      sparks.burst(from, { count: n(18), color: e.weapon === 'sniper' ? '#ffffff' : '#ffc861', speed: e.weapon === 'sniper' ? 18 : 13, cone: Math.PI, size: .08, life: .35 });
+      ringBudget = Math.max(ringBudget, Math.round(10 * k));
+      feel.shake(shakeAt(Math.hypot(e.x - focus.x, e.y - focus.y), 1.35 * Math.max(.3, k), 36)); hold = Math.max(hold, .5 + .4 * k); holdAt = { x: e.x, y: e.y };
     }
+    if (e.type === 'drill') {
+      // La Licuadora's tunnel: sparks where it bit in, earth and dust spat out all along it, paint at its end.
+      const dx = e.x1 - e.x, dy = e.y1 - e.y, l = Math.hypot(dx, dy) || 1, out = { x: -dx / l, y: -dy / l };
+      fx.boom({ x: e.x, y: e.y, z: FRONT, size: .45, color: TEAM_COLORS[team], ground: e.y, front: true });
+      sparks.burst({ x: e.x, y: e.y, z: FRONT }, { count: 16, color: '#ffe08a', speed: 11, dir: out, cone: .9, size: .07, life: .4 });
+      for (let i = 0; i <= 5; i++) {
+        const on = { x: e.x + dx * i / 5, y: e.y + dy * i / 5, z: FRONT };
+        clods.burst(on, { count: 4, color: CLODS[i % 4], speed: 6, dir: UP, cone: 1, size: .14, life: 1.6, spread: .6 });
+        puffs.spawn(on, { color: '#cdb894', count: 3, spread: 1, size: .6, rise: 1, life: 1.4 });
+      }
+      drops.burst({ x: e.x1, y: e.y1, z: FRONT }, { count: 14, color: TEAM_COLORS[team], speed: 6, dir: UP, cone: 1.3, size: .1, life: 1.1, spread: .6 });
+      feel.shake(shakeAt(Math.hypot(e.x - focus.x, e.y - focus.y), .7, 36)); hold = .9; holdAt = { x: (e.x + e.x1) / 2, y: (e.y + e.y1) / 2 };
+    }
+    if (e.type === 'bounce') sparks.burst({ x: e.x, y: e.y, z: FRONT }, { count: 3, color: '#fff3c4', speed: 4, cone: Math.PI, size: .05, life: .2 });
     if ((e.type === 'plop' || (e.type === 'out' && e.reason === 'water'))) {
       const x = e.x ?? match.capys.find(k => k.id === e.capy)?.x ?? focus.x, shell = e.type === 'plop';
-      waterSplash(x, shell ? 1.2 : 1.4, shell ? TEAM_COLORS[match.turn?.team ?? 0] : null); ringBudget = 6;
+      waterSplash(x, shell ? 1.2 : 1.4, shell ? TEAM_COLORS[e.team ?? match.turn?.team ?? 0] : null); ringBudget = 6;
       hold = 1.1; holdAt = { x, y: match.map.water + 3 };
       feel.shake(shakeAt(Math.abs(x - focus.x), shell ? .5 : .7, 30));
     }
@@ -236,13 +275,27 @@ export function createCapisScene(canvas, match) {
   }
 
   const ARROW = [{ x: 0, z: 0 }, { x: 0, z: 0 }];
+  // The dashed path of the shot being charged, with the weapon's own flight:
+  // La Piñita's bounces to where its fuse runs out (and a ring there for the
+  // levels that show where a shot ends), La Lejana's nearly straight line,
+  // La Licuadora's arc and then the tunnel it will bore, El Trueno's middle pellet.
   function preview(c, power, difficulty) {
     const show = power != null;
-    dashes.forEach(d => { d.visible = false; });
+    dashes.forEach(d => { d.visible = false; }); ring.visible = false;
     if (!show) return;
-    const start = { ...muzzle(c), ...aimVelocity(c.aim, c.facing, power * RULES.speed) };
-    const { points } = simulateFlight(start, flightOptions(match), { dt: 1 / 60, maxTime: 5, every: 1 });
-    const reach = pathLength(points.map(p => ({ x: p.x, z: p.y }))) * (difficulty?.guide?.reach ?? 1);
+    const w = weaponOf(c.weapon), shells = launch(c, w.id, c.aim, c.facing, power), start = shells[(shells.length - 1) / 2];
+    const options = flightOptions(match, w.flight === 'bounce' ? [] : undefined, w.id);
+    let points;
+    if (w.flight === 'bounce') {
+      const end = simulateBounce(start, options, { fuse: w.fuse, every: 1 }); points = end.points;
+      if (difficulty?.guide?.ghost !== false && end.hit === 'fuse') ring.userData.set(end.x, end.y, FRONT + .06, w.crater);
+    } else {
+      const end = simulateFlight(start, options, { dt: 1 / 60, maxTime: 5, every: 1 }); points = end.points;
+      if (w.flight === 'drill' && end.hit === 'ground') { const l = Math.hypot(end.vx, end.vy) || 1; for (let i = 1; i <= 6; i++) points.push({ x: end.x + end.vx / l * w.tunnel.length * i / 6, y: end.y + end.vy / l * w.tunnel.length * i / 6 }); }
+    }
+    // La Lejana always shows a stretch of its line: aiming it is the whole point.
+    const full = pathLength(points.map(p => ({ x: p.x, z: p.y })));
+    const reach = Math.max(full * (difficulty?.guide?.reach ?? 1), w.direct ? Math.min(full, 14) : 0);
     let walked = 0, n = 0;
     for (let i = 1; i < points.length && n < DASHES && walked < reach; i++) {
       const a = points[i - 1], b = points[i], l = Math.hypot(b.x - a.x, b.y - a.y); walked += l;
@@ -270,6 +323,7 @@ export function createCapisScene(canvas, match) {
     const flick = Math.max(0, Math.sin(time * .8 + m.seed * 3) - .97) * 33;
     m.ears.forEach((e, i) => { e.o.rotation.z = e.z + Math.sin(time * 34 + i) * .35 * flick + (i ? -1 : 1) * k * .5; });
     // Where the barrel points: aimed on its turn, low otherwise, over the head to cheer.
+    if (m.weapon !== c.weapon && m.held[c.weapon]) { m.held[m.weapon].visible = false; m.weapon = c.weapon; m.launcher = m.held[c.weapon]; m.launcher.visible = true; }
     const barrel = barrelPose(match, c);
     let pitch = barrel.pitch, drop = barrel.drop;
     if (pose === 'cheer') { pitch = 1.2; drop = -.3; } else if (pose === 'sulk') { pitch = -1; drop = .5; }
@@ -307,6 +361,44 @@ export function createCapisScene(canvas, match) {
     }
   }
 
+  // Every shell in the air, each weapon its own way: La Bazuca's rocket along its
+  // velocity with smoke and drops of paint, La Piñita tumbling with its lamp
+  // blinking faster as the fuse runs down, La Lejana's slug with a white streak,
+  // La Licuadora's bit spinning, El Trueno's pellets.
+  function drawShells(dt) {
+    rockets.forEach(r => { r.visible = false; }); grenades.forEach(g => { g.visible = false; });
+    slug.visible = bit.visible = false; let pellet = 0;
+    trailT -= dt; const drip = trailT <= 0; if (drip) trailT = .03;
+    for (const s of match.shells || []) {
+      const w = weaponOf(s.weapon), paint = TEAM_COLORS[s.team], moving = Math.hypot(s.vx, s.vy) > .01;
+      at.set(s.x, s.y, FRONT); if (moving) dir.set(s.vx, s.vy, 0).normalize();
+      back.set(-s.vx, -s.vy);
+      if (w.id === 'bazooka') {
+        const r = rockets[s.team]; r.visible = true; r.position.copy(at);
+        if (moving) r.quaternion.setFromUnitVectors(NOSE, dir);
+        tail.copy(at).addScaledVector(dir, -.55 * ROCKET / 2.2); fx.trail('shell', tail, dt);
+        if (drip) drops.burst(tail, { count: 1, color: paint, speed: 2.5, dir: back, cone: .6, size: .075, life: 1.1, spread: .1 });
+      } else if (w.id === 'grenade') {
+        const g = grenades[s.team]; g.visible = true; g.position.copy(at);
+        if (!s.resting) g.rotation.z -= dt * Math.sign(s.vx || 1) * 9;
+        g.userData.light.emissiveIntensity = Math.sin(time * (8 + s.t * 10)) > 0 ? 3 : 0;
+        if (drip && !s.resting) drops.burst(at, { count: 1, color: paint, speed: 1.5, dir: back, cone: .8, size: .06, life: .8 });
+      } else if (w.id === 'sniper') {
+        slug.visible = true; slug.position.copy(at); if (moving) slug.quaternion.setFromUnitVectors(NOSE, dir);
+        shellMat.color.set(paint); shellMat.emissive.set(paint);
+        sparks.burst(at, { count: 1, color: '#ffffff', speed: 1, dir: back, cone: .2, size: .07, life: .25 });
+      } else if (w.id === 'drill') {
+        bit.visible = true; bit.position.copy(at); if (moving) bit.quaternion.setFromUnitVectors(NOSE, dir); bit.rotateZ(time * 30 % (Math.PI * 2));
+        tail.copy(at).addScaledVector(dir, -.6); fx.trail('shell', tail, dt);
+      } else if (pellet < 8) {
+        one.position.copy(at); one.updateMatrix(); pellets.setMatrixAt(pellet++, one.matrix);
+        shellMat.color.set(paint); shellMat.emissive.set(paint);
+        if (drip) drops.burst(at, { count: 1, color: paint, speed: 1.5, dir: back, cone: .6, size: .05, life: .7 });
+      }
+    }
+    pellets.count = pellet; if (pellet) pellets.instanceMatrix.needsUpdate = true;
+  }
+
   // view: { playing, power (0..1 while charging, else null), difficulty info, labels: (list) => void }
   function frame(dt, view = {}) {
     time += dt;
@@ -342,21 +434,10 @@ export function createCapisScene(canvas, match) {
       streak.position.set(at.x + Math.cos(flashAngle) * .7, at.y + Math.sin(flashAngle) * .7, at.z + .06); streak.rotation.z = flashAngle;
       streak.scale.set(2.6 * (1.3 - flashT * .3), .7 * flashT + .2, 1); streak.material.opacity = flashT;
     }
-    // La Bazuca's rocket along its velocity, trailing smoke and drops of paint.
-    rockets.forEach((r, team) => { r.visible = !!match.shot && match.shot.team === team; });
-    if (match.shot) {
-      const s = match.shot, r = rockets[s.team];
-      r.position.set(s.x, s.y, FRONT);
-      if (Math.hypot(s.vx, s.vy) > .01) r.quaternion.setFromUnitVectors(NOSE, dir.set(s.vx, s.vy, 0).normalize());
-      tail.copy(r.position).addScaledVector(dir, -.55 * ROCKET / 2.2);
-      fx.trail('shell', tail, dt);
-      // Drops of paint shaken off the shell fall in their own arcs.
-      trailT -= dt;
-      if (trailT <= 0) { trailT = .03; back.set(-s.vx, -s.vy); drops.burst(tail, { count: 1, color: TEAM_COLORS[s.team], speed: 2.5, dir: back, cone: .6, size: .075, life: 1.1, spread: .1 }); }
-    }
+    drawShells(dt);
     // Camera: the shell in flight, a fresh blast for a moment, else the capi whose turn it is.
     hold = Math.max(0, hold - dt);
-    const target = match.shot ? { x: match.shot.x, y: match.shot.y } : hold && holdAt ? holdAt : active ? { x: active.x, y: active.y + 1.5 } : focus;
+    const target = match.shot ? { x: match.shot.x, y: match.shot.y + (match.shot.resting ? 1.5 : 0) } : hold && holdAt ? holdAt : active ? { x: active.x, y: active.y + 1.5 } : focus;
     const half = viewWidth() / 2;
     const tx = wide ? match.map.width / 2 : THREE.MathUtils.clamp(target.x, half - 6, match.map.width - half + 6);
     const ty = wide ? wideY(half) : Math.max(match.map.water + 4, target.y);
@@ -392,7 +473,7 @@ export function createCapisScene(canvas, match) {
         let draws = 0, drawn = 0; m.launcher.traverse(o => { if (o.isMesh) draws++; });
         // Meshes the camera draws for the whole capi: one far away, dozens close up.
         m.root.traverseVisible(o => { if (o.isMesh && o.layers.test(camera.layers)) drawn++; });
-        return { id: c.id, model: m.avatar.group.userData.characterVersion, bandana: m.bandana.material.color.getHexString(), launcher: m.launcher.name,
+        return { id: c.id, model: m.avatar.group.userData.characterVersion, bandana: m.bandana.material.color.getHexString(), launcher: m.launcher.name, weapon: m.weapon,
           draws, held: m.gun.visible, raised: aiming(match, c), tip: { x: tip.x, y: tip.y }, muzzle: muzzle(c),
           far: m.lod.far, drawn, farTriangles: m.lod.triangles };
       });
@@ -411,7 +492,9 @@ export function createCapisScene(canvas, match) {
     get effects() { return { drops: drops.active, clods: clods.active, sparks: sparks.active, rings: rings.active }; },
     dispose() {
       unbind(); capis.forEach(m => { m.lod.dispose(); m.root.removeFromParent(); m.avatar.dispose(); }); capis.clear();
-      launchers.forEach(l => l.userData.dispose()); rockets.forEach(r => { r.removeFromParent(); r.userData.dispose(); });
+      launchers.forEach(set => Object.values(set).forEach(l => l.userData.dispose())); rockets.forEach(r => { r.removeFromParent(); r.userData.dispose(); });
+      grenades.forEach(g => { g.removeFromParent(); g.userData.dispose(); }); [slug, bit, pellets].forEach(o => { o.removeFromParent(); o.geometry.dispose(); }); shellMat.dispose(); bitMat.dispose(); pellets.dispose();
+      ring.userData.dispose();
       bandanaGeo.dispose(); knotGeo.dispose(); cloth.forEach(mt => mt.dispose());
       flash.geometry.dispose(); flash.material.dispose(); streak.material.dispose(); glow.dispose(); drip.geometry.dispose(); drip.material.dispose();
       sprays.forEach(spray => spray.dispose());

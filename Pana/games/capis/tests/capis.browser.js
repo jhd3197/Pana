@@ -1,7 +1,8 @@
 // One player against the machine, played with real keys: the lobby shows the
 // map of ?seed=6, a bigger size rebuilds it, and starts a match on it, our capi walks and fires La Bazuca de
 // pintura (Space held, then released), the shell digs a crater, the bot plays
-// its turn and fires, and a won match shows the results, replays the same map
+// its turn and fires, the weapon picker switches by key and by tap and every
+// weapon fires once, and a won match shows the results, replays the same map
 // and returns to the lobby with a new one.
 // Run: npm run test:browser -- capis   (CAPIS_SHOTS=<folder> also saves screenshots)
 import assert from 'node:assert/strict';
@@ -46,7 +47,7 @@ try {
   assert.equal(capis.length, 6);
   for (const c of capis) {
     assert.equal(c.model, 'studio-v1', `${c.id} uses the Pana avatar`);
-    assert.equal(c.launcher, 'La Bazuca', `${c.id} holds La Bazuca`);
+    assert.equal(c.launcher, 'La Bazuca', `${c.id} starts with La Bazuca`);
     assert.ok(c.held && c.draws <= 6, `${c.id}'s launcher is batched (${c.draws} draws)`);
   }
   assert.deepEqual([...new Set(capis.map(c => c.bandana))].length, 2, 'one bandana colour per team');
@@ -94,10 +95,51 @@ try {
   await shot(page, 'crater');
 
   // The machine plays its turn and fires before its clock runs out.
-  await waitFor(page, () => capisDebug.match.turn.n === 2 && capisDebug.match.turn.team === 1);
-  await waitFor(page, () => capisDebug.match.shots === 2 || capisDebug.match.phase === 'finished');
+  // Its shot may be La Piñita: fuse, retreat and settle are slow under software WebGL, so these waits are longer.
+  await waitFor(page, () => capisDebug.match.turn.n === 2 && capisDebug.match.turn.team === 1, undefined, 240_000);
+  await waitFor(page, () => capisDebug.match.shots === 2 || capisDebug.match.phase === 'finished', undefined, 240_000);
   await shot(page, 'bot');
-  await waitFor(page, () => capisDebug.match.turn.n === 3 || capisDebug.match.phase === 'finished');
+  await waitFor(page, () => capisDebug.match.turn.n === 3 || capisDebug.match.phase === 'finished', undefined, 240_000);
+
+  // The weapon picker: five square buttons, keys 1-5, Q E and Tab cycle, a tap
+  // picks; the capi holds what it picked; then each weapon fired once.
+  const ours = () => { const m = capisDebug.match; m.shells = []; m.shot = null; m.phase = 'aim'; m.turn.team = 0; m.turn.capy = m.capys.find(c => c.team === 0 && !c.out).id; m.turn.time = 999; m.wind = 0; m.capys.forEach(c => { if (!c.out) c.paint = Math.min(c.paint, 10); }); };
+  const held = () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon;
+  const lit = () => document.querySelector('.weapon-btn.is-on')?.dataset.weapon;
+  if (await page.evaluate(() => capisDebug.match.phase) !== 'finished') {
+    await page.evaluate(ours);
+    assert.equal(await page.locator('.weapon-btn').count(), 5);
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.weapon-btn')).borderRadius), '0px', 'square corners');
+    await page.keyboard.press('2'); await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === 'grenade');
+    await waitFor(page, () => document.querySelector('.weapon-btn.is-on')?.dataset.weapon === 'grenade');
+    await waitFor(page, () => capisDebug.world.inspect().find(c => c.raised)?.launcher === 'La Piñita');
+    await page.keyboard.press('e'); await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === 'sniper');
+    await page.keyboard.press('q'); await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === 'grenade');
+    await page.keyboard.press('Tab'); await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === 'sniper');
+    await page.locator('.weapon-btn[data-weapon="drill"]').click(); await waitFor(page, () => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === 'drill');
+    assert.equal(await page.evaluate(lit), 'drill');
+    // Charging shows the weapon's own path: La Piñita's ends in a ring where it bursts.
+    await page.keyboard.press('2');
+    await page.keyboard.down(' ');
+    await waitFor(page, () => !document.getElementById('power-bar').hidden && parseInt(document.getElementById('power-value').textContent, 10) >= 30);
+    await page.keyboard.up(' ');
+    await waitFor(page, () => capisDebug.match.phase !== 'aim');
+    await waitFor(page, () => capisDebug.match.phase !== 'flight', undefined, 240_000);
+    for (const [i, weapon] of ['bazooka', 'grenade', 'sniper', 'drill', 'scatter'].entries()) {
+      await page.evaluate(ours);
+      await page.evaluate(w => { capisDebug.match.ammo[0][w] = 5; }, weapon);
+      await page.keyboard.press(String(i + 1));
+      await waitFor(page, w => capisDebug.match.capys.find(c => c.id === capisDebug.match.turn.capy).weapon === w, weapon);
+      const shots = await page.evaluate(() => capisDebug.match.shots);
+      await page.evaluate(() => { const c = capisDebug.match.capys.find(k => k.id === capisDebug.match.turn.capy); c.facing = 1; c.aim = .5; capisDebug.fire(.6); });
+      await waitFor(page, n => capisDebug.match.shots === n + 1, shots);
+      assert.equal(await page.evaluate(() => capisDebug.match.used[capisDebug.match.shot?.weapon ?? 'none'] > 0 || capisDebug.match.phase !== 'flight'), true);
+      await waitFor(page, () => capisDebug.match.phase !== 'flight', undefined, 240_000);
+    }
+    assert.deepEqual(page.errors, [], 'every weapon fired without errors');
+    await page.evaluate(ours);
+    assert.ok(await page.evaluate(() => capisDebug.world.calls) <= 150, 'the play view stays light with every weapon\'s models');
+  }
 
   // Finish it: the rivals are all painted; the turn ends and we win.
   await page.evaluate(() => { const m = capisDebug.match; m.capys.filter(c => c.team === 1).forEach(c => { c.paint = 100; c.out = 'paint'; }); if (m.phase === 'aim') m.turn.time = .01; });
@@ -122,5 +164,5 @@ try {
   await waitFor(page, () => !document.getElementById('lobby').hidden && !capisDebug.playing);
   assert.notEqual(await page.evaluate(() => capisDebug.match.map.seed), 6, 'another match brings another map');
   assert.deepEqual(page.errors, []);
-  console.log('PASS capis: the seed map in the lobby, a size change, match, walk, charge and fire, crater and paint, the bot\'s turn, a win, results, a rematch on the same map, back to the lobby with a new map.');
+  console.log('PASS capis: the seed map in the lobby, a size change, match, walk, charge and fire, crater and paint, the bot\'s turn, the weapon picker and every weapon fired, a win, results, a rematch on the same map, back to the lobby with a new map.');
 } finally { await browser.close(); }
