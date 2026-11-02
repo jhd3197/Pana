@@ -45,3 +45,17 @@ test('without revives a fallen pana stays out; the wipe share and crude barks fo
   for (let i = 0; i < 70; i++) clean.update(.05);
   assert.equal(clean.payout, 0); assert.doesNotMatch(clean.events.at(-1).text, /pajúo/);
 });
+
+test('Sustos: a per-player setting, normal by default, saved and validated', async () => {
+  const { SCARES, loadScares, saveScares, shakeFor } = await import('../public/options.js');
+  const memory = new Map(), storage = { getItem: k => memory.get(k) ?? null, setItem: (k, v) => memory.set(k, v) };
+  assert.equal(SCARES.default, 'normal');
+  assert.deepEqual(SCARES.choices.map(([v]) => v), ['normal', 'suaves', 'apagados']);
+  assert.equal(loadScares(storage), 'normal');
+  assert.equal(saveScares('suaves', storage), true); assert.equal(loadScares(storage), 'suaves');
+  assert.equal(saveScares('terror', storage), false); assert.equal(loadScares(storage), 'suaves');
+  memory.set('pana:reliquia:sustos', 'nonsense'); assert.equal(loadScares(storage), 'normal');
+  assert.equal(loadScares({ getItem() { throw new Error('off'); } }), 'normal');
+  assert.equal(shakeFor('normal'), 1); assert.ok(shakeFor('suaves') < 1 && shakeFor('suaves') > 0); assert.equal(shakeFor('apagados'), 0);
+  assert.equal(validOptions({ sustos: 'suaves' }), false, 'not a room option');
+});

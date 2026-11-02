@@ -172,6 +172,75 @@ instanced with their own shader and must not go through `bake`. A revealed
 hidden room rebuilds that floor's shell once. Every item kind has one
 prototype that the map clones. Floors other than yours are hidden.
 
+## La biblioteca sepultada (the library theme)
+
+`themeFor(depth)` in `deck.js` deals each jornada a theme: the mine, or
+`'biblioteca'` on jornada 2 and every third after (`depth % 3 === 2`: 2, 5,
+8…). It is pure, so every client deals the same library from the seed;
+`run.theme` travels nowhere. The library has its own deck (`estanterias`,
+`lectura`, `archivo`, `copistas`, plus the idol, trap, sanctuary and pit rooms
+under library names, `roomName(kind, theme)`); the seals work as in the mine.
+`jornadaName(level)` is what the HUD and the descent shout call it.
+
+- **Solids.** Bookcases, reading tables and copyists' desks are axis-aligned
+  rectangles in `run.solids`, cut out of the walkable bitmap in `layout.js`
+  (value 0, like a wall), so `walkable`, `lineClear`, `findPath`, shots and
+  thrown loot all treat them as walls with no per-query cost. `furnish()`
+  trims a row where a doorway's clear mouth crosses it instead of dropping
+  it.
+- **Aisles on the path grid.** The stacks put double cases (0.8 m) every
+  3 m from the room centre, so each 2.2 m aisle has its centre on a
+  `.5` line of the 1 m path grid: enemies (radius 0.5) path into every
+  aisle. A 4 m nave crosses the middle; some aisle ends are capped (dead
+  ends), some rows have a 2 m gap only panas squeeze through. Chests in the
+  stacks sit in the nave on a row line, never in an aisle mouth.
+- **Enemies.** Mummies wait in the aisles, one phantom haunts every stack
+  room, spiders hang over them; the archive keeps a cuaima by its loot.
+- **Secret room.** In the library the fake wall is drawn as a bookcase
+  (`bookcaseDoor`) that swings 83° into its passage when the echo mask
+  reveals it.
+- **Look.** `RUIN_PALETTES.biblioteca` lays planks (`stoneTexture('plank')`,
+  no glyphs); `LIBRARY_LOOK` in `view.js` is a sepia fog (2–17 m) with a
+  dimmer hemisphere. Cases, webs and flames are instanced per room (three
+  meshes per room for the cases), candle flames are one shader per floor
+  (`candleFlames`: flicker, a global level and blow-outs as uniforms), and
+  the five pooled point lights pick the nearest candelabra. Measured on an
+  RTX 4090 at Equilibrada: a stacks room draws ~225 calls and ~245 k
+  triangles, a few ms of CPU.
+- **Sound.** Steps are `wood` boards (others' steps squeal now and then);
+  timber groans, page rustles, a falling book, wind through broken windows
+  and a clock that ticks and stops replace drips and pebbles.
+
+Try it: `/g/reliquia/?debug&jornada=2` deals jornada 2 at once when the
+host starts; `reliquia.jornada(n)` skips ahead from the console.
+
+## Scares (all jornadas)
+
+`engine/eerie.js` schedules cosmetic, client-local events (nothing is
+synced): flicker then lights out for a second, candles blown out around
+you, a slam behind, a thud in the next room, whispers and breath at your
+neck, a pale figure 7–12 m ahead that is gone when you look straight at
+it, turn away or walk up, a swelling heartbeat, a book thrown off a shelf,
+a fog surge, the farol stuttering, and the rare jump scare (lights cut, a
+sub swell, the farol comes back on a figure 2.3 m in front with a stinger).
+Jump scares are at least 80 s apart, never in the first 20 s of a jornada,
+never two in a row, never at the camp, downed or riding the cage.
+Intensity rises with la codicia, depth, being alone (no pana within 9 m)
+and low health. `eerie-fx.js` turns events into `view.mood` (light, farol,
+fog, blow-out), `ambience.eerie(name)` and the shapes. With `?debug`,
+`reliquia.scare('silhouette' | 'jumpscare' | 'bookFall' | …)` forces one.
+
+**Sustos** (pause menu, per player, saved in `localStorage`
+`pana:reliquia:sustos`): Normales; Suaves (no blackout, a softer stinger,
+the figure further away, flicker and shake at 40 %); Apagados (no jump
+scares, flicker or shake, only quiet sounds and far shapes; gameplay shakes
+off too).
+
+The whole game is darker: the mine's hemisphere 0.7 → 0.5 and fog 5–30 →
+3.5–24 m, a tighter headlamp cone (0.44 rad), a heavier vignette and a slow
+uneven breathing on every pooled flame. Loot keeps its glow halo and
+enemies their eyes, so both read inside the farol's 8 m.
+
 ## Sound
 
 `ambience.js` builds once audio is unlocked and replaces `sound.out` for the

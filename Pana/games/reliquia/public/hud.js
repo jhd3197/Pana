@@ -6,7 +6,7 @@ import { setBar } from '/engine/kit.js';
 import { ARTIFACT_AURA } from '/engine/models/props/reliquia-treasure.js';
 import { interaction, compassTarget, titles, tier, holds, alive, cartValue } from './rules.js';
 import { layoutFor, distance } from './layout.js';
-import { FLOOR_NAMES, TRUCK, floorOf, inRect } from './deck.js';
+import { jornadaName, TRUCK, floorOf, inRect } from './deck.js';
 import { ITEMS, heldValue, itemName, say } from './items.js';
 import { COLORS } from './view.js';
 
@@ -78,7 +78,7 @@ export function createHud() {
   function update(state, p, room, { heading = 0, paused = false } = {}) {
     if (!p) return;
     const L = layoutFor(state.seed, state.level), f = floorOf(p.x), playing = state.phase === 'playing';
-    $('floor-name').textContent = loc('Jornada {n} · {place}', { n: state.level, place: f === 0 ? loc('Superficie') : loc(FLOOR_NAMES[Math.min(FLOOR_NAMES.length - 1, state.level)]) });
+    $('floor-name').textContent = loc('Jornada {n} · {place}', { n: state.level, place: f === 0 ? loc('Superficie') : loc(jornadaName(state.level)) });
     const load = state.delivered || 0;
     $('quota-label').textContent = `${money(load)} / ${money(state.quota)}`; setBar($('quota-fill'), state.quota ? load / state.quota : 0);
     document.body.classList.toggle('quota-met', load >= state.quota); $('mangos').textContent = Math.floor(state.mangos);

@@ -11,3 +11,21 @@ export const FIELDS = [
 ];
 export const DEFAULT_OPTIONS = optionDefaults(FIELDS);
 export const validOptions = patch => applyRoomOptions(FIELDS, DEFAULT_OPTIONS, patch) !== null;
+
+// "Sustos" is each player's own setting (not the room's): how hard the
+// scares hit on this screen. Suaves: no blackouts, softer stingers, flicker
+// and shake at 40 %. Apagados: no jump scares, flicker or shake.
+export const SCARES = { id: 'sustos', label: loc('Sustos'), default: 'normal', choices: [['normal', loc('Normales')], ['suaves', loc('Suaves')], ['apagados', loc('Apagados')]] };
+const SCARE_KEY = 'pana:reliquia:sustos';
+const store = () => { try { return globalThis.localStorage || null; } catch { return null; } };
+export function loadScares(storage = store()) {
+  let value = null; try { value = storage?.getItem(SCARE_KEY); } catch { /* Storage off. */ }
+  return SCARES.choices.some(([v]) => v === value) ? value : SCARES.default;
+}
+export function saveScares(value, storage = store()) {
+  if (!SCARES.choices.some(([v]) => v === value)) return false;
+  try { storage?.setItem(SCARE_KEY, value); } catch { /* Storage off: this session only. */ }
+  return true;
+}
+// How much camera shake survives the setting (gameplay jolts included).
+export const shakeFor = mode => mode === 'apagados' ? 0 : mode === 'suaves' ? .4 : 1;

@@ -13,14 +13,15 @@ import { createLookControls } from '/engine/play/first-person.js';
 import { pressJump } from '/engine/play/jump.js';
 import { createFootsteps } from '/engine/play/footsteps.js';
 import { sfx as sfxLib } from '/engine/sfx.js';
-import { FIELDS, DEFAULT_OPTIONS } from './options.js';
+import { FIELDS, DEFAULT_OPTIONS, SCARES, loadScares, saveScares, shakeFor } from './options.js';
+import { createEerieFx } from './eerie-fx.js';
 import { Expedition, BARKS, interaction } from './rules.js';
 import { ExpeditionRoom } from './network.js';
 import { createView } from './view.js';
 import { createHud, money } from './hud.js';
 import { sfx } from './sounds.js';
 import { createAmbience } from './ambience.js';
-import { floorOf, FLOOR_NAMES } from './deck.js';
+import { floorOf, jornadaName } from './deck.js';
 import { ITEMS, say } from './items.js';
 import { loc } from '/engine/i18n.js';
 
@@ -29,6 +30,9 @@ const notify = createToast($('toast'), { ms: 3400 });
 const qs = new URLSearchParams(location.search), code = roomCode();
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
 const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience();
+// Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
+let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares);
+const fx = createEerieFx({ view, ambience, dread: v => { const r = Math.round(v * 20) / 20; if (r !== dreadShown) { dreadShown = r; $('dread').style.opacity = r; } } });
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
 let jumpPress = 0;
@@ -54,6 +58,7 @@ const menu = createGameMenu({
     loc('El farol congela a las momias que alumbra. En la oscuridad corren más.'),
     loc('Cada tesoro que levantan sube la codicia: más trampas, momias bravas, túneles que se derrumban y un jaguar negro que los caza.'),
     loc('Al final de cada piso se abre la bajada. ¿Se van con lo que tienen o bajan un piso más?'), loc('Si caen todos, del camión solo se salva una parte.')],
+  options: [{ ...SCARES, get: () => scares, set: v => { if (saveScares(v)) { scares = v; view.shakeScale = shakeFor(v); } } }],
   actions: [{ id: 'offline', label: loc('Abrir expedición local'), kind: 'link', visible: () => failed, run: () => room.practice() }],
   invite: () => inviteUrl(code),
   onOpen() { clearInput(); looking.release(); }, onClose() {},
@@ -104,7 +109,7 @@ function handle(e) {
     case 'lost': sfx.lost(); break;
     case 'curse': sfx.curse(); view.shake(.3); break;
     case 'seal': sfx.seal(); view.shake(.5); break;
-    case 'descend': if (e.players?.includes(room.id)) shout(loc('Piso {n}: {place}', { n: e.floor, place: FLOOR_NAMES[e.floor] ? loc(FLOOR_NAMES[e.floor]) : loc('el oro profundo') }), { tone: 'yellow' }); break;
+    case 'descend': if (e.players?.includes(room.id)) shout(loc('Jornada {n} · {place}', { n: state.level, place: loc(jornadaName(state.level)) }), { tone: 'yellow' }); break;
     case 'trap': if (near) sfx.trap(); break;
     case 'hurt': if (mine) { sfx.hurt(); view.shake(.35); } break;
     case 'down': sfx.down(); break;
@@ -140,7 +145,7 @@ function receive(next) {
   view.reseed(state.seed, state.level || 1);
   if (phase !== state.phase) {
     phase = state.phase; menu.close(); clearInput(); document.body.classList.toggle('playing', phase === 'playing');
-    if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
+    if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; if (qs.has('debug') && Number(qs.get('jornada')) > 1) queueMicrotask(() => window.reliquia?.jornada(Number(qs.get('jornada')))); lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
     if (phase !== 'playing') looking.release();
   }
   // Local practice and a fresh host start a new count.
@@ -194,19 +199,26 @@ function frame(now) {
   if (playing() && (keys.has('arrowleft') || keys.has('arrowright'))) view.look((+keys.has('arrowleft') - +keys.has('arrowright')) * dt * 2.2);
   // Keep the eyes on your pana after the run ends; never draw your own body.
   view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
-  ambience.update(state, p, view.heading, dt);
-  if (p && state.phase === 'playing' && !p.downed && !p.spectator) { const speed = p.moving ? Math.hypot(p.vx, p.vz) : 0; feet.update(dt, { speed, height: p.jumpHeight || 0, sprint: speed > 5.4, surface: floorOf(p.x) ? 'stone' : 'dirt', volume: .8 }, sfxLib); }
+  const theme = view.world.run.theme;
+  ambience.update(state, p, view.heading, dt, theme);
+  fx.update(dt, { state, me: p, heading: view.heading, paused: menu.isOpen, scares, run: view.world.run });
+  if (p && state.phase === 'playing' && !p.downed && !p.spectator) { const speed = p.moving ? Math.hypot(p.vx, p.vz) : 0; feet.update(dt, { speed, height: p.jumpHeight || 0, sprint: speed > 5.4, surface: floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : 'stone' : 'dirt', volume: .8 }, sfxLib); }
   else feet.reset();
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }
 show('loading', false); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); view.dispose(); });
+addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
 if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money,
   get state() { return state; }, get me() { return me(); },
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += .05) room.game.update(Math.min(.05, seconds - t), room.inputs); room.publish(); },
   place(id, x, z, h) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; if (h !== undefined) p.h = h; room.publish(); } },
   face(h, pitch) { view.heading = h; if (pitch !== undefined) view.pitch = pitch; },
+  // Force a scare now: silhouette, jumpscare, bookFall, flicker, candleOut, slam, thud, whisper, heartbeat, fogSurge, farolStutter.
+  scare(kind) { fx.force(kind, { state, me: me(), heading: view.heading }); },
+  // Skip ahead to jornada n (2 is the first library): host only.
+  jornada(n) { const g = room.game; if (!room.isHost || !g || g.phase !== 'playing') return false; while (g.level < n) g.completeLevel(); room.publish(); return g.level; },
+  fx,
 };
 
 await prepareScene({ renderer: view.renderer, scene: view.scene, camera: view.camera });

@@ -19,6 +19,8 @@ export const RUIN_PALETTES = {
   sol: { floor: 0xd8b27a, bricks: [0xe0a85c, 0xcf8f4a, 0xeabd78], band: 0x3fbfa0, ceiling: 0x6b4a33, glyph: 0x5fffd0 },
   jade: { floor: 0x9cc8a0, bricks: [0x6fae8e, 0x5d9a7c, 0x82bf9c], band: 0xe8b04a, ceiling: 0x34503f, glyph: 0xffd36a },
   maldita: { floor: 0xc9a0b8, bricks: [0xa7769a, 0x936486, 0xb98bab], band: 0xffc23d, ceiling: 0x3c2840, glyph: 0xff7adf },
+  // La biblioteca sepultada: worn oak boards, soot-dark stone, a timber band.
+  biblioteca: { floor: 0x7a5434, bricks: [0x5d544a, 0x51493f, 0x675c50], band: 0x3a2618, ceiling: 0x2a2018, glyph: 0xc8964a, planks: true, glyphs: false },
 };
 
 // Stone surfaces, painted once and shared: light grey grain, chips, cracks
@@ -26,9 +28,24 @@ export const RUIN_PALETTES = {
 const textures = new Map();
 export function stoneTexture(kind = 'brick') {
   if (textures.has(kind)) return textures.get(kind);
-  const r = rng({ brick: 11, slab: 12, roof: 13 }[kind] || 14), w = 128, h = kind === 'brick' ? 64 : 128;
+  const r = rng({ brick: 11, slab: 12, roof: 13, plank: 15 }[kind] || 14), w = 128, h = kind === 'brick' ? 64 : 128;
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const g = canvas.getContext('2d');
+  if (kind === 'plank') {
+    // Four worn boards per metre: grain lines, knots, dark seams and nail heads.
+    g.fillStyle = '#ece4d6'; g.fillRect(0, 0, w, h);
+    for (let b = 0; b < 4; b++) {
+      const y0 = b * h / 4, shade = 200 + Math.floor(r() * 50), end = r() * w;
+      g.fillStyle = `rgb(${shade},${shade - 10},${shade - 24})`; g.fillRect(0, y0, w, h / 4);
+      for (let i = 0; i < 14; i++) { g.strokeStyle = `rgba(90,70,50,${.12 + r() * .2})`; g.lineWidth = .6 + r(); g.beginPath(); const y = y0 + 2 + r() * (h / 4 - 4); g.moveTo(0, y); g.bezierCurveTo(w * .3, y + (r() - .5) * 4, w * .6, y + (r() - .5) * 4, w, y + (r() - .5) * 3); g.stroke(); }
+      if (r() < .6) { g.fillStyle = 'rgba(80,55,35,.45)'; g.beginPath(); g.ellipse(r() * w, y0 + h / 8, 3 + r() * 3, 2, 0, 0, Math.PI * 2); g.fill(); }
+      g.fillStyle = 'rgba(40,28,18,.8)'; g.fillRect(0, y0, w, 2); g.fillRect(end, y0, 2, h / 4);
+      g.fillStyle = 'rgba(40,40,40,.7)'; for (const x of [end - 6, end + 6]) for (const y of [y0 + 6, y0 + h / 4 - 6]) g.fillRect(x, y, 2, 2);
+    }
+    for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(255,250,240,${r() * .12})`; g.fillRect(r() * w, r() * h, 1, 1); }
+    const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4;
+    textures.set(kind, texture); return texture;
+  }
   g.fillStyle = '#f2f0ea'; g.fillRect(0, 0, w, h);
   for (let i = 0; i < 900; i++) { const v = 170 + Math.floor(r() * 80); g.fillStyle = `rgba(${v},${v - 6},${v - 14},${.25 + r() * .35})`; g.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 3); }
   for (let i = 0; i < 6; i++) { g.fillStyle = `rgba(120,110,95,${.12 + r() * .12})`; g.beginPath(); g.ellipse(r() * w, r() * h, 4 + r() * 12, 3 + r() * 8, r() * 3, 0, Math.PI * 2); g.fill(); }
@@ -63,9 +80,10 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   const mat = (extra) => { const m = new THREE.MeshStandardMaterial({ roughness: .9, ...extra }); owned.push(m); return m; };
   // Floor: 1 m slabs, slightly bevelled, tilted along ramps.
   const slab = new THREE.BoxGeometry(tile, .3, tile), floorColor = new THREE.Color(palette.floor);
-  group.add(instanced(slab, mat({ roughness: .85, map: stoneTexture('slab') }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
+  // A planked palette lays boards: flush, all running the same way.
+  group.add(instanced(slab, mat({ roughness: .85, map: stoneTexture(palette.planks ? 'plank' : 'slab') }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
     const x = i + .5, z = j + .5, y = ground(x, z), dx = ground(x + .5, z) - ground(x - .5, z), dz = ground(x, z + .5) - ground(x, z - .5);
-    m.position.set(x, y - .15 - r() * .03, z); m.rotation.set(Math.atan(dz), 0, -Math.atan(dx)); m.scale.set(1, 1, 1);
+    m.position.set(x, y - .15 - r() * (palette.planks ? .008 : .03), z); m.rotation.set(Math.atan(dz), palette.planks ? (r() < .5 ? 0 : Math.PI) : 0, -Math.atan(dx)); m.scale.set(palette.planks ? 1.053 : 1, 1, palette.planks ? 1.053 : 1);
     c.copy(floorColor).multiplyScalar(.82 + r() * .3);
   }));
   // Dark grout under the slabs, so a seam seen end-on is mortar, not a hole.
@@ -80,7 +98,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   const course = .58, rows = Math.ceil(height / course), bricks = [], glyphs = [];
   for (const e of edges) for (let k = 0; k < rows; k++) {
     bricks.push({ e, k, band: k === rows - 2 });
-    if (k === rows - 2 && r() < .28) glyphs.push(e);
+    if (k === rows - 2 && r() < .28 && palette.glyphs !== false) glyphs.push(e);
   }
   const brick = new THREE.BoxGeometry(1.12, course * .9, .7), colors = palette.bricks.map(c => new THREE.Color(c)), band = new THREE.Color(palette.band);
   const at = (m, e, along = 0, depth = .35) => {

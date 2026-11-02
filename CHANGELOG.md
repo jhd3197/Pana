@@ -8,6 +8,16 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia tiene un nivel nuevo, La biblioteca sepultada, y toda la mina da más miedo.**
+  La jornada 2 (y luego cada tres) baja a una biblioteca vieja bajo la mina:
+  estanterías altas con pasillos estrechos, una sala de lectura con su lámpara
+  muerta, el archivo prohibido, el taller de los copistas y una estantería que
+  se abre como pasadizo con la máscara de los ecos. Velas, telarañas, polvo en
+  la luz del farol y tablas que crujen. En cada jornada pasan cosas: luces que
+  se apagan, portazos, susurros detrás de ti, una silueta al fondo del pasillo
+  y, de vez en cuando, un susto de verdad. Sustos (Normales, Suaves o
+  Apagados) en el menú de pausa los suaviza o los quita.
+
 - **La Plaza de Pepazo es ahora una plaza de pueblo de verdad, igual para los dos equipos.**
   Una glorieta en el centro, fuentes bajas, bancos, materos, árboles, kioscos
   del mercado, carros y carretillas, muros y esquinas de casa, y un portal de

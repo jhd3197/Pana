@@ -509,6 +509,25 @@ Used by: Carreritas (tyres, boost, crash, via `drift-audio.js`). Carreritas' car
 and Dominó, which load it on first use through `engine/lazy-sound.js`).
 `engine/sfx.js` sits on top of it.
 
+### Eerie events (horror pacing)
+
+`engine/eerie.js` (pure, seeded, no Three.js): `createEerie({ seed })` decides
+when something unsettling happens on one screen: flickers, a slam, a thud in
+the next room, whispers, a far silhouette, a fog surge, a stuttering lamp,
+falling books, and rare jump scares (at least 80 s apart, never in the first
+20 s of a level, never two in a row). `update(dt, { active, time, codicia,
+depth, alone, hp, theme, mode })` returns the events to show; `eerieIntensity`
+scales them; `mode` is the player's "Sustos" setting (`SCARE_MODES`: normal,
+suaves, apagados). Events are cosmetic and client-local: nothing is synced.
+
+```js
+const eerie = createEerie({ seed });
+for (const e of eerie.update(dt, { active: underground, time, codicia, mode })) show(e);
+```
+
+Used by: Reliquia (`games/reliquia/public/eerie-fx.js` turns events into
+lights, sounds and shapes). Tests: `engine/tests/eerie.test.js`.
+
 ### Music
 
 `engine/music.js` (+ `music-tracks.js`): songs, styles, the lobby song.
@@ -663,6 +682,11 @@ Used by: Bochinche.
   (Cocina, Escondidas), `bolas-world` (Bululú, Criollas), the island set
   (Bululú), the coastal set (Carreritas, Parapente), `colonial-street`
   (Trifulca).
+- **Dusty interiors**: `props/reliquia-library` builds a whole level's
+  bookcases in three instanced meshes per call (`bookcases`), every candle
+  flame in one shader (`candleFlames`: flicker, dim and blow-out uniforms),
+  cobweb cards (`cobwebs`), dust motes for a lamp beam (`dustMotes`) and a
+  hinged secret bookcase (`bookcaseDoor`). Used by: Reliquia's library.
 - **Large runtime asset packs** (audio, big images, voice packs) are not engine
   modules. They ship as release ZIPs pinned in `server/src/asset-packs.json`
   and are served by the server. Add a file there, not to Git:

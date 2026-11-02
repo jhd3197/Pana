@@ -25,11 +25,28 @@ export const ROOM_NAMES = {
   entrada: locKey('La bajada'), tesoro: locKey('Cámara del tesoro'), columnas: locKey('Sala de columnas'), trampas: locKey('Pasillo de las losas'),
   idolo: locKey('El altar del ídolo'), veta: locKey('La veta de oro'), cripta: locKey('La cripta'), santuario: locKey('El santuario'), puente: locKey('El abismo'),
   ruedas: locKey('Las dos ruedas'), guardian: locKey('El trono del guardián'), boveda: locKey('La bóveda de oro'), oculta: locKey('La sala escondida'),
+  estanterias: locKey('Las estanterías'), lectura: locKey('La sala de lectura'), archivo: locKey('El archivo prohibido'), copistas: locKey('El taller de los copistas'),
 };
+// La biblioteca sepultada names the rooms it shares with the mine its own way.
+const LIBRARY_NAMES = {
+  entrada: locKey('El vestíbulo'), idolo: locKey('El atril maldito'), trampas: locKey('El pasillo de los dardos'), santuario: locKey('El rincón del bibliotecario'),
+  puente: locKey('El sótano hundido'), ruedas: locKey('Las ruedas del archivo'), guardian: locKey('El guardián de los libros'), oculta: locKey('Detrás del estante'),
+};
+export const LIBRARY_NAME = locKey('La biblioteca sepultada');
 export const FLOOR_NAMES = [locKey('El campamento'), locKey('Las afueras de la mina'), locKey('Las cámaras trampa'), locKey('Las ruinas malditas'), locKey('La bóveda del jaguar'), locKey('El oro profundo')];
 const SIZES = { entrada: [16, 14], tesoro: [16, 14], columnas: [18, 16], trampas: [16, 16], idolo: [14, 14], veta: [16, 14], cripta: [16, 16],
-  santuario: [12, 12], puente: [18, 18], ruedas: [18, 16], guardian: [20, 18], boveda: [22, 22], oculta: [12, 12] };
+  santuario: [12, 12], puente: [18, 18], ruedas: [18, 16], guardian: [20, 18], boveda: [22, 22], oculta: [12, 12],
+  estanterias: [22, 18], lectura: [20, 18], archivo: [16, 14], copistas: [18, 16] };
 const DECK = ['tesoro', 'columnas', 'trampas', 'idolo', 'veta', 'cripta', 'santuario', 'puente'];
+const LIBRARY_DECK = ['estanterias', 'lectura', 'archivo', 'estanterias', 'copistas', 'idolo', 'trampas', 'santuario', 'puente'];
+// Each jornada has a theme: the mine, or (jornada 2, then every third) the
+// buried library. Pure, so every client deals the same one.
+export const themeFor = depth => depth % 3 === 2 ? 'biblioteca' : 'mina';
+export const roomName = (kind, theme = 'mina') => (theme === 'biblioteca' && LIBRARY_NAMES[kind]) || ROOM_NAMES[kind];
+// What the HUD calls a jornada.
+export const jornadaName = level => themeFor(level) === 'biblioteca' ? LIBRARY_NAME : FLOOR_NAMES[Math.min(FLOOR_NAMES.length - 1, level)];
+// Bookcases are solid rectangles cut out of the walkable bitmap (layout.js).
+const SHELF = .8;
 
 export const rectOf = r => [r.x - r.w / 2, r.z - r.d / 2, r.x + r.w / 2, r.z + r.d / 2];
 export const inRect = (x, z, [x0, z0, x1, z1], pad = 0) => x > x0 - pad && x < x1 + pad && z > z0 - pad && z < z1 + pad;
@@ -41,9 +58,9 @@ export const sealKind = depth => depth % 3 === 0 ? 'boveda' : depth % 2 ? 'rueda
 
 const cache = new Map();
 export function generateRun(seed = 1, { depth = 1 } = {}) {
-  const floors = 1, key = `${seed}:${depth}`;
+  const floors = 1, key = `${seed}:${depth}`, theme = themeFor(depth), library = theme === 'biblioteca';
   if (cache.has(key)) return cache.get(key);
-  const run = { seed, floors, depth, rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
+  const run = { seed, floors, depth, theme, solids: [], rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
     sleepers: [], obstacles: [], lights: [], decor: [], pits: [], bridges: [] };
   const id = { loot: 0, chest: 0, plate: 0, sleeper: 0 };
   // ---- Camp: outdoors, the truck and the mine mouth at its north edge.
@@ -75,12 +92,12 @@ export function generateRun(seed = 1, { depth = 1 } = {}) {
       path.push([next[0], next[1]]); seen.add(`${next[0]},${next[1]}`);
       if (next[1] === ROWS - 1 && path.length >= 5) break;
     }
-    const deck = [...DECK]; for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+    const deck = [...(library ? LIBRARY_DECK : DECK)]; for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
     if (!deck.slice(0, path.length - 2).includes('idolo')) deck[Math.floor(R() * Math.max(1, path.length - 2))] = 'idolo';
     const kinds = path.map((_, i) => i === 0 ? 'entrada' : i === path.length - 1 ? sealKind(depth) : deck[(i - 1) % deck.length]);
     const rooms = path.map(([c, r], i) => {
       const [w, d] = SIZES[kinds[i]], p = at(c, r);
-      return { id: `f${f}-r${i}`, floor: f, kind: kinds[i], cell: [c, r], x: p.x, z: p.z, w, d, name: ROOM_NAMES[kinds[i]], index: i };
+      return { id: `f${f}-r${i}`, floor: f, kind: kinds[i], cell: [c, r], x: p.x, z: p.z, w, d, name: roomName(kinds[i], theme), index: i };
     });
     // Side rooms: one hidden (needs the echo mask), one extra.
     const free = [];
@@ -89,11 +106,11 @@ export function generateRun(seed = 1, { depth = 1 } = {}) {
       if (COLS.includes(cc) && rr >= 0 && rr < ROWS && !seen.has(`${cc},${rr}`) && !free.some(q => q.cell.join() === `${cc},${rr}`)) free.push({ cell: [cc, rr], from: path.findIndex(q => q[0] === c && q[1] === r) });
     }
     const sides = [];
-    for (const kind of [R() < .8 ? 'oculta' : null, pick(['tesoro', 'santuario', 'veta'])]) {
+    for (const kind of [R() < .8 ? 'oculta' : null, pick(library ? ['archivo', 'santuario', 'estanterias'] : ['tesoro', 'santuario', 'veta'])]) {
       if (!kind || !free.length) continue;
       const spot = free.splice(Math.floor(R() * free.length), 1)[0], p = at(...spot.cell), [w, d] = SIZES[kind];
       seen.add(spot.cell.join());
-      sides.push({ room: { id: `f${f}-s${sides.length}`, floor: f, kind, cell: spot.cell, x: p.x, z: p.z, w, d, name: ROOM_NAMES[kind], side: true }, from: rooms[spot.from] });
+      sides.push({ room: { id: `f${f}-s${sides.length}`, floor: f, kind, cell: spot.cell, x: p.x, z: p.z, w, d, name: roomName(kind, theme), side: true }, from: rooms[spot.from] });
     }
     for (const r of [...rooms, ...sides.map(s => s.room)]) { r.rect = rectOf(r); run.rooms.push(r); }
     // Corridors: 4 m wide between facing walls, nudged off-centre.
@@ -144,6 +161,12 @@ export function generateRun(seed = 1, { depth = 1 } = {}) {
     const dx = item.x - o.x, dz = item.z - o.z, d = Math.hypot(dx, dz) || 1, min = o.r + .55;
     if (d < min) { item.x = o.x + dx / d * min; item.z = o.z + dz / d * min; }
   }
+  // ...nor inside a bookcase: out through the nearer long face.
+  for (const item of run.loot) for (const s of run.solids) {
+    if (s.floor !== item.floor || item.y || !inRect(item.x, item.z, s.rect, .55)) continue;
+    const [x0, z0, x1, z1] = s.rect;
+    if (x1 - x0 > z1 - z0) item.z = item.z < (z0 + z1) / 2 ? z0 - .6 : z1 + .6; else item.x = item.x < (x0 + x1) / 2 ? x0 - .6 : x1 + .6;
+  }
   cache.set(key, run);
   return run;
 }
@@ -151,7 +174,7 @@ export function generateRun(seed = 1, { depth = 1 } = {}) {
 // Contents of one room: obstacles, loot, chests, traps, sleepers and decor.
 function furnish(run, room, f, depth, R, id) {
   // `f` places things on the floor; `d` (the jornada's depth) decides how much.
-  const [x0, z0, x1, z1] = room.rect, cx = room.x, cz = room.z, d = depth, deep = Math.min(1, d / 4);
+  const [x0, z0, x1, z1] = room.rect, cx = room.x, cz = room.z, d = depth, deep = Math.min(1, d / 4), library = run.theme === 'biblioteca';
   const taken = [];
   // Keep every doorway and stair mouth clear for three metres into the room.
   const mouths = [...run.corridors.filter(c => c.a === room.id || c.b === room.id), ...run.stubs.filter(s => inRect(s.rect[0] + 2.2, s.a, room.rect, .2))]
@@ -159,7 +182,7 @@ function furnish(run, room, f, depth, R, id) {
   const seal = run.seals.find(s => s.room === room.id);
   if (seal) mouths.push([seal.x - 3.3, seal.z - .5, seal.x + 3.3, seal.z + 3.5], ...(seal.winches || []).map(w => [w.x - 1.6, w.z - 1.6, w.x + 1.6, w.z + 1.6]));
   const free = (x, z, r) => !mouths.some(m => inRect(x, z, m, r)) && !run.obstacles.some(o => o.floor === f && Math.hypot(o.x - x, o.z - z) < o.r + r) && !taken.some(t => Math.hypot(t.x - x, t.z - z) < t.r + r)
-    && !run.pits.some(p => p.floor === f && inRect(x, z, p.rect, r) && !run.bridges.some(b => inRect(x, z, b.rect)));
+    && !run.solids.some(s => s.floor === f && inRect(x, z, s.rect, r)) && !run.pits.some(p => p.floor === f && inRect(x, z, p.rect, r) && !run.bridges.some(b => inRect(x, z, b.rect)));
   const spot = (r = .7, margin = 1.6) => {
     for (let i = 0; i < 40; i++) {
       const x = x0 + margin + R() * (room.w - margin * 2), z = z0 + margin + R() * (room.d - margin * 2);
@@ -169,20 +192,36 @@ function furnish(run, room, f, depth, R, id) {
   };
   const loot = (kind, p = spot(.5)) => { if (p) run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: p.x, z: p.z, h: R() * 6.28 }); };
   const small = n => { for (let i = 0; i < n; i++) loot(SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + d)))]); };
-  const chest = () => { const p = spot(.8); if (p) run.chests.push({ id: id.chest++, floor: f, room: room.id, x: p.x, z: p.z, h: Math.round(R() * 4) * Math.PI / 2 }); if (p) run.obstacles.push({ x: p.x, z: p.z, r: .6, floor: f, chest: true }); };
-  const sleeper = (kind = 'mummy', p = spot(.6)) => { if (p) run.sleepers.push({ id: id.sleeper++, kind, floor: f, room: room.id, x: p.x, z: p.z }); };
+  // A spot inside a sub-rectangle of the room (the stacks' nave).
+  const spotIn = ([a, b, c, e], r = .8) => { for (let i = 0; i < 40; i++) { const x = a + R() * (c - a), z = b + R() * (e - b); if (free(x, z, r)) { taken.push({ x, z, r }); return { x, z }; } } return null; };
+  const chest = (p = spot(.8)) => { if (p) run.chests.push({ id: id.chest++, floor: f, room: room.id, x: p.x, z: p.z, h: Math.round(R() * 4) * Math.PI / 2 }); if (p) run.obstacles.push({ x: p.x, z: p.z, r: .6, floor: f, chest: true }); };
+  const sleeper = (kind = 'mummy', p = spot(.6)) => { if (p && inRect(p.x, p.z, room.rect, -.5) && !run.solids.some(s => s.floor === f && inRect(p.x, p.z, s.rect, .5)) && !run.obstacles.some(o => o.floor === f && Math.hypot(o.x - p.x, o.z - p.z) < o.r + .4)) run.sleepers.push({ id: id.sleeper++, kind, floor: f, room: room.id, x: p.x, z: p.z }); };
   // A cuaima coils up beside a piece of this room's loot; spiders wait above.
   const guard = () => { const l = run.loot.filter(l => l.room === room.id && !l.y); const near = l[Math.floor(R() * l.length)]; if (near) sleeper('snake', { x: near.x + (R() < .5 ? -1 : 1), z: near.z + .4 }); };
   const ceiling = n => { for (let i = 0; i < n; i++) sleeper('spider'); };
   const decor = (kind, x, z, h = 0, extra = {}) => run.decor.push({ kind, floor: f, room: room.id, x, z, h, ...extra });
   const pillar = (x, z, r = .75, kind = 'column') => { if (mouths.some(m => inRect(x, z, m, r))) return; run.obstacles.push({ x, z, r, floor: f }); decor(kind, x, z, R() * 6.28); taken.push({ x, z, r }); };
   const big = kind => { const p = { x: cx + (R() - .5) * 2, z: cz + (R() - .5) * 2 }; if (free(p.x, p.z, 1.3)) { taken.push({ ...p, r: 1.6 }); run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: p.x, z: p.z, h: Math.round(R() * 4) * Math.PI / 2 }); } };
+  // A bookcase (or a table) as a solid rectangle: skipped where it would
+  // block a doorway; `axis` is the long side, `kind` what scene.js draws.
+  const solid = (rect, kind = 'shelf', extra = {}) => {
+    if (mouths.some(m => rect[0] < m[2] + .2 && rect[2] > m[0] - .2 && rect[1] < m[3] + .2 && rect[3] > m[1] - .2)) return false;
+    run.solids.push({ floor: f, room: room.id, rect, kind, axis: rect[2] - rect[0] >= rect[3] - rect[1] ? 'x' : 'z', ...extra });
+    taken.push({ x: (rect[0] + rect[2]) / 2, z: (rect[1] + rect[3]) / 2, r: .2 }); return true;
+  };
+  // A row of bookcases along x, cut back where a doorway's clear mouth crosses it.
+  const shelfX = (xa, xb, z, extra) => {
+    let pieces = [[xa, xb]];
+    for (const m of mouths) if (z + SHELF / 2 > m[1] - .2 && z - SHELF / 2 < m[3] + .2) pieces = pieces.flatMap(([a, b]) => [[a, Math.min(b, m[0] - .2)], [Math.max(a, m[2] + .2), b]]).filter(([a, b]) => b - a >= 1.2);
+    for (const [a, b] of pieces) solid([a, z - SHELF / 2, b, z + SHELF / 2], 'shelf', extra);
+  };
   const light = (x, z, kind = 'brazier') => { if (mouths.some(m => inRect(x, z, m, .5))) return; run.lights.push({ floor: f, x, z, kind }); decor(kind, x, z); run.obstacles.push({ x, z, r: .45, floor: f }); taken.push({ x, z, r: .6 }); };
   // Torches in two opposite corners light every room a little.
   const corner = (sx, sz) => ({ x: cx + sx * (room.w / 2 - 1.2), z: cz + sz * (room.d / 2 - 1.2) });
   const lit = R() < .5 ? [[-1, -1], [1, 1]] : [[1, -1], [-1, 1]];
-  for (const [sx, sz] of lit) { const p = corner(sx, sz); light(p.x, p.z, d === 1 ? 'mineLamp' : 'brazier'); }
-  if (d > 1 || R() < .5) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
+  // The library lights all four corners with candles (they are dim).
+  for (const [sx, sz] of library ? [[-1, -1], [1, 1], [1, -1], [-1, 1]] : lit) { const p = corner(sx, sz); light(p.x, p.z, library ? 'candelabra' : d === 1 ? 'mineLamp' : 'brazier'); }
+  if (!library && (d > 1 || R() < .5)) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
   switch (room.kind) {
     case 'entrada':
       // The cargo lift's pad and the jornada's carrito, beside the montacargas.
@@ -221,7 +260,7 @@ function furnish(run, room, f, depth, R, id) {
       break;
     }
     case 'idolo':
-      decor('altar', cx, cz, 0); run.obstacles.push({ x: cx, z: cz, r: 1.1, floor: f }); taken.push({ x: cx, z: cz, r: 1.6 });
+      decor(library ? 'bigLectern' : 'altar', cx, cz, 0); run.obstacles.push({ x: cx, z: cz, r: 1.1, floor: f }); taken.push({ x: cx, z: cz, r: 1.6 });
       run.loot.push({ id: id.loot++, kind: ARTIFACTS[Math.floor(R() * ARTIFACTS.length)], floor: f, room: room.id, x: cx, z: cz + 1.6, h: 0, cursed: true });
       for (let i = 0; i < 2; i++) sleeper(); small(2);
       break;
@@ -238,7 +277,7 @@ function furnish(run, room, f, depth, R, id) {
       ceiling(d > 1 ? 2 : 1);
       break;
     case 'santuario':
-      light(cx, cz, 'brazier'); loot('botiquin'); loot(R() < .5 ? 'machete' : 'honda'); if (d > 1) loot('farol'); small(1);
+      light(cx, cz, library ? 'candelabra' : 'brazier'); loot('botiquin'); loot(R() < .5 ? 'machete' : 'honda'); if (d > 1) loot('farol'); small(1);
       break;
     case 'puente': {
       // A pit fills the middle; a rope bridge reaches the island with the treasure.
@@ -256,6 +295,7 @@ function furnish(run, room, f, depth, R, id) {
     case 'guardian':
       for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) pillar(cx + sx * room.w * .3, cz + sz * room.d * .3, .8);
       run.sleepers.push({ id: id.sleeper++, kind: 'guardian', floor: f, room: room.id, x: cx, z: cz - room.d * .15 });
+      taken.push({ x: cx, z: cz - room.d * .15, r: 1.6 });
       small(3); chest();
       break;
     case 'boveda':
@@ -266,6 +306,54 @@ function furnish(run, room, f, depth, R, id) {
       taken.push({ x: cx, z: cz - room.d * .32, r: 2.2 }, { x: cx - room.w * .2, z: cz + 1, r: 1.8 });
       for (const s of [-1, 1]) light(cx + s * 4, cz - room.d / 2 + 1.4, 'brazier');
       chest(); chest(); small(10); loot('emerald'); loot('emerald');
+      break;
+    // ---- La biblioteca sepultada ----
+    case 'estanterias': {
+      // Double bookcases in rows along x, 3 m apart, so every 2.2 m aisle
+      // has its centre on the 1 m path grid (enemies path through them). A
+      // 4 m nave crosses the middle; some aisles end against a bookcase.
+      for (const row of [-6, -3, 0, 3, 6]) {
+        const z = cz + row, gap = R() < .45 ? (R() < .5 ? -1 : 1) : 0;
+        for (const [a, b] of [[-8, -2], [2, 8]]) {
+          // A side gap (2 m) in some rows: a shortcut a pana can squeeze through.
+          if (gap && Math.sign(a + b) === gap) { const at = gap < 0 ? -6 : 4; shelfX(cx + a, cx + at, z, { tall: R() < .5 }); shelfX(cx + at + 2, cx + b, z, { tall: R() < .5 }); }
+          else shelfX(cx + a, cx + b, z, { tall: R() < .5 });
+        }
+      }
+      for (const aisle of [-4.5, -1.5, 1.5, 4.5]) for (const s of [-1, 1]) if (R() < .35) solid([cx + s * 8.4 - SHELF / 2, cz + aisle - 1.5, cx + s * 8.4 + SHELF / 2, cz + aisle + 1.5], 'shelf', { tall: true });
+      for (let i = 0; i < 4; i++) decor('ladder', cx + (R() < .5 ? -1 : 1) * (3 + R() * 4), cz + [-6, -3, 0, 3, 6][Math.floor(R() * 5)] + (R() < .5 ? -.75 : .75), 0);
+      for (let i = 0; i < 1 + d; i++) sleeper(); sleeper('phantom'); ceiling(2);
+      small(4 + d); loot(R() < .5 ? 'mask' : 'cup'); if (R() < .5) { const z = cz + [-6, -3, 3, 6][Math.floor(R() * 4)]; chest(spotIn([cx - .3, z - .1, cx + .3, z + .1])); }
+      break;
+    }
+    case 'lectura': {
+      // Long reading tables either side of a central walkway, lecterns at the ends.
+      for (const sz of [-1, 1]) for (const sx of [-1, 1]) {
+        const x = cx + sx * 5, z = cz + sz * 3.5;
+        if (!solid([x - 2.6, z - .6, x + 2.6, z + .6], 'table')) continue;
+        for (let i = 0; i < 2; i++) if (R() < .7) run.loot.push({ id: id.loot++, kind: SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + d)))], floor: f, room: room.id, x: x + (R() - .5) * 4, z: z + (R() - .5) * .5, y: .86, h: R() * 6 });
+      }
+      for (const sz of [-1, 1]) { const z = cz + sz * (room.d / 2 - 2.2); if (!mouths.some(m => inRect(cx, z, m, .6))) { run.obstacles.push({ x: cx, z, r: .5, floor: f }); decor('lectern', cx, z, sz < 0 ? 0 : Math.PI); taken.push({ x: cx, z, r: .9 }); } }
+      decor('chandelier', cx, cz, 0);
+      for (let i = 0; i < 1 + d; i++) sleeper(); ceiling(1); small(3); loot('idol');
+      if (d > 2) chest();
+      break;
+    }
+    case 'archivo':
+      // The forbidden archive: two short rows of cases and the chests between.
+      for (const sz of [-1, 1]) { shelfX(cx - 6, cx - 1.5, cz + sz * 3.5, { tall: true }); shelfX(cx + 1.5, cx + 6, cz + sz * 3.5, { tall: true }); }
+      chest(); chest(); small(4 + d);
+      if (R() < .5) loot(ARTIFACTS[Math.floor(R() * ARTIFACTS.length)]); else big(BIG_POOL[Math.min(2, d - 1)][Math.floor(R() * 3)]);
+      guard(); ceiling(1); sleeper();
+      break;
+    case 'copistas':
+      // The copyists' desks: each a small table with a candle and scattered pages.
+      for (const sz of [-1, 1]) for (const sx of [-6.5, -3, 3, 6.5]) {
+        const x = cx + sx, z = cz + sz * 3.5;
+        if (!solid([x - .8, z - .45, x + .8, z + .45], 'desk', { h: sz < 0 ? 0 : Math.PI })) continue;
+        if (R() < .3) run.loot.push({ id: id.loot++, kind: SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + d)))], floor: f, room: room.id, x: x + (R() - .5) * .8, z, y: .8, h: R() * 6 });
+      }
+      for (let i = 0; i < 2 + d; i++) sleeper(); small(3); loot(R() < .5 ? 'cup' : 'idol'); chest();
       break;
     case 'oculta':
       chest(); chest(); small(5); big('emeraldChest');
