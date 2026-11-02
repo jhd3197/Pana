@@ -19,7 +19,7 @@
 // PANA_UNLOCK_ALL_CAMOS=1 treats every camo as owned: for local screenshots and
 // tests only, never on a public server.
 import crypto from 'node:crypto';
-import { PAINT_CAMO_IDS } from '../../engine/play/paint-arsenal.js';
+import { PAINT_CAMO_IDS } from '../../engine/models/props/paint-arsenal.js';
 
 const KNOWN = new Set(PAINT_CAMO_IDS);
 // A header value longer than every id together is not one the gateway made.

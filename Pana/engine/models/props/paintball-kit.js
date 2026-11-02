@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bake } from '/engine/models/core/static-batch.js';
-import { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, PAINT_CAMOS, PAINT_SOLIDS, classOf } from '../../play/paint-arsenal.js';
+import { PAINT_WEAPONS, PAINT_MELEE, PAINT_WEAPON_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, PAINT_CAMOS, PAINT_SOLIDS, weaponClassOf as classOf } from './paint-arsenal.js';
 // Toy paintball markers, eighteen silhouettes you can tell apart in one glance:
 // La Chispa a slim pistol with its air tank under the barrel, El Trueno a double-barrelled
 // pump with a stick feed, Las Gemelas two drum-fed twins, El Cohetón a fat shoulder tube
@@ -83,7 +83,7 @@ const TRIGGER=[[.1,.05],[.13,.05],[.138,.0,.02],[.125,-.055,.012],[.108,-.055],[
 // tiger stripes along the barrel, and paint splats.
 export const CAMO_PATTERNS={woodland:'Selva',digital:'Pixelado',tiger:'Rayas',splash:'Salpicado'};
 // The looks themselves (PAINT_CAMOS patterns, PAINT_SOLIDS colours) are plain data in
-// engine/play/paint-arsenal.js, so rules and the server can allowlist the ids.
+// engine/models/props/paint-arsenal.js, so rules and the server can allowlist the ids.
 const CAMO_GLSL=`
 uniform vec3 uC0,uC1,uC2,uC3;uniform float uScale;uniform int uPattern;varying vec3 vCamo;
 float cHash(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
@@ -133,9 +133,9 @@ function bakeCamo(root,material){
   o.geometry.setAttribute('camoPos',new THREE.BufferAttribute(out,3));});
 }
 
-// Names, classes, mounts and optic kinds are plain data in engine/play/paint-arsenal.js, so
+// Names, classes, mounts and optic kinds are plain data in engine/models/props/paint-arsenal.js, so
 // game rules can read them without Three.js.
-export { PAINT_WEAPONS, PAINT_MELEE, PAINT_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, PAINT_CAMOS, PAINT_SOLIDS, classOf };
+export { PAINT_WEAPONS, PAINT_MELEE, PAINT_WEAPON_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, PAINT_CAMOS, PAINT_SOLIDS, classOf };
 export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],charm='none',pattern='splat',camo=null}={}) {
  // An unknown id draws La Chispa rather than failing a whole scene.
  if(!Object.hasOwn(PAINT_WEAPONS,weapon)&&!Object.hasOwn(PAINT_MELEE,weapon))weapon='pistol';

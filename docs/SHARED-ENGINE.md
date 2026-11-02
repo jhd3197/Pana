@@ -412,16 +412,21 @@ compile, nothing per frame), and `engine/models/core/static-batch.js` keeps
 `camoPos` through a bake. Used by Pepazo (its armory, held and third-person
 markers); who owns which camo is the game's rule, not the model's.
 
-The data behind it is `engine/play/paint-arsenal.js` (no Three.js, safe in
-rules and on the server): `PAINT_WEAPONS` (id → name, menu order),
-`PAINT_MELEE`, `PAINT_CLASSES` (eight marker classes plus granadas and melee;
-nickname and kind through `loc()`), `classOf(id)`, `PAINT_MOUNTS` (which
-attachments each model has a mount for), `PAINT_OPTICS` (the Mira kind each
-model draws: dot, holo, laser, scope, pin), `PAINT_KIT_BORE`, `PAINT_CAMOS`,
-`PAINT_SOLIDS`, `PAINT_CAMO_IDS` (every camo id, solids first) and
-`PAINT_GRENADES` (Pepazo's thrown grenades by name; Capis'
+The data behind it is `engine/models/props/paint-arsenal.js` (no Three.js,
+no imports, safe in rules and on the server): `PAINT_WEAPONS` (id → name, menu
+order), `PAINT_MELEE`, `PAINT_WEAPON_CLASSES` (eight marker classes plus
+granadas and melee, ids and weapons only), `weaponClassOf(id)`, `PAINT_MOUNTS`
+(which attachments each model has a mount for), `PAINT_OPTICS` (the Mira kind
+each model draws: dot, holo, laser, scope, pin), `PAINT_KIT_BORE`,
+`PAINT_CAMOS`, `PAINT_SOLIDS`, `PAINT_CAMO_IDS` (every camo id, solids first)
+and `PAINT_GRENADES` (Pepazo's thrown grenades by name; Capis'
 `tests/weapons.test.js` keeps them equal to `armory-data.js` `GRENADES`).
-The kit re-exports all but the last. Pepazo's `armory-data.js` builds its markers, attachment
+Game code reads it through `engine/play/paint-arsenal.js`, which re-exports
+all of it and adds `PAINT_CLASSES` (each class with its nickname and kind
+through `loc()`) and `classOf(id)`; the models layer may not import `play/`
+or `i18n.js`, so the player-facing names live there. The kit re-exports the
+model data (not `PAINT_GRENADES`, `PAINT_CAMO_IDS`), its `classOf` giving
+`{ id, weapons }`. Pepazo's `armory-data.js` builds its markers, attachment
 rules and optic tuning from it; `games/pintura/tests/paint-kit.browser.js`
 builds every marker with every allowed attachment set and keeps the model and
 the table in agreement.
