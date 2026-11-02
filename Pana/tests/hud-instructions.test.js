@@ -122,5 +122,5 @@ test('the guard catches the patterns it is for', () => {
   assert.equal(hintProblems('x', html('<div id="touch-controls"></div><p>Tu turno</p>')).length, 0, 'touch pads and state prompts pass');
   assert.equal(hintProblems('x', html('<button id="action" hidden><kbd data-prompt>E</kbd> Abrir</button>')).length, 0, 'a contextual prompt keeps its cap');
   assert.equal(hintProblems('x', { html: [], css: [['x.css', '.hud .hint-line { color: red }']], js: [] }).length, 1);
-  assert.equal(hintProblems('x', { html: [], css: [], js: [['x.js', "import { keyFor } from '/engine/control-hints.js';"]] }).length, 1);
+  assert.equal(hintProblems('x', { html: [], css: [], js: [['x.js', 'mountControlHints(node); // engine/control-hints.js']] }).length, 1);
 });
