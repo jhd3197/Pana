@@ -19,6 +19,13 @@ becomes the GitHub release's notes.
   norte. En la calle hay faroles, bancos, materos, árboles, puestos con toldos,
   un camión de frutas y motos; el piso tiene rosetón y franjas. La plaza se
   dibuja con menos de la mitad de llamadas que antes.
+- **En Capis a Pintazos ya puedes subir a la cumbre de la Montaña de cuevas, y las islas, las terrazas y los barrancos se ven más naturales.**
+  Un flanco de la montaña sube en escalones desde una cornisa sobre la boca
+  del túnel (un brinco desde la llanura), así que cualquier capi llega
+  arriba caminando o brincando. Las islas tienen orillas redondeadas que bajan
+  a una playa, sin paredes rectas; las Terrazas del tepuy son de arenisca y
+  laterita cálidas en vez de franjas rojas y blancas; y la capa oscura de
+  tierra bajo la grama se mantiene gruesa en las laderas empinadas.
 
 - **En Captura la bandera de Pepazo quien lleva la bandera corre más lento, y la ayuda dice cuántas capturas ganan.**
   Con la bandera caminas y corres un 15% más lento (los bots también), así que

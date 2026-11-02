@@ -19,7 +19,9 @@
 // the rest level (so the bands drape over hills and fold gently) plus a tilt,
 // then waved and thickened along x by noise; runs of seven bands of five kinds
 // repeat every `period` units with shares, swaps and swells hashed per run.
-// The topsoil, the roots and the grass cover use the starting depth too; where
+// The topsoil, the roots and the grass cover use the starting depth too (the
+// topsoil's measured at right angles to the starting slope, which rides in
+// the tops texture's third channel, so a steep bank keeps it thick); where
 // the coverage is lower now than at the start (a crater), the new face is
 // scorched and charred at the edge, fading over the wide coverage's reach.
 // Cost per pixel: two texture taps more (the start field and the one-row
@@ -36,7 +38,7 @@
 // shader fails to compile, `fallback()` swaps in a plain Lambert cut out by
 // the coverage, so the ground still shows.
 import * as THREE from 'three';
-import { fieldRGBA, coverageContour, smoothTops } from './terrain-mask.js';
+import { fieldRGBA, coverageContour, smoothTops, topSlope } from './terrain-mask.js';
 import { getSettings } from '../settings.js';
 
 // The soil profile when a palette brings none (0..255 RGB, and how the bands lie; see `strata` below).
@@ -52,7 +54,7 @@ varying vec3 vTerrainN;
 uniform sampler2D uField;
 uniform sampler2D uPaint;
 uniform sampler2D uStart;   // the field as the match began: R depth, G coverage, B wide coverage, A bare
-uniform sampler2D uTop;     // per column, the starting top of the ground smoothed wide (R) and narrow (G)
+uniform sampler2D uTop;     // per column, the starting top of the ground smoothed wide (R) and narrow (G), and the narrow one's slope (B)
 uniform vec3 uStrata[8];    // topsoil ash clay pumice ochre loam base seam
 uniform vec4 uStrataP;      // period, fold, tilt, phase
 uniform vec2 uSize;
@@ -180,7 +182,7 @@ vec4 terrainColor() {
   // (uStart, uTop), so a crater cuts through the same bands instead of moving them.
   vec4 S = texture2D(uStart, q / uSize);
   float od = (S.r * 255.0 - 128.0) * 0.25 * uCell;           // below the starting surface
-  vec2 top = texture2D(uTop, vec2(P.x / uSize.x, 0.5)).rg;   // the starting top, smoothed wide and narrow
+  vec3 top = texture2D(uTop, vec2(P.x / uSize.x, 0.5)).rgb;  // the starting top, smoothed wide and narrow, and its slope
   float X = P.x + uStrataP.w;
   // Down the profile: partly the depth under the (smoothed) land, so the bands
   // drape over hills, partly level, plus a gentle dip; then the contacts wave
@@ -263,8 +265,12 @@ vec4 terrainColor() {
   // (from the starting surface, so a crater's wall still shows them)
   float band = 0.2 + 0.09 * tNoise(vec2(P.x * 2.7, 1.0)) + 0.04 * tNoise(vec2(P.x * 11.0, 2.0));
   float under = od - band, wasGrass = (1.0 - S.a) * (1.0 - sandy);
-  float tb = band + 0.16 + 0.14 * tNoise(vec2(X * 1.3, 5.0)) + 0.05 * tNoise(vec2(X * 7.0, 6.0));
-  float topK = 1.0 - smoothstep(tb - 0.07, tb + 0.09, od + (tNoise(W * 8.0) - 0.5) * 0.14);
+  // Its depth is meant at right angles to the slope: straight down that is
+  // 1 / cos of the slope's angle more (at most 2.6×), so a steep bank keeps a
+  // thick topsoil; it fades back to 1× well under the top (caves, ledges).
+  float slopeK = mix(1.0, min(sqrt(1.0 + top.b * top.b), 2.6), 1.0 - smoothstep(1.7, 2.9, top.g - P.y));
+  float tb = (band + 0.16 + 0.14 * tNoise(vec2(X * 1.3, 5.0)) + 0.05 * tNoise(vec2(X * 7.0, 6.0))) * slopeK;
+  float topK = 1.0 - smoothstep(tb - 0.07 * slopeK, tb + 0.09 * slopeK, od + (tNoise(W * 8.0) - 0.5) * 0.14 * slopeK);
   vec3 tsoil = uStrata[0] * (0.82 + 0.36 * tFbm(W * 4.5 + 2.0)) * (1.0 + fine * 0.2);
   tsoil *= 1.0 + smoothstep(0.8, 0.9, tNoise(W * 21.0)) * 0.3 * tFade(0.04, px);
   soil = mix(soil, tsoil, topK * (1.0 - rk * 0.6));
@@ -373,11 +379,12 @@ function makeTextures(mask) {
 }
 // The ground as the match began, which the strata, the topsoil and the
 // scorch of a crater are read from: a copy of the field (depth, coverage, wide
-// coverage, bare) and the smoothed tops per column (half floats, one row).
+// coverage, bare) and the smoothed tops per column with the
+// narrow one's slope (half floats, one row).
 function makeStart(mask) {
-  const start = new Uint8Array(mask.cols * mask.rows * 4), tops = new Uint16Array(mask.cols * 2);
+  const start = new Uint8Array(mask.cols * mask.rows * 4), tops = new Uint16Array(mask.cols * 4);
   const startTex = new THREE.DataTexture(start, mask.cols, mask.rows, THREE.RGBAFormat);
-  const topTex = new THREE.DataTexture(tops, mask.cols, 1, THREE.RGFormat, THREE.HalfFloatType);
+  const topTex = new THREE.DataTexture(tops, mask.cols, 1, THREE.RGBAFormat, THREE.HalfFloatType);
   for (const t of [startTex, topTex]) { t.magFilter = t.minFilter = THREE.LinearFilter; t.generateMipmaps = false; t.needsUpdate = true; }
   return { start, tops, startTex, topTex };
 }
@@ -512,7 +519,8 @@ export function createTerrain(scene, mask, { palette = {}, rockAt = null, grassA
     const { field, paint } = tex, s = start.start;
     for (let o = 0; o < s.length; o += 4) { s[o] = field[o]; s[o + 1] = field[o + 1]; s[o + 2] = paint[o + 2]; s[o + 3] = field[o + 3]; }
     const tops = smoothTops(mask, { extra: back instanceof Uint8Array ? back : mask.hollow || null, wide: 12, narrow: 2 });
-    for (let c = 0; c < mask.cols; c++) { start.tops[c * 2] = THREE.DataUtils.toHalfFloat(tops.wide[c]); start.tops[c * 2 + 1] = THREE.DataUtils.toHalfFloat(tops.narrow[c]); }
+    const half = THREE.DataUtils.toHalfFloat, slope = topSlope(tops.narrow, mask.cell);
+    for (let c = 0; c < mask.cols; c++) { start.tops.set([half(tops.wide[c]), half(tops.narrow[c]), half(slope[c]), 0], c * 4); }
     start.startTex.needsUpdate = start.topTex.needsUpdate = true;
     buildSkin(); paintBack();
   }

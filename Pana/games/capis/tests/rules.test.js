@@ -35,17 +35,23 @@ test('a seed builds the same ground on every load: land across the map, the sea 
   for (const x of map.spawns.flat()) assert.ok(surfaceY(mask, x) > map.water + 2.5, `spawn ${x.toFixed(1)} on dry land`);
 });
 
-test('Montaña de cuevas: a massif over the middle, a tunnel through its foot with a room, marked hollow', () => {
-  const { map, mask } = seedWith(m => m.kind === 'cuevas'), f = map.plan.features.find(k => k.type === 'mountain'), t = map.plan.tunnels[0];
+test('Montaña de cuevas: a massif over the middle, a tunnel through its foot with a room, marked hollow, one flank climbing', () => {
+  const { map, mask } = seedWith(m => m.kind === 'cuevas'), f = map.plan.features.find(k => k.type === 'mountain'), t = map.plan.tunnels[0], c = f.climb;
   // The front capis stand on its crest, well above the lowland at its feet.
   assert.ok(surfaceY(mask, map.spawns[0][0]) > ground(mask, f.at - f.half - 4) + 6);
-  // The tunnel: air with rock over it, all the way through, a back wall behind it.
+  // The tunnel: air with a roof of ground over it (a room's, where there is one), all the way through, a back wall behind it.
   for (let k = 1; k < 4; k++) {
     const p = t.points[k];
-    assert.ok(!solidAt(mask, p.x, p.y + 1) && solidAt(mask, p.x, p.y + 4.5), `the tunnel at ${p.x.toFixed(1)}`);
+    let roof = p.y + 1; while (roof < p.y + 7 && !solidAt(mask, p.x, roof)) roof += .1;
+    assert.ok(!solidAt(mask, p.x, p.y + 1) && roof < p.y + 7 && surfaceY(mask, p.x) > roof + 1, `the tunnel at ${p.x.toFixed(1)}`);
     assert.ok(hollowAt(mask, p.x, p.y + 1), 'the tunnel is a hollow');
   }
-  assert.ok(rockAt(map, f.at - f.half + 2, map.plan.base + 5) > .5 && rockAt(map, f.at + f.half - 2, map.plan.base + 5) > .5, 'its sheer faces are rock');
+  // One face is sheer rock; the other flank climbs from a ledge over the gallery that leads to the tunnel, a hop over the lowland.
+  assert.ok(rockAt(map, f.at - c.side * (f.half - 2), map.plan.base + 5) > .5, 'its sheer face is rock');
+  const ledge = f.at + c.side * (f.half + .5);
+  assert.ok(solidAt(mask, ledge, c.lip - .1) && !solidAt(mask, ledge, c.floor + .9) && solidAt(mask, ledge, c.floor - .2), 'a ledge over the gallery');
+  assert.ok(Math.abs(ground(mask, f.at + c.side * (c.tip + 1.5)) - c.low) < .2 && c.lip - c.low <= 1.15, 'the lowland by the mouth a hop under the ledge');
+  for (let d = f.half - 2; d > f.half * .6; d -= .5) assert.ok(surfaceY(mask, f.at + c.side * (d - .5)) - surfaceY(mask, f.at + c.side * d) < 1.25, `a step at ${d.toFixed(1)} is a hop at most`);
 });
 
 test('Islas con puentes: islands at different heights, rock bridges over the water between them', () => {
@@ -262,6 +268,14 @@ test('the layers of the cut face belong to the map: same seed and kind, same loo
       assert.ok(lum(a.topsoil) < lum(a.ash) && lum(a.base) < lum(a.loam) && lum(a.pumice) > lum(a.clay));
     }
   }
+  // Terrazas reads as warm sandstone and laterite: its bands close in tone (the palest under 1.7 times the darkest), no near-white, every band warm.
+  for (let seed = 1; seed <= 40; seed++) {
+    const a = strataPalette(seed, 'terrazas'), bands = ['ash', 'clay', 'pumice', 'ochre', 'loam'].map(k => a[k]);
+    const lum = c => c[0] * .3 + c[1] * .55 + c[2] * .15, ls = bands.map(lum);
+    assert.ok(Math.max(...ls) / Math.min(...ls) < 1.7, `terrazas ${seed}: band contrast ${(Math.max(...ls) / Math.min(...ls)).toFixed(2)}`);
+    for (const c of bands) assert.ok(Math.max(...c) < 240 && c[0] - c[2] > 50, `terrazas ${seed}: ${c} is warm, not white`);
+  }
+  assert.notDeepEqual(strataPalette(101, 'terrazas'), strataPalette(102, 'terrazas'), 'terrazas still shifts with the seed');
   assert.notDeepEqual(strataPalette(101, 'cerros'), strataPalette(102, 'cerros'), 'another seed shifts the look');
   assert.notDeepEqual(strataPalette(101, 'cerros').clay, strataPalette(101, 'terrazas').clay, 'another kind has its own colours');
   assert.deepEqual(strataPalette(101, 'nada'), strataPalette(101, 'nada'), 'an unknown kind falls back');

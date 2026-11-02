@@ -32,7 +32,10 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   - the soil is a profile of strata like a road cut through volcanic ash
     (`strataPalette(seed, kind)` in map-rules.js; the shader's rules are in
     `docs/SHARED-ENGINE.md`, "Strata"): a dark crumbly topsoil 0.35–0.6 deep
-    with a fringe of roots and fine rootlets hanging from the grass, then runs
+    at right angles to the slope (straight down it is 1 / cos of the
+    starting slope deeper, at most 2.6 times, fading back under 1.7–2.9
+    units, so a steep bank keeps it thick; the slope rides in the tops
+    texture's third channel, no texture tap added) with a fringe of roots and fine rootlets hanging from the grass, then runs
     of seven bands (pale ash with laminae, orange-brown clay with small
     cracks, whitish pumice gravel full of speckles and pebbles, mottled ochre,
     crumbly loam) every 3.8–5.6 units, darker towards the base from 4 units
@@ -47,11 +50,13 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
     edge where the coverage is lower than at the start, fading over about
     0.5 units, the walls of the extruded slab a little less;
   - the palette per kind: cerros warm ochre and brown, cuevas greyer with
-    pale bands, islas sandy with rust, valle redder clay, terrazas brick reds
-    and whites (suave like cerros); the seed shifts warmth and lightness a
+    pale bands, islas sandy with rust, valle redder clay, terrazas warm
+    sandstone and laterite (buff and sand bands over muted red-orange earth,
+    the palest band under 1.7 times the darkest in luminance, no near-white;
+    it was brick red against white, 2.4 times) (suave like cerros); the seed shifts warmth and lightness a
     few percent and picks `period`, `fold`, `tilt` and the noise `phase`;
-  - rock (`rockAt`: the mesas, the tepuy, bridges, ledges and the end cliffs
-    only; the old level rock stripes gave way to the strata) is read through
+  - rock (`rockAt`: the mesas, the tepuy, the cave mountain's sheer face
+    and its ledge, bridges, ledges and the end cliffs only; the old level rock stripes gave way to the strata) is read through
     a noise warp so the map's boxes don't show, has wavy layers and
     branching cracks and takes a little of the band's colour; the beach and
     the sandbar (tops under `water + 2.4`) are sand, thicker towards the
@@ -424,14 +429,29 @@ Trueno 3.5 to 12 % (before: under 0.5 %), La Licuadora 9 to 13 %, La Lejana
     middle under a natural bridge.
   - `cuevas` (Montaña de cuevas): a broad massif over the middle (half-width
     0.27–0.31 of the map, 12–15 over the lowland, a broad peak and a craggy
-    crest), sheer rock faces overhung by the crest's lip, and a tunnel through
-    its foot from lowland to lowland, rising 1.8–3.4 inside, with one or two
-    rooms. The front capis start on the crest; the back ones in the lowlands
-    walk through the tunnel.
+    crest) and a tunnel through its foot from lowland to lowland, rising
+    1.8–3.4 inside, with one or two rooms. One face (the seed picks which) is
+    sheer rock overhung by the crest's lip; the other flank climbs: from the
+    lowland a capi hops (1.1) onto a rock ledge over the tunnel's mouth, then
+    walks up shelves and risers (about 45°) or, where the crest is too high
+    for that, hops up steps under 1 high, reaching the crest's height
+    0.35–0.45 of the half-width from the middle (the crest inside stays as it
+    was). Under the ledge a low gallery (1.8 high) runs from a dip in the
+    lowland to the tunnel. The front capis start on the crest; every capi,
+    the back ones in the lowlands too, can walk or hop up to the summit
+    (through the tunnel from the sheer side). In 2D a tunnel's roof is a
+    separate piece of ground, so the way up from the lowland to it always
+    takes one hop: the ledge is that hop.
   - `islas` (Islas con puentes): three to five islands (by size) at different
-    heights (13–28, steps of up to ±5), undercut by the sea, each joined to
-    the next by a rock bridge (arched or nearly flat) whose top is flush with
-    both islands.
+    heights (12–21, steps of up to ±4; large maps four, one in five five),
+    each with a crown and a knoll or two on top, every inner shore tapering
+    over 4.2–6.4 units (less on small maps) from a broad rounded shoulder
+    down a curved bank to a beach at the waterline (no sheer side and no
+    undercut: the steepest rise of a bank over one unit is about 4.4, it was
+    15–28; the strata run down the bank, no rock block), each
+    joined to the next by a rock bridge (arched or nearly flat) from where
+    one shore starts to fall to where the next one's does, flush with both
+    tops.
   - `valle` (Valle con laguna): two high sides (12–17 over the floor) with
     sheer, rocky cliffs, a natural arch from rim to rim across the valley, a
     pond on its floor and often a ledge on a cliff. The floor is a pit: a capi
@@ -467,7 +487,8 @@ Trueno 3.5 to 12 % (before: under 0.5 %), La Licuadora 9 to 13 %, La Lejana
   map is turned down (`check`) when something floats, a team has no three
   spots (`cramped`), a spawn has under 6 units to walk (`boxed-in`), it is
   `bland` (interest under 3.2), a team cannot walk or hop to the other
-  (`apart`), a cave is shut, the teams differ by more than `FAIR` (mean
+  (`apart`), a cave is shut, a capi cannot walk or hop up to the mountain's
+  summit (`summit-shut`, its highest floor), the teams differ by more than `FAIR` (mean
   height 2.6, front capis' height 3.2, sky 0.2, cover 0.3, distance to the
   nearest rival 6, walk there over walk back 1.6, capis with a shot 1), a
   team has no shot, the front capis cannot hit each other with no wind, or a
@@ -478,11 +499,12 @@ Trueno 3.5 to 12 % (before: under 0.5 %), La Licuadora 9 to 13 %, La Lejana
   than one floor + 2 × bumpiness + 0.6 a landmark (mesa, tunnel, room, cave,
   bridge, arch, ledge, pond, knoll). A flat field scores about 1; medians by
   kind: cuevas 11, islas 7.5, valle 6.7, cerros 6, terrazas 5.5.
-- **Numbers over 300 seeds a size**: 25–50 ms a map in Node (1.5–1.8 attempts
-  a map, 31–36 % of seeds re-roll at least once, one small seed in 300 falls
-  back to `suave`); front capis' heights differ by 0.1 (median), 1.7 (p90),
-  3.2 at most; team means by 0.37 / 1.83 / 2.6; 98 % of maps are walkable
-  both ways without a hop.
+- **Numbers over 300 seeds a size**: 30–60 ms a map in Node (1.6–1.7 attempts
+  a map, 34–38 % of seeds re-roll at least once, none falls back to
+  `suave`); front capis' heights differ by 0.1 (median), 2.0 (p90), 3.2 at
+  most; team means by 0.63 / 2.13 / 2.6; 90 % of maps are walkable both
+  ways without a hop (every islas map; half the cuevas maps, whose way
+  across can take the hop onto the ledge).
 - **Replay**: the lobby shows the map the match will use, its number and
   kind, with "Otro mapa" and a number field in "Más ajustes"; the HUD shows
   them under the teams; starting a match writes `?seed=…&size=…` into the
@@ -539,7 +561,10 @@ whatever its shape.
 
 The strata pass changed only the ground's shader and two small textures: the
 whole map stays at 77 draws and the medium play view at 134 (1280 × 720,
-medium quality), the same as before it.
+medium quality), the same as before it. So did the map polish (rounded
+islands, the climbing flank, the slope-following topsoil, which reads its
+slope from the tops texture it already had): 77 draws for the whole map on
+one seed of each kind, 70–134 for the play view.
 
 The terrain pass replaced ten ground planes with three draws (front, extruded
 wall of about 4 k triangles, back wall) and cut the shore reeds (85 k → 39 k
@@ -576,8 +601,12 @@ large one (5.1 MB before).
   shared aiming error is kept as it was, and La Piñita's bounces magnify it.
 - The way between the teams has no overhangs and no cave mouths (see "Why
   the way across is plain ground"): caves, ledges and caps stand off it, and
-  the tops of the `cuevas` massif above its tunnel mouths and of the `valle`
-  floor are reached only by the front capis' crest or a blast.
+  the `valle` floor is a pit reached only by falling or a blast. The `cuevas`
+  summit is reached from every spawn, but always with a hop (onto the ledge
+  over the gallery), and the bot does not plan hops.
+- Islands' banks are tapered and rounded but still steep (about 5 rise in
+  one unit at the steepest): a capi knocked onto a bank or the beach under a
+  bridge cannot walk back up and has to hop or be blasted out.
 - The bot hops once when stuck and never plans a route with hops, through a
   tunnel on purpose or back up a slope: it walks straight towards its target.
 - About 10 % of experto bot matches end at the turn limit (the one-weapon
@@ -607,7 +636,8 @@ large one (5.1 MB before).
 bytes, every kind on every size with its landmark, land across the map, dry
 spawns with headroom and room to walk, nothing floating but tunnel roofs, the
 teams walking (or hopping) to each other both ways, every cave reachable,
-interest, fairness by measure, the mirrored fallback always passing,
+islands' banks tapered (under 9 rise in one unit, no undercut, a beach),
+the `cuevas` summit reached from all six spawns, interest, fairness by measure, the mirrored fallback always passing,
 generation time, re-rolls, kinds and fairness as diagnostics; 110
 bot-against-bot matches (medium, small and large on experto, normal and
 fácil) that must all finish with no stuck turn and no team firing past its
