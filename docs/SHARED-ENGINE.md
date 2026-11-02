@@ -679,6 +679,11 @@ Used by: Bochinche.
   (Cocina, Escondidas), `bolas-world` (Bululú, Criollas), the island set
   (Bululú), the coastal set (Carreritas, Parapente), `colonial-street`
   (Trifulca).
+- **Dusty interiors**: `props/reliquia-library` builds a whole level's
+  bookcases in three instanced meshes per call (`bookcases`), every candle
+  flame in one shader (`candleFlames`: flicker, dim and blow-out uniforms),
+  cobweb cards (`cobwebs`), dust motes for a lamp beam (`dustMotes`) and a
+  hinged secret bookcase (`bookcaseDoor`). Used by: Reliquia's library.
 - **Large runtime asset packs** (audio, big images, voice packs) are not engine
   modules. They ship as release ZIPs pinned in `server/src/asset-packs.json`
   and are served by the server. Add a file there, not to Git:
