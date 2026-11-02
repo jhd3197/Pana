@@ -25,8 +25,9 @@ becomes the GitHub release's notes.
 
 - **En el todos contra todos de Pepazo nadie arranca al lado de otro pana.**
   Al empezar la ronda cada pana (o bot) queda en su propio punto, a 20 m o más
-  de los demás si la cancha lo permite; en El Puerto tú tienes una base para ti
-  solo, y al reaparecer caes lejos del rival vivo más cercano.
+  de los demás en todas las canchas y de 2 a 8 panas: El Puerto suma tres puntos
+  de salida por mitad (las esquinas de cada base y uno adelantado). Al reaparecer
+  caes lejos del rival vivo más cercano.
 - **En El Puerto de Pepazo los barriles de cada base ya no tienen una caja invisible alrededor.**
   Chocas con cada barril, no con una caja de 3 x 2,6 m, y las dos bases tienen
   los barriles en espejo. `npm run collision-report -- --fix` propone y aplica
