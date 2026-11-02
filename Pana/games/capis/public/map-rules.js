@@ -10,10 +10,11 @@
 //   cerros    rolling hills with a mesa or two away from the middle (a flat
 //             top, a steep face often overhung by its cap, a cave at its
 //             foot), sometimes a pond under a natural bridge
-//   cuevas    a craggy massif with sheer sides and a tunnel right through
-//             its foot, often with a room or two inside
-//   islas     tall islands at different heights, undercut by the sea, joined
-//             by rock bridges and arches over the water
+//   cuevas    a craggy massif with a tunnel right through its foot, often
+//             with a room or two inside, one face sheer, the other flank
+//             climbing in steps from a ledge over the tunnel's mouth
+//   islas     rounded islands at different heights, their shores tapering
+//             to a beach, joined by rock bridges and arches over the water
 //   valle     two high sides with sheer cliffs, a natural arch across the
 //             valley between them, a pond on its floor and a ledge on a cliff
 //   terrazas  a stepped tepuy near the middle, each side its own steps
@@ -116,20 +117,28 @@ export function planMap(seed, size, attempt = 0) {
     hillsAlong(lo, hi, 2 + Math.floor(r() * 2 * scale), 2.5);
     const m = { at: p.mid + between(-.04, .04) * width, half: between(.27, .31) * width, top: Math.min(roof - 4, p.base + between(12, 15)), wall: between(.07, .1),
       peak: { at: between(-.3, .3), height: between(3, 6) } };
+    // One flank (the seed picks which) climbs in shelves and risers a capi
+    // walks up, from a ledge over the tunnel's mouth; the other stays sheer.
+    m.climb = { side: chance(.5) ? -1 : 1, rise: between(.85, .97), reach: between(.35, .45) };
     p.features.push({ type: 'mountain', ...m });
     const rise = between(1.8, 3.4), rooms = [], room = Math.min(2.6, (m.top - p.base - rise - 3) / 2);
     for (let i = 0, n = 1 + Math.floor(r() * 2); i < n; i++) rooms.push({ at: n === 1 ? between(.35, .65) : i ? between(.6, .8) : between(.2, .4), radius: room });
-    p.tunnels.push({ from: m.at - m.half - 1.5, to: m.at + m.half + 1.5, rise, radius: between(1.3, 1.4), rooms });
+    // On the climbing side the tunnel ends under the flank and a low gallery runs on to the mouth.
+    const end = side => m.at + side * (m.climb.side === side ? m.half - 6.5 : m.half + 1.5);
+    p.tunnels.push({ from: end(-1), to: end(1), rise, radius: between(1.3, 1.4), rooms, climb: m.climb });
     p.outer = [chance(.5), chance(.5)];
   } else if (kind === 'islas') {
     p.base = WATER - 2.6;
-    const n = size === 'small' ? 3 : size === 'medium' ? 3 + Math.floor(r() * 2) : 4 + Math.floor(r() * 2);
+    const n = size === 'small' ? 3 : size === 'medium' ? 3 + Math.floor(r() * 2) : 4 + Number(chance(.2));
     const gaps = Array.from({ length: n - 1 }, () => between(4.5, 8) * Math.min(1.2, scale)), room = width - gaps.reduce((a, b) => a + b, 0);
     const shares = Array.from({ length: n }, () => between(.8, 1.25)), sum = shares.reduce((a, b) => a + b, 0);
-    let x = 0, last = between(16, 24);
+    let x = 0, last = between(13, 19);
     for (let i = 0; i < n; i++) {
-      const w = room * shares[i] / sum, top = clamp(last + between(-5, 5), 13, Math.min(roof, 28));
-      p.features.push({ type: 'island', from: x, to: x + w, top, amp: between(1.5, 3.5), undercut: between(1.2, 2) });
+      const w = room * shares[i] / sum, top = clamp(last + between(-4, 4), 12, Math.min(roof, 21));
+      // Each inner shore tapers over its own run, a beach at its foot; a crown and a bump or two on top.
+      const shore = [between(4.2, 6.4), between(4.2, 6.4)].map(v => v * Math.min(1, .55 + .45 * scale)), knolls = [];
+      for (let k = 0, nb = 1 + Math.floor(r() * 2); k < nb; k++) { const h = between(-.8, 2.4); knolls.push({ at: between(x + w * .25, x + w * .75), height: h, width: 3 + 2 * Math.abs(h) + between(0, 4) }); }
+      p.features.push({ type: 'island', from: x, to: x + w, top, amp: between(1, 2.2), shore, knolls, crown: between(.8, 2.2) });
       last = top; x += w + (gaps[i] || 0);
     }
     for (let i = 0; i + 1 < n; i++) p.bridges.push({ a: i, b: i + 1, radius: between(.75, .95), arc: chance(.6) ? between(.6, 1.8) : between(-.5, .3) });
@@ -194,24 +203,59 @@ function tepuyHeight(f, x, h) {
   return Math.max(h, y - (d - at) * s.steep);
 }
 
+// An island's inner shore, `e` in from its edge (negative out over the gap):
+// a rounded beach at the waterline, then a bank that steepens and rounds
+// over into the top `w` in. No sheer side, no undercut.
+function shoreHeight(e, w, top) {
+  const a = 1.6, sand = .18 * w, beach = WATER + .6;
+  if (e >= w) return top;
+  if (e <= sand) return lerp(WATER - 2.6, beach, smoothstep(clamp((e + a) / (a + sand))));
+  const t = (e - sand) / (w - sand);
+  return lerp(beach, top, .5 * smoothstep(t) + .5 * (1 - (1 - t) ** 2.2));
+}
+
+// The climbing flank's steps `u` in from the foot of its ledge: a shelf, then
+// a riser (rounded at lip and foot), `rise` up each `shelf + run`.
+function stepsUp(c, u) {
+  const period = c.shelf + c.run, i = Math.floor(u / period), t = u - i * period;
+  return c.lip + i * c.rise + (t < c.shelf ? Math.sin(t / c.shelf * Math.PI) * .1 : c.rise * ((t - c.shelf) / c.run * .75 + smoothstep((t - c.shelf) / c.run) * .25));
+}
+
+// The mountain's climbing flank at x (`h`: the ground there so far): the
+// lowland by the mouth flat at `low`, the ledge over the mouth (`lip`) out to
+// the tip, then the steps up to the crest. The ledge sits a hop above the
+// lowland. Past the middle the steps keep climbing, so where they fall short
+// of the crest they cut it down instead of leaving a cliff.
+function climbHeight(f, x, crest, h) {
+  const c = f.climb, d = (x - f.at) * c.side;
+  if (d > c.tip) return lerp(c.low, h, smoothstep(clamp((d - c.tip - 2.6) / 2.5)));
+  if (d > f.half - 1.2) return Math.min(crest, c.lip);
+  return Math.min(d > 0 ? crest : h, stepsUp(c, f.half - 1.2 - d));
+}
+
 // Ground height at x: the top of the heightfield (caps, bridges, caves and
 // ledges come after, as cells).
 export function heightAt(p, x) {
-  let h = p.kind === 'islas' ? p.base : rolling(p, x) + detail(p, x);
+  let h = p.kind === 'islas' ? p.base : rolling(p, x) + detail(p, x), climb = null;
   for (const f of p.features) {
     if (f.type === 'mesa') h = mesaHeight(f, x, h);
     else if (f.type === 'mountain') {
-      // A massif with sheer sides and a craggy crest.
+      // A massif with a craggy crest, one flank sheer, the other climbing.
       const d = Math.abs(x - f.at), wall = smoothstep(clamp((f.half - d) / (f.half * f.wall)));
       const crag = (fbm2(x * .07 + p.detail, 4.4, { octaves: 3 }) - .5) * 10 + (fbm2(x * .3 + p.detail, 1.7, { octaves: 2 }) - .5) * 1.2;
       const peak = f.peak ? f.peak.height * Math.exp(-(((x - f.at - f.peak.at * f.half) / (f.half * .4)) ** 2)) : 0;
-      if (wall > 0) h = Math.max(h, lerp(h, f.top + peak + crag * clamp((f.half - d) / (f.half * .3)), wall));
+      const crest = f.top + peak + crag * clamp((f.half - d) / (f.half * .3));
+      // The climbing flank goes on after the ends, which would otherwise wear it down by the shore.
+      const climbing = f.climb?.low !== undefined;
+      if (climbing && d <= f.climb.tip + 5.1) climb = { f, crest };
+      if (!(climbing && f.climb.side === (x < f.at ? -1 : 1)) && wall > 0) h = Math.max(h, lerp(h, crest, wall));
     } else if (f.type === 'island') {
-      if (x >= f.from - 1.5 && x <= f.to + 1.5) {
-        const inside = clamp(Math.min(x - f.from, f.to - x) / 1.1 + .5), top = f.top + (fbm2(x * .06 + p.lf.a, f.top, { octaves: 3 }) - .5) * 2 * f.amp + detail(p, x) * .6;
-        // The outer ends of the first and last island are the map's shores.
-        const edge = (x < f.from && f.from <= .01) || (x > f.to && f.to >= p.width - .01) ? 1 : smoothstep(inside);
-        h = Math.max(h, lerp(p.base, top, edge));
+      if (x >= f.from - 1.6 && x <= f.to + 1.6) {
+        const mid = (f.from + f.to) / 2, half = (f.to - f.from) / 2;
+        const top = f.top + (fbm2(x * .06 + p.lf.a, f.top, { octaves: 3 }) - .5) * 2 * f.amp + detail(p, x) * .45 + bumps(x, f.knolls) + f.crown * (1 - clamp(((x - mid) / half) ** 2));
+        // The outer ends of the first and last island are the map's shores (the ends shape them).
+        const left = f.from <= .01 ? Infinity : x - f.from, right = f.to >= p.width - .01 ? Infinity : f.to - x;
+        h = Math.max(h, left === Infinity && right === Infinity ? top : left < right ? shoreHeight(left, f.shore[0], top) : shoreHeight(right, f.shore[1], top));
       }
     } else if (f.type === 'valley') {
       const d = Math.abs(x - f.at) - f.floor, side = x < f.at ? f.left : f.right;
@@ -241,6 +285,7 @@ export function heightAt(p, x) {
       if (bar > 0) h = Math.max(h, WATER - 2.6 + (2.6 + s.top) * Math.sqrt(bar));
     }
   }
+  if (climb) h = climbHeight(climb.f, x, climb.crest, h);
   return clamp(h, -1, p.height - 4);
 }
 
@@ -284,6 +329,24 @@ function outerCave(p, mask, i, limit) {
   return { x: best.x - out * depth * .6, y: y + .1, what: 'cave' };
 }
 
+// Air over the cell rows from y0 up to y1, in the columns whose centres lie in [x0, x1).
+function clearCells(mask, x0, x1, y0, y1) {
+  const { cols, rows, cell } = mask, r0 = Math.max(0, Math.round(y0 / cell)), r1 = Math.min(rows, Math.round(y1 / cell));
+  for (let c = Math.max(0, Math.floor(x0 / cell)); c <= Math.min(cols - 1, Math.floor(x1 / cell)); c++) {
+    const xc = (c + .5) * cell;
+    if (xc >= x0 && xc < x1) for (let r = r0; r < r1; r++) mask.solid[r * cols + c] = 0;
+  }
+}
+
+// The low gallery from the tunnel's end under the climbing flank out to its
+// mouth (1.8 high, under the ledge), then a short dip up to the lowland: from
+// its rim a capi hops onto the ledge and walks up the flank.
+function gallery(mask, f, c) {
+  const at = d => f.at + c.side * d, span = (d0, d1) => [Math.min(at(d0), at(d1)), Math.max(at(d0), at(d1))];
+  clearCells(mask, ...span(f.half - 6.6, c.tip), c.floor, c.floor + 1.8);
+  for (let d = c.tip; d < c.tip + .9; d += mask.cell) clearCells(mask, ...span(d, d + mask.cell), c.floor + (d + mask.cell / 2 - c.tip) / .9, c.low + 1);
+}
+
 export function buildGround(p) {
   const mask = createMask({ width: p.width, height: p.height, cell: CELL });
   // Each end falls to the sea gently enough to walk: longer where the land is high.
@@ -295,6 +358,19 @@ export function buildGround(p) {
   // A mesa stands on the ground under it, its top `rise` above.
   const bare = { ...p, features: [] };
   for (const f of p.features) if (f.type === 'mesa') { f.base = heightAt(bare, f.at); f.T = Math.min(p.roof, f.base + f.rise); }
+  // The climbing flank stands on the lowland by its mouth: the gallery's
+  // floor 1 under it (on the cell grid), the ledge over the mouth 2.1 over
+  // that (1.8 of room under it, 0.3 of rock), its tip 1.2 out from the foot.
+  // Its steps reach the crest's height `reach` × half from the middle (the
+  // crest inside stays as it was): risers a capi walks up (about 45°) where
+  // that is gentle enough, else short steps under 1 high that it hops.
+  for (const f of p.features) if (f.type === 'mountain' && f.climb) {
+    const c = f.climb, low = heightAt({ ...p, features: p.features.filter(g => g !== f) }, f.at + c.side * (f.half + 3));
+    let top = 0; for (let k = 0; k <= 24; k++) top = Math.max(top, heightAt(p, f.at + c.side * f.half * c.reach * k / 24));
+    c.tip = f.half + 1.2; c.floor = Math.round((low - 1) / CELL) * CELL; c.low = c.floor + 1; c.lip = c.floor + 2.1;
+    const slope = (top - c.lip) / (f.half * (1 - c.reach) - 1.2);
+    c.run = slope <= .5 ? c.rise : .3; c.shelf = Math.max(.75, c.rise / slope - c.run);
+  }
   fillHeights(mask, x => heightAt(p, x));
   p.rocks = []; p.caveSpots = []; p.spans = [];
   // Overhangs first: open to the sky behind, so no back wall.
@@ -309,9 +385,15 @@ export function buildGround(p) {
     }
     if (f.type === 'mountain') {
       // Rock shows in its sheer faces; inside, earth like the rest.
-      for (const side of [-1, 1]) { const x = f.at + side * f.half; p.rocks.push({ x0: Math.min(x, x - side * 5) - 1, x1: Math.max(x, x - side * 5) + 1, y0: p.base + 1, y1: f.top - 2.5 }); }
-      // Its sheer faces are overhung by the crest's lip (nobody climbs them anyway).
       for (const side of [-1, 1]) {
+        const x = f.at + side * f.half, c = f.climb;
+        // The climbing flank shows rock only around the ledge over its mouth.
+        if (c?.side === side) p.rocks.push({ x0: Math.min(x - side * 3, f.at + side * c.tip) - .3, x1: Math.max(x - side * 3, f.at + side * c.tip) + .3, y0: c.floor - 1, y1: c.lip + .25 });
+        else p.rocks.push({ x0: Math.min(x, x - side * 5) - 1, x1: Math.max(x, x - side * 5) + 1, y0: p.base + 1, y1: f.top - 2.5 });
+      }
+      // The sheer face is overhung by the crest's lip (nobody climbs it anyway).
+      for (const side of [-1, 1]) {
+        if (f.climb?.side === side) continue;
         let x = f.at + side * f.half * (1 - f.wall);
         const top = heightAt(p, x);
         for (let k = 0; k < 40 && heightAt(p, x + side * .2) > top - 1.5; k++) x += side * .2;
@@ -334,21 +416,11 @@ export function buildGround(p) {
         ledge.x = x; ledge.y = y;
       }
     }
-    if (f.type === 'island') {
-      // The sea has undercut each island's sides (not the map's shores).
-      for (const [x, out] of [[f.from, -1], [f.to, 1]]) {
-        if (x <= .01 || x >= p.width - .01) continue;
-        const top = heightAt(p, x - out * 1.5);
-        for (let y = WATER + .6; y < top - 4.5; y += .8) carve(mask, x - out * (f.undercut - 1.2), y, 1.25 + .3 * Math.sin(y * 1.7 + f.top));
-        fill(mask, x + out * .5, top - .6, .7);
-        p.rocks.push({ x0: x - 2.5, x1: x + 2, y0: WATER - 1, y1: top - 1.5 });
-      }
-    }
   }
-  // Bridges between islands: a span from one island's edge top to the next.
+  // Bridges between islands: a span from where one island's shore starts to fall to where the next one's does, flush with both tops.
   for (const s of p.bridges) {
-    const A = p.features[s.a], B = p.features[s.b];
-    s.a = { x: A.to - 1.8, y: heightAt(p, A.to - .6) - s.radius }; s.b = { x: B.from + 1.8, y: heightAt(p, B.from + .6) - s.radius };
+    const A = p.features[s.a], B = p.features[s.b], ax = A.to - A.shore[1], bx = B.from + B.shore[0];
+    s.a = { x: ax, y: heightAt(p, ax) - s.radius }; s.b = { x: bx, y: heightAt(p, bx) - s.radius };
     span(mask, s); p.spans.push(s); p.rocks.push({ x0: s.a.x, x1: s.b.x, span: s });
   }
   // A pond gets a natural bridge over it, flush with the ground at both banks.
@@ -359,11 +431,15 @@ export function buildGround(p) {
   // The caves and tunnels are hollows: the scene gives them a back wall.
   const before = mask.solid.slice();
   for (const t of p.tunnels) {
-    const a = { x: t.from, y: heightAt(p, t.from) }, b = { x: t.to, y: heightAt(p, t.to) };
+    // A tunnel ends at the lowland's level, or under a climbing flank at its gallery's floor.
+    const end = (x, side) => ({ x, y: t.climb?.side === side ? t.climb.floor + .25 : heightAt(p, x) });
+    const a = end(t.from, -1), b = end(t.to, 1);
     const points = [a, { x: lerp(t.from, t.to, .25), y: lerp(a.y, b.y, .25) + t.rise * .8 }, { x: lerp(t.from, t.to, .5), y: lerp(a.y, b.y, .5) + t.rise },
       { x: lerp(t.from, t.to, .75), y: lerp(a.y, b.y, .75) + t.rise * .8 }, b];
     // Each mouth opens a little outside the foot, onto the ground there.
-    tunnel(mask, [{ x: t.from - 1.5, y: heightAt(p, t.from - 1.5) }, ...points, { x: t.to + 1.5, y: heightAt(p, t.to + 1.5) }], t.radius);
+    const mouth = side => t.climb?.side === side ? [] : [{ x: side < 0 ? t.from - 1.5 : t.to + 1.5, y: heightAt(p, side < 0 ? t.from - 1.5 : t.to + 1.5) }];
+    tunnel(mask, [...mouth(-1), ...points, ...mouth(1)], t.radius);
+    if (t.climb) gallery(mask, p.features.find(f => f.type === 'mountain'), t.climb);
     for (const room of t.rooms || []) {
       const x = lerp(t.from, t.to, room.at), k = room.at < .5 ? room.at / .5 : (1 - room.at) / .5, y = lerp(a.y, b.y, room.at) + t.rise * (.8 + .2 * k);
       carve(mask, x, y + room.radius - .2, room.radius);
@@ -536,16 +612,25 @@ export function measure(p, mask, spawns) {
     const rivals = stats[1 - t].filter(r => range(s, r)).sort((a, b) => Math.abs(a.x - s.x) - Math.abs(b.x - s.x));
     return rivals.some((r, i) => reachable(mask, s, { x: r.x, y: r.y + .35 }, i ? { angles: .09, powers: .05 } : {})) ? 1 : 0;
   }));
-  const seen = graph.reach(walk.nodes.flat().filter(n => n >= 0));
+  const seen = graph.reach(walk.nodes.flat().filter(n => n >= 0)), reaches = walk.nodes.map(team => team.map(n => n >= 0 ? graph.reach(n) : null));
   // Every capi can get into the fight on foot: to a floor within 32 of a rival (a comfortable lob), or it has a shot already.
-  const moves = walk.nodes.map((team, t) => team.map(n => {
-    if (n < 0) return false;
-    const from = graph.reach(n), rivals = stats[1 - t];
+  const moves = reaches.map((team, t) => team.map(from => {
+    if (!from) return false;
+    const rivals = stats[1 - t];
     for (let i = 0; i < from.length; i++) if (from[i]) { const x = (graph.col[i] + .5) * graph.step; if (rivals.some(r => Math.abs(r.x - x) <= 32)) return true; }
     return false;
   }));
   const caves = p.caveSpots.map(c => { const n = graph.near(c.x, c.y, 1.4); return { ...c, reached: n >= 0 && !!seen[n] }; });
-  return { stats, graph, walk, shots, moves, caves, interest: interestOf(p, mask, graph),
+  // A mountain's summit (its highest floor) is a place every capi can walk or hop up to.
+  const mount = p.features.find(f => f.type === 'mountain');
+  let summit = null;
+  if (mount) {
+    let best = -1;
+    for (let k = 0; k < graph.count; k++) if (Math.abs((k + .5) * graph.step - mount.at) <= mount.half) for (let i = graph.start[k]; i < graph.start[k + 1]; i++) if (best < 0 || graph.y[i] > graph.y[best]) best = i;
+    summit = { x: (graph.col[best] + .5) * graph.step, y: graph.y[best], from: reaches.map(team => team.map(r => !!r?.[best])) };
+    summit.reached = summit.from.flat().every(Boolean);
+  }
+  return { stats, graph, walk, shots, moves, caves, summit, interest: interestOf(p, mask, graph),
     diff: { meanHeight: Math.abs(mean(stats[0], 'y') - mean(stats[1], 'y')), front: Math.abs(stats[0][0].y - stats[1][0].y),
       exposure: Math.abs(mean(stats[0], 'exposure') - mean(stats[1], 'exposure')), cover: Math.abs(mean(stats[0], 'cover') - mean(stats[1], 'cover')),
       distance: Math.abs(mean(stats[0], 'rival') - mean(stats[1], 'rival')),
@@ -560,6 +645,7 @@ export function measure(p, mask, spawns) {
 //   bland         the interest score is under FAIR.interest
 //   apart         a team cannot walk (or hop) to the other's front capi, or back
 //   cave-shut     a cave or tunnel no capi can walk into
+//   summit-shut   a capi cannot walk (or hop) up to the mountain's summit
 //   uneven-<k>    the two teams differ by more than FAIR[k]
 //   out-of-reach  the front capis cannot hit each other with no wind
 //   no-shot       a team has no capi with a shot at a rival
@@ -573,6 +659,7 @@ function check(p, mask, loose, spawns) {
   if (m.interest.score < FAIR.interest) return fail('bland');
   if (!Number.isFinite(m.walk.there) || !Number.isFinite(m.walk.back)) return fail('apart');
   if (m.caves.some(c => !c.reached)) return fail('cave-shut');
+  if (m.summit && !m.summit.reached) return fail('summit-shut');
   for (const k of ['meanHeight', 'front', 'exposure', 'cover', 'distance', 'walk', 'shots']) if (m.diff[k] > FAIR[k]) return fail(`uneven-${k}`);
   if (!m.shots[0].some(Boolean) || !m.shots[1].some(Boolean)) return fail('no-shot');
   for (let t = 0; t < 2; t++) for (let s = 0; s < 3; s++) if (!m.moves[t][s] && !m.shots[t][s]) return fail('walled-in');
@@ -598,7 +685,7 @@ export function generateMap(seed = 1, size = DEFAULT_SIZE) {
     if (failed && attempt < ATTEMPTS - 1) { rejected.push(failed); continue; }
     const start = mask.solid.slice(); for (let i = 0; i < start.length; i++) start[i] |= mask.hollow[i];
     const fair = measured ? { ...measured.diff, interest: measured.interest.score, foot: measured.walk.foot, route: [measured.walk.there, measured.walk.back], shooters: measured.shots, land: measured.interest.land,
-      caves: measured.caves.map(c => ({ what: c.what, reached: c.reached })), heights: measured.stats.map(t => t.map(s => +s.y.toFixed(2))) } : null;
+      caves: measured.caves.map(c => ({ what: c.what, reached: c.reached })), summit: measured.summit && { x: measured.summit.x, y: measured.summit.y, from: measured.summit.from }, heights: measured.stats.map(t => t.map(s => +s.y.toFixed(2))) } : null;
     const map = { id: 'llanos', name: MAP_NAME, seed, size, width: p.width, height: p.height, cell: CELL, water: WATER,
       kind: p.kind, plan: p, spawns, attempt, rejected, failed: failed || null, start, loose: loose.removed, fair };
     return { map, mask };
@@ -608,9 +695,10 @@ export function generateMap(seed = 1, size = DEFAULT_SIZE) {
 
 // ---------- what the earth is made of (for the painter) ----------
 
-// 0..1 rock at (x, y): the mesas, the tepuy, the islands' undercut sides, the
-// bridges and ledges and the cliffs at the ends. The soil's layers between
-// them are the shader's strata (`strataPalette`).
+// 0..1 rock at (x, y): the mesas, the tepuy, the cave mountain's sheer face
+// and its ledge, the bridges and ledges and the cliffs at the ends. The
+// soil's layers between them (the islands' banks too, down to the beach)
+// are the shader's strata (`strataPalette`).
 export function rockAt(map, x, y) {
   const p = map.plan;
   let k = 0;
@@ -643,7 +731,8 @@ const STRATA = Object.freeze({
   cuevas: { topsoil: [62, 50, 40], ash: [196, 192, 180], clay: [138, 118, 100], pumice: [216, 214, 206], ochre: [174, 152, 114], loam: [112, 100, 90], base: [74, 68, 64], seam: [94, 82, 76] },
   islas: { topsoil: [74, 56, 38], ash: [226, 208, 166], clay: [172, 98, 60], pumice: [232, 224, 204], ochre: [212, 174, 106], loam: [156, 118, 80], base: [104, 72, 50], seam: [166, 74, 42] },
   valle: { topsoil: [66, 44, 30], ash: [208, 182, 152], clay: [160, 82, 54], pumice: [218, 204, 188], ochre: [192, 136, 72], loam: [126, 72, 48], base: [82, 48, 36], seam: [136, 48, 34] },
-  terrazas: { topsoil: [64, 46, 36], ash: [222, 210, 194], clay: [152, 80, 64], pumice: [232, 226, 214], ochre: [194, 128, 92], loam: [130, 82, 66], base: [92, 54, 46], seam: [112, 46, 40] },
+  // Warm sandstone and laterite: buff and sand bands over muted red-orange earth, close in tone.
+  terrazas: { topsoil: [70, 48, 36], ash: [204, 166, 128], clay: [178, 118, 84], pumice: [208, 178, 140], ochre: [198, 148, 100], loam: [160, 108, 78], base: [106, 68, 52], seam: [146, 80, 56] },
   suave: { topsoil: [78, 54, 36], ash: [202, 186, 152], clay: [166, 104, 64], pumice: [216, 208, 188], ochre: [194, 152, 82], loam: [128, 90, 58], base: [86, 60, 42], seam: [142, 70, 44] },
 });
 export const STRATA_KEYS = Object.freeze(['topsoil', 'ash', 'clay', 'pumice', 'ochre', 'loam', 'base', 'seam']);

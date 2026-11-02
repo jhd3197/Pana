@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMask, fillHeights, solidAt, carve, carveLine, fill, splash, drips, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA, fieldRGBA, coverageContour, smoothTops } from '../play/terrain-mask.js';
+import { createMask, fillHeights, solidAt, carve, carveLine, fill, splash, drips, stainAt, groundBelow, surfaceY, slopeAt, circleHits, surfaceNormal, takeDirty, paintRGBA, fieldRGBA, coverageContour, smoothTops, topSlope } from '../play/terrain-mask.js';
 
 const near = (a, b, tol = .11) => Math.abs(a - b) <= tol;
 const flat = (h = 10) => { const m = createMask({ width: 40, height: 20, cell: .1 }); fillHeights(m, () => h); takeDirty(m); return m; };
@@ -161,6 +161,17 @@ test('smoothTops follows the starting top per column, smoothed, and counts the e
   const extra = new Uint8Array(m.solid.length); for (let c = 0; c < 40; c++) extra[150 * m.cols + c] = 1;
   assert.ok(smoothTops(m, { extra }).narrow[5] > 14, 'the hollow counts as ground');
   assert.ok(Math.abs(before[100] - 6) < .5);
+});
+
+test('topSlope reads the rise over run of a row of tops: flat, a 60° bank, and the ends', () => {
+  const cell = .1, tops = Float32Array.from({ length: 200 }, (_, c) => { const x = (c + .5) * cell; return x < 8 ? 5 : x < 12 ? 5 + (x - 8) * Math.sqrt(3) : 5 + 4 * Math.sqrt(3); });
+  const s = topSlope(tops, cell);
+  assert.equal(s.length, tops.length);
+  assert.ok(Math.abs(s[20]) < 1e-6 && Math.abs(s[180]) < 1e-6, 'flat ground has no slope');
+  assert.ok(Math.abs(s[100] - Math.sqrt(3)) < 1e-4, `a 60° bank (${s[100]})`);
+  assert.ok(Math.abs(Math.sqrt(1 + s[100] ** 2) - 2) < 1e-3, 'straight down, its topsoil is twice as deep');
+  assert.ok(Number.isFinite(s[0]) && Number.isFinite(s[199]), 'the ends are one-sided');
+  assert.deepEqual([...topSlope(Float32Array.from([1, 2, 4]), 1, 1)], [1, 1.5, 2]);
 });
 
 

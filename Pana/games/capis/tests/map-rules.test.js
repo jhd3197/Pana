@@ -1,13 +1,14 @@
 // The generated maps over a sweep of seeds on every size (SWEEP a size, every
 // kind): each passes its checks, the teams can walk (or hop) to each other,
 // spawns have room, nothing floats but the roofs over tunnels, every cave is
-// reachable, the ground is interesting, the two sides are fair by measure,
-// every kind shows up, and the same seed gives the same cells. The numbers
+// reachable, islands have tapered shores, the summit of the cave mountain is
+// reached from every spawn, the ground is interesting, the two sides are fair
+// by measure, every kind shows up, and the same seed gives the same cells. The numbers
 // (generation time, re-rolls, kinds, fairness) are printed as diagnostics.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateMap, spawnStats, planMap, buildMap, inspectPlan, MAP_SIZES, FAIR, ATTEMPTS, KINDS, WATER } from '../public/map-rules.js';
-import { surfaceY } from '../../../engine/play/terrain-mask.js';
+import { generateMap, spawnStats, planMap, buildMap, inspectPlan, heightAt, MAP_SIZES, FAIR, ATTEMPTS, KINDS, WATER } from '../public/map-rules.js';
+import { surfaceY, solidAt } from '../../../engine/play/terrain-mask.js';
 import { dropFloating, headroom, floorGraph } from '../../../engine/play/terrain-gen.js';
 
 const SWEEP = Number(process.env.CAPIS_SWEEP) || 300;
@@ -131,6 +132,50 @@ test('the teams can walk (or hop) to each other both ways, and every cave and tu
   const tunnel = all.find(g => g.map.kind === 'cuevas'), graph = floorGraph(tunnel.mask, { water: WATER }), tt = tunnel.map.plan.tunnels[0];
   const inside = graph.near(tt.points[2].x, tt.points[2].y, 1), mouths = [tt.points[0], tt.points[4]].map(pt => graph.near(pt.x, surfaceY(tunnel.mask, pt.x) ?? pt.y, 3));
   assert.ok(inside >= 0 && mouths.every(m => m >= 0 && graph.reach(m)[inside] && graph.reach(inside)[m]), `${label(tunnel)}: the tunnel is walked through`);
+});
+
+test('islands have tapered shores: no sheer side, no undercut, a beach at the waterline', t => {
+  const steep = [];
+  for (const g of all) {
+    if (g.map.kind !== 'islas') continue;
+    const p = g.map.plan, { mask } = g;
+    let worst = 0;
+    for (const f of p.features) if (f.type === 'island') for (const [edge, out] of [[f.from, -1], [f.to, 1]]) {
+      if (edge <= .01 || edge >= p.width - .01) continue;
+      // The bank's steepest rise over one unit (a sheer side was 15 to 28), and earth under it all the way down (no undercut).
+      for (let x = edge - out * 8; out * (x - edge) < 1.6; x += out * .1) {
+        worst = Math.max(worst, Math.abs(heightAt(p, x + out) - heightAt(p, x)));
+        const cx = (Math.floor(x / mask.cell) + .5) * mask.cell, h = heightAt(p, cx);
+        for (let y = WATER + .3; y < h - .3; y += .25) assert.ok(solidAt(mask, cx, y), `${label(g)}: the bank at ${cx.toFixed(2)} is undercut at ${y.toFixed(1)}`);
+      }
+      // A beach: ground just above the water a little out from the edge.
+      const beach = heightAt(p, edge + out * .2);
+      assert.ok(beach > WATER - 1 && beach < WATER + 2, `${label(g)}: a beach at ${edge.toFixed(1)} (${beach.toFixed(1)})`);
+    }
+    steep.push(worst);
+    assert.ok(worst < 9, `${label(g)}: a bank rises ${worst.toFixed(1)} in one unit`);
+  }
+  t.diagnostic(`islas, steepest rise of a bank over one unit: ${quantiles(steep)} (${steep.length} maps)`);
+});
+
+test('the summit of the cave mountain is reached on foot (or with hops) from every spawn', t => {
+  let n = 0, foot = 0;
+  for (const g of all) {
+    if (g.map.kind !== 'cuevas') continue;
+    n++;
+    const s = g.map.fair.summit;
+    assert.ok(s && s.from.flat().every(Boolean), `${label(g)}: the summit at ${s?.x.toFixed(1)} from ${JSON.stringify(s?.from)}`);
+  }
+  // Measured again from scratch on a few maps: from the back capi on each side, up the climbing flank.
+  for (const g of all.filter(g => g.map.kind === 'cuevas').slice(0, 12)) {
+    const graph = floorGraph(g.mask, { water: WATER }), s = g.map.fair.summit, top = graph.near(s.x, s.y, .2);
+    for (const team of [0, 1]) {
+      const x = g.map.spawns[team][2], from = graph.near(x, surfaceY(g.mask, x), .6);
+      assert.ok(top >= 0 && graph.reach(from)[top], `${label(g)}: team ${team}'s back capi reaches the summit`);
+      if (graph.reach(from, { hops: false })[top]) foot++;
+    }
+  }
+  t.diagnostic(`${n} cuevas maps, the summit reached from all 6 spawns on every one; back capis that get there without a hop: ${foot} of 24 (the way up starts with a hop onto the ledge)`);
 });
 
 test('every map is interesting: relief, landmarks, caves, ground on more than one level', t => {
