@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict';
 import { launch, openGame } from '../../tests/browser-kit.js';
 
-const GAMES = (process.env.PANA_HELP_GAMES || 'domino').split(',');
+const GAMES = (process.env.PANA_HELP_GAMES || 'domino,galope,pintura').split(',');
 const browser = await launch();
 try {
   for (const game of GAMES) {

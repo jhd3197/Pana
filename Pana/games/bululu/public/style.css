@@ -464,7 +464,7 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 /* narrower screens: smaller cards between the logo and the right column */
 @media (max-width: 1120px) {
   .logo h1 { font-size: 38px; }
-  .cards { left: 200px; right: 244px; gap: 8px; }
+  .cards { left: 232px; right: 244px; gap: 8px; }
   .pcard { gap: 6px; padding: 6px 8px; }
   .pcard img { width: 30px; height: 30px; }
   .vals { gap: 6px; }
@@ -567,6 +567,10 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 @media (max-width: 860px), (max-height: 500px) {
   body { --pk-qe-top: 64px; --pk-qe-top-phone: 64px; }
   body.pana-starter .cards { display: none; }
+}
+/* Upright screens: the heading goes under the logo and the map column. */
+@media (max-width: 860px) and (min-height: 501px) {
+  body { --pk-qe-top: 232px; --pk-qe-top-phone: 232px; }
 }
 @media (max-height: 500px) {
   body { --pk-qe-top: 8px; }

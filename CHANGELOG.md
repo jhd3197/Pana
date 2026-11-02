@@ -12,8 +12,16 @@ becomes the GitHub release's notes.
   El menú tiene una página Instrucciones con el objetivo, cómo se juega, los
   controles y consejos. Muestra las teclas del teclado, los botones de tu mando
   (con sus nombres de Xbox o PlayStation) o los controles táctiles, según lo que
-  estés usando, y cambia sola si agarras otro. Durante la partida ya no aparece
-  la barra de botones del mando ni la tecla Esc junto a Menú.
+  estés usando, y cambia sola si agarras otro. Los 24 juegos quitaron de la
+  pantalla las listas de teclas, las teclas pegadas a los botones y los avisos
+  de "pulsa X para"; quedan solo los avisos del momento, como "E abrir" o "Tu
+  turno". Durante la partida ya no aparece la barra de botones del mando ni la
+  tecla Esc junto a Menú.
+
+- **Los paneles del HUD ya no se montan unos sobre otros.**
+  En pantallas medianas, bajitas o en el teléfono vertical, Dominó, Bululú,
+  Bochinche, Capis, Cocina, Bolas Criollas, Embuste, Escondidas, ¿Quién quiere
+  ser mi pana?, Reliquia y Pepazo acomodan sus paneles para que nada tape a nada.
 
 - **Reliquia tiene un nivel nuevo, La biblioteca sepultada, y toda la mina da más miedo.**
   La jornada 2 (y luego cada tres) baja a una biblioteca vieja bajo la mina:

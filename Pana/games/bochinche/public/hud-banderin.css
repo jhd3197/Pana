@@ -113,6 +113,8 @@
   .banderin .hud-banner .s { font-size: 20px; }
   .banderin .hud-banner.is-count .m { font-size: 72px; }
 }
+/* Upright phones: the clock goes under the menu buttons, never behind them. */
+@media (max-width: 560px) { .banderin .status-panel { top: 66px; } }
 @media (prefers-reduced-motion: reduce) {
   .banderin .fighter-panel, .banderin .stocks i, .banderin .shield-track span { transition: none; }
   .banderin :is(.fighter-panel.is-on .damage, .fighter-panel.is-ko, .status-panel.is-low #timer, .hud-banner::before, .hud-banner > *, .hud-pop, .hud-item.is-on) { animation: none; }

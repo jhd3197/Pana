@@ -14,7 +14,7 @@ body.in-lobby .world-label { display: none; }
 #game-nav { display: flex; gap: 8px; }
 #lobby { position: fixed; left: 24px; top: 84px; bottom: 32px; width: min(360px, calc(100vw - 48px)); overflow-y: auto; z-index: 3; }
 
-.quiz-panel { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); width: min(760px, calc(100vw - 24px)); display: grid; gap: 8px; z-index: 3; padding: 12px 14px; }
+.quiz-panel { position: fixed; left: 50%; bottom: 48px; transform: translateX(-50%); width: min(760px, calc(100vw - 24px)); display: grid; gap: 8px; z-index: 3; padding: 12px 14px; }
 .quiz-top { display: flex; justify-content: space-between; align-items: center; }
 .quiz-top .pk-eyebrow { color: var(--qq-gold); }
 .clock { font-size: 22px; min-width: 2ch; text-align: right; }
@@ -56,7 +56,7 @@ body.in-lobby .world-label { display: none; }
 @media (max-width: 560px) {
   .answers { grid-template-columns: 1fr; gap: 6px; }
   .answer { min-height: 40px; font-size: 14px; }
-  .quiz-panel { bottom: 24px; gap: 6px; padding: 10px; }
+  .quiz-panel { bottom: 44px; gap: 6px; padding: 10px; }
 }
 
 /* The 212px cards skew 6deg: reserve their corners, shadow and focus outline. */

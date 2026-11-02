@@ -104,7 +104,10 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
 .touch-actions .pk-touch{min-width:64px;padding:0 10px;font-size:14px}
 #t-use{grid-column:3;grid-row:2/4;min-height:100px}
 @media (pointer:coarse){#touch{display:flex}.carry{bottom:auto;top:16px;left:auto;right:16px;width:200px}.team{display:none}.map-wrap{display:none}.compass{top:64px}.place{width:200px}.hands .pk-slot{min-height:44px}}
+/* The compass sits under the menu buttons once they reach the middle of the screen. */
+@media (max-width:1180px) and (min-width:641px){.compass{top:68px}.team{top:120px}}
 @media (max-width:640px){
+  .team,.map-wrap{display:none}
   .topbar{top:8px;right:8px}#game-nav #invite,#game-nav #sound{display:none}
   .compass{top:8px;left:8px;right:96px;width:auto;transform:none;height:38px}
   .place,.carry{top:54px!important;width:calc(50vw - 12px)!important}

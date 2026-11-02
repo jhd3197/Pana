@@ -498,7 +498,7 @@
   "Mano terminada": "Hand over",
   "Mantén el botón": "Hold the button",
   "Mantén Espacio": "Hold Space",
-  "Mantén para sacudir · suelta para tapar": "Hold to shake · let go to cover",
+  "Mantén para sacudir": "Hold to shake",
   "Mapa": "Map",
   "Mapa anterior": "Previous map",
   "Mapa del río": "River map",
@@ -668,7 +668,6 @@
   "Rodando…": "Rolling…",
   "Rondas": "Rounds",
   "Ropa": "Clothes",
-  "Sacude el cacho": "Shake the dice cup",
   "Sala": "Room",
   "Sala {code}": "Room {code}",
   "Sala {code} · {n} pana": {
