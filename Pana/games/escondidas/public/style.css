@@ -57,7 +57,7 @@ nav .pk-btn span { color: var(--pk-yellow); }
 .map-wrap i:last-of-type { margin-left: 6px; background: var(--pk-coral); }
 
 #crosshair { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: 300; color: rgba(255, 255, 255, .8); text-shadow: 0 1px 3px #000; pointer-events: none; }
-.center-message { position: fixed; left: 50%; top: 36%; transform: translateX(-50%); z-index: 3; max-width: 90vw; padding: 22px 30px; text-align: center; }
+.center-message { position: fixed; left: 50%; bottom: 24%; transform: translateX(-50%); z-index: 3; max-width: 90vw; padding: 22px 30px; text-align: center; }
 .center-message b { display: block; font: 400 30px/1.05 var(--pk-display); color: var(--pk-yellow); }
 .center-message span { display: block; margin-top: 8px; font: 700 14px var(--pk-sans); color: var(--pk-muted); }
 
@@ -140,7 +140,7 @@ nav .pk-btn span { color: var(--pk-yellow); }
   .map-wrap { top: 158px; right: 10px; width: 116px; padding: 6px; }
   .map-wrap > span { font-size: 8px; margin-bottom: 4px; }
   .map-wrap small { font-size: 9px; gap: 3px; }
-  .center-message { top: 30%; width: 300px; padding: 18px; }
+  .center-message { top: auto; bottom: 110px; width: 300px; padding: 18px; }
   .center-message b { font-size: 24px; }
   .center-message span { font-size: 12px; }
   .disguise-panel { left: 10px; right: 10px; bottom: 90px; width: auto; gap: 8px; padding: 12px; }
