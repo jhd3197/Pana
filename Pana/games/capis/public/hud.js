@@ -12,8 +12,15 @@ const WEAPON_ICONS = { bazooka: 'weaponBazooka', grenade: 'kitGrenade', sniper: 
 
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 
-export function createHud($, { human = 0, pick = () => {} } = {}) {
-  const teamNames = [loc('Tus capis'), loc('La máquina')];
+// `side` says who is looking: your team, whose turn it is (null: the
+// machine's) and each team's name. Single player: team 0 against the machine.
+export const soloSide = (human = 0) => ({ team: () => human, player: m => activeCapy(m)?.team === human ? 'me' : null,
+  teamName: team => team === human ? loc('Tus capis') : loc('La máquina') });
+
+export function createHud($, { side = soloSide(), pick = () => {} } = {}) {
+  const teamNames = [0, 1].map(team => side.teamName(team));
+  // 'me', another pana's name, or null (the machine), for the capi on its turn.
+  const playerOf = match => side.player(match);
   let rows = new Map(), tags = new Map(), shownTime = '', shownWind = null, shownWeapons = '';
 
   // The weapon picker: one square button per weapon (icon, name, shots
@@ -28,8 +35,8 @@ export function createHud($, { human = 0, pick = () => {} } = {}) {
     $('weapon-list').append(button); buttons.set(w.id, { button, ammo });
   }
   function weapons(match) {
-    const active = activeCapy(match), mine = active?.team === human && match.phase === 'aim' && alive(active);
-    const team = active?.team ?? human, held = active?.weapon;
+    const active = activeCapy(match), mine = playerOf(match) === 'me' && match.phase === 'aim' && alive(active);
+    const team = active?.team ?? side.team() ?? 0, held = active?.weapon;
     const shown = `${held}|${mine}|${WEAPONS.map(w => ammoLeft(match, team, w.id)).join(',')}`;
     if (shown === shownWeapons) return; shownWeapons = shown;
     for (const w of WEAPONS) {
@@ -41,12 +48,13 @@ export function createHud($, { human = 0, pick = () => {} } = {}) {
     }
     const w = WEAPONS.find(k => k.id === held);
     $('weapon-note').textContent = w ? loc(w.blurb) : '';
-    $('weapons').classList.toggle('is-rival', !!active && active.team !== human);
+    $('weapons').classList.toggle('is-rival', !!active && active.team !== side.team());
   }
 
   function build(match) {
-    rows = new Map(); tags = new Map(); $('labels').replaceChildren();
+    rows = new Map(); tags = new Map(); $('labels').replaceChildren(); shownWeapons = '';
     for (const team of [0, 1]) {
+      teamNames[team] = side.teamName(team);
       const list = $(`team-${team}`), title = el('li', 'team-name', teamNames[team]);
       list.replaceChildren(title);
       for (const c of match.capys.filter(k => k.team === team)) {
@@ -59,16 +67,16 @@ export function createHud($, { human = 0, pick = () => {} } = {}) {
   }
 
   function update(match) {
-    const active = activeCapy(match), t = match.turn, mine = active?.team === human;
+    const active = activeCapy(match), t = match.turn, who = playerOf(match), mine = who === 'me';
     const panel = $('turn-who').parentElement;
-    $('turn-who').textContent = !active ? '' : mine ? loc('Tu turno · {name}', { name: active.name }) : loc('Turno de la máquina · {name}', { name: active.name });
+    $('turn-who').textContent = !active ? '' : mine ? loc('Tu turno · {name}', { name: active.name }) : who ? loc('Turno de {pana} · {name}', { pana: who, name: active.name }) : loc('Turno de la máquina · {name}', { name: active.name });
     const time = match.phase === 'aim' ? String(Math.ceil(t.time)) : match.phase === 'retreat' ? String(Math.ceil(t.retreat)) : '';
     if (time !== shownTime) { $('turn-time').textContent = time; shownTime = time; }
     panel.classList.toggle('is-rival', !mine);
     panel.classList.toggle('is-hurry', match.phase === 'aim' && t.time <= 5);
     const fuse = match.shot?.weapon === 'grenade' ? Math.max(0, Math.ceil(weaponOf('grenade').fuse - match.shot.t)) : null;
     $('turn-note').textContent = match.phase === 'flight' ? (fuse != null ? loc('¡Allá va! Mecha: {n} s', { n: fuse }) : loc('¡Allá va!')) : match.phase === 'retreat' ? loc('¡Corre a cubrirte!')
-      : match.phase === 'aim' && !mine ? loc('La máquina está apuntando…') : match.phase === 'aim' && t.time <= 5 ? loc('¡Dispara ya!') : '';
+      : match.phase === 'aim' && !mine ? (who ? loc('{pana} está apuntando…', { pana: who }) : loc('La máquina está apuntando…')) : match.phase === 'aim' && t.time <= 5 ? loc('¡Dispara ya!') : '';
     if (match.wind !== shownWind) {
       shownWind = match.wind;
       const arrow = $('wind-arrow'), calm = Math.abs(match.wind) < .05;
@@ -98,8 +106,8 @@ export function createHud($, { human = 0, pick = () => {} } = {}) {
   }
 
   function results(match) {
-    const win = match.winner === human;
-    $('result-title').textContent = match.winner === -1 ? loc('¡Empate pintado!') : win ? loc('¡Ganaron tus capis!') : loc('Ganó la máquina');
+    const human = side.team(), win = match.winner === human, machine = side.teamName(match.winner) === loc('La máquina');
+    $('result-title').textContent = match.winner === -1 ? loc('¡Empate pintado!') : win ? loc('¡Ganaron tus capis!') : machine ? loc('Ganó la máquina') : loc('Ganaron los rivales');
     $('result-copy').textContent = match.endedBy === 'turns'
       ? (match.winner === -1 ? loc('Se acabaron los turnos y quedaron parejos.') : loc('Se acabaron los turnos: gana el equipo con más capis en pie y menos pintura.'))
       : win ? loc('Ni un capi rival quedó en pie.') : match.winner === -1 ? loc('No quedó ningún capi en pie.') : loc('Tus capis terminaron pintados o en el río.');

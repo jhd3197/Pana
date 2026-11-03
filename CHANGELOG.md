@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos ya se juega con amigos: abre una sala con «Con amigos», comparte el link y jueguen hasta cuatro en dos equipos.**
+  Cada quien ve los tiros y los cráteres de los demás. Un equipo sin panas lo
+  juega la máquina, y si alguien se va, su compañero o la máquina sigue por
+  él. «Jugar solo» contra la máquina sigue igual.
 - **La Estatua de Reliquia ahora se ve como una estatua de verdad: una doliente de mármol pálido que resalta en la oscuridad.**
   Sobre un pedestal bajo, con un velo roto, cuencas vacías y una boca
   entreabierta, manos de dedos largos y musgo en el ruedo. Cada vez que se
