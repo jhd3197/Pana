@@ -89,6 +89,23 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     else { character.wardrobe.setHeadwear(ownHeadwear); ownHats.forEach((o, i) => { o.visible = hatsShown[i]; }); }
   }
 
+  // The hit flash: white, cooling to red. Emissive only, on this pana's own
+  // materials (buildCharacter makes them per character; ink hulls have none).
+  const flashing = [];
+  root.traverse(o => { for (const m of [o.material].flat()) if (m?.emissive && !flashing.some(f => f.m === m)) flashing.push({ m, color: m.emissive.clone(), power: m.emissiveIntensity }); });
+  const FLASH_HOT = new THREE.Color('#ffffff'), FLASH_COOL = new THREE.Color('#ff2410');
+  let flashLeft = 0, flashSpan = 1, flashPower = 1;
+  function flash(power = 1) { flashSpan = flashLeft = .12 + .08 * power; flashPower = .5 + .5 * power; }
+  function stepFlash(dt) {
+    if (flashLeft <= 0) return;
+    flashLeft = Math.max(0, flashLeft - dt);
+    const k = flashLeft / flashSpan;
+    for (const f of flashing) {
+      if (k === 0) { f.m.emissive.copy(f.color); f.m.emissiveIntensity = f.power; continue; }
+      f.m.emissive.copy(FLASH_COOL).lerp(FLASH_HOT, k * k); f.m.emissiveIntensity = flashPower * (.25 + .75 * k);
+    }
+  }
+
   // An impulse from a hit: the head snaps back, the body sways and twists
   // away, a different way every time. The engine character adds a decaying
   // spine/head stagger toward the hit's side when it has one.
@@ -104,7 +121,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   const doCheer = () => { cheer = 1.4; };
 
   // view: { act, at, moving, dodgeDir, guard } from the fight body, or a crowd pana.
-  function update(dt, view = {}) {
+  function update(dt, view = {}, real = dt) {
+    stepFlash(Math.min(.1, real));
     dt = Math.min(.1, Math.max(0, dt));
     time += dt;
     const act = view.act || 'crowd', at = view.at || 0;
@@ -275,5 +293,5 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     gloves.forEach(g => g.userData.dispose()); helmet.dispose(); tag?.userData.dispose(); warn.userData.dispose();
     character.dispose(); root.removeFromParent();
   }
-  return { root, character, update, setCorner, showTag: (on) => { tagShown = on; }, hit, blocked, shove: doShove, cheer: doCheer, dispose, get corner() { return corner; } };
+  return { root, character, update, setCorner, showTag: (on) => { tagShown = on; }, hit, blocked, shove: doShove, cheer: doCheer, flash, dispose, get corner() { return corner; }, get flashing() { return flashLeft > 0; }, get materials() { return flashing.map(f => f.m); } };
 }

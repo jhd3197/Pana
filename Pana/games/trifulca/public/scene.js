@@ -164,7 +164,15 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   // The fight's events: hits rock heads, the camera punches in, the arena answers.
   function react(e) {
     const entry = panas.get(e.id), who = entry?.pana, at = entry?.pos;
-    if (at && ['hit', 'trompon', 'block'].includes(e.type)) impacts.spawn(at.clone().add(v(0, (e.move === 'sweep' ? .4 : 1.65) + floor(), 0)), e.type, e.move);
+    if (at && ['hit', 'trompon', 'block'].includes(e.type)) {
+      // On the side the blow came from, not inside the victim's head.
+      const from = panas.get(e.by)?.pos, toward = from ? from.clone().sub(at).setY(0).normalize() : v();
+      impacts.spawn(at.clone().addScaledVector(toward, .4).add(v(0, (e.move === 'sweep' ? .4 : 1.3) + floor(), 0)), e.type, e.move, e.chain || 0);
+    }
+    // The hit fighter flashes; a heavy blow also freezes the pose and shakes the camera.
+    const heavy = e.type === 'trompon' || e.type === 'caida' || e.move === 'kick' || e.counter || e.contra || e.armed || e.chain >= 2;
+    if (who && ['hit', 'trompon', 'shove', 'impacto', 'caida'].includes(e.type)) who.flash(heavy ? 1 : .7);
+    if (heavy && ['hit', 'trompon', 'caida'].includes(e.type)) { hitStop = Math.max(hitStop, e.type === 'hit' ? .05 : .08); shake = Math.max(shake, .32); }
     // Which side the blow came from, in the victim's facing frame (for stagger).
     const side = (by) => {
       const from = panas.get(by)?.pos;
@@ -173,12 +181,12 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     };
     if (e.type === 'hit' && who) { who.hit(e.counter ? 1 : .6, false, side(e.by)); puffs.spawn(at.clone().add(v(0, 1.4 + floor(), 0)), { color: 0xfff1d0, count: 4, spread: .4, size: .5, rise: .6, life: .4 }); }
     if (e.type === 'trompon' && who) {
-      who.hit(1.3, true, side(e.by)); shake = .2; zoomT = .45;
+      who.hit(1.3, true, side(e.by)); zoomT = .45;
       rings.ring(at.clone().add(v(0, 1.4 + floor(), 0)), { color: 0xffd23f, maxRadius: 2.2, life: .35 });
       rings.sparkle(at.clone().add(v(0, 1.6 + floor(), 0)), { count: 8 });
     }
     if (e.type === 'block' && who) { who.blocked(); rings.sparkle(at.clone().add(v(0, 1.5 + floor(), 0)), { color: 0xffffff, count: 4, spread: .3 }); }
-    if (e.type === 'caida') { shake = .18; zoomT = .5; lastCaida = time; if (at) puffs.spawn(at.clone().add(v(0, .2 + floor(), 0)), { color: 0xcab79a, count: 3, spread: .5, size: .45, rise: .4, life: .6 }); }
+    if (e.type === 'caida') { zoomT = .5; lastCaida = time; if (at) puffs.spawn(at.clone().add(v(0, .2 + floor(), 0)), { color: 0xcab79a, count: 3, spread: .5, size: .45, rise: .4, life: .6 }); }
     if (e.type === 'rise' && who) who.character.bounce?.(.8);
     // A trompón connecting or a caída: the neighbours close by gasp.
     if ((e.type === 'trompon' || e.type === 'caida') && at) {
@@ -249,15 +257,15 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       const t = want.get(id); if (!t) continue;
       const goal = v(t.x, t.y, t.z);
       if (!entry.placed) { entry.pos.copy(goal); entry.h = t.h; entry.placed = true; }
-      const moved = entry.pos.distanceTo(goal);
-      entry.pos.lerp(goal, k);
+      const moved = entry.pos.distanceTo(goal), still = frozen && !!t.corner;
+      if (!still) entry.pos.lerp(goal, k);
       let dh = t.h - entry.h; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); entry.h += dh * k;
       entry.pana.root.position.copy(entry.pos); entry.pana.root.rotation.y = entry.h;
       entry.pana.setCorner(t.corner);
       entry.pana.showTag(!t.corner);
       const view = { ...t.view };
       if (view.act === 'crowd') view.moving = moved / Math.max(dt, 1e-3) > .8 ? 1 : 0;
-      entry.pana.update(dt, view);
+      entry.pana.update(still ? 0 : dt, view, dt);
       // TV framing: a pana of the crowd right between the camera and the fight ducks out of shot.
       if (!t.corner && fightMid) {
         const dx = entry.pos.x - fightMid.x, dz = entry.pos.z - fightMid.z, toward = dx * camPerp.x + dz * camPerp.z, side = Math.abs(dx * camPerp.z - dz * camPerp.x);
