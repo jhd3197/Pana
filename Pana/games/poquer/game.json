@@ -1,6 +1,6 @@
 {
   "name": "Póquer",
-  "description": "Texas Hold’em y Omaha entre panas. Cartas privadas, cinco en la mesa y un buen farol. Fichas gratis y bots para practicar.",
+  "description": "Hold’em y Omaha",
   "players": 6,
   "color": "#29a987"
 }
