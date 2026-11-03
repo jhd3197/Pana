@@ -645,7 +645,7 @@ See candidates.
 
 | Piece | Module | Used by |
 |---|---|---|
-| Lobby roster cards (portrait, drag seats) | `engine/lobby-roster.js` | Criollas, Curiara, Pepazo (and `game-entry` for all) |
+| Lobby roster cards (portrait, drag seats) | `engine/lobby-roster.js` | Capis a Pintazos (teams), Criollas, Curiara, Pepazo (and `game-entry` for all) |
 | Seat swapping rules | `engine/play/seat-rules.js` | Billar, Caída, Criollas, Curiara, Dominó, Pepazo, Póquer |
 | Table seating UI | `engine/play/table-seating.js` | Billar, Caída, Dominó, Póquer |
 | Seat bubbles (frases) | `engine/play/seat-bubbles.js`, `play/frases.js` | Caída, Dominó, QQSMP, Stop (bubbles); Caída, Dominó, QQSMP, Reliquia (frases) |
@@ -692,12 +692,12 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 
 | Piece | Module | Used by |
 |---|---|---|
-| Real-time room | `engine/live-room.js` (`LiveRoom`, `axis`, `elapsedClock`) | Bochinche, Cocina, Curiara, Escondidas, Galope, Lancha, Parapente, Reliquia, Tambor, Trifulca |
+| Real-time room | `engine/live-room.js` (`LiveRoom`, `axis`, `elapsedClock`) | Bochinche, Capis a Pintazos (turns with live walking and aim), Cocina, Curiara, Escondidas, Galope, Lancha, Parapente, Reliquia, Tambor, Trifulca |
 | Turn-based room | `engine/table-room.js` | Billar, Caída, Chapita, Criollas, Ludo, QQSMP, Stop |
 | Client prediction | `engine/predict.js` | Cocina, Escondidas, Galope, Reliquia |
 | Raw room and links | `engine/net.js` | Bululú, Carreritas, Dominó, Embuste, Pepazo, Póquer |
 | Shell (load, loops, teardown) | `engine/game-shell.js` (`bootGame`) | 17 games |
-| Invite links | `engine/invite.js` | all 24 (Capis a Pintazos through game-entry only) |
+| Invite links | `engine/invite.js` | all 24 |
 | Seeded random, noise | `engine/random.js` | 14 games |
 | Gateway-vouched ownership (pana.sh signs `x-pana-camos` with `PANA_GATEWAY_SECRET`; `parseOwned(headers)` verifies the HMAC, timing-safe; mid-session `parseSub` + `newNonce` + `verifyRefresh` for a nonce-bound signed refresh) | `server/src/camo-trust.js`, read in a room's `onAuth(client, options, context)` | Pepazo (camos). The catalog and the bridge client stay game-local: `games/pintura/public/camos.js`, `camo-store.js` |
 
@@ -842,6 +842,7 @@ flowchart LR
 
   fx["fx (sound, particles)"]:::mod -->|used by| G20["21 games"]:::game
   lobby["lobby-roster"]:::mod -->|used by| criollas:::game
+  lobby -->|used by| capis:::game
   lobby -->|used by| curiara:::game
   lobby -->|used by| pintura
   seatrules["play/seat-rules"]:::mod -->|used by| TABLE["billar, caida, criollas, domino, poquer"]:::game
@@ -854,7 +855,7 @@ flowchart LR
   picker -->|used by| escondidas
   picker -->|used by| pintura
 
-  live["live-room"]:::mod -->|used by| LIVE["bochinche, cocina, curiara, escondidas, galope, lancha, parapente, reliquia, tambor, trifulca"]:::game
+  live["live-room"]:::mod -->|used by| LIVE["bochinche, capis, cocina, curiara, escondidas, galope, lancha, parapente, reliquia, tambor, trifulca"]:::game
   table["table-room"]:::mod -->|used by| TURN["billar, caida, chapita, criollas, ludo, qqsmp, stop"]:::game
   predict["predict"]:::mod -->|used by| PRED["cocina, escondidas, galope, reliquia"]:::game
   results["results"]:::mod -->|used by| R21["22 games"]:::game

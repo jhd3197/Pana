@@ -24,5 +24,6 @@ export default {
     loc('La tierra pintada resbala: los capis se deslizan cuesta abajo.'),
     loc('La Bazuca, La Lejana, La Licuadora y El Trueno tienen pocos tiros por equipo; La Piñita nunca se acaba.'),
     loc('Cada partida trae un mapa nuevo. En la sala, escribe su número para repetir uno.'),
+    loc('Con amigos, los panas de un equipo se turnan. Un equipo sin panas lo juega la máquina.'),
   ],
 };

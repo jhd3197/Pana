@@ -2,8 +2,8 @@
 
 Turn-based paint artillery between capybaras: two teams of three capis on a
 stretch of the Llanos generated for each match (hills, a cave mountain,
-islands and bridges, a valley, a tepuy), one player against the machine
-(`players: 1`, offline, no room and no `network.js`). Each turn a capi walks,
+islands and bridges, a valley, a tepuy), solo against the machine or with
+up to four panas in a room (`players: 4`, see "With friends"). Each turn a capi walks,
 jumps, picks one of five weapons from Pepazo's arsenal (see "Weapons"), aims
 and fires; the shell flies its own way (with more or less wind, bouncing on a
 fuse, nearly straight), digs a crater or a tunnel, paints the ground and the
@@ -187,6 +187,43 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   goes dizzy on a loss. Light: a warm hemisphere, a low warm sun from the
   front left and a warm rim light from behind.
 
+## With friends (`online.js`, `network.js`)
+
+The lobby offers **Jugar solo** (the match runs in `game.js` against
+`bot.js`, no room) and **Con amigos**, which opens a room on the shared
+lobby (room code, Copiar link, ready cards). A `?room=` link (an invite or a
+party handing over `room=`) joins that room at once.
+
+- **Room**: `CapisRoom` extends `engine/live-room.js` `LiveRoom` on the
+  default relay room (no `server/room.js`). The host runs the match
+  (`online.js` `CapisTable`) on a 50 ms timer from real elapsed time, stepping
+  `tickMatch` at 1/60 s inside each slice like solo does; guests send their
+  held keys (`cleanInput`: walk, aim, pointed aim, face, jump presses) and two
+  actions, `fire` (power plus the aim and facing the shooter's screen showed)
+  and `weapon`. Only the pana whose turn it is (`controllerOf`) is obeyed.
+- **Teams**: two teams of three capis as solo. Panas fill the teams evenly
+  (move with the lobby roster cards; the host can move anyone; three a team at
+  most). On a team's k-th turn (`turn.k`, counted by the rules) its panas take
+  turns in arrival order. A team with no pana is the machine: one pana alone
+  in a room plays against it, and two can play together against it.
+- **Drops**: a pana who leaves is removed at once; its turns, even the one
+  under way, go to a teammate or to the machine. If the host leaves, the next
+  pana becomes host and carries on from its own copy (`CapisTable.restore`).
+- **The ground never travels.** The mask is 300k+ cells, so the rules log
+  every change to it as an edit (`{ op: 'blast' | 'drill', … }`) and
+  `applyEdit` is the only code that touches the mask for a shot, on the host
+  and on every copy. A snapshot (~4 KB) carries the capis, shells, turn, wind,
+  ammo, the last 6 edits and the last 16 events (numbered; each client plays
+  the ones it has not seen for sounds, toasts and effects). A guest builds the
+  map from the seed and replays edits (`mirror`); one that missed more than
+  the tail asks with a `resync` action and the host sends every edit for the
+  next snapshots (also for 2 s after anyone joins). A rematch on the same map
+  is detected by the turn number going back, and starts a new copy.
+- **Jump presses** are counted per pana on every tick, so presses made on
+  someone else's turn never make your capi jump when your turn comes.
+- Results: the host picks Otra partida (`lobby` action → `toLobby()`, a new
+  map) or the rematch; guests wait.
+
 ## Files
 
 - `public/rules.js`: the match (pure): teams, turn order, timers, wind,
@@ -206,12 +243,17 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
 - `public/scene.js`, `public/backdrop.js`: the 3D view.
 - `public/hud.js`: turn and clock, wind, both teams' paint bars, name tags,
   results.
-- `public/game.js`: wiring (keys, mouse, touch, the shot charge, sounds).
+- `public/online.js`: the room's table and a guest's copy of the match (pure,
+  tested); `public/network.js`: the room (`LiveRoom`).
+- `public/game.js`: wiring (keys, mouse, touch, the shot charge, sounds,
+  solo or the room).
 - `tests/rules.test.js`, `tests/map-rules.test.js` (the generated maps over
   many seeds), `tests/weapons.test.js` (each weapon's flight, crater or
   tunnel, fuse, falloff, ammo, determinism and the bot's choice),
   `tests/map-matches.test.js` (bot-against-bot matches),
-  `tests/capis.browser.js`.
+  `tests/online.test.js` (teams, turns, drops, the copy), `tests/room.test.js`
+  (two `CapisRoom`s over a stand-in relay), `tests/capis.browser.js`,
+  `tests/online.browser.js` (two real clients).
 - Cover art: `web/images/launcher/capis.jpg` (hero, kept under 100 KB so it stays in Git) and`capis-card.jpg` (hub tile), registered in `web/launcher-art.js`. `public/card.js` is now only the fallback live card.
 
 ## Rules and tuning (`RULES` in `rules.js`)
@@ -586,8 +628,9 @@ large one (5.1 MB before).
 
 ## Known gaps
 
-- No team or player-vs-player online yet (the map is ready for it: a room
-  only needs to share `{ seed, size }`, and the weapons are pure rules).
+- Online, a guest draws the host's snapshots as they come (20 a second):
+  capis and shells step instead of gliding, and the aim follows the host a
+  round trip late. No four-team free-for-all: two teams only.
 - No utility weapon (a jump or a teleport): five weapons, all of them shots.
 - The far copy of a capi (whole-map view) always shows La Bazuca, whatever
   it holds; La Piñita in the paws sits at the barrel's tip with the paws on
@@ -652,6 +695,15 @@ clock, blast, damage, water, winner, the bot's choice of target),
 `npm test -- terrain-mask ballistic side-walker lod-band` for the engine pieces
 (drips, the painter's options, the shader fields with no steps on a gentle
 staircase, and the outline's normals included).
+`node --test` on `tests/online.test.js` and `tests/room.test.js` (through
+`npm test`) checks teams, turn order, drops mid-turn, the jump counter, the
+copy level with the host through a whole bot match with lost snapshots, the
+resync after a gap, a host handoff, and two rooms over a stand-in relay (host
+settings only, a turn each, the guest's keys walking its capi on the host,
+the same craters on both). `tests/online.browser.js` does the same with two
+real clients: the room code and copy link, the guest straight from the
+`?room=` link, the host's map on the guest's lobby, a turn each (the guest by
+keys and Space) and the same ground hash on both screens.
 `npm run test:browser -- capis` (on `?seed=6`) checks the lobby shows the
 seed's map, that a large size rebuilds it at 180 wide and back, that the
 match is played on it with its number in the HUD and the address, and that
