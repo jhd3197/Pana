@@ -2,6 +2,10 @@ import { icon } from './icons.js';
 import { isRoomFieldVisible } from './room-option-fields.js';
 import { loc, locn } from './i18n.js';
 const panels = new WeakMap();
+// Choices per row: up to three side by side, four as 2×2, more in two rows.
+// A field's default may follow the other values (`defaultOf(values)`, e.g. a game mode's preset).
+const defaultOf = (field, values) => typeof field.defaultOf === 'function' ? field.defaultOf(values) : field.default;
+const segColumns = n => n <= 3 ? Math.max(1, n) : n === 4 ? 2 : Math.ceil(n / 2);
 
 // Existing map/camera/help controls keep their handlers and authoritative state.
 // Entry calls this after the game has created them, before exposing the lobby.
@@ -50,6 +54,7 @@ export function createRoomOptions(container, { title, fields, change, reset, hel
       button.addEventListener('click', () => { if (enabled) change({ [field.id]: value }); });
       choices.append(button); return { button, value };
     });
+    choices.style.setProperty('--seg-cols', segColumns(field.choices.length));
     if (field.advanced) { group.classList.add('pk-skin-card'); legend.className = 'pk-skin-label'; choices.classList.add('pk-skin-chips'); }
     group.append(legend, choices); (field.advanced ? grid : primary).append(group);
     return { field, group, buttons };
@@ -57,7 +62,7 @@ export function createRoomOptions(container, { title, fields, change, reset, hel
   const advanced = fields.filter(f => f.advanced); more.hidden = !advanced.length;
   function updateCount() {
     const applicable = advanced.filter(f => isRoomFieldVisible(f, values));
-    const changed = applicable.filter(f => values[f.id] !== f.default).length;
+    const changed = applicable.filter(f => values[f.id] !== defaultOf(f, values)).length;
     const total = applicable.length + extraCount;
     count.textContent = changed ? locn(changed, '{n} cambio', '{n} cambios') : locn(total, '{n} opción', '{n} opciones');
     more.hidden = !applicable.length && !extraCount && !links.children.length;
@@ -143,7 +148,7 @@ export function createRoomOptions(container, { title, fields, change, reset, hel
       restore.disabled = !enabled;
       for (const { field, group, buttons } of controls) {
         group.hidden = !isRoomFieldVisible(field, values);
-        group.classList.toggle('is-changed', values[field.id] !== field.default);
+        group.classList.toggle('is-changed', values[field.id] !== defaultOf(field, values));
         for (const { button, value } of buttons) { button.disabled = !enabled || group.hidden; button.setAttribute('aria-pressed', String(values[field.id] === value)); }
       }
     },

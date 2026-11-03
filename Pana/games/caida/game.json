@@ -2,5 +2,6 @@
   "name": "Caída",
   "description": "Cartas criollas",
   "players": 6,
+  "teams": true,
   "color": "#235d51"
 }

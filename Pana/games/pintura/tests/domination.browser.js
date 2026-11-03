@@ -20,10 +20,12 @@ try {
   await waitFor(a, () => pinturaDebug.room.connected && pinturaDebug.room.state.players.length === 2);
   await a.evaluate(() => { pinturaDebug.room.configure({ mode: 'dom', domGoal: 100, bots: 5 }); pinturaDebug.room.selectMap('plaza'); });
   await waitFor(b, () => pinturaDebug.room.state.options.mode === 'dom' && pinturaDebug.room.state.options.domGoal === 100 && pinturaDebug.room.state.mapId === 'plaza');
-  // The lobby shows the mode's own limits and hides the ordinary round time.
-  assert.ok(await a.getByText('Puntos para ganar', { exact: true }).first().isVisible(), 'score limit in the lobby');
-  assert.ok(await a.getByText('Tiempo límite').first().isVisible(), 'time limit in the lobby');
+  // Más ajustes shows the mode's own limits and hides the ordinary round time.
+  await a.locator('#pana-room-more').click();
+  assert.ok(await a.getByText('Puntos para ganar', { exact: true }).first().isVisible(), 'score limit in Más ajustes');
+  assert.ok(await a.getByText('Tiempo límite').first().isVisible(), 'time limit in Más ajustes');
   assert.equal(await a.getByText('Tiempo por ronda').first().isVisible(), false);
+  await a.locator('#pana-room-done').click();
   assert.equal(await a.locator('#win-target').textContent(), '100');
   await shot(a, 'lobby');
 

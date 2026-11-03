@@ -224,6 +224,10 @@ party handing over `room=`) joins that room at once.
 - Results: the host picks Otra partida (`lobby` action → `toLobby()`, a new
   map) or the rematch; guests wait.
 
+Online, the two teams show in the main lobby through `engine/team-lobby.js`
+(Rosados, Verdes). `CapisTable.addPlayer` puts a newcomer on the smaller team
+through `smallestTeam` (a tie goes to Rosados, as before).
+
 ## Files
 
 - `public/rules.js`: the match (pure): teams, turn order, timers, wind,

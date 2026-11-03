@@ -14,6 +14,20 @@ becomes the GitHub release's notes.
   pistola o una de pescozón: cambias con Q, 1 y 2, Y en el mando o el botón
   del teléfono. Las clases: Balanceado, Rápido, Tanque, Regenera, Sigiloso y
   Granadero. Tu kit guardado se pasa solo. Girar sin ratón ahora es ← y →.
+- **Los equipos se ven igual en todos los juegos, en la sala principal, y quien llega entra al equipo más chico.**
+  Dominó, Caída, Billar, Criollas, Chapita, Curiara, Capis y Pepazo usan los
+  mismos paneles: Unirme aquí, Cambiarme aquí y Organizar. En Chapita ya
+  puedes elegir puesto con un toque.
+- **Pepazo: elige «Equipos» o «Todos contra todos» arriba en la sala.**
+  Con equipos eliges el modo (Pintadas, Captura la bandera, Dominación) y
+  los dos equipos salen en la sala, ya no escondidos en Más ajustes.
+- **Pepazo: nuevo modo Hardcore, un pepazo y fuera, en equipos o todos contra todos.**
+  La sala solo pregunta Partida y Modo; cada modo trae su tiempo y su meta, y
+  lo demás está en Más ajustes. Ya no se elige el aguante.
+- **Pepazo: tus compañeros llevan una flechita de su color sobre la cabeza.**
+  Solo en partidas por equipos, también en Bandera y Dominación.
+- **Los equipos de cuatro se ven en dos filas de dos, y los ajustes de la sala son más compactos.**
+  Las opciones salen en filas de botones bajo su nombre en todos los juegos.
 - **El armero de Pepazo tiene un puesto fijo para cada pieza: Mira, Cañón, Tolva y Culata.**
   Cada puesto ofrece solo lo que le cabe a esa arma: la francotiradora lleva
   telescópica, la pistola punto rojo o láser, y la tolva viene chica o grande.

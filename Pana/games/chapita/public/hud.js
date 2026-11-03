@@ -52,14 +52,10 @@ export function matchupText(state, mySeat) {
   return state.derby ? loc('{line} · quedan {n} lanzamientos', { line, n: state.derby.left }) : line;
 }
 
-export function renderLobbyRoster(state, meId) {
-  const rows = [0, 1].flatMap(team => teamSeats(team).map((seat, i) => {
-    const p = state.players[seat], mine = p.id !== null && p.id === meId;
-    return { rank: i + 1, lead: dot(team), name: mine ? loc('{name} · tú', { name: p.name }) : p.name,
-      detail: [p.id === null ? loc('Bot · {style}', { style: loc(styleText(p)) }) : loc('Pana'), p.zurdo ? loc('zurdo') : null, i === 3 ? loc('cuarto bate') : null].filter(Boolean).join(' · '),
-      end: team ? loc('Casa') : loc('Visita'), me: mine };
-  }));
-  fillNames($('roster'), rows);
+// A lobby card's line (engine/team-lobby.js): a bot's style, zurdo, the cleanup hitter.
+export function lobbyDetail(p) {
+  const text = [p.id === null ? loc(styleText(p)) : null, p.zurdo ? loc('zurdo') : null, teamSeats(p.seat % 2).indexOf(p.seat) === 3 ? loc('cuarto bate') : null].filter(Boolean).join(' · ');
+  return text ? el('small', 'pk-roster-status', text) : null;
 }
 
 // The results: the score line, the titles and both teams.

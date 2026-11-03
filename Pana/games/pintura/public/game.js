@@ -1,9 +1,10 @@
 import { createArmory } from './armory.js';
 import { kitStats, kitRating, MARKERS, WEAPONS, cycleWeapon, gunOf } from './armory-data.js';
 import { readiness } from '/engine/play/melee.js';
-import { createLobbyRoster } from '/engine/lobby-roster.js';
+import { createTeamLobby } from '/engine/team-lobby.js';
+import { ratingBadge } from '/engine/kit-rating.js';
 import { createRoomOptions } from '/engine/room-options.js';
-import { FIELDS, DEFAULT_OPTIONS, teamPlay, roundTime } from './options.js';
+import { MENU_FIELDS, DEFAULT_OPTIONS, teamPlay, roundTime, menuValues, menuPatch, hardcorePlay } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/play/map-picker.js';
 import { createDifficultyPicker, DEFAULT_DIFFICULTY } from '/engine/play/difficulty.js';
@@ -30,7 +31,7 @@ import { createLookControls } from '/engine/play/first-person.js';
 import { createScopeOverlay } from '/engine/play/scope.js';
 import { createFeats } from '/engine/feats.js';
 import { createHitFeats } from './feats.js';
-import { coverFor, TARGET, segmentBox, paintSeats, variantName } from './rules.js';
+import { coverFor, TARGET, segmentBox, paintSeats, variantName, hitsToKill } from './rules.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { loc, locn } from '/engine/i18n.js';
 
@@ -57,10 +58,12 @@ if (typeof window.PanaSh?.onCamoUnlocked === 'function') window.PanaSh.onCamoUnl
 $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-armory').click(), read: () => {
   const describe = p => { const stats = kitStats(p.kit || room.kit, room.state.options); return { id: room.link?.state.players.find(m => m.seat === p.id)?.id, kit: stats.name, level: kitRating(p.kit || room.kit, room.state.options), color: p.color || '#ffc629', team: teamPlay(room.state.options) ? (p.team ? loc('Turquesa') : loc('Naranja')) : '' }; };
   const people = room.state.players.filter(p => p.connected && !p.bot).length || 1;
-  return { connection: room.local ? 'local' : room.connected ? 'online' : $('connection').dataset.failed === 'true' ? 'offline' : 'connecting', players: room.state.players.map(describe), local: describe({ kit: room.kit }), summary: [locn(people, '{n} pana', '{n} panas'), room.state.options?.mode === 'ctf' ? loc('Captura la bandera') : room.state.options?.mode === 'dom' ? loc('Dominación') : room.state.options?.mode === 'teams' ? loc('Equipos') : loc('Todos vs todos'), loc('{n} min', { n: roundTime(room.state.options) / 60 })].join(' · ') };
+  return { connection: room.local ? 'local' : room.connected ? 'online' : $('connection').dataset.failed === 'true' ? 'offline' : 'connecting', players: room.state.players.map(describe), local: describe({ kit: room.kit }), summary: [locn(people, '{n} pana', '{n} panas'), room.state.options?.mode === 'ctf' ? loc('Captura la bandera') : room.state.options?.mode === 'dom' ? loc('Dominación') : room.state.options?.mode === 'teams' ? loc('Equipos') : loc('Todos vs todos'), hardcorePlay(room.state.options) && loc('Hardcore'), loc('{n} min', { n: roundTime(room.state.options) / 60 })].filter(Boolean).join(' · ') };
 } };
-const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
-const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: FIELDS, change: options => room.configure(options), reset() {
+// Team rounds show the sides in the main lobby; the kit rides on each card.
+const kitLine = p => { const line = document.createElement('span'); line.className = 'sala-player-kit'; line.textContent = kitStats(p.kit || room.kit, room.state.options).name; line.insertAdjacentHTML('beforeend', ratingBadge(kitRating(p.kit || room.kit, room.state.options))); return line; };
+const teamRoster = createTeamLobby($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to), titles: [loc('Naranja'), loc('Turquesa')], colors: ['#f28b42', '#29c5cd'], detail: kitLine });
+const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: MENU_FIELDS, change: patch => room.configure(menuPatch(patch, room.state.options)), reset() {
   room.configure(DEFAULT_OPTIONS); room.selectMap('terminal'); room.selectDifficulty(DEFAULT_DIFFICULTY);
 } });
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
@@ -283,7 +286,7 @@ function cooldown(state, me) {
   wasReloading = !!reloading;
 }
 function aguante(state, me) {
-  const total = kitStats(me?.kit,state.options).toughness, left = me ? Math.max(0, total - (me.paint || 0)) : total, key = `${total}:${left}`;
+  const total = hitsToKill(me?.kit, state.options), left = me ? Math.max(0, total - (me.paint || 0)) : total, key = `${total}:${left}`;
   if ($('aguante').dataset.key === key) return; $('aguante').dataset.key = key;
   $('aguante').replaceChildren(...Array.from({ length: total }, (_, i) => { const pip = document.createElement('i'); pip.className = i < left ? 'pip' : 'pip pip--painted'; return pip; }));
   $('aguante').setAttribute('aria-label', loc('Aguante {left} de {total}', { left, total }));
@@ -318,7 +321,7 @@ function roundStart(state) {
 const teamsOn = state => teamPlay(state.options);
 const teamScore = state => loc('Naranja {orange} — Turquesa {teal}', { orange: state.teamScores?.[0] || 0, teal: state.teamScores?.[1] || 0 });
 function render(state) {
-  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
+  optionsUI.update(menuValues(state.options || DEFAULT_OPTIONS), room.connected && room.isHost && state.phase !== 'playing');
   if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase !== 'playing');
@@ -329,9 +332,8 @@ function render(state) {
   $('lobby').hidden = !lobby; $('hud').hidden = lobby || finished; document.body.classList.toggle('in-lobby', lobby);
   const teams = teamPlay(state.options), people = state.players.filter(p => p.connected);
   const missingTeam = teams && people.length > 1 && new Set(people.map(p => p.team)).size < 2;
-  $('team-roster').hidden = !teams;
   $('roster').hidden = teams;
-  if (teams) teamRoster.update([loc('Naranja'), loc('Turquesa')].map((title, team) => ({ id: team, title, color: team ? '#29c5cd' : '#f28b42', seats: paintSeats(state.players).map((player, key) => ({ key, player })).filter(s => s.key % 2 === team) })), { ownId: room.id, hostId: room.local ? room.id : room.link?.state.players.find(p => p.id === room.link.state.host)?.seat, enabled: room.connected && lobby, canArrange: room.isHost, members: room.link?.state.players || [] });
+  teamRoster.update({ teams, seats: paintSeats(state.players).map((player, key) => ({ key, team: key % 2, player })), ownId: room.id, hostId: room.local ? room.id : room.link?.state.players.find(p => p.id === room.link.state.host)?.seat, enabled: room.connected && lobby, canArrange: room.isHost, members: room.link?.state.players || [] });
   $('start').disabled = (!room.connected ? $('connection').dataset.failed !== 'true' : !room.isHost || missingTeam); $('start').textContent = !room.connected ? loc('Conectando…') : missingTeam ? loc('Falta un pana en el otro equipo') : room.isHost ? loc('¡A pepear!') : loc('El anfitrión inicia la ronda');
   $('invite').disabled = room.local || !room.connected; $('roster').textContent = state.players.filter(p => p.connected).map(p => p.name).join(' · ');
   const me = state.players.find(p => p.id === room.id), order = [...state.players].sort((a, b) => b.score - a.score || a.hits - b.hits);

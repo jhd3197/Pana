@@ -56,6 +56,10 @@ Host changes preserve the chosen positions: the table lives on the server.
 The shared `engine/tests/table-seating.browser.js` proves two-client seating,
 results-to-lobby, host migration and mobile controls in all three table games.
 
+The lobby cards are `engine/team-lobby.js` (docs/SHARED-ENGINE.md, "Team lobby
+and auto-balance"); a newcomer takes a free seat on the smaller pair
+(`openSeat`), a tie keeps the first free seat as before.
+
 ## Rendering
 
 `table-model.js` owns the table, chair and tile factories; Studio adapters use

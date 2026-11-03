@@ -96,7 +96,7 @@ for host authorization, synchronized values and resets.
 
 Game-owned `[data-pana-roster]` containers move to the left roster area, hiding
 generic member cards while visible. `[data-room-personal]` controls move there
-too. The shared `lobby-roster.js` renderer displays grouped avatar cards;
+too, for sala games (Pepazo) as well. The shared `team-lobby.js` renderer displays grouped avatar cards;
 `table-seating.js` adapts alternating table indices into teams. Its full group,
 seat and permission API is documented in `pana-ui.md`. Team selection stays in
 these cards rather than a dropdown inside advanced settings.

@@ -1,6 +1,8 @@
 import { TableRoom } from '/engine/table-room.js';
 import { createGame, acceptAction, step, STEP, snapshot, botShot, botPlacement, BOT_ID, advanceShotClock, stepPoolStarter } from './rules.js';
 import { loc, locKey } from '/engine/i18n.js';
+import { openSeat } from '/engine/play/team-balance.js';
+import { teamOf } from './match-rules.js';
 
 // The table setting (map, difficulty) survives new rooms and practice.
 const keepMap = (prev) => ({ ...(prev?.mapId ? { mapId: prev.mapId } : {}), ...(prev?.difficulty ? { difficulty: prev.difficulty } : {}), ...(prev?.options ? { options: { ...prev.options } } : {}) });
@@ -24,9 +26,14 @@ export class PoolRoom extends TableRoom {
     for (const m of this.members.values()) {
       const p = this.game.players.find(p => p.id === m.id)
         || this.game.activeSeats.map(i => this.game.players[i]).find(p => p.id === null)
-        || this.game.players.slice(0, this.game.options.format === 'duel' ? 2 : 6).find(p => p.id === null);
+        || this.newcomerSeat();
       if (p) Object.assign(p, { id: m.id, name: m.name, avatar: m.avatar || {} });
     }
+  }
+  // A newcomer joins the smaller team in parejas; duels fill the two seats in order.
+  newcomerSeat() {
+    const duel = this.game.options.format === 'duel', table = this.game.players.slice(0, duel ? 2 : 6);
+    return table[openSeat(table, { teamOf: duel ? null : teamOf, free: p => p.id === null })];
   }
   // Fixed physics steps while the balls roll; ~20 snapshots a second.
   step(dt) {

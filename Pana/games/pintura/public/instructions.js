@@ -6,6 +6,7 @@ export default {
   howTo: [
     loc('Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie.'),
     loc('En bandera gana el equipo que llegue primero a las capturas de la sala; en dominación, el que sume los puntos de la meta.'),
+    loc('En Hardcore un pepazo te saca, pero vuelves rápido y sin límite de vidas.'),
     loc('Si te pintan en primera persona, miras a los panas que siguen en pie hasta que vuelves a la cancha.'),
   ],
   sections: [{ title: loc('Moverte'), rows: [

@@ -4,7 +4,8 @@
 .pk-room-field { min-width: 0; margin: 0; padding: 0; border: 0; }
 /* :where() keeps these out of the dialog's skinned cards without raising their weight over sala.css. */
 :where(.pk-room-primary) .pk-room-field legend { padding: 0; margin-bottom: 12px; color: var(--pk-text); font: 900 17px var(--pk-sans); }
-:where(.pk-room-primary) .pk-room-field .pk-seg { display: flex; gap: 3px; flex-wrap: wrap; padding: 5px; border-radius: 0; background: var(--pk-purple); }
+/* Choices sit in even columns: up to three in a row, four as 2×2 (--seg-cols, room-options.js). */
+:where(.pk-room-primary) .pk-room-field .pk-seg { display: grid; grid-template-columns: repeat(var(--seg-cols, 3), minmax(0, 1fr)); gap: 3px; padding: 5px; border-radius: 0; background: var(--pk-purple); }
 :where(.pk-room-primary) .pk-room-field .pk-seg button { flex: 1; min-height: 46px; border-radius: 0; padding: 10px 14px; font: 900 15px var(--pk-sans); }
 :where(.pk-room-primary) .pk-room-field .pk-seg button[aria-pressed="true"] { background: var(--pk-yellow); color: var(--pk-night); }
 :where(.pk-room-primary) .pk-room-field .pk-seg button:disabled { cursor: default; opacity: .8; }

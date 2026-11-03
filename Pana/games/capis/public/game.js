@@ -10,7 +10,7 @@ import { sfx } from '/engine/sfx.js';
 import { bootGame } from '/engine/game-shell.js';
 import { createToast } from '/engine/hud.js';
 import { createRoomOptions } from '/engine/room-options.js';
-import { createLobbyRoster } from '/engine/lobby-roster.js';
+import { createTeamLobby } from '/engine/team-lobby.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { elapsedClock } from '/engine/live-room.js';
 import { createShotCharge, paintCharge } from '/engine/play/shot-charge.js';
@@ -57,11 +57,11 @@ const side = {
   teamName: team => team === myTeam() ? loc('Tus capis') : !online || botTeams(room.state.players).includes(team) ? loc('La máquina') : loc('Rivales'),
 };
 const hud = createHud($, { side, pick: id => choose(id) });
-const roster = createLobbyRoster($('capis-roster'), { onMove: (from, to) => {
+const TEAM_TITLES = [loc('Rosados'), loc('Verdes')];
+const roster = createTeamLobby($('capis-roster'), { titles: TEAM_TITLES, colors: TEAM_COLORS, onMove: (from, to) => {
   const p = seatList()[from]?.player;
   if (p?.id != null) room.action('team', { id: p.id, team: Math.floor(to / TEAM_MAX) });
 } });
-const TEAM_TITLES = [loc('Rosados'), loc('Verdes')];
 function seatList() {
   const bots = botTeams(room.state.players);
   return [0, 1].flatMap(team => { const list = room.state.players.filter(p => p.team === team);
@@ -119,13 +119,11 @@ function lobbyView() {
   const host = !online || room.isHost;
   $('online').hidden = online;
   $('connection').hidden = !online;
-  $('capis-roster').hidden = !online;
   $('start').disabled = !world || (online && (!room.connected || !room.isHost));
   $('start').textContent = !world ? loc('Preparando…') : !online ? loc('Jugar solo') : !room.connected ? loc('Conectando…') : room.isHost ? loc('¡A pintar!') : loc('Espera al anfitrión');
   panel.update(options, host);
   $('seed-input').disabled = $('seed-new').disabled = !host;
-  if (online) roster.update([0, 1].map(team => ({ id: team, title: TEAM_TITLES[team], color: TEAM_COLORS[team], seats: seatList().filter(s => s.team === team) })),
-    { ownId: room.id, hostId: room.hostId, enabled: room.connected, canArrange: room.isHost, members: room.link?.state.players || [] });
+  roster.update({ teams: online, seats: online ? seatList() : [], ownId: room.id, hostId: room.hostId, enabled: room.connected, canArrange: room.isHost, members: room.link?.state.players || [] });
   for (const id of ['again', 'same-map']) $(id).disabled = online && !room.isHost;
   $('again').textContent = online && !room.isHost ? loc('Espera al anfitrión') : loc('Otra partida');
 }

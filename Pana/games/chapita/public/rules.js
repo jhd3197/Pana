@@ -9,6 +9,8 @@ import { locKey } from '../../../engine/i18n.js';
 import { defaultOptions, roomOptions } from './options.js';
 import { PITCHES, PITCH_KINDS, CAPS, ROWS, FIELDERS, pitchTarget, arrivalRow, hitVelocity, traceHit } from './field.js';
 import { chooseJugada, jugadaSeconds, pitchFlavor, beaned } from './jugadas.js';
+import { canMoveSeats } from '../../../engine/play/seat-rules.js';
+import { openSeat } from '../../../engine/play/team-balance.js';
 
 export const SEATS = 8;
 export const TEAM_SIZE = 4;
@@ -73,7 +75,8 @@ export class ChapitaGame {
 
   // A pana sits in their own seat or takes a bot's; a full street watches.
   addPlayer(id, name, avatar = {}) {
-    const p = this.players.find(p => p.id === id) || this.players.find(p => p.id === null);
+    // A newcomer takes a bot seat on the smaller side (team = seat % 2).
+    const p = this.players.find(p => p.id === id) || this.players[openSeat(this.players, { teamOf: seat => seat % 2 })];
     if (!p || (p.id === id && p.name === name && JSON.stringify(p.avatar) === JSON.stringify(avatar))) return false;
     if (p.id !== id) p.zurdo = false;
     Object.assign(p, { id, name: String(name || 'Pana').slice(0, 18), avatar, style: null, skill: .7 }); this.revision++; return true;   // i18n-ignore: a name
@@ -470,6 +473,14 @@ export class ChapitaGame {
     if (data.action === 'hand') {
       if (this.phase === 'flight' && this.batter === seat) return false;
       this.ledger[id] = data.seq; this.players[seat].zurdo = !this.players[seat].zurdo; this.revision++; return true;
+    }
+    // The lobby's team panels: a pana takes another seat (swapping with whoever
+    // sits there, bot or pana); the host may arrange anyone.
+    if (data.action === 'seat' && this.phase === 'lobby') {
+      if (!canMoveSeats(this.players, data.from, data.to, id, hostId)) return false;
+      const a = this.players[data.from], b = this.players[data.to];
+      for (const key of ['id', 'name', 'avatar', 'zurdo', 'style', 'skill']) [a[key], b[key]] = [b[key], a[key]];
+      this.ledger[id] = data.seq; this.revision++; return true;
     }
     if (data.action === 'switch' && this.phase === 'lobby') {
       const other = this.players.find(p => p.id === null && p.team !== this.players[seat].team);

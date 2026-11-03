@@ -3,5 +3,6 @@
   "tileName": "CHAPITA",
   "description": "Béisbol de barrio",
   "players": 8,
+  "teams": true,
   "color": "#e8453c"
 }

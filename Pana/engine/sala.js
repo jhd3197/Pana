@@ -26,8 +26,6 @@ export async function createSala({ root, original, status, footer, actionTray, c
   // Preserve the armory's existing handler when moving its real button.
   if (!armory) kit.onclick = config.openKit;
   footer.insertBefore(kit, actionTray); footer.insertBefore(change, kit);
-  const teams = document.getElementById('team-roster');
-  if (teams) { document.querySelector('#pana-room-dialog .pk-room-grid').prepend(teams); }
   const map = document.getElementById('map-choice');
   if (map) {
     const nav = document.createElement('div'); nav.className = 'sala-map';
@@ -55,8 +53,6 @@ export async function createSala({ root, original, status, footer, actionTray, c
     else if (!start.disabled) setText(start, startLabel);
     const personal = document.getElementById('pana-lobby-roster')?.querySelector('.is-own');
     if (personal) personal.setAttribute('aria-pressed', readyButton.getAttribute('aria-pressed') || 'true');
-    // Team arrangement is a room setting; all eight pana cards keep their place.
-    if (teams) document.getElementById('pana-room-more').dataset.teams = String(!teams.hidden);
   }
   await styled;
   return {

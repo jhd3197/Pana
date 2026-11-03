@@ -648,16 +648,55 @@ See candidates.
 
 | Piece | Module | Used by |
 |---|---|---|
-| Lobby roster cards (portrait, drag seats) | `engine/lobby-roster.js` | Capis a Pintazos (teams), Criollas, Curiara, Pepazo (and `game-entry` for all) |
-| Seat swapping rules | `engine/play/seat-rules.js` | Billar, Caída, Criollas, Curiara, Dominó, Pepazo, Póquer |
-| Table seating UI | `engine/play/table-seating.js` | Billar, Caída, Dominó, Póquer |
+| Team lobby (team panels in the main lobby, one list without teams; four seats a side as 2×2) | `engine/team-lobby.js` (`createTeamLobby`) on `engine/lobby-roster.js` | Billar, Caída, Capis a Pintazos, Chapita, Criollas, Curiara, Dominó, Pepazo (Póquer through table seating, as one list) |
+| Team balance on join, who is a teammate | `engine/play/team-balance.js` (`smallestTeam`, `openSeat`, `isTeammate`) | Billar, Caída, Capis a Pintazos, Chapita, Criollas, Dominó, Pepazo |
+| Lobby roster cards (portrait, seats) | `engine/lobby-roster.js` | only through `team-lobby.js`; `game-entry` uses its `portraitImg` |
+| Seat swapping rules | `engine/play/seat-rules.js` | Billar, Caída, Chapita, Criollas, Curiara, Dominó, Pepazo, Póquer |
+| Table seating UI (team lobby with team = seat % 2) | `engine/play/table-seating.js` | Billar, Caída, Dominó, Póquer |
 | Seat bubbles (frases) | `engine/play/seat-bubbles.js`, `play/frases.js` | Caída, Dominó, QQSMP, Stop (bubbles); Caída, Dominó, QQSMP, Reliquia (frases) |
 | ¿Quién empieza? (roll-off for the first turn) | `engine/play/quien-empieza.js` + `-rules.js`, `play/roll-off.js` | Billar, Bululú, Caída, Criollas, Dominó, Ludo, Póquer |
 | Map picker | `engine/play/map-picker.js` | Billar, Caída, Criollas, Dominó, Escondidas, Pepazo, Póquer |
 | Results → lobby (pick the next map) | `engine/play/round-lobby.js` (`returnToLobby`; LiveRoom's `lobby` action calls `game.toLobby()`) | Escondidas, Pepazo, Trifulca |
 | Difficulty picker | `engine/play/difficulty.js` | Billar, Criollas, Pepazo; Capis a Pintazos reads the levels for its bot and aim preview |
-| Room options (fields, rules, finalize; compact "Más ajustes" grid in the game skin, in-dialog help layer via `help: { controls, tips }`) | `engine/room-options.js`, `room-options.css`, `room-options-rules.js`, `room-option-fields.js` | 23 games; fields in 13; help layer in Pepazo |
+| Room options (fields, rules, finalize; primary choices as a square button grid, label above; compact "Más ajustes" grid in the game skin; `defaultOf(values)` for mode-dependent defaults; in-dialog help layer via `help: { controls, tips }`) | `engine/room-options.js`, `room-options.css`, `room-options-rules.js`, `room-option-fields.js` | 23 games; fields in 13; help layer in Pepazo |
 | Results screen | `engine/results.js` + `.pk-results` | 22 games (not Bululú, Embuste) |
+
+### Team lobby and auto-balance
+
+Every team game shows its sides the same way: team panels in the main lobby
+(title, colour, count, the cards with Unirme aquí, Cambiarme aquí and the host's
+Organizar), never in "Más ajustes". Without teams it shows one list, or hides so
+the lobby shell's player cards show. The game owns the seats: a key per seat
+(what `onMove` receives) and the seat's team.
+
+```js
+import { createTeamLobby } from '/engine/team-lobby.js';
+const lobby = createTeamLobby($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to),
+  titles: [loc('Naranja'), loc('Turquesa')], colors: ['#f28b42', '#29c5cd'] });   // default: Equipo A / B
+lobby.update({ teams: teamPlay(options), seats: seats.map((player, key) => ({ key, team: key % 2, player })),
+  ownId, hostId, enabled, canArrange: room.isHost, members });
+```
+
+`titles` may be a function (Curiara: one panel per canoe), `list: { title }`
+keeps a single panel without teams (table games), `detail(player)` adds a line
+to a filled card (Pepazo's kit, Chapita's batting style). Table games use
+`createTableSeating`, which is this with team = seat % 2. Put the container
+(it gets `data-pana-roster`) in the game's lobby markup: `engine/game-entry.js`
+docks it in the main roster column for every game, the sala too.
+
+A newcomer joins the smaller team: `openSeat(players, { teamOf, free })` from
+`engine/play/team-balance.js` picks the first free seat of the smallest team
+that still has one; a tie keeps the old first-free-seat rule. `smallestTeam(counts, prefer)`
+is the same choice for games that store a team, not a seat (Capis). It is pure:
+import it by relative path from rules a room loads. Curiara keeps filling one
+canoe before the next, since a canoe is a crew of two, not a side.
+
+Cards per row follow `rosterColumns` (`lobby-roster.js`): up to three in one
+row, four as a 2×2 grid of compact cards, more in two even rows.
+
+A game with `"teams": true` in game.json must render through this;
+`tests/conventions.test.js` fails on a game that imports `createLobbyRoster`,
+draws roster cards itself or keeps team lists in its lobby markup.
 
 ### Team objectives: flags and capture zones
 
@@ -739,6 +778,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
 | Text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`) | all 24 |
 | Your own pana's outline and marker | `engine/play/local-outline.js` | Bochinche; Capis a Pintazos (the marker only, over the capi whose turn it is) |
+| Teammate chevrons (team rounds, own side only, through cover) | `engine/play/team-marker.js` (`createTeamMarkers`, `isTeammate`) | Pepazo |
 
 ### Your own pana: outline and marker
 
@@ -757,6 +797,22 @@ outline.update(dt); marker.update(dt);   // every frame
 ```
 
 Used by: Bochinche.
+
+### Teammate chevrons
+
+`engine/play/team-marker.js`. `createTeamMarkers({ height, size })` puts a small
+chevron in the team colour over a pana's head; it keeps one screen size and
+draws over cover. Call `set(group, show, color)` every frame per pana, with
+`show = isTeammate(me, p, teamRound)` (never yourself, never without teams),
+and `dispose()` with the scene. A full-body outline stays for your own pana
+only (`local-outline.js`).
+
+```js
+const marks = createTeamMarkers();
+marks.set(avatar.group, !down && isTeammate(me, p, teamPlay(state.options)), p.color);
+```
+
+Used by: Pepazo (team rounds, Bandera and Dominación too).
 
 ## Worlds and models
 
@@ -848,10 +904,12 @@ flowchart LR
   fp -->|used by| pintura
 
   fx["fx (sound, particles)"]:::mod -->|used by| G20["21 games"]:::game
-  lobby["lobby-roster"]:::mod -->|used by| criollas:::game
+  lobby["team-lobby + team-balance"]:::mod -->|used by| criollas:::game
   lobby -->|used by| capis:::game
   lobby -->|used by| curiara:::game
   lobby -->|used by| pintura
+  lobby -->|used by| chapita:::game
+  lobby -->|used by| TABLE
   seatrules["play/seat-rules"]:::mod -->|used by| TABLE["billar, caida, criollas, domino, poquer"]:::game
   seatrules -->|used by| curiara
   seatrules -->|used by| pintura
