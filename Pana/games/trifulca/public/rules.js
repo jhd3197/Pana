@@ -36,7 +36,9 @@ export const NICKS = ['El Trompa', 'La Metralla', 'El Ciclón', 'Puño de Mango'
 export const FROM = ['de Maracaibo', 'de Catia', 'de Petare', 'de Barquisimeto', 'de Valencia', 'de Maturín', 'de Puerto La Cruz', // i18n-ignore
   'de Mérida', 'de Coro', 'de Cumaná', 'de San Félix', 'de La Guaira', 'de Barinas', 'de Margarita']; // i18n-ignore
 // Things lying around in a trifulca libre: a swing hits harder, a throw flies.
-export const PROPS = ['silla', 'caja', 'casco', 'chancleta'];
+export const PROPS = ['silla', 'caja', 'casco', 'chancleta', 'bate'];
+// How near a prop must be to pick it up, and how near a foe to grab them instead.
+export const PICKUP = 1.7, GRAB_FIRST = .8;
 export const THROW = { speed: 9.5, range: 7, mareo: 22, push: 5, radius: .55 };
 
 // What a member may send each tick: a world-space stick, two held buttons and
@@ -321,7 +323,7 @@ export class Trifulca {
     const r = arena.shape === 'square' ? arena.half * .7 : arena.r * .62;
     return [0, 1, 2, 3].map(i => {
       const a = Math.PI / 4 + i * Math.PI / 2 + (draw(this) - .5) * .5;
-      return { id: this.nextProp++, kind: PROPS[(i + Math.floor(draw(this) * 4)) % PROPS.length], x: Math.sin(a) * r, z: Math.cos(a) * r, h: draw(this) * 6, held: null, fly: null };
+      return { id: this.nextProp++, kind: PROPS[(i + Math.floor(draw(this) * PROPS.length)) % PROPS.length], x: Math.sin(a) * r, z: Math.cos(a) * r, h: draw(this) * 6, held: null, fly: null };
     });
   }
 
@@ -440,9 +442,12 @@ export class Trifulca {
       this.emit({ type: 'throw', id: b.id, prop: prop.id, kind: prop.kind });
       return true;
     }
-    const near = this.props.filter(p => !p.held && !p.fly).map(p => ({ p, d: Math.hypot(p.x - b.x, p.z - b.z) })).filter(o => o.d < 1.2).sort((x, y) => x.d - y.d)[0];
-    const foeClose = this.bodies.some(o => o.team !== b.team && inRing(o) && Math.hypot(o.x - b.x, o.z - b.z) < 1.3);
-    if (!near || foeClose) return false;
+    const near = this.props.filter(p => !p.held && !p.fly).map(p => ({ p, d: Math.hypot(p.x - b.x, p.z - b.z) })).filter(o => o.d < PICKUP).sort((x, y) => x.d - y.d)[0];
+    if (!near) return false;
+    // Bodies stop a metre apart, so a foe beside you must not hide what lies at
+    // your feet: grabbing wins only when the prop is further than the foe.
+    const foe = this.bodies.filter(o => o.team !== b.team && inRing(o)).map(o => Math.hypot(o.x - b.x, o.z - b.z)).sort((x, y) => x - y)[0] ?? Infinity;
+    if (near.d > GRAB_FIRST && foe < near.d) return false;
     near.p.held = b.id; b.prop = near.p.id;
     this.emit({ type: 'pickup', id: b.id, prop: near.p.id, kind: near.p.kind });
     return true;

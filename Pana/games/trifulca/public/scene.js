@@ -18,14 +18,15 @@ import { createPana } from './fighters.js';
 import { motoHelmet, chancleta } from './set.js';
 import { gazeAt, midOf, npcLife, animateNpc } from './crowd-life.js';
 import { inkOutlines } from './toon.js';
-import { plasticChair, produceCrates } from '/engine/models/props/barrio.js';
+import { plasticChair, produceCrates, woodenBat } from '/engine/models/props/barrio.js';
 
 // The things lying around a trifulca libre, at the size a pana can swing.
 const PROP_MODELS = {
   silla: () => { const m = plasticChair({ color: '#ff4b4b' }); m.scale.setScalar(.55); return m; },
   caja: () => produceCrates({ w: .6, d: .45, h: .34, seed: 4, detail: 'light' }),
-  casco: () => { const m = motoHelmet({ color: '#2ad1b2' }); m.scale.setScalar(.5); m.position.y = .3; const g = new THREE.Group(); g.add(m); return g; },
+  casco: () => { const m = motoHelmet({ color: '#2ad1b2' }); m.scale.setScalar(.5); m.position.y = .3; const g = new THREE.Group(); g.add(m); g.userData.dispose = m.userData.dispose; return g; },
   chancleta: () => { const m = chancleta({ color: '#ff6fae' }); m.scale.setScalar(1.8); return m; },
+  bate: () => { const m = woodenBat({ length: 1.15 }); m.rotation.set(0, 0, Math.PI / 2); m.position.set(.55, .09, 0); const g = new THREE.Group(); g.add(m); g.userData.dispose = m.userData.dispose; return g; },
 };
 const ringOf = (bodies = []) => bodies.filter(b => !b.bench && !b.out);
 // Whoever stands by the ring steps aside when a fighter lands on their spot.
@@ -297,12 +298,12 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     for (const p of current?.props || []) {
       const entry = props.get(p.id); if (!entry) continue;
       const holder = p.held != null ? panas.get(p.held) : null;
-      let goal, tilt = 0;
-      if (holder) { const h = holder.h; goal = holder.pos.clone().add(v(Math.sin(h) * .55, 1.2, Math.cos(h) * .55)); tilt = .3; }
+      let goal, tilt = 0, raise = 0;
+      if (holder) { const h = holder.h; goal = holder.pos.clone().add(v(Math.sin(h) * .55, 1.2, Math.cos(h) * .55)); tilt = .3; if (p.kind === 'bate') raise = 1.25; }
       else if (p.fly) { goal = v(p.x, floor() + 1.25, p.z); entry.spin += dt * 14; }
       else { goal = v(p.x, floor(), p.z); entry.spin = 0; }
       entry.pos.lerp(goal, p.fly ? 1 : 1 - Math.exp(-dt * 18));
-      entry.model.position.copy(entry.pos); entry.model.rotation.set(tilt + entry.spin, p.h || 0, 0);
+      entry.model.position.copy(entry.pos); entry.model.rotation.set(tilt + entry.spin, p.h || 0, raise);
     }
     void want;
   }
