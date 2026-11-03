@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Arena, cleanInput, BOT_ID } from '../public/rules.js';
-import { MELEE, WEAPONS, ATTACHMENTS, kitStats, kitRating, cleanKit, canAttach, dpsOf, meleeInterval, throwRange, cycleWeapon, isMelee } from '../public/armory-data.js';
+import { MELEE, WEAPONS, PARTS, kitStats, kitRating, cleanKit, canFit, dpsOf, meleeInterval, throwRange, cycleWeapon, isMelee } from '../public/armory-data.js';
 
 // A plaza round with A at (x, z) facing -z and B straight ahead `gap` metres away, nobody shielded.
 function duel(weapon, gap = 1.5, { toughness = 3, third = null, kit = {} } = {}) {
@@ -48,7 +48,7 @@ test('a swing misses past the reach, behind the back and through cover, and wait
 });
 
 test('drip paints one more pepazo, tape is faster and shorter, knockback and stun land', () => {
-  const plain = kitStats({ weapon: 'brush' }), drip = kitStats({ weapon: 'brush', attachments: ['drip'] }), tape = kitStats({ weapon: 'brush', attachments: ['tape'] });
+  const plain = kitStats({ weapon: 'brush' }), drip = kitStats({ weapon: 'brush', slots: { head: 'drip' } }), tape = kitStats({ weapon: 'brush', slots: { grip: 'tape' } });
   assert.equal(drip.damage, plain.damage + 1); assert.ok(drip.recovery > plain.recovery);
   assert.ok(tape.windup < plain.windup && tape.reach < plain.reach);
   const { g, a, b } = duel('maraca', 1.5, { toughness: 6 }); const z = b.z;
@@ -109,12 +109,12 @@ test('all six melee weapons have armory numbers, three melee parts and their pla
     assert.ok(dpsOf(s) > 2 && dpsOf(s) < 5, `${m.id} ${dpsOf(s)} pepazos/s`);
     assert.ok(meleeInterval(s) >= .3 && meleeInterval(s) <= 1.1);
     const rating = kitRating({ weapon: m.id }); assert.ok(rating >= 100 && rating <= 800, `${m.id} rating ${rating}`);
-    for (const a of ATTACHMENTS) assert.equal(canAttach(m.id, a.id), !!a.melee, `${m.id} ${a.id}`);
-    assert.deepEqual(cleanKit({ weapon: m.id, attachments: ['barrel', 'tape', 'drip'] }).attachments, [null, 'tape', 'drip']);
+    for (const p of PARTS) assert.equal(canFit(m.id, p.slot, p.id), ['tape', 'drip', 'strap'].includes(p.id), `${m.id} ${p.id}`);
+    assert.deepEqual(cleanKit({ weapon: m.id, attachments: ['barrel', 'tape', 'drip'] }).slots, { grip: 'tape', head: 'drip', pommel: null });
   }
   assert.ok(throwRange(kitStats({ weapon: 'sandal' }).throwable) > 15, 'the chancla reaches past 15 m from a level look');
-  assert.equal(kitStats({ weapon: 'sandal', attachments: ['strap'] }).throwable.recall, 1.5);
-  assert.equal(kitStats({ weapon: 'sandal', attachments: ['drip'] }).throwable.damage, 4, 'a throw paints what a strike does');
+  assert.equal(kitStats({ weapon: 'sandal', slots: { pommel: 'strap' } }).throwable.recall, 1.5);
+  assert.equal(kitStats({ weapon: 'sandal', slots: { head: 'drip' } }).throwable.damage, 4, 'a throw paints what a strike does');
   assert.equal(MELEE.filter(m => m.throwable).map(m => m.id).join(), 'sandal');
   assert.equal(cycleWeapon('sprayer', 1), 'bat'); assert.equal(cycleWeapon('maraca', 1), 'pistol');
   assert.equal(kitStats({ weapon: 'sandal' }, { weapons: 'pistol' }).id, 'pistol', 'pistol-only rooms keep La Chispa');

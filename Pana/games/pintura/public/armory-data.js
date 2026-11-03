@@ -92,30 +92,71 @@ const ticks = seconds => Math.max(1, Math.ceil(seconds / STEP - 1e-6)) * STEP;
 export const meleeInterval = s => ticks(s.windup) + ticks(s.recovery);
 // How far a throwable melee weapon flies from a level look before it lands (metres), for the armory.
 export function throwRange(t, hand = 1.45) { const vy = Math.sin(t.lift) * t.speed, time = (vy + Math.sqrt(vy * vy + 2 * t.gravity * hand)) / t.gravity; return Math.min(time, t.life) * Math.cos(t.lift) * t.speed; }
-export const ATTACHMENTS = [
- {id:'barrel',name:locKey('Cañón afinado'),blurb:locKey('Más precisión y alcance; en las marcadoras que no se desvían, la bola o el cohete sale más rápido. −5% movilidad.')},
- {id:'hopper',name:locKey('Tolva grande'),blurb:locKey('Más bolas; recarga más lenta y −5% movilidad. En El Cohetón y La Bazuca: un cohete extra.')},
- {id:'stock',name:locKey('Culata ligera'),blurb:locKey('+5% movilidad, menos control. Los cohetes pierden radio de salpicadura.')},
- {id:'optic',name:locKey('Mira'),blurb:locKey('Apuntas con clic derecho: acerca la vista y endereza el tiro. Cada marcadora trae su mira. −2% movilidad.')},
- // Melee parts, on the grip, the head and the pommel of every melee model: one tradeoff each.
- {id:'tape',melee:true,name:locKey('Cinta de agarre'),blurb:locKey('Golpeas 20% más rápido; llegas 15% menos lejos.')},
- {id:'drip',melee:true,name:locKey('Goteo de pintura'),blurb:locKey('+1 pepazo por golpe; te recuperas 25% más lento.')},
- {id:'strap',melee:true,name:locKey('Correa'),blurb:locKey('La chancla lanzada vuelve 40% antes; las demás se recuperan 15% más rápido. −4% movilidad.')},
+// The gunsmith's slots: fixed and typed. A marker has a Mira, a Cañón, a Tolva and
+// a Culata; a melee weapon a Puño, a Cabeza and a Pomo. Each slot holds one of its
+// own PARTS or nothing. Shown in this order; a Mira's stats still go on last.
+export const SLOTS = [
+ {id:'optic',name:locKey('Mira'),icon:'kitOptic',swap:true},
+ {id:'barrel',name:locKey('Cañón'),icon:'kitBarrel'},
+ {id:'hopper',name:locKey('Tolva'),icon:'kitHopper'},
+ {id:'stock',name:locKey('Culata'),icon:'kitStock'},
+ {id:'grip',melee:true,name:locKey('Puño'),icon:'kitGrip'},
+ {id:'head',melee:true,name:locKey('Cabeza'),icon:'kitDrip'},
+ {id:'pommel',melee:true,name:locKey('Pomo'),icon:'kitStrap'},
 ];
-// Each Mira kind's aim tuning (the kind comes with the marker: PAINT_OPTICS).
-// zoom: magnification while aiming (a scoped marker multiplies its own scope by
-// `scopeBoost` instead); aimSpread: the aimed spread as a share of the hip spread;
-// sens: look speed while aiming, on top of the zoom's own slowdown; hipSpread:
-// the laser also tightens hip fire. Numbers and reasons: docs/knowledge/pintura.md.
-export const OPTICS = {
- dot:{name:locKey('Punto rojo'),zoom:1.35,aimSpread:.75,sens:.9},
- holo:{name:locKey('Holográfica'),zoom:1.5,aimSpread:.7,sens:.85},
- laser:{name:locKey('Láser'),zoom:1.1,aimSpread:.8,sens:1,hipSpread:.85},
- scope:{name:locKey('Mira telescópica'),zoom:2.4,aimSpread:.5,sens:.75,scopeBoost:1.3},
- pin:{name:locKey('Mira de pines'),zoom:1.2,aimSpread:.6,sens:.95},
-};
-// The Mira kind a marker takes.
+export const slotOf = id => SLOTS.find(s => s.id === id) || null;
+// Every option, one row each: a new Mira or hopper size is one more row here (and
+// the markers that take it in FITS). `part` is the model piece that shows it
+// (paintball-kit.js PAINT_PART_LABELS), `look` how the model draws it.
+// Stats: `mul` multiplies, then `add` adds (a stat the weapon lacks stays absent);
+// `when` swaps in another effect for the weapons WHEN names. A Mira's `aim`: zoom
+// while aiming (a scoped marker multiplies its own scope by `scopeBoost` instead),
+// aimSpread as a share of the hip spread, sens the look speed while aiming,
+// hipSpread a tighter hip fire. Numbers and reasons: docs/knowledge/pintura.md.
+const mira = (id, name, aim) => ({ id, slot:'optic', name, icon:id==='scope'?'kitScope':'kitOptic', part:'optic', look:{ opticKind:id }, add:{ mobility:-.02 }, aim });
+export const PARTS = [
+ mira('dot', locKey('Punto rojo'), { zoom:1.35, aimSpread:.75, sens:.9 }),
+ mira('holo', locKey('Holográfica'), { zoom:1.5, aimSpread:.7, sens:.85 }),
+ mira('laser', locKey('Láser'), { zoom:1.1, aimSpread:.8, sens:1, hipSpread:.85 }),
+ mira('scope', locKey('Telescópica'), { zoom:2.4, aimSpread:.5, sens:.75, scopeBoost:1.3 }),
+ mira('pin', locKey('De pines'), { zoom:1.2, aimSpread:.6, sens:.95 }),
+ // A marker that already flies straight cannot get tighter: its barrel sends the shot out faster.
+ { id:'barrel', slot:'barrel', name:locKey('Cañón afinado'), icon:'kitBarrel', part:'barrel', mul:{ spread:.65, life:1.12, aimSpread:.65 }, add:{ mobility:-.05 },
+  when:{ straight:{ mul:{ speed:1.12, aimSpread:.65 }, add:{ mobility:-.05 } } } },
+ { id:'minihopper', slot:'hopper', name:locKey('Tolva chica'), icon:'kitHopper', part:'hopper', look:{ hopperScale:.72 }, mul:{ magazine:.7, reload:.8 }, add:{ mobility:.03 } },
+ // A launcher with spare rounds takes one more round instead of a bigger load.
+ { id:'hopper', slot:'hopper', name:locKey('Tolva grande'), icon:'kitHopper', part:'hopper', mul:{ magazine:1.4, reload:1.25 }, add:{ mobility:-.05 },
+  when:{ reserve:{ mul:{ reload:1.25 }, add:{ reserve:1, mobility:-.05 } } } },
+ { id:'stock', slot:'stock', name:locKey('Culata ligera'), icon:'kitStock', part:'stock', mul:{ spread:1.3, splash:.8 }, add:{ mobility:.05, spread:.015, aimSpread:.008 } },
+ // Melee: on the grip, the head and the pommel of every melee model, one tradeoff each.
+ { id:'tape', slot:'grip', name:locKey('Cinta de agarre'), icon:'kitGrip', part:'tape', mul:{ windup:.8, recovery:.8, reach:.85 } },
+ { id:'drip', slot:'head', name:locKey('Goteo de pintura'), icon:'kitDrip', part:'drip', mul:{ recovery:1.25 }, add:{ damage:1 } },
+ { id:'strap', slot:'pommel', name:locKey('Correa'), icon:'kitStrap', part:'strap', mul:{ recovery:.85 }, add:{ mobility:-.04 },
+  when:{ throwable:{ mul:{ 'throwable.recall':.6 }, add:{ mobility:-.04 } } } },
+];
+const PARTS_BY_ID = Object.fromEntries(PARTS.map(p => [p.id, p]));
+export const partOf = id => typeof id === 'string' && Object.hasOwn(PARTS_BY_ID, id) ? PARTS_BY_ID[id] : null;
+// Which weapons a `when` effect is for.
+const WHEN = { straight: s => !s.melee && !(s.spread > 0), reserve: s => s.reserve != null, throwable: s => !!s.throwable };
+// Each Mira kind's aim tuning, by kind (the HUD's title, the balance tests).
+export const OPTICS = Object.fromEntries(PARTS.filter(p => p.aim).map(p => [p.id, { name:p.name, ...p.aim }]));
+// The Mira a marker's model comes with (PAINT_OPTICS): its stock option, always allowed.
 export const opticOf = weaponId => PAINT_OPTICS[weaponId] || null;
+// What each marker's slots take. `optic`: Miras besides its stock one; small markers
+// carry small sights, the long ones a scope. `hopper`: small markers the small one,
+// launchers and La Corneta's three shots only the big one. A slot left out takes every part of
+// that slot its model has a mount for (PAINT_MOUNTS).
+const BOTH = ['minihopper', 'hopper'], BIG = ['hopper'], SMALL = ['minihopper'];
+const FITS = {
+ pistol:{ optic:['laser'], hopper:SMALL }, rapid:{ optic:['dot'], hopper:SMALL }, sixshooter:{ optic:['laser'], hopper:SMALL },
+ smg:{ optic:['dot', 'laser'], hopper:BOTH }, pdw:{ optic:['holo', 'laser'], hopper:BOTH },
+ carbine:{ optic:['dot', 'scope'], hopper:BOTH }, bullpup:{ optic:['dot', 'scope'], hopper:BOTH },
+ minigun:{ optic:['holo'], hopper:BOTH }, lmg:{ optic:['holo', 'scope'], hopper:BOTH },
+ scatter:{ optic:['dot'], hopper:BOTH }, blunderbuss:{ optic:['dot', 'holo'], hopper:BIG },
+ sniper:{ optic:[], hopper:BOTH }, marksman:{ optic:['holo', 'scope'], hopper:BOTH },
+ rocket:{ optic:['dot'], hopper:BIG }, bazooka:{ optic:['dot'], hopper:BIG }, revolver:{ optic:['dot'], hopper:BIG },
+ slingshot:{ optic:[], hopper:BOTH }, sprayer:{ optic:['holo', 'laser'], hopper:BOTH },
+};
 export const ARMOR = [
  {id:'shirt',name:'La Franela',blurb:locKey('Aguante y movilidad normales.'),mobility:1,toughness:0}, // i18n-ignore: proper name
  {id:'padded',name:'El Acolchado',blurb:locKey('+1 pepazo de aguante, −10% movilidad.'),mobility:.9,toughness:1}, // i18n-ignore: proper name
@@ -147,55 +188,87 @@ export const FALLBACK_CAMO = START_CAMOS[0];
 const cleanCamo = id => typeof id === 'string' && CAMO_IDS.includes(id) ? id : null;
 // Whether a player owning `owned` (a Set or array of ids, or nothing) may wear `camo`.
 export const ownsCamo = (camo, owned) => camo == null || START_CAMOS.includes(camo) || (owned instanceof Set ? owned.has(camo) : Array.isArray(owned) && owned.includes(camo));
-// Three attachment slots. A kit stores `attachments` as a fixed [slot 0, slot 1,
-// slot 2] array of id|null so a part stays in the slot the player put it in. Every
-// marker's mounts (muzzle, feed, stock, rail) are separate places on the model, so
-// any three parts fit together; the fourth stays in the box.
-export const ATTACHMENT_SLOTS = 3;
-// Which attachments fit which marker: the mounts its model has (paint-arsenal.js).
-export const ATTACHMENT_RULES = Object.fromEntries(WEAPONS.map(m=>[m.id,ATTACHMENTS.map(a=>a.id).filter(id=>PAINT_MOUNTS[m.id]?.includes(id))]));
-export const canAttach = (weaponId, attachmentId) => !!ATTACHMENT_RULES[weaponId]?.includes(attachmentId);
+// Which slots each weapon has and the parts each takes: { slot: [part ids] }, the
+// stock Mira first. Only slots its model has a mount for (PAINT_MOUNTS).
+export const SLOT_RULES = Object.fromEntries(WEAPONS.map(w => {
+ const mounts = PAINT_MOUNTS[w.id] || [], fit = FITS[w.id] || {}, rules = {};
+ for (const slot of SLOTS) {
+  const parts = PARTS.filter(p => p.slot === slot.id && mounts.includes(p.part)).map(p => p.id);
+  const allowed = slot.id === 'optic' ? [opticOf(w.id), ...(fit.optic || [])].filter((id, i, all) => parts.includes(id) && all.indexOf(id) === i)
+   : fit[slot.id] ? parts.filter(id => fit[slot.id].includes(id)) : parts;
+  if (allowed.length) rules[slot.id] = allowed;
+ }
+ return [w.id, rules];
+}));
+// The slots a weapon shows, in SLOTS order.
+export const slotsFor = weaponId => SLOTS.filter(s => SLOT_RULES[weaponId]?.[s.id]);
+export const canFit = (weaponId, slot, partId) => !!SLOT_RULES[weaponId]?.[slot]?.includes(partId);
+// Kits saved before typed slots list part ids (`attachments`: up to three, any slot,
+// null gaps). Each lands in its part's slot; the old generic Mira is the stock one.
+const legacySlot = (weapon, id) => id === 'optic' ? ['optic', opticOf(weapon)] : partOf(id) ? [partOf(id).slot, id] : null;
+function cleanSlots(weapon, value) {
+ const rules = SLOT_RULES[weapon], slots = Object.fromEntries(Object.keys(rules).map(slot => [slot, null])), raw = value.slots;
+ if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+  for (const slot of Object.keys(slots)) { const id = Object.hasOwn(raw, slot) ? raw[slot] : null; if (typeof id === 'string' && rules[slot].includes(id)) slots[slot] = id; }
+ } else if (Array.isArray(value.attachments)) {
+  for (const old of value.attachments.slice(0, 8)) { const at = legacySlot(weapon, old); if (at && slots[at[0]] === null && rules[at[0]].includes(at[1])) slots[at[0]] = at[1]; }
+ }
+ return slots;
+}
+// A kit's `slots` has every slot its weapon has: a part id or null.
 export function cleanKit(value={}) {
  if (!value || typeof value !== 'object') value={};
- const weapon=pick(WEAPONS,value.weapon), raw=Array.isArray(value.attachments)?value.attachments:[];
- // Up to ATTACHMENT_SLOTS entries are slot positions; a longer list (old or hostile) is packed.
- const list=raw.length>ATTACHMENT_SLOTS?raw.filter(id=>canAttach(weapon,id)).filter((id,i,all)=>all.indexOf(id)===i):raw;
- const attachments=Array.from({length:ATTACHMENT_SLOTS},(_,i)=>{const id=list[i];return canAttach(weapon,id) && !list.slice(0,i).includes(id) ? id : null;});
- return { weapon, attachments, armor:pick(ARMOR,value.armor), grenade:pick(GRENADES,value.grenade), finish:pick(FINISHES,value.finish), charm:pick(CHARMS,value.charm), pattern:pick(PATTERNS,value.pattern), camo:cleanCamo(value.camo) };
+ const weapon=pick(WEAPONS,value.weapon);
+ return { weapon, slots:cleanSlots(weapon,value), armor:pick(ARMOR,value.armor), grenade:pick(GRENADES,value.grenade), finish:pick(FINISHES,value.finish), charm:pick(CHARMS,value.charm), pattern:pick(PATTERNS,value.pattern), camo:cleanCamo(value.camo) };
 }
-// The attachment in each slot, always ATTACHMENT_SLOTS long.
-export const slotsOf = kit => cleanKit(kit).attachments;
-// Puts `id` (or null to clear) in slot `index`; the same part in the other slot moves here.
-// Returns a new clean kit, or the kit unchanged when the part does not fit the marker.
-export function setSlot(kit, index, id) {
- const clean=cleanKit(kit); if(!(index>=0 && index<ATTACHMENT_SLOTS) || (id!=null && !canAttach(clean.weapon,id))) return clean;
- const attachments=clean.attachments.map((a,i)=>i===index?(id??null):a===id?null:a);
- return cleanKit({...clean,attachments});
+// The part ids fitted, in SLOTS order.
+export const partsOf = kit => { const slots = cleanKit(kit).slots; return SLOTS.map(s => slots[s.id]).filter(Boolean); };
+// Puts part `id` (or null to clear) in `slot`. Returns a new clean kit, unchanged
+// when the weapon has no such slot or the part does not fit it.
+export function setPart(kit, slot, id) {
+ const clean=cleanKit(kit); if(!Object.hasOwn(clean.slots,slot) || (id!=null && !canFit(clean.weapon,slot,id))) return clean;
+ return cleanKit({...clean,slots:{...clean.slots,[slot]:id??null}});
 }
-// A new marker keeps the parts that fit it; `dropped` lists the ones it cannot take.
+// A new weapon keeps the parts it takes. A Mira it cannot take becomes its stock
+// one; any other part that does not fit leaves the kit and is listed in `dropped`.
 export function changeWeapon(kit, weaponId) {
- const before=cleanKit(kit), after=cleanKit({...before,weapon:weaponId});
- return { kit:after, dropped:before.attachments.filter((id,i)=>id && after.attachments[i]!==id) };
+ const before=cleanKit(kit), weapon=pick(WEAPONS,weaponId), rules=SLOT_RULES[weapon], slots={}, dropped=[];
+ for (const slot of Object.keys(rules)) {
+  const id=before.slots[slot]; slots[slot]=!id?null:rules[slot].includes(id)?id:slotOf(slot).swap?rules[slot][0]:null;
+  if(id && !slots[slot]) dropped.push(id);
+ }
+ for (const [slot,id] of Object.entries(before.slots)) if(id && !rules[slot]) dropped.push(id);
+ return { kit:cleanKit({...before,weapon,slots}), dropped };
+}
+// What the model draws for a kit (paintball-kit.js createPaintKit options): the
+// pieces fitted and how (`opticKind`, `hopperScale`).
+export function kitModel(kit) {
+ const look={ attachments:[], opticKind:null, hopperScale:1 };
+ for (const id of partsOf(kit)) { const p=PARTS_BY_ID[id]; look.attachments.push(p.part); Object.assign(look,p.look); }
+ return look;
+}
+// One part's effect on stats `s` (its `when` effect for the weapons that names).
+const pathOf = (s, key) => { const at = key.split('.'), last = at.pop(); return [at.reduce((o, k) => o?.[k], s), last]; };
+function applyPart(s, part) {
+ const variant = Object.keys(part.when || {}).find(k => WHEN[k](s)), e = variant ? part.when[variant] : part;
+ for (const [key, n] of Object.entries(e.mul || {})) { const [o, k] = pathOf(s, key); if (o && o[k] != null) o[k] *= n; }
+ for (const [key, n] of Object.entries(e.add || {})) { const [o, k] = pathOf(s, key); if (o && o[k] != null) o[k] += n; }
+ // Whole balls and rounds, rounded up (float noise trimmed first).
+ for (const k of ['magazine', 'reserve']) if (s[k]) s[k] = Math.ceil(Math.round(s[k] * 1e6) / 1e6);
+ if (part.aim) {
+  const a = part.aim; s.optic = part.id; s.sens = a.sens;
+  if (a.hipSpread) s.spread *= a.hipSpread;
+  s.aimSpread = (s.aimSpread ?? s.spread) * a.aimSpread;
+  s.zoom = s.scope ? s.scope * (a.scopeBoost || 1) : a.zoom;
+ }
 }
 export function kitStats(value={}, options={}) {
- const kit=cleanKit(value), weapon=options.weapons==='pistol'?'pistol':kit.weapon;
- const s={...weaponOf(weapon)}, armor=ARMOR.find(a=>a.id===kit.armor), parts=kit.attachments.filter(id=>id && canAttach(weapon,id));
+ let kit=cleanKit(value); if(options.weapons==='pistol' && kit.weapon!=='pistol') kit=changeWeapon(kit,'pistol').kit;
+ const s={...weaponOf(kit.weapon)}, armor=ARMOR.find(a=>a.id===kit.armor), parts=partsOf(kit).map(partOf);
  s.zoom=s.scope||1.2; s.sens=1; s.optic=null;
  if(s.melee) return meleeStats(s,parts,armor,options);
- for(const id of parts) {
-  // A marker that already flies straight cannot get tighter: its barrel sends the shot out faster instead.
-  if(id==='barrel') { if(s.spread>0) { s.spread*=.65; s.life*=1.12; } else s.speed*=1.12; if(s.aimSpread!=null) s.aimSpread*=.65; s.mobility-=.05; }
-  if(id==='hopper') { if(s.reserve!=null) s.reserve++; else s.magazine=Math.ceil(s.magazine*1.4); s.reload*=1.25; s.mobility-=.05; }
-  if(id==='stock') { s.mobility+=.05; s.spread=s.spread*1.3+.015; if(s.aimSpread!=null) s.aimSpread+=.008; if(s.splash) s.splash*=.8; }
- }
  // The Mira goes on last, so it steadies whatever spread the other parts left.
- if(parts.includes('optic')) {
-  const kind=opticOf(weapon), o=OPTICS[kind];
-  s.optic=kind; s.sens=o.sens; s.mobility-=.02;
-  if(o.hipSpread) s.spread*=o.hipSpread;
-  s.aimSpread=(s.aimSpread??s.spread)*o.aimSpread;
-  s.zoom=s.scope ? s.scope*(o.scopeBoost||1) : o.zoom;
- }
+ for(const part of [...parts.filter(p=>!p.aim),...parts.filter(p=>p.aim)]) applyPart(s,part);
  s.mobility*=armor.mobility; s.toughness=Math.max(1,(options.toughness||3)+armor.toughness);
  if(options.fastReload) s.reload*=.55/1.3;
  s.damage=s.damage||1; s.sprint=!s.heavy;
@@ -207,11 +280,7 @@ export function kitStats(value={}, options={}) {
 // `cadence` is the swing interval, so whatever reads a marker's pace reads this too.
 function meleeStats(s,parts,armor,options) {
  if(s.throwable) s.throwable={...s.throwable}; if(s.sweetSpot) s.sweetSpot={...s.sweetSpot};
- for(const id of parts) {
-  if(id==='tape') { s.windup*=.8; s.recovery*=.8; s.reach*=.85; }
-  if(id==='drip') { s.damage+=1; s.recovery*=1.25; }
-  if(id==='strap') { if(s.throwable) s.throwable.recall*=.6; else s.recovery*=.85; s.mobility-=.04; }
- }
+ for(const part of parts) applyPart(s,part);
  // The thrown chancla paints what a strike paints, drips included.
  if(s.throwable) s.throwable.damage=s.damage;
  s.mobility*=armor.mobility; s.toughness=Math.max(1,(options.toughness||3)+armor.toughness);

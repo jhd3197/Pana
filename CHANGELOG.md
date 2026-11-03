@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El armero de Pepazo tiene un puesto fijo para cada pieza: Mira, Cañón, Tolva y Culata.**
+  Cada puesto ofrece solo lo que le cabe a esa arma: la francotiradora lleva
+  telescópica, la pistola punto rojo o láser, y la tolva viene chica o grande.
+  Cada opción muestra con iconos lo que gana o pierde. Tu kit guardado se
+  pasa solo al nuevo armero.
 - **El polígono de tiro de Pepazo ya dispara con ratón y con mando, y es práctica solo tuya.**
   Una pantalla corta de carga al entrar; el primer clic ya dispara, el mando
   mira, camina, dispara y sale con B o Start sin tocar la sala ni tu party.

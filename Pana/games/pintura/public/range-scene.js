@@ -12,7 +12,7 @@ import { createScope } from '/engine/play/scope.js';
 import { createBlastFx } from '/engine/play/blast-fx.js';
 import { Puffs } from '/engine/fx.js';
 import { pixelRatio } from '/engine/settings.js';
-import { FINISHES, WEAPONS } from './armory-data.js';
+import { FINISHES, WEAPONS, kitModel } from './armory-data.js';
 import { EYE } from './rules.js';
 import { createViewmodel, recoilOf } from './viewmodel.js';
 import { FIRE, LANE, MARKS } from './range-sim.js';
@@ -69,7 +69,7 @@ export function createRangeScene(canvas) {
   let held = null, heldKey = '', yaw = -Math.PI / 2, pitch = 0, lastFired = 0, lastSmacks = 0, opticSens = 1, mobile = false;
   const viewmodel = createViewmodel(), feel = createRecoil(), scope = createScope({ zoom: 1.2 });
   function hold(kit, weapon) {
-    const options = { ...kit, weapon, color: FINISHES.find(f => f.id === kit.finish)?.color || '#f28b42' }, k = JSON.stringify(options); if (k === heldKey) return;
+    const options = { ...kit, ...kitModel({ ...kit, weapon }), weapon, color: FINISHES.find(f => f.id === kit.finish)?.color || '#f28b42' }, k = JSON.stringify(options); if (k === heldKey) return;
     held?.removeFromParent(); held?.userData.dispose(); held?.userData.flash?.geometry.dispose(); held?.userData.flash?.material.dispose(); heldKey = k;
     held = createPaintKit(options); held.scale.setScalar(isMelee(weapon) ? (weapon === 'sandal' ? .6 : .42) : .3); camera.add(held);
     const flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));

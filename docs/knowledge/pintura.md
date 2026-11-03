@@ -345,9 +345,8 @@ the pad sent), not a direction captured before the first frame set the yaw.
   you out with a coral bar), so `combat.duplicate()` keeps the bottom pill quiet
   for those two messages. Team scores are in the race row, not the pill.
 - Under the pepas the hopper plate shows the marker's name and class kind
-  (`La Metra · Subfusiles`) and one icon per fitted part (`kitBarrel`,
-  `kitHopper`, `kitStock`, `kitOptic` in `engine/icons.js`; the Mira's title
-  names its kind).
+  (`La Metra · Subfusiles`) and one icon per fitted part (its `PARTS` row's
+  `icon` from `engine/icons.js`; the title is the part's name).
 - `viewmodel.js` poses the first-person marker (sway, recoil, reload, sprint
   lowering) from the player fields; the marker models are in
   `engine/models/props/paintball-kit.js`, one silhouette per marker. Aiming
@@ -485,13 +484,12 @@ weapon between 2 and 5).
   within the reach, inside the cone, with no cover between. Friendly fire,
   shields and respawns follow the balls' rules (`Arena.targetsOf`). A hit pushes
   a splat under the victim and counts `p.smacks` (clients play the blow sound).
-- Parts (`ATTACHMENTS` with `melee: true`; the models mount them on the grip,
-  head and pommel): **Cinta de agarre** `tape` swings 20% faster and reaches 15%
+- Parts, one per slot (`PARTS` rows for the `grip`, `head` and `pommel` slots;
+  the models mount them on the grip, head and pommel): **Cinta de agarre** `tape` swings 20% faster and reaches 15%
   less; **Goteo de pintura** `drip` paints +1 pepazo and recovers 25% slower;
   **Correa** `strap` brings a thrown chancla back 40% sooner (1.5 s), the others
-  recover 15% faster, −4% mobility. Melee weapons take only these three and
-  markers only theirs (`PAINT_MOUNTS` in `engine/models/props/paint-arsenal.js`); the
-  armory lists only the kind that fits.
+  recover 15% faster, −4% mobility. Melee weapons have only these three slots and
+  markers only theirs (`PAINT_MOUNTS` in `engine/models/props/paint-arsenal.js`).
 - Switching weapon mid-swing drops the blow but keeps 0.3 s of wait; while the
   chancla is away the server ignores a weapon change (the client keeps sending
   its pick, so it applies once the chancla is back).
@@ -678,8 +676,8 @@ Team and flag lobbies show the shared avatar roster, with four orange and four t
 
 ## Armory and composed combat kits
 
-`armory-data.js` is the shared, pure source for eighteen markers, three
-attachment slots, one armor slot, three grenades and cosmetics. `kitStats`
+`armory-data.js` is the shared, pure source for eighteen markers, typed
+gunsmith slots, one armor slot, three grenades and cosmetics. `kitStats`
 composes real tradeoffs and still honors pistol-only, fast-reload and room
 toughness options. Marker names, classes, mounts, Mira kinds and bores come
 from `engine/play/paint-arsenal.js`, which adds the class names players read
@@ -688,21 +686,38 @@ that the models are built from (no Three.js). Models may not import `play/`,
 so data-only readers (`camos.js`, the server's `camo-trust.js`) import the
 models file directly.
 
-Attachment slots are positional: `kit.attachments` is always
-`[slot 0, slot 1, slot 2]`, each an id or `null`, so every consumer filters
-nulls. `cleanKit` reads up to three entries as slot positions (old saved kits of
-one or two land in the first slots), packs a longer list, allowlists, dedupes
-and applies `canAttach`. `setSlot(kit, i, id|null)` fills or clears one slot and
-moves a part already in another slot; `changeWeapon` returns the new kit plus
-the parts that no longer fit. `ATTACHMENT_RULES` is built from the model's
-mounts (`PAINT_MOUNTS`): a muzzle for the barrel, a feed for the hopper, a stock
-mount (launchers take sliding rods) and a rail or bracket for the Mira. In the
-new kit every marker has all four, at four separate places on the model (La
-Lejana's stock swaps its wooden one for a skeleton, La Bazuca takes rods), so
-any three parts fit together and three slots are safe; the fourth part stays in
-the box. A marker without a mount simply leaves it out of `PAINT_MOUNTS`: the
-armory greys that part out with "no tiene dónde montarlo" and a swap drops it
-(unit tested with a mount removed). A barrel on
+Gunsmith slots are fixed and typed. `SLOTS` lists them (a marker: Mira
+`optic`, Cañón `barrel`, Tolva `hopper`, Culata `stock`; a melee weapon: Puño
+`grip`, Cabeza `head`, Pomo `pommel`) and `PARTS` holds every option, one row
+each: its slot, name, icon, the model piece that shows it (`part`, a
+`PAINT_PART_LABELS` key) and `look` (how the model draws it: `opticKind`,
+`hopperScale`), plus its stats as `mul` then `add`, with a `when` effect for
+some weapons (`straight`: flies dead straight, `reserve`: launchers with spare
+rounds, `throwable`: La Chancleta). A new Mira or hopper size is one row there
+plus the markers that take it in `FITS`. `SLOT_RULES[weapon]` is built from the
+model's mounts (`PAINT_MOUNTS`) and `FITS`: the stock Mira (`PAINT_OPTICS`) first
+and the others that marker may take, the hoppers it takes (small markers only
+the Tolva chica; launchers and La Corneta only the Tolva grande), and every
+barrel and stock its mounts fit. A slot with no option does not show.
+The Tolva chica holds 70% of the balls (rounded up) and reloads in 80% of the
+time, +3% mobility; the Tolva grande holds 140% and reloads in 125%, −5%
+mobility (on a launcher: one more round instead). La Corneta keeps only the
+big one because 70% of three shots is still three.
+
+`kit.slots` is `{ slot: partId|null }` with every slot of its weapon.
+`cleanKit` keeps only allowed parts and never throws on hostile data. Kits saved
+before typed slots (`attachments: ['barrel', 'hopper', null]`) still load:
+each old id lands in its part's slot, the generic `'optic'` becomes the marker's
+stock Mira, the old `'hopper'` is the Tolva grande, and what the weapon cannot
+take is dropped; the next save writes `slots` only. `setPart(kit, slot, id|null)`
+fills or clears one slot. `changeWeapon` keeps what fits, turns a Mira the new
+marker cannot take into its stock one and returns the rest as `dropped`.
+`kitModel(kit)` is what `createPaintKit` draws (`attachments` pieces,
+`opticKind`, `hopperScale`); the armory, the held marker, the third-person
+markers and the range all build through it. Every marker has all four mounts,
+at four separate places on the model (La Lejana's stock swaps its wooden one for
+a skeleton, La Bazuca takes rods), so all four slots fill at once; balance.test
+checks every allowed combination. A barrel on
 a marker that already flies straight (spread 0: Chispa, Cohetón, Bazuca) adds
 12% shot speed instead of tightening spread, so range and the precision row's
 m/s both move; on the others it tightens spread and adds 12% flight time.
@@ -714,7 +729,7 @@ gives the reason and practice reports it the same way. The armory shows it in
 that it opens between rounds. Number keys and the pause menu's marker go
 through `armory.setWeapon`: the saved `pintura:kit` and client kit follow, the
 lobby also sends the kit, and mid-round the server takes it from
-`input.weapon`, running the same `cleanKit` so both sides drop the same parts.
+`input.weapon`, running the same `changeWeapon` so both sides keep and drop the same parts.
 Swaps keep reload debt and never refill limited rocket reserve.
 Rocket splash and grenade blasts apply at most one hit per victim and respect
 cover, teams and spawn protection. Respawn restores one grenade. Sticky pools
@@ -818,9 +833,10 @@ under each arm, so the arm hangs over the band. The front plate tilts back
 0.29 rad with the chest and its top sits under the jowls, which hide the
 middle of the shoulder straps.
 
-The two-client browser proof picks the marker through its class chip, fills a
-guest kit slot by slot (slot 2 first, clearing slot 1 leaves slots 2 and 3),
-fits La Bazuca's Mira in slot 3 (it names Holográfica), verifies the host
+The two-client browser proof picks the marker through its class chip, checks
+the four typed slots, that El Cohetón's Tolva lists only the big hopper and La
+Bazuca's Mira its Holográfica and Punto rojo (with the zoom chip), fills and
+clears slots, verifies the host
 receives each kit, checks grenade consumption, rejects and announces a
 mid-round armor change, checks number keys (7 is La Metra) and Z/X reach the saved kit, then
 proves real shooting, respawn, host departure and rematch. Mobile
@@ -845,15 +861,18 @@ the host and matches the armory.
 
 ## Mira (optic)
 
-The fourth attachment. Each marker's model carries one kind (`PAINT_OPTICS`, the
-model sets `userData.optic` when fitted) and `OPTICS` in `armory-data.js` tunes it:
+The Mira slot. Each marker's model comes with a stock kind (`PAINT_OPTICS`) and
+`FITS` adds the others it may take; the model draws the chosen kind
+(`opticKind`, `userData.optic`) on the marker's own mount. La Lejana and La
+China draw their own and take only it. Each kind's `aim` in `PARTS` (also
+`OPTICS` by kind) tunes it:
 
-| Kind | Markers | zoom | aimSpread × | sens | Why |
+| Kind | Stock on (others may fit it too) | zoom | aimSpread × | sens | Why |
 |---|---|---|---|---|---|
 | `dot` red dot | La Chispa, La Licuadora, La Fumigadora, El Llanero, La Pulga, El Zamuro, La Culebrona | 1.35 | .75 | .9 | small, quick: a little closer, a little steadier |
 | `holo` holographic | El Trueno, El Cohetón, La Bazuca, La Metra, El Tambor, La Parrandera, El Tuqueque | 1.5 | .7 | .85 | the mid-range sight: more zoom, steadier |
-| `laser` under-barrel | Las Gemelas | 1.1 | .8 | 1 | also tightens hip fire (`hipSpread` .85): twins are fired from the hip |
-| `scope` telescopic | La Lejana, La Corneta | 2.4 | .5 | .75 | La Lejana multiplies its own 3.5× by 1.3 (4.55×) instead |
+| `laser` under-barrel | Las Gemelas (La Chispa, El Llanero, La Metra, La Pulga, La Fumigadora may take it) | 1.1 | .8 | 1 | also tightens hip fire (`hipSpread` .85): twins are fired from the hip |
+| `scope` telescopic | La Lejana, La Corneta (La Parrandera, El Tuqueque, El Zamuro, La Culebrona may take it) | 2.4 | .5 | .75 | La Lejana multiplies its own 3.5× by 1.3 (4.55×) instead |
 | `pin` pin sight | La China | 1.2 | .6 | .95 | three pins to judge a slow stone's drop |
 
 `kitStats` applies the Mira last, so it steadies whatever spread the other parts

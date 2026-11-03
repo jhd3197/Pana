@@ -1,6 +1,6 @@
 import { createKnockout } from './knockout.js';
 import { createPaintKit, bakePaintKit, wearPaintVest, createPaintRocket, createPaintGrenade, PAINT_KIT_BORE } from '/engine/models/props/paintball-kit.js';
-import { FINISHES, MARKERS, kitStats, grenadeDef, isMelee } from './armory-data.js';
+import { FINISHES, MARKERS, kitStats, kitModel, grenadeDef, isMelee } from './armory-data.js';
 import { createViewmodel, recoilOf } from './viewmodel.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { createMuelle } from './muelle.js';
@@ -212,7 +212,7 @@ export function createScene(canvas) {
   }
   function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) renderer.setSize(w, h, false); }
   // The marker held in first person, rebuilt when the pana's paint colour changes.
-  const modelOptions = p => ({...p.kit, weapon:p.weapon, color:FINISHES.find(f=>f.id===p.kit?.finish)?.color || p.color});
+  const modelOptions = p => ({...p.kit, ...kitModel({...p.kit, weapon:p.weapon}), weapon:p.weapon, color:FINISHES.find(f=>f.id===p.kit?.finish)?.color || p.color});
   let held = null, heldColor = ''; const viewmodel = createViewmodel();
   function holdMarker(p) {
     const key=JSON.stringify(modelOptions(p)); if(heldColor===key) return;
