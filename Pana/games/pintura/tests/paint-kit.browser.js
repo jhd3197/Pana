@@ -13,7 +13,7 @@ try {
     const THREE = await import('three');
     const kit = await import('/engine/models/props/paintball-kit.js');
     const { ATTACHMENT_RULES, ATTACHMENT_SLOTS, MARKERS } = await import('/g/pintura/armory-data.js');
-    const PART = { barrel: 'Accesorio · cañón afinado', hopper: 'Accesorio · tolva grande', stock: 'Accesorio · culata ligera', optic: 'Accesorio · mira' };
+    const PART = kit.PAINT_PART_LABELS;
     const problems = [], meshes = root => { const list = []; root.traverse(o => { if (o.isMesh) list.push(o); }); return list; };
     const finite = root => meshes(root).every(m => [...m.geometry.attributes.position.array].every(Number.isFinite));
     let builds = 0;

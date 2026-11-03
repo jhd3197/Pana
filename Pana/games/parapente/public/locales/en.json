@@ -10,7 +10,6 @@
   "¡En la diana!": "On target!",
   "¡En la diana! Esperando a tus panas.": "On target! Waiting for your friends.",
   "¡Ganaste el vuelo, pana!": "You won the flight, pana!",
-  "¡Salta del Ávila! Carreras de parapente sobre Galipán: pasa las balizas, sube en las térmicas, atraviesa los aros y aterriza en la diana de Boca de Tigre.": "Jump off El Ávila! Paraglider races over Galipán: pass the beacons, ride the thermals, fly through the rings and land on the Boca de Tigre target.",
   "¡Se cerró el vuelo!": "The flight is over!",
   "¡Térmica!": "Thermal!",
   "{beacons}/{total} balizas · {rings} aros": "{beacons}/{total} beacons · {rings} rings",
@@ -81,5 +80,6 @@
   "Vela en trim": "Wing at trim",
   "Volar": "Flying",
   "Volar en local": "Fly locally",
+  "Vuelo desde el Ávila": "Paragliding race",
   "Vuelo local": "Local flight"
 }

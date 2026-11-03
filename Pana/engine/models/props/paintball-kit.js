@@ -136,6 +136,12 @@ function bakeCamo(root,material){
 // Names, classes, mounts and optic kinds are plain data in engine/models/props/paint-arsenal.js, so
 // game rules can read them without Three.js.
 export { PAINT_WEAPONS, PAINT_MELEE, PAINT_WEAPON_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, PAINT_CAMOS, PAINT_SOLIDS, classOf };
+// The name every mesh of a fitted part starts with, by attachment id: the armory
+// frames a part by it and a browser suite checks each model draws exactly these.
+export const PAINT_PART_LABELS = Object.freeze({ // i18n-ignore: model part names
+  barrel: 'Accesorio · cañón afinado', hopper: 'Accesorio · tolva grande', stock: 'Accesorio · culata ligera', optic: 'Accesorio · mira', // i18n-ignore: model part names
+  tape: 'Accesorio · cinta de agarre', drip: 'Accesorio · pintura fresca', strap: 'Accesorio · muñequera', // i18n-ignore: model part names
+});
 export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],charm='none',pattern='splat',camo=null}={}) {
  // An unknown id draws La Chispa rather than failing a whole scene.
  if(!Object.hasOwn(PAINT_WEAPONS,weapon)&&!Object.hasOwn(PAINT_MELEE,weapon))weapon='pistol';
@@ -246,7 +252,7 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
  // --- Attachments, each fitted to the weapon's own mounts. ---
  function tune(m) {
   // Cañón afinado: a ported extension with a coral muzzle brake, slid onto the barrel end.
-  label('Accesorio · cañón afinado');
+  label(PAINT_PART_LABELS.barrel);
   const r=m.r,L=r>.12?.22:.3,z=m.z;
   for(const x of m.xs){
    turn([[r*.7,z-.03],[r+.012,z-.03],[r+.014,z+.05],[r*.86,z+.075],[r*.86,z+L-.08],[r*.7,z+L-.08]],m.mat||dark,x,m.y);
@@ -259,7 +265,7 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
  }
  function skeleton(m) {
   // Culata ligera on rifles and pistols: an open skeleton stock with a cheek pad.
-  label('Accesorio · culata ligera');
+  label(PAINT_PART_LABELS.stock);
   const z=m.z,y=m.y,P=pts=>pts.map(([a,b,r])=>[z+a,y+b,r]);
   slab(P([[.02,.04],[-.5,.05,.02],[-.54,.085,.02],[-.57,.085,.02],[-.57,-.22,.02],[-.52,-.22,.02],[-.46,-.14,.03],[.02,-.075,.02]]),.07,dark,{holes:[P([[-.06,.0,.02],[-.44,.01,.02],[-.42,-.1,.03],[-.08,-.035,.02]])]});
   slab(P([[-.57,.095],[-.605,.095,.015],[-.605,-.235,.015],[-.57,-.235]]),.11,rubber);
@@ -268,7 +274,7 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
  }
  function rods(m) {
   // Culata ligera on the launchers: twin sliding rods and a shoulder pad.
-  label('Accesorio · culata ligera');
+  label(PAINT_PART_LABELS.stock);
   slab([[m.z+.06,m.top],[m.z-.1,m.top],[m.z-.1,m.y-.035,.02],[m.z+.06,m.y-.035,.02]],.11,dark);
   many([-.035,.035].map(x=>gcyl(.014,.62,x,m.y,m.z-.36,'z',12)),steel);
   slab([[m.z-.64,m.y+.09],[m.z-.69,m.y+.09,.02],[m.z-.69,m.y-.13,.02],[m.z-.64,m.y-.13]],.14,rubber);
@@ -283,14 +289,14 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
   within(g,fn);return g;
  }
  function feeder(f,s=1) {
-  label('Accesorio · tolva grande');
-  const g=sideMount(f,()=>{const top=neck(f.neck||.05);within(top,()=>{label('Accesorio · tolva grande');loader(s,f.ball);});});
+  label(PAINT_PART_LABELS.hopper);
+  const g=sideMount(f,()=>{const top=neck(f.neck||.05);within(top,()=>{label(PAINT_PART_LABELS.hopper);loader(s,f.ball);});});
   // Every piece of the loader keeps the attachment's name, even inside its own group.
-  g.traverse(o=>{if(o.isMesh)o.name='Accesorio · tolva grande · '+o.name.replace('Tolva · ','').replace('Cuello de alimentación','cuello');});
+  g.traverse(o=>{if(o.isMesh)o.name=PAINT_PART_LABELS.hopper+' · '+o.name.replace('Tolva · ','').replace('Cuello de alimentación','cuello');});
  }
 // Mira: the sight accessory. Each kind returns the sight line it creates.
  function optic(o) {
-  label('Accesorio · mira');
+  label(PAINT_PART_LABELS.optic);
   let x=o.x||0;const y=o.y,z=o.z,k=o.kind||'dot';
   if(o.arm!==undefined){// a side bracket from the body out to the optic
    const a=o.arm;box(Math.abs(a-x)+.03,.024,.07,dark,(x+a)/2,y-.012,z,.006);box(.03,.05,.07,dark,x,y-.03,z,.006);x=a;}
@@ -340,7 +346,7 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
  // --- Melee accessories ---
  // Cinta de agarre: a black tape wrap spiralling up the handle, cream ends.
  function tapeWrap(G) {
-  label('Accesorio · cinta de agarre');
+  label(PAINT_PART_LABELS.tape);
   if(G.bands){many(G.bands.map(([y,w,d])=>gbox(w,.026,d,0,y,G.z||0)),ink);many(G.bands.map(([y,w,d])=>gbox(w+.004,.006,d+.004,0,y+.014,G.z||0)),cream);return;}
   const turns=(G.y1-G.y0)/.03,n=Math.round(turns*16),pts=[];
   for(let i=0;i<=n;i++){const t=i/n,a=t*turns*Math.PI*2;pts.push(new THREE.Vector3(Math.sin(a)*(G.r+.004),G.y0+t*(G.y1-G.y0),Math.cos(a)*(G.r+.004)));}
@@ -349,14 +355,14 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
  }
  // Pintura fresca: runs of wet paint hanging off the head, each ending in a drop.
  function drips(pts,len=.06) {
-  label('Accesorio · pintura fresca');const g=[];
+  label(PAINT_PART_LABELS.drip);const g=[];
   pts.forEach(([x,y,z],i)=>{const l=len*(.55+((i*37)%10)/14),a=new THREE.SphereGeometry(.012,8,6);a.scale(1,l/.024,1);a.translate(x,y-l/2,z);g.push(a,gball(.016,x,y-l,z,1,8));});
   many(g,paint);
  }
  const ring=(y,r,n,phase=0)=>range(0,n-1,1).map(i=>{const a=phase+i/n*Math.PI*2;return [Math.sin(a)*r,y,Math.cos(a)*r];});
  // Muñequera: a paracord wrist loop from the pommel with a cream slider bead.
  function lanyard(p) {
-  label('Accesorio · muñequera');const y=p.y,z=p.z||0;
+  label(PAINT_PART_LABELS.strap);const y=p.y,z=p.z||0;
   const loop=[[0,y,z],[0,y-.05,z+.045],[0,y-.15,z+.04],[0,y-.19,z],[0,y-.15,z-.04],[0,y-.05,z-.045]].map(v=>new THREE.Vector3(...v));
   put(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(loop,true),48,.0075,6,true),line);
   blob(.016,cream,0,y-.028,z,1,1.3,1);
@@ -487,8 +493,8 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
   label('Riel');slab([[-.12,.275],[.54,.275],[.54,.3,.005],[-.12,.3,.005]],.07,dark,{bevel:.005});many(range(-.1,.52,.04).map(z=>gbox(.076,.012,.018,0,.305,z)),dark);
   // With the Mira the stock scope gives way to a long-range one: fatter, longer, sunshade and flip caps.
   const big=has('optic');if(big)sight=.405;const tr=big?.054:.043;
-  label(big?'Accesorio · mira':'Monturas');for(const z of [.02,.4]){box(.06,big?.075:.05,.05,dark,0,big?.335:.322,z,.01);put(new THREE.TorusGeometry(tr+.009,.012,8,24).translate(0,sight,z),dark);}
-  label(big?'Accesorio · mira':'Mira telescópica');
+  label(big?PAINT_PART_LABELS.optic:'Monturas');for(const z of [.02,.4]){box(.06,big?.075:.05,.05,dark,0,big?.335:.322,z,.01);put(new THREE.TorusGeometry(tr+.009,.012,8,24).translate(0,sight,z),dark);}
+  label(big?PAINT_PART_LABELS.optic:'Mira telescópica');
   turn(big?[[0,-.25],[.058,-.25],[.07,-.22],[.07,-.11],[.054,-.06],[.054,.5],[.086,.62],[.09,.9],[0,.9]]:[[0,-.17],[.05,-.17],[.058,-.15],[.058,-.07],[.044,-.03],[.043,.5],[.068,.6],[.07,.7],[0,.7]],ink,0,sight,32);
   const back=big?-.251:-.171,front=big?.901:.701;
   put(gcyl(big?.058:.048,.006,0,sight,back,'z',24),mat('#1b4a5a',{roughness:.1,metalness:.4}));
@@ -563,9 +569,9 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
   label('Muñequera');hose([[0,-.02,-.03],[0,-.05,-.14],[0,-.1,-.25],[0,-.16,-.31]],.022,steel);box(.13,.035,.12,rubber,0,-.18,-.34,.015);
   label('Ligas');for(const s of [-1,1])hose([[s*.142,.31,.035],[s*.1,.3,-.04],[s*.045,.29,-.105]],.011,coral);
   label('Bolsa');blob(.04,leather,0,.288,-.12,1.5,.85,.6);blob(.031,ball,0,.29,-.1);
-  if(has('barrel')){label('Accesorio · cañón afinado');put(gcyl(.016,.29,0,.31,.02,'x',12),steel);}
+  if(has('barrel')){label(PAINT_PART_LABELS.barrel);put(gcyl(.016,.29,0,.31,.02,'x',12),steel);}
   // Mira on La China: a hunter's pin sight hung from the right fork, three bright pins to aim by.
-  if(has('optic')){label('Accesorio · mira');box(.03,.05,.03,dark,.128,.26,.03,.006);put(gcyl(.009,.09,.07,.262,.03,'x',10),steel);
+  if(has('optic')){label(PAINT_PART_LABELS.optic);box(.03,.05,.03,dark,.128,.26,.03,.006);put(gcyl(.009,.09,.07,.262,.03,'x',10),steel);
    const pin=c=>mat(c,{emissive:c,emissiveIntensity:.6});[['#d4f786',.04],['#ffc629',.065],['#ff4b4b',.09]].forEach(([c,x])=>{post(.0035,.0035,.035,steel,x,.242,.03);blob(.007,pin(c),x,.224,.03);});sight=.224;}
   mounts=[{parent:group,muzzle:{xs:[0],y:.31,z:.02,r:.03},feed:{y:-.075,z:-.15,neck:.035},size:.55,stock:{y:-.13,z:-.38},deco:{axis:'y',x:0,z:0,y0:-.3,y1:-.05,r:.036}}];
  } else if(weapon==='revolver') {

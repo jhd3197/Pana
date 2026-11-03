@@ -20,7 +20,7 @@ const run = (g, n, inputs = new Map()) => { for (let i = 0; i < n; i++) g.update
 
 test('every pana has a costume, three trajes and a registered poder per style', () => {
   assert.equal(PANAS.length, 13);
-  assert.equal(new Set(PANAS.map(p => p.key)).size, 13);
+  assert.equal(new Set(PANAS.map(p => p.id)).size, 13);
   for (const p of PANAS) {
     assert.equal(p.trajes.length, 3, p.id);
     const look = normalizeWardrobe(costumeLook(p.id, 2, { fur: '#cf7d22' }));

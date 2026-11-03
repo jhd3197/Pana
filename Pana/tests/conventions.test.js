@@ -96,6 +96,8 @@ test('every game has the files the hub and the kit expect', () => {
     const json = meta(id), html = read(pub(id, 'index.html'));
     if (typeof json.name !== 'string' || !json.name) problems.push(`${id}: game.json needs a name`);
     if (typeof json.description !== 'string' || !json.description) problems.push(`${id}: game.json needs a description`);
+    // The hub card's tagline: a few words, not a paragraph (docs/UI-RULES.md).
+    else if (json.description.length > 30) problems.push(`${id}: game.json description is a tagline of 30 characters at most (${json.description.length})`);
     if (!Number.isInteger(json.players) || json.players < 1 || json.players > MAX_MEMBERS) problems.push(`${id}: game.json players must be 1–${MAX_MEMBERS}`);
     if (!/^#[0-9a-f]{6}$/i.test(json.color || '')) problems.push(`${id}: game.json color must be #rrggbb`);
     if ('tileName' in json && (typeof json.tileName !== 'string' || !json.tileName || json.tileName.length > 12)) problems.push(`${id}: game.json tileName is a short name for the hub card (1–12 characters)`);

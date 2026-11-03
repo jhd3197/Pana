@@ -411,7 +411,9 @@ Chispa) or a Studio melee piece: origin at the grip, +Z down the barrel,
 sideways offset for side-mounted sights), `userData.bore` the barrel axis
 height, `userData.optic` the Mira kind when one is fitted, `userData.class`,
 `userData.spin` (a group to turn when firing: La Licuadora, the revolvers).
-Attachments `barrel hopper stock optic` sit on each marker's own mounts.
+Attachments `barrel hopper stock optic` sit on each marker's own mounts;
+`PAINT_PART_LABELS[id]` is the name every mesh of a fitted part starts with
+(melee `tape drip strap` too), so a menu can frame or draw one part alone.
 `PAINT_KIT_BORE[weapon]` is the barrel axis height for all eighteen.
 `bakePaintKit(options)` is the same marker batched into a few draws (finishes
 folded to matte, glossy and metal, one draw each), with `tip`, `sight`,
@@ -645,7 +647,7 @@ See candidates.
 
 | Piece | Module | Used by |
 |---|---|---|
-| Lobby roster cards (portrait, drag seats) | `engine/lobby-roster.js` | Criollas, Curiara, Pepazo (and `game-entry` for all) |
+| Lobby roster cards (portrait, drag seats) | `engine/lobby-roster.js` | Capis a Pintazos (teams), Criollas, Curiara, Pepazo (and `game-entry` for all) |
 | Seat swapping rules | `engine/play/seat-rules.js` | Billar, Caída, Criollas, Curiara, Dominó, Pepazo, Póquer |
 | Table seating UI | `engine/play/table-seating.js` | Billar, Caída, Dominó, Póquer |
 | Seat bubbles (frases) | `engine/play/seat-bubbles.js`, `play/frases.js` | Caída, Dominó, QQSMP, Stop (bubbles); Caída, Dominó, QQSMP, Reliquia (frases) |
@@ -692,12 +694,12 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 
 | Piece | Module | Used by |
 |---|---|---|
-| Real-time room | `engine/live-room.js` (`LiveRoom`, `axis`, `elapsedClock`) | Bochinche, Cocina, Curiara, Escondidas, Galope, Lancha, Parapente, Reliquia, Tambor, Trifulca |
+| Real-time room | `engine/live-room.js` (`LiveRoom`, `axis`, `elapsedClock`) | Bochinche, Capis a Pintazos (turns with live walking and aim), Cocina, Curiara, Escondidas, Galope, Lancha, Parapente, Reliquia, Tambor, Trifulca |
 | Turn-based room | `engine/table-room.js` | Billar, Caída, Chapita, Criollas, Ludo, QQSMP, Stop |
 | Client prediction | `engine/predict.js` | Cocina, Escondidas, Galope, Reliquia |
 | Raw room and links | `engine/net.js` | Bululú, Carreritas, Dominó, Embuste, Pepazo, Póquer |
 | Shell (load, loops, teardown) | `engine/game-shell.js` (`bootGame`) | 17 games |
-| Invite links | `engine/invite.js` | all 24 (Capis a Pintazos through game-entry only) |
+| Invite links | `engine/invite.js` | all 24 |
 | Seeded random, noise | `engine/random.js` | 14 games |
 | Gateway-vouched ownership (pana.sh signs `x-pana-camos` with `PANA_GATEWAY_SECRET`; `parseOwned(headers)` verifies the HMAC, timing-safe; mid-session `parseSub` + `newNonce` + `verifyRefresh` for a nonce-bound signed refresh) | `server/src/camo-trust.js`, read in a room's `onAuth(client, options, context)` | Pepazo (camos). The catalog and the bridge client stay game-local: `games/pintura/public/camos.js`, `camo-store.js` |
 
@@ -711,6 +713,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | ui: all 24; settings: 16 |
 | "Editar pana" over the page: the Mi pana editor in a full-screen frame, so the room socket and a pana.sh party stay; a saved look fires `pana:avatar` on window | `engine/pana-editor.js` (`openPanaEditor`, `bindPanaEditorLinks`; `embeddedEditor` on the editor's side) | every lobby (`game-entry` "Cambiar pana" sends the room the new look), the hub; never a plain link to `/personaje` |
 | Icons (`lock` marks something not yours yet; `weaponBazooka`, `weaponSniper`, `weaponDrill`, `weaponScatter` and `kitGrenade` for a weapon picker) | `engine/icons.js` | Billar, Bochinche, Bululú, Capis a Pintazos (room options, the weapon picker), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
+| Icons (`lock` marks something not yours yet; `person` beside a player count on the hub; `weaponBazooka`, `weaponSniper`, `weaponDrill`, `weaponScatter` and `kitGrenade` for a weapon picker) | `engine/icons.js` | the hub, Billar, Bochinche, Bululú, Capis a Pintazos (room options, the weapon picker), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
 | Toast | `engine/hud.js` (`createToast`) | Billar, Caída, Capis a Pintazos, Cocina, Criollas, Curiara, Dominó, Embuste, Escondidas, Lancha, Parapente, Reliquia |
 | Hold to see more: a key (and the pad button that presses it, View → Tab through `createGameMenu({ pad })`) shows a layer while held; letting go, blur, a hidden page and a lost pointer lock hide it; `toggle('touch')` for a tap button | `engine/hold-overlay.js` (`createHoldOverlay`, pure `createHold`) | Reliquia (Tab / View: map, compass, jornada and team) |
 | Touch controls | `engine/touch.js` | 17 games |
@@ -728,6 +731,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Saved name and appearance | `engine/avatar.js` | all 24 |
 | Pana model | `engine/models/characters/pana/avatar-model.js` | 19 games (not Curiara, Galope, Lancha, Parapente, Criollas) |
 | Portraits | `engine/portrait.js`, `portrait-cache.js` | Bochinche, Trifulca |
+| Menu card pictures of any 3D object (built, framed by its bounds, drawn once on the shared offscreen renderer, cached by key; `keep(mesh)` draws one part alone) | `engine/object-thumb.js` (`objectThumb(key, build, { width, height, turn, tilt, keep, margin })`) on `engine/snapshot.js` | Pepazo (armory cards: every weapon, part, charm and grenade) |
 | Wardrobe | `engine/wardrobe.js`, `wardrobe-preview.js` | Bochinche, Carreritas, Pepazo, Trifulca (the page also loads `wardrobe-preview` through `pana.sh`) |
 | Mangos (shared currency) | `engine/mangos.js` | Bochinche, Carreritas |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
@@ -778,6 +782,14 @@ Used by: Bochinche.
   glowing tall window and a hinged secret bookcase (`bookcaseDoor`).
   `props/reliquia-hideouts` has the searchable furniture (see "Hiding
   spots"). Used by: Reliquia's library.
+- **Shooting range**: `props/shooting-range` builds a covered firing lane
+  (`createRangeLane`: concrete floor with lane lines and distance numbers,
+  panelled walls, ceiling baffles and strip lights, the berm, a booth with
+  its bench and rail; baked into a few batches), hanging distance signs
+  (`createRangeSign`) and targets (`createRangeTarget`: paper silhouette,
+  board, popup on a hinge, big back board; `userData.face` is where splats
+  go). Registered in Studio. Used by: Pepazo's armory range (`range.js`,
+  `range-scene.js`, `range-sim.js`, the rules on a lane of dummy targets).
 - **Large runtime asset packs** (audio, big images, voice packs) are not engine
   modules. They ship as release ZIPs pinned in `server/src/asset-packs.json`
   and are served by the server. Add a file there, not to Git:
@@ -835,6 +847,7 @@ flowchart LR
 
   fx["fx (sound, particles)"]:::mod -->|used by| G20["21 games"]:::game
   lobby["lobby-roster"]:::mod -->|used by| criollas:::game
+  lobby -->|used by| capis:::game
   lobby -->|used by| curiara:::game
   lobby -->|used by| pintura
   seatrules["play/seat-rules"]:::mod -->|used by| TABLE["billar, caida, criollas, domino, poquer"]:::game
@@ -847,7 +860,7 @@ flowchart LR
   picker -->|used by| escondidas
   picker -->|used by| pintura
 
-  live["live-room"]:::mod -->|used by| LIVE["bochinche, cocina, curiara, escondidas, galope, lancha, parapente, reliquia, tambor, trifulca"]:::game
+  live["live-room"]:::mod -->|used by| LIVE["bochinche, capis, cocina, curiara, escondidas, galope, lancha, parapente, reliquia, tambor, trifulca"]:::game
   table["table-room"]:::mod -->|used by| TURN["billar, caida, chapita, criollas, ludo, qqsmp, stop"]:::game
   predict["predict"]:::mod -->|used by| PRED["cocina, escondidas, galope, reliquia"]:::game
   results["results"]:::mod -->|used by| R21["22 games"]:::game

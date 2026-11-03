@@ -39,7 +39,7 @@
   "Al gastar todas las bolas, el equipo más cercano suma un tanto por cada bola más cerca del mingo que la mejor del rival. A igual distancia, la mano no da tantos.": "When all balls are thrown, the closest team scores a point for each ball nearer the mingo than the rival's best. At equal distance, the hand scores no points.",
   "Antes de la primera mano, una moneda decide qué equipo lanza el mingo: cara para los rojos, sello para los verdes. El anfitrión puede cambiarlo en Más ajustes: al azar, el orden de la mesa o que empiece el equipo que perdió la última partida.": "Before the first hand, a coin decides which team throws the mingo: heads for the reds, tails for the greens. The host can change this in More settings: random, table order, or the team that lost the last game starts.",
   "AQUÍ FRENA": "STOPS HERE",
-  "Arrima al mingo o saca la bola rival con un boche. Dos equipos, una cancha de tierra y tus panas en 3D.": "Roll close to the jack or knock the rival ball away with a boche. Two teams, a dirt court and your friends in 3D.",
+  "Arrima al mingo": "Roll to the jack",
   "Arrima al mingo. Si una bola rival estorba, ¡sácala con un boche!": "Get close to the mingo. If a rival ball is in the way, knock it out with a boche!",
   "Arrima tus bolas al mingo más que el equipo rival y llega primero a la meta de tantos.": "Get your balls closer to the jack than the other team and reach the points target first.",
   "Arrime": "Close in",
@@ -101,7 +101,6 @@
   "Toca la cancha": "Tap the court",
   "Toca la cancha para dirigir la bola y afina con las flechas. Mantén el botón: la fuerza sube y baja; suelta para lanzar.": "Tap the court to aim the ball and fine-tune with the arrows. Hold the button: the power rises and falls; release to throw.",
   "Turno de {name} · {team}": "{name}'s turn · {team}",
-  "Verdes": "Greens",
   "VERDES": "GREENS",
   "Vista de la cancha": "Court view"
 }

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#e8569b">
-  <meta name="description" content="Artillería de pintura entre chigüires. Apunta con la bazuca, mide el viento y tumba a los capis rivales al río.">
+  <meta name="description" content="Artillería de pintura entre chigüires. Apunta con la bazuca, mide el viento y tumba a los capis rivales al río. Solo contra la máquina o con hasta cuatro panas.">
   <title translate="no">Capis a Pintazos · Pana</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
@@ -18,18 +18,19 @@
   <header class="topbar"><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a><nav id="game-nav" aria-label="Opciones"></nav></header>
   <!-- game-entry supplies the shared Carreritas side-settings lobby. -->
   <section id="lobby" class="pk-lobby" aria-labelledby="lobby-title">
-    <span class="pk-ribbon">TÚ VS LA MÁQUINA</span>
+    <span class="pk-ribbon">SOLO O CON AMIGOS</span>
     <h1 id="lobby-title" class="pk-title" translate="no">Capis a Pintazos</h1>
-    <p class="pk-copy" data-room-description>Tres capis por equipo en la orilla del llano. Por turnos, apunta la bazuca de pintura, mide el viento y tumba a los rivales al río o píntalos enteros.</p>
+    <p class="pk-copy" data-room-description>Tres capis por equipo. Por turnos, apunta, mide el viento y tumba a los rivales al río.</p>
     <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
     <p id="lobby-seed" class="pk-copy lobby-seed" translate="no"></p>
     <div id="room-options"></div>
+    <div id="capis-roster" hidden></div>
     <div class="seed-card" data-room-extra>
       <label class="pk-eyebrow" for="seed-input">Número del mapa</label>
       <div class="seed-row"><input id="seed-input" type="number" min="1" max="99999" inputmode="numeric" aria-describedby="seed-note"><button id="seed-new" class="pk-btn pk-btn--ghost" type="button">Otro mapa</button></div>
       <small id="seed-note" class="pk-copy">Cada partida trae un mapa nuevo. Escribe un número para repetir uno.</small>
     </div>
-    <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando…</button></div>
+    <div class="pk-lobby-foot"><p id="connection" class="pk-copy" role="status" hidden></p><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando…</button><button id="online" class="pk-btn pk-btn--ghost pk-btn--lg" type="button">Con amigos</button></div>
   </section>
   <main id="hud" hidden>
     <section class="turn-panel pk-panel" aria-label="Turno">
