@@ -416,7 +416,12 @@ export class Trifulca {
     if (!partner || Math.hypot(partner.x - b.x, partner.z - b.z) > 2.2 || ['down', 'dizzy', 'rise', 'kick', 'sweep', 'toss', 'tumble'].includes(b.act)) return false;
     const { x, z, h } = b;
     partner.bench = false; Object.assign(partner, { x: x * .85, z: z * .85, h, act: 'idle', at: 0, inv: .5 });
-    b.bench = true; b.charge = -1; this.benchSpot(b);
+    b.bench = true; b.charge = -1; b.queued = null; b.buffer = 0; this.benchSpot(b);
+    // The partner jumps in beside the foe, never into them.
+    for (const foe of this.bodies.filter(o => o.team !== b.team && inRing(o))) {
+      const dx = partner.x - foe.x, dz = partner.z - foe.z, d = Math.hypot(dx, dz);
+      if (d < BODY_GAP) { const nx = d > 1e-4 ? dx / d : Math.sign(partner.x) || 1, nz = d > 1e-4 ? dz / d : 0; partner.x = foe.x + nx * BODY_GAP; partner.z = foe.z + nz * BODY_GAP; }
+    }
     this.emit({ type: 'relevo', id: partner.id, from: b.id });
     return true;
   }

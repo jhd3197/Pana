@@ -35,6 +35,8 @@ export const MAREO_MAX = 100, MAREO_CALMA = 75, KO_CAIDAS = 3, COUNT_STEP = .85;
 // (a tag-in, a fling) slides out over a few ticks, while walking in, even on a
 // trompón's lunge, still stops at the gap. 1 m is also where bots back off.
 export const BODY_GAP = 1, SEPARATE = 5;
+// A body flung out of a circle ring stops here: the neighbours stand further out.
+export const EDGE_LIMIT = 1;
 
 // The ring is the panas. `circle` arenas have a human ring (shoved back in by
 // the crowd); the tent's ring has ropes that bounce.
@@ -348,20 +350,41 @@ export function stepBodies(bodies, arena, dt, moves, emit) {
   // invulnerable (that only stops hits). Only positions move, so knockback
   // velocity carries on. Two on the same spot split along X, the first body
   // (the red corner) to the left.
-  for (let i = 0; i < ring.length; i++) for (let j = i + 1; j < ring.length; j++) {
-    const a = ring[i], b = ring[j], dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
-    if (d >= BODY_GAP) continue;
-    const push = Math.min((BODY_GAP - d) / 2, SEPARATE * dt), nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0;
-    a.x -= nx * push; a.z -= nz * push; b.x += nx * push; b.z += nz * push;
-  }
+  const cap = SEPARATE * dt;
+  // What can't give way (a partner on the apron, a pana knocked out on the floor,
+  // a body on the ropes): the free one moves alone.
+  const moveOff = (free, wall) => {
+    const dx = free.x - wall.x, dz = free.z - wall.z, d = Math.hypot(dx, dz);
+    if (d >= BODY_GAP) return;
+    const push = Math.min(BODY_GAP - d, cap * 2), nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0;
+    free.x += nx * push; free.z += nz * push;
+  };
+  for (const wall of bodies.filter(o => !inRing(o))) for (const self of ring) moveOff(self, wall);
+  const separate = () => {
+    for (let i = 0; i < ring.length; i++) for (let j = i + 1; j < ring.length; j++) {
+      const a = ring[i], b = ring[j], dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
+      if (d >= BODY_GAP) continue;
+      const push = Math.min((BODY_GAP - d) / 2, cap), nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0;
+      a.x -= nx * push; a.z -= nz * push; b.x += nx * push; b.z += nz * push;
+    }
+  };
+  separate();
+  // Three or more: moving out of one body can press into another.
+  if (ring.length > 2) separate();
   // Ropes bounce in the tent; elsewhere the crowd handles the edge (rules.js).
+  const pinned = new Set();
   for (const self of ring) {
     const e = edge(arena, self.x, self.z);
     if (arena.shape === 'square' && e.out > 0) {
-      self.x += e.nx * e.out; self.z += e.nz * e.out;
+      self.x += e.nx * e.out; self.z += e.nz * e.out; pinned.add(self);
       const into = self.vx * -e.nx + self.vz * -e.nz;
       if (into > .5) { self.vx += e.nx * into * 1.8; self.vz += e.nz * into * 1.8; emit({ type: 'ropes', id: self.id }); }
-    } else if (e.out > 1.4) { self.x += e.nx * (e.out - 1.4); self.z += e.nz * (e.out - 1.4); }
+    } else if (e.out > EDGE_LIMIT) { self.x += e.nx * (e.out - EDGE_LIMIT); self.z += e.nz * (e.out - EDGE_LIMIT); pinned.add(self); }
+  }
+  for (const wall of pinned) for (const self of ring) if (self !== wall && !pinned.has(self)) moveOff(self, wall);
+  if (ring.length > 2) {
+    separate();
+    for (const self of pinned) { const e = edge(arena, self.x, self.z); if (arena.shape === 'square' && e.out > 0) { self.x += e.nx * e.out; self.z += e.nz * e.out; } }
   }
   return kos;
 }
