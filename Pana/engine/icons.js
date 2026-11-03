@@ -49,6 +49,8 @@ export const ICONS = {
   touch: svg('<rect x="11" y="3" width="18" height="34" rx="3.5" fill="none" stroke="currentColor" stroke-width="3.5"/><circle cx="20" cy="31" r="2" fill="currentColor"/>'),
   picture: svg('<rect x="4" y="7" width="32" height="22" rx="1.5" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M9 25l8-8 6 6 3-3 5 5" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M13 35h14" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>'),
   speaker: svg('<path d="M5 15h7l8-7v24l-8-7H5z" fill="currentColor"/><path d="M26 14a8 8 0 0 1 0 12M30 9a14 14 0 0 1 0 22" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>'),
+  // A player: the hub's player count sits next to it.
+  person: svg('<circle cx="20" cy="12" r="7" fill="currentColor"/><path d="M6 36c0-8 6-13 14-13s14 5 14 13z" fill="currentColor"/>'),
   globe: svg('<circle cx="20" cy="20" r="15" fill="none" stroke="currentColor" stroke-width="3.2"/><path d="M5 20h30M20 5c-5 4-7 9-7 15s2 11 7 15c5-4 7-9 7-15s-2-11-7-15z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
   controller: svg('<rect x="5" y="5" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2"/><rect x="22" y="5" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2"/><rect x="5" y="22" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2"/><rect x="22" y="22" width="13" height="13" fill="currentColor"/>'),
   chevronRight: svg('<path d="m16 10 8 10-8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),

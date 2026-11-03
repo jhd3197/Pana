@@ -15,6 +15,13 @@ becomes the GitHub release's notes.
   impacto dice su distancia y sus pepazos; con las reglas de la ronda
   (cadencia, dispersión, caída del daño, recarga, granada y pescozón). T
   repone los blancos y Esc o Volver te regresan a la armería.
+- **En Bochinche, Elige tu pana ahora llena la pantalla con los trece panas en tres filas grandes.**
+  Sin números ni letras en las tarjetas y sin textos largos: el pana, su
+  poder y sus barras. Las flechas recorren la cuadrícula y Enter lo elige.
+- **Las tarjetas del inicio ahora se leen de un vistazo: cada juego trae una frase corta y un ícono con cuántos panas juegan.**
+  Las descripciones largas pasaron a dos o tres palabras ("Artillería de
+  pintura") y "tú vs la máquina" o "hasta 8 panas" ahora es un muñequito con
+  "1" o "1-8".
 - **La Estatua de Reliquia ahora se ve como una estatua de verdad: una doliente de mármol pálido que resalta en la oscuridad.**
   Sobre un pedestal bajo, con un velo roto, cuencas vacías y una boca
   entreabierta, manos de dedos largos y musgo en el ruedo. Cada vez que se
