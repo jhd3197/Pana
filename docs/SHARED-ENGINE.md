@@ -649,7 +649,7 @@ See candidates.
 | Piece | Module | Used by |
 |---|---|---|
 | Team lobby (team panels in the main lobby, one list without teams; four seats a side as 2×2) | `engine/team-lobby.js` (`createTeamLobby`) on `engine/lobby-roster.js` | Billar, Caída, Capis a Pintazos, Chapita, Criollas, Curiara, Dominó, Pepazo (Póquer through table seating, as one list) |
-| Team balance on join | `engine/play/team-balance.js` (`smallestTeam`, `openSeat`) | Billar, Caída, Capis a Pintazos, Chapita, Criollas, Dominó, Pepazo |
+| Team balance on join, who is a teammate | `engine/play/team-balance.js` (`smallestTeam`, `openSeat`, `isTeammate`) | Billar, Caída, Capis a Pintazos, Chapita, Criollas, Dominó, Pepazo |
 | Lobby roster cards (portrait, seats) | `engine/lobby-roster.js` | only through `team-lobby.js`; `game-entry` uses its `portraitImg` |
 | Seat swapping rules | `engine/play/seat-rules.js` | Billar, Caída, Chapita, Criollas, Curiara, Dominó, Pepazo, Póquer |
 | Table seating UI (team lobby with team = seat % 2) | `engine/play/table-seating.js` | Billar, Caída, Dominó, Póquer |
@@ -778,6 +778,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
 | Text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`) | all 24 |
 | Your own pana's outline and marker | `engine/play/local-outline.js` | Bochinche; Capis a Pintazos (the marker only, over the capi whose turn it is) |
+| Teammate chevrons (team rounds, own side only, through cover) | `engine/play/team-marker.js` (`createTeamMarkers`, `isTeammate`) | Pepazo |
 
 ### Your own pana: outline and marker
 
@@ -796,6 +797,22 @@ outline.update(dt); marker.update(dt);   // every frame
 ```
 
 Used by: Bochinche.
+
+### Teammate chevrons
+
+`engine/play/team-marker.js`. `createTeamMarkers({ height, size })` puts a small
+chevron in the team colour over a pana's head; it keeps one screen size and
+draws over cover. Call `set(group, show, color)` every frame per pana, with
+`show = isTeammate(me, p, teamRound)` (never yourself, never without teams),
+and `dispose()` with the scene. A full-body outline stays for your own pana
+only (`local-outline.js`).
+
+```js
+const marks = createTeamMarkers();
+marks.set(avatar.group, !down && isTeammate(me, p, teamPlay(state.options)), p.color);
+```
+
+Used by: Pepazo (team rounds, Bandera and Dominación too).
 
 ## Worlds and models
 

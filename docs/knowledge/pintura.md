@@ -622,7 +622,9 @@ Team rounds show the two teams in the main lobby through
 kit and its nivel); free-for-all hides them and the shell's player cards show.
 A pana who joins a team round takes the smaller team (`smallestTeam`), a tie
 keeps the lowest free seat; Unirme aquí / Cambiarme aquí / Organizar still move
-them.
+them. In a team round each teammate (bots included) wears a small chevron in
+the team colour over the head (`engine/play/team-marker.js`), shown through
+cover; rivals, yourself and todos contra todos never get one.
 
 ### Hardcore and hits to kill
 

@@ -38,3 +38,6 @@ export function openSeat(players, { teamOf = null, teams = 2, free = p => p?.id 
   const team = smallestTeam(sizes, teamOf(open[0], players[open[0]]));
   return open.find(seat => teamOf(seat, players[seat]) === team) ?? open[0];
 }
+
+// Whether `p` is on `me`'s side in a team round (never `me` itself, never without teams).
+export const isTeammate = (me, p, teams) => !!teams && !!me && !!p && p.id !== me.id && p.team === me.team;

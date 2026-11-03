@@ -12,6 +12,8 @@ import { createDomProps } from './domination-scene.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import * as THREE from 'three';
+import { createTeamMarkers, isTeammate } from '/engine/play/team-marker.js';
+import { teamPlay } from './options.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
 import { createSky } from '/engine/worlds/sky.js';
@@ -80,6 +82,7 @@ export function createScene(canvas) {
   const defaultCourt = new THREE.Group(); scene.add(defaultCourt);
   let environment = null, mapId = ''; scene.userData.mapId = mapId;
   const materials = new Map(), avatars = new Map(), ballMeshes = new Map(), splats = new Map();
+  const teamMarks = createTeamMarkers();
   const material = color => { if (!materials.has(color)) materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: .85 })); return materials.get(color); };
   // Hits splat as glossy blobs, four shapes per colour.
   const hitTextures = [11, 12, 13, 14].map(seed=>splatTexture(seed)).concat(splatTexture(11,'stripe'),splatTexture(11,'dots')), hitMaterials = new Map();
@@ -317,7 +320,7 @@ export function createScene(canvas) {
         // Third-person markers are batched (bakePaintKit): a few draws each instead of dozens.
         const marker = bakePaintKit(modelOptions(p)); marker.position.set(.48, .95, .25); marker.rotation.x = isMelee(p.weapon) ? .5 : 0; avatar.group.add(marker);
         avatar.ring = ring; avatar.marker = marker; avatar.paintColor = p.color; avatar.stains = []; avatar.stainCount = 0; avatar.flinch = 0; avatar.paint = p.paint || 0; avatar.out = p.respawn > 0 || p.eliminated ? 9 : 0;
-        avatar.group.rotation.order = 'YXZ'; avatars.set(p.id, avatar);
+        avatar.group.rotation.order = 'YXZ'; avatar.group.userData.playerId = p.id; avatars.set(p.id, avatar);
       }
       // A pepazo makes the pana flinch; the last one bursts paint and topples them.
       if ((p.paint || 0) > avatar.paint) { avatar.flinch = 1; avatar.stagger(.8, Math.atan2(p.impact?.z || 0, p.impact?.x || 1) - Math.atan2(p.ax,p.az)); if (p.id === id) feel.shake(.8); }
@@ -346,6 +349,8 @@ export function createScene(canvas) {
       avatar.group.rotation.set(-avatar.flinch * .35, Math.atan2(p.ax, p.az), 0);
       avatar.ring.position.y = .05 - avatar.group.position.y; avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = !down && (p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0);
       avatar.marker.visible = !down; avatar.vest.visible = !down && p.kit?.armor === 'padded';
+      // Your teammates wear a chevron over their heads (team rounds only).
+      teamMarks.set(avatar.group, !down && !lobby && isTeammate(me, p, teamPlay(state.options)), p.color);
       if (falling && avatar.knockout) { avatar.group.rotation.set(0, Math.atan2(p.ax,p.az), 0); avatar.knockout.update(dt); }
       else avatar.update(dt, { walk: p.walk, run: p.walk });
       // A swing or a throw (a new count) swings the right arm like a grenade throw.
@@ -483,6 +488,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { disposed = true; unbind(); ctfProps.dispose(); domProps.dispose(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); town?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); thrownMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { disposed = true; unbind(); teamMarks.dispose(); ctfProps.dispose(); domProps.dispose(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); town?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); thrownMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }

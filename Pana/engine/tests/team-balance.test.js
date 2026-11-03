@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { smallestTeam, teamCounts, openSeat } from '../play/team-balance.js';
+import { smallestTeam, teamCounts, openSeat, isTeammate } from '../play/team-balance.js';
 import { Arena } from '../../games/pintura/public/rules.js';
 import { DominoGame } from '../../games/domino/public/rules.js';
 import { CaidaGame } from '../../games/caida/public/rules.js';
@@ -83,4 +83,13 @@ test('Capis: panas fill the teams evenly', () => {
   const t = new CapisTable();
   for (const id of ['a', 'b', 'c']) t.addPlayer(id, id, {});
   assert.deepEqual(t.players.map(p => p.team), [0, 1, 0]);
+});
+
+test('teammate markers: own side only, never yourself, never without teams', () => {
+  const me = { id: 1, team: 0 };
+  assert.equal(isTeammate(me, { id: 3, team: 0 }, true), true);
+  assert.equal(isTeammate(me, { id: 2, team: 1 }, true), false);
+  assert.equal(isTeammate(me, me, true), false);
+  assert.equal(isTeammate(me, { id: 3, team: 0 }, false), false, 'todos contra todos shows none');
+  assert.equal(isTeammate(null, { id: 3, team: 0 }, true), false);
 });
