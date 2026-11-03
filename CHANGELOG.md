@@ -15,6 +15,8 @@ becomes the GitHub release's notes.
 - **Pepazo: elige «Equipos» o «Todos contra todos» arriba en la sala.**
   Con equipos eliges el modo (Pintadas, Captura la bandera, Dominación) y
   los dos equipos salen en la sala, ya no escondidos en Más ajustes.
+- **Los equipos de cuatro se ven en dos filas de dos, y los ajustes de la sala son más compactos.**
+  Las opciones salen en filas de botones bajo su nombre en todos los juegos.
 - **El armero de Pepazo tiene un puesto fijo para cada pieza: Mira, Cañón, Tolva y Culata.**
   Cada puesto ofrece solo lo que le cabe a esa arma: la francotiradora lleva
   telescópica, la pistola punto rojo o láser, y la tolva viene chica o grande.

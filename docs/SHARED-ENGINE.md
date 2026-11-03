@@ -648,7 +648,7 @@ See candidates.
 
 | Piece | Module | Used by |
 |---|---|---|
-| Team lobby (team panels in the main lobby, one list without teams) | `engine/team-lobby.js` (`createTeamLobby`) on `engine/lobby-roster.js` | Billar, Caída, Capis a Pintazos, Chapita, Criollas, Curiara, Dominó, Pepazo (Póquer through table seating, as one list) |
+| Team lobby (team panels in the main lobby, one list without teams; four seats a side as 2×2) | `engine/team-lobby.js` (`createTeamLobby`) on `engine/lobby-roster.js` | Billar, Caída, Capis a Pintazos, Chapita, Criollas, Curiara, Dominó, Pepazo (Póquer through table seating, as one list) |
 | Team balance on join | `engine/play/team-balance.js` (`smallestTeam`, `openSeat`) | Billar, Caída, Capis a Pintazos, Chapita, Criollas, Dominó, Pepazo |
 | Lobby roster cards (portrait, seats) | `engine/lobby-roster.js` | only through `team-lobby.js`; `game-entry` uses its `portraitImg` |
 | Seat swapping rules | `engine/play/seat-rules.js` | Billar, Caída, Chapita, Criollas, Curiara, Dominó, Pepazo, Póquer |
@@ -658,7 +658,7 @@ See candidates.
 | Map picker | `engine/play/map-picker.js` | Billar, Caída, Criollas, Dominó, Escondidas, Pepazo, Póquer |
 | Results → lobby (pick the next map) | `engine/play/round-lobby.js` (`returnToLobby`; LiveRoom's `lobby` action calls `game.toLobby()`) | Escondidas, Pepazo, Trifulca |
 | Difficulty picker | `engine/play/difficulty.js` | Billar, Criollas, Pepazo; Capis a Pintazos reads the levels for its bot and aim preview |
-| Room options (fields, rules, finalize; compact "Más ajustes" grid in the game skin, in-dialog help layer via `help: { controls, tips }`) | `engine/room-options.js`, `room-options.css`, `room-options-rules.js`, `room-option-fields.js` | 23 games; fields in 13; help layer in Pepazo |
+| Room options (fields, rules, finalize; primary choices as a square button grid, label above; compact "Más ajustes" grid in the game skin; `defaultOf(values)` for mode-dependent defaults; in-dialog help layer via `help: { controls, tips }`) | `engine/room-options.js`, `room-options.css`, `room-options-rules.js`, `room-option-fields.js` | 23 games; fields in 13; help layer in Pepazo |
 | Results screen | `engine/results.js` + `.pk-results` | 22 games (not Bululú, Embuste) |
 
 ### Team lobby and auto-balance
@@ -690,6 +690,9 @@ that still has one; a tie keeps the old first-free-seat rule. `smallestTeam(coun
 is the same choice for games that store a team, not a seat (Capis). It is pure:
 import it by relative path from rules a room loads. Curiara keeps filling one
 canoe before the next, since a canoe is a crew of two, not a side.
+
+Cards per row follow `rosterColumns` (`lobby-roster.js`): up to three in one
+row, four as a 2×2 grid of compact cards, more in two even rows.
 
 A game with `"teams": true` in game.json must render through this;
 `tests/conventions.test.js` fails on a game that imports `createLobbyRoster`,
