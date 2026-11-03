@@ -76,7 +76,10 @@ export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, 
   const { map, mask } = generated || generateMap(seed, size);
   const m = { map, mask, seed: map.seed >>> 0, phase: 'aim', winner: null, wind: 0, shot: null, events: [],
     options: { seconds: TURN_SECONDS.includes(seconds) ? seconds : 35, difficulty, size: map.size }, humans,
-    last: [-1, -1], turn: null, clock: 0, shots: 0, shells: [], capys: [], ammo: [startingAmmo(), startingAmmo()], used: {} };
+    last: [-1, -1], turn: null, clock: 0, shots: 0, shells: [], capys: [], ammo: [startingAmmo(), startingAmmo()], used: {},
+    // Every change to the ground, in order: replayed on the same seed's map it
+    // rebuilds this ground exactly (applyEdit), so a room never sends the mask.
+    edits: [], teamTurns: [0, 0] };
   map.spawns.forEach((xs, team) => xs.forEach((x, slot) => {
     m.capys.push({ id: `${team}-${slot}`, team, slot, name: NAMES[team][slot], x, y: surfaceY(mask, x) ?? map.height - 2, vx: 0, vy: 0,
       grounded: false, facing: team ? -1 : 1, aim: .55, paint: 0, out: null, jumpPress: 0, slide: 0, weapon: FIRST_WEAPON });
@@ -100,7 +103,8 @@ function startTurn(m, team) {
   // A capi keeps the weapon it last held while its team has shots of it; else La Piñita.
   if (!canUse(m, team, pick.weapon)) pick.weapon = BASIC_WEAPON;
   m.wind = Math.round((draw(m) * 2 - 1) * 10) / 10;
-  m.turn = { n: (m.turn?.n || 0) + 1, team, capy: pick.id, time: m.options.seconds, retreat: 0, settle: 0 };
+  // `k`: this team's own turn count, so teammates in a room take turns (online.js controllerOf).
+  m.turn = { n: (m.turn?.n || 0) + 1, k: ++m.teamTurns[team], team, capy: pick.id, time: m.options.seconds, retreat: 0, settle: 0 };
   m.phase = 'aim'; m.shot = null; m.shells = [];
   m.events.push({ type: 'turn', team, capy: pick.id });
 }
@@ -155,12 +159,27 @@ function hit(m, c, paint, team, vx, vy, weapon) {
 // every capi near it. `weapon` defaults to La Bazuca.
 export function explode(m, x, y, team, weapon = FIRST_WEAPON, victim = null) {
   const w = weaponOf(weapon);
-  carve(m.mask, x, y, w.crater);
-  splash(m.mask, x, y, w.stain, team);
-  if (w.drips) drips(m.mask, x, y, w.stain - .4, team, { seed: m.shots * 7919 + Math.round(x * 10) * 31 + Math.round(y * 10) });
+  edit(m, { op: 'blast', x, y, team, weapon: w.id, seed: m.shots * 7919 + Math.round(x * 10) * 31 + Math.round(y * 10) });
   m.events.push({ type: 'blast', x, y, team, weapon: w.id, size: w.crater });
   hurt(m, x, y, w, team, victim);
 }
+
+// One change to the ground (a burst or a tunnel), applied to `mask`. The
+// match and a room guest's copy of it both run this, from the same numbers.
+export function applyEdit(mask, e) {
+  if (e.op === 'blast') {
+    const w = weaponOf(e.weapon);
+    carve(mask, e.x, e.y, w.crater);
+    splash(mask, e.x, e.y, w.stain, e.team);
+    if (w.drips) drips(mask, e.x, e.y, w.stain - .4, e.team, { seed: e.seed });
+  } else if (e.op === 'drill') {
+    const { radius } = weaponOf('drill').tunnel, { x0, y0, x1, y1, team } = e, w = weaponOf('drill');
+    carveLine(mask, x0, y0, x1, y1, radius);
+    for (let k = 0; k <= 4; k++) splash(mask, x0 + (x1 - x0) * k / 4, y0 + (y1 - y0) * k / 4, radius + .5, team, 150);
+    splash(mask, x1, y1, w.stain, team);
+  }
+}
+function edit(m, e) { m.edits.push(e); applyEdit(m.mask, e); }
 
 // La Licuadora bores in where it strikes: a tunnel `tunnel.length` long along
 // its flight (a capsule, terrain-mask.js carveLine), a lick of paint on its
@@ -169,9 +188,7 @@ export function explode(m, x, y, team, weapon = FIRST_WEAPON, victim = null) {
 export function drill(m, x, y, vx, vy, team) {
   const w = weaponOf('drill'), { length, radius } = w.tunnel, l = Math.hypot(vx, vy) || 1, ux = vx / l, uy = vy / l;
   const x0 = x - ux * .4, y0 = y - uy * .4, x1 = x + ux * length, y1 = y + uy * length;
-  carveLine(m.mask, x0, y0, x1, y1, radius);
-  for (let k = 0; k <= 4; k++) splash(m.mask, x0 + (x1 - x0) * k / 4, y0 + (y1 - y0) * k / 4, radius + .5, team, 150);
-  splash(m.mask, x1, y1, w.stain, team);
+  edit(m, { op: 'drill', x0, y0, x1, y1, team });
   m.events.push({ type: 'drill', x: x0, y: y0, x1, y1, team, weapon: w.id });
   const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy, reach = radius + RULES.radius;
   for (const c of m.capys.filter(alive)) {
