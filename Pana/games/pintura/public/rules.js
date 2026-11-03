@@ -2,7 +2,7 @@ import { cleanKit, changeWeapon, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBA
 import { createMelee, startSwing, stepMelee, swingHit, throwStart, stepThrown, aimThrow, inHand } from '../../../engine/play/melee.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { smallestTeam } from '../../../engine/play/team-balance.js';
-import { DEFAULT_OPTIONS, validOptions, teamPlay, roundTime, livesOf, objectivePlay } from './options.js';
+import { DEFAULT_OPTIONS, validOptions, teamPlay, roundTime, livesOf, objectivePlay, hardcorePlay, withModeDefaults, withoutLegacy } from './options.js';
 import { isCtf, ctfReset, ctfStep, ctfDrop, ctfOutcome, ctfGoal, carrierSlow } from './ctf.js';
 import { isDom, domReset, domStep, domOutcome, domBotGoal } from './domination.js';
 import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/worlds/arena-layouts.js';
@@ -170,8 +170,14 @@ function distanceField(grid, target) {
   }
   return far;
 }
+// Pepazos that knock a pana out. Hardcore: one. Otherwise the kit's armor on a
+// base of 3 (armory-data.js kitStats; a simulation may pass its own `toughness`
+// base, rooms never do since the lobby's Aguante choice became Hardcore).
+export const hitsToKill = (kit, options) => hardcorePlay(options) ? 1 : kitStats(kit, options).toughness;
+// Seconds out after a knockout: Hardcore keeps the round moving.
+export const respawnTime = options => hardcorePlay(options) ? 1.5 : 2.5;
 export class Arena {
-  constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.flagEvents = []; this.flagSerial = 0; this.zones = []; this.zoneEvents = []; this.zoneSerial = 0; this.domBank = [0, 0]; this.outcome = null; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; this.camoOwners = new Map(); }
+  constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { const { toughness, ...room } = options || {}; this.options = { ...DEFAULT_OPTIONS, ...(validOptions(withoutLegacy(room)) ? withoutLegacy(room) : {}), ...(toughness > 0 ? { toughness } : {}) }; this.flags = []; this.flagEvents = []; this.flagSerial = 0; this.zones = []; this.zoneEvents = []; this.zoneSerial = 0; this.domBank = [0, 0]; this.outcome = null; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; this.camoOwners = new Map(); }
   // A camo the seat does not own falls back to the first solid one (camoRefusal names it for the client).
   selectKit(id, value) { const p=this.players.find(p=>p.id===id && p.connected); if(!p || this.phase==='playing') return false; p.kit=cleanKit(value); if(!ownsCamo(p.kit.camo,this.camoOwners.get(id))) p.kit.camo=FALLBACK_CAMO; p.weapon=p.kit.weapon; return true; }
   // The camos a seat owns beyond the solid ones: the room passes the gateway's signed list, practice the local one.
@@ -181,7 +187,7 @@ export class Arena {
   camoRefusal(id, value) { const camo=cleanKit(value).camo; return ownsCamo(camo,this.camoOwners.get(id)) ? '' : camo; }
   // Why selectKit would refuse this seat right now ('' when it would accept): the client says so instead of dropping the pick.
   kitRejection(id) { return !this.players.some(p=>p.id===id && p.connected) ? 'absent' : this.phase==='playing' ? 'playing' : ''; }
-  configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.players.forEach(p => { p.color = COLORS[teamPlay(this.options) ? p.team : p.seat]; }); this.parkLobby(); return true; }
+  configure(options) { options = withoutLegacy(options); if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, withModeDefaults(this.options, options)); this.players.forEach(p => { p.color = COLORS[teamPlay(this.options) ? p.team : p.seat]; }); this.parkLobby(); return true; }
   moveSeat(actorId, from, to, hostId) {
     if (!['lobby', 'finished'].includes(this.phase) || !teamPlay(this.options)) return false;
     const seats = paintSeats(this.players);
@@ -582,10 +588,10 @@ export class Arena {
     const length = Math.hypot(dx, dz) || 1;
     victim.impact = { x: dx / length, z: dz / length, zone: impact.zone === 'head' ? 'head' : 'body', blast: !!impact.blast, n: this.eventSerial + 1 };
     const distance = owner ? Math.round(Math.hypot(owner.x - victim.x, owner.z - victim.z)) : 0;
-    const toughness = kitStats(victim.kit,this.options).toughness, weapon = impact.weapon || null, thrown = !!impact.thrown;
+    const toughness = hitsToKill(victim.kit, this.options), weapon = impact.weapon || null, thrown = !!impact.thrown;
     victim.paint = Math.min(toughness, victim.paint + Math.max(1, damage)); victim.stains = [...victim.stains, color].slice(-5); victim.calm = 0;
     if (victim.paint < toughness) { this.event('hit', owner, victim, distance, { weapon, thrown }); return; }
-    victim.respawn = 2.5; victim.hits++; victim.slow = this.options.paint === 'sticky' ? 7 : 0; victim.eliminated = livesOf(this.options) > 0 && victim.hits >= livesOf(this.options);
+    victim.respawn = respawnTime(this.options); victim.hits++; victim.slow = this.options.paint === 'sticky' ? 7 : 0; victim.eliminated = livesOf(this.options) > 0 && victim.hits >= livesOf(this.options);
     const rival = !!owner && !this.sameTeam(owner, victim), revenge = rival && owner.nemesis === victim.id;
     if (rival) { owner.score++; owner.streak++; if (revenge) owner.nemesis = null; victim.nemesis = owner.id; if (!objectivePlay(this.options)) this.teamScores[owner.team]++; }
     victim.streak = 0;

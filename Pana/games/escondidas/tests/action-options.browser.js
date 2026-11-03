@@ -9,11 +9,13 @@ const browser = await launch();
 const configs = [
   ['escondidas', 'hunt', { rounds: 6, disguises: 'barrels', seekers: 2, hideSeconds: 45, hints: 'whistle', moveDisguised: false, seekerMap: true, huntSeconds: 240 }],
   ['cocina', 'cocina', { kitchen: 'playa', duration: 300, difficulty: 'chaos', orders: 'arepa', impatient: false, fire: 'fast', tips: false, switchKitchen: true, helpers: false }],
-  ['pintura', 'pinturaDebug', { mode: 'teams', duration: 300, toughness: 5, lives: 1, paint: 'sticky', weapons: 'pistol', friendlyFire: true, fastReload: true, flag: true }],
+  // Pepazo's lobby asks Partida and Modo (they write `mode` and `hardcore`); the rest is in Más ajustes.
+  ['pintura', 'pinturaDebug', { mode: 'ctf', hardcore: false, duration: 180, flagGoal: 5, domGoal: 200, flagTime: 900, lives: 3, paint: 'sticky', weapons: 'pistol', friendlyFire: true, fastReload: true, bots: 'auto' },
+    [['sides', 'teams'], ['teamMode', 'ctf'], ['more'], ['flagGoal', 5], ['flagTime', 900], ['paint', 'sticky'], ['weapons', 'pistol'], ['friendlyFire', true], ['fastReload', true]]],
   ['reliquia', 'reliquia', { difficulty: 'hard', greed: 'fierce', revive: false, wipeShare: 0, map: false, crude: true }],
 ];
 try {
-  for (const [game, debug, values] of configs) {
+  for (const [game, debug, values, clicks] of configs) {
     const code = `opts-${game}-${Date.now()}`, host = await openGame(browser, game, { room: code, name: 'Ana', query: 'debug' });
     const guest = await openGame(browser, game, { room: code, name: 'Luis', mobile: true, query: 'debug' });
     await waitFor(host, key => window[key]?.room.isHost && window[key].room.state.players.length === 2, debug);
@@ -21,7 +23,8 @@ try {
     const fields = await host.evaluate(async game => (await import(`/g/${game}/options.js`)).FIELDS, game);
     const defaults = Object.fromEntries(fields.map(f => [f.id, f.default]));
     if (['escondidas', 'pintura'].includes(game)) await host.locator('#map-choice').selectOption('puerto');
-    for (const advanced of [false, true]) {
+    if (clicks) for (const [id, value] of clicks) await host.locator(id === 'more' ? '#pana-room-more' : `[data-room-option="${id}"][data-value="${value}"]`).click();
+    else for (const advanced of [false, true]) {
       if (advanced) await host.locator('#pana-room-more').click();
       for (const f of fields.filter(f => !!f.advanced === advanced)) await host.locator(`[data-room-option="${f.id}"][data-value="${values[f.id]}"]`).click();
     }

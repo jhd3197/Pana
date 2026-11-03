@@ -9,8 +9,9 @@ The host only starts rounds. Its departure cannot interrupt simulation.
 
 ## Rules and input
 
-- Three minutes by default or ten knockouts; ties share victory. `toughness` (Aguante, default 3)
-  pepazos knock a pana out for 2.5 seconds; `paint` counts hits taken and `stains` keeps
+- Three minutes by default or ten knockouts; ties share victory. Three pepazos
+  (plus or minus the armor, `hitsToKill` in `rules.js`) knock a pana out for 2.5
+  seconds, one in Hardcore (below); `paint` counts hits taken and `stains` keeps
   their colours. After 4 s without a hit one pepazo washes off every 1.5 s; respawn clears both. Spawn protection lasts 1.5 seconds and firing cancels it.
 - Spawns (`public/spawn-picker.js`). Free-for-all round start uses `spreadSpawns`: an
   exact search over the court's spawns (8, El Puerto 14) keeps every pair at least
@@ -587,18 +588,55 @@ that input. Fast reload is 0.55 seconds instead of 1.3. Sticky paint slows the
 victim for seven seconds including the respawn wait. Friendly hits can consume
 a life when enabled but never award points.
 
-### Partida: Equipos or Todos contra todos
+### Partida, Modo and Más ajustes
 
-The lobby asks "Partida" first (Equipos / Todos contra todos), then, for
-teams, "Modo" (Pintadas, Captura la bandera, Dominación). Both are
-lobby-only fields (`MENU_FIELDS` in `options.js`): `menuValues` derives
-`sides` from `teamPlay`, `menuPatch` turns a choice into the one `mode` the
-rules read (Equipos keeps a team game already picked). `FIELDS`, the server's
-allowlist and saved options are unchanged. Team rounds show the two teams in the
-main lobby through `engine/team-lobby.js` (each card carries the kit and its
-nivel); free-for-all hides them and the shell's player cards show. A pana who
-joins a team round takes the smaller team (`smallestTeam`), a tie keeps the
-lowest free seat; Unirme aquí / Cambiarme aquí / Organizar still move them.
+The main lobby asks two things only, as compact rows of buttons: "Partida"
+(Equipos / Todos contra todos) and "Modo" (teams: Pintadas, Bandera,
+Dominación, Hardcore; todos contra todos: Pintadas, Hardcore). Both are
+lobby-only fields (`MENU_FIELDS` in `options.js`: `sides`, `teamMode`,
+`ffaMode`); `menuValues` derives them from the room and `menuPatch` turns a
+choice into the room's `mode` and `hardcore` (Equipos keeps a team game already
+picked; both sides keep Hardcore). Everything else (round time, goals, time
+limit, lives, paint, weapons, friendly fire, reload, bots, bot aim) is in
+"Más ajustes". `FIELDS` stays the server's allowlist.
+
+Each mode brings its own values (`MODE_DEFAULTS`), so nobody has to set
+anything:
+
+| Modo | Values |
+|---|---|
+| Pintadas (teams or todos contra todos) | 3 min, 3 lives |
+| Bandera (`ctf`) | 10 min, 3 captures |
+| Dominación (`dom`) | 10 min, 200 points |
+| Hardcore (teams or todos contra todos) | 3 min, endless lives, 1.5 s respawn |
+
+`Arena.configure` applies them through `withModeDefaults`: a patch that
+switches the mode (or Hardcore, or teams and todos contra todos) gets the new
+mode's values for whatever it does not name itself; any other patch leaves
+them alone. The rule lives in the rules, so a raw `configure` from the server
+behaves like the menu. In Más ajustes a field's mode value counts as its
+default (`defaultOf`), so only real changes are flagged.
+
+Team rounds show the two teams in the main lobby through
+`engine/team-lobby.js` (four seats a side as a 2×2 grid; each card carries the
+kit and its nivel); free-for-all hides them and the shell's player cards show.
+A pana who joins a team round takes the smaller team (`smallestTeam`), a tie
+keeps the lowest free seat; Unirme aquí / Cambiarme aquí / Organizar still move
+them.
+
+### Hardcore and hits to kill
+
+The lobby's old "Aguante" choice (1, 3 or 5 pepazos) is gone. `hardcore: true`
+makes one pepazo a knockout (`hitsToKill` in `rules.js` returns 1) and the
+respawn 1.5 s instead of 2.5 (`respawnTime`); it rides the paint modes only
+(`hardcorePlay` is false in Bandera and Dominación). Otherwise
+`hitsToKill` is the kit's `kitStats(...).toughness`: a base of 3 plus the
+armor's offset. That is the hook for armor classes: change the base or the
+armor inside `kitStats` and every hit, the HUD's bar and the bots follow.
+A simulation may still pass `toughness` to the `Arena` constructor as its
+base (unit tests do); rooms never carry it: `withoutLegacy` drops it from
+saved or synced options and from `configure` patches, so an old room with
+Aguante neither crashes nor refuses its other settings.
 
 ### Capture the flag ("Captura la bandera")
 

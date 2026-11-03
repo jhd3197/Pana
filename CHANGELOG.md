@@ -15,6 +15,9 @@ becomes the GitHub release's notes.
 - **Pepazo: elige «Equipos» o «Todos contra todos» arriba en la sala.**
   Con equipos eliges el modo (Pintadas, Captura la bandera, Dominación) y
   los dos equipos salen en la sala, ya no escondidos en Más ajustes.
+- **Pepazo: nuevo modo Hardcore, un pepazo y fuera, en equipos o todos contra todos.**
+  La sala solo pregunta Partida y Modo; cada modo trae su tiempo y su meta, y
+  lo demás está en Más ajustes. Ya no se elige el aguante.
 - **Los equipos de cuatro se ven en dos filas de dos, y los ajustes de la sala son más compactos.**
   Las opciones salen en filas de botones bajo su nombre en todos los juegos.
 - **El armero de Pepazo tiene un puesto fijo para cada pieza: Mira, Cañón, Tolva y Culata.**
