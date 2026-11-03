@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo: Acabado, Camuflaje y Llavero juntos en Estilo.**
+  Cada arma tiene un solo botón Estilo con los tres; Atrás, Esc, Retroceso o
+  B suben un nivel a la vez, y las flechas recorren la armería.
 - **Pepazo: llevas dos armas y tu equipo es tu clase.**
   La armería abajo tiene solo Equipo, Arma 1, Arma 2 y Granadas; cada arma
   abre su propio menú con sus piezas y Atrás (Esc o B). El Arma 2 es una

@@ -22,8 +22,10 @@ const colorOf=kit=>FINISHES.find(f=>f.id===kit.finish)?.color||'#f28b42';
 const classOfMarker=id=>ARMORY_CLASSES.find(c=>c.weapons.includes(id))||ARMORY_CLASSES[0];
 // Pepazos with up to two decimals: La China's stones paint half of one.
 const pepazos=n=>locn(n,'{n} pepazo','{n} pepazos',{n:String(Math.round(n*100)/100)});
-// A gun's sub-menu, after its weapon and typed part slots: the looks both guns share.
-const LOOKS=[{id:'finish',name:locKey('Acabado')},{id:'camo',name:locKey('Camuflaje')},{id:'charm',name:locKey('Llavero')},{id:'pattern',name:locKey('Salpicadura')}];
+// A gun's sub-menu, after its weapon and typed part slots: Estilo (a page of its own with
+// the three looks in STYLE), then Salpicadura. Both guns share them.
+const STYLE=[{id:'finish',name:locKey('Acabado')},{id:'camo',name:locKey('Camuflaje')},{id:'charm',name:locKey('Llavero')}];
+const LOOKS=[{id:'style',name:locKey('Estilo')},{id:'pattern',name:locKey('Salpicadura')}];
 // What a class changes against Balanceado, as icon + number chips (`less`: lower is better).
 const CLASS_CHIPS=[{key:'mobility',icon:'kitBolt',text:d=>`${Math.round(d*100)}%`},{key:'toughness',icon:'kitShield',text:d=>String(d)},{key:'regen',icon:'kitRegen',text:d=>`${Math.round(d*100)}%`},
  {key:'stepNoise',icon:'kitStep',text:d=>`${Math.round(d*100)}%`,less:true},{key:'markerScale',icon:'kitRadar',text:d=>`${Math.round(d*100)}%`,less:true},{key:'grenades',icon:'kitGrenade',text:d=>String(d)},{key:'grenadeRecharge',icon:'whirl',text:d=>`${Math.round(d)} s`,less:true}];
@@ -50,8 +52,8 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  // The class chips, the first row of the weapon choices; LB / RB step through them (role=tab).
  const tabs=document.createElement('nav');tabs.id='armory-classes';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label',loc('Clases de marcadora'));
  back.prepend(Object.assign(document.createElement('i'),{innerHTML:ICONS.chevronLeft}));back.onclick=()=>stepBack();
- // Three levels: the four slots; a gun's sub-menu (`gun` 0 or 1); one slot's choices (`category`).
- let shown=null,ratedOptions='',category=null,slot=null,gun=null,hover=0,renderer=null,scene,camera,model,avatar,vest,range=null,pivot,gunBox,padded=false,framed=null,sway=0,opener=null;
+ // Levels: the four slots; a gun's sub-menu (`gun` 0 or 1); its Estilo page (`styling`); one slot's choices (`category`).
+ let styling=false,shown=null,ratedOptions='',category=null,slot=null,gun=null,hover=0,renderer=null,scene,camera,model,avatar,vest,range=null,pivot,gunBox,padded=false,framed=null,sway=0,opener=null;
  // The gun on show: the open sub-menu's, else the Arma tile last pointed at.
  const hand=()=>gun??hover;
  const catalog={armor:ARMOR,grenade:GRENADES,finish:FINISHES,charm:CHARMS,pattern:PATTERNS};
@@ -133,12 +135,13 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  }
  // A tile: its picture and a short label that always shows whole (armory.css wraps it).
  const tile=(field,label,part=null)=>{const b=document.createElement('button');b.type='button';b.dataset.slot=field;if(part)b.dataset.part=part;b.innerHTML=`<i></i><span>${esc(loc(label))}</span>`;b.onclick=()=>choose(field,part);return b;};
- // A gun's sub-menu: its weapon, the typed slots that weapon has, then the shared looks.
+ // A gun's sub-menu: its weapon, the typed slots that weapon has, then the shared looks;
+ // on its Estilo page, Atrás and the three looks instead.
  let gunKey='';
  function gunTiles(){
-  const g=gunOf(kit,gun),key=`${gun}:${slotsFor(g.weapon).map(s=>s.id)}`;if(key===gunKey)return;gunKey=key;
-  gunNav.setAttribute('aria-label',gun?loc('Arma 2'):loc('Arma 1'));
-  gunNav.replaceChildren(back,tile('weapon',locKey('Arma')),...slotsFor(g.weapon).map(s=>tile('part',s.name,s.id)),...LOOKS.map(l=>tile(l.id,l.name)));
+  const g=gunOf(kit,gun),key=`${gun}:${styling}:${slotsFor(g.weapon).map(s=>s.id)}`;if(key===gunKey)return;gunKey=key;
+  gunNav.setAttribute('aria-label',styling?loc('Estilo'):gun?loc('Arma 2'):loc('Arma 1'));
+  gunNav.replaceChildren(back,...styling?STYLE.map(l=>tile(l.id,l.name)):[tile('weapon',locKey('Arma')),...slotsFor(g.weapon).map(s=>tile('part',s.name,s.id)),...LOOKS.map(l=>tile(l.id,l.name))]);
  }
  // Each slot's picture of what it holds now.
  function slotPic(b,field,h=hand()){
@@ -147,6 +150,8 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   if(field==='armor')return setPic(pic,`a:${kit.armor}`,armorOf(kit.armor).icon);
   if(field==='grenade')return setPic(pic,`g:${color}`,'kitGrenade',m=>m.grenadeThumb(color));
   if(field==='part'){const part=g.slots[b.dataset.part];b.classList.toggle('armory-empty',!part);b.dataset.id=part||'';b.title=loc(partOf(part)?.name||NONE.name);return setPic(pic,`p:${g.weapon}:${part}:${color}`,part?partOf(part).icon:slotOf(b.dataset.part).icon,part&&(m=>m.partThumb(g.weapon,part,color)));}
+  // Estilo: the finish's colour under the camo worn, cut corner to corner.
+  if(field==='style'){pic.dataset.key='';pic.className='armory-swatch armory-style';pic.innerHTML='';pic.style.background=`linear-gradient(135deg,${FINISHES.find(f=>f.id===kit.finish).color||'#f28b42'} 50%,transparent 50%),${kit.camo?swatch(kit.camo):'#2f3d3c'}`;return pic;}
   if(field==='finish'||field==='camo'){pic.dataset.key='';pic.className='armory-swatch';pic.innerHTML='';pic.style.background=field==='finish'?FINISHES.find(f=>f.id===kit.finish).color||swatch(''):swatch(kit.camo);return pic;}
   if(field==='charm')return setPic(pic,`c:${kit.charm}`,kit.charm==='none'?'close':'wardrobe-cuello',kit.charm!=='none'&&(m=>m.charmThumb(kit.charm)));
   if(field==='pattern')return setPic(pic,`s:${g.weapon}:${kit.pattern}:${color}`,'kitPaint',m=>m.weaponThumb({weapon:g.weapon,color,camo:kit.camo,pattern:kit.pattern}));
@@ -166,7 +171,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
    b.setAttribute('aria-pressed',String(field==='gun'?gun===mine:category===field));slotPic(b,field,mine??h);
    b.querySelector('b').textContent=field==='gun'?weaponName(g2.weapon):field==='armor'?loc(armorOf(kit.armor).name):catalog[field].find(x=>x.id===kit[field]).name;
   }
-  for(const b of gunNav.children){b.setAttribute('aria-pressed',String(category===b.dataset.slot&&(b.dataset.slot!=='part'||slot===b.dataset.part)));slotPic(b,b.dataset.slot);if(b.dataset.slot==='weapon')b.querySelector('span').textContent=weaponName(g.weapon);}
+  for(const b of gunNav.children){b.setAttribute('aria-pressed',String((category===b.dataset.slot||b.dataset.slot==='style'&&STYLE.some(l=>l.id===category))&&(b.dataset.slot!=='part'||slot===b.dataset.part)));slotPic(b,b.dataset.slot);if(b.dataset.slot==='weapon')b.querySelector('span').textContent=weaponName(g.weapon);}
   choices.dataset.category=category||'';if(!category)return;
   if(category==='camo'){choices.replaceChildren(...camoChoices());return;}
   const attaching=category==='part',arming=category==='weapon',classes=classesFor(h);
@@ -248,13 +253,18 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  // Opens one slot's choices (a gunsmith slot names which: 'optic', 'hopper'…).
  function choose(field,part=null){
   if(field==='gun')return openGun(Number(part??0));
+  if(field==='style')return openStyle();
   opener=document.activeElement;category=field;slot=part;shown=null;note.textContent='';dialog.classList.add('choosing');paint();rebuild();
   focus(choices.querySelector('.armory-choice[aria-pressed=true]')||choices.querySelector('.armory-choice'));
  }
- function openGun(h){gun=hover=h;category=null;gunKey='';note.textContent='';dialog.classList.remove('choosing');paint();rebuild();focus(gunNav.querySelector('[data-slot]'));}
- // Atrás, B or Esc: the choices close back to their level; a gun's sub-menu back to the four slots.
+ function openGun(h){gun=hover=h;styling=false;category=null;gunKey='';note.textContent='';dialog.classList.remove('choosing');paint();rebuild();focus(gunNav.querySelector('[data-slot]'));}
+ // Estilo: the sub-menu's tiles give way to Atrás and the three looks.
+ function openStyle(){styling=true;gunKey='';note.textContent='';paint();focus(gunNav.querySelector('[data-slot]'));}
+ // Atrás, B, Esc or Backspace: one level up each time. The choices close back to their level,
+ // the Estilo page back to the gun's sub-menu, a gun's sub-menu back to the four slots.
  function stepBack(){
   if(category){const from=opener;category=null;slot=null;dialog.classList.remove('choosing');paint();rebuild();focus(from?.isConnected&&!from.closest('[hidden]')?from:gun!==null?gunNav.querySelector('[data-slot]'):document.querySelector('#armory-slots button'));return true;}
+  if(styling){styling=false;gunKey='';note.textContent='';paint();focus(gunNav.querySelector('[data-slot=style]'));return true;}
   if(gun!==null){const h=gun;gun=null;paint();rebuild();focus(document.querySelector(`#armory-slots [data-hand="${h}"]`));return true;}
   return false;
  }
@@ -265,7 +275,27 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  }
  // Esc steps back a level before it closes the armory (the range closes itself first).
  dialog.addEventListener('cancel',event=>{if(range)return;if(stepBack())event.preventDefault();});
- const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda: 1 y 2 o Q cambian de arma; Z y X, de modelo.'));return;}note.textContent='';gun=null;category=null;hover=0;dialog.classList.remove('choosing');dialog.showModal();init();paint();rebuild();if(camoLib||window.PanaSh)loadCamos(true);};
+ // The keyboard: Esc and Backspace step back a level, taken on the key itself: Chrome lets a
+ // page hold back only one `cancel` per click, so Esc Esc would close the whole armory.
+ // The arrows walk the level's tiles and cards (Enter presses one), sideways along a row
+ // of class tabs, which they also pick.
+ const DIRS={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+ dialog.addEventListener('keydown',event=>{
+  if(range||event.altKey||event.ctrlKey||event.metaKey)return;
+  if(event.key==='Escape'){if(stepBack())event.preventDefault();return;}
+  if(event.target.matches?.('input,textarea,select'))return;
+  if(event.key==='Backspace'){if(stepBack())event.preventDefault();return;}
+  const dir=DIRS[event.key];if(!dir)return;event.preventDefault();
+  const now=document.activeElement,visible=b=>b.getClientRects().length&&!b.disabled&&!b.closest('[hidden]')&&getComputedStyle(b).visibility!=='hidden';
+  if(now?.matches('[role=tab]')&&dir[0]){const row=[...now.parentElement.children].filter(visible),next=row[row.indexOf(now)+dir[0]];if(next){next.click();focus(next);}return;}
+  const level=category?[back,...choices.querySelectorAll('button')]:gun!==null?[...gunNav.children]:[...document.querySelectorAll('#armory-slots button')];
+  const all=level.filter(visible);if(!all.length)return;if(!all.includes(now))return focus(all.find(b=>b.getAttribute('aria-pressed')==='true')||all[0]);
+  // The nearest in that direction, a step along the other axis costing double.
+  const at=b=>{const r=b.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2];},[x,y]=at(now);let best=null,cost=Infinity;
+  for(const b of all){if(b===now)continue;const [bx,by]=at(b),along=(bx-x)*dir[0]+(by-y)*dir[1],across=Math.abs((bx-x)*dir[1])+Math.abs((by-y)*dir[0]);if(along<=1)continue;const c=along+across*2;if(c<cost){cost=c;best=b;}}
+  focus(best);
+ });
+ const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda: 1 y 2 o Q cambian de arma; Z y X, de modelo.'));return;}note.textContent='';gun=null;styling=false;category=null;hover=0;dialog.classList.remove('choosing');dialog.showModal();init();paint();rebuild();if(camoLib||window.PanaSh)loadCamos(true);};
  document.getElementById('open-armory').onclick=open;document.getElementById('armory-close').onclick=()=>dialog.close();
  document.getElementById('armory-go').onclick=()=>{save();dialog.close();if(room.isHost)room.start();};
  // Probar: the shooting range (range.js), a first-person lane with the gun on show on the real rules.
@@ -282,8 +312,8 @@ export function createArmory({room,onPick,notify=()=>{}}) {
    return opened.ready.then(()=>new Promise(done=>setTimeout(done,Math.max(0,LOADING_MIN-(performance.now()-shown))))).then(()=>{if(range===opened)endLoading();});
   }).catch(()=>{if(range==='loading')range=null;endLoading();});
  };
- dialog.addEventListener('close',()=>{if(range?.close)range.close();range=null;endLoading();gun=null;category=null;dialog.classList.remove('choosing','armory-in-gun');document.getElementById('open-armory').focus();});
- return {get kit(){return kit;}, get preview(){return model;}, get body(){return avatar?.group;},get camos(){return camoData;}, get range(){return range?.debug??null;}, get ranging(){return !!range;}, get level(){return category?'choices':gun!==null?`gun${gun}`:'top';}, refreshCamos:()=>loadCamos(true), open, setWeapon, back:stepBack, update(dt){
+ dialog.addEventListener('close',()=>{if(range?.close)range.close();range=null;endLoading();gun=null;styling=false;category=null;dialog.classList.remove('choosing','armory-in-gun');document.getElementById('open-armory').focus();});
+ return {get kit(){return kit;}, get preview(){return model;}, get body(){return avatar?.group;},get camos(){return camoData;}, get range(){return range?.debug??null;}, get ranging(){return !!range;}, get level(){return category?'choices':styling?'style':gun!==null?`gun${gun}`:'top';}, refreshCamos:()=>loadCamos(true), open, setWeapon, back:stepBack, update(dt){
   if(range?.update){range.update(dt);return;}
   if(!dialog.open||!renderer)return;if(ratedOptions!==JSON.stringify(room.state.options))paintStats();const c=renderer.domElement,w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
   if(framed!==view())frame();sway+=dt;if(framed==='smith'){pivot.rotation.y=SMITH_ANGLE+Math.sin(sway*.5)*.1;const k=1-Math.exp(-dt*7);camera.position.lerp(camGoal,k);camera.lookAt(lookNow.lerp(lookGoal,k));}else pivot.rotation.y+=dt*.18;if(framed==='armor')avatar.group.rotation.y=Math.sin(sway*.5)*.7;if(framed==='armor')avatar.update(dt,{walk:false});

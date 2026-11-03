@@ -117,7 +117,7 @@ try {
   await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && JSON.stringify(p.kit.slots)==='{"optic":"holo","barrel":null,"hopper":"hopper","stock":"stock"}' && p.kit.armor==='tanque' && p.kit.grenade==='pegajosa';},guestId);
   // Camuflajes: a fixed set. A solid one is everyone's and reaches the room; without pana.sh a
   // patterned one is locked in the armory, and the room swaps it for a solid one if sent anyway.
-  await b.locator('#open-armory').click(); await b.locator('#armory-slots [data-hand="0"]').click(); await b.locator('[data-slot="camo"]').click();
+  await b.locator('#open-armory').click(); await b.locator('#armory-slots [data-hand="0"]').click(); await b.locator('[data-slot="style"]').click(); await b.locator('[data-slot="camo"]').click();
   await b.locator('#armory-choices .armory-camo[data-id="liso-uva"] .armory-choice').click();
   await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-uva', guestId);
   assert.equal((await savedKit()).camo, 'liso-uva');
