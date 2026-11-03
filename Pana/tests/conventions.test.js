@@ -316,6 +316,23 @@ test('every import in served code points at a real file', () => {
   assert.deepEqual(problems, []);
 });
 
+// A module parsed before the page's import map cannot resolve "three", and
+// the browser keeps that failure. A modulepreload served from cache parses at
+// once, so a page with its map after the preload opens once, then breaks.
+test('the import map comes before every module and modulepreload', () => {
+  const pages = [...walk(path.join(app, 'web'), n => n.endsWith('.html')),
+    ...games.flatMap(id => walk(path.join(gamesDir, id, 'public'), n => n.endsWith('.html'))),
+    ...walkAll(path.join(app, 'scripts', 'templates'), n => n.endsWith('.html.tmpl'))];
+  const problems = [];
+  for (const file of pages) {
+    const html = read(file), map = html.search(/<script\b[^>]*type=["']?importmap/i);
+    if (map < 0) continue;
+    const module = html.search(/<link\b[^>]*rel=["']?modulepreload|<script\b[^>]*type=["']?module\b/i);
+    if (module >= 0 && module < map) problems.push(rel(file));
+  }
+  assert.deepEqual(problems, []);
+});
+
 // Other sites load these engine files by path (pana.sh's pages, profile and
 // shop): moving one breaks them, so they stay where they are.
 const PUBLIC_ENGINE = ['kit.css', 'ui.js', 'avatar.js', 'portrait.js', 'portrait-cache.js', 'wardrobe-preview.js'];

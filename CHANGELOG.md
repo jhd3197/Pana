@@ -15,6 +15,15 @@ becomes the GitHub release's notes.
   Abajo ya no dibuja la sombra del sol ni lo que la niebla tapa, y el
   anfitrión manda solo lo que cambió: unas diez veces menos datos. Los otros
   panas se ven caminar parejo aunque la conexión venga a saltos.
+- **Editar pana ya no te saca de la sala: el editor se abre encima y al cerrarlo sigues donde estabas.**
+  Desde la sala de un juego o el inicio, tu puesto y tu party se quedan. Al
+  guardar, los demás ven tu pana nuevo. Mi pana también abre bien cada vez,
+  no solo la primera.
+- **La armería de Pepazo muestra cada arma y cada accesorio en foto: menos texto, más fácil de elegir.**
+  Las tarjetas llevan la imagen real del arma, la pieza, el llavero o la
+  granada y solo su nombre. Al elegir un accesorio el arma se pone de lado y
+  la cámara se acerca a la pieza montada; el panel de estadísticas marca con
+  +/− lo que gana o pierde.
 - **Capis a Pintazos ya se juega con amigos: abre una sala con «Con amigos», comparte el link y jueguen hasta cuatro en dos equipos.**
   Cada quien ve los tiros y los cráteres de los demás. Un equipo sin panas lo
   juega la máquina, y si alguien se va, su compañero o la máquina sigue por

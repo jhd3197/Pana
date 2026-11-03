@@ -411,7 +411,9 @@ Chispa) or a Studio melee piece: origin at the grip, +Z down the barrel,
 sideways offset for side-mounted sights), `userData.bore` the barrel axis
 height, `userData.optic` the Mira kind when one is fitted, `userData.class`,
 `userData.spin` (a group to turn when firing: La Licuadora, the revolvers).
-Attachments `barrel hopper stock optic` sit on each marker's own mounts.
+Attachments `barrel hopper stock optic` sit on each marker's own mounts;
+`PAINT_PART_LABELS[id]` is the name every mesh of a fitted part starts with
+(melee `tape drip strap` too), so a menu can frame or draw one part alone.
 `PAINT_KIT_BORE[weapon]` is the barrel axis height for all eighteen.
 `bakePaintKit(options)` is the same marker batched into a few draws (finishes
 folded to matte, glossy and metal, one draw each), with `tip`, `sight`,
@@ -710,6 +712,8 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | One square UI style: `--pk-r*` radius tokens are 0, hard offset shadows (`--pk-drop`, `--pk-skin-shadow`); real circles (avatars, dots, swatches, joystick, spinners, balls) opt out with `var(--pk-radius-round)` | `engine/kit.css`; guarded by `tests/ui-square.test.js` (pana-kit.md, "One square style") | every page and game; Capis allow-listed while it is restyled |
 | Game skin: the lobby room panel's look for any panel or dialog (`.pk-skin-panel`, `-card`, `-plate`, `-label`, `-chips`, `-btn`, `-go`, `-link`; `--pk-skin-*` tokens) | `engine/kit.css` (pana-ui.md, "Game skin") | the shared sala (`sala.css` reads the tokens) and "Más ajustes" in the 23 room-options games |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | ui: all 24; settings: 16 |
+| "Editar pana" over the page: the Mi pana editor in a full-screen frame, so the room socket and a pana.sh party stay; a saved look fires `pana:avatar` on window | `engine/pana-editor.js` (`openPanaEditor`, `bindPanaEditorLinks`; `embeddedEditor` on the editor's side) | every lobby (`game-entry` "Cambiar pana" sends the room the new look), the hub; never a plain link to `/personaje` |
+| Icons (`lock` marks something not yours yet; `weaponBazooka`, `weaponSniper`, `weaponDrill`, `weaponScatter` and `kitGrenade` for a weapon picker) | `engine/icons.js` | Billar, Bochinche, Bululú, Capis a Pintazos (room options, the weapon picker), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
 | Icons (`lock` marks something not yours yet; `person` beside a player count on the hub; `weaponBazooka`, `weaponSniper`, `weaponDrill`, `weaponScatter` and `kitGrenade` for a weapon picker) | `engine/icons.js` | the hub, Billar, Bochinche, Bululú, Capis a Pintazos (room options, the weapon picker), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
 | Toast | `engine/hud.js` (`createToast`) | Billar, Caída, Capis a Pintazos, Cocina, Criollas, Curiara, Dominó, Embuste, Escondidas, Lancha, Parapente, Reliquia |
 | Hold to see more: a key (and the pad button that presses it, View → Tab through `createGameMenu({ pad })`) shows a layer while held; letting go, blur, a hidden page and a lost pointer lock hide it; `toggle('touch')` for a tap button | `engine/hold-overlay.js` (`createHoldOverlay`, pure `createHold`) | Reliquia (Tab / View: map, compass, jornada and team) |
@@ -728,6 +732,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Saved name and appearance | `engine/avatar.js` | all 24 |
 | Pana model | `engine/models/characters/pana/avatar-model.js` | 19 games (not Curiara, Galope, Lancha, Parapente, Criollas) |
 | Portraits | `engine/portrait.js`, `portrait-cache.js` | Bochinche, Trifulca |
+| Menu card pictures of any 3D object (built, framed by its bounds, drawn once on the shared offscreen renderer, cached by key; `keep(mesh)` draws one part alone) | `engine/object-thumb.js` (`objectThumb(key, build, { width, height, turn, tilt, keep, margin })`) on `engine/snapshot.js` | Pepazo (armory cards: every weapon, part, charm and grenade) |
 | Wardrobe | `engine/wardrobe.js`, `wardrobe-preview.js` | Bochinche, Carreritas, Pepazo, Trifulca (the page also loads `wardrobe-preview` through `pana.sh`) |
 | Mangos (shared currency) | `engine/mangos.js` | Bochinche, Carreritas |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |

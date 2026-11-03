@@ -267,6 +267,26 @@ switch between the lobby and the game gets a short cover too ("¡A jugar!",
 "De vuelta a la sala…"). The Mi pana editor covers itself with the player's
 portrait until `editor.js` is ready.
 
+## Editar pana over the page
+
+Every "Editar pana" / "Cambiar pana" opens `/personaje?embed=1` in a
+full-screen square `<dialog>` with an iframe (`engine/pana-editor.js`). It
+never navigates. Leaving a lobby page drops the room seat (Colyseus leave
+4000). On pana.sh, a Pana Mayor passing through the hub (the old `/#mi-pana`
+link) also sends the whole party home. In the frame, the editor's back button
+becomes a close (B and Escape close it too), saving closes it, and links out
+(the shop) open a new tab. On close a changed look fires `pana:avatar` on
+window: `game-entry` sends it to the room with RoomKit's `me` message and
+redraws the roster. pana.sh's party.js does not run inside a frame, so the
+frame never takes over the party socket or the "follow the leader" tab.
+
+Trap: a page's import map must come before every `modulepreload` and module
+script (`tests/conventions.test.js`). The browser's preload scanner parses a
+cached preloaded module before the parser reaches a later map. `"three"` then
+fails to resolve and the page keeps that failure. On pana.sh the versioned
+files are cached for a year, so Mi pana opened once and failed on every later
+visit. The gateway now also moves the map to the top of `<head>`.
+
 ## Game controllers
 
 `engine/gamepad.js` makes an Xbox or PlayStation pad work in every game that
