@@ -695,6 +695,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Real-time room | `engine/live-room.js` (`LiveRoom`, `axis`, `elapsedClock`) | Bochinche, Capis a Pintazos (turns with live walking and aim), Cocina, Curiara, Escondidas, Galope, Lancha, Parapente, Reliquia, Tambor, Trifulca |
 | Turn-based room | `engine/table-room.js` | Billar, Caída, Chapita, Criollas, Ludo, QQSMP, Stop |
 | Client prediction | `engine/predict.js` | Cocina, Escondidas, Galope, Reliquia |
+| Snapshot deltas (send only what changed; a whole state on join, a new host, a guest's `resync` and every N publishes) | `engine/state-delta.js` (`diffState`, `patchState`, `createDeltaSender`, `createDeltaReceiver`); tests `engine/tests/state-delta.test.js` | Reliquia (`network.js`: `publish` and `receive`) |
 | Raw room and links | `engine/net.js` | Bululú, Carreritas, Dominó, Embuste, Pepazo, Póquer |
 | Shell (load, loops, teardown) | `engine/game-shell.js` (`bootGame`) | 17 games |
 | Invite links | `engine/invite.js` | all 24 |

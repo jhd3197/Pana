@@ -64,6 +64,15 @@ on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
   yourself in the snapshot (Galope's drafting did). Bodies pushed by actions
   (a dodge, a carry) still move when the host says so. Not predicted: a
   Curiara canoe is shared by two paddlers, and Tambor's input is song hits.
+- **Snapshot deltas (`engine/state-delta.js`)**: a LiveRoom publishes its
+  whole state every tick. A room can override `publish()` to send
+  `createDeltaSender().encode(state)` instead (only the changed fields,
+  arrays of `{ id }` objects diffed per item) and `receive()` to rebuild the
+  state with `createDeltaReceiver().decode(from, message)` before calling
+  `super.receive`. A null decode means no base yet: send `{ kind: 'resync' }`
+  to the host, whose `wire.reset()` makes the next publish whole; reset it on
+  `memberJoined`, `memberHello` and `takeOver` too. Reliquia's `network.js`
+  is the worked example (about a tenth of the bytes).
 
 ## A host-simulated game on HostRoom directly
 
