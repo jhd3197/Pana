@@ -15,6 +15,7 @@ import { boxingGlove, CORNER_COLORS, HELMET_COLORS } from './set.js';
 import { T } from './fight-rules.js';
 import { rhythm } from './crowd-life.js';
 import { inkOutlines } from './toon.js';
+import { HEAD_SIZE, ARM_LENGTH, ARM_GUARD, punchLength } from './fighter-look.js';
 
 const SCULPT = .6;   // buildCharacter's sculpt scale: bones live in sculpt units
 const ease = (a, b, k) => a + (b - a) * k;
@@ -37,7 +38,7 @@ export function nameTag(text, { me = false } = {}) {
 
 export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   const look = normalizeAvatar(avatar);
-  const character = buildCharacter(look);
+  const character = buildCharacter(look, { head: HEAD_SIZE });
   const root = new THREE.Group(), tilt = new THREE.Group();
   root.add(tilt); tilt.add(character.group);
   const arms = [character.armL, character.armR], base = arms.map(a => a.position.clone());
@@ -45,17 +46,19 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(1 / SCULPT);
     glove.position.set(0, -.86, .04); glove.visible = false; inkOutlines(glove); arm.add(glove); return glove;
   });
-  const applyCombat = createCombatRig(character, gloves, base);
+  const armReach = { guard: ARM_GUARD, punch: ARM_GUARD };
+  const applyCombat = createCombatRig(character, gloves, base, armReach);
   // The wardrobe's kart helmet goes on to fight; the pana's own hat comes off.
-  const ownHats = character.head.children.filter(o => o.name.startsWith('hat:'));
+  // The old look's hats (pesca, lana, corona, llanero) are bare unnamed meshes on the head.
+  const ownHats = character.head.children.filter(o => o.name.startsWith('hat:') || (o.isMesh && !o.name));
   const helmet = createAccessories(character, { hat: 'casco', glasses: null, neck: null, back: null, extras: {} });
   helmet.color('hat', 'casco', 'main', HELMET_COLORS[seed % HELMET_COLORS.length]);
   helmet.color('hat', 'casco', 'stripe', seed % HELMET_COLORS.length === 0 ? '#e8443a' : '#ffffff');
   let ownHeadwear = character.wardrobe.headwear, hatsShown = ownHats.map(o => o.visible);
   // A ¡! over a pana winding up a trompón: the cue to dodge.
-  const warn = nameTag(loc('¡OJO!'), { me: true }); warn.scale.set(.7, .175, 1); warn.position.y = 2.95; warn.visible = false; root.add(warn);
+  const warn = nameTag(loc('¡OJO!'), { me: true }); warn.scale.set(.7, .175, 1); warn.position.y = 2.4; warn.visible = false; root.add(warn);
   const tag = name ? nameTag(me ? loc('{name} · tú', { name }) : name, { me }) : null;
-  if (tag) { tag.position.y = 2.6; root.add(tag); }
+  if (tag) { tag.position.y = 2.1; root.add(tag); }
   let tagShown = true;
   let corner = null, wobble = 0, wobbleV = 0, sway = 0, swayV = 0, spin = 0, time = 0, shove = 0, cheer = 0, cheerWas = 0, twist = 0;
   let recoil = 0, recoilV = 0, jolt = 0;
@@ -128,9 +131,9 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     arms.forEach((arm, i) => {
       const p = pose[i], t = targets[i];
       p.rx = ease(p.rx, t.rx, k); p.rz = ease(p.rz, t.rz, k); p.s = ease(p.s, t.s, k); p.z = ease(p.z, t.z ?? 0, k);
-      arm.rotation.set(p.rx, 0, p.rz); arm.scale.y = p.s;
+      arm.rotation.set(p.rx, 0, p.rz); arm.scale.y = p.s * ARM_LENGTH;
       arm.position.copy(base[i]); arm.position.z += p.z;
-      gloves[i].scale.set(1 / SCULPT, 1 / SCULPT / p.s, 1 / SCULPT);
+      gloves[i].scale.set(1 / SCULPT, 1 / SCULPT / (p.s * ARM_LENGTH), 1 / SCULPT);
     });
     // The body: twist into punches, crouch to block or dodge, flop when down.
     const b = character.body, kb = 1 - Math.exp(-dt * 12);
@@ -190,7 +193,11 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
       authored['body.y'] += Math.abs(Math.sin(time * 5.4 + bounce)) * .045;
       authored['armL.rx'] += Math.sin(time * 10.8 + bounce) * .04;
     }
-    applyCombat(authored, view.moving || 0);
+    // A whiff's extra recovery: still leaning into the punch that met nothing.
+    if (authored && T[act]?.whiff && at > T[act].total) authored['body.rx'] += .22;
+    const striking = act === 'jab' || act === 'trompon';
+    armReach.punch = punchLength(view.gap ?? 1.2);
+    applyCombat(authored, view.moving || 0, striking ? attackExtension(act, at) : 0);
     if (tag) tag.visible = tagShown && act !== 'down';
     warn.visible = act === 'wind' || (['kick', 'sweep', 'toss'].includes(act) && at < T[act].active[0]); if (warn.visible) warn.scale.set(.7 + Math.sin(time * 30) * .06, .175, 1);
   }
