@@ -183,6 +183,16 @@ mine deals neither.
   (24 before scaling), then stands 2.6 s. Melee and paint only stagger it
   (`wound()` refuses stone; 0.9 s): the answer is to keep eyes on it or leave.
   The view snaps it to each host position (no lerp) with a little dust.
+  Look: a pale marble mourner (albedo about 0xa3a197, roughness 0.82, a
+  faint cold emissive 0x10141a) on a 12 cm plinth, about 2.07 m: bare face
+  with hollow sockets and an open mouth, a thin torn veil behind it, two
+  separate arms with long fingers, moss on the hem and plinth. The poses
+  (weeping, reading with a book, one arm reaching, both arms and the mouth
+  open, the lunge) each turn the head 30–70° from the last so a snap reads
+  from 8 m. The headlamp clips that marble to white within 3 m, so the view
+  dims it by distance with `userData.setShade` (×0.28 at 2 m under a full
+  lamp, full from 8.5 m, `STATUE_DIM` in `view.js`); never darken the
+  palette instead, or the silhouette vanishes at range.
 - **Cues** (`presence.js`, existing clips only): the Lector's tell is a page
   turning where it stands, a slow low creak while it stands listening within
   8 m, a low chain while it walks within 10 m; each Estatua stride is the

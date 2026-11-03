@@ -34,6 +34,8 @@ const CAMP_LOOK = { background: 0xf6d6a4, fog: [45, 150], hemi: [0xfff1d6, 0x8a6
 // reach. Both stay readable within the farol's 8 m.
 const DEEP_LOOK = { background: 0x0a0710, fog: [3.5, 24], hemi: [0x5c5088, 0x2a1d12, .5], sun: 0, exposure: 1.15, dust: .45, lamp: 0xfff0d8, hand: 0xffa850, lampPower: 58, candle: [0xffa24a, 5.5, 11] };
 const LIBRARY_LOOK = { background: 0x18202a, fog: [2.5, 21], hemi: [0x74849e, 0x0c0c10, 1.8], sun: 0, exposure: 1.1, dust: 1, lamp: 0xe4ebf4, hand: 0xd8dde6, lampPower: 25, lampDecay: 1.15, handPower: .35, candle: [0xff9e52, 1.6, 4.5] };
+// How much La Estatua's pale marble dims with the headlamp right on it (2 m).
+const STATUE_DIM = .72;
 
 function label(text, color, { bubble = false } = {}) {
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 96;
@@ -191,6 +193,11 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         }
         a.root.position.set(e.x, 0, e.z); a.root.rotation.y = e.h || 0;
         a.pose.pose = e.pose ?? 0; a.model.userData.animate(t, a.pose);
+        // Pale marble under the headlamp: dimmed when the lamp is right on it
+        // (it clips to white within 3 m), full from 8.5 m out where only the
+        // cold room light finds the silhouette.
+        const near = 1 - Math.min(1, Math.max(0, (Math.hypot(camera.position.x - e.x, camera.position.z - e.z) - 2) / 6.5));
+        a.model.userData.setShade(1 - near * near * (3 - 2 * near) * STATUE_DIM * Math.min(1, headlamp.intensity / (look.lampPower || 58)));
         a.ring.visible = e.windup > 0 && a.root.visible; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(1.6);
         continue;
       }
