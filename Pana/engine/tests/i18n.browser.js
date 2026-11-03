@@ -24,7 +24,7 @@ try {
   assert.equal(await page.locator('.game[data-id="lancha"] .game-name').textContent(), 'Lancha');
   // Descriptions come translated from /api/games?lang=en.
   const api = await page.evaluate(() => fetch('/api/games?lang=en').then(r => r.json()));
-  assert.match(api.games.find(g => g.id === 'domino').description, /Saturday/);
+  assert.match(api.games.find(g => g.id === 'domino').description, /dominoes/);
   console.log('PASS hub follows ?pana-language and keeps game names');
 
   // Ajustes → Idioma: the hub reloads in the chosen language and keeps it.

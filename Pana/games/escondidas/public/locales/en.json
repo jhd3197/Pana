@@ -71,6 +71,7 @@
   "Encontrado": "Found",
   "Esconderme": "Hide",
   "ESCÓNDETE": "HIDE",
+  "Escóndete como objeto": "Prop hide-and-seek",
   "ESCONDIDAS · ENTRE PANAS": "ESCONDIDAS · AMONG PANAS",
   "Escondidas · Pana Hunt": "Escondidas · Pana Hunt",
   "Escondido: conviértete en un objeto y aguanta hasta que se acabe el tiempo. Buscador: encuentra a todos los panas antes de que suene el final.": "Hider: turn into an object and hold out until time runs out. Seeker: find every pana before the round ends.",
@@ -141,6 +142,5 @@
   "Volver a pana": "Back to pana",
   "Volver al juego": "Back to the game",
   "Volviste a ser pana.": "You're a pana again.",
-  "Vuélvete un barril, una cava o una mata. Tienes tres cambios para despistar al buscador en la Plaza Pana. Solo o con tus panas.": "Turn into a barrel, a cooler or a bush. You get three changes to fool the seeker in Plaza Pana. Solo or with friends.",
   "Ya tienes esa forma.": "You already have that shape."
 }

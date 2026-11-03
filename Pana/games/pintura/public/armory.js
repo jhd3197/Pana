@@ -4,7 +4,6 @@ import { loadAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { createPaintKit, wearPaintVest, PAINT_PART_LABELS } from '/engine/models/props/paintball-kit.js';
 import { MARKERS, WEAPONS, ARMORY_CLASSES, ATTACHMENTS, throwRange, meleeInterval, OPTICS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, FALLBACK_CAMO, cleanKit, kitStats, kitRating, canAttach, setSlot, changeWeapon, opticOf, shotInterval, dpsOf } from './armory-data.js';
-import { Arena } from './rules.js';
 import { ICONS } from '/engine/icons.js';
 import { pixelRatio } from '/engine/settings.js';
 import { loc, locn, locKey, formatList } from '/engine/i18n.js';
@@ -46,7 +45,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  const back=document.createElement('button');back.id='armory-parts-back';back.type='button';back.className='pk-btn';back.textContent=loc('‹ Atrás');choices.before(back);back.onclick=()=>dialog.classList.remove('choosing');
  const icons={weapon:'kitBarrel',attachments:'plus',armor:'kitVest',grenade:'kitGrenade',finish:'kitPaint',camo:'kitPaint',charm:'wardrobe-cuello',pattern:'kitPaint'};
  for(const b of document.querySelectorAll('#armory-slots button')){const icon=document.createElement('i');icon.innerHTML=ICONS[icons[b.dataset.slot]];b.insertBefore(icon,b.querySelector('b'));}
- let shown=null,ratedOptions='',category='weapon',slot=0,renderer=null,scene,camera,model,avatar,vest,target,range=null,acc=0,pivot,gunBox,padded=false,framed=null,sway=0; const balls=new Map();
+ let shown=null,ratedOptions='',category='weapon',slot=0,renderer=null,scene,camera,model,avatar,vest,range=null,pivot,gunBox,padded=false,framed=null,sway=0;
  const catalog={weapon:WEAPONS,attachments:ATTACHMENTS,armor:ARMOR,grenade:GRENADES,finish:FINISHES,charm:CHARMS,pattern:PATTERNS};
  // Camuflajes: camos.js and camo-store.js load with the first look at the tab (at once on
  // pana.sh, whose bridge says what this pana owns). Without the bridge only the solid ones are yours.
@@ -166,20 +165,18 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   if(dropped.length)say(dropNote(dropped,kit.weapon));
   if(dialog.open){paint();rebuild();}
  }
- // Three views: the gun alone, centred and turning on `pivot`; the armor tab, the pana
- // alone wearing the vest (no gun in front of it), centred and swaying; the test range,
- // pana and gun side by side.
+ // Two views plus the gunsmith: the gun alone, centred and turning on `pivot`; the armor tab, the pana
+ // alone wearing the vest (no gun in front of it), centred and swaying.
  // The gunsmith: choosing a part turns the gun side-on, fills the frame with it and
  // glides the camera toward the part in this slot (the one hovered, else the one fitted).
  // Wide screens keep the stats on the right, so the gun sits a little left of the view's middle.
  let shownLook=kit;const wide=matchMedia('(min-width:801px)'),SMITH_ANGLE=Math.PI/2+.45,smithEye=new THREE.Vector3(0,1.15,4.2),camGoal=new THREE.Vector3(),lookGoal=new THREE.Vector3(),lookNow=new THREE.Vector3(0,1.15,0);
- const view=()=>range?'range':!dialog.classList.contains('choosing')?'gun':category==='armor'?'armor':category==='attachments'?'smith':'gun';
+ const view=()=>!dialog.classList.contains('choosing')?'gun':category==='armor'?'armor':category==='attachments'?'smith':'gun';
  function frame(){
-  const v=view(),body=v==='armor'||v==='range';avatar.group.visible=body;vest.visible=body&&padded;model.visible=v!=='armor';
+  const v=view(),body=v==='armor';avatar.group.visible=body;vest.visible=body&&padded;model.visible=v!=='armor';
   if(v==='armor'){avatar.group.position.set(0,0,0);avatar.group.rotation.y=0;camera.position.set(0,1.05,4.4);camera.lookAt(0,.92,0);}
   else{avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;}
-  if(v==='range'){pivot.position.set(.5,1.3,0);model.position.set(0,0,0);model.scale.setScalar(1.7);camera.position.set(4,2.7,5);camera.lookAt(0,1.2,0);}
-  else if(v==='gun'){const s=3.1/Math.max(gunBox.size.x,gunBox.size.y,gunBox.size.z,.01);pivot.position.set(0,1.2,0);model.scale.setScalar(s);model.position.copy(gunBox.center).multiplyScalar(-s);camera.position.set(1.6,2.1,5);camera.lookAt(0,1.15,0);}
+  if(v==='gun'){const s=3.1/Math.max(gunBox.size.x,gunBox.size.y,gunBox.size.z,.01);pivot.position.set(0,1.2,0);model.scale.setScalar(s);model.position.copy(gunBox.center).multiplyScalar(-s);camera.position.set(1.6,2.1,5);camera.lookAt(0,1.15,0);}
   else if(v==='smith'){const H=2*4.4*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)),s=Math.min(.68*H*camera.aspect/Math.max(gunBox.size.z,.01),.62*H/Math.max(gunBox.size.y,.01));
    pivot.position.set(0,1.2,0);model.scale.setScalar(s);model.position.copy(gunBox.center).multiplyScalar(-s);lookGoal.set(wide.matches?.1*H*camera.aspect:0,1.2,0);
    const part=new THREE.Box3(),name=PAINT_PART_LABELS[shownLook.attachments?.[slot]];pivot.rotation.y=SMITH_ANGLE;pivot.updateMatrixWorld(true);
@@ -199,31 +196,19 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(35,1,.1,50);camera.position.set(4,2.7,5);camera.lookAt(0,1.2,0);
   pivot=new THREE.Group();pivot.rotation.y=-.6;scene.add(pivot);
   scene.add(new THREE.HemisphereLight(0xfff5df,0x444466,2));const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(3,6,4);scene.add(light);
-  avatar=buildCharacter(loadAvatar());avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;scene.add(avatar.group);vest=wearPaintVest(avatar);target=buildCharacter({...loadAvatar(),outfitColor:'#29c5cd'});target.group.position.set(1.8,0,-2);target.group.visible=false;scene.add(target.group);rebuild();
+  avatar=buildCharacter(loadAvatar());avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;scene.add(avatar.group);vest=wearPaintVest(avatar);rebuild();
  }
  for(const b of document.querySelectorAll('#armory-slots button')) b.onclick=()=>{category=b.dataset.slot;slot=Number(b.dataset.index)||0;shown=null;note.textContent='';dialog.classList.add('choosing');paint();};
  const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda cambias de marcadora con 1 a 9, Z y X.'));return;}note.textContent='';dialog.classList.remove('choosing');dialog.showModal();init();paint();if(camoLib||window.PanaSh)loadCamos(true);};
  document.getElementById('open-armory').onclick=open;document.getElementById('armory-close').onclick=()=>dialog.close();
  document.getElementById('armory-go').onclick=()=>{save();dialog.close();if(room.isHost)room.start();};
- document.getElementById('armory-range').onclick=()=>{
-  target.group.visible=true;
-  range=new Arena('plaza');range.add(1,{name:loc('Tú')});range.add(2,{name:loc('Blanco')});range.selectKit(1,kit);range.start();range.go();
-  Object.assign(range.players[0],{x:-22,z:-22,shield:0});Object.assign(range.players[1],{x:-22,z:-15,shield:0});
-  document.getElementById('range-controls').hidden=false;document.getElementById('range-status').textContent=loc('Apunta al blanco: el kit usa sus reglas reales.');
- };
- let fire=false,grenade=false;
- document.getElementById('range-fire').onclick=()=>{fire=true;};
- // The range lobs its grenade like a bot: the throw solved to blow on the target.
- document.getElementById('range-grenade').onclick=()=>{if(!range)return;const [p,dummy]=range.players,aim=range.aimGrenade(p,dummy.x,dummy.z);grenade=aim?{grenade:true,pitch:aim.pitch,charge:aim.charge}:{grenade:true};};
- dialog.addEventListener('close',()=>{range=null;if(target)target.group.visible=false;document.getElementById('range-controls').hidden=true;document.getElementById('open-armory').focus();});
- return {get kit(){return kit;}, get preview(){return model;}, get body(){return avatar?.group;},get camos(){return camoData;}, refreshCamos:()=>loadCamos(true), open, setWeapon, update(dt){
+ // Probar: the shooting range (range.js), a first-person lane with this kit on the real rules.
+ document.getElementById('armory-range').onclick=()=>{if(range)return;range='loading';import('./range.js').then(({openRange})=>{if(range!=='loading'||!dialog.open){range=null;return;}range=openRange({dialog,kit,options:room.state.options,onExit:()=>{range=null;}});}).catch(()=>{range=null;});};
+ dialog.addEventListener('close',()=>{if(range?.close)range.close();range=null;document.getElementById('open-armory').focus();});
+ return {get kit(){return kit;}, get preview(){return model;}, get body(){return avatar?.group;},get camos(){return camoData;}, get range(){return range?.debug??null;}, get ranging(){return !!range;}, refreshCamos:()=>loadCamos(true), open, setWeapon, update(dt){
+  if(range?.update){range.update(dt);return;}
   if(!dialog.open||!renderer)return;if(ratedOptions!==JSON.stringify(room.state.options))paintStats();const c=renderer.domElement,w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
-  if(framed!==view())frame();sway+=dt;if(framed==='smith'){pivot.rotation.y=SMITH_ANGLE+Math.sin(sway*.5)*.1;const k=1-Math.exp(-dt*7);camera.position.lerp(camGoal,k);camera.lookAt(lookNow.lerp(lookGoal,k));}else pivot.rotation.y+=dt*.18;if(framed==='armor')avatar.group.rotation.y=Math.sin(sway*.5)*.7;if(framed==='armor'||framed==='range')avatar.update(dt,{walk:false});
-  if(range){acc+=dt;while(acc>=.05){range.step(.05,new Map([[1,{ax:0,az:1,fire,...(grenade||{})}]]));fire=grenade=false;acc-=.05;}const p=range.players[0],dummy=range.players[1];document.getElementById('range-status').textContent=`Blanco: ${dummy.paint} pepazos · ${dummy.hits} fuera · Carga: ${p.ammo} · ${p.reload>0?'Recargando':p.grenadeReady?'Granada lista':'Sin granada'}`;target.group.rotation.z=dummy.paint*.08;target.update(dt,{walk:false});if(dummy.respawn){dummy.respawn=0;Object.assign(dummy,{x:-22,z:-15,paint:0,shield:0});} }
-  if(range) {
-   for(const ball of range.balls){let o=balls.get(ball.id);if(!o){o=new THREE.Mesh(new THREE.SphereGeometry(ball.rocket?.12:.04,8,6),new THREE.MeshBasicMaterial({color:ball.color}));balls.set(ball.id,o);scene.add(o);}const t=(ball.z+22)/7;o.position.set(.1+1.7*t,1.1,-2*t);}
-  }
-  for(const [id,o] of balls)if(!range?.balls.some(b=>b.id===id)){o.removeFromParent();o.geometry.dispose();o.material.dispose();balls.delete(id);}
+  if(framed!==view())frame();sway+=dt;if(framed==='smith'){pivot.rotation.y=SMITH_ANGLE+Math.sin(sway*.5)*.1;const k=1-Math.exp(-dt*7);camera.position.lerp(camGoal,k);camera.lookAt(lookNow.lerp(lookGoal,k));}else pivot.rotation.y+=dt*.18;if(framed==='armor')avatar.group.rotation.y=Math.sin(sway*.5)*.7;if(framed==='armor')avatar.update(dt,{walk:false});
   renderer.render(scene,camera);
- },dispose(){model?.userData.dispose();vest?.userData.dispose();avatar?.dispose();target?.dispose();balls.forEach(o=>{o.geometry.dispose();o.material.dispose();});renderer?.dispose();}};
+ },dispose(){if(range?.close)range.close();model?.userData.dispose();vest?.userData.dispose();avatar?.dispose();renderer?.dispose();}};
 }

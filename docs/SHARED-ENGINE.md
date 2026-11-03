@@ -711,7 +711,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | One square UI style: `--pk-r*` radius tokens are 0, hard offset shadows (`--pk-drop`, `--pk-skin-shadow`); real circles (avatars, dots, swatches, joystick, spinners, balls) opt out with `var(--pk-radius-round)` | `engine/kit.css`; guarded by `tests/ui-square.test.js` (pana-kit.md, "One square style") | every page and game; Capis allow-listed while it is restyled |
 | Game skin: the lobby room panel's look for any panel or dialog (`.pk-skin-panel`, `-card`, `-plate`, `-label`, `-chips`, `-btn`, `-go`, `-link`; `--pk-skin-*` tokens) | `engine/kit.css` (pana-ui.md, "Game skin") | the shared sala (`sala.css` reads the tokens) and "Más ajustes" in the 23 room-options games |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | ui: all 24; settings: 16 |
-| Icons (`lock` marks something not yours yet; `weaponBazooka`, `weaponSniper`, `weaponDrill`, `weaponScatter` and `kitGrenade` for a weapon picker) | `engine/icons.js` | Billar, Bochinche, Bululú, Capis a Pintazos (room options, the weapon picker), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
+| Icons (`lock` marks something not yours yet; `person` beside a player count on the hub; `weaponBazooka`, `weaponSniper`, `weaponDrill`, `weaponScatter` and `kitGrenade` for a weapon picker) | `engine/icons.js` | the hub, Billar, Bochinche, Bululú, Capis a Pintazos (room options, the weapon picker), Carreritas, Criollas, Ludo, Pepazo, Reliquia, Stop |
 | Toast | `engine/hud.js` (`createToast`) | Billar, Caída, Capis a Pintazos, Cocina, Criollas, Curiara, Dominó, Embuste, Escondidas, Lancha, Parapente, Reliquia |
 | Hold to see more: a key (and the pad button that presses it, View → Tab through `createGameMenu({ pad })`) shows a layer while held; letting go, blur, a hidden page and a lost pointer lock hide it; `toggle('touch')` for a tap button | `engine/hold-overlay.js` (`createHoldOverlay`, pure `createHold`) | Reliquia (Tab / View: map, compass, jornada and team) |
 | Touch controls | `engine/touch.js` | 17 games |
@@ -780,6 +780,14 @@ Used by: Bochinche.
   glowing tall window and a hinged secret bookcase (`bookcaseDoor`).
   `props/reliquia-hideouts` has the searchable furniture (see "Hiding
   spots"). Used by: Reliquia's library.
+- **Shooting range**: `props/shooting-range` builds a covered firing lane
+  (`createRangeLane`: concrete floor with lane lines and distance numbers,
+  panelled walls, ceiling baffles and strip lights, the berm, a booth with
+  its bench and rail; baked into a few batches), hanging distance signs
+  (`createRangeSign`) and targets (`createRangeTarget`: paper silhouette,
+  board, popup on a hinge, big back board; `userData.face` is where splats
+  go). Registered in Studio. Used by: Pepazo's armory range (`range.js`,
+  `range-scene.js`, `range-sim.js`, the rules on a lane of dummy targets).
 - **Large runtime asset packs** (audio, big images, voice packs) are not engine
   modules. They ship as release ZIPs pinned in `server/src/asset-packs.json`
   and are served by the server. Add a file there, not to Git:

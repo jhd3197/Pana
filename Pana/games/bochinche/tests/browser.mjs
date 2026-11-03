@@ -11,10 +11,12 @@ try {
   assert(await host.evaluate(()=>bochincheDebug.world.camera.isPerspectiveCamera));
   await guest.locator('[data-style="1"]').click();
   await waitFor(host,()=>bochincheDebug.room.state.players[1].style===1);
-  // Elige tu pana through the real screen: W is El Minotauro, Enter locks it in.
+  // Elige tu pana through the real screen: click El Trueno, then arrows walk
+  // the five-wide grid down two rows and right one to El Minotauro; Enter locks it in.
   await guest.locator('#pana-change').click();
   await guest.locator('.boch-pick').waitFor();
-  await guest.keyboard.press('w');
+  await guest.locator('.boch-tile[data-pana="trueno"]').click();
+  for(const key of ['ArrowDown','ArrowDown','ArrowRight']) await guest.keyboard.press(key);
   await guest.keyboard.press('Enter');
   await waitFor(host,()=>bochincheDebug.room.state.players[1].pana==='minotauro');
   assert(await guest.locator('.boch-pick').isHidden());

@@ -368,7 +368,9 @@ function frame(now) {
   if (active() && !spectate.spectator.active) world.look((Number(held.has('q')) - Number(held.has('e'))) * dt * 2.2);
   document.body.classList.toggle('first-person', cameraView === 'primera' && room.state.phase === 'playing');
   world.setAim(active() && aiming()); world.aimGrenade(grenadeAim());
-  armory.update(dt); spectate.update(dt, room.state, room.id, lastKiller?.id ?? null); world.draw(room.state, room.id, dt, aim);
+  armory.update(dt); spectate.update(dt, room.state, room.id, lastKiller?.id ?? null);
+  // The armory's range draws the whole screen: the court behind it waits.
+  if (!armory.ranging) world.draw(room.state, room.id, dt, aim);
   const scoped = world.scope.scoped; scopeView.set(scoped ? world.scope.amount : 0); document.body.classList.toggle('scoped', scoped); steps.update(room.state, room.id, world.avatars, dt); minimap.draw(room.state, room.id, world.forward(), !$('scoreboard').hidden); ctfHud.frame(world.camera, myPana()); domHud.frame(world.camera, myPana()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
