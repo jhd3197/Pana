@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Editar pana ya no te saca de la sala: el editor se abre encima y al cerrarlo sigues donde estabas.**
+  Desde la sala de un juego o el inicio, tu puesto y tu party se quedan. Al
+  guardar, los demás ven tu pana nuevo. Mi pana también abre bien cada vez,
+  no solo la primera.
 - **La Estatua de Reliquia ahora se ve como una estatua de verdad: una doliente de mármol pálido que resalta en la oscuridad.**
   Sobre un pedestal bajo, con un velo roto, cuencas vacías y una boca
   entreabierta, manos de dedos largos y musgo en el ruedo. Cada vez que se

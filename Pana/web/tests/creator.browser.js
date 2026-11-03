@@ -8,8 +8,7 @@ try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await context.addInitScript(() => { localStorage.setItem('pana:name', 'Ana'); if (!localStorage.getItem('pana:avatar')) localStorage.setItem('pana:avatar', JSON.stringify({ outfit: 'hawaiana', outfitColor: '#123456', hat: 'band', extra: 'cadena' })); });
   const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
-  await page.goto(base + '/#mi-pana');
-  await page.waitForURL('**/personaje');
+  await page.goto(base + '/personaje');
   await page.waitForFunction(() => window.PANA_PREPARED, null, { timeout: 120000 });
   assert.equal(await page.evaluate(() => panaEditor.state.top), 'tropical');
   await page.locator('[data-slot="hat"][data-item="casco"]').click();
