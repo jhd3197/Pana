@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Bochinche, Elige tu pana ahora llena la pantalla con los trece panas en tres filas grandes.**
+  Sin números ni letras en las tarjetas y sin textos largos: el pana, su
+  poder y sus barras. Las flechas recorren la cuadrícula y Enter lo elige.
 - **La Estatua de Reliquia ahora se ve como una estatua de verdad: una doliente de mármol pálido que resalta en la oscuridad.**
   Sobre un pedestal bajo, con un velo roto, cuencas vacías y una boca
   entreabierta, manos de dedos largos y musgo en el ruedo. Cada vez que se
