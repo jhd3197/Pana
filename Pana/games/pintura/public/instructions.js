@@ -22,6 +22,9 @@ export default {
     { action: loc('Mantén para cargar la granada y suelta para lanzarla'), keyboard: 'G', gamepad: 'RB', touch: loc('Botón Granada') },
     { action: loc('Arma anterior o siguiente (las de pescozón van al final)'), keyboard: 'Z / X', gamepad: 'Y', touch: loc('Flechas de marcadora') },
     { action: loc('Chispa / Trueno / Gemelas / Cohetón / Lejana / Bazuca'), keyboard: '1 – 6' },
+  ] }, { title: loc('Polígono de tiro (Probar, en la armería)'), rows: [
+    { action: loc('Reponer los blancos'), keyboard: 'T', gamepad: 'Y', touch: loc('Botón de reponer') },
+    { action: loc('Volver a la armería'), keyboard: 'Esc', gamepad: 'B', touch: loc('Botón Volver') },
   ] }, { title: loc('Fuera de la ronda'), rows: [
     { action: loc('Cambiar de pana'), keyboard: 'Q / E', gamepad: 'LB / RB', touch: loc('Flechas del nombre') },
     { action: loc('Ver la cancha desde arriba'), keyboard: loc('Espacio'), gamepad: 'A', touch: loc('Botón Cámara') },
@@ -37,6 +40,7 @@ export default {
     loc('El mapa de la esquina muestra lo que tienes alrededor (unos 30 m): tu equipo y solo los rivales que tienes a la vista. Mantén Tab para ver la cancha completa.'),
     loc('Mantén G para cargar la granada: los puntos marcan su arco y el anillo, hasta dónde pinta. Mira hacia arriba para lanzarla más alto. La mecha corre al soltarla.'),
     loc('La Lejana pinta dos pepazos por tiro, pero sin la mira se desvía. El cohete de La Bazuca saca de una si pega directo: apunta adelante del rival.'),
+    loc('Probar, en la armería, abre el polígono de tiro con tu kit: blancos de 10 a 100 m, y cada impacto dice su distancia y sus pepazos.'),
     loc('Si estás solo, tres bots entran contigo; con amigos la cancha es de ustedes. En Más ajustes eliges cuántos bots juegan. Puedes invitar hasta ocho panas.'),
   ],
 };

@@ -723,19 +723,53 @@ expire and slow opponents. Grenade flight and blasts: see "Grenades" below.
 `armory.js` previews the actual marker (with its parts) alone: it turns on a pivot,
 centred and scaled from its own bounding box so a pistol and La Bazuca fill the
 frame alike. The own pana (with El Acolchado when worn) only appears on the
-Equipo tab while choosing and during the range test (`view`/`frame`;
+Equipo tab while choosing (`view`/`frame`;
 `pinturaDebug.armory.body` is its group). On Equipo the marker is hidden
 (`visible=false`) and the pana stands alone at the origin, swaying, with the
 camera at chest height (y 1.05): from higher up the big head hides the vest.
-The range keeps the wider framing with the marker beside the pana. Hover gives
+Hover gives
 comparisons for range, damage, paint per second (`dpsOf`), spread (aimed spread
 and zoom when it aims), the real fire rate, capacity, reload, mobility and
 toughness. The marker picker comes by class: a chip per class with markers
 (nickname over kind, `ARMORY_CLASSES`: the marker classes plus melee; granadas
 has none so it gets no chip), then that class's weapons, each card with its pepazos/s, range and
-magazine. The header shows the class under the name. Its Probar
-range runs an independent `Arena` against a target, using the same rules as the
-server. It never spends ammo or emits shots into the multiplayer room.
+magazine. The header shows the class under the name. Probar opens
+the shooting range (below). It never spends ammo or emits shots into the
+multiplayer room.
+
+### Shooting range (Probar)
+
+`range.js` (input, HUD, lifetime), `range-scene.js` (Three.js) and
+`range-sim.js` (pure, unit tested in `tests/range.test.js`; the browser suite
+is `tests/range.browser.js`). The lane, signs and targets are the shared
+`engine/models/props/shooting-range.js`. Everything loads on the first
+Probar (dynamic import, the CSS as a `<link>` it appends), so the armory's
+first load is unchanged.
+
+- The sim is a real `Arena` on El Puerto's bounds (116 m along x, the only
+  court long enough for a 100 m target): the shooter stands at x = -55 and
+  `cover` (a getter on `Arena`) is overridden on the instance with the lane's
+  two walls and the berm. Targets are dummy panas (seats 2-7, so at most seven
+  targets); every 50 ms tick resets their paint, respawn and the shooter's
+  score and the clock, so nothing is ever knocked out and the round never
+  ends. A dropped popup is `shield`ed, which takes it out of `shotTargets`.
+- Hits are read by wrapping `arena.hit` on the instance: its `damage` is the
+  real falloff (`rangedDamage`, Infinity for a head or direct hit), and the
+  splat pushed just before it is the ball's. Balls that vanish without a
+  splat ran out of `life`: the readout says Corto at that distance and a
+  splat drops on the floor there (El Tuqueque: about 61 m).
+- The rules are flat (balls fly at `SHOT_HEIGHT`), so whether a ball hits is
+  the horizontal aim, as in a round. Only the picture uses the pitch: the
+  splat lands on the face at `EYE + tan(pitch) * distance`. The paper
+  silhouette's rings sit at 1.1 m, the height bots aim at.
+- The range is a full-screen section inside the armory `<dialog>` (the top
+  layer: nothing outside it is clickable). Esc while the pointer is locked is
+  the look controls' `unlocked`; Esc otherwise is the dialog's `cancel`,
+  which the range prevents and turns into closing itself. While it runs
+  `game.js` skips `world.draw` (`armory.ranging`), and closing disposes the
+  scene and forces the range's WebGL context lost.
+- About 80 draw calls and 7 k triangles at 1280x720 (the lane is baked
+  into a few colour batches; each splat is one plane, capped at 160).
 `paintball-kit.js` supplies the eighteen marker models, cosmetic finishes,
 attachments and padded vest to both preview and gameplay. Studio registers
 those same models. Paint pattern changes are cosmetic and never change hits.

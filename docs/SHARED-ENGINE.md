@@ -777,6 +777,14 @@ Used by: Bochinche.
   glowing tall window and a hinged secret bookcase (`bookcaseDoor`).
   `props/reliquia-hideouts` has the searchable furniture (see "Hiding
   spots"). Used by: Reliquia's library.
+- **Shooting range**: `props/shooting-range` builds a covered firing lane
+  (`createRangeLane`: concrete floor with lane lines and distance numbers,
+  panelled walls, ceiling baffles and strip lights, the berm, a booth with
+  its bench and rail; baked into a few batches), hanging distance signs
+  (`createRangeSign`) and targets (`createRangeTarget`: paper silhouette,
+  board, popup on a hinge, big back board; `userData.face` is where splats
+  go). Registered in Studio. Used by: Pepazo's armory range (`range.js`,
+  `range-scene.js`, `range-sim.js`, the rules on a lane of dummy targets).
 - **Large runtime asset packs** (audio, big images, voice packs) are not engine
   modules. They ship as release ZIPs pinned in `server/src/asset-packs.json`
   and are served by the server. Add a file there, not to Git:

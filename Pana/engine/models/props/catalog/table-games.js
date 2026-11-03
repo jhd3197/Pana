@@ -32,4 +32,7 @@ export default [
   ['paint-marker', 'Marcadora de pintura', 'paintball', 'createPaintMarker', '¡Pintura!', {}],
   ['team-canopy', 'Toldo de equipo', 'paintball', 'teamCanopy', 'Pepazo', { color: '#29c5cd' }],
   ['sandbag-wall', 'Sacos de arena', 'paintball', 'sandbagWall', 'Pepazo', { w: 4 }],
+  ['range-lane', 'Polígono de tiro', 'shooting-range', 'createRangeLane', 'Pepazo', { length: 30, marks: [10, 25] }],
+  ['range-target', 'Blanco de tiro', 'shooting-range', 'createRangeTarget', 'Pepazo', { kind: 'paper' }],
+  ['range-sign', 'Letrero de distancia', 'shooting-range', 'createRangeSign', 'Pepazo', { meters: 50 }],
 ].map(([id, name, module, factory, game, previewOptions]) => ({ id, name, category: 'Objetos', source: `/engine/models/props/${module}.js`, factory, usedBy: [game], pack: 'table-games', previewOptions }));
