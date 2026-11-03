@@ -9,7 +9,7 @@ import { generateRun, inRect } from '../public/deck.js';
 import { Expedition, interaction, visibleItems, quotaFor, spotFront, compassTarget } from '../public/rules.js';
 import { ITEMS, valueOf } from '../public/items.js';
 
-const LIBRARY = [2, 5, 8];
+const LIBRARY = [1, 2, 3, 5, 8];
 const opened = L => ({ open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])), lift: { floor: 1, moving: false } });
 function reachable(L, state, from, step = .5, radius = .45) {
   const key = (i, j) => `${i},${j}`, seen = new Set(), queue = [[Math.round(from.x / step), Math.round(from.z / step)]];
@@ -25,16 +25,16 @@ const relicValue = kinds => kinds.reduce((n, k) => n + (ITEMS[k].tool ? 0 : valu
 test('the same seed deals the same hiding spots on every client', async () => {
   const fresh = await import('../public/deck.js?fresh');
   for (const [seed, depth] of [[3, 2], [9, 5], [21, 8]]) {
-    const a = generateRun(seed, { depth }), b = fresh.generateRun(seed, { depth });
+    const a = generateRun(seed, { depth, theme: 'biblioteca' }), b = fresh.generateRun(seed, { depth, theme: 'biblioteca' });
     assert.ok(a.spots.length >= 6, `seed ${seed}/${depth}: spots dealt`);
     assert.deepEqual(JSON.parse(JSON.stringify(a.spots)), JSON.parse(JSON.stringify(b.spots)));
   }
-  assert.equal(generateRun(3, { depth: 1 }).spots.length, 0, 'the mine keeps its look for now');
+  assert.equal(generateRun(3, { depth: 1, theme: 'mina' }).spots.length, 0, 'the mine keeps its look for now');
 });
 
 test('every hiding spot is reachable and its mouth is clear', () => {
   for (let seed = 1; seed <= 25; seed++) for (const depth of LIBRARY) {
-    const L = layoutFor(seed, depth), state = opened(L), stop = L.run.lifts.find(l => l.floor === 1);
+    const L = layoutFor(seed, depth, 'biblioteca'), state = opened(L), stop = L.run.lifts.find(l => l.floor === 1);
     const walker = reachable(L, state, { x: stop.x, z: stop.z - 5 });
     for (const sp of L.run.spots) {
       const front = spotFront(sp), room = L.run.rooms.find(r => r.id === sp.room);
@@ -48,7 +48,7 @@ test('every hiding spot is reachable and its mouth is clear', () => {
 test('relics hide in the spots, decoys and empties exist, and the quota stays reachable', () => {
   let decoys = 0, empty = 0, hard = 0, easy = 0;
   for (let seed = 1; seed <= 40; seed++) for (const depth of LIBRARY) {
-    const run = layoutFor(seed, depth).run, rooms = run.rooms.filter(r => r.floor === 1);
+    const run = layoutFor(seed, depth, 'biblioteca').run, rooms = run.rooms.filter(r => r.floor === 1);
     const plain = run.loot.filter(l => l.floor === 1), hidden = run.spots.filter(s => !s.decoy).flatMap(s => s.content);
     // Plain-sight value is mostly the big treasures, the sealed chamber's
     // scatter and the cursed piece on its lectern; the hand-sized relics hide.
@@ -69,7 +69,7 @@ test('relics hide in the spots, decoys and empties exist, and the quota stays re
 
 // A library jornada with one pana, nothing awake.
 function library(seed) {
-  const g = new Expedition(seed); g.addPlayer(1, 'Ana'); g.addPlayer(2, 'Beto'); g.start(seed); g.completeLevel();
+  const g = new Expedition(seed, { place: 'biblioteca' }); g.addPlayer(1, 'Ana'); g.addPlayer(2, 'Beto'); g.start(seed); g.completeLevel();
   assert.equal(g.layout.run.theme, 'biblioteca');
   for (const r of g.layout.run.rooms) g.woke[r.id] = 1;
   return g;

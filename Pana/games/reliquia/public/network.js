@@ -2,6 +2,7 @@ import { Expedition, stepExplorer, alive } from './rules.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
 import { jumpCount } from '/engine/play/jump.js';
 import { loc, locn } from '/engine/i18n.js';
+import { createDeltaSender, createDeltaReceiver } from '/engine/state-delta.js';
 
 const ACTIONS = new Set(['use', 'throw', 'drop', 'drag', 'bark', 'interact']);
 const angle = v => Number.isFinite(v) ? Math.atan2(Math.sin(v), Math.cos(v)) : undefined;
@@ -22,6 +23,23 @@ export class ExpeditionRoom extends LiveRoom {
       },
     });
     this.state = new Expedition().snapshot();
+    // Snapshots travel as deltas (engine/state-delta.js): a whole state every
+    // 2 s, after a join or a new host, or when a guest asks for one.
+    this.wire = createDeltaSender({ keyframe: 40 }); this.unwire = createDeltaReceiver(); this.askedAt = 0;
+  }
+  publish() {
+    this.state = this.game.snapshot();
+    const wire = this.wire.encode(this.state);
+    this.onState(this.state);
+    this.send({ kind: 'snapshot', ...wire, ...(this.acks.size ? { acks: Object.fromEntries(this.acks) } : {}) });
+  }
+  receive(id, data) {
+    if (data?.kind === 'resync') { if (this.isHost) this.wire.reset(); return; }
+    if (data?.kind !== 'snapshot' || id !== this.hostId || this.isHost) return super.receive(id, data);
+    const state = this.unwire.decode(id, data);
+    if (state) return super.receive(id, { ...data, state });
+    // A delta without its base: ask the host for a whole state (at most twice a second).
+    const now = performance.now(); if (now - this.askedAt > 500) { this.askedAt = now; this.send({ kind: 'resync' }, 'host'); }
   }
   statusText() { return locn(this.members.size, 'Sala {code} · {n} pana', 'Sala {code} · {n} panas', { code: this.code }); }
   cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), h: angle(raw?.h), pitch: Number.isFinite(raw?.pitch) ? Math.max(-1.2, Math.min(1.2, raw.pitch)) : 0, jump: jumpCount(raw), hold: !!raw?.hold, sprint: !!raw?.sprint }; }
@@ -38,15 +56,15 @@ export class ExpeditionRoom extends LiveRoom {
   // A new identity does not resurrect a stale expedition from a deleted room.
   entered(alone) { if (alone) this.state = new Expedition().snapshot(); }
   takeOver(previous) {
-    super.takeOver(previous);
+    super.takeOver(previous); this.wire.reset(); this.unwire.reset();
     this.game = new Expedition(this.state.seed || 1, this.state.options);
     if (this.state.phase !== 'lobby') this.game.restore(this.state, this.members);
     for (const p of this.members.values()) this.game.addPlayer(p.id, p.name, p.id === this.id ? this.avatar : p.avatar || this.state.players.find(q => q.id === p.id)?.avatar || {});
     this.publish(); if (previous != null) this.onNotice(loc('Cambió el anfitrión. La expedición continúa.'));
   }
-  memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar); this.publish(); } }
+  memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar); this.wire.reset(); this.publish(); } }
   memberLeft(id) { super.memberLeft(id); if (this.isHost) { this.game.removePlayer(id); this.publish(); } }
-  memberHello(id, m) { if (this.isHost) { this.game.addPlayer(id, m.name, m.avatar); this.publish(); } }
+  memberHello(id, m) { if (this.isHost) { this.game.addPlayer(id, m.name, m.avatar); this.wire.reset(); this.publish(); } }
   // The expedition's own ledger also travels in snapshots, so a new host never
   // replays an action the old one already applied.
   handle(id, data) {

@@ -25,7 +25,7 @@ import { sfx } from './sounds.js';
 import { createAmbience } from './ambience.js';
 import { createSamples } from './samples.js';
 import { createPresence } from './presence.js';
-import { floorOf, jornadaName } from './deck.js';
+import { floorOf, jornadaName, themeOf } from './deck.js';
 import { ITEMS, say } from './items.js';
 import { loc } from '/engine/i18n.js';
 
@@ -109,7 +109,7 @@ function handle(e) {
     case 'lost': sfx.lost(); break;
     case 'curse': sfx.curse(); view.shake(.3); break;
     case 'seal': sfx.seal(); view.shake(.5); break;
-    case 'descend': if (e.players?.includes(room.id)) shout(loc('Jornada {n} · {place}', { n: state.level, place: loc(jornadaName(state.level)) }), { tone: 'yellow' }); break;
+    case 'descend': if (e.players?.includes(room.id)) shout(loc('Jornada {n} · {place}', { n: state.level, place: loc(jornadaName(state.level, themeOf(state))) }), { tone: 'yellow' }); break;
     case 'trap': if (near) sfx.trap(); break;
     case 'hurt': if (mine) { sfx.hurt(); view.shake(.35); } break;
     case 'down': sfx.down(); break;
@@ -142,7 +142,7 @@ function handle(e) {
 }
 function receive(next) {
   state = next;
-  view.reseed(state.seed, state.level || 1);
+  view.reseed(state.seed, state.level || 1, themeOf(state));
   if (phase !== state.phase) {
     phase = state.phase; menu.close(); clearInput(); document.body.classList.toggle('playing', phase === 'playing');
     if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; if (qs.has('debug') && Number(qs.get('jornada')) > 1) queueMicrotask(() => window.reliquia?.jornada(Number(qs.get('jornada')))); lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
@@ -223,7 +223,7 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
   scare(kind) { fx.force(kind, { state, me: me(), heading: view.heading }); },
   // Stand in front of a hiding spot (the nth on this floor, or of a kind) and look at it.
   spot(which = 0) { const run = view.world.run, list = run.spots.filter(s => typeof which !== 'string' || s.kind === which), sp = typeof which === 'number' ? run.spots[which] : list[0]; if (!sp) return null; const d = (sp.wall ? .75 : .9) + 1, x = sp.x + Math.sin(sp.h) * d, z = sp.z + Math.cos(sp.h) * d, h = Math.atan2(sp.x - x, sp.z - z); this.place(room.id, x, z, h); view.heading = h; view.pitch = -.3; return sp; },
-  // Skip ahead to jornada n (2 is the first library): host only.
+  // Skip ahead to jornada n (with Alternar, odd jornadas are the library): host only.
   jornada(n) { const g = room.game; if (!room.isHost || !g || g.phase !== 'playing') return false; while (g.level < n) g.completeLevel(); room.publish(); return g.level; },
   // Spawn an enemy `ahead` metres in front of you (`side` to the right): host only.
   // (or on the nearest open floor around that point).

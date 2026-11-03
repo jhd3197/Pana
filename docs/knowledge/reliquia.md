@@ -260,8 +260,23 @@ hand items; the own avatar is hidden. Look input is
 reachable (floor 1 at start, floor f+1 when seal f opens), only from
 Studio models: `ruinShell` (brick walls, slabs, grout, ceiling, painted
 `stoneTexture`s tinted per block; one
-InstancedMesh each, plain boxes: about 110–140 k triangles and ~100 draw
-calls in play) plus ruins, mine, cave, cemetery, camp and crystal props.
+InstancedMesh per 24 m tile and part, plain boxes, so the camera culls the
+floor tile by tile) plus ruins, mine, cave, cemetery, camp and crystal props.
+
+**What a frame costs.** Underground the sun is off, so `setLook` stops its
+shadow pass (`renderer.shadowMap.autoUpdate`; `castShadow` stays, so no
+shader recompiles on the lift) and the camera's far plane sits at the fog's
+far end (`scene.fog.far + 1`; fog depth and the far plane are the same view
+depth, so nothing visible is lost; the camp keeps 220 m for the sky).
+Measured headless (SwiftShader, 1280 × 800, seed 424242, one pana on floor
+1): the mine went from 267 draw calls and 133 k triangles to 66 and 35 k,
+the library from 212 and 223 k to 81 and 107 k, and frames came twice as
+often in the mine and 1.75× in the library (two panas, host: 4.96 → 11.1
+fps and 4.19 → 7.79). Each awake mummy adds about 17
+calls. Software WebGL is
+pixel-bound, so compare calls and triangles, not milliseconds. The host's
+20 Hz timer shares the main thread with drawing: a host whose GPU lags
+also simulates and publishes less often, which guests feel as lag.
 Static decor is baked per floor; braziers animate; crystal clusters are
 instanced with their own shader and must not go through `bake`. A revealed
 hidden room rebuilds that floor's shell once. Every item kind has one
@@ -269,13 +284,20 @@ prototype that the map clones. Floors other than yours are hidden.
 
 ## La biblioteca sepultada (the library theme)
 
-`themeFor(depth)` in `deck.js` deals each jornada a theme: the mine, or
-`'biblioteca'` on jornada 2 and every third after (`depth % 3 === 2`: 2, 5,
-8…). It is pure, so every client deals the same library from the seed;
-`run.theme` travels nowhere. The library has its own deck (`estanterias`,
+`themeFor(depth, place)` in `deck.js` deals each jornada a theme from the
+room's **Lugar** option (`options.place`, a primary lobby choice the host
+sets): `'biblioteca'` or `'mina'` every jornada, or `'alternar'` (the
+default) with the library on odd jornadas, so a fresh run opens in the
+library and swaps after each completed jornada. `themeOf(state)` reads it
+from `state.level` and `state.options`, which every snapshot already
+carries, so `run.theme` itself travels nowhere; `generateRun`, `layoutFor`
+and `createExpeditionWorld` take the theme, and their caches key on it.
+Every seal kind works in both themes, the vault included (the reachability
+and quota tests walk both themes at depths 1–8). The start event and the
+end-of-jornada event name the place that comes next. The library has its own deck (`estanterias`,
 `lectura`, `archivo`, `copistas`, plus the idol, trap, sanctuary and pit rooms
 under library names, `roomName(kind, theme)`); the seals work as in the mine.
-`jornadaName(level)` is what the HUD and the descent shout call it.
+`jornadaName(level, theme)` is what the HUD and the descent shout call it.
 
 - **Solids.** Bookcases, reading tables and copyists' desks are axis-aligned
   rectangles in `run.solids`, cut out of the walkable bitmap in `layout.js`
@@ -463,6 +485,15 @@ Host simulation at 20 Hz on `LiveRoom` (`reliquia-v3`). Input:
 plus host-only `configure` and `start`; the expedition's own `ledger` in
 snapshots stops a new host replaying them. Guests predict their own
 walking with `stepExplorer` unless they grip a treasure or are dragged.
+
+Snapshots go out as deltas (`engine/state-delta.js`): only the fields that
+changed, per player, enemy and item by `id`, with a whole state every 40
+publishes (2 s), after a join or a hello, after a new host takes over, and
+when a guest asks with `{ kind: 'resync' }` because a delta's `base` is not
+the one it holds. A 2-pana run sends about 0.3–0.7 KB per publish instead
+of 2.7–6 KB (11–12 %); diffing and patching cost about 0.1 ms a tick.
+Other panas are drawn up to 0.15 s ahead along their `vx`/`vz` since the
+last snapshot, so a host that publishes slowly still looks like walking.
 Late arrivals start at the camp; joiners during results wait as
 spectators. A departing pana drops both hands.
 
@@ -484,7 +515,7 @@ npm run test:browser -- reliquia
 ```
 
 `tests/hiding.test.js` covers the spots: same seed same spots, every spot
-reachable with its front clear (depths 2, 5, 8), plain-sight relics, decoys
+reachable with its front clear (library at depths 1, 2, 3, 5, 8), plain-sight relics, decoys
 and empties, the quota still reachable, a search opening exactly once, the
 lantern opening the passage and the opened state in a guest's snapshot.
 The rules tests cover reachability across seeds, handfuls and one weapon, throwing,

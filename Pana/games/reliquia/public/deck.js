@@ -40,12 +40,16 @@ const SIZES = { entrada: [16, 14], tesoro: [16, 14], columnas: [18, 16], trampas
   estanterias: [22, 18], lectura: [20, 18], archivo: [16, 14], copistas: [18, 16] };
 const DECK = ['tesoro', 'columnas', 'trampas', 'idolo', 'veta', 'cripta', 'santuario', 'puente'];
 const LIBRARY_DECK = ['estanterias', 'lectura', 'archivo', 'estanterias', 'copistas', 'idolo', 'trampas', 'santuario', 'puente'];
-// Each jornada has a theme: the mine, or (jornada 2, then every third) the
-// buried library. Pure, so every client deals the same one.
-export const themeFor = depth => depth % 3 === 2 ? 'biblioteca' : 'mina';
+// Each jornada has a theme: the mine or the buried library. The room's
+// "Lugar" option (`place`) picks it: always one, or alternating with the
+// library first (jornada 1, 3, 5…). Pure, so every client deals the same one.
+export const PLACES = ['alternar', 'biblioteca', 'mina'];
+export const themeFor = (depth, place = 'alternar') => place === 'mina' || place === 'biblioteca' ? place : depth % 2 ? 'biblioteca' : 'mina';
+// The theme of a state's (or an expedition's) current jornada.
+export const themeOf = s => themeFor(s?.level || 1, s?.options?.place);
 export const roomName = (kind, theme = 'mina') => (theme === 'biblioteca' && LIBRARY_NAMES[kind]) || ROOM_NAMES[kind];
 // What the HUD calls a jornada.
-export const jornadaName = level => themeFor(level) === 'biblioteca' ? LIBRARY_NAME : FLOOR_NAMES[Math.min(FLOOR_NAMES.length - 1, level)];
+export const jornadaName = (level, theme = themeFor(level)) => theme === 'biblioteca' ? LIBRARY_NAME : FLOOR_NAMES[Math.min(FLOOR_NAMES.length - 1, level)];
 // Bookcases are solid rectangles cut out of the walkable bitmap (layout.js).
 const SHELF = .8;
 // Hiding spots (engine/play/hiding-spots.js): what a pana searches in the
@@ -75,8 +79,8 @@ export const floorOf = x => Math.max(0, Math.round(x / SPACING));
 export const sealKind = depth => depth % 3 === 0 ? 'boveda' : depth % 2 ? 'ruedas' : 'guardian';
 
 const cache = new Map();
-export function generateRun(seed = 1, { depth = 1 } = {}) {
-  const floors = 1, key = `${seed}:${depth}`, theme = themeFor(depth), library = theme === 'biblioteca';
+export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {}) {
+  const floors = 1, key = `${seed}:${depth}:${theme}`, library = theme === 'biblioteca';
   if (cache.has(key)) return cache.get(key);
   const run = { seed, floors, depth, theme, solids: [], spots: [], rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
     sleepers: [], obstacles: [], lights: [], decor: [], pits: [], bridges: [] };
