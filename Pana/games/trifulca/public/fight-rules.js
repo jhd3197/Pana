@@ -44,6 +44,9 @@ export const ARENAS = {
   colonial: { shape: 'circle', r: 4.3, twist: 'balde' },
 };
 export const arenaOf = (id) => ARENAS[id] || ARENAS.calle;
+// The map a state shows: this fight's, or the host's pinned one; while the night
+// rotates there's none yet, so the lobby stays on `shown`.
+export const arenaIdOf = (state, shown = 'calle') => state.arenaNow || (ARENAS[state.options?.arena] ? state.options.arena : shown);
 
 // How far outside the ring a point is (negative inside) and the way back in.
 export function edge(arena, x, z) {

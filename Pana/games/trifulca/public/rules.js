@@ -9,9 +9,9 @@
 // dolitas and give water in the corner. fight-rules.js owns the punches,
 // bot-rules.js the bots.
 import { draw, clamp, seedOf } from '/engine/random.js';
-import { defaultOptions, roomOptions } from './options.js';
+import { defaultOptions, roomOptions, ROTATE } from './options.js';
 import { locKey } from '../../../engine/i18n.js';
-import { arenaOf, newBody, control, presses, stepBodies, edge, crowdSpot, scorecard, setAct, addMareo, knockDown, inRing, facing, CORNERS, MAREO_CALMA, BODY_GAP } from './fight-rules.js';
+import { ARENAS, arenaOf, newBody, control, presses, stepBodies, edge, crowdSpot, scorecard, setAct, addMareo, knockDown, inRing, facing, CORNERS, MAREO_CALMA, BODY_GAP } from './fight-rules.js';
 import { botInput } from './bot-rules.js';
 import { returnToLobby } from '../../../engine/play/round-lobby.js';
 
@@ -58,7 +58,7 @@ export class Trifulca {
     this.players = []; this.queue = []; this.bodies = []; this.props = [];
     this.phase = 'lobby'; this.time = 0; this.fightNo = 0; this.champion = null; this.champions = [];
     this.result = null; this.titles = []; this.events = []; this.eventSeq = 0;
-    this.fight = null; this.round = 0; this.bracket = null; this.arenaNow = null; this.nextProp = 1;
+    this.fight = null; this.round = 0; this.bracket = null; this.arenaNow = null; this.arenaCycle = []; this.arenaLast = null; this.arenaNext = null; this.nextProp = 1;
   }
 
   snapshot() { return JSON.parse(JSON.stringify(this)); }
@@ -68,7 +68,7 @@ export class Trifulca {
   // picks the next arena. The night's results stay until the next start.
   toLobby() {
     return returnToLobby(this, { from: this.tutorial ? [this.phase] : ['finished'],
-      reset: g => Object.assign(g, { tutorial: null, bodies: [], props: [], fight: null, arenaNow: null, time: 0 }) });
+      reset: g => Object.assign(g, { tutorial: null, bodies: [], props: [], fight: null, arenaNow: null, arenaCycle: [], arenaLast: null, arenaNext: null, time: 0 }) });
   }
   get mode() { return this.options.modo; }
 
@@ -139,7 +139,7 @@ export class Trifulca {
     // Panas first in a random order, then the bots.
     const order = this.players.map(p => ({ id: p.id, k: (p.bot ? 1 : 0) + draw(this) * .9 }));
     this.queue = order.sort((a, b) => a.k - b.k).map(o => o.id);
-    Object.assign(this, { champion: null, champions: [], fightNo: 0, result: null, titles: [], events: [], round: this.round + 1, bracket: null, winner: null, tutorial: null });
+    Object.assign(this, { champion: null, champions: [], fightNo: 0, result: null, titles: [], events: [], round: this.round + 1, bracket: null, winner: null, tutorial: null, arenaNow: null, arenaCycle: [], arenaLast: null, arenaNext: null });
     // Alone: a ladder of rivals, and the bots never fight each other.
     const humanIds = this.players.filter(p => !p.bot).map(p => p.id), bots = this.players.filter(p => p.bot);
     this.ladder = this.mode === 'queda' && humanIds.length === 1 && bots.length ? { me: humanIds[0], rivals: bots.map(b => b.id), step: 0, lives: LADDER_LIVES } : null;
@@ -177,11 +177,33 @@ export class Trifulca {
 
   refund() { for (const p of this.players) if (p.bet) { p.dolitas += p.bet.amount; p.bet = null; } }
 
-  // The next fighters step up for their intro.
-  beginIntro() {
-    if (this.mode === 'torneo') this.arenaNow = this.bracket && this.bracket.rounds[this.bracket.round].length === 2 ? 'toldo' : null;
+  // Varios: the head of a shuffled cycle of the maps, refilled when it runs out
+  // and never the one just played. A torneo keeps el toldo for its final.
+  rotation() {
+    if (this.options.arena !== ROTATE) return null;
+    if (!this.arenaCycle.length) {
+      const pool = Object.keys(ARENAS).filter(id => this.mode !== 'torneo' || id !== 'toldo');
+      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(draw(this) * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+      if (pool[0] === this.arenaLast) [pool[0], pool[1]] = [pool[1], pool[0]];
+      this.arenaCycle = pool;
+    }
+    return this.arenaCycle[0];
+  }
+  chooseArena() {
+    const b = this.bracket;
+    if (this.mode === 'torneo' && b?.rounds[b.round].length === 2) return 'toldo';
+    const next = this.rotation();
+    if (next) { this.arenaCycle.shift(); this.arenaLast = next; }
+    return next;
+  }
+
+  // The next fighters step up for their intro. A restarted intro (a fighter
+  // left before the bell) stays on the same map.
+  beginIntro(again = false) {
+    if (!again) this.arenaNow = this.chooseArena();
     const arena = this.arena, line = this.lineup().filter(l => l.id != null);
-    if (new Set(line.map(l => l.team)).size < 2) { this.phase = 'lobby'; return; }
+    if (new Set(line.map(l => l.team)).size < 2) { this.arenaNow = null; this.phase = 'lobby'; return; }
+    this.arenaNext = null;
     this.bodies = line.map(l => Object.assign(newBody(l.id, l.corner, arena, l.team), { bench: !!l.bench }));
     for (const b of this.bodies.filter(x => x.bench)) this.benchSpot(b);
     // The champion carries a little of the last fight; a long streak gives the challenger a boost.
@@ -211,6 +233,7 @@ export class Trifulca {
     const profe = this.addPlayer(BOT_SEAT, 'Profe Cheo', {}, true);
     profe.nick = 'El Profe'; profe.level = 0; // i18n-ignore
     for (const p of this.players) Object.assign(p, { dolitas: START_DOLITAS, stats: stats(), bet: null, carry: 0, last: {} });
+    if (this.options.arena === ROTATE) this.arenaNow = 'calle';
     const arena = this.arena;
     this.bodies = [newBody(id, 'red', arena), newBody(profe.id, 'blue', arena)];
     Object.assign(this.bodies[0], { x: -2.6 }); Object.assign(this.bodies[1], { x: 1.6 });
@@ -634,6 +657,10 @@ export class Trifulca {
     if (final && lead) { belt = true; lead.dolitas += PAY.title; payouts.push({ id: lead.id, amount: PAY.title, why: 'cinturón' }); } // i18n-ignore: an id
     this.result = { winner: winners[0] ?? null, loser: losers[0] ?? null, winners, losers, team, how, by, cards, payouts, belt, final, streak: lead?.stats.streak || 0 };
     this.phase = 'after'; this.time = AFTER;
+    // Published ahead, so every client can dress the next map during the verdict.
+    const round = this.bracket?.rounds[this.bracket.round].length;
+    const last = final || (this.ladder ? this.ladder.step >= this.ladder.rivals.length || this.ladder.lives <= 0 : this.mode !== 'torneo' && this.fightNo >= this.options.peleas);
+    this.arenaNext = last ? null : round === 4 && this.bracket.match === 1 ? 'toldo' : this.rotation() || this.options.arena;
     for (const b of this.bodies) {
       if (b.prop) { const prop = this.props.find(p => p.id === b.prop); if (prop) prop.held = null; b.prop = null; }
       if (winners.includes(b.id) && !b.bench) setAct(b, 'win');
