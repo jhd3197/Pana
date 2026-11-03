@@ -115,7 +115,8 @@ sees it. A staged shot that puts the pana within about 1.5 m of a crate stack
 shows the crate's wood and coral band at the right screen edge: that is cover,
 not the own body (the plaza's back booth at x -11, z 21.5 sits next to x -14, z 22).
 Shots stay level: the server only receives `world.forward()` as the aim, so
-pitch is cosmetic and clamped. WASD is yaw-relative (`world.movement`); Q/E turn.
+pitch is cosmetic and clamped. WASD is yaw-relative (`world.movement`); ← / → turn
+(Q swaps guns, so the keyboard turn moved off Q/E; ↑ ↓ still walk).
 The mouse uses pointer lock. Esc releases the lock before the page sees the
 key, so a lock lost during play opens the shared menu; opening the menu or the
 results screen releases it. Without a lock (refused, headless, touch) a drag on
@@ -476,8 +477,8 @@ weapon between 2 and 5).
 
 - **Damage is a big stack, not a one-hit rule.** A blow lands `damage` pepazos
   at once through `Arena.hit` (the same path as La Lejana's two). At the default
-  Aguante 3 the heavy three (bate, chancla, tobo) knock out in one hit, but El
-  Acolchado survives one and Aguante 5 needs two; the light ones (brocha,
+  Aguante 3 the heavy three (bate, chancla, tobo) knock out in one hit, but
+  Tanque survives one and Aguante 5 needs two; the light ones (brocha,
   maraca) chain. One rule keeps toughness, armor, the Goteo part and room
   options meaningful, where a flat one-hit kill would make all of them moot.
 - **One person per swing.** The blow is decided once, when the windup ends
@@ -579,12 +580,14 @@ and accepts them only outside a running round.
 
 A marker fires on a 50 ms tick, so its real interval is its `cadence` rounded
 up to whole ticks (`shotInterval`): La Chispa 0.25 s, Las Gemelas 0.2 s, El
-Trueno's three balls every 0.75 s. Keys 1–9 pick the first nine markers in menu
-order (`PAINT_WEAPONS`), Z/X (or [ and ]) step to the previous/next marker in
-class order (`WEAPON_CYCLE`, wrapping; Q/E already turn the view), the gamepad's
-Y is X, phones have previous/next arrow buttons beside Mira, and the shared pause menu lists all
-eighteen. All of it goes through `armory.setWeapon`; pistol-only rooms override
-that input. Fast reload is 0.55 seconds instead of 1.3. Sticky paint slows the
+Trueno's three balls every 0.75 s. 1 and 2 draw Arma 1 and Arma 2, Q (the
+gamepad's Y, the phone's middle button between the arrows) the other one; Z/X
+(or [ and ], the gamepad's B) step the gun in hand to the previous/next weapon in
+class order (`WEAPON_CYCLE`, wrapping, Arma 2 only through sidearms:
+`cycleWeapon(id, step, hand)`), phones have previous/next arrow buttons, and the
+shared pause menu lists every weapon for Arma 1. The keys used to pick markers
+1-9; with two guns 1/2 are the guns, as in most shooters. All of it goes through
+`armory.setWeapon(id, hand)`; pistol-only rooms override that input. Fast reload is 0.55 seconds instead of 1.3. Sticky paint slows the
 victim for seven seconds including the respawn wait. Friendly hits can consume
 a life when enabled but never award points.
 
@@ -730,7 +733,7 @@ Team and flag lobbies show the shared avatar roster, with four orange and four t
 ## Armory and composed combat kits
 
 `armory-data.js` is the shared, pure source for eighteen markers, typed
-gunsmith slots, one armor slot, three grenades and cosmetics. `kitStats`
+gunsmith slots, two guns, the Equipo classes, three grenades and cosmetics. `kitStats`
 composes real tradeoffs and still honors pistol-only, fast-reload and room
 toughness options. Marker names, classes, mounts, Mira kinds and bores come
 from `engine/play/paint-arsenal.js`, which adds the class names players read
@@ -785,12 +788,12 @@ lobby also sends the kit, and mid-round the server takes it from
 `input.weapon`, running the same `changeWeapon` so both sides keep and drop the same parts.
 Swaps keep reload debt and never refill limited rocket reserve.
 Rocket splash and grenade blasts apply at most one hit per victim and respect
-cover, teams and spawn protection. Respawn restores one grenade. Sticky pools
+cover, teams and spawn protection. Respawn restores the class's grenades. Sticky pools
 expire and slow opponents. Grenade flight and blasts: see "Grenades" below.
 
 `armory.js` previews the actual marker (with its parts) alone: it turns on a pivot,
 centred and scaled from its own bounding box so a pistol and La Bazuca fill the
-frame alike. The own pana (with El Acolchado when worn) only appears on the
+frame alike. The own pana (with the padded vest for Tanque) only appears on the
 Equipo tab while choosing (`view`/`frame`;
 `pinturaDebug.armory.body` is its group). On Equipo the marker is hidden
 (`visible=false`) and the pana stands alone at the origin, swaying, with the
@@ -804,6 +807,78 @@ has none so it gets no chip), then that class's weapons, each card with its pepa
 magazine. The header shows the class under the name. Probar opens
 the shooting range (below). It never spends ammo or emits shots into the
 multiplayer room.
+
+### Two guns: Arma 1 and Arma 2
+
+A kit carries `weapon`/`slots` (Arma 1, any weapon) and `weapon2`/`slots2`
+(Arma 2, the sidearm: `SECONDARY`, the pistolas class and the melee set: what
+you draw when the long gun is empty or too slow up close). La Chancleta is the
+default, so an old kit gains a melee backup instead of a second Chispa. Each gun
+keeps its own typed slots; finish, camo, charm and splash stay at kit level and
+dress both (shared to keep the change small). `gunOf(kit, hand)` returns one
+gun as a one-gun kit, and `kitStats`, `kitModel`, `partsOf`, `setPart` and
+`changeWeapon` take a `hand` (0 or 1). `cleanKit` gives old saves
+(`attachments`, `slots`, no `weapon2`) La Chancleta and never throws; a long gun
+sent as `weapon2` falls back to it. Pistol-only rooms make both hands La Chispa.
+
+In the room each pana has `hand` (0/1), `spare` (the holstered gun's
+`{ ammo, reserve }`) and `swap`. An input's `hand` swaps (`Arena.swapHand`): the
+holstered gun's pepas come back, a reload in progress is dropped, a thrown
+chancla must be back first, and the drawn gun waits `SWAP_TIME` (0.4 s) before
+it fires, swings or reloads. During the loading wait and the 3-2-1 a swap is
+free. `input.weapon` changes only the gun in hand and only to one that hand may
+hold. Every round starts on Arma 1 with both guns full. Bots keep Arma 1. The
+HUD's plate shows the gun in hand and, small and dim beside it, the other one
+(their `armory-thumbs.js` pictures); the phone's swap button shows the other.
+
+### Clases (Equipo)
+
+Equipo is a class with a real effect, not a look. `ARMOR` in `armory-data.js`
+has one row per class (adding one is one row): `mobility` (walk multiplier),
+`toughness` (pepazos added to the room's Aguante, never under 1: the room
+option's interaction is unchanged), `regen` (how fast the four quiet seconds
+that wash a pepazo off run), `stepNoise` (rivals hear the steps up to
+`28 m × noise`, louder or fainter), `markerScale` (the dot on rivals' minimap,
+and how near they must be to see it: `30 m × scale`), `grenades` carried and
+`grenadeRecharge` (seconds to get one back after a throw; every class now gets
+grenades back, where before it was one per life), `icon` and `vest` (the padded
+vest).
+
+| Class | Walk | Aguante | Regen | Steps | Dot | Grenades | Back in |
+|---|---|---|---|---|---|---|---|
+| Balanceado | 100% | +0 | 1× | 100% | 100% | 1 | 30 s |
+| Rápido | 108% | −1 | 1× | 115% | 100% | 1 | 30 s |
+| Tanque | 90% | +1 | 1× | 125% | 120% | 1 | 30 s |
+| Regenera | 97% | +0 | 1.8× | 100% | 100% | 1 | 40 s |
+| Sigiloso | 96% | +0 | 0.75× | 40% | 55% | 1 | 30 s |
+| Granadero | 95% | +0 | 0.9× | 100% | 100% | 2 | 18 s |
+
+Every effect is computed by `Arena` from the validated kit (`kitStats` adds the
+class to the gun's numbers; `wearClass` publishes `noise` and `mark` on the
+player for the other clients' footsteps and minimap); nothing comes from the
+client's input. Pepazo had footsteps and a minimap but no radar, so Sigiloso's
+"harder to see" is the minimap dot (smaller, and only within 16 m). Bots take
+their class's effects too. `tests/loadout.test.js` checks each class gains and
+pays something, every class × weapon × part set stays bounded with at most 40
+rating points between classes, and the sim's walk, aguante, wash, grenades,
+steps and dot. Old ids migrate (`LEGACY_ARMOR`): La Franela (`shirt`) →
+Balanceado, El Acolchado (`padded`) → Tanque (the vest still shows),
+El Cortaviento (`wind`) → Rápido.
+
+### The armory's menu
+
+Two levels plus the choices. The bottom bar holds four slots (Equipo, Arma 1,
+Arma 2, Granadas), each a picture and its whole name (they wrap, never cut).
+Arma 1 / Arma 2 open that gun's sub-menu: Atrás, the weapon (classes as
+`role=tab` chips, so LB/RB walk them; Arma 2 lists only `classesFor(1)`), its
+typed slots and the four looks. The preview, stats and Probar follow the gun on
+show (`hand()`: the open sub-menu's, else the Arma tile last pointed at).
+Atrás, Esc (the dialog's `cancel`) and B step back one level: the engine's
+`menuBack` clicks a shown `[data-pad-back]` inside a dialog before closing it.
+`pinturaDebug.armory.level` is `top`, `gun0`, `gun1` or `choices`;
+`tests/armory-menu.browser.js` checks no label is cut at three sizes, the
+levels with the mouse and a stubbed controller, Arma 2 kept after a reload and
+Q / 1 / 2 / Y in a practice round.
 
 ### Shooting range (Probar)
 

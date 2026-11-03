@@ -56,6 +56,9 @@ try {
   assert.ok(await b.locator('#start').isDisabled()); await wait(a, () => pinturaDebug.world.avatars.size === 2);
   // Guest-authored loadout travels through the real room and remains server-owned.
   await b.locator('#open-armory').click();
+  // Four slots on top; Arma 1 opens its own sub-menu (its weapon, its typed slots, the looks).
+  assert.deepEqual(await b.locator('#armory-slots button').evaluateAll(l => l.map(e => e.dataset.hand ?? e.dataset.slot)), ['armor', '0', '1', 'grenade']);
+  await b.locator('#armory-slots [data-hand="0"]').click();
   // Markers are picked by class: a chip per class, then its markers (only La Chispa's class shows first).
   await b.locator('[data-slot="weapon"]').click();
   // The weapon preview is the gun alone: the pana stays out of it, the gun and its parents show.
@@ -67,54 +70,54 @@ try {
   assert.match(await b.locator('#armory-choices [data-id="revolver"]').textContent(), /El Tambor/);
   await b.locator('#armory-choices [data-id="rocket"]').click();
   assert.match(await b.locator('#armory-class').textContent(), /Lanzadores/);
-  await b.locator('#armory-parts-back').click();
+  await b.locator('#armory-back').click();
   // Gunsmith slots are typed: Mira, Cañón, Tolva and Culata, each listing only its own parts.
   const slotButton = s => b.locator(`[data-slot="part"][data-part="${s}"]`);
   const savedKit = () => b.evaluate(() => JSON.parse(localStorage.getItem('pintura:kit')));
   const listed = () => b.locator('#armory-choices [data-id]').evaluateAll(l => l.map(e => e.dataset.id));
-  assert.deepEqual(await b.locator('#armory-slots [data-slot="part"]').evaluateAll(l => l.map(e => e.dataset.part)), ['optic', 'barrel', 'hopper', 'stock']);
+  assert.deepEqual(await b.locator('#armory-gun [data-slot="part"]').evaluateAll(l => l.map(e => e.dataset.part)), ['optic', 'barrel', 'hopper', 'stock']);
   await slotButton('hopper').click(); assert.equal(await slotButton('hopper').getAttribute('aria-pressed'), 'true');
-  assert.match(await b.locator('#armory-parts-back').textContent(), /Tolva/);
   assert.deepEqual(await listed(), ['', 'hopper'], 'El Cohetón takes only the big hopper (a spare rocket)');
-  await b.locator('#armory-choices [data-id="hopper"]').click(); await b.locator('#armory-parts-back').click();
-  assert.equal(await slotButton('hopper').locator('b').textContent(), 'Tolva grande'); assert.equal(await slotButton('stock').locator('b').textContent(), 'Ninguno');
+  await b.locator('#armory-choices [data-id="hopper"]').click(); await b.locator('#armory-back').click();
+  assert.equal(await slotButton('hopper').getAttribute('data-id'), 'hopper'); assert.equal(await slotButton('stock').getAttribute('data-id'), '');
   const saved = await savedKit(); assert.deepEqual(saved.slots, { optic: null, barrel: null, hopper: 'hopper', stock: null }); assert.equal('attachments' in saved, false, 'the typed shape is saved');
-  await slotButton('stock').click(); await b.locator('#armory-choices [data-id="stock"]').click(); await b.locator('#armory-parts-back').click();
+  await slotButton('stock').click(); await b.locator('#armory-choices [data-id="stock"]').click(); await b.locator('#armory-back').click();
   const guestId=await b.evaluate(()=>pinturaDebug.room.id);
   const seen = (want) => wait(a, ([id, want]) => JSON.stringify(pinturaDebug.room.state.players.find(p => p.id === id).kit.slots) === want, [guestId, JSON.stringify(want)]);
   await seen({ optic: null, barrel: null, hopper: 'hopper', stock: 'stock' });
   // La Bazuca takes the same parts (its stock is a pair of sliding rods): they stay put.
   await b.locator('[data-slot="weapon"]').click(); await b.locator('#armory-choices [data-id="bazooka"]').click();
   assert.equal(await b.locator('#armory-note').textContent(), '');
-  assert.deepEqual((await savedKit()).slots, { optic: null, barrel: null, hopper: 'hopper', stock: 'stock' }); await b.locator('#armory-parts-back').click();
+  assert.deepEqual((await savedKit()).slots, { optic: null, barrel: null, hopper: 'hopper', stock: 'stock' }); await b.locator('#armory-back').click();
   // The Mira slot lists the Miras this marker takes, its own first, each with its zoom chip.
-  await slotButton('optic').click(); assert.match(await b.locator('#armory-parts-back').textContent(), /Mira/);
+  await slotButton('optic').click(); assert.equal(await slotButton('optic').getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await listed(), ['', 'holo', 'dot']);
   assert.match(await b.locator('#armory-choices [data-id="holo"]').textContent(), /Holográfica.*1\.5×/);
-  await b.locator('#armory-choices [data-id="holo"]').click(); await b.locator('#armory-parts-back').click();
-  await slotButton('barrel').click(); await b.locator('#armory-choices [data-id="barrel"]').click(); await b.locator('#armory-parts-back').click();
-  await b.locator('[data-slot="weapon"]').click(); await b.locator('#armory-choices [data-id="rocket"]').click(); await b.locator('#armory-parts-back').click();
+  await b.locator('#armory-choices [data-id="holo"]').click(); await b.locator('#armory-back').click();
+  await slotButton('barrel').click(); await b.locator('#armory-choices [data-id="barrel"]').click(); await b.locator('#armory-back').click();
+  await b.locator('[data-slot="weapon"]').click(); await b.locator('#armory-choices [data-id="rocket"]').click(); await b.locator('#armory-back').click();
   await seen({ optic: 'holo', barrel: 'barrel', hopper: 'hopper', stock: 'stock' });
   // The preview holds the real model with every part and the chosen Mira kind.
   assert.equal(await b.evaluate(() => pinturaDebug.armory.preview.userData.optic), 'holo');
   // Clearing one slot leaves the others where they were.
-  await slotButton('barrel').click(); await b.locator('#armory-choices [data-id=""]').click(); await b.locator('#armory-parts-back').click();
-  assert.equal(await slotButton('barrel').locator('b').textContent(), 'Ninguno'); assert.equal(await slotButton('hopper').locator('b').textContent(), 'Tolva grande'); assert.equal(await slotButton('optic').locator('b').textContent(), 'Holográfica');
+  await slotButton('barrel').click(); await b.locator('#armory-choices [data-id=""]').click(); await b.locator('#armory-back').click();
+  assert.equal(await slotButton('barrel').getAttribute('data-id'), ''); assert.equal(await slotButton('hopper').getAttribute('data-id'), 'hopper'); assert.equal(await slotButton('optic').getAttribute('data-id'), 'holo');
   assert.deepEqual((await savedKit()).slots, { optic: 'holo', barrel: null, hopper: 'hopper', stock: 'stock' });
-  await b.locator('[data-slot="armor"]').click();await b.locator('#armory-choices [data-id="padded"]').click();
+  // Equipo is the class: Tanque wears the padded vest.
+  await b.locator('#armory-back').click(); await b.locator('[data-slot="armor"]').click();await b.locator('#armory-choices [data-id="tanque"]').click();
   // On armor the body is the point: the pana comes back wearing the vest, and the gun
   // leaves the view so it does not hide the vest.
   await wait(b, `pinturaDebug.armory.body.visible && pinturaDebug.armory.body.getObjectByName('El Acolchado')?.visible && !(${shows})(pinturaDebug.armory.preview)`);
-  await b.locator('#armory-parts-back').click();
-  await b.locator('[data-slot="weapon"]').click();
+  await b.locator('#armory-back').click();
+  await b.locator('#armory-slots [data-hand="0"]').click(); await b.locator('[data-slot="weapon"]').click();
   await wait(b, `(${shows})(pinturaDebug.armory.preview) && !pinturaDebug.armory.body.visible`);
-  await b.locator('#armory-parts-back').click();
+  await b.locator('#armory-back').click(); await b.locator('#armory-back').click();
   await b.locator('[data-slot="grenade"]').click();await b.locator('#armory-choices [data-id="pegajosa"]').click();
   await b.locator('#armory-close').click();
-  await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && JSON.stringify(p.kit.slots)==='{"optic":"holo","barrel":null,"hopper":"hopper","stock":"stock"}' && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
+  await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && JSON.stringify(p.kit.slots)==='{"optic":"holo","barrel":null,"hopper":"hopper","stock":"stock"}' && p.kit.armor==='tanque' && p.kit.grenade==='pegajosa';},guestId);
   // Camuflajes: a fixed set. A solid one is everyone's and reaches the room; without pana.sh a
   // patterned one is locked in the armory, and the room swaps it for a solid one if sent anyway.
-  await b.locator('#open-armory').click(); await b.locator('[data-slot="camo"]').click();
+  await b.locator('#open-armory').click(); await b.locator('#armory-slots [data-hand="0"]').click(); await b.locator('[data-slot="camo"]').click();
   await b.locator('#armory-choices .armory-camo[data-id="liso-uva"] .armory-choice').click();
   await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-uva', guestId);
   assert.equal((await savedKit()).camo, 'liso-uva');
@@ -126,7 +129,7 @@ try {
   await locked.locator('.armory-choice').dispatchEvent('click'); assert.equal((await savedKit()).camo, 'liso-uva', 'a locked camo is not picked');
   assert.match(await b.locator('#armory-note').textContent(), /pana.sh/);
   await locked.locator('.armory-choice').hover(); await wait(b, () => pinturaDebug.armory.preview.userData.camo?.pattern === 'woodland');
-  await b.locator('#armory-parts-back').click(); await b.locator('#armory-close').click();
+  await b.locator('#armory-back').click(); await b.locator('#armory-close').click();
   await b.evaluate(() => pinturaDebug.room.selectKit({ ...pinturaDebug.armory.kit, camo: 'selva' }));
   await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.camo === 'liso-mango', guestId);
   await wait(b, () => /camuflaje todavía no es tuyo/.test(document.getElementById('toast').textContent));
@@ -160,16 +163,18 @@ try {
   assert.equal(await a.evaluate(id=>pinturaDebug.room.state.players.find(p=>p.id===id).kit.weapon,guestId),'rocket','mid-round kit edit is rejected');
   // The refusal is said, not swallowed.
   await wait(b, () => /plena ronda/.test(document.getElementById('toast').textContent));
-  // A number key changes the marker in the room and in the saved kit.
-  await a.locator('#world').focus(); await a.keyboard.press('3');
+  // X steps the gun in hand to the next marker in class order, in the room and the saved kit; Z back.
+  await a.locator('#world').focus(); await a.keyboard.press('x');
   await wait(a, () => JSON.parse(localStorage.getItem('pintura:kit')).weapon === 'rapid' && pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).kit.weapon === 'rapid');
-  // 7 is La Metra (new markers are pickable mid-round); X steps to the next marker in class order, Z back.
-  await a.keyboard.press('7'); await wait(a, `${mine}.kit.weapon === 'smg'`);
-  await a.keyboard.press('x'); await wait(a, `${mine}.kit.weapon === 'pdw'`);
-  await a.keyboard.press('z'); await wait(a, `${mine}.kit.weapon === 'smg'`);
-  await a.keyboard.press('1'); await wait(a, `${mine}.kit.weapon === 'pistol'`);
-  assert.equal(await a.evaluate(() => JSON.parse(localStorage.getItem('pintura:kit')).weapon), 'pistol');
-  console.log('ok: markers by class, typed gunsmith slots list only their parts, the Mira lists its kinds, kits replicate, mid-round kit lock is announced, number keys and Z/X update the saved kit');
+  await a.keyboard.press('z'); await wait(a, `${mine}.kit.weapon === 'pistol'`);
+  // Q draws Arma 2 (La Chancleta); X then steps Arma 2 through sidearms only; 1 draws Arma 1 again.
+  await a.keyboard.press('q'); await wait(a, `${mine}.hand === 1 && ${mine}.weapon === 'sandal'`);
+  await a.keyboard.press('x'); await wait(a, `${mine}.kit.weapon2 === 'roller' && ${mine}.weapon === 'roller'`);
+  await a.keyboard.press('1'); await wait(a, `${mine}.hand === 0 && ${mine}.weapon === 'pistol'`);
+  // The guest sees the host's swap through the room.
+  await wait(b, id => pinturaDebug.room.state.players.find(p => p.id === id).kit.weapon2 === 'roller', await a.evaluate(() => pinturaDebug.room.id));
+  assert.deepEqual(await a.evaluate(() => { const k = JSON.parse(localStorage.getItem('pintura:kit')); return [k.weapon, k.weapon2]; }), ['pistol', 'roller']);
+  console.log('ok: markers by class, typed gunsmith slots list only their parts, the Mira lists its kinds, kits replicate, mid-round kit lock is announced, Z/X, Q and 1 swap and update the saved kit');
 
   // The guest crosses the court with the overview option (world-axis keys); the
   // host plays the default first-person view: turn, walk, then fire along the crosshair.
@@ -218,17 +223,17 @@ try {
   // front, then the throw: it leaves the hand (the held model hides, the real
   // sandal flies), paints a bot 12 m away and comes back to the hand.
   const s = await open('Chancla', `${code}-melee`);
-  await s.locator('#open-armory').click(); await s.locator('[data-slot="weapon"]').click();
+  await s.locator('#open-armory').click(); await s.locator('#armory-slots [data-hand="0"]').click(); await s.locator('[data-slot="weapon"]').click();
   await s.locator('#armory-classes [data-class="melee"]').click();
   assert.match(await s.locator('#armory-choices [data-id="sandal"]').textContent(), /La Chancleta/);
   await s.locator('#armory-choices [data-id="sandal"]').click();
   assert.match(await s.locator('#armory-class').textContent(), /Cuerpo a cuerpo/);
   assert.match(await s.locator('#armory-stats').textContent(), /Golpes\/s/); assert.doesNotMatch(await s.locator('#armory-stats').textContent(), /Capacidad/);
-  await s.locator('#armory-parts-back').click();
-  assert.deepEqual(await s.locator('#armory-slots [data-slot="part"]').evaluateAll(l => l.map(e => e.dataset.part)), ['grip', 'head', 'pommel'], 'melee has its own three slots');
+  await s.locator('#armory-back').click();
+  assert.deepEqual(await s.locator('#armory-gun [data-slot="part"]').evaluateAll(l => l.map(e => e.dataset.part)), ['grip', 'head', 'pommel'], 'melee has its own three slots');
   await s.locator('[data-slot="part"][data-part="grip"]').click();
   assert.equal(await s.locator('#armory-choices [data-id="barrel"]').count(), 0, 'melee lists its own parts');
-  await s.locator('#armory-choices [data-id="tape"]').click(); await s.locator('#armory-parts-back').click(); await s.locator('#armory-close').click();
+  await s.locator('#armory-choices [data-id="tape"]').click(); await s.locator('#armory-back').click(); await s.locator('#armory-close').click();
   assert.equal(await s.evaluate(() => JSON.parse(localStorage.getItem('pintura:kit')).weapon), 'sandal');
   // The positions below are on the plaza (open from x -14, z 22 down to z 10).
   await s.evaluate(() => pinturaDebug.room.selectMap('plaza')); await wait(s, () => pinturaDebug.room.state.mapId === 'plaza');

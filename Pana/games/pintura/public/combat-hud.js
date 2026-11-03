@@ -1,6 +1,6 @@
 import { loc, locn } from '/engine/i18n.js';
 import { icon } from '/engine/icons.js';
-import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, partOf, partsOf } from './armory-data.js';
+import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, FINISHES, partOf, partsOf, gunOf } from './armory-data.js';
 import { TARGET } from './rules.js';
 import { livesOf } from './options.js';
 import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES } from './hud-model.js';
@@ -20,13 +20,19 @@ export function keyFor(keys) {
 // Under the pepas: the marker's name and class, and an icon per fitted part.
 // Out of pepas: the reload key of the device in use (a phone has its Recargar button).
 function emptyText() { const key = keyFor({ keyboard: 'R', gamepad: 'X', touch: null }); return key ? loc('Sin pepas · {key} para recargar', { key }) : loc('Sin pepas · toca Recargar'); }
+// The two guns' pictures (armory-thumbs.js, loaded with the first round): the icon until they land.
+let thumbs = null;
+function gunPic(el, key, options) {
+  if (!el || el.dataset.key === key) return; el.dataset.key = key; el.replaceChildren(icon('kitBarrel'));
+  (thumbs ??= import('./armory-thumbs.js')).then(m => m.weaponThumb(options)).then(src => { if (!src || el.dataset.key !== key) return; const img = new Image(); img.alt = ''; img.src = src; el.replaceChildren(img); }).catch(() => {});
+}
 export function createCombatHud(doc = document) {
   const $ = id => doc.getElementById(id), body = doc.body;
   const set = (el, text) => { if (el.textContent !== text) el.textContent = text; };
   const pulse = name => { body.classList.remove(name); void body.offsetWidth; body.classList.add(name); };
   const team = t => t ? loc('Turquesa') : loc('Naranja');
   const side = (kind, label, color, translate) => { set($(`${kind}-label`), label); $(`${kind}-label`).translate = translate; $(`${kind}-dot`).style.setProperty('--c', color || 'var(--pk-text)'); };
-  let balls = 0, parts = '';
+  let balls = 0, parts = '', lastHand = null;
 
   return {
     // Fed every render, in the lobby too (the HUD is hidden there).
@@ -39,7 +45,7 @@ export function createCombatHud(doc = document) {
       set($('position'), r.teams ? goal : `${goal} · ${loc('{rank} de {n} panas', { rank: r.rank, n: r.n })}`);
       set($('timer'), clock(state.time)); $('clock').classList.toggle('low', state.time <= 30);
 
-      const stats = kitStats(me?.kit, state.options), ammo = me?.ammo ?? stats.magazine, melee = !!stats.melee;
+      const stats = kitStats(me?.kit, state.options, me?.hand), ammo = me?.ammo ?? stats.magazine, melee = !!stats.melee;
       $('hud').style.setProperty('--pepa', me?.color || 'var(--pk-yellow)');
       set($('me-name'), me?.name || '');
       // A melee weapon has no pepas: the plate shows its pepazos per blow over a swing bar (--cd).
@@ -54,7 +60,14 @@ export function createCombatHud(doc = document) {
       const lives = Math.max(0, livesOf(state.options) - (me?.hits || 0));
       const marker = WEAPONS.find(m => m.id === me?.weapon) || MARKERS[0], group = ARMORY_CLASSES.find(c => c.id === marker.class);
       set($('ammo'), [marker.name, group && loc(group.kind), livesOf(state.options) && locn(lives, '{n} vida', '{n} vidas')].filter(Boolean).join(' · '));
-      const fitted = me?.kit ? partsOf(me.kit) : [];
+      const fitted = me?.kit ? partsOf(me.kit, me.hand) : [];
+      // The gun in hand, the other one small beside it and on the phone's swap button; a swap pops the new one in.
+      if (me?.kit) {
+        const color = FINISHES.find(f => f.id === me.kit.finish)?.color || '#f28b42', other = gunOf(me.kit, me.hand === 1 ? 0 : 1).weapon, look = w => ({ weapon: w, color, camo: me.kit.camo ?? null, pattern: me.kit.pattern });
+        gunPic($('wpn-now'), `${me.weapon}:${color}:${me.kit.camo}`, look(me.weapon)); gunPic($('wpn-other'), `${other}:${color}:${me.kit.camo}`, look(other));
+        gunPic($('weapon-hand')?.querySelector('.wpn-pic'), `${other}:${color}:${me.kit.camo}`, look(other));
+        if (lastHand !== null && lastHand !== me.hand) pulse('swapped'); lastHand = me.hand ?? 0;
+      }
       if (parts !== fitted.join()) {
         parts = fitted.join();
         $('wpn-kit').replaceChildren(...fitted.map(id => { const el = doc.createElement('i'); el.append(icon(partOf(id).icon)); el.title = loc(partOf(id).name); return el; }));
@@ -66,7 +79,9 @@ export function createCombatHud(doc = document) {
       set($('reload-text'), away ? loc('La chancla vuelve en {n} s', { n: Math.max(0, me.melee.t).toFixed(1) }) : reloading ? loc('Recargando {n} s', { n: me.reload.toFixed(1) }) : empty ? emptyText() : '');
 
       const gear = $('gear'), ready = !!me?.grenadeReady;
-      if (gear.dataset.ready !== String(ready)) { gear.dataset.ready = String(ready); gear.replaceChildren(icon('kitGrenade'), doc.createTextNode(` ${ready ? loc('Granada') : loc('Sin granada')}`)); }
+      // Granadero carries two: the count shows once there is more than one.
+      const count = me?.grenades ?? 1, gearKey = `${ready}:${count}`;
+      if (gear.dataset.key !== gearKey) { gear.dataset.ready = String(ready); gear.dataset.key = gearKey; gear.replaceChildren(icon('kitGrenade'), doc.createTextNode(` ${ready ? loc('Granada') : loc('Sin granada')}${count > 1 ? ` ×${count}` : ''}`)); }
     },
     // The kill lines already sit in the killfeed; the bottom pill skips them.
     duplicate: message => KILL_LINES.has(message),
@@ -82,6 +97,6 @@ export function createCombatHud(doc = document) {
       if (angle === null) return;
       $('hit-dir').style.setProperty('--ang', `${angle.toFixed(3)}rad`); pulse('dir-hit');
     },
-    reset() { this.streak(0); body.classList.remove('dir-hit'); },
+    reset() { this.streak(0); body.classList.remove('dir-hit', 'swapped'); lastHand = null; },
   };
 }

@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo: llevas dos armas y tu equipo es tu clase.**
+  La armería abajo tiene solo Equipo, Arma 1, Arma 2 y Granadas; cada arma
+  abre su propio menú con sus piezas y Atrás (Esc o B). El Arma 2 es una
+  pistola o una de pescozón: cambias con Q, 1 y 2, Y en el mando o el botón
+  del teléfono. Las clases: Balanceado, Rápido, Tanque, Regenera, Sigiloso y
+  Granadero. Tu kit guardado se pasa solo. Girar sin ratón ahora es ← y →.
 - **Los equipos se ven igual en todos los juegos, en la sala principal, y quien llega entra al equipo más chico.**
   Dominó, Caída, Billar, Criollas, Chapita, Curiara, Capis y Pepazo usan los
   mismos paneles: Unirme aquí, Cambiarme aquí y Organizar. En Chapita ya

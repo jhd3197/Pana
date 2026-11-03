@@ -12,7 +12,7 @@ export default {
   sections: [{ title: loc('Moverte'), rows: [
     { action: loc('Caminar hacia donde miras'), keyboard: 'W A S D / ' + loc('Flechas'), gamepad: 'Stick izq.', touch: loc('Cruceta') },
     { action: loc('Mirar y apuntar (haz clic en la cancha para capturar el ratón)'), keyboard: loc('Ratón'), gamepad: 'Stick der.', touch: loc('Arrastra el dedo') },
-    { action: loc('Girar sin ratón'), keyboard: 'Q / E' },
+    { action: loc('Girar sin ratón'), keyboard: '← / →' },
     { action: loc('Saltar'), keyboard: loc('Espacio'), gamepad: 'A', touch: loc('Botón Saltar') },
     { action: loc('Correr (no puedes disparar corriendo)'), keyboard: 'Shift', gamepad: 'LB / L3' },
   ] }, { title: loc('Pintar'), rows: [
@@ -21,8 +21,9 @@ export default {
     { action: loc('Con La Chancleta: lanzarla en arco (vuelve sola a tu mano)'), keyboard: loc('Clic derecho / F / V'), gamepad: 'R3' },
     { action: loc('Recargar'), keyboard: 'R', gamepad: 'X', touch: loc('Botón Carga') },
     { action: loc('Mantén para cargar la granada y suelta para lanzarla'), keyboard: 'G', gamepad: 'RB', touch: loc('Botón Granada') },
-    { action: loc('Arma anterior o siguiente (las de pescozón van al final)'), keyboard: 'Z / X', gamepad: 'Y', touch: loc('Flechas de marcadora') },
-    { action: loc('Chispa / Trueno / Gemelas / Cohetón / Lejana / Bazuca'), keyboard: '1 – 6' },
+    { action: loc('Cambiar de arma (Arma 1 y Arma 2)'), keyboard: 'Q', gamepad: 'Y', touch: loc('Botón entre las flechas') },
+    { action: loc('Sacar el Arma 1 o el Arma 2'), keyboard: '1 / 2' },
+    { action: loc('Modelo anterior o siguiente del arma en la mano'), keyboard: 'Z / X', gamepad: 'B', touch: loc('Flechas de marcadora') },
   ] }, { title: loc('Polígono de tiro (Probar, en la armería)'), rows: [
     { action: loc('Reponer los blancos'), keyboard: 'T', gamepad: 'Y', touch: loc('Botón de reponer') },
     { action: loc('Volver a la armería'), keyboard: 'Esc', gamepad: 'B / Start', touch: loc('Botón Volver') },
@@ -42,6 +43,8 @@ export default {
     loc('Mantén G para cargar la granada: los puntos marcan su arco y el anillo, hasta dónde pinta. Mira hacia arriba para lanzarla más alto. La mecha corre al soltarla.'),
     loc('La Lejana pinta dos pepazos por tiro, pero sin la mira se desvía. El cohete de La Bazuca saca de una si pega directo: apunta adelante del rival.'),
     loc('En la armería cada arma tiene su puesto para la mira, el cañón, la tolva y la culata. La tolva chica recarga rápido; la grande lleva más bolas.'),
+    loc('Llevas dos armas: el Arma 1 puede ser cualquiera y el Arma 2 una pistola o una de pescozón. Cada una guarda sus pepas; al cambiar, la nueva tarda un momento en disparar.'),
+    loc('Tu equipo es tu clase: Rápido corre más y aguanta menos, Tanque al revés, Regenera se limpia la pintura antes, Sigiloso casi no se oye ni se ve en el mapa, Granadero lleva dos granadas.'),
     loc('Probar, en la armería, abre el polígono de tiro con tu kit: blancos de 10 a 100 m, y cada impacto dice su distancia y sus pepazos.'),
     loc('Si estás solo, tres bots entran contigo; con amigos la cancha es de ustedes. En Más ajustes eliges cuántos bots juegan. Puedes invitar hasta ocho panas.'),
   ],

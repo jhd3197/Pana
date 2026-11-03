@@ -1,6 +1,6 @@
 import { createKnockout } from './knockout.js';
 import { createPaintKit, bakePaintKit, wearPaintVest, createPaintRocket, createPaintGrenade, PAINT_KIT_BORE } from '/engine/models/props/paintball-kit.js';
-import { FINISHES, MARKERS, kitStats, kitModel, grenadeDef, isMelee } from './armory-data.js';
+import { FINISHES, MARKERS, kitStats, kitModel, grenadeDef, isMelee, gunOf, armorOf } from './armory-data.js';
 import { createViewmodel, recoilOf } from './viewmodel.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { createMuelle } from './muelle.js';
@@ -215,7 +215,8 @@ export function createScene(canvas) {
   }
   function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) renderer.setSize(w, h, false); }
   // The marker held in first person, rebuilt when the pana's paint colour changes.
-  const modelOptions = p => ({...p.kit, ...kitModel({...p.kit, weapon:p.weapon}), weapon:p.weapon, color:FINISHES.find(f=>f.id===p.kit?.finish)?.color || p.color});
+  // The gun in the pana's hand (Arma 1 or Arma 2) with that gun's own parts.
+  const modelOptions = p => ({...p.kit, ...kitModel({...gunOf(p.kit, p.hand), weapon:p.weapon}), weapon:p.weapon, color:FINISHES.find(f=>f.id===p.kit?.finish)?.color || p.color});
   let held = null, heldColor = ''; const viewmodel = createViewmodel();
   function holdMarker(p) {
     const key=JSON.stringify(modelOptions(p)); if(heldColor===key) return;
@@ -338,7 +339,7 @@ export function createScene(canvas) {
         avatar.marker = bakePaintKit(modelOptions(p)); avatar.marker.position.set(.48, .95, .25); avatar.marker.rotation.x = isMelee(p.weapon) ? .5 : 0; avatar.group.add(avatar.marker); avatar.paintColor = p.color; avatar.kitKey=JSON.stringify(modelOptions(p));
       }
       if(!avatar.vest) avatar.vest=wearPaintVest(avatar);
-      avatar.vest.visible=p.kit?.armor==='padded';
+      avatar.vest.visible=!!armorOf(p.kit?.armor).vest;
       avatar.ring.material.color.set(p.color);
       const falling = down && avatar.out < 2.2;
       avatar.group.visible = p.connected && (!down || falling) && !(first && p.id === id);
@@ -348,7 +349,7 @@ export function createScene(canvas) {
       avatar.flinch = Math.max(0, avatar.flinch - dt * 5);
       avatar.group.rotation.set(-avatar.flinch * .35, Math.atan2(p.ax, p.az), 0);
       avatar.ring.position.y = .05 - avatar.group.position.y; avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = !down && (p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0);
-      avatar.marker.visible = !down; avatar.vest.visible = !down && p.kit?.armor === 'padded';
+      avatar.marker.visible = !down; avatar.vest.visible = !down && !!armorOf(p.kit?.armor).vest;
       // Your teammates wear a chevron over their heads (team rounds only).
       teamMarks.set(avatar.group, !down && !lobby && isTeammate(me, p, teamPlay(state.options)), p.color);
       if (falling && avatar.knockout) { avatar.group.rotation.set(0, Math.atan2(p.ax,p.az), 0); avatar.knockout.update(dt); }
@@ -369,7 +370,7 @@ export function createScene(canvas) {
       if (state.phase === 'playing' && me.fired > lastFired) feel.fire(recoilOf(me.weapon));
       lastFired = me.fired; const jolt = feel.update(dt);
       // Sprinting widens the view a little; aiming narrows it (La Lejana's scope a lot).
-      const stats = kitStats(me.kit, state.options);
+      const stats = kitStats(me.kit, state.options, me.hand);
       sprintFov += ((me.sprint ? 7 : 0) - sprintFov) * (1 - Math.exp(-dt * 6));
       scope.setZoom(stats.zoom); opticSens = stats.sens; scope.update(dt, aiming && !down && !me.sprint && !(me.reload > 0) && state.phase === 'playing');
       camera.fov = scope.fov((mobile ? 80 : 72) + sprintFov);
@@ -471,7 +472,7 @@ export function createScene(canvas) {
     sensitivity() { return scope.sensitivity() * (1 + (opticSens - 1) * scope.amount); },
     // A scoped rifle's tracer (La Lejana, El Zamuro): from the muzzle (your marker in first person) to the first cover or pana it meets.
     tracer(p, state, mine) {
-      const reach = kitStats(p.kit, state.options), range = reach.speed * reach.life, cover = coverFor(state.mapId, state.variant || 0);
+      const reach = kitStats(p.kit, state.options, p.hand), range = reach.speed * reach.life, cover = coverFor(state.mapId, state.variant || 0);
       const targets = state.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated);
       // The round itself when it is in the snapshot (a hip shot wanders off the aim), else the aim.
       const ball = state.balls.filter(b => b.owner === p.id && b.kind === p.weapon).at(-1), speed = ball ? Math.hypot(ball.vx, ball.vz) : 0;

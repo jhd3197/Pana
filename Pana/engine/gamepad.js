@@ -16,6 +16,7 @@
 //   <section data-pad-play> inside an open dialog   // a play view over a menu (Pepazo's range): the
 //                                                  // page reads the pad itself, the right stick still
 //                                                  // drives padLook, B / Start click its [data-pad-back]
+//   <button data-pad-back> shown inside a dialog    // B / Start step back through it instead of closing
 //   No button bar is drawn during play: padHelp(pad) fills the pause menu's
 //   Instrucciones page (engine/controls-page.js) when a game declares no pad keys.
 //   padControls({ playing: () => false, menu: () => settings.open() })  // a page that is all menu;
@@ -220,6 +221,10 @@ function menuPress(scope) {
   if (!now.matches('input[type=range], input[type=text], input:not([type]), textarea, select')) {if(now.matches('a[href]'))stopVibration();else if(getSettings().padVibration)testVibration();now.click();}
 }
 function menuBack(scope) {
+  // A dialog with a page of its own open (Pepazo's armory sub-menus) shows a
+  // [data-pad-back] Atrás: B takes that step back instead of closing the dialog.
+  const step = scope.matches('dialog') && [...scope.querySelectorAll('[data-pad-back]')].find(n => shown(n) && !n.closest('[data-pad-play]'));
+  if (step) { step.click(); return; }
   if (scope.matches('dialog')) { sendKey('keydown', 'Escape', scope); if (scope.open && !scope.classList.contains('pana-menu')) scope.close?.(); return; }
   // Outside a dialog B is "back": the page's [data-pad-back] link (the lobby's
   // Juegos, the editor's Volver a los juegos).

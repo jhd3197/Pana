@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { createPaintKit, wearPaintVest, PAINT_PART_LABELS } from '/engine/models/props/paintball-kit.js';
-import { WEAPONS, ARMORY_CLASSES, SLOT_RULES, slotsFor, slotOf, partOf, throwRange, meleeInterval, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, FALLBACK_CAMO, cleanKit, kitStats, kitRating, kitModel, setPart, changeWeapon, shotInterval, dpsOf } from './armory-data.js';
+import { WEAPONS, ARMORY_CLASSES, SLOT_RULES, slotsFor, slotOf, partOf, throwRange, meleeInterval, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, FALLBACK_CAMO, cleanKit, kitStats, kitRating, kitModel, setPart, changeWeapon, shotInterval, dpsOf, gunOf, armorOf, classesFor, allowedIn } from './armory-data.js';
 import { ICONS } from '/engine/icons.js';
 import { pixelRatio } from '/engine/settings.js';
 import { loc, locn, locKey, formatList } from '/engine/i18n.js';
@@ -22,11 +22,19 @@ const colorOf=kit=>FINISHES.find(f=>f.id===kit.finish)?.color||'#f28b42';
 const classOfMarker=id=>ARMORY_CLASSES.find(c=>c.weapons.includes(id))||ARMORY_CLASSES[0];
 // Pepazos with up to two decimals: La China's stones paint half of one.
 const pepazos=n=>locn(n,'{n} pepazo','{n} pepazos',{n:String(Math.round(n*100)/100)});
+// A gun's sub-menu, after its weapon and typed part slots: the looks both guns share.
+const LOOKS=[{id:'finish',name:locKey('Acabado')},{id:'camo',name:locKey('Camuflaje')},{id:'charm',name:locKey('Llavero')},{id:'pattern',name:locKey('Salpicadura')}];
+// What a class changes against Balanceado, as icon + number chips (`less`: lower is better).
+const CLASS_CHIPS=[{key:'mobility',icon:'kitBolt',text:d=>`${Math.round(d*100)}%`},{key:'toughness',icon:'kitShield',text:d=>String(d)},{key:'regen',icon:'kitRegen',text:d=>`${Math.round(d*100)}%`},
+ {key:'stepNoise',icon:'kitStep',text:d=>`${Math.round(d*100)}%`,less:true},{key:'markerScale',icon:'kitRadar',text:d=>`${Math.round(d*100)}%`,less:true},{key:'grenades',icon:'kitGrenade',text:d=>String(d)},{key:'grenadeRecharge',icon:'whirl',text:d=>`${Math.round(d)} s`,less:true}];
+const chip=(d,less,icon,text)=>{const el=document.createElement('small');el.className=`armory-delta ${(d>0)!==!!less?'gain':'loss'}`;el.innerHTML=`${ICONS[icon]}${d>0?'+':'−'}${esc(text(Math.abs(d)))}`;return el;};
+export function classChips(c){const out=document.createElement('span');out.className='armory-chips';for(const k of CLASS_CHIPS){const d=c[k.key]-ARMOR[0][k.key];if(Math.abs(d)>1e-6)out.append(chip(d,k.less,k.icon,k.text));}return out;}
 // notify: a toast for news that arrives while the armory is closed (mid-round).
+// onPick(kit): the kit the next rounds and the number keys play with.
 export function createArmory({room,onPick,notify=()=>{}}) {
  let kit=cleanKit();try{kit=cleanKit(JSON.parse(localStorage.getItem('pintura:kit')));}catch{}
- room.kit=kit;onPick(kit.weapon);
- const dialog=document.getElementById('armory'),choices=document.getElementById('armory-choices'),note=document.getElementById('armory-note');
+ room.kit=kit;onPick(kit);
+ const dialog=document.getElementById('armory'),choices=document.getElementById('armory-choices'),note=document.getElementById('armory-note'),gunNav=document.getElementById('armory-gun'),back=document.getElementById('armory-back');
  // Says why a pick changed or did not stick: inline while the armory is open, a toast otherwise.
  const say=text=>{note.textContent=text;if(!dialog.open)notify(text);};
  const weaponName=id=>loc(WEAPONS.find(m=>m.id===id).name);
@@ -39,13 +47,15 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  };
  const rating=document.createElement('span');rating.id='armory-rating';document.getElementById('armory-name').after(rating);
  const className=document.createElement('small');className.id='armory-class';rating.after(className);
- // The class chips, the first row of the marker choices.
- const tabs=document.createElement('nav');tabs.id='armory-classes';tabs.setAttribute('aria-label',loc('Clases de marcadora'));
- const back=document.createElement('button');back.id='armory-parts-back';back.type='button';back.className='pk-btn';back.textContent=loc('‹ Atrás');choices.before(back);back.onclick=()=>dialog.classList.remove('choosing');
- const icons={weapon:'kitBarrel',armor:'kitVest',grenade:'kitGrenade',finish:'kitPaint',camo:'kitPaint',charm:'wardrobe-cuello',pattern:'kitPaint'};
- for(const b of document.querySelectorAll('#armory-slots button')){const icon=document.createElement('i');icon.innerHTML=ICONS[icons[b.dataset.slot]];b.insertBefore(icon,b.querySelector('b'));}
- let shown=null,ratedOptions='',category='weapon',slot=null,renderer=null,scene,camera,model,avatar,vest,range=null,pivot,gunBox,padded=false,framed=null,sway=0;
- const catalog={weapon:WEAPONS,armor:ARMOR,grenade:GRENADES,finish:FINISHES,charm:CHARMS,pattern:PATTERNS};
+ // The class chips, the first row of the weapon choices; LB / RB step through them (role=tab).
+ const tabs=document.createElement('nav');tabs.id='armory-classes';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label',loc('Clases de marcadora'));
+ back.prepend(Object.assign(document.createElement('i'),{innerHTML:ICONS.chevronLeft}));back.onclick=()=>stepBack();
+ // Three levels: the four slots; a gun's sub-menu (`gun` 0 or 1); one slot's choices (`category`).
+ let shown=null,ratedOptions='',category=null,slot=null,gun=null,hover=0,renderer=null,scene,camera,model,avatar,vest,range=null,pivot,gunBox,padded=false,framed=null,sway=0,opener=null;
+ // The gun on show: the open sub-menu's, else the Arma tile last pointed at.
+ const hand=()=>gun??hover;
+ const catalog={armor:ARMOR,grenade:GRENADES,finish:FINISHES,charm:CHARMS,pattern:PATTERNS};
+ const icons={finish:'kitPaint',camo:'kitPaint',charm:'wardrobe-cuello',pattern:'kitPaint'};
  // Camuflajes: camos.js and camo-store.js load with the first look at the tab (at once on
  // pana.sh, whose bridge says what this pana owns). Without the bridge only the solid ones are yours.
  let camoLib=null,camoData=null,camoLoad=null;
@@ -57,6 +67,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  // The room learns camos got mid-session only through pana.sh's signature (camo-store signed).
  const signer=()=>camoLib?.store.canSign?nonce=>camoLib.store.signed(nonce):null;
  if(window.PanaSh)loadCamos();
+ const swatch=id=>id?camoLib?.swatch(id)||'#2f3d3c':'linear-gradient(135deg,#f28b42 50%,#2f3d3c 50%)';
  // One card per camo: a swatch from its palette, its state, a Comprar for mango ones.
  // Every card previews on the 3D marker; only owned ones are picked.
  function camoChoices(){
@@ -69,7 +80,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
    const b=document.createElement('button');b.type='button';b.className='armory-choice';b.dataset.id=c.id;b.setAttribute('aria-pressed',String((kit.camo??'')===c.id));
    if(st.state!=='owned')b.setAttribute('aria-disabled','true');
    b.title=st.text;b.innerHTML=`<i class="armory-swatch"></i><b>${esc(loc(c.name))}</b>${st.state==='owned'?'':`<i class="armory-lock">${ICONS.lock}</i>`}`;
-   b.querySelector('.armory-swatch').style.background=c.id?camoLib.swatch(c.id):'linear-gradient(135deg,#f28b42 50%,#2f3d3c 50%)';
+   b.querySelector('.armory-swatch').style.background=swatch(c.id);
    const look=()=>({...kit,camo:c.id||null});
    for(const event of ['pointerenter','focus'])b.addEventListener(event,()=>rebuild(look()));
    for(const event of ['pointerleave','blur'])b.addEventListener(event,()=>rebuild());
@@ -89,9 +100,9 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  // A change on the stats panel as a short number: whole from 10 up, else one decimal (two under 0.1).
  const fmtDelta=n=>n>=10?String(Math.round(n)):n>=.095?String(Math.round(n*10)/10):String(Math.round(n*100)/100);
  function paintStats(value=kit){
-  ratedOptions=JSON.stringify(room.state.options);
-  rating.innerHTML=ratingBadge(kitRating(value,room.state.options));
-  const current=kitStats(kit,room.state.options),next=kitStats(value,room.state.options);
+  ratedOptions=JSON.stringify(room.state.options);const h=hand();
+  rating.innerHTML=ratingBadge(kitRating(gunOf(value,h),room.state.options));
+  const current=kitStats(kit,room.state.options,h),next=kitStats(value,room.state.options,h);
   // Precision is the aimed spread (La Lejana through its scope); a marker that flies straight shows its shot speed, which a barrel raises; damage counts pepazos per hit, a direct rocket knocks out.
   const aimed=s=>s.aimSpread??s.spread;
   // Cadence is the rate the simulation really fires at (whole 50 ms ticks); Pintura/s is pepazos a second with every ball landing.
@@ -107,93 +118,105 @@ export function createArmory({room,onPick,notify=()=>{}}) {
    const delta=Number.isFinite(d)&&Math.abs(d)>1e-6?`<small class="armory-delta ${up?'gain':'loss'}">${d>0?'+':'−'}${fmtDelta(Math.abs(d))}</small>`:'';
    return `<div><dt>${name}${delta}</dt><dd><span class="armory-bars">${Array.from({length:10},(_,i)=>`<i class="${i<Math.min(a,b)?'on':i<Math.max(a,b)?gain?'gain':'loss':''}"></i>`).join('')}</span><b>${text(next)}</b></dd></div>`;}).join('');
  }
- // The gunsmith slots this weapon has (a marker four, melee three), right after Marcadora.
- let slotKey='';
- function slotButtons(){
-  const key=slotsFor(kit.weapon).map(s=>s.id).join();if(key===slotKey)return;slotKey=key;
-  for(const b of document.querySelectorAll('#armory-slots [data-slot=part]'))b.remove();
-  document.querySelector('#armory-slots [data-slot=weapon]').after(...slotsFor(kit.weapon).map(s=>{
-   const b=document.createElement('button');b.type='button';b.dataset.slot='part';b.dataset.part=s.id;
-   b.innerHTML=`<span>${esc(loc(s.name))}</span><i></i><b></b>`;b.onclick=()=>choose('part',s.id);return b;}));
- }
  // What a part changes against an empty slot, as up to three icon + number chips:
  // zoom, balls, reach, paint per blow, swings or reload, mobility. `less`: lower is better.
  const CHIPS=[{icon:'kitScope',get:s=>s.aims?s.zoom:0,text:(d,s)=>`${Math.round(s.zoom*100)/100}×`,plain:true},{icon:'kitHopper',get:s=>s.melee?0:s.magazine+(s.reserve||0),text:d=>String(Math.round(d))},
   {icon:'kitBarrel',get:s=>s.melee?s.reach:s.speed*s.life,text:d=>`${fmtDelta(d)} m`},{icon:'kitPaint',get:s=>s.melee?s.damage:0,text:d=>fmtDelta(d)},
   {icon:'whirl',get:s=>s.melee?1/meleeInterval(s):0,text:d=>`${fmtDelta(d)}/s`},{icon:'whirl',get:s=>s.melee?0:s.reload,text:d=>`${fmtDelta(d)} s`,less:true},{icon:'person',get:s=>s.mobility*100,text:d=>`${Math.round(d)}%`}];
  function chips(id){
-  const opts=room.state.options,bare=kitStats(setPart(kit,slot,null),opts),fitted=kitStats(setPart(kit,slot,id),opts),out=document.createElement('span');out.className='armory-chips';
+  const opts=room.state.options,h=hand(),bare=kitStats(setPart(kit,slot,null,h),opts,h),fitted=kitStats(setPart(kit,slot,id,h),opts,h),out=document.createElement('span');out.className='armory-chips';
   for(const c of CHIPS){
    const d=c.get(fitted)-c.get(bare);if(Math.abs(d)<1e-6||out.childElementCount>=3)continue;
-   const el=document.createElement('small');el.className=`armory-delta ${(d>0)!==!!c.less?'gain':'loss'}`;
-   el.innerHTML=`${ICONS[c.icon]}${c.plain?'':d>0?'+':'−'}${esc(c.text(Math.abs(d),fitted))}`;out.append(el);
+   if(c.plain){const el=chip(d,c.less,c.icon,()=>c.text(0,fitted));el.innerHTML=`${ICONS[c.icon]}${esc(c.text(0,fitted))}`;out.append(el);}else out.append(chip(d,c.less,c.icon,c.text));
   }
   return out;
  }
+ // A tile: its picture and a short label that always shows whole (armory.css wraps it).
+ const tile=(field,label,part=null)=>{const b=document.createElement('button');b.type='button';b.dataset.slot=field;if(part)b.dataset.part=part;b.innerHTML=`<i></i><span>${esc(loc(label))}</span>`;b.onclick=()=>choose(field,part);return b;};
+ // A gun's sub-menu: its weapon, the typed slots that weapon has, then the shared looks.
+ let gunKey='';
+ function gunTiles(){
+  const g=gunOf(kit,gun),key=`${gun}:${slotsFor(g.weapon).map(s=>s.id)}`;if(key===gunKey)return;gunKey=key;
+  gunNav.setAttribute('aria-label',gun?loc('Arma 2'):loc('Arma 1'));
+  gunNav.replaceChildren(back,tile('weapon',locKey('Arma')),...slotsFor(g.weapon).map(s=>tile('part',s.name,s.id)),...LOOKS.map(l=>tile(l.id,l.name)));
+ }
+ // Each slot's picture of what it holds now.
+ function slotPic(b,field,h=hand()){
+  const g=gunOf(kit,h),color=colorOf(kit),pic=b.querySelector('i');
+  if(field==='gun'||field==='weapon')return setPic(pic,`w:${g.weapon}:${color}:${kit.camo}:${kit.pattern}`,'kitBarrel',m=>m.weaponThumb({weapon:g.weapon,color,camo:kit.camo,pattern:kit.pattern}));
+  if(field==='armor')return setPic(pic,`a:${kit.armor}`,armorOf(kit.armor).icon);
+  if(field==='grenade')return setPic(pic,`g:${color}`,'kitGrenade',m=>m.grenadeThumb(color));
+  if(field==='part'){const part=g.slots[b.dataset.part];b.classList.toggle('armory-empty',!part);b.dataset.id=part||'';b.title=loc(partOf(part)?.name||NONE.name);return setPic(pic,`p:${g.weapon}:${part}:${color}`,part?partOf(part).icon:slotOf(b.dataset.part).icon,part&&(m=>m.partThumb(g.weapon,part,color)));}
+  if(field==='finish'||field==='camo'){pic.dataset.key='';pic.className='armory-swatch';pic.innerHTML='';pic.style.background=field==='finish'?FINISHES.find(f=>f.id===kit.finish).color||swatch(''):swatch(kit.camo);return pic;}
+  if(field==='charm')return setPic(pic,`c:${kit.charm}`,kit.charm==='none'?'close':'wardrobe-cuello',kit.charm!=='none'&&(m=>m.charmThumb(kit.charm)));
+  if(field==='pattern')return setPic(pic,`s:${g.weapon}:${kit.pattern}:${color}`,'kitPaint',m=>m.weaponThumb({weapon:g.weapon,color,camo:kit.camo,pattern:kit.pattern}));
+ }
  function paint() {
-  const group=classOfMarker(kit.weapon);slotButtons();
+  const h=hand(),g=gunOf(kit,h),group=classOfMarker(g.weapon);
+  if(gun!==null)gunTiles();
   // A weapon swap can take away the slot being chosen (a melee weapon has no Mira).
-  if(category==='part'&&!SLOT_RULES[kit.weapon][slot]){category='weapon';dialog.classList.remove('choosing');}
-  document.getElementById('armory-name').textContent=weaponName(kit.weapon);className.textContent=`${loc(group.name)} · ${loc(group.kind)}`;paintStats();
-  const color=colorOf(kit);
-  for(const b of document.querySelectorAll('#armory-slots button')) {
-   const field=b.dataset.slot;b.setAttribute('aria-pressed',String(category===field && (field!=='part' || slot===b.dataset.part)));
-   if(field==='camo'){b.querySelector('b').textContent=camoName(kit.camo);continue;}
-   const part=field==='part'?kit.slots[b.dataset.part]:null;
-   if(field==='weapon')setPic(b.querySelector('i'),`${kit.weapon}:${color}:${kit.camo}:${kit.pattern}`,'kitBarrel',m=>m.weaponThumb({weapon:kit.weapon,color,camo:kit.camo,pattern:kit.pattern}));
-   if(field==='part')setPic(b.querySelector('i'),`${kit.weapon}:${part}:${color}`,part?partOf(part).icon:slotOf(b.dataset.part).icon,part&&(m=>m.partThumb(kit.weapon,part,color)));
-   b.classList.toggle('armory-empty',field==='part'&&!part);
-   const value=field==='part' ? partOf(part)?.name || NONE.name : catalog[field].find(x=>x.id===kit[field]).name;
-   // Generic part names are locKey() in armory-data.js; proper names pass through unchanged.
-   b.querySelector('b').textContent=loc(value);
+  if(category==='part'&&!SLOT_RULES[g.weapon][slot]){category=null;dialog.classList.remove('choosing');}
+  dialog.classList.toggle('armory-in-gun',gun!==null);gunNav.hidden=gun===null;back.hidden=gun===null&&!category;
+  // Atrás is the sub-menu's first tile, and sits over the choices while one slot is open.
+  if(gun!==null&&!category){if(gunNav.firstElementChild!==back)gunNav.prepend(back);}else if(back.parentElement!==dialog)choices.before(back);
+  document.getElementById('armory-name').textContent=category==='armor'?loc(armorOf(kit.armor).name):weaponName(g.weapon);
+  className.textContent=category==='armor'?'':`${gun===null?`${h?loc('Arma 2'):loc('Arma 1')} · `:''}${loc(group.kind)}`;paintStats();
+  for(const b of document.querySelectorAll('#armory-slots button')){
+   const field=b.dataset.slot,mine=field==='gun'?Number(b.dataset.hand):null,g2=mine===null?null:gunOf(kit,mine);
+   b.setAttribute('aria-pressed',String(field==='gun'?gun===mine:category===field));slotPic(b,field,mine??h);
+   b.querySelector('b').textContent=field==='gun'?weaponName(g2.weapon):field==='armor'?loc(armorOf(kit.armor).name):catalog[field].find(x=>x.id===kit[field]).name;
   }
-  if(category==='camo'){back.textContent=loc('‹ Atrás');choices.replaceChildren(...camoChoices());return;}
-  const attaching=category==='part', arming=category==='weapon';
-  back.textContent=attaching?`${loc('‹ Atrás')} · ${loc(slotOf(slot).name)}`:loc('‹ Atrás');
-  // Markers come by class: a chip per class (nickname · kind), then that class's markers.
-  if(arming && !ARMORY_CLASSES.includes(shown)) shown=classOfMarker(kit.weapon);
-  if(arming) tabs.replaceChildren(...ARMORY_CLASSES.map(c=>{const t=document.createElement('button');t.type='button';t.className='armory-class';t.dataset.class=c.id;t.setAttribute('aria-pressed',String(c===shown));t.innerHTML=`<b>${esc(loc(c.name))}</b><span>${esc(loc(c.kind))}</span>`;t.onclick=()=>{shown=c;paint();};return t;}));
+  for(const b of gunNav.children){b.setAttribute('aria-pressed',String(category===b.dataset.slot&&(b.dataset.slot!=='part'||slot===b.dataset.part)));slotPic(b,b.dataset.slot);if(b.dataset.slot==='weapon')b.querySelector('span').textContent=weaponName(g.weapon);}
+  choices.dataset.category=category||'';if(!category)return;
+  if(category==='camo'){choices.replaceChildren(...camoChoices());return;}
+  const attaching=category==='part',arming=category==='weapon',classes=classesFor(h);
+  // Weapons come by class: a tab per class (nickname · kind), then that class's weapons. Arma 2 only shows sidearms.
+  if(arming && !classes.includes(shown)) shown=classOfMarker(g.weapon);if(arming&&!classes.includes(shown))shown=classes[0];
+  // The same tab buttons stay while the hand's classes do, so LB / RB keep the focus on the tab they pick.
+  if(arming&&tabs.dataset.key!==String(h)){tabs.dataset.key=String(h);tabs.replaceChildren(...classes.map(c=>{const t=document.createElement('button');t.type='button';t.className='armory-class';t.setAttribute('role','tab');t.dataset.class=c.id;t.innerHTML=`<b>${esc(loc(c.name))}</b><span>${esc(loc(c.kind))}</span>`;t.onclick=()=>{shown=c;paint();t.focus({preventScroll:true});};return t;}));}
+  if(arming)for(const t of tabs.children)t.setAttribute('aria-selected',String(t.dataset.class===shown.id));
   // A slot lists only the parts this weapon takes there (SLOT_RULES), Ninguno first.
-  const items=attaching?[NONE,...SLOT_RULES[kit.weapon][slot].map(partOf)]:arming?WEAPONS.filter(m=>shown.weapons.includes(m.id)):catalog[category];
-  // Every card is a picture and a name; a part adds what it changes as icon chips.
-  const picture=item=>{const pic=document.createElement('i');pic.className='armory-pic';const k=`${category}:${item.id}:${kit.weapon}:${color}:${kit.camo}:${kit.pattern}`;
+  const items=attaching?[NONE,...SLOT_RULES[g.weapon][slot].map(partOf)]:arming?WEAPONS.filter(m=>shown.weapons.includes(m.id)&&allowedIn(h,m.id)):catalog[category];
+  const color=colorOf(kit);
+  // Every card is a picture and a name; a part or a class adds what it changes as icon chips.
+  const picture=item=>{const pic=document.createElement('i');pic.className='armory-pic';const k=`${category}:${item.id}:${g.weapon}:${color}:${kit.camo}:${kit.pattern}`;
    if(arming)return setPic(pic,k,'kitBarrel',m=>m.weaponThumb({weapon:item.id,color,camo:kit.camo,pattern:kit.pattern}));
-   if(attaching)return setPic(pic,k,item.id?item.icon:'close',item.id&&(m=>m.partThumb(kit.weapon,item.id,color)));
-   if(category==='pattern')return setPic(pic,k,'kitPaint',m=>m.weaponThumb({weapon:kit.weapon,color,camo:kit.camo,pattern:item.id}));
+   if(attaching)return setPic(pic,k,item.id?item.icon:'close',item.id&&(m=>m.partThumb(g.weapon,item.id,color)));
+   if(category==='armor')return setPic(pic,k,item.icon);
+   if(category==='pattern')return setPic(pic,k,'kitPaint',m=>m.weaponThumb({weapon:g.weapon,color,camo:kit.camo,pattern:item.id}));
    if(category==='charm')return setPic(pic,k,item.id==='none'?'close':'wardrobe-cuello',item.id!=='none'&&(m=>m.charmThumb(item.id)));
    if(category==='grenade')return setPic(pic,k,'kitGrenade',m=>m.grenadeThumb(color));
-   if(category==='finish'){pic.classList.add('armory-swatch');pic.style.background=item.color||'linear-gradient(135deg,#f28b42 50%,#2f3d3c 50%)';return pic;}
-   return setPic(pic,k,icons[category]);};
+   pic.classList.add('armory-swatch');pic.style.background=item.color||swatch('');return pic;};
   choices.replaceChildren(...(arming?[tabs]:[]),...items.map(item=>{
    const b=document.createElement('button');b.type='button';b.className='armory-choice armory-card';b.dataset.id=item.id;
-   b.setAttribute('aria-pressed',String(attaching?(kit.slots[slot]??'')===item.id:kit[category]===item.id));
+   b.setAttribute('aria-pressed',String(attaching?(g.slots[slot]??'')===item.id:arming?g.weapon===item.id:kit[category]===item.id));
    const label=document.createElement('b');label.textContent=loc(item.name);b.append(picture(item),label);
-   if(attaching&&item.id)b.append(chips(item.id));
+   if(attaching&&item.id)b.append(chips(item.id));if(category==='armor')b.append(classChips(item));
    // Read the kit when the event fires, not when the button was drawn.
-   const pick=()=>attaching?{kit:setPart(kit,slot,item.id||null),dropped:[]}:category==='weapon'?changeWeapon(kit,item.id):{kit:cleanKit({...kit,[category]:item.id}),dropped:[]};
+   const pick=()=>attaching?{kit:setPart(kit,slot,item.id||null,h),dropped:[]}:arming?changeWeapon(kit,item.id,h):{kit:cleanKit({...kit,[category]:item.id}),dropped:[]};
    for(const event of ['pointerenter','focus'])b.addEventListener(event,()=>{const next=pick().kit;paintStats(next);rebuild(next);});
    for(const event of ['pointerleave','blur'])b.addEventListener(event,()=>{paintStats();rebuild();});
-   b.onclick=()=>{const {kit:next,dropped}=pick();kit=next;note.textContent=dropped.length?dropNote(dropped,kit.weapon):'';save();paint();rebuild();};return b;
+   b.onclick=()=>{const {kit:next,dropped}=pick();kit=next;note.textContent=dropped.length?dropNote(dropped,gunOf(kit,h).weapon):'';save();paint();rebuild();focus(choices.querySelector(`.armory-card[data-id="${item.id}"]`));};return b;
   }));
  }
  function store(){try{localStorage.setItem('pintura:kit',JSON.stringify(kit));}catch{}}
- function save(){store();room.selectKit(kit);onPick(kit.weapon);}
- // Number keys and the pause menu: the room takes the marker from input mid-round,
- // so only the lobby sends the kit; the saved kit follows either way.
- function setWeapon(id){
-  if(id===kit.weapon || !WEAPONS.some(m=>m.id===id))return;
-  const {kit:next,dropped}=changeWeapon(kit,id);kit=next;
-  if(room.state.phase==='playing'){store();room.kit=kit;onPick(kit.weapon);}else save();
-  if(dropped.length)say(dropNote(dropped,kit.weapon));
+ function save(){store();room.selectKit(kit);onPick(kit);}
+ // Z / X and the pause menu mid-round: the room takes the weapon of the gun in hand from
+ // input, so only the lobby sends the kit; the saved kit follows either way.
+ function setWeapon(id,h=0){
+  const now=gunOf(kit,h).weapon;if(id===now || !allowedIn(h,id))return;
+  const {kit:next,dropped}=changeWeapon(kit,id,h);kit=next;
+  if(room.state.phase==='playing'){store();room.kit=kit;onPick(kit);}else save();
+  if(dropped.length)say(dropNote(dropped,gunOf(kit,h).weapon));
   if(dialog.open){paint();rebuild();}
  }
- // Two views plus the gunsmith: the gun alone, centred and turning on `pivot`; the armor tab, the pana
- // alone wearing the vest (no gun in front of it), centred and swaying.
+ // Two views plus the gunsmith: the gun alone, centred and turning on `pivot`; Equipo, the pana
+ // alone in the class's look (no gun in front of it), centred and swaying.
  // The gunsmith: choosing a part turns the gun side-on, fills the frame with it and
  // glides the camera toward the part in this slot (the one hovered, else the one fitted). A Mira on top is seen from above, over the hopper.
  // Wide screens keep the stats on the right, so the gun sits a little left of the view's middle.
  let shownLook=kit;const wide=matchMedia('(min-width:801px)'),SMITH_ANGLE=Math.PI/2+.45,smithEye=new THREE.Vector3(0,1.15,4.2),camGoal=new THREE.Vector3(),lookGoal=new THREE.Vector3(),lookNow=new THREE.Vector3(0,1.15,0);
- const view=()=>!dialog.classList.contains('choosing')?'gun':category==='armor'?'armor':category==='part'?'smith':'gun';
+ const view=()=>category==='armor'?'armor':category==='part'?'smith':'gun';
  function frame(){
   const v=view(),body=v==='armor';avatar.group.visible=body;vest.visible=body&&padded;model.visible=v!=='armor';
   if(v==='armor'){avatar.group.position.set(0,0,0);avatar.group.rotation.y=0;camera.position.set(0,1.05,4.4);camera.lookAt(0,.92,0);}
@@ -201,17 +224,17 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   if(v==='gun'){const s=3.1/Math.max(gunBox.size.x,gunBox.size.y,gunBox.size.z,.01);pivot.position.set(0,1.2,0);model.scale.setScalar(s);model.position.copy(gunBox.center).multiplyScalar(-s);camera.position.set(1.6,2.1,5);camera.lookAt(0,1.15,0);}
   else if(v==='smith'){const H=2*4.4*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)),s=Math.min(.68*H*camera.aspect/Math.max(gunBox.size.z,.01),.62*H/Math.max(gunBox.size.y,.01));
    pivot.position.set(0,1.2,0);model.scale.setScalar(s);model.position.copy(gunBox.center).multiplyScalar(-s);lookGoal.set(wide.matches?.1*H*camera.aspect:0,1.2,0);
-   const part=new THREE.Box3(),name=PAINT_PART_LABELS[partOf(shownLook.slots?.[slot])?.part];pivot.rotation.y=SMITH_ANGLE;pivot.updateMatrixWorld(true);
+   const part=new THREE.Box3(),name=PAINT_PART_LABELS[partOf(gunOf(shownLook,hand()).slots[slot])?.part];pivot.rotation.y=SMITH_ANGLE;pivot.updateMatrixWorld(true);
    if(name)model.traverse(o=>{if(o.isMesh&&o.name.startsWith(name))part.expandByObject(o);});
    if(!part.isEmpty())lookGoal.lerp(part.getCenter(new THREE.Vector3()),.6);camGoal.copy(lookGoal).addScaledVector(smithEye,part.isEmpty()?1:.74);if(slot==='optic')camGoal.y+=1.1;}
   framed=v;
  }
  function rebuild(look=kit){
   if(!renderer)return;model?.removeFromParent();model?.userData.dispose();
-  model=createPaintKit({...look,...kitModel(look),color:FINISHES.find(f=>f.id===look.finish).color||'#f28b42'});
+  const h=hand();model=createPaintKit({...look,...kitModel(look,h),weapon:gunOf(look,h).weapon,color:FINISHES.find(f=>f.id===look.finish).color||'#f28b42'});
   // Measured once per model at unit scale, so every weapon (pistol to bazooka) fills the frame alike.
   const box=new THREE.Box3().setFromObject(model);gunBox={center:box.getCenter(new THREE.Vector3()),size:box.getSize(new THREE.Vector3())};
-  pivot.add(model);padded=look.armor==='padded';shownLook=look;frame();
+  pivot.add(model);padded=!!armorOf(look.armor).vest;shownLook=look;frame();
  }
  function init(){
   if(renderer)return;renderer=new THREE.WebGLRenderer({canvas:document.getElementById('armory-view'),antialias:true,alpha:true});renderer.setPixelRatio(pixelRatio(1.5));
@@ -220,13 +243,32 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   scene.add(new THREE.HemisphereLight(0xfff5df,0x444466,2));const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(3,6,4);scene.add(light);
   avatar=buildCharacter(loadAvatar());avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;scene.add(avatar.group);vest=wearPaintVest(avatar);rebuild();
  }
+ // The focus follows the menu: into a level its first button, back out the button that opened it.
+ const focus=el=>el?.focus({preventScroll:true});
  // Opens one slot's choices (a gunsmith slot names which: 'optic', 'hopper'…).
- function choose(field,part=null){category=field;slot=part;shown=null;note.textContent='';dialog.classList.add('choosing');paint();}
- for(const b of document.querySelectorAll('#armory-slots button')) b.onclick=()=>choose(b.dataset.slot);
- const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda cambias de marcadora con 1 a 9, Z y X.'));return;}note.textContent='';dialog.classList.remove('choosing');dialog.showModal();init();paint();if(camoLib||window.PanaSh)loadCamos(true);};
+ function choose(field,part=null){
+  if(field==='gun')return openGun(Number(part??0));
+  opener=document.activeElement;category=field;slot=part;shown=null;note.textContent='';dialog.classList.add('choosing');paint();rebuild();
+  focus(choices.querySelector('.armory-choice[aria-pressed=true]')||choices.querySelector('.armory-choice'));
+ }
+ function openGun(h){gun=hover=h;category=null;gunKey='';note.textContent='';dialog.classList.remove('choosing');paint();rebuild();focus(gunNav.querySelector('[data-slot]'));}
+ // Atrás, B or Esc: the choices close back to their level; a gun's sub-menu back to the four slots.
+ function stepBack(){
+  if(category){const from=opener;category=null;slot=null;dialog.classList.remove('choosing');paint();rebuild();focus(from?.isConnected&&!from.closest('[hidden]')?from:gun!==null?gunNav.querySelector('[data-slot]'):document.querySelector('#armory-slots button'));return true;}
+  if(gun!==null){const h=gun;gun=null;paint();rebuild();focus(document.querySelector(`#armory-slots [data-hand="${h}"]`));return true;}
+  return false;
+ }
+ for(const b of document.querySelectorAll('#armory-slots button')){
+  b.onclick=()=>choose(b.dataset.slot,b.dataset.hand);
+  // Pointing at Arma 1 or Arma 2 shows that gun.
+  if(b.dataset.slot==='gun')for(const event of ['pointerenter','focus'])b.addEventListener(event,()=>{const h=Number(b.dataset.hand);if(gun===null&&!category&&hover!==h){hover=h;paint();rebuild();}});
+ }
+ // Esc steps back a level before it closes the armory (the range closes itself first).
+ dialog.addEventListener('cancel',event=>{if(range)return;if(stepBack())event.preventDefault();});
+ const open=()=>{if(room.state.phase==='playing'){notify(loc('La armería abre entre rondas. En plena ronda: 1 y 2 o Q cambian de arma; Z y X, de modelo.'));return;}note.textContent='';gun=null;category=null;hover=0;dialog.classList.remove('choosing');dialog.showModal();init();paint();rebuild();if(camoLib||window.PanaSh)loadCamos(true);};
  document.getElementById('open-armory').onclick=open;document.getElementById('armory-close').onclick=()=>dialog.close();
  document.getElementById('armory-go').onclick=()=>{save();dialog.close();if(room.isHost)room.start();};
- // Probar: the shooting range (range.js), a first-person lane with this kit on the real rules.
+ // Probar: the shooting range (range.js), a first-person lane with the gun on show on the real rules.
  // Nothing of it is fetched before the click: a small dark square (a bar, one word) covers the
  // module, its stylesheet, the scene and the shader compile, never less than LOADING_MIN ms.
  const LOADING_MIN=450;let loading=null;
@@ -236,12 +278,12 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   loading=document.createElement('div');loading.id='range-loading';loading.setAttribute('role','status');loading.innerHTML=`<i class="pk-cover-bar"><i></i></i><b>${esc(loc('Cargando'))}</b>`;dialog.append(loading);
   import('./range.js').then(({openRange})=>{
    if(range!=='loading'||!dialog.open){range=null;endLoading();return;}
-   const opened=range=openRange({dialog,kit,options:room.state.options,onExit:()=>{range=null;endLoading();if(dialog.open)document.getElementById('armory-range').focus();}});
+   const opened=range=openRange({dialog,kit:gunOf(kit,hand()),options:room.state.options,onExit:()=>{range=null;endLoading();if(dialog.open)document.getElementById('armory-range').focus();}});
    return opened.ready.then(()=>new Promise(done=>setTimeout(done,Math.max(0,LOADING_MIN-(performance.now()-shown))))).then(()=>{if(range===opened)endLoading();});
   }).catch(()=>{if(range==='loading')range=null;endLoading();});
  };
- dialog.addEventListener('close',()=>{if(range?.close)range.close();range=null;endLoading();document.getElementById('open-armory').focus();});
- return {get kit(){return kit;}, get preview(){return model;}, get body(){return avatar?.group;},get camos(){return camoData;}, get range(){return range?.debug??null;}, get ranging(){return !!range;}, refreshCamos:()=>loadCamos(true), open, setWeapon, update(dt){
+ dialog.addEventListener('close',()=>{if(range?.close)range.close();range=null;endLoading();gun=null;category=null;dialog.classList.remove('choosing','armory-in-gun');document.getElementById('open-armory').focus();});
+ return {get kit(){return kit;}, get preview(){return model;}, get body(){return avatar?.group;},get camos(){return camoData;}, get range(){return range?.debug??null;}, get ranging(){return !!range;}, get level(){return category?'choices':gun!==null?`gun${gun}`:'top';}, refreshCamos:()=>loadCamos(true), open, setWeapon, back:stepBack, update(dt){
   if(range?.update){range.update(dt);return;}
   if(!dialog.open||!renderer)return;if(ratedOptions!==JSON.stringify(room.state.options))paintStats();const c=renderer.domElement,w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
   if(framed!==view())frame();sway+=dt;if(framed==='smith'){pivot.rotation.y=SMITH_ANGLE+Math.sin(sway*.5)*.1;const k=1-Math.exp(-dt*7);camera.position.lerp(camGoal,k);camera.lookAt(lookNow.lerp(lookGoal,k));}else pivot.rotation.y+=dt*.18;if(framed==='armor')avatar.group.rotation.y=Math.sin(sway*.5)*.7;if(framed==='armor')avatar.update(dt,{walk:false});
