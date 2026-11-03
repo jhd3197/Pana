@@ -867,18 +867,25 @@ El Cortaviento (`wind`) → Rápido.
 
 ### The armory's menu
 
-Two levels plus the choices. The bottom bar holds four slots (Equipo, Arma 1,
+Three levels plus the choices. The bottom bar holds four slots (Equipo, Arma 1,
 Arma 2, Granadas), each a picture and its whole name (they wrap, never cut).
 Arma 1 / Arma 2 open that gun's sub-menu: Atrás, the weapon (classes as
 `role=tab` chips, so LB/RB walk them; Arma 2 lists only `classesFor(1)`), its
-typed slots and the four looks. The preview, stats and Probar follow the gun on
+typed slots, Estilo and Salpicadura. Estilo (its picture: the finish's colour
+over the camo worn) opens a page of Atrás plus Acabado, Camuflaje and Llavero,
+each opening its own choices. The preview, stats and Probar follow the gun on
 show (`hand()`: the open sub-menu's, else the Arma tile last pointed at).
-Atrás, Esc (the dialog's `cancel`) and B step back one level: the engine's
-`menuBack` clicks a shown `[data-pad-back]` inside a dialog before closing it.
-`pinturaDebug.armory.level` is `top`, `gun0`, `gun1` or `choices`;
-`tests/armory-menu.browser.js` checks no label is cut at three sizes, the
-levels with the mouse and a stubbed controller, Arma 2 kept after a reload and
-Q / 1 / 2 / Y in a practice round.
+Atrás, Esc, Backspace and B step back one level (choices → Estilo → the gun →
+the four slots): the engine's `menuBack` clicks a shown `[data-pad-back]` inside
+a dialog before closing it. Esc is taken on its `keydown`, not only on the
+dialog's `cancel`: Chrome lets a page cancel `cancel` once per user activation,
+so a second Esc in a row would close the whole armory. The arrow keys walk the
+level's tiles by position and Enter presses one.
+`pinturaDebug.armory.level` is `top`, `gun0`, `gun1`, `style` or `choices`;
+`tests/armory-menu.browser.js` checks no label is cut and no tile overlaps the
+buttons at four sizes (390x844 too), the levels with the mouse, the keyboard
+and a stubbed controller, Arma 2 kept after a reload and Q / 1 / 2 / Y in a
+practice round.
 
 ### Shooting range (Probar)
 

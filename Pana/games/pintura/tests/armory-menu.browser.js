@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { launch, openGame, waitFor } from '../../../tests/browser-kit.js';
-// The armory's two levels: four slots (Equipo, Arma 1, Arma 2, Granadas) whose labels
-// are never cut, each gun's sub-menu and back with the mouse and with a controller
+// The armory's levels: four slots (Equipo, Arma 1, Arma 2, Granadas) whose labels
+// are never cut, each gun's sub-menu and its Estilo page (Acabado, Camuflaje, Llavero),
+// and back one level at a time with the mouse, the keyboard and a controller
 // (navigator.getGamepads stubbed), Arma 2 kept after a reload, and Q / Y swapping guns
-// in a real practice round. PANA_SHOTS=<folder> also saves armory-hud-swap.png.
+// in a real practice round. PANA_SHOTS=<folder> also saves the
+// Estilo menus (1-gun-submenu, 2-cosmetics-group, 3-camo-colors) and armory-hud-swap.png.
 const shots = process.env.PANA_SHOTS;
 const ORDER = ['a', 'b', 'x', 'y', 'lb', 'rb', 'lt', 'rt', 'view', 'start', 'ls', 'rs', 'up', 'down', 'left', 'right'];
 const browser = await launch();
@@ -11,8 +13,14 @@ const browser = await launch();
 const cut = page => page.evaluate(() => [...document.querySelectorAll('#armory-slots button, #armory-slots button > span, #armory-slots button > b, #armory-gun button, #armory-gun button > span')]
   .filter(e => e.getClientRects().length && (e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1 || getComputedStyle(e).textOverflow === 'ellipsis')).map(e => e.textContent));
 const level = page => page.evaluate(() => pinturaDebug.armory.level);
+// The sub-menu's tiles never overlap Probar or ¡A pepear!.
+async function apart(page, where) {
+  const boxes = await page.evaluate(() => [...document.querySelectorAll('#armory-gun button, #armory-stats, #armory footer button')].filter(e => e.getClientRects().length).map(e => { const r = e.getBoundingClientRect(); return [e.id || e.dataset.slot, r.left, r.top, r.right, r.bottom]; }));
+  const tiles = boxes.filter(b => !['armory-stats', 'armory-range', 'armory-go'].includes(b[0])), panels = boxes.filter(b => ['armory-range', 'armory-go'].includes(b[0]));
+  for (const t of tiles) for (const p of panels) assert.ok(t[3] <= p[1] || t[1] >= p[3] || t[4] <= p[2] || t[2] >= p[4], `${t[0]} overlaps ${p[0]} at ${where}`);
+}
 try {
-  for (const [w, h] of [[1280, 720], [1920, 1080], [1024, 600]]) {
+  for (const [w, h] of [[1280, 720], [1920, 1080], [1024, 600], [390, 844]]) {
     const page = await openGame(browser, 'pintura', { name: 'Prueba', query: 'debug', wait: false });
     await page.setViewportSize({ width: w, height: h });
     await waitFor(page, () => window.pinturaDebug?.room.connected && window.PANA_PREPARED === true, null, 120_000);
@@ -23,9 +31,12 @@ try {
     for (const hand of ['0', '1']) {
       await page.locator(`#armory-slots [data-hand="${hand}"]`).click(); await waitFor(page, l => pinturaDebug.armory.level === l, `gun${hand}`);
       assert.deepEqual(await cut(page), [], `${w}x${h}: no label is cut in Arma ${Number(hand) + 1}`);
-      const boxes = await page.evaluate(() => [...document.querySelectorAll('#armory-gun button, #armory-stats, #armory footer button')].filter(e => e.getClientRects().length).map(e => { const r = e.getBoundingClientRect(); return [e.id || e.dataset.slot, r.left, r.top, r.right, r.bottom]; }));
-      const tiles = boxes.filter(b => !['armory-stats', 'armory-range', 'armory-go'].includes(b[0])), panels = boxes.filter(b => ['armory-range', 'armory-go'].includes(b[0]));
-      for (const t of tiles) for (const p of panels) assert.ok(t[3] <= p[1] || t[1] >= p[3] || t[4] <= p[2] || t[2] >= p[4], `${t[0]} overlaps ${p[0]} at ${w}x${h}`);
+      await apart(page, `${w}x${h} Arma ${Number(hand) + 1}`);
+      // Its Estilo page: Atrás and three looks, as whole and as clear of the buttons.
+      await page.locator('#armory-gun [data-slot=style]').click(); await waitFor(page, () => pinturaDebug.armory.level === 'style');
+      assert.deepEqual(await cut(page), [], `${w}x${h}: no label is cut in Estilo`);
+      await apart(page, `${w}x${h} Estilo`);
+      await page.locator('#armory-back').click(); await waitFor(page, l => pinturaDebug.armory.level === l, `gun${hand}`);
       await page.locator('#armory-back').click(); await waitFor(page, () => pinturaDebug.armory.level === 'top');
     }
     await page.context().close();
@@ -38,12 +49,43 @@ try {
   await waitFor(page, () => window.pinturaDebug?.room.connected && window.PANA_PREPARED === true, null, 120_000);
   assert.deepEqual(await page.evaluate(() => [pinturaDebug.armory.kit.weapon2, pinturaDebug.armory.kit.armor, pinturaDebug.armory.kit.slots.barrel]), ['sandal', 'rapido', 'barrel'], 'an old save loads into the new shape');
 
-  // Mouse: Arma 1's sub-menu has its weapon, its four typed slots and the four looks.
+  // Mouse: Arma 1's sub-menu has its weapon, its four typed slots, Estilo and Salpicadura.
   await page.locator('#open-armory').click();
   await page.locator('#armory-slots [data-hand="0"]').click();
-  assert.deepEqual(await page.locator('#armory-gun button[data-slot]').evaluateAll(b => b.map(x => x.dataset.part || x.dataset.slot)), ['weapon', 'optic', 'barrel', 'hopper', 'stock', 'finish', 'camo', 'charm', 'pattern']);
+  if (shots) await page.screenshot({ path: `${shots}/1-gun-submenu.png` });
+  assert.deepEqual(await page.locator('#armory-gun button[data-slot]').evaluateAll(b => b.map(x => x.dataset.part || x.dataset.slot)), ['weapon', 'optic', 'barrel', 'hopper', 'stock', 'style', 'pattern']);
+  // Estilo holds Acabado, Camuflaje and Llavero; each opens its own choices, and Atrás climbs one level at a time.
+  const slots = () => page.locator('#armory-gun button[data-slot]').evaluateAll(b => b.map(x => x.dataset.part || x.dataset.slot));
+  const focused = () => page.evaluate(() => document.activeElement.dataset.part || document.activeElement.dataset.slot || document.activeElement.id);
+  await page.locator('#armory-gun [data-slot=style]').click(); await waitFor(page, () => pinturaDebug.armory.level === 'style');
+  assert.deepEqual(await slots(), ['finish', 'camo', 'charm']);
+  assert.deepEqual(await cut(page), [], 'no label is cut in Estilo');
+  if (shots) await page.screenshot({ path: `${shots}/2-cosmetics-group.png` });
+  for (const [look, card] of [['finish', '.armory-card'], ['camo', '.armory-camo'], ['charm', '.armory-card']]) {
+    await page.locator(`#armory-gun [data-slot=${look}]`).click(); await waitFor(page, () => pinturaDebug.armory.level === 'choices');
+    assert.equal(await page.locator('#armory-choices').getAttribute('data-category'), look);
+    assert.ok(await page.locator(`#armory-choices ${card}`).count() > 1, `${look} lists its options`);
+    if (shots && look === 'camo') await page.screenshot({ path: `${shots}/3-camo-colors.png` });
+    await page.locator('#armory-back').click(); await waitFor(page, () => pinturaDebug.armory.level === 'style');
+    assert.equal(await focused(), look, 'back on the look that opened');
+  }
+  await page.locator('#armory-back').click(); await waitFor(page, () => pinturaDebug.armory.level === 'gun0');
+  assert.equal(await focused(), 'style', 'back on Estilo');
+  // The keyboard: the arrows walk the tiles, Enter drills in, Backspace and Esc climb back.
+  await page.keyboard.press('ArrowLeft'); assert.equal(await focused(), 'stock');
+  await page.keyboard.press('ArrowRight'); assert.equal(await focused(), 'style');
+  await page.keyboard.press('Enter'); await waitFor(page, () => pinturaDebug.armory.level === 'style');
+  assert.equal(await focused(), 'finish', 'Estilo takes the focus');
+  await page.keyboard.press('ArrowRight'); assert.equal(await focused(), 'camo');
+  await page.keyboard.press('Enter'); await waitFor(page, () => pinturaDebug.armory.level === 'choices');
+  await page.keyboard.press('Backspace'); await waitFor(page, () => pinturaDebug.armory.level === 'style');
+  assert.equal(await focused(), 'camo');
+  await page.keyboard.press('Enter'); await waitFor(page, () => pinturaDebug.armory.level === 'choices');
+  await page.keyboard.press('Escape'); await waitFor(page, () => pinturaDebug.armory.level === 'style');
+  await page.keyboard.press('Backspace'); await waitFor(page, () => pinturaDebug.armory.level === 'gun0');
+  assert.equal(await focused(), 'style');
+  await page.keyboard.press('Escape'); await waitFor(page, () => pinturaDebug.armory.level === 'top' && document.getElementById('armory').open);
   // Arma 2 lists only sidearms; La Chispa goes in and survives a reload.
-  await page.locator('#armory-back').click();
   await page.locator('#armory-slots [data-hand="1"]').click();
   await page.locator('#armory-gun [data-slot=weapon]').click(); await waitFor(page, () => pinturaDebug.armory.level === 'choices');
   assert.deepEqual(await page.locator('#armory-classes [role=tab]').evaluateAll(t => t.map(x => x.dataset.class)), ['pistolas', 'melee']);
@@ -51,7 +93,7 @@ try {
   await page.locator('#armory-choices .armory-card[data-id=pistol]').click();
   await waitFor(page, () => JSON.parse(localStorage.getItem('pintura:kit')).weapon2 === 'pistol');
   await page.locator('#armory-back').click(); await waitFor(page, () => pinturaDebug.armory.level === 'gun1');
-  assert.deepEqual(await page.locator('#armory-gun button[data-slot]').evaluateAll(b => b.map(x => x.dataset.part || x.dataset.slot)), ['weapon', 'optic', 'barrel', 'hopper', 'stock', 'finish', 'camo', 'charm', 'pattern'], 'La Chispa has its own four slots');
+  assert.deepEqual(await page.locator('#armory-gun button[data-slot]').evaluateAll(b => b.map(x => x.dataset.part || x.dataset.slot)), ['weapon', 'optic', 'barrel', 'hopper', 'stock', 'style', 'pattern'], 'La Chispa has its own four slots');
   await page.keyboard.press('Escape'); await waitFor(page, () => pinturaDebug.armory.level === 'top' && document.getElementById('armory').open);
   await page.keyboard.press('Escape'); await waitFor(page, () => !document.getElementById('armory').open);
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -87,6 +129,14 @@ try {
   await press('a'); await waitFor(page, () => pinturaDebug.armory.level === 'choices');
   await press('b'); await waitFor(page, () => pinturaDebug.armory.level === 'gun1');
   assert.equal(await page.evaluate(() => document.activeElement.dataset.part), 'optic', 'back on the slot that opened');
+  // Estilo on a controller: A opens it and the camo grid, B climbs back one level each time.
+  await page.locator('#armory-gun [data-slot=style]').focus(); await press('a'); await waitFor(page, () => pinturaDebug.armory.level === 'style');
+  await press('right'); assert.equal(await page.evaluate(() => document.activeElement.dataset.slot), 'camo');
+  await press('a'); await waitFor(page, () => pinturaDebug.armory.level === 'choices');
+  await press('b'); await waitFor(page, () => pinturaDebug.armory.level === 'style');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.slot), 'camo');
+  await press('b'); await waitFor(page, () => pinturaDebug.armory.level === 'gun1');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.slot), 'style');
   await press('b'); await waitFor(page, () => pinturaDebug.armory.level === 'top');
   await press('b'); await waitFor(page, () => !document.getElementById('armory').open);
   await page.evaluate(() => { navigator.getGamepads = () => []; });
