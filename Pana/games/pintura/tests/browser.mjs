@@ -118,7 +118,7 @@ try {
   await wait(b, () => !pinturaDebug.armory.body.visible);
   assert.equal(await b.locator('#armory-choices input[type="color"]').count(), 0, 'no free colour picker');
   const locked = b.locator('#armory-choices .armory-camo[data-id="selva"]');
-  assert.equal(await locked.getAttribute('data-state'), 'locked'); assert.match(await locked.textContent(), /pana\.sh/);
+  assert.equal(await locked.getAttribute('data-state'), 'locked'); assert.match(await locked.locator('.armory-choice').getAttribute('title'), /pana\.sh/);
   await locked.locator('.armory-choice').dispatchEvent('click'); assert.equal((await savedKit()).camo, 'liso-uva', 'a locked camo is not picked');
   assert.match(await b.locator('#armory-note').textContent(), /pana.sh/);
   await locked.locator('.armory-choice').hover(); await wait(b, () => pinturaDebug.armory.preview.userData.camo?.pattern === 'woodland');

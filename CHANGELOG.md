@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La armería de Pepazo muestra cada arma y cada accesorio en foto: menos texto, más fácil de elegir.**
+  Las tarjetas llevan la imagen real del arma, la pieza, el llavero o la
+  granada y solo su nombre. Al elegir un accesorio el arma se pone de lado y
+  la cámara se acerca a la pieza montada; el panel de estadísticas marca con
+  +/− lo que gana o pierde.
 - **Capis a Pintazos ya se juega con amigos: abre una sala con «Con amigos», comparte el link y jueguen hasta cuatro en dos equipos.**
   Cada quien ve los tiros y los cráteres de los demás. Un equipo sin panas lo
   juega la máquina, y si alguien se va, su compañero o la máquina sigue por

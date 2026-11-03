@@ -411,7 +411,9 @@ Chispa) or a Studio melee piece: origin at the grip, +Z down the barrel,
 sideways offset for side-mounted sights), `userData.bore` the barrel axis
 height, `userData.optic` the Mira kind when one is fitted, `userData.class`,
 `userData.spin` (a group to turn when firing: La Licuadora, the revolvers).
-Attachments `barrel hopper stock optic` sit on each marker's own mounts.
+Attachments `barrel hopper stock optic` sit on each marker's own mounts;
+`PAINT_PART_LABELS[id]` is the name every mesh of a fitted part starts with
+(melee `tape drip strap` too), so a menu can frame or draw one part alone.
 `PAINT_KIT_BORE[weapon]` is the barrel axis height for all eighteen.
 `bakePaintKit(options)` is the same marker batched into a few draws (finishes
 folded to matte, glossy and metal, one draw each), with `tip`, `sight`,
@@ -727,6 +729,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Saved name and appearance | `engine/avatar.js` | all 24 |
 | Pana model | `engine/models/characters/pana/avatar-model.js` | 19 games (not Curiara, Galope, Lancha, Parapente, Criollas) |
 | Portraits | `engine/portrait.js`, `portrait-cache.js` | Bochinche, Trifulca |
+| Menu card pictures of any 3D object (built, framed by its bounds, drawn once on the shared offscreen renderer, cached by key; `keep(mesh)` draws one part alone) | `engine/object-thumb.js` (`objectThumb(key, build, { width, height, turn, tilt, keep, margin })`) on `engine/snapshot.js` | Pepazo (armory cards: every weapon, part, charm and grenade) |
 | Wardrobe | `engine/wardrobe.js`, `wardrobe-preview.js` | Bochinche, Carreritas, Pepazo, Trifulca (the page also loads `wardrobe-preview` through `pana.sh`) |
 | Mangos (shared currency) | `engine/mangos.js` | Bochinche, Carreritas |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |

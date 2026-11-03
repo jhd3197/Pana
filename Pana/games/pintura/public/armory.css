@@ -52,3 +52,22 @@
 .armory-lock svg { width:100%; height:100%; }
 .armory-buy { margin:0 5px 5px; }
 .armory-camo-note { grid-column:1/-1; margin:0 5px; color:var(--pk-muted); font-size:13px; }
+/* Choice cards: a picture of the real piece (or its icon, or a swatch) and its name; numbers live on the stats panel. */
+#armory-choices{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));align-content:start}
+.armory-card{position:relative;display:grid;grid-template-rows:64px auto;gap:6px;align-items:center;justify-items:center;padding:8px 8px 10px;text-align:center;min-width:0}
+.armory-card b{font-size:15px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.armory-pic{display:grid;grid-template:100% / 100%;place-items:center;width:100%;height:64px;color:var(--pk-muted);overflow:hidden}
+.armory-pic img{width:100%;height:100%;object-fit:contain}.armory-pic svg{width:34px;height:34px;fill:currentColor}
+.armory-pic.armory-swatch{width:64px;height:40px;margin:0}
+.armory-choice[aria-pressed=true] .armory-pic{color:#16161a}
+.armory-badge{position:absolute;top:4px;right:6px;min-width:18px;padding:1px 4px;background:var(--pk-yellow);color:#16161a;font:900 11px var(--pk-sans)}
+#armory-classes{flex-wrap:nowrap;overflow-x:auto;padding:2px 6px 6px;scrollbar-width:thin}.armory-class{flex:0 0 auto}
+#armory-slots i img{width:100%;height:46px;object-fit:contain}
+#armory-stats dt{display:flex;align-items:center;gap:6px}.armory-delta{font:900 12px var(--pk-sans);letter-spacing:0}.armory-delta.gain{color:var(--pk-teal)}.armory-delta.loss{color:var(--pk-coral)}
+.armory-camo .armory-choice{position:relative}.armory-camo .armory-lock{position:absolute;top:6px;right:8px;width:14px;height:14px;margin:0}
+.armory-mango{display:inline-block;width:16px;height:16px;margin-right:4px;vertical-align:-3px}.armory-mango svg{width:100%;height:100%}
+@media(max-width:800px){#armory-choices{grid-template-columns:repeat(3,minmax(0,1fr))}.armory-card{grid-template-rows:48px auto;padding:6px}.armory-pic{height:48px}.armory-card b{font-size:12px}#armory-slots i img{height:38px}}
+/* While choosing, the cards stop short of the stats panel so neither covers the other. */
+@media(min-width:801px){#armory.choosing #armory-choices{right:420px}#armory.choosing #armory-note{right:420px}}
+/* The gunsmith zooms in on a part: the gun fades out at the view's edges instead of being cut. */
+#armory.choosing #armory-view{-webkit-mask-image:linear-gradient(90deg,transparent,#000 7% 93%,transparent),linear-gradient(transparent,#000 7% 90%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 7% 93%,transparent),linear-gradient(transparent,#000 7% 90%,transparent);mask-composite:intersect}
