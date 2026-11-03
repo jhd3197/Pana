@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
+import { woodenBat } from '/engine/models/props/barrio.js';
 
 const DISPLAY = '"Luckiest Guy", "Nunito", system-ui, sans-serif';
 const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: .6, ...extra });
@@ -305,9 +306,7 @@ export function createPelota({ radius = .065 } = {}) {
   return owned(group);
 }
 export function createBate({ length = 1.25 } = {}) {
-  const group = new THREE.Group(), k = length / 1.7; group.name = 'Bate de madera';
-  const shape = [[.045, 0], [.055, .06], [.035, .1], [.04, .45], [.085, 1.05], [.09, 1.6], [.065, 1.68], [0, 1.7]].map(([r, y]) => new THREE.Vector2(r * k, y * k));
-  part(group, new THREE.LatheGeometry(shape, 24), mat('#b77d42', { roughness: .5 }));
+  const group = woodenBat({ length });
   group.userData.previewBounds = [[-.3, 0, -.3], [.3, 1.35, .3]];
   return owned(group);
 }
