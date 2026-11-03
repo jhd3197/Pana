@@ -22,15 +22,15 @@ export function createPanaPicker({ avatar, pick }) {
   const root = el('section', 'boch-pick', document.body);
   root.hidden = true; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'boch-pick-title');
   root.innerHTML = `<header class="boch-pick-top"><button type="button" class="boch-chip" data-close>${loc('Volver a la sala')}</button><h2 id="boch-pick-title" class="boch-plate">${loc('Elige tu pana')}</h2></header>
-    <article class="boch-prev"><div class="boch-art"><span class="boch-key"></span><img alt=""></div><div class="boch-info"><small translate="no"></small><b></b><p></p>
-    <div class="boch-fx"><span>${loc('Lo deja')}</span><em></em></div><div class="boch-stats"></div><div class="boch-trajes"><span>${loc('Traje')}</span></div></div></article>
+    <article class="boch-prev"><div class="boch-art"><img alt=""></div><div class="boch-info"><small translate="no"></small><b></b>
+    <em class="boch-fx"></em><div class="boch-stats"></div><div class="boch-trajes"></div></div></article>
     <div class="boch-grid" role="listbox" aria-label="${loc('Panas')}"></div>
     <footer class="boch-go"><button type="button" class="boch-chip" data-random>${loc('¡Sorpréndeme!')}</button><button type="button" class="boch-ok" data-ok>${loc('¡Listo!')}</button></footer>`;
   const $ = s => root.querySelector(s), art = $('.boch-art'), grid = $('.boch-grid'), trajes = $('.boch-trajes');
   const tiles = PANAS.map(p => {
     const b = el('button', 'boch-tile', grid); b.type = 'button'; b.dataset.pana = p.id; b.setAttribute('role', 'option');
     b.style.setProperty('--c', p.color);
-    b.innerHTML = `<img alt=""><span class="nm"></span><span class="k">${p.key}</span><span class="tags"></span>`;
+    b.innerHTML = `<img alt=""><span class="nm"></span><span class="tags"></span>`;
     b.querySelector('.nm').textContent = loc(p.poder);
     b.setAttribute('aria-label', loc('{who}, poder {poder}', { who: p.who, poder: loc(p.poder) }));
     return b;
@@ -41,12 +41,11 @@ export function createPanaPicker({ avatar, pick }) {
   function render(pop = false) {
     const p = panaById(current.pana), color = p.trajes[current.traje];
     root.style.setProperty('--pc', color);
-    $('.boch-key').textContent = p.key;
     showPortrait(art.querySelector('img'), costumeAvatar(avatar(), p.id, current.traje));
     if (pop && !reduced.matches) { art.classList.remove('is-pop'); void art.offsetWidth; art.classList.add('is-pop'); }
     $('.boch-info small').textContent = p.who.toUpperCase();
-    $('.boch-info b').textContent = loc(p.poder); $('.boch-info p').textContent = loc(p.desc);
-    $('.boch-fx em').textContent = loc(p.fx);
+    $('.boch-info b').textContent = loc(p.poder);
+    $('.boch-fx').textContent = loc(p.fx);
     $('.boch-stats').replaceChildren(...poderStats(p.id).map(([label, value]) => {
       const row = el('span'); el('i', '', row).textContent = loc(label);
       const segs = el('span', 'segs', row); for (let n = 1; n <= 5; n++) el('i', n <= value ? 'on' : '', segs);
@@ -71,12 +70,19 @@ export function createPanaPicker({ avatar, pick }) {
     const step = () => { choose(PANAS[Math.floor(Math.random() * PANAS.length)].id, 0, n + 1 === total); n++; spinning = n < total ? setTimeout(step, 50 + n * 12) : 0; };
     step();
   }
+  // Arrows walk the grid (as many columns as the layout shows), Enter locks in.
+  const STEP = { ArrowLeft: -1, ArrowRight: 1 };
   const keys = e => {
     if (root.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
-    const k = e.key.toUpperCase(), p = PANAS.find(p => p.key === k);
     const tile = e.target.closest?.('.boch-tile');
-    if (p) { choose(p.id); tiles.find(b => b.dataset.pana === p.id)?.focus(); }
-    else if (k === 'R') random();
+    const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+    const step = STEP[e.key] ?? (e.key === 'ArrowDown' ? cols : e.key === 'ArrowUp' ? -cols : 0);
+    if (step) {
+      const at = PANAS.findIndex(p => p.id === (tile?.dataset.pana ?? current.pana)), to = at + step;
+      if (to < 0 || to >= PANAS.length) { e.preventDefault(); return; }
+      choose(PANAS[to].id); tiles[to].focus();
+    }
+    else if (e.key.toUpperCase() === 'R') random();
     // Enter locks in: the focused tile if there is one, else the current pick.
     else if (e.key === 'Enter' && (tile || !e.target.closest?.('button'))) { if (tile) current = { pana: tile.dataset.pana, traje: tile.dataset.pana === current.pana ? current.traje : 0 }; confirm(); }
     else return;
