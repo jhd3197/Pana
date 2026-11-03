@@ -3,7 +3,7 @@
 // armory.js loads this with the first card it draws.
 import { createPaintKit, createPaintGrenade } from '/engine/models/props/paintball-kit.js';
 import { objectThumb } from '/engine/object-thumb.js';
-import { isMelee } from './armory-data.js';
+import { isMelee, kitModel, partOf } from './armory-data.js';
 
 // Markers point right showing their left side (the feed); melee lies down, head right.
 const turnOf = weapon => isMelee(weapon) ? [0, .35, -Math.PI / 2] : [0, Math.PI / 2, 0];
@@ -17,10 +17,12 @@ const kitOf = o => () => createPaintKit({ charm: 'none', ...o });
 export function weaponThumb({ weapon, color = '#f28b42', camo = null, pattern = 'splat' }) {
   return objectThumb(`pepazo:w:${weapon}:${color}:${camo}:${pattern}`, kitOf({ weapon, color, camo, pattern }), { ...CARD, turn: turnOf(weapon) });
 }
-// One attachment alone, as it is fitted to this weapon (its meshes are named 'Accesorio · …').
+// One gunsmith part alone, as it is fitted to this weapon (its meshes are named 'Accesorio · …').
+// A smaller hopper gets more room around it, so the two hopper cards show their sizes.
 export function partThumb(weapon, part, color = '#f28b42') {
-  return objectThumb(`pepazo:p:${weapon}:${part}:${color}`, kitOf({ weapon, color, attachments: [part] }),
-    { turn: partTurn(weapon), tilt: .42, keep: o => o.name.startsWith('Accesorio'), ...CARD, margin: 1.15 });
+  const model = kitModel({ weapon, slots: { [partOf(part)?.slot]: part } });
+  return objectThumb(`pepazo:p:${weapon}:${part}:${color}`, kitOf({ weapon, color, ...model }),
+    { turn: partTurn(weapon), tilt: .42, keep: o => o.name.startsWith('Accesorio'), ...CARD, margin: 1.15 / model.hopperScale });
 }
 // A charm alone, hanging from its ring.
 export function charmThumb(charm) {

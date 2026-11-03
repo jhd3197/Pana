@@ -15,6 +15,15 @@ becomes the GitHub release's notes.
 - **Pepazo: elige «Equipos» o «Todos contra todos» arriba en la sala.**
   Con equipos eliges el modo (Pintadas, Captura la bandera, Dominación) y
   los dos equipos salen en la sala, ya no escondidos en Más ajustes.
+- **El armero de Pepazo tiene un puesto fijo para cada pieza: Mira, Cañón, Tolva y Culata.**
+  Cada puesto ofrece solo lo que le cabe a esa arma: la francotiradora lleva
+  telescópica, la pistola punto rojo o láser, y la tolva viene chica o grande.
+  Cada opción muestra con iconos lo que gana o pierde. Tu kit guardado se
+  pasa solo al nuevo armero.
+- **El polígono de tiro de Pepazo ya dispara con ratón y con mando, y es práctica solo tuya.**
+  Una pantalla corta de carga al entrar; el primer clic ya dispara, el mando
+  mira, camina, dispara y sale con B o Start sin tocar la sala ni tu party.
+  Cambiar pana ya no aparece sobre la armería.
 - **Reliquia arranca en la biblioteca sepultada, y en la sala eliges el Lugar: Alternar, Biblioteca o Mina.**
   Con Alternar (lo normal) la primera jornada es la biblioteca y la siguiente
   la mina, y así. El anuncio de cada jornada dice adónde bajan.

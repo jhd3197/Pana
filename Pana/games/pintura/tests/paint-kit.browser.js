@@ -1,6 +1,6 @@
 // The real paint-kit models in a WebGL page: all eighteen markers build with every
-// attachment set the armory allows, each part lands on the model, the data the game
-// reads (tip, sight, bore, optic kind) agrees with paint-arsenal.js, the batched
+// gunsmith option alone and with full slots, each part lands on the model, the data the game
+// reads (tip, sight, bore, the chosen Mira kind) agrees, the small hopper is smaller, the batched
 // version keeps it, camo stays inert unless asked for and shares one program, and El
 // Acolchado is one cheap mesh that fits the pana's torso and rides its body.
 import assert from 'node:assert/strict';
@@ -12,31 +12,39 @@ try {
   const result = await page.evaluate(async () => {
     const THREE = await import('three');
     const kit = await import('/engine/models/props/paintball-kit.js');
-    const { ATTACHMENT_RULES, ATTACHMENT_SLOTS, MARKERS } = await import('/g/pintura/armory-data.js');
+    const { SLOT_RULES, MARKERS, kitModel, partOf } = await import('/g/pintura/armory-data.js');
     const PART = kit.PAINT_PART_LABELS;
     const problems = [], meshes = root => { const list = []; root.traverse(o => { if (o.isMesh) list.push(o); }); return list; };
     const finite = root => meshes(root).every(m => [...m.geometry.attributes.position.array].every(Number.isFinite));
+    const partBox = (root, part) => { const b = new THREE.Box3(); root.updateMatrixWorld(true); for (const m of meshes(root)) if (m.name.startsWith(PART[part])) b.expandByObject(m); return b.getSize(new THREE.Vector3()).length(); };
     let builds = 0;
     for (const { id } of MARKERS) {
-      const parts = ATTACHMENT_RULES[id];
-      for (let mask = 0; mask < 1 << parts.length; mask++) {
-        const chosen = parts.filter((_, i) => mask & (1 << i)); if (chosen.length > ATTACHMENT_SLOTS) continue;
+      const rules = SLOT_RULES[id], slots = Object.keys(rules);
+      // Bare, every option alone, and every slot filled with its first and with its last option.
+      const kits = [{}, ...slots.flatMap(s => rules[s].map(p => ({ [s]: p }))), Object.fromEntries(slots.map(s => [s, rules[s][0]])), Object.fromEntries(slots.map(s => [s, rules[s].at(-1)]))];
+      for (const chosen of kits) {
+        const look = kitModel({ weapon: id, slots: chosen }), label = JSON.stringify(chosen);
         let model;
-        try { model = kit.createPaintKit({ weapon: id, attachments: chosen, color: '#29c5cd', charm: 'mango', pattern: 'dots' }); } catch (error) { problems.push(`${id} ${chosen}: ${error.message}`); continue; }
+        try { model = kit.createPaintKit({ weapon: id, ...look, color: '#29c5cd', charm: 'mango', pattern: 'dots' }); } catch (error) { problems.push(`${id} ${label}: ${error.message}`); continue; }
         builds++;
         const names = meshes(model).map(m => m.name);
-        for (const part of parts) if (chosen.includes(part) !== names.some(n => n.startsWith(PART[part]))) problems.push(`${id} ${chosen}: ${part} ${chosen.includes(part) ? 'missing' : 'drawn unasked'}`);
+        for (const slot of slots) { const part = partOf(rules[slot][0]).part; if (!!chosen[slot] !== names.some(n => n.startsWith(PART[part]))) problems.push(`${id} ${label}: ${part} ${chosen[slot] ? 'missing' : 'drawn unasked'}`); }
         const u = model.userData;
         if (u.bore !== kit.PAINT_KIT_BORE[id]) problems.push(`${id}: bore ${u.bore} vs ${kit.PAINT_KIT_BORE[id]}`);
-        if (!(u.tip > 0) || !(u.sight > 0) || !Number.isFinite(u.sightX)) problems.push(`${id} ${chosen}: tip/sight ${u.tip}/${u.sight}/${u.sightX}`);
-        if ((u.optic ?? null) !== (chosen.includes('optic') ? kit.PAINT_OPTICS[id] : null)) problems.push(`${id} ${chosen}: optic ${u.optic}`);
+        if (!(u.tip > 0) || !(u.sight > 0) || !Number.isFinite(u.sightX)) problems.push(`${id} ${label}: tip/sight ${u.tip}/${u.sight}/${u.sightX}`);
+        if ((u.optic ?? null) !== (chosen.optic ?? null)) problems.push(`${id} ${label}: optic drawn ${u.optic}`);
         if (u.class !== kit.classOf(id).id || model.name !== kit.PAINT_WEAPONS[id]) problems.push(`${id}: class/name ${u.class}/${model.name}`);
-        if (!finite(model)) problems.push(`${id} ${chosen}: non-finite geometry`);
+        if (!finite(model)) problems.push(`${id} ${label}: non-finite geometry`);
         if (meshes(model).some(m => m.geometry.attributes.camoPos || m.material.userData.camo)) problems.push(`${id}: camo without being asked`);
         u.dispose();
       }
+      // The small hopper is drawn smaller than the big one.
+      if (rules.hopper.length > 1) {
+        const size = h => { const m = kit.createPaintKit({ weapon: id, ...kitModel({ weapon: id, slots: { hopper: h } }) }), s = partBox(m, 'hopper'); m.userData.dispose(); return s; };
+        if (!(size('minihopper') < size('hopper') * .85)) problems.push(`${id}: small hopper not smaller`);
+      }
       // Batched: same data, fewer draws, every part kept.
-      const full = parts.slice(0, ATTACHMENT_SLOTS), plain = kit.createPaintKit({ weapon: id, attachments: full }), baked = kit.bakePaintKit({ weapon: id, attachments: full });
+      const full = kitModel({ weapon: id, slots: Object.fromEntries(slots.map(s => [s, rules[s].at(-1)])) }), plain = kit.createPaintKit({ weapon: id, ...full }), baked = kit.bakePaintKit({ weapon: id, ...full });
       const b = baked.userData, p = plain.userData;
       if (b.tip !== p.tip || b.sight !== p.sight || b.bore !== kit.PAINT_KIT_BORE[id] || b.optic !== p.optic) problems.push(`${id}: baked data ${JSON.stringify([b.tip, b.sight, b.bore, b.optic])}`);
       if (meshes(baked).length >= meshes(plain).length) problems.push(`${id}: baking saved no draws (${meshes(baked).length}/${meshes(plain).length})`);
@@ -74,7 +82,7 @@ try {
     const renderer = new THREE.WebGLRenderer({ canvas: document.createElement('canvas') }); renderer.setSize(64, 64, false); renderer.debug.checkShaderErrors = true;
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(40, 1, .1, 20); camera.position.set(2, 1, 3); camera.lookAt(0, .2, .5);
     scene.add(new THREE.HemisphereLight('#fff', '#445', 2));
-    const selva = kit.createPaintKit({ weapon: 'carbine', camo: 'selva' }), rumba = kit.createPaintKit({ weapon: 'marksman', camo: 'rumba', attachments: ['optic'] }), baked = kit.bakePaintKit({ weapon: 'lmg', camo: 'jaguar', attachments: ['hopper', 'optic'] });
+    const selva = kit.createPaintKit({ weapon: 'carbine', camo: 'selva' }), rumba = kit.createPaintKit({ weapon: 'marksman', camo: 'rumba', attachments: ['optic'], opticKind: 'scope' }), baked = kit.bakePaintKit({ weapon: 'lmg', camo: 'jaguar', attachments: ['hopper', 'optic'], hopperScale: .72 });
     const camoMeshes = [selva, rumba, baked].map(m => meshes(m).filter(o => o.material.userData.camo));
     if (camoMeshes.some(list => !list.length || list.some(o => !o.geometry.attributes.camoPos || o.geometry.attributes.camoPos.count !== o.geometry.attributes.position.count))) problems.push('a camo body lost camoPos (baked or not)');
     const keys = camoMeshes.flat().map(o => o.material.customProgramCacheKey());
@@ -90,14 +98,14 @@ try {
     return { problems, builds, camoPrograms, glError, colours, vestStats };
   });
   assert.deepEqual(result.problems, []);
-  assert.ok(result.builds >= 18 * 15, `built ${result.builds} marker/attachment sets`);
+  assert.ok(result.builds >= 18 * 8, `built ${result.builds} marker/slot sets`);
   assert.equal(result.glError, 0, 'WebGL reported an error');
   assert.equal(result.camoPrograms, 1, 'every camo material shares one compiled program');
   assert.deepEqual(result.colours, ['4b5b2c', '1a1030', 'f28b42'], 'each camo keeps its own colours');
   assert.equal(result.vestStats.meshes, 1, 'El Acolchado draws in one call');
   assert.ok(result.vestStats.tris <= 5000, `El Acolchado has ${result.vestStats.tris} triangles`);
   assert.deepEqual(page.errors, []);
-  console.log(`ok: ${result.builds} marker/attachment sets build with parts on their mounts, bore/optic/tip agree, baking keeps them, camo is inert unless asked and shares one program, El Acolchado is ${result.vestStats.tris} triangles in one draw`);
+  console.log(`ok: ${result.builds} marker/slot sets build with parts on their mounts, bore/optic/tip agree, baking keeps them, camo is inert unless asked and shares one program, El Acolchado is ${result.vestStats.tris} triangles in one draw`);
 } finally {
   await browser.close();
 }

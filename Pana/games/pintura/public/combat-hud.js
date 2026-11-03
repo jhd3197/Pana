@@ -1,6 +1,6 @@
 import { loc, locn } from '/engine/i18n.js';
 import { icon } from '/engine/icons.js';
-import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, ATTACHMENTS, OPTICS } from './armory-data.js';
+import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, partOf, partsOf } from './armory-data.js';
 import { TARGET } from './rules.js';
 import { livesOf } from './options.js';
 import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES } from './hud-model.js';
@@ -20,7 +20,6 @@ export function keyFor(keys) {
 // Under the pepas: the marker's name and class, and an icon per fitted part.
 // Out of pepas: the reload key of the device in use (a phone has its Recargar button).
 function emptyText() { const key = keyFor({ keyboard: 'R', gamepad: 'X', touch: null }); return key ? loc('Sin pepas · {key} para recargar', { key }) : loc('Sin pepas · toca Recargar'); }
-const PART_ICON = { barrel: 'kitBarrel', hopper: 'kitHopper', stock: 'kitStock', optic: 'kitOptic', tape: 'plus', drip: 'kitPaint', strap: 'plus' };
 export function createCombatHud(doc = document) {
   const $ = id => doc.getElementById(id), body = doc.body;
   const set = (el, text) => { if (el.textContent !== text) el.textContent = text; };
@@ -55,10 +54,10 @@ export function createCombatHud(doc = document) {
       const lives = Math.max(0, livesOf(state.options) - (me?.hits || 0));
       const marker = WEAPONS.find(m => m.id === me?.weapon) || MARKERS[0], group = ARMORY_CLASSES.find(c => c.id === marker.class);
       set($('ammo'), [marker.name, group && loc(group.kind), livesOf(state.options) && locn(lives, '{n} vida', '{n} vidas')].filter(Boolean).join(' · '));
-      const fitted = (me?.kit?.attachments || []).filter(Boolean);
+      const fitted = me?.kit ? partsOf(me.kit) : [];
       if (parts !== fitted.join()) {
         parts = fitted.join();
-        $('wpn-kit').replaceChildren(...fitted.map(id => { const el = doc.createElement('i'); el.append(icon(PART_ICON[id])); el.title = id === 'optic' && stats.optic ? loc(OPTICS[stats.optic].name) : loc(ATTACHMENTS.find(a => a.id === id)?.name || ''); return el; }));
+        $('wpn-kit').replaceChildren(...fitted.map(id => { const el = doc.createElement('i'); el.append(icon(partOf(id).icon)); el.title = loc(partOf(id).name); return el; }));
       }
 
       // A thrown chancla is away: the same bar fills until it is back in the hand.

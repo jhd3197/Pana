@@ -15,7 +15,8 @@ import { PAINT_WEAPONS, PAINT_MELEE, PAINT_WEAPON_CLASSES, PAINT_MOUNTS, PAINT_O
 // carbine, El Tuqueque a bullpup, El Zamuro a marksman rifle on its bipod and La
 // Culebrona a belt-fed machine marker. Attachments ('barrel', 'hopper', 'stock',
 // 'optic') sit on each marker's own mounts (PAINT_MOUNTS); `userData.optic` is the
-// kind of Mira fitted (PAINT_OPTICS), `userData.bore` the barrel axis height.
+// kind of Mira fitted (PAINT_OPTICS, or `opticKind`), `userData.bore` the barrel axis
+// height. `hopperScale` sizes the fitted hopper (Pepazo's Tolva chica is .72).
 // `userData.sightX` is the sight line's sideways offset (side-mounted Miras).
 // `userData.spin` (Licuadora, Tambor) is a group to turn around Z when firing.
 // Origin at the grip, +Z down the barrel. `userData.tip` is the muzzle's z,
@@ -138,11 +139,14 @@ function bakeCamo(root,material){
 export { PAINT_WEAPONS, PAINT_MELEE, PAINT_WEAPON_CLASSES, PAINT_MOUNTS, PAINT_OPTICS, PAINT_KIT_BORE, PAINT_CAMOS, PAINT_SOLIDS, classOf };
 // The name every mesh of a fitted part starts with, by attachment id: the armory
 // frames a part by it and a browser suite checks each model draws exactly these.
+// The Mira kinds optic() draws; createPaintKit's `opticKind` swaps a mount's own kind for one
+// (La Lejana and La China draw their own and keep it).
+const OPTIC_KINDS=['dot','holo','laser','scope','pin'];
 export const PAINT_PART_LABELS = Object.freeze({ // i18n-ignore: model part names
   barrel: 'Accesorio · cañón afinado', hopper: 'Accesorio · tolva grande', stock: 'Accesorio · culata ligera', optic: 'Accesorio · mira', // i18n-ignore: model part names
   tape: 'Accesorio · cinta de agarre', drip: 'Accesorio · pintura fresca', strap: 'Accesorio · muñequera', // i18n-ignore: model part names
 });
-export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],charm='none',pattern='splat',camo=null}={}) {
+export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],opticKind=null,hopperScale=1,charm='none',pattern='splat',camo=null}={}) {
  // An unknown id draws La Chispa rather than failing a whole scene.
  if(!Object.hasOwn(PAINT_WEAPONS,weapon)&&!Object.hasOwn(PAINT_MELEE,weapon))weapon='pistol';
  if(!Array.isArray(attachments))attachments=[];
@@ -824,8 +828,8 @@ export function createPaintKit({color='#f28b42',weapon='pistol',attachments=[],c
 
  for(const m of mounts) within(m.parent,()=>{
   if(has('barrel'))tip=Math.max(tip,tune(m.muzzle));
-  if(has('hopper'))feeder(m.feed,m.size);
-  if(has('optic')&&m.optic){const r=optic(m.optic);optic_=m.optic.kind;if(r){sight=r.y;sightX=r.x;}}
+  if(has('hopper'))feeder(m.feed,m.size*(hopperScale>0&&hopperScale<=2?hopperScale:1));
+  if(has('optic')&&m.optic){const o=OPTIC_KINDS.includes(opticKind)?{...m.optic,kind:opticKind}:m.optic,r=optic(o);optic_=o.kind;if(r){sight=r.y;sightX=r.x;}}
   if(has('stock'))m.rods?rods(m.rods):skeleton(m.stock);
   decorate(m.deco);
  });

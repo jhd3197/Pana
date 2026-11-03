@@ -71,3 +71,17 @@
 @media(min-width:801px){#armory.choosing #armory-choices{right:420px}#armory.choosing #armory-note{right:420px}}
 /* The gunsmith zooms in on a part: the gun fades out at the view's edges instead of being cut. */
 #armory.choosing #armory-view{-webkit-mask-image:linear-gradient(90deg,transparent,#000 7% 93%,transparent),linear-gradient(transparent,#000 7% 90%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 7% 93%,transparent),linear-gradient(transparent,#000 7% 90%,transparent);mask-composite:intersect}
+/* Gunsmith: a part card's chips (icon + change), an empty slot's dimmed icon. */
+.armory-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;min-height:14px}.armory-chips .armory-delta{display:inline-flex;align-items:center;gap:2px;white-space:nowrap}.armory-chips svg{width:13px;height:13px;fill:currentColor}
+.armory-choice[aria-pressed=true] .armory-delta.gain{color:#0b6b60}.armory-choice[aria-pressed=true] .armory-delta.loss{color:#a3221d}#armory-slots .armory-empty i{opacity:.45}
+/* Gunsmith slots are narrower: the slot's short name over the fitted part's picture. */
+#armory-slots [data-slot=part]{flex:.7 1 0;grid-template-rows:auto 1fr}#armory-slots [data-slot=part] b{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#armory-slots [data-slot=part] i img{height:56px}
+@media(max-width:800px){#armory-slots [data-slot=part]{flex:0 0 78px}#armory-slots [data-slot=part] i img{height:44px}}
+/* Phones: a long marker name stays on one line, so it never runs into the stats panel. */
+@media(max-width:800px){#armory h3{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(20px,6.6vw,32px);vertical-align:top}.armory-card b{white-space:normal;line-height:1.05;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
+/* Probar: a small dark square while the range loads (armory.js), over the whole armory. */
+#range-loading{position:fixed;inset:0;z-index:40;display:grid;place-items:center;align-content:center;gap:14px;background:#0e0b24;color:var(--pk-text,#fff)}
+#range-loading .pk-cover-bar{display:block;width:120px;height:6px}
+#range-loading b{font:18px var(--pk-display);letter-spacing:.04em}
+/* The lobby's Cambiar pana belongs to the lobby: never over the armory or its range. */
+body:has(#armory[open]) #pana-lobby-change{display:none}

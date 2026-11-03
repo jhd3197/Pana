@@ -12,7 +12,7 @@ import { createScope } from '/engine/play/scope.js';
 import { createBlastFx } from '/engine/play/blast-fx.js';
 import { Puffs } from '/engine/fx.js';
 import { pixelRatio } from '/engine/settings.js';
-import { FINISHES, WEAPONS } from './armory-data.js';
+import { FINISHES, WEAPONS, kitModel } from './armory-data.js';
 import { EYE } from './rules.js';
 import { createViewmodel, recoilOf } from './viewmodel.js';
 import { FIRE, LANE, MARKS } from './range-sim.js';
@@ -69,7 +69,7 @@ export function createRangeScene(canvas) {
   let held = null, heldKey = '', yaw = -Math.PI / 2, pitch = 0, lastFired = 0, lastSmacks = 0, opticSens = 1, mobile = false;
   const viewmodel = createViewmodel(), feel = createRecoil(), scope = createScope({ zoom: 1.2 });
   function hold(kit, weapon) {
-    const options = { ...kit, weapon, color: FINISHES.find(f => f.id === kit.finish)?.color || '#f28b42' }, k = JSON.stringify(options); if (k === heldKey) return;
+    const options = { ...kit, ...kitModel({ ...kit, weapon }), weapon, color: FINISHES.find(f => f.id === kit.finish)?.color || '#f28b42' }, k = JSON.stringify(options); if (k === heldKey) return;
     held?.removeFromParent(); held?.userData.dispose(); held?.userData.flash?.geometry.dispose(); held?.userData.flash?.material.dispose(); heldKey = k;
     held = createPaintKit(options); held.scale.setScalar(isMelee(weapon) ? (weapon === 'sandal' ? .6 : .42) : .3); camera.add(held);
     const flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
@@ -85,6 +85,8 @@ export function createRangeScene(canvas) {
     boom(b) { blasts.boom({ x: b.x, z: b.z, y: Math.max(.6, b.y || 0), size: Math.max(.6, b.radius / 3), color: b.color }); feel.shake(.5); },
     clear() { for (const v of targets.values()) { v.splats.forEach(m => m.removeFromParent()); v.splats = []; } loose.forEach(m => m.removeFromParent()); loose.length = 0; },
     get splats() { let n = loose.length; for (const v of targets.values()) n += v.splats.length; return n; },
+    // The marker in hand and the eye in place before the first frame (shaders compile against them).
+    prime(sim) { hold(sim.me.kit, sim.me.weapon); camera.position.set(sim.me.x, EYE, sim.me.z); camera.rotation.set(pitch, yaw, 0, 'YXZ'); camera.updateMatrixWorld(); },
     // sim: range-sim.js; aiming: the aim button is held.
     update(dt, sim, aiming) {
       const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
@@ -104,7 +106,7 @@ export function createRangeScene(canvas) {
       const jolt = feel.update(dt);
       scope.setZoom(stats.zoom); opticSens = stats.sens; scope.update(dt, aiming && !(me.reload > 0));
       camera.fov = scope.fov(mobile ? 80 : 72);
-      camera.position.set(FIRE.x, EYE, FIRE.z); camera.rotation.set(pitch + jolt.pitch, yaw + jolt.yaw, jolt.roll, 'YXZ');
+      camera.position.set(me.x, EYE, me.z); camera.rotation.set(pitch + jolt.pitch, yaw + jolt.yaw, jolt.roll, 'YXZ');
       camera.updateProjectionMatrix();
       hold(me.kit, me.weapon); held.visible = !scope.scoped && !(stats.melee && me.melee?.phase === 'away');
       const shot = viewmodel.update(dt, { held, weapon: me.weapon, fired: me.fired || 0, reload: me.reload, reloadTime: stats.reload, sprint: false, bob: 0, sway: 0, down: false, air: 0, push: 0, aim: scope.amount,
@@ -133,7 +135,7 @@ export function createRangeScene(canvas) {
       renderer.render(scene, camera);
     },
     // Where the crosshair points on the court (x, z) at distance d: for tests and aim.
-    ahead(d) { camera.getWorldDirection(pos); return { x: FIRE.x + pos.x * d, z: FIRE.z + pos.z * d }; },
+    ahead(d) { camera.getWorldDirection(pos); return { x: camera.position.x + pos.x * d, z: camera.position.z + pos.z * d }; },
     dispose() {
       held?.userData.dispose(); held?.userData.flash?.geometry.dispose(); held?.userData.flash?.material.dispose();
       owned.forEach(o => o.userData.dispose()); grenades.forEach(g => g.userData.dispose?.());
