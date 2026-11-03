@@ -71,3 +71,9 @@
 @media(min-width:801px){#armory.choosing #armory-choices{right:420px}#armory.choosing #armory-note{right:420px}}
 /* The gunsmith zooms in on a part: the gun fades out at the view's edges instead of being cut. */
 #armory.choosing #armory-view{-webkit-mask-image:linear-gradient(90deg,transparent,#000 7% 93%,transparent),linear-gradient(transparent,#000 7% 90%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 7% 93%,transparent),linear-gradient(transparent,#000 7% 90%,transparent);mask-composite:intersect}
+/* Probar: a small dark square while the range loads (armory.js), over the whole armory. */
+#range-loading{position:fixed;inset:0;z-index:40;display:grid;place-items:center;align-content:center;gap:14px;background:#0e0b24;color:var(--pk-text,#fff)}
+#range-loading .pk-cover-bar{display:block;width:120px;height:6px}
+#range-loading b{font:18px var(--pk-display);letter-spacing:.04em}
+/* The lobby's Cambiar pana belongs to the lobby: never over the armory or its range. */
+body:has(#armory[open]) #pana-lobby-change{display:none}

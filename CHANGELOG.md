@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El polígono de tiro de Pepazo ya dispara con ratón y con mando, y es práctica solo tuya.**
+  Una pantalla corta de carga al entrar; el primer clic ya dispara, el mando
+  mira, camina, dispara y sale con B o Start sin tocar la sala ni tu party.
+  Cambiar pana ya no aparece sobre la armería.
 - **Reliquia arranca en la biblioteca sepultada, y en la sala eliges el Lugar: Alternar, Biblioteca o Mina.**
   Con Alternar (lo normal) la primera jornada es la biblioteca y la siguiente
   la mina, y así. El anuncio de cada jornada dice adónde bajan.
