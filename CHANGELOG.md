@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo: llevas dos armas y tu equipo es tu clase.**
+  La armería abajo tiene solo Equipo, Arma 1, Arma 2 y Granadas; cada arma
+  abre su propio menú con sus piezas y Atrás (Esc o B). El Arma 2 es una
+  pistola o una de pescozón: cambias con Q, 1 y 2, Y en el mando o el botón
+  del teléfono. Las clases: Balanceado, Rápido, Tanque, Regenera, Sigiloso y
+  Granadero. Tu kit guardado se pasa solo. Girar sin ratón ahora es ← y →.
 - **El armero de Pepazo tiene un puesto fijo para cada pieza: Mira, Cañón, Tolva y Culata.**
   Cada puesto ofrece solo lo que le cabe a esa arma: la francotiradora lleva
   telescópica, la pistola punto rojo o láser, y la tolva viene chica o grande.

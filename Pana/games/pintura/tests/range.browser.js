@@ -145,6 +145,13 @@ try {
   await page.locator('#range-back').click();
   await waitFor(page, () => !document.getElementById('range'));
   assert.equal(await page.evaluate(() => document.getElementById('armory').open), true);
+  // Probar inside Arma 2's sub-menu tries that gun (La Chancleta by default), then Atrás is still there.
+  await page.locator('#armory-slots [data-hand="1"]').click(); await waitFor(page, () => pinturaDebug.armory.level === 'gun1');
+  await enter(page);
+  assert.equal(await range(page, () => pinturaDebug.armory.range.sim.me.weapon), 'sandal', 'the range holds Arma 2');
+  await page.locator('#range-back').click(); await waitFor(page, () => !document.getElementById('range'));
+  assert.equal(await page.evaluate(() => pinturaDebug.armory.level), 'gun1', 'back in the same sub-menu');
+  await page.locator('#armory-back').click(); await waitFor(page, () => pinturaDebug.armory.level === 'top');
   // Solo practice: not one room message while ranging, and the room is as it was.
   // (The armory's own idle inputs between visits are the lobby's, as before.)
   const room = await page.evaluate(() => ({ ranging: roomSent.filter(([, r]) => r).map(([t]) => t), other: [...new Set(roomSent.map(([t]) => t))].filter(t => t !== 'input'), phase: pinturaDebug.room.state.phase, players: pinturaDebug.room.link.state.players.map(p => [p.id, p.lobbyReady]) }));

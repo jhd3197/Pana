@@ -77,8 +77,16 @@ export const MELEE_CLASS = PAINT_CLASSES.find(c => c.id === 'melee');
 export const ARMORY_CLASSES = [...CLASSES, MELEE_CLASS];
 // Every weapon in class order, melee last: the order Z/X (and [ ]) cycle through mid-round.
 export const WEAPON_CYCLE = ARMORY_CLASSES.flatMap(c => c.weapons.filter(id => WEAPONS.some(m => m.id === id)));
-// The next (step 1) or previous (step -1) weapon in WEAPON_CYCLE, wrapping round.
-export const cycleWeapon = (id, step = 1) => { const n = WEAPON_CYCLE.length, i = WEAPON_CYCLE.indexOf(id); return WEAPON_CYCLE[((i < 0 ? 0 : i + step) % n + n) % n]; };
+// A kit carries two weapons: Arma 1 (hand 0) takes any weapon; Arma 2 (hand 1) is the
+// sidearm, a pistol (Las de bolsillo) or a melee weapon (Los del pescozón), and starts
+// as La Chancleta. Finish, camo, charm and splash stay shared by both.
+export const SECONDARY_CLASSES = ARMORY_CLASSES.filter(c => c.id === 'pistolas' || c.id === 'melee');
+export const SECONDARY = SECONDARY_CLASSES.flatMap(c => c.weapons.filter(id => WEAPONS.some(m => m.id === id)));
+export const DEFAULT_SECONDARY = 'sandal';
+export const classesFor = hand => hand === 1 ? SECONDARY_CLASSES : ARMORY_CLASSES;
+export const allowedIn = (hand, id) => hand === 1 ? SECONDARY.includes(id) : WEAPONS.some(m => m.id === id);
+// The next (step 1) or previous (step -1) weapon in WEAPON_CYCLE that `hand` may hold, wrapping round.
+export const cycleWeapon = (id, step = 1, hand = 0) => { const list = WEAPON_CYCLE.filter(w => allowedIn(hand, w)), n = list.length, i = list.indexOf(id); return list[((i < 0 ? 0 : i + step) % n + n) % n]; };
 // Seconds between shots as the simulation fires them: the cadence rounded up to whole ticks.
 export function shotInterval(cadence) { let left = cadence, ticks = 0; do { left = Math.max(0, left - STEP); ticks++; } while (left > 0); return ticks * STEP; }
 // Pepazos a body hit paints after flying `distance` metres. A marker with `falloff`
@@ -157,11 +165,25 @@ const FITS = {
  rocket:{ optic:['dot'], hopper:BIG }, bazooka:{ optic:['dot'], hopper:BIG }, revolver:{ optic:['dot'], hopper:BIG },
  slingshot:{ optic:[], hopper:BOTH }, sprayer:{ optic:['holo', 'laser'], hopper:BOTH },
 };
+// Equipo: the pana's class, one row each (adding a class is one more row). Every
+// number is read by the simulation from the validated kit (rules.js), never from
+// the client: `mobility` multiplies the walk, `toughness` adds pepazos to the
+// room's aguante, `regen` speeds the paint wearing off, `stepNoise` scales how far
+// and how loud rivals hear the steps (sounds.js), `markerScale` the dot rivals see
+// on their minimap and how close they must be to see it, `grenades` the ones
+// carried, `grenadeRecharge` the seconds to get one back. `vest` draws the padded
+// vest. Each class pays for what it gets: docs/knowledge/pintura.md, "Clases".
 export const ARMOR = [
- {id:'shirt',name:'La Franela',blurb:locKey('Aguante y movilidad normales.'),mobility:1,toughness:0}, // i18n-ignore: proper name
- {id:'padded',name:'El Acolchado',blurb:locKey('+1 pepazo de aguante, −10% movilidad.'),mobility:.9,toughness:1}, // i18n-ignore: proper name
- {id:'wind',name:'El Cortaviento',blurb:locKey('+8% movilidad, −1 pepazo de aguante.'),mobility:1.08,toughness:-1}, // i18n-ignore: proper name
+ {id:'base',name:locKey('Balanceado'),icon:'kitVest',mobility:1,toughness:0,regen:1,stepNoise:1,markerScale:1,grenades:1,grenadeRecharge:30},
+ {id:'rapido',name:locKey('Rápido'),icon:'kitBolt',mobility:1.08,toughness:-1,regen:1,stepNoise:1.15,markerScale:1,grenades:1,grenadeRecharge:30},
+ {id:'tanque',name:locKey('Tanque'),icon:'kitShield',mobility:.9,toughness:1,regen:1,stepNoise:1.25,markerScale:1.2,grenades:1,grenadeRecharge:30,vest:true},
+ {id:'regenera',name:locKey('Regenera'),icon:'kitRegen',mobility:.97,toughness:0,regen:1.8,stepNoise:1,markerScale:1,grenades:1,grenadeRecharge:40},
+ {id:'sigiloso',name:locKey('Sigiloso'),icon:'kitStep',mobility:.96,toughness:0,regen:.75,stepNoise:.4,markerScale:.55,grenades:1,grenadeRecharge:30},
+ {id:'granadero',name:locKey('Granadero'),icon:'kitGrenade',mobility:.95,toughness:0,regen:.9,stepNoise:1,markerScale:1,grenades:2,grenadeRecharge:18},
 ];
+// Kits saved before classes named a vest: each becomes the class nearest to it.
+export const LEGACY_ARMOR = { shirt:'base', padded:'tanque', wind:'rapido' };
+export const armorOf = id => ARMOR.find(a => a.id === (typeof id === 'string' && Object.hasOwn(LEGACY_ARMOR, id) ? LEGACY_ARMOR[id] : id)) || ARMOR[0];
 // Thrown grenades (rules.js throwGrenade, engine/play/lob.js). `speed` is the launch
 // speed at no charge and full charge (m/s): from a level look that carries about
 // 12 m and 28 m before the first bounce. The fuse starts on release. `damage` is
@@ -215,36 +237,43 @@ function cleanSlots(weapon, value) {
  }
  return slots;
 }
-// A kit's `slots` has every slot its weapon has: a part id or null.
+// A kit's `slots` has every slot its weapon has: a part id or null; `weapon2` and
+// `slots2` are Arma 2's. Kits saved before Arma 2 get La Chancleta.
 export function cleanKit(value={}) {
- if (!value || typeof value !== 'object') value={};
- const weapon=pick(WEAPONS,value.weapon);
- return { weapon, slots:cleanSlots(weapon,value), armor:pick(ARMOR,value.armor), grenade:pick(GRENADES,value.grenade), finish:pick(FINISHES,value.finish), charm:pick(CHARMS,value.charm), pattern:pick(PATTERNS,value.pattern), camo:cleanCamo(value.camo) };
+ if (!value || typeof value !== 'object' || Array.isArray(value)) value={};
+ const weapon=pick(WEAPONS,value.weapon), weapon2=SECONDARY.includes(value.weapon2)?value.weapon2:DEFAULT_SECONDARY;
+ return { weapon, slots:cleanSlots(weapon,value), weapon2, slots2:cleanSlots(weapon2,{slots:value.slots2}), armor:armorOf(value.armor).id, grenade:pick(GRENADES,value.grenade), finish:pick(FINISHES,value.finish), charm:pick(CHARMS,value.charm), pattern:pick(PATTERNS,value.pattern), camo:cleanCamo(value.camo) };
 }
-// The part ids fitted, in SLOTS order.
-export const partsOf = kit => { const slots = cleanKit(kit).slots; return SLOTS.map(s => slots[s.id]).filter(Boolean); };
-// Puts part `id` (or null to clear) in `slot`. Returns a new clean kit, unchanged
-// when the weapon has no such slot or the part does not fit it.
-export function setPart(kit, slot, id) {
- const clean=cleanKit(kit); if(!Object.hasOwn(clean.slots,slot) || (id!=null && !canFit(clean.weapon,slot,id))) return clean;
- return cleanKit({...clean,slots:{...clean.slots,[slot]:id??null}});
+// One gun of a kit as a one-gun kit: Arma 2 (hand 1) moves into `weapon` and `slots`.
+export const gunOf = (kit, hand = 0) => { const k = cleanKit(kit); return hand === 1 ? { ...k, weapon: k.weapon2, slots: k.slots2 } : k; };
+const withGun = (kit, hand, weapon, slots) => cleanKit(hand === 1 ? { ...kit, weapon2: weapon, slots2: slots } : { ...kit, weapon, slots });
+// The part ids fitted to a gun, in SLOTS order.
+export const partsOf = (kit, hand = 0) => { const slots = gunOf(kit, hand).slots; return SLOTS.map(s => slots[s.id]).filter(Boolean); };
+// Puts part `id` (or null to clear) in `slot` of a gun. Returns a new clean kit,
+// unchanged when the weapon has no such slot or the part does not fit it.
+export function setPart(kit, slot, id, hand = 0) {
+ const clean=cleanKit(kit), gun=gunOf(clean,hand); if(!Object.hasOwn(gun.slots,slot) || (id!=null && !canFit(gun.weapon,slot,id))) return clean;
+ return withGun(clean,hand,gun.weapon,{...gun.slots,[slot]:id??null});
 }
 // A new weapon keeps the parts it takes. A Mira it cannot take becomes its stock
 // one; any other part that does not fit leaves the kit and is listed in `dropped`.
-export function changeWeapon(kit, weaponId) {
- const before=cleanKit(kit), weapon=pick(WEAPONS,weaponId), rules=SLOT_RULES[weapon], slots={}, dropped=[];
+// Arma 2 refuses anything but a sidearm (the kit comes back unchanged).
+export function changeWeapon(kit, weaponId, hand = 0) {
+ const before=cleanKit(kit), gun=gunOf(before,hand);
+ if(hand===1 && !SECONDARY.includes(weaponId)) return { kit:before, dropped:[] };
+ const weapon=pick(WEAPONS,weaponId), rules=SLOT_RULES[weapon], slots={}, dropped=[];
  for (const slot of Object.keys(rules)) {
-  const id=before.slots[slot]; slots[slot]=!id?null:rules[slot].includes(id)?id:slotOf(slot).swap?rules[slot][0]:null;
+  const id=gun.slots[slot]; slots[slot]=!id?null:rules[slot].includes(id)?id:slotOf(slot).swap?rules[slot][0]:null;
   if(id && !slots[slot]) dropped.push(id);
  }
- for (const [slot,id] of Object.entries(before.slots)) if(id && !rules[slot]) dropped.push(id);
- return { kit:cleanKit({...before,weapon,slots}), dropped };
+ for (const [slot,id] of Object.entries(gun.slots)) if(id && !rules[slot]) dropped.push(id);
+ return { kit:withGun(before,hand,weapon,slots), dropped };
 }
-// What the model draws for a kit (paintball-kit.js createPaintKit options): the
+// What the model draws for a gun (paintball-kit.js createPaintKit options): the
 // pieces fitted and how (`opticKind`, `hopperScale`).
-export function kitModel(kit) {
+export function kitModel(kit, hand = 0) {
  const look={ attachments:[], opticKind:null, hopperScale:1 };
- for (const id of partsOf(kit)) { const p=PARTS_BY_ID[id]; look.attachments.push(p.part); Object.assign(look,p.look); }
+ for (const id of partsOf(kit, hand)) { const p=PARTS_BY_ID[id]; look.attachments.push(p.part); Object.assign(look,p.look); }
  return look;
 }
 // One part's effect on stats `s` (its `when` effect for the weapons that names).
@@ -262,20 +291,27 @@ function applyPart(s, part) {
   s.zoom = s.scope ? s.scope * (a.scopeBoost || 1) : a.zoom;
  }
 }
-export function kitStats(value={}, options={}) {
- let kit=cleanKit(value); if(options.weapons==='pistol' && kit.weapon!=='pistol') kit=changeWeapon(kit,'pistol').kit;
- const s={...weaponOf(kit.weapon)}, armor=ARMOR.find(a=>a.id===kit.armor), parts=partsOf(kit).map(partOf);
+// The numbers of one gun (hand 0 Arma 1, hand 1 Arma 2); pistol-only rooms make both La Chispa.
+export function kitStats(value={}, options={}, hand=0) {
+ let kit=gunOf(value,hand===1?1:0); if(options?.weapons==='pistol' && kit.weapon!=='pistol') kit=changeWeapon(kit,'pistol').kit;
+ const s={...weaponOf(kit.weapon)}, armor=armorOf(kit.armor), parts=partsOf(kit).map(partOf);
  s.zoom=s.scope||1.2; s.sens=1; s.optic=null;
  if(s.melee) return meleeStats(s,parts,armor,options);
  // The Mira goes on last, so it steadies whatever spread the other parts left.
  for(const part of [...parts.filter(p=>!p.aim),...parts.filter(p=>p.aim)]) applyPart(s,part);
- s.mobility*=armor.mobility; s.toughness=Math.max(1,(options.toughness||3)+armor.toughness);
+ wear(s,armor,options);
  if(options.fastReload) s.reload*=.55/1.3;
  s.damage=s.damage||1; s.sprint=!s.heavy;
  // Aiming (right mouse, F, LT, Mira) only does anything with a scope or a Mira.
  s.aims=s.aimSpread!=null; return s;
 }
 
+// The class on top of a weapon's numbers: its walk, aguante (the room's plus the
+// class's, never under one), paint wear, steps, minimap dot and grenades.
+function wear(s,c,options) {
+ s.mobility*=c.mobility; s.toughness=Math.max(1,(options?.toughness||3)+c.toughness);
+ Object.assign(s,{armor:c.id,regen:c.regen,stepNoise:c.stepNoise,markerScale:c.markerScale,grenades:c.grenades,grenadeRecharge:c.grenadeRecharge});
+}
 // A melee weapon's numbers with its parts and armor: no ammo, no reload, never aims.
 // `cadence` is the swing interval, so whatever reads a marker's pace reads this too.
 function meleeStats(s,parts,armor,options) {
@@ -283,7 +319,7 @@ function meleeStats(s,parts,armor,options) {
  for(const part of parts) applyPart(s,part);
  // The thrown chancla paints what a strike paints, drips included.
  if(s.throwable) s.throwable.damage=s.damage;
- s.mobility*=armor.mobility; s.toughness=Math.max(1,(options.toughness||3)+armor.toughness);
+ wear(s,armor,options);
  return Object.assign(s,{cadence:s.windup+s.recovery,magazine:0,reload:0,speed:0,life:0,spread:0,sprint:true,aims:false});
 }
 // The engine definition (engine/play/melee.js) behind a melee kit's stats.
@@ -294,14 +330,17 @@ export function kitRating(value={}, options={}) {
  const s=kitStats(value,options), grenade=GRENADES.find(g=>g.id===cleanKit(value).grenade);
  const unit=n=>Math.max(0,Math.min(1,n));
  const lob=.025*unit(grenade.radius*grenade.damage/(grenade.fuse*4));
+ // The class beyond its walk and aguante: faster healing, quieter steps, a smaller dot, more grenades (0 for Balanceado).
+ const gear=.03*unit((s.regen-1)+(1-s.stepNoise)*.6+(1-s.markerScale)*.6+(s.grenades-1)*.5+(30/s.grenadeRecharge-1)*.3);
+ const top=n=>Math.min(800,Math.round(n));
  // Melee: reach (or the throw) for range, the cone for precision, pepazos a second, swing pace.
- if(s.melee) return Math.round(100+700*(.15*unit((s.throwable?throwRange(s.throwable):s.reach)/60)+.10*unit(s.arc/1.2)+.20*unit(dpsOf(s)/6)+.05
-  +.10*unit(1-meleeInterval(s)/1.5)+.15*unit(s.mobility/1.15)+.15*unit(s.toughness/6)+.025*unit((s.knockback+s.stun)/2)+lob));
+ if(s.melee) return top(100+700*(.15*unit((s.throwable?throwRange(s.throwable):s.reach)/60)+.10*unit(s.arc/1.2)+.20*unit(dpsOf(s)/6)+.05
+  +.10*unit(1-meleeInterval(s)/1.5)+.15*unit(s.mobility/1.15)+.15*unit(s.toughness/6)+.025*unit((s.knockback+s.stun)/2)+lob+gear));
  const sustained=s.magazine*s.pellets*s.damage/(s.magazine*s.cadence+s.reload);
  const score=.15*unit(s.speed*s.life/60)+.10*unit(1-(s.aimSpread??s.spread)/.3)
   +.20*unit(sustained/6)+.10*unit((s.magazine+(s.reserve||0))/26)
   +.10*unit(1-s.reload/4)+.15*unit(s.mobility/1.15)
   +.15*unit(s.toughness/6)+.025*unit(((s.splash||0)+s.pellets-1+(s.damage-1)*2+(s.direct?3:0))/5)
-  +.025*unit(grenade.radius*grenade.damage/(grenade.fuse*4));
- return Math.round(100+700*score);
+  +lob+gear;
+ return top(100+700*score);
 }

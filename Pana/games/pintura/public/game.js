@@ -1,5 +1,5 @@
 import { createArmory } from './armory.js';
-import { kitStats, kitRating, MARKERS, WEAPONS, cycleWeapon } from './armory-data.js';
+import { kitStats, kitRating, MARKERS, WEAPONS, cycleWeapon, gunOf } from './armory-data.js';
 import { readiness } from '/engine/play/melee.js';
 import { createLobbyRoster } from '/engine/lobby-roster.js';
 import { createRoomOptions } from '/engine/room-options.js';
@@ -40,7 +40,8 @@ const held = new Set(), pads = []; let aim = null, firing = false, jumpPress = 0
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'), $('board-map'));
 const hitFeats = createHitFeats(createFeats($('toast'))), combat = createCombatHud(document), ctfHud = createCtfHud(document), domHud = createDomHud(document);
 // A released grenade rides three inputs (150 ms), so a server tick that only keeps the latest input still sees it.
-let weapon = 'pistol', queuedGrenade = null, grenadeSends = 0, lastWeapon = '', throwSends = 0;
+// `hand`: the gun this pana holds, Arma 1 (0) or Arma 2 (1); every input asks the room for it.
+let hand = 0, queuedGrenade = null, grenadeSends = 0, lastWeapon = '', throwSends = 0;
 // Aim: right mouse or F held, or the Mira button toggled on a phone. Scopes and Miras zoom in.
 let mouseAim = false, touchAim = false; const aiming = () => mouseAim || touchAim || held.has('f');
 const steps = createSteps(), seenSplats = new Set(), seenBooms = new Set(), scopeView = createScopeOverlay(document);
@@ -50,7 +51,7 @@ const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(),
 } });
 // Out of the round in first person: a look at who got you, then watch the others (spectate-hud.js).
 const spectate = createSpectateHud(document, { enabled: () => cameraView === 'primera' }); world.setSpectator(spectate.spectator);
-const toast = createToast($('toast')), armory = createArmory({ room, onPick: value => { weapon = value; }, notify: toast });
+const toast = createToast($('toast')), armory = createArmory({ room, onPick: () => {}, notify: toast });
 // pana.sh may call back when a camo unlocks mid-session (optional in its bridge).
 if (typeof window.PanaSh?.onCamoUnlocked === 'function') window.PanaSh.onCamoUnlocked(id => import('./camos.js').then(({ camoById }) => { const c = camoById(id); if (c) { toast(loc('¡Camuflaje {name} desbloqueado!', { name: loc(c.name) })); armory.refreshCamos(); } }));
 $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-armory').click(), read: () => {
@@ -65,9 +66,9 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),
   notes: { facil: loc('Los bots fallan seguido y disparan menos.'), normal: loc('Bots con buena mano, pero se les va alguna.'), dificil: loc('Los bots apuntan fino y no sueltan el gatillo.'), experto: loc('Casi no fallan: muévete y cúbrete.') } });
-const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla y el mapa completo')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
+const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyQ', loc('Cambiar de arma')], b: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla y el mapa completo')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
  
-  options: [{ id: 'weapon', label: loc('Marcadora (si la sala permite todas)'), choices: WEAPONS.map(m=>[m.id,m.name]), get: () => weapon, set: value => armory.setWeapon(value) },
+  options: [{ id: 'weapon', label: loc('Marcadora (si la sala permite todas)'), choices: WEAPONS.map(m=>[m.id,m.name]), get: () => armory.kit.weapon, set: value => armory.setWeapon(value, 0) },
     { id: 'view', label: loc('Cámara'), choices: [['primera', loc('Primera persona')], ['cancha', loc('Ver la cancha')]], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? loc('La práctica está en pausa.') : loc('La ronda online sigue mientras estás en el menú.'),
   invite: () => inviteUrl(code), onOpen() { clearInput(); looking.release(); }, onClose() {}, canOpen: () => room.state.phase !== 'finished',
@@ -83,7 +84,7 @@ function active() { return !$('armory').open && room.connected && room.state.pha
 const myPana = () => room.state.players.find(p => p.id === room.id);
 // La Chancleta in hand: the aim inputs (right mouse, F, LT, the Mira button) and V throw it
 // (melee never aims). The throw rides three inputs, like a grenade, so a tick never misses it.
-const throwable = () => { const me = myPana(); return !!me && !!kitStats(me.kit, room.state.options).throwable; };
+const throwable = () => { const me = myPana(); return !!me && !!kitStats(me.kit, room.state.options, me.hand).throwable; };
 function throwNow() { if (!active() || !throwable()) return false; sound.unlock(); throwSends = 3; return true; }
 // Hold G (or the Granada button) to charge the throw, release to throw it: the
 // power swings up and down (engine/play/shot-charge.js) and rides the next input
@@ -99,6 +100,7 @@ pads.push(holdButton($('fire'), { down: () => { touchFire = queuedFire = true; s
 // A phone has one thumb for aim and fire, so Mira toggles instead of being held.
 // Previous / next marker in class order (Z / X on a keyboard).
 for (const [id, step] of [['weapon-prev', -1], ['weapon-next', 1]]) pads.push(holdButton($(id), { down: () => cycle(step), up: () => {}, paused: () => !active() }));
+pads.push(holdButton($('weapon-hand'), { down: () => draw(1 - hand), up: () => {}, paused: () => !active() }));
 pads.push(holdButton($('aim'), { down: () => { if (throwNow()) return; touchAim = !touchAim; $('aim').setAttribute('aria-pressed', String(touchAim)); }, up: () => {}, paused: () => !active() }));
 // Through a scope the look slows with the zoom, and a Mira's own `sens` on top, so a small drag still lands on target.
 const looking = createLookControls(canvas, { enabled: () => active() && cameraView === 'primera', look: (yaw, pitch) => { const k = world.sensitivity(); world.look(yaw * k, pitch * k); },
@@ -120,18 +122,20 @@ if (params.get('debugCollision') === '1') debugCollision().then(d => d.toggle(tr
 addEventListener('keydown', event => { if (event.key === 'F9') { event.preventDefault(); debugCollision().then(d => event.shiftKey ? d.download() : d.toggle()); } });
 addEventListener('keydown', event => {
   if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a') || spectate.key(event)) return;
-  const key = event.key.toLowerCase(), slot = Number(key);
-  // A number picks the marker for this round and the saved kit (pistol-only rooms keep La Chispa);
-  // Z/X and [ ] step through every marker in class order (Q/E already turn the view).
-  if (slot >= 1 && slot <= Math.min(9, MARKERS.length) && room.state.options?.weapons !== 'pistol') armory.setWeapon(MARKERS[slot - 1].id); if (key === 'm') toggleMute();
+  const key = event.key.toLowerCase();
+  // 1 and 2 draw Arma 1 and Arma 2, Q (Y on a pad) the other one; Z/X and [ ] step the gun
+  // in hand through its weapons in class order (Arma 2 only through sidearms).
+  if ((key === '1' || key === '2') && !event.repeat) draw(Number(key) - 1); if (key === 'q' && !event.repeat && active()) draw(1 - hand); if (key === 'm') toggleMute();
   if ((key === 'z' || key === '[') && !event.repeat) cycle(-1); if ((key === 'x' || key === ']') && !event.repeat) cycle(1);
   if (key === 'g' && active() && !event.repeat) chargeGrenade('g');
   if ((key === 'v' || key === 'f') && !event.repeat && throwNow()) event.preventDefault();
   if (key === 'tab') { event.preventDefault(); if (room.state.phase === 'playing') showBoard(true); }
-  if (['w', 'a', 's', 'd', 'q', 'e', 'r', 'f', 'v', ' ', 'enter', 'shift', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ' && !event.repeat) jump(); if (key === 'enter') queuedFire = true; if (key === 'r') queuedReload = true; } }
+  if (['w', 'a', 's', 'd', 'q', 'r', 'f', 'v', ' ', 'enter', 'shift', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ' && !event.repeat) jump(); if (key === 'enter') queuedFire = true; if (key === 'r') queuedReload = true; } }
 });
 addEventListener('keyup', event => { const key = event.key.toLowerCase(); held.delete(key); if (key === 'g') grenadeCharge.release('g'); if (key === 'tab') showBoard(false); });
-function cycle(step) { if (room.state.options?.weapons !== 'pistol') armory.setWeapon(cycleWeapon(armory.kit.weapon, step)); }
+function cycle(step) { if (room.state.options?.weapons !== 'pistol') armory.setWeapon(cycleWeapon(gunOf(armory.kit, hand).weapon, step, hand), hand); }
+// The other gun to the hand: the room swaps it (a short wait before it fires) and keeps each gun's pepas.
+function draw(next) { if (!active() || next === hand || (next !== 0 && next !== 1)) return; hand = next; sound.unlock(); }
 // Hold Tab (View on a controller): everyone's knockouts, times painted and
 // current streak, beside the whole court's map (minimap.js draws it each frame).
 function showBoard(open) {
@@ -168,7 +172,7 @@ function input() {
   const length = Math.hypot(ax, az) || 1, fire = queuedFire || firing || touchFire || held.has('enter');
   // Pulling the trigger mid-reload clicks, so the wait is never silent.
   if (fire && me.reload > 0 && performance.now() - lastDry > 450) { lastDry = performance.now(); sfx.dry(); }
-  return { weapon, grenade: queuedGrenade !== null, charge: queuedGrenade ?? 0, pitch: cameraView === 'primera' ? world.pitch : null, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
+  return { weapon: gunOf(armory.kit, hand).weapon, hand, grenade: queuedGrenade !== null, charge: queuedGrenade ?? 0, pitch: cameraView === 'primera' ? world.pitch : null, ...world.movement(Number(held.has('d')) - Number(held.has('a')),
     Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))), sprint: held.has('shift'),
     ax: ax / length, az: az / length, jump: jumpPress, fire, aim: aiming() && cameraView === 'primera', alt: throwSends > 0, reload: queuedReload || held.has('r') };
 }
@@ -266,7 +270,7 @@ function splats(state, me) {
 }
 // The crosshair ring and the HUD bar fill while the marker reloads or (slow markers) cools down.
 function cooldown(state, me) {
-  const stats = kitStats(me?.kit, state.options), melee = !!stats.melee && !!me?.melee, reloading = !melee && me?.reload > 0;
+  const stats = kitStats(me?.kit, state.options, me?.hand), melee = !!stats.melee && !!me?.melee, reloading = !melee && me?.reload > 0;
   // A melee weapon's ring and bar fill through each swing and while the chancla is away.
   const cooling = melee ? readiness(me.melee, stats) < 1 : !reloading && stats.cadence >= .4 && me?.cooldown > 0;
   const progress = melee ? readiness(me.melee, stats) : reloading ? 1 - me.reload / stats.reload : cooling ? 1 - me.cooldown / stats.cadence : 1;
@@ -347,7 +351,7 @@ function render(state) {
   if(state.phase==='playing' && $('armory').open) $('armory').close();
   $('stamina').style.setProperty('--left', String(me?.stamina ?? 1)); $('stamina').classList.toggle('stamina--full', (me?.stamina ?? 1) >= 1);
   if (!$('scoreboard').hidden) showBoard(true);
-  if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = loc('Cancha {court}', { court: loc(variantName(state.mapId, state.variant || 0)) }); hitFeats.reset(); combat.reset(); }
+  if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = loc('Cancha {court}', { court: loc(variantName(state.mapId, state.variant || 0)) }); hitFeats.reset(); combat.reset(); hand = 0; }
   $('results').hidden = !finished;
   if (finished) {
     menu.close(); looking.release(); showBoard(false); const winners = order.filter(p => state.winners?.includes(p.id));
@@ -365,7 +369,7 @@ let previous = performance.now(), stoppedAt = previous;
 const timer = setInterval(() => { const now = performance.now(), dt = (now - stoppedAt) / 1000; stoppedAt = now; if (!armory.ranging) room.input(input()); queuedFire = queuedReload = false; if (--grenadeSends <= 0) queuedGrenade = null; throwSends = Math.max(0, throwSends - 1); room.tick(dt, menu.isOpen); }, 50);
 function frame(now) {
   if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now;
-  if (active() && !spectate.spectator.active) world.look((Number(held.has('q')) - Number(held.has('e'))) * dt * 2.2);
+  if (active() && !spectate.spectator.active) world.look((Number(held.has('arrowleft')) - Number(held.has('arrowright'))) * dt * 2.2);
   document.body.classList.toggle('first-person', cameraView === 'primera' && room.state.phase === 'playing');
   world.setAim(active() && aiming()); world.aimGrenade(grenadeAim());
   armory.update(dt); spectate.update(dt, room.state, room.id, lastKiller?.id ?? null);

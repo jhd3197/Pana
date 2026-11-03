@@ -21,6 +21,12 @@ export const ICONS = {
   kitDrip: svg('<path d="M20 4C26 13 30 19 30 25a10 10 0 0 1-20 0c0-6 4-12 10-21z" fill="currentColor"/>'),
   kitStrap: svg('<path d="M17 3h6v14h-6z M20 17c8 0 12 5 12 10s-5 10-12 10S8 32 8 27s4-10 12-10zm0 5c-4 0-6 2-6 5s2 5 6 5 6-2 6-5-2-5-6-5z" fill="currentColor" fill-rule="evenodd"/>'),
   kitVest: svg('<path d="M12 6l4 4h8l4-4 6 6-3 6v16H9V18l-3-6z" fill="currentColor"/>'),
+  // Pepazo's classes and what they change: speed, toughness, healing, quiet steps, the minimap dot.
+  kitBolt: svg('<path d="M23 3L8 23h10l-3 14 17-21H21z" fill="currentColor"/>'),
+  kitShield: svg('<path d="M20 3l14 5v10c0 9-6 16-14 19C12 34 6 27 6 18V8z" fill="currentColor"/>'),
+  kitRegen: svg('<path d="M15 5h10v10h10v10H25v10H15V25H5V15h10z" fill="currentColor"/>'),
+  kitStep: svg('<path d="M10 22c-2-6 0-14 5-14s6 7 4 14z M12 25h7v3c0 3-2 5-4 5s-3-2-3-5z M23 15c-1-5 1-11 5-11s5 6 3 11z M24 18h6v3c0 3-1 4-3 4s-3-1-3-4z" fill="currentColor"/>'),
+  kitRadar: svg('<path d="M20 4a16 16 0 1 0 .01 0zm0 5a11 11 0 1 1-.01 0z" fill="currentColor" fill-rule="evenodd"/><circle cx="20" cy="20" r="4" fill="currentColor"/>'),
   // Paint weapons in profile, muzzle to the right (Capis a Pintazos' picker): a launcher tube,
   // a long scoped rifle, a drill bit and a pump scatter with its fan of pellets.
   weaponBazooka: svg('<path d="M3 15h27v10H3z M30 13h7v14h-7z M10 25h5v7h-5z" fill="currentColor"/>'),

@@ -27,6 +27,8 @@ export function clampToEdge(point, w, inset = 0, h = w) {
 }
 
 const teamColor = team => team ? TEAL : ORANGE;
+// How big and how far a rival shows: the room's `mark` for its class, 1 when absent or hostile.
+export const rivalMark = p => Number.isFinite(p?.mark) && p.mark > 0 ? Math.min(2, p.mark) : 1;
 
 function paint(g, view, state, id, forward, dpr) {
   const { w, h, scale } = view, at = (x, z) => project(view, x, z), inset = 11 * dpr, clamp = p => clampToEdge(p, w, inset, h);
@@ -61,10 +63,11 @@ function paint(g, view, state, id, forward, dpr) {
     if (p.id === id || !p.connected || p.respawn > 0 || p.eliminated) continue;
     const friend = teams && me && p.team === me.team, spot = clamp(at(p.x, p.z));
     if (!spot.inside) { if (friend) edge(spot, p.color, 5.5 * dpr); continue; }
-    const seen = friend || (me && !cover.some(o => segmentBox(me.x, me.z, p.x - me.x, p.z - me.z, o) !== null));
+    // A rival's class sets its dot (`mark`, from the room): Sigiloso's is small and shows only up close.
+    const mark = friend ? 1 : rivalMark(p), seen = friend || (me && Math.hypot(p.x - me.x, p.z - me.z) <= MINIMAP_RADIUS * mark && !cover.some(o => segmentBox(me.x, me.z, p.x - me.x, p.z - me.z, o) !== null));
     if (!seen) continue;
     g.fillStyle = p.color; g.strokeStyle = friend ? '#fff' : '#1b1b1b'; g.lineWidth = dpr;
-    g.beginPath(); g.arc(spot.x, spot.y, 3.4 * dpr, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.beginPath(); g.arc(spot.x, spot.y, 3.4 * Math.min(1.3, mark) * dpr, 0, Math.PI * 2); g.fill(); g.stroke();
   }
   if (me) {
     // Your pana: an arrow pointing where the crosshair looks.

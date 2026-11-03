@@ -1,4 +1,4 @@
-import { cleanKit, changeWeapon, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO, rangedDamage } from './armory-data.js';
+import { cleanKit, changeWeapon, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO, rangedDamage, allowedIn } from './armory-data.js';
 import { createMelee, startSwing, stepMelee, swingHit, throwStart, stepThrown, aimThrow, inHand } from '../../../engine/play/melee.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, validOptions, teamPlay, roundTime, livesOf, objectivePlay } from './options.js';
@@ -28,6 +28,8 @@ export const SIZE = 27, SPREAD = 1.5, DURATION = 180, TARGET = 10, SPEED = 7, RA
 // A round holds still until every pana has loaded its court (or READY_TIMEOUT
 // seconds passed), then counts COUNTDOWN seconds down before anyone moves.
 export const READY_TIMEOUT = 8, COUNTDOWN = 3;
+// Seconds a drawn gun waits before it fires or swings (Arma 1 / Arma 2 swap).
+export const SWAP_TIME = .4;
 // Level shots fly SHOT_HEIGHT m up (where the scene draws the ball): cover
 // whose top is at or under it (sandbags, ammo piles, barrels, the snake bunkers)
 // lets them pass over instead of standing as an invisible wall above it.
@@ -79,7 +81,7 @@ export function cleanInput(input = {}) {
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
   // `alt` (also sent as `throw`) is the alternate attack: La Chancleta's throw.
   // `look` says a real pitch came (first person); without it no shot can reach a head.
-  return { look: Number.isFinite(input.pitch), x, z, ax, az, weapon: WEAPONS.some(m => m.id === input.weapon) ? input.weapon : null, fire: input.fire === true, alt: input.alt === true || input.throw === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, pitch, charge, jump: jumpCount(input) };
+  return { look: Number.isFinite(input.pitch), x, z, ax, az, weapon: WEAPONS.some(m => m.id === input.weapon) ? input.weapon : null, hand: input.hand === 0 || input.hand === 1 ? input.hand : null, fire: input.fire === true, alt: input.alt === true || input.throw === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, pitch, charge, jump: jumpCount(input) };
 }
 // Where a thrown melee weapon leaves pana p's hand: like a grenade, 1.45 m up and
 // 0.45 m ahead, never reaching through the cover p stands against.
@@ -172,7 +174,7 @@ function distanceField(grid, target) {
 export class Arena {
   constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.flagEvents = []; this.flagSerial = 0; this.zones = []; this.zoneEvents = []; this.zoneSerial = 0; this.domBank = [0, 0]; this.outcome = null; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; this.camoOwners = new Map(); }
   // A camo the seat does not own falls back to the first solid one (camoRefusal names it for the client).
-  selectKit(id, value) { const p=this.players.find(p=>p.id===id && p.connected); if(!p || this.phase==='playing') return false; p.kit=cleanKit(value); if(!ownsCamo(p.kit.camo,this.camoOwners.get(id))) p.kit.camo=FALLBACK_CAMO; p.weapon=p.kit.weapon; return true; }
+  selectKit(id, value) { const p=this.players.find(p=>p.id===id && p.connected); if(!p || this.phase==='playing') return false; p.kit=cleanKit(value); if(!ownsCamo(p.kit.camo,this.camoOwners.get(id))) p.kit.camo=FALLBACK_CAMO; p.weapon=p.hand===1?p.kit.weapon2:p.kit.weapon; this.wearClass(p); return true; }
   // The camos a seat owns beyond the solid ones: the room passes the gateway's signed list, practice the local one.
   // Never in view(): what someone owns is not broadcast.
   setCamos(id, owned) { this.camoOwners.set(id, new Set(owned || [])); }
@@ -211,7 +213,7 @@ export class Arena {
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.
     if (this.phase === 'playing' && !this.loading) this.ready.add(id);
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); this.parkLobby(); return p; }
-    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, altHeld: false, melee: createMelee(), smacks: 0, recalls: 0, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
+    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), hand: 0, swap: 0, spare: null, grenades: 1, grenadeIn: 0, noise: 1, mark: 1, grenadeReady: true, grenadeHeld: false, altHeld: false, melee: createMelee(), smacks: 0, recalls: 0, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p);
     // A late arrival mid-round lands like a respawn, away from the living rivals.
     if (this.phase === 'playing') Object.assign(p, this.spawnPoint(p, this.rivalsOf(p))); else this.parkLobby();
@@ -246,7 +248,7 @@ export class Arena {
   start() {
     if (this.phase !== 'lobby' || !this.canStart()) return false;
     this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = roundTime(this.options); this.teamScores = [0, 0]; this.outcome = null; ctfReset(this); domReset(this); this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = [];
-    this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: teamPlay(this.options) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, jumpHeight: 0, jumpVelocity: 0, jumpPending: false }));
+    this.players.forEach((p, i) => Object.assign(p, { eliminated: false, slow: 0, color: teamPlay(this.options) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, jumpHeight: 0, jumpVelocity: 0, jumpPending: false, hand: 0 }));
     this.players.forEach(p => this.refill(p));
     if (this.teamRound) {
       // One by one, so each pana spawns away from the rivals already placed and on a free spot of its side.
@@ -266,8 +268,21 @@ export class Arena {
   checkReady() { if (this.loading && this.players.every(p => p.bot || !p.connected || this.ready.has(p.id))) { this.loading = 0; this.countdown = COUNTDOWN; } }
   // Skip the wait and the countdown: the armory's range and tests that only exercise play.
   go() { this.loading = this.countdown = 0; }
-  freezeJumps(inputs) { for (const p of this.players) if (!p.bot) resetJump(p, inputs.get(p.id)); }
-  refill(p) { const stats=kitStats(p.kit,this.options); p.ammo=stats.magazine; p.reserve=stats.reserve ?? 0; p.weapon=stats.id; p.grenadeReady=true; p.grenadeHeld=false; p.lobAt=null; p.shots=0; p.melee=freshMelee(p); }
+  // Frozen play spends jumps but takes a gun swap at once (no wait to draw it before the YA).
+  freezeJumps(inputs) { for (const p of this.players) if (!p.bot) { const hand = inputs.get(p.id)?.hand; resetJump(p, inputs.get(p.id)); if (hand === 0 || hand === 1) this.swapHand(p, hand, 0); } }
+  // Both guns full: the one in hand in ammo/reserve, the holstered one in `spare`.
+  refill(p) { const stats=kitStats(p.kit,this.options,p.hand), other=kitStats(p.kit,this.options,p.hand===1?0:1); p.ammo=stats.magazine; p.reserve=stats.reserve ?? 0; p.spare={ ammo:other.magazine, reserve:other.reserve ?? 0 }; p.swap=0; p.weapon=stats.id; this.wearClass(p,stats); p.grenades=stats.grenades; p.grenadeIn=0; p.grenadeReady=true; p.grenadeHeld=false; p.lobAt=null; p.shots=0; p.melee=freshMelee(p); }
+  // What rivals' clients read of the class (their steps and minimap dot), from the validated kit.
+  wearClass(p, stats = kitStats(p.kit, this.options)) { p.noise = stats.stepNoise; p.mark = stats.markerScale; }
+  // Arma 1 (hand 0) or Arma 2 (hand 1) to the hand: each gun keeps its own pepas, a reload
+  // in progress is dropped, and the drawn gun waits `delay` seconds before it fires or swings.
+  // A thrown chancla has to come back first.
+  swapHand(p, hand, delay = SWAP_TIME) {
+    if ((hand !== 0 && hand !== 1) || hand === (p.hand === 1 ? 1 : 0) || !inHand(p.melee)) return false;
+    const spare = p.spare || { ammo: 0, reserve: 0 };
+    p.spare = { ammo: p.ammo, reserve: p.reserve || 0 }; p.ammo = spare.ammo; p.reserve = spare.reserve; p.hand = hand;
+    p.reload = 0; p.swap = delay; p.melee = freshMelee(p); p.weapon = kitStats(p.kit, this.options, hand).id; return true;
+  }
   // Respawn protection: 1.5 s of shield (the ring blinks in the scene) so nobody is
   // painted on arrival; firing or throwing cancels it early.
   respawn(p) {
@@ -346,7 +361,7 @@ export class Arena {
       const step = gd > 2 && this.route(p, goal.x, goal.z); if (step) ({ x, z } = step);
       else if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId, this.variant)) { const swap = x; x = -z; z = swap; }
     }
-    const stats = kitStats(p.kit, this.options);
+    const stats = kitStats(p.kit, this.options, p.hand);
     if (stats.melee) return this.meleeBot(p, q, { clear, length, x, z, ax: aimX, az: aimZ, fire: Math.sin(t * 3) > skill.trigger }, stats);
     const lob = this.botGrenade(p, q, clear);
     // A headshot marker aims at the chest, so bots do not knock out with every shot.
@@ -404,15 +419,21 @@ export class Arena {
       p.slow = Math.max(0, (p.slow || 0) - dt);
       if (p.respawn > 0) { p.respawn = Math.max(0, p.respawn - dt); resetJump(p, inputs.get(p.id)); if (!p.respawn) this.respawn(p); continue; }
       p.shield = Math.max(0, p.shield - dt); p.cooldown = Math.max(0, p.cooldown - dt);
-      // Paint wears off after four quiet seconds, one pepazo every 1.5 s.
-      if ((p.paint > 0 || p.soak > 0) && (p.calm += dt) >= 4) { if (p.paint > 0) { p.paint--; p.stains = p.stains.slice(1); } p.soak = 0; p.calm = 2.5; }
-      let stats=kitStats(p.kit,this.options);
+      let stats=kitStats(p.kit,this.options,p.hand); p.swap = Math.max(0, (p.swap || 0) - dt);
+      // Paint wears off after four quiet seconds, one pepazo every 1.5 s; the class's `regen` runs that clock faster or slower.
+      if ((p.paint > 0 || p.soak > 0) && (p.calm += dt * stats.regen) >= 4) { if (p.paint > 0) { p.paint--; p.stains = p.stains.slice(1); } p.soak = 0; p.calm = 2.5; }
+      // A grenade comes back every `grenadeRecharge` seconds until the class's count is full.
+      if (p.grenadeIn > 0 && (p.grenadeIn -= dt) <= 0) { p.grenades = Math.min(stats.grenades, (p.grenades || 0) + 1); p.grenadeIn = p.grenades < stats.grenades ? stats.grenadeRecharge : 0; p.grenadeReady = true; }
       if (p.reload > 0) { p.reload = Math.max(0, p.reload - dt); if (!p.reload) { p.ammo = stats.reserve != null ? Math.min(stats.magazine,p.reserve) : stats.magazine; if(stats.reserve != null) p.reserve-=p.ammo; } }
       const input = p.bot ? this.bot(p) : cleanInput(inputs.get(p.id));
+      if (input.hand !== null && this.swapHand(p, input.hand)) stats = kitStats(p.kit, this.options, p.hand);
+      // The weapon asked for goes in the gun in hand (Z / X step through its choices); an input
+      // still naming the other hand (a swap waiting on the chancla) changes nothing.
       // A thrown chancla has to come back before the pana can change weapon.
-      if(input.weapon && input.weapon !== p.kit.weapon && this.options.weapons !== 'pistol' && inHand(p.melee)) {
+      const held = p.hand === 1 ? p.kit.weapon2 : p.kit.weapon;
+      if(input.weapon && input.weapon !== held && (input.hand ?? p.hand) === p.hand && allowedIn(p.hand, input.weapon) && this.options.weapons !== 'pistol' && inHand(p.melee)) {
         // Parts that do not fit the new marker come off, exactly as the client's armory drops them.
-        p.kit=changeWeapon(p.kit,input.weapon).kit; stats=kitStats(p.kit,this.options);
+        p.kit=changeWeapon(p.kit,input.weapon,p.hand).kit; stats=kitStats(p.kit,this.options,p.hand);
         p.ammo=Math.min(p.ammo,stats.magazine); p.reserve=0;
         if(p.shots>0 && !stats.melee) { p.ammo=0; p.reload=stats.reload; }
         // A switch mid-swing drops the blow but not the wait.
@@ -423,7 +444,7 @@ export class Arena {
         const event=stepMelee(p.melee,stats,dt);
         if(event==='strike') this.strike(p,stats);
         if(event==='return') p.recalls++;
-        if(input.alt && !p.altHeld) this.throwMelee(p,input,stats);
+        if(input.alt && !p.altHeld && !p.swap) this.throwMelee(p,input,stats);
       }
       p.altHeld=input.alt;
       if(input.grenade && !p.grenadeHeld && p.grenadeReady) this.throwGrenade(p,input);
@@ -435,10 +456,10 @@ export class Arena {
       const walk = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (p.aim ? .5 : 1) * carrierSlow(this, p);
       const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, regen: 5, move: axisMove((x, z) => blocked(x, z, RADIUS, this.mapId, this.variant)) }).sprinting; p.sprint = sprinting;
       p.walk = !!(input.x || input.z);
-      if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < stats.magazine && (stats.reserve == null || p.reserve > 0)) p.reload = stats.reload;
+      if ((input.reload || p.ammo === 0) && !p.reload && !p.swap && p.ammo < stats.magazine && (stats.reserve == null || p.reserve > 0)) p.reload = stats.reload;
       // Melee: the trigger swings (no ammo); the blow lands when the windup ends.
-      if (stats.melee) { if (input.fire && !sprinting && startSwing(p.melee, stats)) p.shield = 0; }
-      else if (input.fire && !sprinting && !p.cooldown && !p.reload && p.ammo > 0) {
+      if (stats.melee) { if (input.fire && !sprinting && !p.swap && startSwing(p.melee, stats)) p.shield = 0; }
+      else if (input.fire && !sprinting && !p.swap && !p.cooldown && !p.reload && p.ammo > 0) {
         const rivals=stats.headshot && !input.look ? this.shotTargets(p) : null;
         p.ammo--; p.shots++; p.fired++; p.cooldown=stats.cadence; p.shield=0;
         const spread=p.aim && stats.aimSpread!=null ? stats.aimSpread : stats.spread;
@@ -487,7 +508,8 @@ export class Arena {
   // The grenade leaves the hand on release (its fuse starts then: a held grenade
   // never cooks, so lag can never blow one up in a pana's hand).
   throwGrenade(p,input) {
-    p.grenadeReady=false; p.shield=0;
+    const stats=kitStats(p.kit,this.options); p.grenades=Math.max(0,(p.grenades ?? 1)-1); p.grenadeReady=p.grenades>0; p.shield=0;
+    if(!p.grenadeIn) p.grenadeIn=stats.grenadeRecharge;
     const def=grenadeDef(p.kit.grenade);
     this.grenades.push({id:++this.serial,owner:p.id,color:p.color,kind:def.id,...grenadeStart(p,input,def.id,this.cover),t:0,bounces:0,rolling:false,resting:false,life:def.fuse,total:def.fuse,radius:def.radius,damage:def.damage});
   }
@@ -602,7 +624,7 @@ export class Arena {
     const best = teams ? Math.max(...this.teamScores) : Math.max(...this.players.map(p => p.score));
     return this.players.filter(p => (teams ? this.teamScores[p.team] : p.score) === best).map(p => p.id);
   }
-  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), flagEvents: this.flagEvents.map(e => ({ ...e })), zones: this.zones.map(z => ({ ...z })), zoneEvents: this.zoneEvents.map(e => ({ ...e })), outcome: this.outcome ? { ...this.outcome } : null, teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, loading: this.loading, countdown: this.countdown, time: this.time, players: this.players.map(p => ({ ...p, melee: { ...p.melee }, impact: p.impact ? { ...p.impact } : null, stains: [...p.stains] })), thrown: this.thrown.map(f => ({ ...f })), grenades:this.grenades.map(g=>({...g})), booms:this.booms.map(b=>({...b})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message, messageVars: this.messageVars ? { ...this.messageVars } : null }; }
+  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), flagEvents: this.flagEvents.map(e => ({ ...e })), zones: this.zones.map(z => ({ ...z })), zoneEvents: this.zoneEvents.map(e => ({ ...e })), outcome: this.outcome ? { ...this.outcome } : null, teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, loading: this.loading, countdown: this.countdown, time: this.time, players: this.players.map(p => ({ ...p, melee: { ...p.melee }, impact: p.impact ? { ...p.impact } : null, spare: p.spare ? { ...p.spare } : null, stains: [...p.stains] })), thrown: this.thrown.map(f => ({ ...f })), grenades:this.grenades.map(g=>({...g})), booms:this.booms.map(b=>({...b})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message, messageVars: this.messageVars ? { ...this.messageVars } : null }; }
 }
 
 // Stable lobby positions are independent of member IDs and survive roster changes.

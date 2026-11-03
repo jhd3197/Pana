@@ -59,8 +59,9 @@ try {
   if (shots) { await mkdir(shots, { recursive: true }); await page.screenshot({ path: `${shots}/spectator-gamepad.png` }); }
   // Behind the watched pana, settled, the crosshair gone.
   const followGap = () => page.evaluate(() => { const { world, spectate } = pinturaDebug, at = world.avatars.get(spectate.spectator.target)?.group.position, p = world.camera.position; return at ? Math.hypot(at.x - p.x, at.z - p.z) : 99; });
-  await waitFor(page, () => { const { world, spectate } = pinturaDebug, at = world.avatars.get(spectate.spectator.target)?.group.position, p = world.camera.position; return !!at && Math.hypot(at.x - p.x, at.z - p.z) < 4.5 && p.y < at.y + 4; });
-  assert.ok(await followGap() < 4.5);
+  // The gap measured in the frame that settled (the watched bot keeps moving, so a second read can drift past it).
+  const settled = await (await waitFor(page, () => { const { world, spectate } = pinturaDebug, at = world.avatars.get(spectate.spectator.target)?.group.position, p = world.camera.position, gap = at ? Math.hypot(at.x - p.x, at.z - p.z) : 99; return !!at && gap < 4.5 && p.y < at.y + 4 && gap; })).jsonValue();
+  assert.ok(settled < 4.5 && (await followGap()) < 6, `follows from behind: ${settled}`);
   assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.crosshair')).display), 'none');
 
   // Next and previous: E / Q on a keyboard, RB / LB from a controller (engine/gamepad.js types G and Shift).
@@ -99,9 +100,9 @@ try {
   const after = await page.evaluate(() => ({ spectating: document.body.classList.contains('spectating'), bar: document.getElementById('spectate').hidden, crosshair: getComputedStyle(document.querySelector('.crosshair')).display,
     touch: getComputedStyle(document.getElementById('touch')).visibility, held: pinturaDebug.world.held?.visible }));
   assert.deepEqual(after, { spectating: false, bar: true, crosshair: 'block', touch: 'visible', held: true });
-  // Q turns the view again instead of switching pana.
+  // ← turns the view again instead of switching pana.
   const yaw = await page.evaluate(() => pinturaDebug.world.yaw);
-  await page.keyboard.down('q'); await waitFor(page, y => Math.abs(pinturaDebug.world.yaw - y) > .05, yaw); await page.keyboard.up('q');
+  await page.keyboard.down('ArrowLeft'); await waitFor(page, y => Math.abs(pinturaDebug.world.yaw - y) > .05, yaw); await page.keyboard.up('ArrowLeft');
 
   const spy = await page.evaluate(() => ({ alive: [...window.spy.shapes.alive], out: [...window.spy.shapes.out], sends: window.spy.sends,
     fields: [...Object.keys(pinturaDebug.room.state), ...pinturaDebug.room.state.players.flatMap(p => Object.keys(p))].filter(k => /spectat|watch|camera|follow|overhead/i.test(k)) }));

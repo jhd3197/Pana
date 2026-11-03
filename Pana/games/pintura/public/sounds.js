@@ -52,6 +52,9 @@ const FLOOR = { terminal: 'concrete', muelle: 'wood', noche: 'grass' };
 // Everyone's feet: one shared-controller stepper per pana. Speed comes from how far
 // the avatar moved this frame, so bots and remote panas are heard too, quieter
 // with distance and silent beyond the court's hearing.
+// Metres a rival's steps carry at noise 1; `noise` is 1 when absent or hostile.
+export const STEP_RANGE = 28;
+export const stepNoise = p => Number.isFinite(p?.noise) && p.noise > 0 ? Math.min(2, p.noise) : 1;
 export function createSteps() {
   const feet = new Map(), last = new Map();
   return {
@@ -65,8 +68,10 @@ export function createSteps() {
         const speed = out || !at || !before || jump > 6 || dt < .001 ? 0 : jump / dt;
         const distance = me && p.id !== myId ? Math.hypot(p.x - me.x, p.z - me.z) : 0;
         if (!feet.has(p.id)) feet.set(p.id, createFootsteps());
-        if (distance > 28) { feet.get(p.id).reset(); continue; }
-        feet.get(p.id).update(dt, { speed, height: out ? 0 : p.jumpHeight || 0, sprint: !!p.sprint, surface, volume: p.id === myId ? .8 : .55 / (1 + distance / 6) }, lib);
+        // A rival's class sets how far and how loud its steps carry (`noise`, from the room: Sigiloso's are faint).
+        const noise = p.id === myId ? 1 : stepNoise(p);
+        if (distance > STEP_RANGE * noise) { feet.get(p.id).reset(); continue; }
+        feet.get(p.id).update(dt, { speed, height: out ? 0 : p.jumpHeight || 0, sprint: !!p.sprint, surface, volume: p.id === myId ? .8 : .55 * noise / (1 + distance / 6) }, lib);
       }
       for (const id of feet.keys()) if (!state.players.some(p => p.id === id)) { feet.delete(id); last.delete(id); }
     },

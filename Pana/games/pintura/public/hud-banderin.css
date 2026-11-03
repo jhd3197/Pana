@@ -115,3 +115,12 @@ body.counting #hud .countdown { color: var(--pk-yellow); -webkit-text-stroke: ca
 /* The fitted parts under the marker name: one small icon each (barrel, hopper, stock, Mira). */
 #hud .wpn-kit { display: flex; gap: calc(4 * var(--u)); color: var(--pk-yellow); font-size: calc(16 * var(--u)); }
 #hud .wpn-kit:empty { display: none; }
+/* The gun in hand and, small and dim, the other one (Q / 1 / 2 / Y swap them); the drawn gun pops in. */
+#hud .wpn-guns { display: flex; align-items: end; gap: calc(8 * var(--u)); }
+.wpn-pic { display: block; width: calc(84 * var(--u, 1px)); height: calc(42 * var(--u, 1px)); }
+.wpn-pic img, .wpn-pic svg { display: block; width: 100%; height: 100%; object-fit: contain; fill: currentColor; color: var(--pk-muted); }
+#hud #wpn-other { width: calc(46 * var(--u)); height: calc(23 * var(--u)); opacity: .55; }
+body.swapped #hud #wpn-now { animation: gun-draw .4s ease-out; } @keyframes gun-draw { from { transform: translateY(40%); opacity: 0; } }
+#weapon-hand .wpn-pic { width: 100%; height: 26px; }
+/* Phones: the plate stays its old size above the touch buttons; the swap button shows the other gun. */
+@media (max-width: 600px), (max-height: 520px) { #hud .wpn-guns { display: none; } }
