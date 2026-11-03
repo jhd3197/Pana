@@ -107,6 +107,31 @@ test('every game has the files the hub and the kit expect', () => {
   assert.deepEqual(problems, []);
 });
 
+// A team game ("teams": true in game.json) shows its sides in the main lobby
+// through engine/team-lobby.js, directly or through engine/play/table-seating.js:
+// one look, one Unirme aquí / Cambiarme aquí / Organizar, auto-balance on join.
+// No game builds the roster cards, team lists or team headings of its own.
+test('team games render lobby teams through the shared team lobby', () => {
+  const problems = [];
+  const shared = /from\s+['"][^'"]*\/engine\/(?:team-lobby|play\/table-seating)\.js['"]/;
+  for (const id of games) {
+    const json = meta(id);
+    if ('teams' in json && typeof json.teams !== 'boolean') problems.push(`${id}: game.json teams is true or false`);
+    const files = walk(path.join(gamesDir, id, 'public'), name => /\.(js|html)$/.test(name)).map(file => [file, read(file)]);
+    if (json.teams && !files.some(([, code]) => shared.test(code))) problems.push(`${id}: game.json says teams, but no public file imports engine/team-lobby.js (createTeamLobby)`);
+    for (const [file, code] of files) {
+      if (/\bcreateLobbyRoster\b/.test(code)) problems.push(`${rel(file)}: builds the lobby roster itself; use createTeamLobby (engine/team-lobby.js)`);
+      if (/pk-roster-(?:group|heading|cards)|data-roster-(?:group|seat)/.test(code)) problems.push(`${rel(file)}: draws team lobby cards by hand; use createTeamLobby (engine/team-lobby.js)`);
+      const declares = /\bcreateTeamLobby\(/.test(code) || /\bseating\.update\([^;]*\bteams\s*:/.test(code);
+      if (declares && !json.teams) problems.push(`${rel(file)}: shows teams in the lobby; add "teams": true to game.json`);
+    }
+    // The lobby markup itself: no team lists or team headings of its own.
+    const lobby = read(pub(id, 'index.html')).match(/<section[^>]*\bid="lobby"[\s\S]*?<\/section>/)?.[0] || '';
+    if (/\bid="team-\d"|class="[^"]*\bteam-list\b|>\s*Equipo [A-D]\s*</.test(lobby)) problems.push(`${id}: index.html lobby has its own team list; use createTeamLobby (engine/team-lobby.js)`);
+  }
+  assert.deepEqual(problems, []);
+});
+
 test('each game sets --pk-game to its game.json color', () => {
   const problems = [];
   for (const id of games) {

@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los equipos se ven igual en todos los juegos, en la sala principal, y quien llega entra al equipo más chico.**
+  Dominó, Caída, Billar, Criollas, Chapita, Curiara, Capis y Pepazo usan los
+  mismos paneles: Unirme aquí, Cambiarme aquí y Organizar. En Chapita ya
+  puedes elegir puesto con un toque.
+- **Pepazo: elige «Equipos» o «Todos contra todos» arriba en la sala.**
+  Con equipos eliges el modo (Pintadas, Captura la bandera, Dominación) y
+  los dos equipos salen en la sala, ya no escondidos en Más ajustes.
 - **Reliquia arranca en la biblioteca sepultada, y en la sala eliges el Lugar: Alternar, Biblioteca o Mina.**
   Con Alternar (lo normal) la primera jornada es la biblioteca y la siguiente
   la mina, y así. El anuncio de cada jornada dice adónde bajan.

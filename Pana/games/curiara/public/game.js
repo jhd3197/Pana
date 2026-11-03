@@ -1,7 +1,7 @@
 import { createRoomOptions } from '/engine/room-options.js';
 import { FIELDS, cleanOptions } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
-import { createLobbyRoster } from '/engine/lobby-roster.js';
+import { createTeamLobby } from '/engine/team-lobby.js';
 import * as THREE from 'three';
 import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound, pulseSpeedLines, setSpeedLines } from '/engine/fx.js';
@@ -37,7 +37,7 @@ const keys = new Set(), touch = new Set(), canoes = new Map(), touchButtons = []
 let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
 const room = new RiverRoom({ code, name, avatar, onState: s => { state = s; snapshotAt = performance.now(); }, onStatus: (message, error = false) => { $('connection').textContent = message; $('practice').classList.toggle('hidden', !error); if (error) showNotice(message); } });
 state = room.state;
-const crewRoster = createLobbyRoster($('seats'), { onMove: (from, to) => room.moveSeat(from, to) });
+const crewRoster = createTeamLobby($('seats'), { onMove: (from, to) => room.moveSeat(from, to), titles: boat => loc('Curiara {n}', { n: boat + 1 }), colors: COLORS });
 
 const roomOptions=createRoomOptions($('room-options'),{title:'Curiara',fields:FIELDS,change:patch=>{if(patch.crew){format=patch.crew;store.set('curiara:format',format);}room.configure(patch);},reset:()=>{room.configure(cleanOptions());}});
 for(const button of document.querySelectorAll('[data-room-option=crew]'))button.dataset.format=button.dataset.value;
@@ -110,12 +110,10 @@ function input() {
 function drawSeats() {
   const pairs = FORMATS[state.format].seats === 2, capacity = FORMATS[state.format].boats * FORMATS[state.format].seats;
   const people = state.players.filter(p => !p.bot).length;
-  $('seats').hidden = !pairs;
   $('format-copy').textContent = people > capacity ? loc('Hay {people} panas y {capacity} puestos. Elige más curiaras para dar la salida.', { people, capacity }) : pairs ? loc('{boats} curiaras de dos panas: la proa rema, la popa lleva el timón. Elige tu puesto.', { boats: FORMATS[state.format].boats }) : loc('Una curiara por pana. Ocho curiaras en el agua.');
   for (const b of document.querySelectorAll('[data-format]')) { b.setAttribute('aria-pressed', String(b.dataset.format === state.format)); b.disabled = !room.isHost || !room.connected; }
-  if (!pairs) return;
-  crewRoster.update(crewGrid(state.players, state.format).map((crew, boat) => ({ id: boat, title: `Curiara ${boat + 1}`, color: COLORS[boat], seats: crew.map((player, pos) => ({ key: boat * 2 + pos, player, label: pos ? loc('Popa · timón') : loc('Proa · remo') })) })),
-    { ownId: room.id, hostId: room.hostId, enabled: room.connected && ['lobby', 'finished'].includes(state.phase), canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
+  // Each two-pana canoe is a team panel; one-pana canoes use the shell list.
+  crewRoster.update({ teams: pairs, seats: pairs ? crewGrid(state.players, state.format).flatMap((crew, boat) => crew.map((player, pos) => ({ key: boat * 2 + pos, team: boat, player, label: pos ? loc('Popa · timón') : loc('Proa · remo') }))) : [], ownId: room.id, hostId: room.hostId, enabled: room.connected && ['lobby', 'finished'].includes(state.phase), canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
 }
 $('start').onclick = $('again').onclick = () => { unlock(); room.start(); };
 $('practice').onclick = () => goLocal();

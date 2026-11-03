@@ -15,6 +15,7 @@
 // map was made from its seed (rules.js applyEdit), and a guest replays them.
 import { createMatch, tickMatch, takeEvents, activeCapy, alive, applyEdit, fire, selectWeapon, canUse } from './rules.js';
 import { createBot } from './bot.js';
+import { smallestTeam } from '../../../engine/play/team-balance.js';
 import { defaultOptions, roomOptions } from './options.js';
 import { mapSeed, SEED_LIMIT } from './map-rules.js';
 
@@ -76,7 +77,7 @@ export class CapisTable {
     if (known) { Object.assign(known, { name, avatar }); this.revision++; return known; }
     if (this.players.length >= MAX_PLAYERS) return null;
     const count = team => this.players.filter(p => p.team === team).length;
-    const p = { id, name, avatar, team: count(1) < count(0) ? 1 : 0 };
+    const p = { id, name, avatar, team: smallestTeam([count(0), count(1)], 0) };
     this.players.push(p); this.revision++;
     // A newcomer needs the whole ground: send every edit for a couple of seconds.
     this.fullEdits = 40;
