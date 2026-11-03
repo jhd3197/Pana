@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Trifulca: cada pelea en un mapa distinto, y los golpes se sienten.**
+  Arena Varios rota los mapas sin repetir (o fija uno); un toque siempre sale,
+  un golpe a tiempo encadena, fallar te deja expuesto, el golpeado destella, y
+  hay bate en la trifulca libre.
 - **Pepazo: Acabado, Camuflaje y Llavero juntos en Estilo.**
   Cada arma tiene un solo botón Estilo con los tres; Atrás, Esc, Retroceso o
   B suben un nivel a la vez, y las flechas recorren la armería.
