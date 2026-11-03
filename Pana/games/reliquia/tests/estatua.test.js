@@ -8,11 +8,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Expedition } from '../public/rules.js';
 import { spawnEnemy, ESTATUA_CAP } from '../public/enemies.js';
-import { seenBy, ESTATUA } from '../public/estatua.js';
+import { seenBy, ESTATUA, POSES } from '../public/estatua.js';
 import { generateRun, ESTATUA_ROOMS } from '../public/deck.js';
 import { distance } from '../public/layout.js';
 import { inViewCone, watcher } from '../../../engine/play/sight.js';
-import { statuePose, STATUE_POSES } from '../../../engine/models/props/statue-pose.js';
+import { statuePose, STATUE_POSES, STATUE_POSE_NAMES } from '../../../engine/models/props/statue-pose.js';
 
 function library(seed = 21, players = 1) {
   const g = new Expedition(seed); for (let i = 1; i <= players; i++) g.addPlayer(i, `Pana ${i}`); g.start(seed); g.completeLevel();
@@ -146,4 +146,18 @@ test('every pose is finite for any time; the stone holds still while frozen', ()
   const a = { ...statuePose(2, { t: 1, seed: 4, frozen: true }) }, b = { ...statuePose(2, { t: 50, seed: 4, frozen: true }) };
   assert.deepEqual(a, b, 'frozen: the same pose whatever the time');
   assert.notDeepEqual({ ...statuePose(0, { seed: 4 }) }, { ...statuePose(3, { seed: 4 }) }, 'the poses differ');
+});
+
+test('each pose is its own body language: the head swings 30°+ and the arms move', () => {
+  assert.equal(STATUE_POSE_NAMES.length, STATUE_POSES.length);
+  for (const i of [...POSES.far, POSES.near, POSES.close, POSES.strike]) assert.ok(STATUE_POSES[i], `pose ${i}`);
+  const head = ['headRx', 'headRy', 'spineRx'], arms = Object.keys(STATUE_POSES[0]).filter(k => /^[lr][A-Z]/.test(k));
+  const most = (a, b, keys) => Math.max(...keys.map(k => Math.abs(a[k] - b[k])));
+  for (const seed of [1, 2, 9]) for (let i = 0; i < STATUE_POSES.length; i++) for (let j = i + 1; j < STATUE_POSES.length; j++) {
+    const a = { ...statuePose(i, { seed }) }, b = { ...statuePose(j, { seed }) };
+    assert.ok(most(a, b, head) >= .5, `${STATUE_POSE_NAMES[i]} vs ${STATUE_POSE_NAMES[j]}: head or lean ${most(a, b, head).toFixed(2)} rad`);
+    assert.ok(most(a, b, arms) >= .3, `${STATUE_POSE_NAMES[i]} vs ${STATUE_POSE_NAMES[j]}: arms ${most(a, b, arms).toFixed(2)} rad`);
+  }
+  // The book only shows in the reading pose.
+  assert.deepEqual(STATUE_POSES.map(p => p.book), [0, 1, 0, 0, 0]);
 });
