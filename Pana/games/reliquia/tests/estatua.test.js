@@ -15,7 +15,7 @@ import { inViewCone, watcher } from '../../../engine/play/sight.js';
 import { statuePose, STATUE_POSES, STATUE_POSE_NAMES } from '../../../engine/models/props/statue-pose.js';
 
 function library(seed = 21, players = 1) {
-  const g = new Expedition(seed); for (let i = 1; i <= players; i++) g.addPlayer(i, `Pana ${i}`); g.start(seed); g.completeLevel();
+  const g = new Expedition(seed, { place: 'biblioteca' }); for (let i = 1; i <= players; i++) g.addPlayer(i, `Pana ${i}`); g.start(seed); g.completeLevel();
   assert.equal(g.layout.run.theme, 'biblioteca');
   for (const r of g.layout.run.rooms) g.woke[r.id] = 1;
   g.enemies = [];
@@ -116,8 +116,8 @@ test('hits only stagger it: stone does not break', () => {
 
 test('placed in library rooms, never with the guardian, the camp or a seal; capped', () => {
   let placed = 0;
-  for (let seed = 1; seed <= 30; seed++) for (const depth of [2, 5, 8]) {
-    const run = generateRun(seed, { depth }), statues = run.sleepers.filter(s => s.kind === 'estatua');
+  for (let seed = 1; seed <= 30; seed++) for (const depth of [1, 2, 3, 5, 8]) {
+    const run = generateRun(seed, { depth, theme: 'biblioteca' }), statues = run.sleepers.filter(s => s.kind === 'estatua');
     assert.ok(statues.length <= (depth >= 5 ? 2 : 1));
     for (const s of statues) {
       const room = run.rooms.find(r => r.id === s.room);
@@ -128,9 +128,9 @@ test('placed in library rooms, never with the guardian, the camp or a seal; capp
   }
   assert.ok(placed >= 90, `${placed} statues`);
   // The deal is the same every time.
-  assert.deepEqual(JSON.parse(JSON.stringify(generateRun(7, { depth: 5 }).sleepers)), JSON.parse(JSON.stringify(generateRun(7, { depth: 5 }).sleepers)));
+  assert.deepEqual(JSON.parse(JSON.stringify(generateRun(7, { depth: 5, theme: 'biblioteca' }).sleepers)), JSON.parse(JSON.stringify(generateRun(7, { depth: 5, theme: 'biblioteca' }).sleepers)));
   // It stands asleep from the start of the jornada until its room is entered.
-  const g = new Expedition(9); g.addPlayer(1, 'Ana'); g.start(9); g.completeLevel();
+  const g = new Expedition(9, { place: 'biblioteca' }); g.addPlayer(1, 'Ana'); g.start(9); g.completeLevel();
   const e = g.enemies.find(e => e.kind === 'estatua');
   assert.ok(e && !e.awake, 'there from the start, asleep');
   const stop = g.layout.run.lifts.find(l => l.floor === 1);

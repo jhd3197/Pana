@@ -759,7 +759,14 @@ multiplayer room.
 is `tests/range.browser.js`). The lane, signs and targets are the shared
 `engine/models/props/shooting-range.js`. Everything loads on the first
 Probar (dynamic import, the CSS as a `<link>` it appends), so the armory's
-first load is unchanged.
+first load is unchanged. Most of its modules are already in the game's graph,
+so it used to pop up at once: `armory.js` now covers the opening with
+`#range-loading` (a dark square, the kit's running bar, "Cargando") until
+`openRange(...).ready` resolves (stylesheet loaded, `renderer.compileAsync`,
+one frame drawn) and at least 450 ms passed, so it never flashes for a frame.
+Input waits for `ready` too. Do not use `engine/game-load.js` `prepareScene`
+here: inside the lobby it wraps `renderer.render` to draw nothing while
+`body.pana-in-lobby` is set, and the armory opens from the lobby.
 
 - The sim is a real `Arena` on El Puerto's bounds (116 m along x, the only
   court long enough for a 100 m target): the shooter stands at x = -55 and
@@ -783,6 +790,27 @@ first load is unchanged.
   which the range prevents and turns into closing itself. While it runs
   `game.js` skips `world.draw` (`armory.ranging`), and closing disposes the
   scene and forces the range's WebGL context lost.
+- A controller inside a `<dialog>` is that dialog's menu for
+  `engine/gamepad.js` (focus moves, A presses the armory's "¡A pepear!" behind
+  the range and starts the room's round, B / Start close the whole armory, the
+  right stick is dead). The range's root is `[data-pad-play]`: the engine then
+  leaves it alone except `padLook` (right stick) and B / Start, which click its
+  `[data-pad-back]` (Volver), so only the range closes. The range reads the
+  rest itself through `activePad()` / `readPad()` (never
+  `getGamepads()[0]`: Windows often lists a headset first): left stick walks,
+  RT fires (held: auto), LT aims, X reloads, RB grenade, Y resets, R3 throws.
+- The shooter walks a bay behind the line (WASD / left stick, `BAY`: 3 m back,
+  the lane's width less 1 m), at the kit's walk, halved through a scope;
+  `range-sim.js` moves it itself (`x`, `z` in the input) and passes the rules
+  a still input. Distances read from where the shooter stands.
+- Mouse: `createLookControls` only calls `press` once the pointer is locked,
+  so the click that asks for the lock never fired (and a refused or slow lock
+  left the trigger dead). The range also fires on that unlocked click.
+- Solo practice: while `armory.ranging` (from the click, through loading)
+  `game.js` sends no `input` to the room, and nothing in the range sends
+  anything else; the browser suite spies `room.link.send` to prove it. The
+  lobby's Cambiar pana (`#pana-lobby-change`) is hidden while the armory is
+  open (`armory.css`).
 - About 80 draw calls and 7 k triangles at 1280x720 (the lane is baked
   into a few colour batches; each splat is one plane, capped at 160).
 `paintball-kit.js` supplies the eighteen marker models, cosmetic finishes,

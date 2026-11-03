@@ -24,7 +24,7 @@ export default {
     { action: loc('Chispa / Trueno / Gemelas / Cohetón / Lejana / Bazuca'), keyboard: '1 – 6' },
   ] }, { title: loc('Polígono de tiro (Probar, en la armería)'), rows: [
     { action: loc('Reponer los blancos'), keyboard: 'T', gamepad: 'Y', touch: loc('Botón de reponer') },
-    { action: loc('Volver a la armería'), keyboard: 'Esc', gamepad: 'B', touch: loc('Botón Volver') },
+    { action: loc('Volver a la armería'), keyboard: 'Esc', gamepad: 'B / Start', touch: loc('Botón Volver') },
   ] }, { title: loc('Fuera de la ronda'), rows: [
     { action: loc('Cambiar de pana'), keyboard: 'Q / E', gamepad: 'LB / RB', touch: loc('Flechas del nombre') },
     { action: loc('Ver la cancha desde arriba'), keyboard: loc('Espacio'), gamepad: 'A', touch: loc('Botón Cámara') },

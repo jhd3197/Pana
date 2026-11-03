@@ -13,6 +13,9 @@
 //     playing: () => state.phase === 'play',       // false: the whole page is a menu
 //   } });
 //   pad: { native: true, help: [['A', 'Golpe'], …] } // the game reads the pad itself in play
+//   <section data-pad-play> inside an open dialog   // a play view over a menu (Pepazo's range): the
+//                                                  // page reads the pad itself, the right stick still
+//                                                  // drives padLook, B / Start click its [data-pad-back]
 //   No button bar is drawn during play: padHelp(pad) fills the pause menu's
 //   Instrucciones page (engine/controls-page.js) when a game declares no pad keys.
 //   padControls({ playing: () => false, menu: () => settings.open() })  // a page that is all menu;
@@ -319,6 +322,17 @@ function frame(now) {
   const steering=(raw.axes||[]).some(v=>Math.abs(v)>getSettings().padDeadzone+.01);
   if(held||steering)activate('gamepad');
   const scope = menuScope();
+
+  // A play view inside a dialog is not that dialog's menu: no focus moves, no
+  // presses behind it; the look still turns and B / Start leave only the view.
+  const surface=[...document.querySelectorAll('[data-pad-play]')].find(shown);
+  if(surface){
+    release(); clearMark(); lastDir='';
+    if(edge('b')||edge('start'))surface.querySelector('[data-pad-back]')?.click();
+    else{const {x,y}=pad.right;if((x||y)&&lookers.size)for(const fn of lookers)fn(x,y,dt);}
+    if(cursor)cursor.hidden=true;
+    before=pad;lastScope=null;requestAnimationFrame(frame);return;
+  }
 
   const testing=scope?.querySelector('[data-pad-test-active]');
   if(testing){

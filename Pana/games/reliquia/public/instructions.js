@@ -7,6 +7,7 @@ export default {
     loc('Cada jornada pide una cuota: llenen el carrito, empújenlo a la plataforma de carga y apriétenle el botón amarillo. Cuando la carga subida alcance la cuota, el montacargas los sube y la jornada termina.'),
     loc('Apunta con el punto del centro a lo que quieres usar: palancas, carrito, tesoros, la tienda. Cada mano lleva un tesoro, una herramienta o un puñado de cuatro piezas.'),
     loc('Al final de cada piso se abre la bajada. ¿Se van con lo que tienen o bajan un piso más?'),
+    loc('Hay dos lugares: la biblioteca sepultada y la mina. En la sala, Lugar elige uno o los alterna, empezando por la biblioteca.'),
   ],
   sections: [{ title: loc('Moverte'), rows: [
     { action: loc('Caminar hacia donde miras'), keyboard: 'W A S D', gamepad: 'Stick izq.', touch: loc('Cruceta') },

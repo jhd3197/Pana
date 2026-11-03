@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRangeSim, TARGETS, MARKS, FIRE, MELEE_REACH } from '../public/range-sim.js';
+import { createRangeSim, TARGETS, MARKS, FIRE, MELEE_REACH, BAY } from '../public/range-sim.js';
 import { kitStats } from '../public/armory-data.js';
 
 // Fires up to `shots` aimed shots at target t (aiming through a Mira when asked) and returns what landed on it.
@@ -87,4 +87,19 @@ test('reset clears the counts and the paint in flight', () => {
   const sim = createRangeSim({ weapon: 'smg' });
   shoot(sim, at(sim, 10), { shots: 3 }); assert.ok(sim.counts.shots > 0);
   sim.reset(); assert.deepEqual(sim.counts, { shots: 0, hits: 0 }); assert.equal(sim.arena.splats.length, 0);
+});
+
+test('the shooter walks the firing bay (never past the line) and distances read from where they stand', () => {
+  const sim = createRangeSim({ weapon: 'bullpup' }), stats = kitStats({ weapon: 'bullpup' });
+  sim.tick({ ax: 1, az: 0, x: -1, z: 0 });
+  assert.ok(Math.abs(sim.stand.x - (FIRE.x - 7 * stats.mobility * .05)) < 1e-9, 'one tick of the kit\'s walk');
+  for (let i = 0; i < 200; i++) sim.tick({ ax: 1, az: 0, x: 1, z: 0 });
+  assert.equal(sim.stand.x, FIRE.x, 'the firing line stops the walk');
+  for (let i = 0; i < 200; i++) sim.tick({ ax: 1, az: 0, x: -1, z: 1 });
+  assert.deepEqual(sim.stand, { x: FIRE.x - BAY.back, z: BAY.half });
+  assert.deepEqual([sim.me.x, sim.me.z], [FIRE.x - BAY.back, BAY.half]);
+  const board = at(sim, 25), { hits } = shoot(sim, board, { shots: 3 });
+  assert.ok(hits.length > 0, 'hits from the corner of the bay');
+  assert.equal(hits[0].distance, Math.round(Math.hypot(board.x - sim.stand.x, board.z - sim.stand.z)));
+  sim.reset(); assert.deepEqual(sim.stand, { x: FIRE.x - BAY.back, z: BAY.half }, 'resetting the targets leaves the shooter where they stand');
 });

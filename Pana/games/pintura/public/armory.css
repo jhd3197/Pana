@@ -79,3 +79,9 @@
 @media(max-width:800px){#armory-slots [data-slot=part]{flex:0 0 78px}#armory-slots [data-slot=part] i img{height:44px}}
 /* Phones: a long marker name stays on one line, so it never runs into the stats panel. */
 @media(max-width:800px){#armory h3{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(20px,6.6vw,32px);vertical-align:top}.armory-card b{white-space:normal;line-height:1.05;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
+/* Probar: a small dark square while the range loads (armory.js), over the whole armory. */
+#range-loading{position:fixed;inset:0;z-index:40;display:grid;place-items:center;align-content:center;gap:14px;background:#0e0b24;color:var(--pk-text,#fff)}
+#range-loading .pk-cover-bar{display:block;width:120px;height:6px}
+#range-loading b{font:18px var(--pk-display);letter-spacing:.04em}
+/* The lobby's Cambiar pana belongs to the lobby: never over the armory or its range. */
+body:has(#armory[open]) #pana-lobby-change{display:none}

@@ -227,8 +227,20 @@ export function createArmory({room,onPick,notify=()=>{}}) {
  document.getElementById('open-armory').onclick=open;document.getElementById('armory-close').onclick=()=>dialog.close();
  document.getElementById('armory-go').onclick=()=>{save();dialog.close();if(room.isHost)room.start();};
  // Probar: the shooting range (range.js), a first-person lane with this kit on the real rules.
- document.getElementById('armory-range').onclick=()=>{if(range)return;range='loading';import('./range.js').then(({openRange})=>{if(range!=='loading'||!dialog.open){range=null;return;}range=openRange({dialog,kit,options:room.state.options,onExit:()=>{range=null;}});}).catch(()=>{range=null;});};
- dialog.addEventListener('close',()=>{if(range?.close)range.close();range=null;document.getElementById('open-armory').focus();});
+ // Nothing of it is fetched before the click: a small dark square (a bar, one word) covers the
+ // module, its stylesheet, the scene and the shader compile, never less than LOADING_MIN ms.
+ const LOADING_MIN=450;let loading=null;
+ const endLoading=()=>{loading?.remove();loading=null;};
+ document.getElementById('armory-range').onclick=()=>{
+  if(range)return;range='loading';const shown=performance.now();
+  loading=document.createElement('div');loading.id='range-loading';loading.setAttribute('role','status');loading.innerHTML=`<i class="pk-cover-bar"><i></i></i><b>${esc(loc('Cargando'))}</b>`;dialog.append(loading);
+  import('./range.js').then(({openRange})=>{
+   if(range!=='loading'||!dialog.open){range=null;endLoading();return;}
+   const opened=range=openRange({dialog,kit,options:room.state.options,onExit:()=>{range=null;endLoading();if(dialog.open)document.getElementById('armory-range').focus();}});
+   return opened.ready.then(()=>new Promise(done=>setTimeout(done,Math.max(0,LOADING_MIN-(performance.now()-shown))))).then(()=>{if(range===opened)endLoading();});
+  }).catch(()=>{if(range==='loading')range=null;endLoading();});
+ };
+ dialog.addEventListener('close',()=>{if(range?.close)range.close();range=null;endLoading();document.getElementById('open-armory').focus();});
  return {get kit(){return kit;}, get preview(){return model;}, get body(){return avatar?.group;},get camos(){return camoData;}, get range(){return range?.debug??null;}, get ranging(){return !!range;}, refreshCamos:()=>loadCamos(true), open, setWeapon, update(dt){
   if(range?.update){range.update(dt);return;}
   if(!dialog.open||!renderer)return;if(ratedOptions!==JSON.stringify(room.state.options))paintStats();const c=renderer.domElement,w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();

@@ -76,7 +76,7 @@ $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn'
 $('room-code').textContent = loc('Sala {code}', { code }); $('rules').onclick = () => menu.open('controls');
 $('start').onclick = () => { sound.unlock(); if (!room.connected && $('connection').dataset.failed === 'true') room.practice(); else room.start(); }; $('again').onclick = () => room.toLobby();
 for (const id of ['practice', 'fallback']) $(id).onclick = () => { menu.close(); $('recovery').hidden = true; room.practice(); };
-function clearInput() { grenadeCharge.cancel(); queuedGrenade = null; throwSends = 0; held.clear(); firing = touchFire = queuedFire = queuedReload = mouseAim = touchAim = false; $('aim').setAttribute('aria-pressed', 'false'); pads.forEach(p => p.release()); room.input({ jump: jumpPress }); }
+function clearInput() { grenadeCharge.cancel(); queuedGrenade = null; throwSends = 0; held.clear(); firing = touchFire = queuedFire = queuedReload = mouseAim = touchAim = false; $('aim').setAttribute('aria-pressed', 'false'); pads.forEach(p => p.release()); if (!armory.ranging) room.input({ jump: jumpPress }); }
 // Space or the Saltar button. The count rides every input, so frozen play (loading, the 3-2-1) spends it.
 function jump() { const s = room.state; if (active() && !s.loading && !s.countdown) jumpPress = pressJump(jumpPress); }
 function active() { return !$('armory').open && room.connected && room.state.phase === 'playing' && !menu.isOpen; }
@@ -362,7 +362,7 @@ function render(state) {
   lastPhase = state.phase; document.dispatchEvent(new Event('pana:sala-update'));
 }
 let previous = performance.now(), stoppedAt = previous;
-const timer = setInterval(() => { const now = performance.now(), dt = (now - stoppedAt) / 1000; stoppedAt = now; room.input(input()); queuedFire = queuedReload = false; if (--grenadeSends <= 0) queuedGrenade = null; throwSends = Math.max(0, throwSends - 1); room.tick(dt, menu.isOpen); }, 50);
+const timer = setInterval(() => { const now = performance.now(), dt = (now - stoppedAt) / 1000; stoppedAt = now; if (!armory.ranging) room.input(input()); queuedFire = queuedReload = false; if (--grenadeSends <= 0) queuedGrenade = null; throwSends = Math.max(0, throwSends - 1); room.tick(dt, menu.isOpen); }, 50);
 function frame(now) {
   if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now;
   if (active() && !spectate.spectator.active) world.look((Number(held.has('q')) - Number(held.has('e'))) * dt * 2.2);

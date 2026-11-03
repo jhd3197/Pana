@@ -698,6 +698,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Real-time room | `engine/live-room.js` (`LiveRoom`, `axis`, `elapsedClock`) | Bochinche, Capis a Pintazos (turns with live walking and aim), Cocina, Curiara, Escondidas, Galope, Lancha, Parapente, Reliquia, Tambor, Trifulca |
 | Turn-based room | `engine/table-room.js` | Billar, Caída, Chapita, Criollas, Ludo, QQSMP, Stop |
 | Client prediction | `engine/predict.js` | Cocina, Escondidas, Galope, Reliquia |
+| Snapshot deltas (send only what changed; a whole state on join, a new host, a guest's `resync` and every N publishes) | `engine/state-delta.js` (`diffState`, `patchState`, `createDeltaSender`, `createDeltaReceiver`); tests `engine/tests/state-delta.test.js` | Reliquia (`network.js`: `publish` and `receive`) |
 | Raw room and links | `engine/net.js` | Bululú, Carreritas, Dominó, Embuste, Pepazo, Póquer |
 | Shell (load, loops, teardown) | `engine/game-shell.js` (`bootGame`) | 17 games |
 | Invite links | `engine/invite.js` | all 24 |
@@ -718,7 +719,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Toast | `engine/hud.js` (`createToast`) | Billar, Caída, Capis a Pintazos, Cocina, Criollas, Curiara, Dominó, Embuste, Escondidas, Lancha, Parapente, Reliquia |
 | Hold to see more: a key (and the pad button that presses it, View → Tab through `createGameMenu({ pad })`) shows a layer while held; letting go, blur, a hidden page and a lost pointer lock hide it; `toggle('touch')` for a tap button | `engine/hold-overlay.js` (`createHoldOverlay`, pure `createHold`) | Reliquia (Tab / View: map, compass, jornada and team) |
 | Touch controls | `engine/touch.js` | 17 games |
-| Gamepad | `engine/gamepad.js` | Carreritas, Trifulca; `ui`, `first-person`, `settings` and `game-entry` read pads for every game |
+| Gamepad | `engine/gamepad.js` (`activePad`, `readPad`; a `[data-pad-play]` view inside a dialog is play, not that dialog's menu: right-stick `padLook`, B / Start click its `[data-pad-back]`) | Carreritas, Trifulca, Pepazo's range (`data-pad-play`); `ui`, `first-person`, `settings` and `game-entry` read pads for every game |
 | Instrucciones page in the pause menu: goal, how to play, controls per device (keyboard, controller with its own button names, touch) switching live with the device in use, tips; never on the HUD | `engine/controls-page.js` (`mountControlsPage`, `normalizeInstructions`, `sectionsFor`; `.pana-help-*` in `ui.css`), data in each game's `public/instructions.js` | all games (through `engine/ui.js`) |
 | River HUD, minimap, guide | `engine/river/hud.js`, `minimap.js`, `guide.js` | Curiara, Lancha (`river/hud` also Galope) |
 | Combat HUD (Banderín style: race, pepas, hit arrow, KO plate) | `games/pintura/public/combat-hud.js`, `hud-model.js`, `hud-banderin.css` | Pepazo only (game-local) |

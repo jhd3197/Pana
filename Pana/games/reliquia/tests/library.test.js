@@ -1,9 +1,10 @@
-// La biblioteca sepultada: the theme is dealt from the depth, bookcases are
+// La biblioteca sepultada: the theme is dealt from the depth and the room's Lugar, bookcases are
 // solid, and every room, aisle, piece of loot and chest stays reachable.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { layoutFor } from '../public/layout.js';
-import { generateRun, themeFor, jornadaName, LIBRARY_NAME, inRect } from '../public/deck.js';
+import { generateRun, themeFor, themeOf, jornadaName, LIBRARY_NAME, inRect } from '../public/deck.js';
+import { Expedition } from '../public/rules.js';
 import { ITEMS } from '../public/items.js';
 
 // Flood fill on a grid (no search cap, unlike findPath): every cell a body of
@@ -20,26 +21,38 @@ function reachable(L, state, from, step = .5, radius = .45, off = 0) {
 }
 const opened = L => ({ open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])), lift: { floor: 1, moving: false } });
 
-test('the library comes on jornada 2 and every third after; the mine stays first', () => {
-  assert.deepEqual([1, 2, 3, 4, 5, 6, 7, 8].map(themeFor), ['mina', 'biblioteca', 'mina', 'mina', 'biblioteca', 'mina', 'mina', 'biblioteca']);
-  assert.equal(jornadaName(2), LIBRARY_NAME);
+test('Alternar opens in the library and swaps every jornada; Mina and Biblioteca stay put', () => {
+  const depths = [1, 2, 3, 4, 5, 6];
+  assert.deepEqual(depths.map(d => themeFor(d)), ['biblioteca', 'mina', 'biblioteca', 'mina', 'biblioteca', 'mina']);
+  assert.deepEqual(depths.map(d => themeFor(d, 'alternar')), depths.map(d => themeFor(d)));
+  assert.ok(depths.every(d => themeFor(d, 'mina') === 'mina' && themeFor(d, 'biblioteca') === 'biblioteca'));
+  assert.equal(themeOf({ level: 1, options: { place: 'alternar' } }), 'biblioteca');
+  assert.equal(themeOf({ level: 1, options: { place: 'mina' } }), 'mina');
+  assert.equal(themeOf({ level: 2, options: {} }), 'mina');
+  assert.equal(jornadaName(1), LIBRARY_NAME);
+  assert.equal(jornadaName(1, 'mina'), 'Las afueras de la mina');
+  // A fresh expedition's first jornada is the library; the next one the mine.
+  const g = new Expedition(4); g.addPlayer(1, 'Ana'); g.start(4);
+  assert.equal(g.layout.run.theme, 'biblioteca'); g.completeLevel(); assert.equal(g.layout.run.theme, 'mina');
+  const mine = new Expedition(4, { place: 'mina' }); mine.addPlayer(1, 'Ana'); mine.start(4);
+  assert.equal(mine.layout.run.theme, 'mina');
   for (const seed of [1, 2, 3]) {
-    const run = generateRun(seed, { depth: 2 });
+    const run = generateRun(seed, { depth: 2, theme: 'biblioteca' });
     assert.equal(run.theme, 'biblioteca');
     assert.ok(run.rooms.some(r => ['estanterias', 'lectura', 'archivo', 'copistas'].includes(r.kind)), 'library rooms');
     assert.ok(!run.rooms.some(r => ['veta', 'columnas', 'tesoro', 'cripta'].includes(r.kind)), 'no mine rooms');
     assert.ok(run.lights.every(l => l.kind === 'candelabra'), 'candles, not braziers');
-    assert.equal(generateRun(seed, { depth: 1 }).theme, 'mina');
-    assert.equal(generateRun(seed, { depth: 1 }).solids.length, 0);
+    assert.equal(generateRun(seed, { depth: 1, theme: 'mina' }).theme, 'mina');
+    assert.equal(generateRun(seed, { depth: 1, theme: 'mina' }).solids.length, 0);
   }
   // Same seed, same library on every client.
-  assert.deepEqual(JSON.parse(JSON.stringify(generateRun(9, { depth: 5 }).solids)), JSON.parse(JSON.stringify(generateRun(9, { depth: 5 }).solids)));
+  assert.deepEqual(JSON.parse(JSON.stringify(generateRun(9, { depth: 5, theme: 'biblioteca' }).solids)), JSON.parse(JSON.stringify(generateRun(9, { depth: 5, theme: 'biblioteca' }).solids)));
 });
 
 test('bookcases are solid and the stacks keep narrow aisles', () => {
   let stacks = 0;
   for (let seed = 1; seed <= 30; seed++) {
-    const L = layoutFor(seed, 2);
+    const L = layoutFor(seed, 2, 'biblioteca');
     for (const s of L.run.solids) {
       const x = (s.rect[0] + s.rect[2]) / 2, z = (s.rect[1] + s.rect[3]) / 2;
       assert.equal(L.walkable(x, z, {}, .1), false, `seed ${seed}: inside a ${s.kind}`);
@@ -59,8 +72,8 @@ test('bookcases are solid and the stacks keep narrow aisles', () => {
 });
 
 test('every room, aisle, loot and chest is reachable in many library and mine jornadas', () => {
-  for (let seed = 1; seed <= 25; seed++) for (const depth of [1, 2, 3, 5, 8]) {
-    const L = layoutFor(seed, depth), state = opened(L), stop = L.run.lifts.find(l => l.floor === 1), landing = { x: stop.x, z: stop.z - 5 };
+  for (let seed = 1; seed <= 25; seed++) for (const depth of [1, 2, 3, 5, 8]) for (const theme of ['mina', 'biblioteca']) {
+    const L = layoutFor(seed, depth, theme), state = opened(L), stop = L.run.lifts.find(l => l.floor === 1), landing = { x: stop.x, z: stop.z - 5 };
     const walker = reachable(L, state, landing), enemy = reachable(L, state, landing, 1, .5, .5);
     const reach = (to, radius = .45) => radius >= .5 ? enemy(to) : walker(to);
     for (const r of L.run.rooms.filter(r => r.floor === 1)) {
@@ -92,7 +105,7 @@ test('every room, aisle, loot and chest is reachable in many library and mine jo
 test('the hidden room in the library still opens with the echo mask', () => {
   let found = 0;
   for (let seed = 1; seed <= 30; seed++) {
-    const L = layoutFor(seed, 2), wall = L.run.hidden[0]; if (!wall) continue;
+    const L = layoutFor(seed, 2, 'biblioteca'), wall = L.run.hidden[0]; if (!wall) continue;
     found++;
     const room = L.run.rooms.find(r => r.id === wall.room), stop = L.run.lifts.find(l => l.floor === 1), landing = { x: stop.x, z: stop.z - 5 };
     const shut = { open: {}, revealed: {}, lift: { floor: 1, moving: false } };

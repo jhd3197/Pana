@@ -27,15 +27,15 @@ function lootOn(g, size, floor = 1) { return run(g).loot.find(l => l.floor === f
 function stand(g, id, item) { place(g, id, item.x, item.z + 1.2); const p = g.players.find(p => p.id === id); p.h = facing(p, item); return p; }
 
 test('every room of many dealt jornadas is reachable once the seals open', () => {
-  for (let seed = 1; seed <= 20; seed++) for (const depth of [1, 2, 3]) {
-    const L = layoutFor(seed, depth), state = { open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])), lift: { floor: 1, moving: false } };
+  for (let seed = 1; seed <= 20; seed++) for (const depth of [1, 2, 3]) for (const theme of ['mina', 'biblioteca']) {
+    const L = layoutFor(seed, depth, theme), state = { open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])), lift: { floor: 1, moving: false } };
     assert.equal(L.run.rooms.some(r => r.kind === 'boveda'), depth === 3, 'the vault every third jornada');
     assert.ok(L.run.cargo.some(c => c.floor === 1) && L.run.carts.length === 1, 'one carrito and its cargo lift');
     const stop = L.run.lifts.find(l => l.floor === 1), landing = { x: stop.x, z: stop.z - 5 };
     for (const r of L.run.rooms.filter(r => r.floor === 1)) {
-      assert.ok(L.findPath(landing, { x: r.x + (r.kind === 'idolo' ? 2 : 0), z: r.z }, state).length || L.run.pits.some(p => p.room === r.id) || r.kind === 'santuario' || r.kind === 'idolo', `seed ${seed}/${depth}: ${r.id} ${r.kind}`);
+      assert.ok(L.findPath(landing, { x: r.x + (r.kind === 'idolo' ? 2 : 0), z: r.z }, state).length || L.run.pits.some(p => p.room === r.id) || r.kind === 'santuario' || r.kind === 'idolo', `seed ${seed}/${depth}/${theme}: ${r.id} ${r.kind}`);
     }
-    for (const v of L.run.stubs.filter(s => s.kind === 'vault')) assert.ok(L.findPath(landing, { x: (v.rect[0] + v.rect[2]) / 2, z: (v.rect[1] + v.rect[3]) / 2 }, state).length, `seed ${seed}/${depth}: the sealed chamber`);
+    for (const v of L.run.stubs.filter(s => s.kind === 'vault')) assert.ok(L.findPath(landing, { x: (v.rect[0] + v.rect[2]) / 2, z: (v.rect[1] + v.rect[3]) / 2 }, state).length, `seed ${seed}/${depth}/${theme}: the sealed chamber`);
   }
   const a = layoutFor(5, 1).run, b = layoutFor(6, 1).run;
   assert.notDeepEqual(a.rooms.map(r => r.kind), b.rooms.map(r => r.kind), 'two jornadas never match');
@@ -210,9 +210,9 @@ test('extraction needs every standing pana at the truck; titles go to the stats'
   assert.equal(list.find(t => t.title === 'El codicioso').player, 1); assert.equal(list.find(t => t.title === 'El cargador').player, 2);
 });
 
-test('the echo mask reveals a hidden room; the compass points at treasure or a boss', () => {
+test('in the mine the echo mask reveals a hidden room; the compass points at treasure or a boss', () => {
   for (let seed = 1; seed < 40; seed++) {
-    const g = setup(1, seed), wall = run(g).hidden.find(h => h.floor === 1); if (!wall) continue;
+    const g = setup(1, seed, { place: 'mina' }), wall = run(g).hidden.find(h => h.floor === 1); if (!wall) continue;
     const [a] = g.players; a.hands[0] = { id: 5, kind: 'echoMask' };
     place(g, 1, wall.x + (wall.horizontal ? 0 : 0), wall.z); a.x = wall.x; a.z = wall.z;
     // Stand on the path side of the wall.
