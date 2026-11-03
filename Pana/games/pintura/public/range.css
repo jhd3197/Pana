@@ -1,0 +1,55 @@
+/* The armory's shooting range (range.js): a full-screen first-person lane in the armory's top layer. */
+#range{position:fixed;inset:0;z-index:30;background:#2a2f36;overflow:hidden;color:#fff;font-family:var(--pk-body,system-ui);user-select:none;-webkit-user-select:none;touch-action:none}
+#range *{border-radius:0}
+#range-view{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+#range .pk-btn{position:absolute;display:flex;align-items:center;gap:8px;border:0;background:#0e0b24;color:#fff;box-shadow:4px 4px #16161a;transform:skew(-10deg);font:20px var(--pk-display);padding:10px 16px;z-index:2}
+#range .pk-btn svg{width:24px;height:24px;flex:none}
+#range-back{top:18px;left:18px}
+#range-reset{top:18px;right:18px;padding:10px 12px}
+#range .pk-btn:hover,#range .pk-btn:focus-visible{background:var(--pk-yellow,#ffc629);color:#16161a}
+/* The last hit: its distance and the pepazos it painted (falloff), or how far a ball fell short. */
+#range-read{position:absolute;top:18px;left:50%;transform:translateX(-50%) skew(-10deg);background:#0e0b24;box-shadow:4px 4px #16161a;padding:6px 18px;display:flex;align-items:baseline;gap:10px;white-space:nowrap;z-index:2}
+#range-read[hidden]{display:none}
+#range-read b{font:34px/1 var(--pk-display);color:var(--pk-yellow,#ffc629)}
+#range-read span{font:600 16px var(--pk-body,system-ui);text-transform:uppercase;letter-spacing:.04em}
+#range-read[data-kind=ko] b,#range-read[data-kind=ko] span{color:#ff5a4f}
+#range-read[data-kind=short] b{color:#9aa6b2}
+/* Crosshair: four ticks; the hit marker's X flashes on a hit. */
+#range-cross{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;pointer-events:none;z-index:1}
+#range-cross i,#range-cross i:before,#range-cross i:after,#range-cross:before,#range-cross:after{position:absolute;content:'';background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.55)}
+#range-cross:before{left:19px;top:4px;width:2px;height:10px}#range-cross:after{left:19px;bottom:4px;width:2px;height:10px}
+#range-cross i:before{left:4px;top:19px;width:10px;height:2px}#range-cross i:after{right:4px;top:19px;width:10px;height:2px}
+#range-cross b{position:absolute;inset:0;opacity:0;transition:opacity .08s}
+#range-cross b:before,#range-cross b:after{content:'';position:absolute;left:50%;top:50%;width:30px;height:3px;margin:-1.5px 0 0 -15px;background:#fff;box-shadow:0 0 0 1px #e2453c}
+#range-cross b:before{transform:rotate(45deg)}#range-cross b:after{transform:rotate(-45deg)}
+#range.hit #range-cross b{opacity:1}
+#range.scoped #range-cross{display:none}
+/* Ammo: the magazine big, the rest small, a bar while reloading; the grenade lights when ready. */
+#range-ammo{position:absolute;right:18px;bottom:18px;display:flex;align-items:baseline;gap:6px;background:#0e0b24;box-shadow:4px 4px #16161a;transform:skew(-10deg);padding:6px 16px 10px;z-index:2}
+#range-ammo b{font:40px/1 var(--pk-display);color:#fff}
+#range-ammo span{font:20px var(--pk-display);color:#b9b3d6}
+#range-ammo.melee b,#range-ammo.melee span{display:none}
+#range-ammo .range-nade{width:26px;height:26px;margin-left:8px;align-self:center;opacity:.3}
+#range-ammo .range-nade svg{width:100%;height:100%}
+#range-ammo.nade .range-nade{opacity:1;color:var(--pk-yellow,#ffc629)}
+#range-ammo:after{content:'';position:absolute;left:0;bottom:0;height:4px;width:calc(var(--reload,0) * 100%);background:var(--pk-yellow,#ffc629)}
+#range.charging #range-ammo .range-nade{opacity:1;color:#ff8a3d;transform:scale(calc(1 + var(--charge,0) * .4))}
+/* Touch: fire big at the right thumb, aim / reload / grenade around it. */
+#range-pad{display:none}
+@media (pointer:coarse){
+ #range-pad{display:block;position:absolute;right:18px;bottom:18px;width:196px;height:196px;z-index:2}
+ #range-pad .pk-btn{padding:0;justify-content:center;width:58px;height:58px}
+ #range-pad .pk-btn svg{width:28px;height:28px}
+ #range-fire{right:0;bottom:0;width:96px!important;height:96px!important;background:var(--pk-yellow,#ffc629)!important;color:#16161a!important}
+ #range-fire svg{width:40px!important;height:40px!important}
+ #range-aim{right:118px;bottom:8px}
+ #range-reload{right:110px;bottom:84px}
+ #range-grenade{right:22px;bottom:122px}
+ #range-aim[aria-pressed=true]{background:var(--pk-yellow,#ffc629);color:#16161a}
+ #range-ammo{right:auto;left:18px}
+}
+@media (max-width:640px){
+ #range-read{top:78px}
+ #range-read b{font-size:28px}
+ #range .pk-btn{font-size:18px}
+}

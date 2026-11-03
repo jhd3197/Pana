@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En la armería de Pepazo, Probar ahora abre un polígono de tiro de verdad: disparas en primera persona con tu kit a blancos de 10 a 100 m.**
+  Un pasillo techado con luces, distancias pintadas en el piso y en letreros,
+  siluetas de papel, una pizarra, blancos que suben y bajan, uno que corre
+  en un riel y uno grande al fondo. La pintura queda en los blancos y cada
+  impacto dice su distancia y sus pepazos; con las reglas de la ronda
+  (cadencia, dispersión, caída del daño, recarga, granada y pescozón). T
+  repone los blancos y Esc o Volver te regresan a la armería.
 - **La Estatua de Reliquia ahora se ve como una estatua de verdad: una doliente de mármol pálido que resalta en la oscuridad.**
   Sobre un pedestal bajo, con un velo roto, cuencas vacías y una boca
   entreabierta, manos de dedos largos y musgo en el ruedo. Cada vez que se
