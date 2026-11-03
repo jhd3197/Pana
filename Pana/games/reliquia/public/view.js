@@ -25,7 +25,7 @@ import { formatNumber } from '/engine/i18n.js';
 import { holds, alive, cartValue, liftView } from './rules.js';
 
 export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
-const EYE = 1.45, POOL = 5;
+const EYE = 1.45, POOL = 5, FAR = 220;
 const CAMP_LOOK = { background: 0xf6d6a4, fog: [45, 150], hemi: [0xfff1d6, 0x8a6a4a, 2.1], sun: 3, exposure: 1.05 };
 // Underground: the mine is a dark violet black; the buried library cold and
 // grey-blue, a thin haze (no thick fog: the mist is a few rooms' accent), a
@@ -55,7 +55,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene(); scene.background = new THREE.Color(CAMP_LOOK.background); scene.fog = new THREE.Fog(CAMP_LOOK.background, ...CAMP_LOOK.fog);
-  const camera = new THREE.PerspectiveCamera(74, 1, .05, 220); camera.rotation.order = 'YXZ'; scene.add(camera);
+  const camera = new THREE.PerspectiveCamera(74, 1, .05, FAR); camera.rotation.order = 'YXZ'; scene.add(camera);
   const sky = createSky(WARM_DAY.sky); scene.add(sky.mesh);
   const hemi = new THREE.HemisphereLight(...CAMP_LOOK.hemi); scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffd9a0, CAMP_LOOK.sun); sun.castShadow = true; sun.shadow.mapSize.setScalar(shadowSize(1024));
@@ -83,7 +83,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const splatMaterial = (seat, n) => { const key = `${seat}:${n}`; if (!splatMaterials.has(key)) splatMaterials.set(key, new THREE.MeshBasicMaterial({ color: COLORS[seat % 8], map: splatTextures[n % 4], transparent: true, alphaTest: .4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, side: THREE.DoubleSide })); return splatMaterials.get(key); };
   const splats = new Map(), shots = new Map(), darts = new Map();
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
-  const avatars = new Map(), enemies = new Map(), carts = new Map();
+  const avatars = new Map(), enemies = new Map(), carts = new Map(), tmp = new THREE.Vector3();
+  let lastState = null, snapAt = 0;
   let scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', look = CAMP_LOOK, poolAt = 0, swingT = [0, 0], shakeScale = 1;
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
@@ -93,6 +94,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sun.intensity = look.sun; sky.mesh.visible = name === 'camp'; renderer.toneMappingExposure = look.exposure;
+    // Underground the sun is off, so its shadow pass (every caster drawn again)
+    // would cost a whole second scene for nothing. The light keeps castShadow,
+    // so no shader recompiles on the way down or up.
+    renderer.shadowMap.autoUpdate = name === 'camp'; if (name === 'camp') renderer.shadowMap.needsUpdate = true;
     headlamp.color.set(look.lamp || 0xfff0d8); headlamp.decay = look.lampDecay ?? 1.35;
   }
   function heldModel(slot, held, i) {
@@ -140,6 +145,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
 
   function draw(state, me, dt, { downedLook = false, self = me?.id } = {}) {
     const t = performance.now() / 1000, vf = me ? floorOf(me.x) : 0;
+    if (state !== lastState) { lastState = state; snapAt = t; }
     // Riders sink and rise with the cage through the shaft.
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
     setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'camp' : world.run.theme === 'biblioteca' ? 'biblioteca' : 'mina');
@@ -155,7 +161,11 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       const a = avatarFor(p, i), body = me?.id === p.id ? me : p;
       a.root.visible = !p.spectator && p.id !== self && floorOf(p.x) === vf;
       if (!a.root.visible) continue;
-      const target = new THREE.Vector3(body.x, (body.y || 0) + rideY(p), body.z);
+      // Between snapshots another pana keeps walking the way it was going (at
+      // most 0.15 s ahead), so a host that publishes slowly still
+      // looks like walking on a guest's screen, not a step and a glide.
+      const ahead = body === p && p.moving && !p.downed ? Math.min(.15, t - snapAt) : 0;
+      const target = tmp.set(body.x + (p.vx || 0) * ahead, (body.y || 0) + rideY(p), body.z + (p.vz || 0) * ahead);
       if (a.root.position.distanceTo(target) > 5) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       const turn = Math.atan2(Math.sin(body.h - a.character.group.rotation.y), Math.cos(body.h - a.character.group.rotation.y));
       a.character.group.rotation.y += turn * Math.min(1, dt * 12);
@@ -201,7 +211,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         a.ring.visible = e.windup > 0 && a.root.visible; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(1.6);
         continue;
       }
-      const target = new THREE.Vector3(e.x, 0, e.z);
+      const target = tmp.set(e.x, 0, e.z);
       a.root.position.lerp(target, Math.min(1, dt * (e.mode === 'leap' ? 30 : 12)));
       const turn = Math.atan2(Math.sin(e.h - a.root.rotation.y), Math.cos(e.h - a.root.rotation.y)); a.root.rotation.y += turn * Math.min(1, dt * 10);
       if (a.critter) {
@@ -245,7 +255,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       // A carrito on the montacargas rides it down the shaft with everyone.
       // The cargo lift hauls it up through the ceiling and lowers it back empty.
       const cargo = state.cargo?.cart === c.id ? state.cargo : null, up = cargo ? Math.min(1, cargo.t / 3) : 0;
-      const target = new THREE.Vector3(c.x, cargo ? (cargo.phase === 'up' ? up : 1 - up) * 7 : 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
+      const target = tmp.set(c.x, cargo ? (cargo.phase === 'up' ? up : 1 - up) * 7 : 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       a.root.rotation.y = c.h;
       // Your own cart's balance is on the HUD, not floating in your face.
       if (a.tag) a.tag.visible = !c.pushers.includes(me?.id) && (!me || Math.hypot(c.x - me.x, c.z - me.z) > 2.2);
@@ -319,6 +329,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       puffs.spawn({ x: me.x + Math.cos(a) * r, y: 4.3, z: me.z + Math.sin(a) * r }, { color: lookName === 'biblioteca' ? 0x9ca2aa : 0xc9b48a, count: 3 + greed, spread: .5, size: .35, rise: -2.6, life: 1.4 });
     }
     puffs.update(dt); waves.update(dt);
+    // Past the fog's far end everything is the background colour already
+    // (fog depth and the far plane are the same view depth), so the far plane
+    // sits there: rooms and shelves beyond it are culled instead of drawn.
+    camera.far = lookName === 'camp' ? FAR : Math.min(FAR, scene.fog.far + 1);
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);
   }
@@ -344,7 +358,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     movement(x, z) { return { x: -x * Math.cos(h) - z * Math.sin(h), z: x * Math.sin(h) - z * Math.cos(h) }; },
     shake(amount) { shake = Math.min(1.3, shake + amount); },
     // A new run has a new deck: rebuild the world from its seed.
-    reseed(next, depth) { if (world.run.seed === next && world.run.depth === depth) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, depth }); scene.add(world.group); },
+    reseed(next, depth, theme) { if (world.run.seed === next && world.run.depth === depth && (!theme || world.run.theme === theme)) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, depth, theme }); scene.add(world.group); },
     dispose() {
       removeEventListener('resize', resize); unbind?.(); puffs.clear(); waves.clear();
       for (const [id, a] of avatars) removeAvatar(a, id);

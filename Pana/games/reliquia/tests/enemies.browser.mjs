@@ -1,5 +1,5 @@
 // The library's own two in the real game: El Lector and La Estatua spawned
-// next to the pana on jornada 2 (?debug&jornada=2) render without page
+// next to the pana on jornada 2 (?debug&jornada=2, Lugar: Biblioteca) render without page
 // errors; the statue's drawn position holds still while it is in view and
 // moves once the pana looks away; the Lector comes to a noise. Leaves
 // screenshots in Pana/games/reliquia/qa.
@@ -14,6 +14,8 @@ try {
   const page = await openGame(browser, 'reliquia', { name: 'Juan', room, query: 'debug&jornada=2' });
   page.setDefaultTimeout(90_000);
   await waitFor(page, () => window.reliquia?.room.connected);
+  await page.evaluate(() => reliquia.room.action('configure', { options: { place: 'biblioteca' } }));
+  await waitFor(page, () => reliquia.state.options.place === 'biblioteca');
   await page.locator('#start').click();
   await waitFor(page, () => reliquia.state.phase === 'playing' && reliquia.state.level === 2 && reliquia.view.world.run.theme === 'biblioteca');
   // Stand in the entrance hall, looking north into it, nothing else awake.

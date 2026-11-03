@@ -65,15 +65,28 @@ export function stoneTexture(kind = 'brick') {
   textures.set(kind, texture); return texture;
 }
 
-function instanced(geometry, material, items, place) {
-  const mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, items.length)), m = new THREE.Object3D(), c = new THREE.Color();
-  items.forEach((item, i) => { place(m, c, item); m.updateMatrix(); mesh.setMatrixAt(i, m.matrix); mesh.setColorAt(i, c); });
-  mesh.count = items.length; mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  mesh.castShadow = false; mesh.receiveShadow = true; mesh.computeBoundingSphere?.();
-  return mesh;
+// One instanced mesh per `tile` metres square (0: one for everything), so a
+// floor's walls and slabs are culled by the camera tile by tile instead of
+// drawn whole. Instances are placed in the same order either way, so the
+// seeded jitter and colours do not change.
+function instanced(geometry, material, items, place, tile = 0) {
+  const m = new THREE.Object3D(), c = new THREE.Color(), placed = [];
+  for (const item of items) { place(m, c, item); m.updateMatrix(); placed.push({ matrix: m.matrix.clone(), color: c.clone(), key: tile ? `${Math.floor(m.position.x / tile)},${Math.floor(m.position.z / tile)}` : '' }); }
+  const buckets = new Map();
+  for (const p of placed) { if (!buckets.has(p.key)) buckets.set(p.key, []); buckets.get(p.key).push(p); }
+  if (!buckets.size) buckets.set('', []);
+  const meshes = [...buckets.values()].map(list => {
+    const mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, list.length));
+    list.forEach((p, i) => { mesh.setMatrixAt(i, p.matrix); mesh.setColorAt(i, p.color); });
+    mesh.count = list.length; mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.castShadow = false; mesh.receiveShadow = true; mesh.computeBoundingSphere?.();
+    return mesh;
+  });
+  if (meshes.length === 1) return meshes[0];
+  const group = new THREE.Group(); group.add(...meshes); return group;
 }
 
-export function ruinShell({ inside, ground = () => 0, solid = () => true, open = () => false, sky = () => false, tile = .95, bounds, palette = RUIN_PALETTES.sol, height = 4.6, seed = 7, roof = true } = {}) {
+export function ruinShell({ inside, ground = () => 0, solid = () => true, open = () => false, sky = () => false, tile = .95, bounds, palette = RUIN_PALETTES.sol, height = 4.6, seed = 7, roof = true, chunk = 24 } = {}) {
   const r = rng(seed), [x0, z0, x1, z1] = bounds.map(Math.floor);
   const cell = (i, j) => inside(i + .5, j + .5);
   const cells = [];
@@ -88,13 +101,13 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
     const x = i + .5, z = j + .5, y = ground(x, z), dx = ground(x + .5, z) - ground(x - .5, z), dz = ground(x, z + .5) - ground(x, z - .5);
     m.position.set(x, y - .15 - r() * (palette.planks ? .008 : .03), z); m.rotation.set(Math.atan(dz), palette.planks ? (r() < .5 ? 0 : Math.PI) : 0, -Math.atan(dx)); m.scale.set(palette.planks ? 1.053 : 1, 1, palette.planks ? 1.053 : 1);
     c.copy(floorColor).multiplyScalar(.82 + r() * .3);
-  }));
+  }, chunk));
   // Dark grout under the slabs, so a seam seen end-on is mortar, not a hole.
   const grout = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), groutColor = new THREE.Color(palette.floor).multiplyScalar(.5);
   group.add(instanced(grout, mat({ roughness: 1 }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
     const x = i + .5, z = j + .5, dx = ground(x + .5, z) - ground(x - .5, z), dz = ground(x, z + .5) - ground(x, z - .5);
     m.position.set(x, ground(x, z) - .1, z); m.rotation.set(Math.atan(dz), 0, -Math.atan(dx)); c.copy(groutColor);
-  }));
+  }, chunk));
   // Walls: brick courses on every edge between a walkable cell and the outside.
   const edges = [];
   for (const [i, j] of cells) for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!cell(i + di, j + dj) && !open(i + di + .5, j + dj + .5)) edges.push({ i, j, di, dj, y: ground(i + .5, j + .5) });
@@ -112,11 +125,11 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
     at(m, e, (k % 2 ? .25 : -.25) + (r() - .5) * .04, .35 + (r() - .5) * .06);
     m.position.y = e.y + course * (k + .5); m.scale.set(1, 1, 1 + (r() - .5) * .1);
     c.copy(isBand ? band : colors[Math.floor(r() * colors.length)]).multiplyScalar(isBand ? 1 : .85 + r() * .25);
-  }));
+  }, chunk));
   const glyph = new THREE.OctahedronGeometry(.16);
   group.add(instanced(glyph, mat({ color: 0xffffff, emissive: palette.glyph, emissiveIntensity: 1.2, roughness: .4 }), glyphs, (m, c, e) => {
     at(m, e, 0, -.02); m.position.y = e.y + course * (rows - 1.5); m.scale.set(1, 1, .35); c.set(palette.glyph);
-  }));
+  }, chunk));
   // Ceiling: 2 m rough slabs just above the wall tops.
   const roofCells = new Map();
   if (roof) for (const [i, j] of cells) { const key = `${Math.floor(i / 2)},${Math.floor(j / 2)}`; if (!roofCells.has(key)) roofCells.set(key, [Math.floor(i / 2) * 2, Math.floor(j / 2) * 2]); }
@@ -124,7 +137,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   group.add(instanced(slabRoof, mat({ roughness: 1, map: stoneTexture('roof') }), [...roofCells.values()].filter(([i, j]) => !sky(i + 1, j + 1)), (m, c, [i, j]) => {
     m.position.set(i + 1, ground(i + 1, j + 1) + height + .3 - r() * .25, j + 1); m.rotation.set((r() - .5) * .1, r() * 3, (r() - .5) * .1);
     c.copy(ceiling).multiplyScalar(.8 + r() * .35);
-  }));
+  }, chunk));
   group.userData = { cells: cells.length, edges: edges.length, dispose() { [slab, grout, brick, glyph, slabRoof].forEach(g => g.dispose()); owned.forEach(m => m.dispose()); } };
   return group;
 }

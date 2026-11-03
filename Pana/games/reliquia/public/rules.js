@@ -3,7 +3,7 @@
 // loot back to the truck to bank it, and la codicia rises with every
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
-import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, CAGE, SPOTS } from './deck.js';
+import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS } from './deck.js';
 import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
 import { layoutFor, distance } from './layout.js';
 import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from './items.js';
@@ -42,7 +42,7 @@ export const spotFront = sp => { const d = SPOTS[sp.kind].wall ? SPOTS[sp.kind].
 // One explorer's own movement for dt: the host's simulation and a guest's
 // prediction (engine/predict.js). It only writes p; the state decides the rest.
 export function stepExplorer(p, input, dt, world) {
-  const L = layoutFor(world.seed, world.level);
+  const L = layoutFor(world.seed, world.level, themeOf(world));
   if (Number.isFinite(input.h)) p.h = input.h;
   if (Number.isFinite(input.pitch)) p.pitch = clamp(input.pitch, -1.2, 1.2);
   if (p.grip != null || p.push != null || p.draggedBy != null || p.riding || p.downed || p.spectator) { resetJump(p, input); if (!p.riding) p.y = L.groundAt(p.x,p.z); p.moving = false; return; }
@@ -67,7 +67,7 @@ export function interaction(s, p) {
   if (!p || !alive(p)) return null;
   if (p.grip != null) return { kind: 'release', text: locKey('Soltar el tesoro'), press: true };
   if (p.push != null) return { kind: 'release', text: locKey('Soltar el carrito'), press: true };
-  const L = layoutFor(s.seed, s.level), f = floorOf(p.x), pitch = p.pitch || 0, cp = Math.cos(pitch);
+  const L = layoutFor(s.seed, s.level, themeOf(s)), f = floorOf(p.x), pitch = p.pitch || 0, cp = Math.cos(pitch);
   const eye = { x: p.x, y: (p.y || 0) + 1.45, z: p.z }, look = { x: Math.sin(p.h) * cp, y: Math.sin(pitch), z: Math.cos(p.h) * cp };
   const options = [];
   const offer = (target, pt, r, reach = REACH) => {
@@ -155,7 +155,7 @@ export const cartValue = cart => cart.contents.reduce((n, c) => n + valueOf(c.ki
 export const reviveTime = p => holds(p, 'botiquin') ? REVIVE / 2 : REVIVE;
 // Every pickable item: the deck's untouched loot plus what moved this run.
 export function visibleItems(s) {
-  const run = layoutFor(s.seed, s.level).run;
+  const run = layoutFor(s.seed, s.level, themeOf(s)).run;
   return [...run.loot.filter(l => !s.touched[l.id]).map(l => ({ ...l, state: 'ground', y: l.y || 0 })), ...s.items];
 }
 // Where the crooked compass points: the best treasure, or every third
@@ -164,7 +164,7 @@ export function compassTarget(s, p) {
   const f = floorOf(p.x), boss = s.enemies.filter(e => floorOf(e.x) === f).sort((a, b) => b.maxHp - a.maxHp)[0];
   if (boss && (Math.floor(s.time / 15) + p.seat) % 3 === 2) return { x: boss.x, z: boss.z, boss: true };
   // Treasure still hidden in an unsearched spot counts too.
-  const hidden = layoutFor(s.seed, s.level).run.spots.filter(sp => sp.floor === f && !s.spots?.[sp.id] && !sp.decoy && sp.content.length).map(sp => ({ x: sp.x, z: sp.z, value: sp.content.reduce((n, k) => n + valueOf(k), 0) }));
+  const hidden = layoutFor(s.seed, s.level, themeOf(s)).run.spots.filter(sp => sp.floor === f && !s.spots?.[sp.id] && !sp.decoy && sp.content.length).map(sp => ({ x: sp.x, z: sp.z, value: sp.content.reduce((n, k) => n + valueOf(k), 0) }));
   const best = [...visibleItems(s).filter(i => floorOf(i.x) === f && i.state === 'ground').map(i => ({ x: i.x, z: i.z, value: valueOf(i.kind) })), ...hidden].sort((a, b) => b.value - a.value)[0];
   return best ? { x: best.x, z: best.z, boss: false } : null;
 }
@@ -207,7 +207,7 @@ export class Expedition {
       director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0 });
     this.paths = new Map();
   }
-  get layout() { return layoutFor(this.seed, this.level); }
+  get layout() { return layoutFor(this.seed, this.level, themeOf(this)); }
   configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); return true; }
   addPlayer(id, name, avatar = {}) {
     let p = this.players.find(p => p.id === id); if (p) { p.avatar = avatar; return p; }
@@ -236,7 +236,8 @@ export class Expedition {
     roster.forEach(p => this.addPlayer(p.id, p.name, p.avatar)); this.phase = 'playing';
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));
     this.quota = quotaFor(1, this.players.length); this.placeStatues();
-    this.event('start', locKey('Jornada 1: bajen, llenen el carrito y súbanlo por la carga hasta juntar Bs. {quota}.'), { vars: { quota: this.quota } });
+    // Where the jornada happens is part of the first word everyone reads.
+    this.event('start', locKey('Jornada 1 · {place}: bajen, llenen el carrito y súbanlo por la carga hasta juntar Bs. {quota}.'), { vars: { quota: this.quota, place: jornadaName(1, themeOf(this)) } });
   }
   accept(id, seq, action, data = {}) {
     if (!Number.isSafeInteger(seq) || seq <= (this.ledger[id] || 0) || !this.players.some(p => p.id === id)) return false;
@@ -668,7 +669,7 @@ export class Expedition {
       riders.forEach(p => { p.riding = false; });
       if (lift.to > this.deepest) {
         this.deepest = lift.to; riders.forEach(p => { p.stats.unaMas++; });
-        this.event('descend', locKey('¡Bajaron al piso {floor}: {place}!'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to, place: jornadaName(this.level) } });
+        this.event('descend', locKey('¡Bajaron al piso {floor}: {place}!'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to, place: jornadaName(this.level, themeOf(this)) } });
       }
       this.event('lift-arrive', riders.length ? '' : lift.to ? locKey('El montacargas llegó al piso {floor}.') : locKey('El montacargas llegó al campamento.'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to } });
       const done = lift.to === 0 && lift.from === 1 && riders.length && this.delivered >= this.quota;
@@ -695,8 +696,9 @@ export class Expedition {
       p.downed = false; p.hp = 1; p.revive = 0; p.invulnerable = 2;
     });
     this.quota = quotaFor(this.level, this.players.filter(p => !p.spectator).length); this.placeStatues();
-    this.event('level', left ? locKey('¡Jornada {level} lista! Subieron Bs. {value}. Los que se quedaron abajo llegaron con lo justo. La jornada {next} pide Bs. {quota}.')
-      : locKey('¡Jornada {level} lista! Subieron Bs. {value}. La jornada {next} pide Bs. {quota}.'), { level: done, value: delivered, left, vars: { level: done, value: delivered, next: this.level, quota: this.quota } });
+    // The next jornada's place (Alternar swaps it) rides in the same line.
+    this.event('level', left ? locKey('¡Jornada {level} lista! Subieron Bs. {value}. Los que se quedaron abajo llegaron con lo justo. Ahora toca {place}: Bs. {quota}.')
+      : locKey('¡Jornada {level} lista! Subieron Bs. {value}. Ahora toca {place}: Bs. {quota}.'), { level: done, value: delivered, left, vars: { level: done, value: delivered, next: this.level, quota: this.quota, place: jornadaName(this.level, themeOf(this)) } });
   }
   // The cargo lift: the carrito on its pad rides up alone, its load banks
   // and counts for the quota, and it comes back down empty.

@@ -54,8 +54,8 @@ export function itemModel(kind) {
 }
 export const glowColor = kind => ITEMS[kind].artifact ? treasure.ARTIFACT_AURA[kind] : ITEMS[kind].junk ? GLOW.junk : ITEMS[kind].tool ? GLOW.tool : ITEMS[kind].size === 'big' ? GLOW.big : GLOW.treasure;
 
-export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {}) {
-  const L = layoutFor(seed, depth), run = L.run, floors = run.floors;
+export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true } = {}) {
+  const L = layoutFor(seed, depth, theme), run = L.run, floors = run.floors;
   const group = new THREE.Group(); group.name = 'Reliquia · La mina del sol'; // i18n-ignore: scene graph name
   const owned = new Set(), animated = [], floorsBuilt = new Map();
   const halo = glowTexture(), haloMaterials = new Map();

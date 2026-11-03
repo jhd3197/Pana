@@ -12,6 +12,13 @@ becomes the GitHub release's notes.
   Una pantalla corta de carga al entrar; el primer clic ya dispara, el mando
   mira, camina, dispara y sale con B o Start sin tocar la sala ni tu party.
   Cambiar pana ya no aparece sobre la armería.
+- **Reliquia arranca en la biblioteca sepultada, y en la sala eliges el Lugar: Alternar, Biblioteca o Mina.**
+  Con Alternar (lo normal) la primera jornada es la biblioteca y la siguiente
+  la mina, y así. El anuncio de cada jornada dice adónde bajan.
+- **Reliquia corre más fluido bajo tierra y en línea.**
+  Abajo ya no dibuja la sombra del sol ni lo que la niebla tapa, y el
+  anfitrión manda solo lo que cambió: unas diez veces menos datos. Los otros
+  panas se ven caminar parejo aunque la conexión venga a saltos.
 - **Editar pana ya no te saca de la sala: el editor se abre encima y al cerrarlo sigues donde estabas.**
   Desde la sala de un juego o el inicio, tu puesto y tu party se quedan. Al
   guardar, los demás ven tu pana nuevo. Mi pana también abre bien cada vez,
