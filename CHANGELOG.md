@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La armería de Pepazo muestra cada arma y cada accesorio en foto: menos texto, más fácil de elegir.**
+  Las tarjetas llevan la imagen real del arma, la pieza, el llavero o la
+  granada y solo su nombre. Al elegir un accesorio el arma se pone de lado y
+  la cámara se acerca a la pieza montada; el panel de estadísticas marca con
+  +/− lo que gana o pierde.
 - **La Estatua de Reliquia ahora se ve como una estatua de verdad: una doliente de mármol pálido que resalta en la oscuridad.**
   Sobre un pedestal bajo, con un velo roto, cuencas vacías y una boca
   entreabierta, manos de dedos largos y musgo en el ruedo. Cada vez que se
