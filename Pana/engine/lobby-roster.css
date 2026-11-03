@@ -15,7 +15,8 @@
 .pk-roster-host { align-self:flex-start; font-size:11px; font-weight:900; text-transform:uppercase; padding:4px 7px; border-radius:0; color:var(--pk-night); background:var(--pk-yellow); }
 .pk-roster-status { color:var(--pk-muted); font-size:12px; font-weight:800; text-transform:uppercase; }
 .pk-roster-action { min-height:44px; padding:9px 12px; border:1px solid var(--pk-line); border-radius:0; color:inherit; background:transparent; font:inherit; font-weight:800; font-size:14px; cursor:pointer; }
-.pk-roster-card>.pk-roster-action { width:100%; }
+.pk-roster-actions { display:flex; flex-direction:column; gap:8px; width:100%; }
+.pk-roster-actions>.pk-roster-action { width:100%; }
 .pk-roster-action:hover:not(:disabled) { background:color-mix(in srgb,var(--roster-color) 20%,transparent); }
 .pk-roster-action:disabled { opacity:.45; cursor:default; }
 .pk-roster-action:focus-visible { outline:3px solid var(--pk-yellow); outline-offset:2px; }
@@ -24,7 +25,16 @@
 @media(max-width:900px) { .pk-lobby-team-roster { grid-template-columns:1fr; } }
 
 .pk-lobby-team-roster[hidden],.pk-lobby-team-roster.hidden { display:none; }
-.pk-lobby-team-roster.is-dense .pk-roster-heading { margin-bottom:10px; }
-.pk-lobby-team-roster.is-dense .pk-roster-card { padding:10px 8px; gap:6px; }
-.pk-lobby-team-roster.is-dense .pk-roster-portrait { height:96px; }
-.pk-lobby-team-roster.is-dense .pk-roster-card.is-empty { min-height:150px; }
+/* Four or more seats a side (2×2): the portrait sits beside the name and the
+   buttons share one row, so both rows of cards stay in view. */
+.pk-lobby-team-roster.is-dense .pk-roster-group { padding:12px; }
+.pk-lobby-team-roster.is-dense .pk-roster-heading { min-height:36px; margin-bottom:10px; }
+.pk-lobby-team-roster.is-dense .pk-roster-cards { gap:8px; align-content:start; }
+.pk-lobby-team-roster.is-dense .pk-roster-card { display:grid; grid-template-columns:76px minmax(0,1fr); align-content:center; justify-items:start; gap:2px 10px; padding:8px; text-align:left; }
+.pk-lobby-team-roster.is-dense .pk-roster-card>* { grid-column:2; justify-content:flex-start; text-align:left; }
+.pk-lobby-team-roster.is-dense .pk-roster-portrait { grid-column:1; grid-row:1 / span 4; width:76px; height:76px; }
+.pk-lobby-team-roster.is-dense .pk-roster-host { align-self:start; padding:3px 6px; font-size:10px; }
+.pk-lobby-team-roster.is-dense .pk-roster-card>.pk-roster-actions { grid-column:1 / -1; flex-direction:row; gap:6px; margin-top:6px; }
+.pk-lobby-team-roster.is-dense .pk-roster-action { min-height:34px; padding:6px 8px; font-size:13px; }
+.pk-lobby-team-roster.is-dense .pk-roster-card.is-empty { min-height:0; grid-template-columns:auto minmax(0,1fr); align-items:center; }
+.pk-lobby-team-roster.is-dense .pk-roster-card.is-empty>svg { grid-column:1; width:24px; height:24px; }

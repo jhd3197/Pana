@@ -360,6 +360,9 @@ workspace is lazy too; neither adds to a game's static module budget.
 `engine/room-options.js` owns primary segmented choices and the prototype's
 “Más ajustes” native dialog. Each game supplies a pure field schema with `id`,
 `label`, `default`, typed `choices: [[value, label]]` and optional `advanced`.
+A field may also pass `defaultOf(values)` when its default follows other
+values (Pepazo: each mode's round time and lives); "Más ajustes" counts and
+marks changes against it.
 `createRoomOptions(container, { title, fields, change, reset, help })` calls `change`
 with a patch object, never a key/value pair. Load `room-options.css` with kit.css.
 Call `update(authoritativeValues, mayEdit)` from snapshots, and close the dialog
@@ -374,6 +377,12 @@ fresh/practice state factories as well as migration snapshots.
 Escape closes this dialog without also opening the pause menu. Tab wraps among
 visible enabled buttons, inputs, selects and links; closing restores the
 trigger's focus.
+
+Primary choices in the lobby's settings column sit under their label as one
+grid of square buttons: up to three in a row, four as 2×2, more in two rows
+(`--seg-cols`, set by room-options.js; laid out in `sala.css` and
+`room-options.css`). Keep the main lobby to the one or two choices that define
+the round; the rest belongs in "Más ajustes".
 
 The dialog follows the lobby side panel's compact look: a one-row header (Más
 ajustes eyebrow, game title, host notice, close), one grid of equal cards with
@@ -452,7 +461,10 @@ from `engine/team-lobby.js` for teams, boat crews or table seats; it renders
 through `engine/lobby-roster.js`, which games no longer import (the conventions
 test fails on it). Its CSS is imported by game-lobby.css. The container gets
 `data-pana-roster`, so entry docks it in the main roster column, sala games too:
-team panels never sit in Más ajustes.
+team panels never sit in Más ajustes. A team of up to three seats shows one row of
+cards; four seats a side stand as a 2×2 grid of compact cards (portrait beside
+the name, buttons in one row; `rosterColumns` in `lobby-roster.js`), more in
+two even rows.
 
 ```js
 const lobby = createTeamLobby(container, { onMove: (from, to) => room.moveSeat(from, to) });
@@ -531,8 +543,7 @@ an invite when currently local. No prototype sample players are fabricated.
 
 Connection status and Reintentar occupy one place at the settings card's foot.
 Offline keeps a yellow local-play action; retry reloads the existing connection
-flow. Pepazo's actual team arrangement remains under Más ajustes so the eight
-sala cards stay in place. Other games use the same side-settings presentation while retaining their
+flow. Pepazo's teams stand in the main lobby as team panels (team rounds only). Other games use the same side-settings presentation while retaining their
 game-owned team seating and personal controls. Their start labels, handlers and
 host permissions are not replaced. No optional workshop metadata is required.
 

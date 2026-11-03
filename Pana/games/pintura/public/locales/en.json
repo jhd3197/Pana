@@ -64,9 +64,6 @@
   "{victim} · {distance} m · ¡Tiro largo!": "{victim} · {distance} m · Long shot!",
   "+1 pepazo de aguante, −10% movilidad.": "+1 hit of toughness, −10% mobility.",
   "+8% movilidad, −1 pepazo de aguante.": "+8% mobility, −1 hit of toughness.",
-  "1 pepazo": "1 hit",
-  "3 pepazos": "3 hits",
-  "5 pepazos": "5 hits",
   "Aguante": "Toughness",
   "Aguante {left} de {total}": "Toughness {left} of {total}",
   "Aguante y movilidad normales.": "Normal toughness and mobility.",
@@ -318,5 +315,8 @@
   "Ya es tuyo, pero la sala lo verá cuando vuelvas a entrar: por ahora llevas uno liso.": "It's yours, but the room will see it when you rejoin: for now you wear a solid one.",
   "Zona {zone} · {team}": "Zone {zone} · {team}",
   "Zona {zone} · libre": "Zone {zone} · free",
-  "Zonas": "Zones"
+  "Zonas": "Zones",
+  "Hardcore": "Hardcore",
+  "Bandera": "Flag",
+  "En Hardcore un pepazo te saca, pero vuelves rápido y sin límite de vidas.": "In Hardcore one hit knocks you out, but you're back fast with endless lives."
 }

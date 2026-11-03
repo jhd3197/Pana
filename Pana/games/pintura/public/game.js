@@ -4,7 +4,7 @@ import { readiness } from '/engine/play/melee.js';
 import { createTeamLobby } from '/engine/team-lobby.js';
 import { ratingBadge } from '/engine/kit-rating.js';
 import { createRoomOptions } from '/engine/room-options.js';
-import { MENU_FIELDS, DEFAULT_OPTIONS, teamPlay, roundTime, menuValues, menuPatch } from './options.js';
+import { MENU_FIELDS, DEFAULT_OPTIONS, teamPlay, roundTime, menuValues, menuPatch, hardcorePlay } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/play/map-picker.js';
 import { createDifficultyPicker, DEFAULT_DIFFICULTY } from '/engine/play/difficulty.js';
@@ -31,7 +31,7 @@ import { createLookControls } from '/engine/play/first-person.js';
 import { createScopeOverlay } from '/engine/play/scope.js';
 import { createFeats } from '/engine/feats.js';
 import { createHitFeats } from './feats.js';
-import { coverFor, TARGET, segmentBox, paintSeats, variantName } from './rules.js';
+import { coverFor, TARGET, segmentBox, paintSeats, variantName, hitsToKill } from './rules.js';
 import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { loc, locn } from '/engine/i18n.js';
 
@@ -57,7 +57,7 @@ if (typeof window.PanaSh?.onCamoUnlocked === 'function') window.PanaSh.onCamoUnl
 $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-armory').click(), read: () => {
   const describe = p => { const stats = kitStats(p.kit || room.kit, room.state.options); return { id: room.link?.state.players.find(m => m.seat === p.id)?.id, kit: stats.name, level: kitRating(p.kit || room.kit, room.state.options), color: p.color || '#ffc629', team: teamPlay(room.state.options) ? (p.team ? loc('Turquesa') : loc('Naranja')) : '' }; };
   const people = room.state.players.filter(p => p.connected && !p.bot).length || 1;
-  return { connection: room.local ? 'local' : room.connected ? 'online' : $('connection').dataset.failed === 'true' ? 'offline' : 'connecting', players: room.state.players.map(describe), local: describe({ kit: room.kit }), summary: [locn(people, '{n} pana', '{n} panas'), room.state.options?.mode === 'ctf' ? loc('Captura la bandera') : room.state.options?.mode === 'dom' ? loc('Dominación') : room.state.options?.mode === 'teams' ? loc('Equipos') : loc('Todos vs todos'), loc('{n} min', { n: roundTime(room.state.options) / 60 })].join(' · ') };
+  return { connection: room.local ? 'local' : room.connected ? 'online' : $('connection').dataset.failed === 'true' ? 'offline' : 'connecting', players: room.state.players.map(describe), local: describe({ kit: room.kit }), summary: [locn(people, '{n} pana', '{n} panas'), room.state.options?.mode === 'ctf' ? loc('Captura la bandera') : room.state.options?.mode === 'dom' ? loc('Dominación') : room.state.options?.mode === 'teams' ? loc('Equipos') : loc('Todos vs todos'), hardcorePlay(room.state.options) && loc('Hardcore'), loc('{n} min', { n: roundTime(room.state.options) / 60 })].filter(Boolean).join(' · ') };
 } };
 // Team rounds show the sides in the main lobby; the kit rides on each card.
 const kitLine = p => { const line = document.createElement('span'); line.className = 'sala-player-kit'; line.textContent = kitStats(p.kit || room.kit, room.state.options).name; line.insertAdjacentHTML('beforeend', ratingBadge(kitRating(p.kit || room.kit, room.state.options))); return line; };
@@ -282,7 +282,7 @@ function cooldown(state, me) {
   wasReloading = !!reloading;
 }
 function aguante(state, me) {
-  const total = kitStats(me?.kit,state.options).toughness, left = me ? Math.max(0, total - (me.paint || 0)) : total, key = `${total}:${left}`;
+  const total = hitsToKill(me?.kit, state.options), left = me ? Math.max(0, total - (me.paint || 0)) : total, key = `${total}:${left}`;
   if ($('aguante').dataset.key === key) return; $('aguante').dataset.key = key;
   $('aguante').replaceChildren(...Array.from({ length: total }, (_, i) => { const pip = document.createElement('i'); pip.className = i < left ? 'pip' : 'pip pip--painted'; return pip; }));
   $('aguante').setAttribute('aria-label', loc('Aguante {left} de {total}', { left, total }));

@@ -19,16 +19,24 @@ try {
   await waitFor(a, () => pinturaDebug.room.connected && pinturaDebug.room.state.players.length === 2);
   await a.evaluate(() => { pinturaDebug.room.configure({ mode: 'ctf', flagGoal: 1, bots: 5 }); pinturaDebug.room.selectMap('plaza'); });
   await waitFor(b, () => pinturaDebug.room.state.options.mode === 'ctf' && pinturaDebug.room.state.options.flagGoal === 1 && pinturaDebug.room.state.mapId === 'plaza');
-  // The lobby shows the mode's own limits and hides the ordinary round time.
-  assert.ok(await a.getByText('Capturas para ganar').first().isVisible(), 'score limit in the lobby');
-  assert.ok(await a.getByText('Tiempo límite').first().isVisible(), 'time limit in the lobby');
+  // Más ajustes shows the mode's own limits and hides the ordinary round time.
+  await a.locator('#pana-room-more').click();
+  assert.ok(await a.getByText('Capturas para ganar').first().isVisible(), 'score limit in Más ajustes');
+  assert.ok(await a.getByText('Tiempo límite').first().isVisible(), 'time limit in Más ajustes');
   assert.equal(await a.getByText('Tiempo por ronda').first().isVisible(), false);
+  await a.locator('#pana-room-done').click();
   assert.equal(await a.locator('#win-target').textContent(), '1');
   await shot(a, 'lobby');
 
   await a.locator('#start').click();
   const live = () => pinturaDebug.room.state.phase === 'playing' && !pinturaDebug.room.state.loading && !pinturaDebug.room.state.countdown && document.querySelector('#hud .ctf-flags')?.hidden === false;
   await waitFor(a, live, undefined, 120_000); await waitFor(b, live, undefined, 120_000);
+  // Teammates (bots included) wear a chevron over their heads; rivals and you never do.
+  const marks = page => page.evaluate(() => { const s = pinturaDebug.room.state, me = s.players.find(p => p.id === pinturaDebug.room.id), out = [];
+    pinturaDebug.world.scene.traverse(o => { if (o.name === 'Team marker' && o.visible && o.parent?.visible) out.push(s.players.find(p => p.id === o.parent.userData.playerId)?.team === me.team && o.parent.userData.playerId !== me.id); });
+    return out; });
+  await waitFor(b, () => { let n = 0; pinturaDebug.world.scene.traverse(o => { if (o.name === 'Team marker' && o.visible) n++; }); return n > 0; }, undefined, 30_000);
+  for (const page of [a, b]) assert.ok((await marks(page)).every(Boolean), 'chevrons only over teammates');
   const flags = page => page.evaluate(() => pinturaDebug.room.state.flags.map(f => f.state));
   // Bots reach a flag within seconds, so any of the three states may show already.
   assert.ok((await flags(b)).every(s => ['home', 'carried', 'dropped'].includes(s)));
