@@ -13,6 +13,10 @@ becomes the GitHub release's notes.
   granada y solo su nombre. Al elegir un accesorio el arma se pone de lado y
   la cámara se acerca a la pieza montada; el panel de estadísticas marca con
   +/− lo que gana o pierde.
+- **Capis a Pintazos ya se juega con amigos: abre una sala con «Con amigos», comparte el link y jueguen hasta cuatro en dos equipos.**
+  Cada quien ve los tiros y los cráteres de los demás. Un equipo sin panas lo
+  juega la máquina, y si alguien se va, su compañero o la máquina sigue por
+  él. «Jugar solo» contra la máquina sigue igual.
 - **En la armería de Pepazo, Probar ahora abre un polígono de tiro de verdad: disparas en primera persona con tu kit a blancos de 10 a 100 m.**
   Un pasillo techado con luces, distancias pintadas en el piso y en letreros,
   siluetas de papel, una pizarra, blancos que suben y bajan, uno que corre
