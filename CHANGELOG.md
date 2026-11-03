@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia corre más fluido bajo tierra y en línea.**
+  Abajo ya no dibuja la sombra del sol ni lo que la niebla tapa, y el
+  anfitrión manda solo lo que cambió: unas diez veces menos datos. Los otros
+  panas se ven caminar parejo aunque la conexión venga a saltos.
 - **Capis a Pintazos ya se juega con amigos: abre una sala con «Con amigos», comparte el link y jueguen hasta cuatro en dos equipos.**
   Cada quien ve los tiros y los cráteres de los demás. Un equipo sin panas lo
   juega la máquina, y si alguien se va, su compañero o la máquina sigue por
