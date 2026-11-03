@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La Estatua de Reliquia ahora se ve como una estatua de verdad: una doliente de mármol pálido que resalta en la oscuridad.**
+  Sobre un pedestal bajo, con un velo roto, cuencas vacías y una boca
+  entreabierta, manos de dedos largos y musgo en el ruedo. Cada vez que se
+  mueve cambia de pose a la vista: llorando, leyendo un libro, estirando
+  una mano hacia ti, con los brazos al frente o lanzándose encima.
 - **La biblioteca de Reliquia tiene dos monstruos propios: El Lector, un bibliotecario ciego que caza por el oído, y La Estatua, que solo se mueve cuando nadie la mira.**
   El Lector va adonde oyó el último ruido: correr, saltar, registrar, abrir
   cofres o pelear lo atraen, y caminar despacio o quedarse quieto no. Antes de

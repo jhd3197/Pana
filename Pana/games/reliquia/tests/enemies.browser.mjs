@@ -48,6 +48,32 @@ try {
   await page.screenshot({ path: path.join(output, 'estatua.png') });
   check('La Estatua holds still while it is in view');
 
+  // The model itself: every pose is finite, moves the hands and the head,
+  // stays within the draw budget, and setShade only scales its albedo.
+  const model = await page.evaluate(async id => {
+    const { Vector3 } = await import('three'), m = reliquia.view.enemies.get(id).model, v = new Vector3(), poses = [];
+    let finite = true, draws = 0;
+    for (let i = 0; i < 5; i++) {
+      m.userData.setPose(i); m.updateMatrixWorld(true);
+      const points = [];
+      let count = 0;
+      m.traverseVisible(o => { if (o.isMesh) { count++; o.getWorldPosition(v); points.push(v.toArray()); o.matrixWorld.elements.forEach(x => { finite &&= Number.isFinite(x); }); } });
+      draws = Math.max(draws, count); poses.push(points);
+    }
+    const tinted = []; m.traverse(o => { if (o.isMesh && o.material.vertexColors) tinted.push(o.material); });
+    m.userData.setShade(.5); const shaded = tinted.every(t => Math.abs(t.color.r - .5) < 1e-6); m.userData.setShade(1);
+    m.userData.setPose(reliquia.state.enemies.find(e => e.id === id)?.pose ?? 0);
+    return { finite, draws, poses, shaded };
+  }, statue.id);
+  assert.ok(model.finite, 'finite transforms in every pose');
+  assert.ok(model.draws >= 12 && model.draws <= 20, `${model.draws} draws per statue`);
+  assert.ok(model.shaded, 'setShade scales the tinted albedo');
+  for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) {
+    const a = model.poses[i], b = model.poses[j], moved = a.filter((p, k) => b[k] && Math.hypot(p[0] - b[k][0], p[1] - b[k][1], p[2] - b[k][2]) > .1).length;
+    assert.ok(moved >= 4, `poses ${i} and ${j} differ (${moved} parts moved)`);
+  }
+  check(`La Estatua: five distinct finite poses in ${model.draws} draws`);
+
   // Look away (south): it strides closer; look back: it has moved, and holds again.
   await page.evaluate(() => reliquia.face(0, 0));
   await waitFor(page, id => (reliquia.state.enemies.find(e => e.id === id)?.steps || 0) >= 2, statue.id);
