@@ -5,6 +5,15 @@ panas in two teams of four; bots fill every empty seat. A turn-based game on
 the shared table room (`engine/table-room.js`) with real-time pitches: the
 host runs every timer in `advance(dt)`.
 
+## Lobby teams
+
+The lobby shows Visita and Casa through `engine/team-lobby.js` (bots are CPU
+cards with their batting style, zurdo and cuarto bate as the card's line). A pana
+moves with Cambiar / Cambiarme aquí (the `seat` action swaps who sits in two
+seats, bot or pana; the host may arrange anyone, lobby only); `switch` still
+exists for the old one-step team change. A newcomer takes a bot seat on the
+smaller side (`openSeat`, team = seat % 2).
+
 ## Files
 
 - `public/field.js`: pure geometry shared by rules and scene: the pitch path

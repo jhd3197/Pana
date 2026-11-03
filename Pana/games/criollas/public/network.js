@@ -1,6 +1,7 @@
 import { TableRoom } from '/engine/table-room.js';
 import { createGame, acceptAction, step, STEP, copy, botPlayer } from './rules.js';
 import { loc, locn } from '/engine/i18n.js';
+import { openSeat } from '/engine/play/team-balance.js';
 
 // The table setting (goal, place, difficulty) survives new rooms and practice.
 const keepTarget = (prev) => prev ? { ...createGame(), target: prev.target, ballsPerPlayer: prev.ballsPerPlayer || 4, remaining: Array(6).fill(prev.ballsPerPlayer || 4), mapId: prev.mapId || 'plaza', difficulty: prev.difficulty || 'normal', opener: prev.opener || 'cacho', turnSeconds: prev.turnSeconds ?? 60 } : createGame();
@@ -23,7 +24,8 @@ export class CriollasRoom extends TableRoom {
   seatMembers() {
     this.game.players.forEach((p, i) => { if (p.id !== null && !this.members.has(p.id)) this.game.players[i] = botPlayer(i); });
     for (const m of this.members.values()) {
-      const p = this.game.players.find(p => p.id === m.id) || this.game.players.find(p => p.id === null);
+      // A newcomer takes a bot seat on the smaller team (team = seat % 2).
+      const p = this.game.players.find(p => p.id === m.id) || this.game.players[openSeat(this.game.players, { teamOf: seat => seat % 2, free: p => p.id === null })];
       if (p) Object.assign(p, { id: m.id, name: m.name, avatar: m.avatar || {} });
     }
     this.game.revision++;

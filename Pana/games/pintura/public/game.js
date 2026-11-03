@@ -1,9 +1,10 @@
 import { createArmory } from './armory.js';
 import { kitStats, kitRating, MARKERS, WEAPONS, cycleWeapon } from './armory-data.js';
 import { readiness } from '/engine/play/melee.js';
-import { createLobbyRoster } from '/engine/lobby-roster.js';
+import { createTeamLobby } from '/engine/team-lobby.js';
+import { ratingBadge } from '/engine/kit-rating.js';
 import { createRoomOptions } from '/engine/room-options.js';
-import { FIELDS, DEFAULT_OPTIONS, teamPlay, roundTime } from './options.js';
+import { MENU_FIELDS, DEFAULT_OPTIONS, teamPlay, roundTime, menuValues, menuPatch } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/play/map-picker.js';
 import { createDifficultyPicker, DEFAULT_DIFFICULTY } from '/engine/play/difficulty.js';
@@ -58,8 +59,10 @@ $('lobby').panaSala = { kitLabel: loc('Armar mi kit'), openKit: () => $('open-ar
   const people = room.state.players.filter(p => p.connected && !p.bot).length || 1;
   return { connection: room.local ? 'local' : room.connected ? 'online' : $('connection').dataset.failed === 'true' ? 'offline' : 'connecting', players: room.state.players.map(describe), local: describe({ kit: room.kit }), summary: [locn(people, '{n} pana', '{n} panas'), room.state.options?.mode === 'ctf' ? loc('Captura la bandera') : room.state.options?.mode === 'dom' ? loc('Dominación') : room.state.options?.mode === 'teams' ? loc('Equipos') : loc('Todos vs todos'), loc('{n} min', { n: roundTime(room.state.options) / 60 })].join(' · ') };
 } };
-const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
-const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: FIELDS, change: options => room.configure(options), reset() {
+// Team rounds show the sides in the main lobby; the kit rides on each card.
+const kitLine = p => { const line = document.createElement('span'); line.className = 'sala-player-kit'; line.textContent = kitStats(p.kit || room.kit, room.state.options).name; line.insertAdjacentHTML('beforeend', ratingBadge(kitRating(p.kit || room.kit, room.state.options))); return line; };
+const teamRoster = createTeamLobby($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to), titles: [loc('Naranja'), loc('Turquesa')], colors: ['#f28b42', '#29c5cd'], detail: kitLine });
+const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: MENU_FIELDS, change: patch => room.configure(menuPatch(patch, room.state.options)), reset() {
   room.configure(DEFAULT_OPTIONS); room.selectMap('terminal'); room.selectDifficulty(DEFAULT_DIFFICULTY);
 } });
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
@@ -314,7 +317,7 @@ function roundStart(state) {
 const teamsOn = state => teamPlay(state.options);
 const teamScore = state => loc('Naranja {orange} — Turquesa {teal}', { orange: state.teamScores?.[0] || 0, teal: state.teamScores?.[1] || 0 });
 function render(state) {
-  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
+  optionsUI.update(menuValues(state.options || DEFAULT_OPTIONS), room.connected && room.isHost && state.phase !== 'playing');
   if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase !== 'playing');
@@ -325,9 +328,8 @@ function render(state) {
   $('lobby').hidden = !lobby; $('hud').hidden = lobby || finished; document.body.classList.toggle('in-lobby', lobby);
   const teams = teamPlay(state.options), people = state.players.filter(p => p.connected);
   const missingTeam = teams && people.length > 1 && new Set(people.map(p => p.team)).size < 2;
-  $('team-roster').hidden = !teams;
   $('roster').hidden = teams;
-  if (teams) teamRoster.update([loc('Naranja'), loc('Turquesa')].map((title, team) => ({ id: team, title, color: team ? '#29c5cd' : '#f28b42', seats: paintSeats(state.players).map((player, key) => ({ key, player })).filter(s => s.key % 2 === team) })), { ownId: room.id, hostId: room.local ? room.id : room.link?.state.players.find(p => p.id === room.link.state.host)?.seat, enabled: room.connected && lobby, canArrange: room.isHost, members: room.link?.state.players || [] });
+  teamRoster.update({ teams, seats: paintSeats(state.players).map((player, key) => ({ key, team: key % 2, player })), ownId: room.id, hostId: room.local ? room.id : room.link?.state.players.find(p => p.id === room.link.state.host)?.seat, enabled: room.connected && lobby, canArrange: room.isHost, members: room.link?.state.players || [] });
   $('start').disabled = (!room.connected ? $('connection').dataset.failed !== 'true' : !room.isHost || missingTeam); $('start').textContent = !room.connected ? loc('Conectando…') : missingTeam ? loc('Falta un pana en el otro equipo') : room.isHost ? loc('¡A pepear!') : loc('El anfitrión inicia la ronda');
   $('invite').disabled = room.local || !room.connected; $('roster').textContent = state.players.filter(p => p.connected).map(p => p.name).join(' · ');
   const me = state.players.find(p => p.id === room.id), order = [...state.players].sort((a, b) => b.score - a.score || a.hits - b.hits);

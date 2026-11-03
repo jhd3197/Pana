@@ -2,5 +2,6 @@
   "name": "Billar",
   "description": "Bola 8 y Bola 9",
   "players": 6,
+  "teams": true,
   "color": "#20856c"
 }

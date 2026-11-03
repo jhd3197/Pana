@@ -10,7 +10,7 @@ import { createRoomOptions } from '/engine/room-options.js';
 import { optionDefaults } from '/engine/room-options-rules.js';
 import { CRIOLLAS_OPTIONS, criollasOptions } from './options.js';
 import { fillRoster } from '/engine/results.js';
-import { createLobbyRoster } from '/engine/lobby-roster.js';
+import { createTeamLobby } from '/engine/team-lobby.js';
 import { sound } from '/engine/fx.js';
 import { paintCharge, createShotCharge } from '/engine/play/shot-charge.js';
 import { aimAt, clamp, measure, distance } from '/engine/play/bolas-criollas.js';
@@ -39,7 +39,7 @@ const room = new CriollasRoom({ code, name: loadName(), avatar: loadAvatar(), on
     $('recovery').hidden = !failed || room.state.phase === 'lobby'; render(room.state);
   },
 });
-const teamRoster = createLobbyRoster($('lobby-roster'), { onMove: (from, to) => room.action('swap', { from, to }) });
+const teamRoster = createTeamLobby($('lobby-roster'), { onMove: (from, to) => room.action('swap', { from, to }), titles: TEAM_NAMES.map(t => loc(t)), colors: ['#ed5949', '#299e72'] });
 room.state.players[0] = { id: null, name: loadName(), avatar: loadAvatar() };
 const menu = createGameMenu({ pad: { move: 'arrows', moveLabel: loc('Afinar la dirección'), cursor: loc('Dirigir la bola'), keys: { a: ['Space', loc('Fuerza: mantén y suelta para lanzar')], y: ['KeyC', loc('Cámara')] } }, title: loc('Bolas Criollas'), orientation: 'libre', sound,
   note: () => room.offline ? loc('La partida está en pausa.') : loc('La sala sigue jugando mientras estás en el menú.'),
@@ -136,8 +136,7 @@ function render(g) {
   mapPicker.update(g.mapId, lobby && (!room.connected || room.isHost));
   $('guide-note').textContent = g.difficulty === 'normal' ? loc('El blanco indica dónde frena sin choques.') : difficultyInfo(g.difficulty).note;
   $('side-controls').hidden = lobby; $('power-bar').hidden = lobby || !charge.active;
-  $('lobby-roster').hidden = !lobby;
-  if (lobby) teamRoster.update(TEAM_NAMES.map((title, team) => ({ id: team, title: loc(title), color: team ? '#299e72' : '#ed5949', seats: g.players.map((player, key) => ({ key, player: { ...player, bot: player.id === null } })).filter(s => s.key % 2 === team) })), { ownId: room.id, hostId: room.hostId, enabled: room.connected, canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
+  teamRoster.update({ teams: lobby, seats: g.players.map((player, key) => ({ key, team: key % 2, player: { ...player, bot: player.id === null } })), ownId: room.id, hostId: room.hostId, enabled: room.connected, canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
   for (let t = 0; t < 2; t++) { $(`score-${t}`).textContent = g.scores[t]; const left = g.remaining.reduce((sum, n, i) => sum + (i % 2 === t ? n : 0), 0); $(`left-${t}`).textContent = locn(left, '{n} bolas por tirar', '{n} bolas por tirar'); }
   $('hand-number').textContent = loc('MANO {n}', { n: g.hand }); $('target-label').textContent = loc('A {n} tantos', { n: g.target });
   const player = g.players[g.turn];

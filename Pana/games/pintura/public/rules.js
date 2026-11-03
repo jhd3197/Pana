@@ -1,6 +1,7 @@
 import { cleanKit, changeWeapon, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO, rangedDamage } from './armory-data.js';
 import { createMelee, startSwing, stepMelee, swingHit, throwStart, stepThrown, aimThrow, inHand } from '../../../engine/play/melee.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
+import { smallestTeam } from '../../../engine/play/team-balance.js';
 import { DEFAULT_OPTIONS, validOptions, teamPlay, roundTime, livesOf, objectivePlay } from './options.js';
 import { isCtf, ctfReset, ctfStep, ctfDrop, ctfOutcome, ctfGoal, carrierSlow } from './ctf.js';
 import { isDom, domReset, domStep, domOutcome, domBotGoal } from './domination.js';
@@ -205,7 +206,10 @@ export class Arena {
     let p = this.players.find(p => p.id === id);
     const occupied = this.players.filter(other => other !== p && other.connected).map(other => other.seat);
     const free = Array.from({ length: SEATS }, (_, i) => i).filter(i => !occupied.includes(i));
-    const seat = p && !occupied.includes(p.seat) ? p.seat : free.includes(want) ? want : free[0];
+    // A newcomer in a team round joins the smaller team (team = seat % 2); a tie keeps the first free seat.
+    const people = this.players.filter(other => other !== p && other.connected), sides = [0, 1].map(t => free.some(s => s % 2 === t) ? people.filter(o => o.seat % 2 === t).length : Infinity);
+    const fair = teamPlay(this.options) && free.length ? free.find(s => s % 2 === smallestTeam(sides, free[0] % 2)) : free[0];
+    const seat = p && !occupied.includes(p.seat) ? p.seat : free.includes(want) ? want : fair;
     if (seat === undefined) return null;
     const team = seat % 2, color = COLORS[teamPlay(this.options) ? team : seat];
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.

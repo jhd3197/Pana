@@ -16,7 +16,8 @@ export function portraitImg(avatar, className = '') {
 const node = (tag, cls, text) => { const el = document.createElement(tag); el.className = cls; if (text != null) el.textContent = text; return el; };
 
 // Seat keys belong to the game, not DOM order or member IDs.
-export function createLobbyRoster(container, { onMove }) {
+// `detail(player)` may add a game's line to a filled card (Pepazo: the kit).
+export function createLobbyRoster(container, { onMove, detail = null }) {
   container.classList.add('pk-lobby-team-roster'); container.dataset.panaRoster = '';
   let groups = [], options = {}, selected = null, selectedPlayerId, signature = '';
   function portrait(player) {
@@ -36,6 +37,8 @@ export function createLobbyRoster(container, { onMove }) {
     const source = selected ?? own?.key;
     const move = target => { if (!options.enabled || source == null || source === target) return; onMove(source, target); selected = null; render(); };
     container.replaceChildren(); container.style.setProperty('--roster-groups', Math.min(groups.length, 2));
+    // Four or more seats a side wrap to two rows: smaller cards keep them in view.
+    container.classList.toggle('is-dense', groups.some(g => g.seats.length > 3));
     for (const group of groups) {
       const section = node('section', 'pk-roster-group'); section.dataset.rosterGroup = group.id;
       if (group.color) section.style.setProperty('--roster-color', group.color);
@@ -59,6 +62,7 @@ export function createLobbyRoster(container, { onMove }) {
           const member = options.members?.find(m => m.id === p.id || m.seat === p.id);
           const status = p.bot ? 'CPU' : member && 'assetsReady' in member ? !member.assetsReady ? loc('Cargando') : member.lobbyReady ? loc('Listo') : loc('Esperando') : loc('En la sala');
           card.append(portrait(p), node('strong', 'pk-roster-name', mine ? loc('{name} (tú)', { name: p.name }) : p.name), node('span', 'pk-roster-status', status));
+          const extra = detail?.(p); if (extra) card.append(extra);
           if (!mine || selected != null) card.append(button(selected != null ? loc('Mover aquí') : loc('Cambiar'), () => move(seat.key), seat.key, !options.enabled || source == null || source === seat.key));
           if (options.canArrange) {
             const pick = button(selected === seat.key ? loc('Cancelar') : loc('Organizar'), () => { selected = selected === seat.key ? null : seat.key; selectedPlayerId = p.id; render(); }, null, !options.enabled);

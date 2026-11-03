@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los equipos se ven igual en todos los juegos, en la sala principal, y quien llega entra al equipo más chico.**
+  Dominó, Caída, Billar, Criollas, Chapita, Curiara, Capis y Pepazo usan los
+  mismos paneles: Unirme aquí, Cambiarme aquí y Organizar. En Chapita ya
+  puedes elegir puesto con un toque.
+- **Pepazo: elige «Equipos» o «Todos contra todos» arriba en la sala.**
+  Con equipos eliges el modo (Pintadas, Captura la bandera, Dominación) y
+  los dos equipos salen en la sala, ya no escondidos en Más ajustes.
 - **El armero de Pepazo tiene un puesto fijo para cada pieza: Mira, Cañón, Tolva y Culata.**
   Cada puesto ofrece solo lo que le cabe a esa arma: la francotiradora lleva
   telescópica, la pistola punto rojo o láser, y la tolva viene chica o grande.

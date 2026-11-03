@@ -11,7 +11,9 @@ import { ChapitaRoom } from './network.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
 import { ChapitaGame, roleOf } from './rules.js';
 import { HEIGHT_TEXT, ROWS } from './field.js';
-import { renderScoreboard, renderLobbyRoster, renderResults, matchupText, eventText, shout, SHOUTS } from './hud.js';
+import { createTeamLobby } from '/engine/team-lobby.js';
+import { TEAM_COLORS } from './scene.js';
+import { renderScoreboard, lobbyDetail, renderResults, matchupText, eventText, shout, SHOUTS } from './hud.js';
 import { loc, locKey } from '/engine/i18n.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
@@ -42,7 +44,7 @@ $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn'
 $('rules').onclick = () => menu.open('controls');
 $('start').onclick = $('again').onclick = () => { sound.unlock(); room.action('start'); };
 $('practice').onclick = () => room.practice();
-$('switch').onclick = () => room.action('switch');
+const teams = createTeamLobby($('roster'), { onMove: (from, to) => room.action('seat', { from, to }), titles: [loc('Visita'), loc('Casa')], colors: TEAM_COLORS, detail: lobbyDetail });
 $('hand').onclick = () => room.action('hand');
 $('throw').onclick = () => throwPitch();
 $('swing').onclick = () => swingNow();
@@ -103,8 +105,8 @@ function render(state) {
   document.body.dataset.phase = state.phase;
   $('start').disabled = !world || !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? loc('¡Play ball!') : loc('Espera al anfitrión');
-  renderLobbyRoster(state, room.id);
-  $('switch').disabled = !me || !room.connected; $('hand').disabled = !me || !room.connected;
+  teams.update({ teams: true, seats: state.players.map((p, key) => ({ key, team: key % 2, player: { ...p, bot: p.id === null } })), ownId: room.id, hostId: room.hostId, enabled: room.connected && lobby, canArrange: room.isHost, members: room.link?.state.players || [] });
+  $('hand').disabled = !me || !room.connected;
   $('hand').setAttribute('aria-pressed', String(!!me?.zurdo));
 
   // The clocks start the first time this screen sees a pitch or a hit.

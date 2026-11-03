@@ -42,7 +42,8 @@ if (original) { original.inert = true; settings.append(original); }
 // The entry shell only docks those controls; it never assigns players itself.
 function dockSeats() {
   if (!original) return;
-  const controls = original.panaSala ? [] : [...original.querySelectorAll('[data-pana-roster]')];
+  // Team panels (engine/team-lobby.js) always stand here, in the main lobby.
+  const controls = [...original.querySelectorAll('[data-pana-roster]')];
   const showSeats = () => { roster.hidden = controls.some(node => !node.hidden && !node.classList.contains('hidden')); };
   for (const node of [...controls, ...(original.panaSala ? [] : original.querySelectorAll('[data-room-personal]'))]) {
     const placeholder = document.createComment('roster control home'); node.before(placeholder);

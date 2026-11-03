@@ -2,5 +2,6 @@
   "name": "Bolas Criollas",
   "description": "Arrima al mingo",
   "players": 6,
+  "teams": true,
   "color": "#d88b4b"
 }

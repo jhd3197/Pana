@@ -2,5 +2,6 @@
   "name": "Curiara",
   "description": "Remo por el Amazonas",
   "players": 8,
+  "teams": true,
   "color": "#3f9e7a"
 }

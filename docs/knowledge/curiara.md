@@ -135,6 +135,11 @@ Headless suites render slowly; give two-client steps long timeouts.
 
 ## Room options
 
+Two-pana canoes show as team panels, one per canoe, through
+`engine/team-lobby.js`; one-pana formats use the shell's player cards. Seating
+is not auto-balanced: free panas fill one canoe before the next, because a
+canoe is a crew of two, not a side.
+
 The shared primary/advanced room panel publishes host-validated options through
 race snapshots. Active races lock options, and host migration rebuilds the same
 river before continuing. The existing Amazonas remains the default. Caroní has

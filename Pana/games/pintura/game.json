@@ -2,5 +2,6 @@
   "name": "Pepazo",
   "description": "Paintball entre panas",
   "players": 8,
+  "teams": true,
   "color": "#f28b42"
 }

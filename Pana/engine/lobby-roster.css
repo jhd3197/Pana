@@ -24,3 +24,7 @@
 @media(max-width:900px) { .pk-lobby-team-roster { grid-template-columns:1fr; } }
 
 .pk-lobby-team-roster[hidden],.pk-lobby-team-roster.hidden { display:none; }
+.pk-lobby-team-roster.is-dense .pk-roster-heading { margin-bottom:10px; }
+.pk-lobby-team-roster.is-dense .pk-roster-card { padding:10px 8px; gap:6px; }
+.pk-lobby-team-roster.is-dense .pk-roster-portrait { height:96px; }
+.pk-lobby-team-roster.is-dense .pk-roster-card.is-empty { min-height:150px; }
