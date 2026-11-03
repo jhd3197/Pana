@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El armero de Pepazo tiene un puesto fijo para cada pieza: Mira, Cañón, Tolva y Culata.**
+  Cada puesto ofrece solo lo que le cabe a esa arma: la francotiradora lleva
+  telescópica, la pistola punto rojo o láser, y la tolva viene chica o grande.
+  Cada opción muestra con iconos lo que gana o pierde. Tu kit guardado se
+  pasa solo al nuevo armero.
 - **Editar pana ya no te saca de la sala: el editor se abre encima y al cerrarlo sigues donde estabas.**
   Desde la sala de un juego o el inicio, tu puesto y tu party se quedan. Al
   guardar, los demás ven tu pana nuevo. Mi pana también abre bien cada vez,

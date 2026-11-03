@@ -14,6 +14,12 @@ export const ICONS = {
   // A marker's stock in profile, and a sight on its rail (Pepazo's Culata and Mira).
   kitStock: svg('<path d="M4 13h18l12 9v7H23l-7-8H4z" fill="currentColor"/>'),
   kitOptic: svg('<path d="M6 13h28v10H6z M12 23h4v6h-4z M24 23h4v6h-4z" fill="currentColor"/><circle cx="20" cy="18" r="3" fill="#16161a"/>'),
+  // A long scope on its rings, and a melee weapon's three places: a taped grip, a paint
+  // drip on the head, a wrist strap on the pommel (Pepazo's gunsmith).
+  kitScope: svg('<path d="M3 15h6l3 2h16l3-3h6v10h-6l-3-3H12l-3 2H3z M14 23h4v6h-4z M22 23h4v6h-4z" fill="currentColor"/>'),
+  kitGrip: svg('<path d="M17 4h6v32h-6z" fill="currentColor"/><path d="M15 12l10-3v4l-10 3z M15 19l10-3v4l-10 3z M15 26l10-3v4l-10 3z" fill="#16161a"/>'),
+  kitDrip: svg('<path d="M20 4C26 13 30 19 30 25a10 10 0 0 1-20 0c0-6 4-12 10-21z" fill="currentColor"/>'),
+  kitStrap: svg('<path d="M17 3h6v14h-6z M20 17c8 0 12 5 12 10s-5 10-12 10S8 32 8 27s4-10 12-10zm0 5c-4 0-6 2-6 5s2 5 6 5 6-2 6-5-2-5-6-5z" fill="currentColor" fill-rule="evenodd"/>'),
   kitVest: svg('<path d="M12 6l4 4h8l4-4 6 6-3 6v16H9V18l-3-6z" fill="currentColor"/>'),
   // Paint weapons in profile, muzzle to the right (Capis a Pintazos' picker): a launcher tube,
   // a long scoped rifle, a drill bit and a pump scatter with its fan of pellets.

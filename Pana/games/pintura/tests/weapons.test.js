@@ -159,5 +159,5 @@ test('La Bazuca holds one rocket and two more, reloads slowly and cannot sprint'
   fire(g); assert.equal(a.ammo, 0);
   idle(g, Math.ceil(s.reload / .05) + 2);
   assert.equal(a.ammo, 1); assert.equal(a.reserve, 1);
-  const hopper = kitStats({ weapon: 'bazooka', attachments: ['hopper'] }); assert.equal(hopper.reserve, 3);
+  const hopper = kitStats({ weapon: 'bazooka', slots: { hopper: 'hopper' } }); assert.equal(hopper.reserve, 3);
 });

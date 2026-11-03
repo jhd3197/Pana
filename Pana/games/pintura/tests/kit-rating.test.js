@@ -10,7 +10,7 @@ test('kit rating follows effective combat stats, not cosmetic or unknown input',
   assert.ok(kitRating({}, {fastReload:true})>base);
   assert.ok(kitRating({}, {toughness:5})>base);
   assert.equal(kitRating({weapon:'rocket'},{weapons:'pistol'}),base);
-  assert.notEqual(kitRating({attachments:['hopper']}),base);
+  assert.notEqual(kitRating({slots:{hopper:'minihopper'}}),base);
   assert.notEqual(kitRating({armor:'padded'}),base);
   assert.notEqual(kitRating({grenade:'chispita'}),base);
 });

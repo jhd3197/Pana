@@ -2,7 +2,7 @@
 // reasons are the BALANCING section of docs/knowledge/pintura.md.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MARKERS, CLASSES, WEAPON_CYCLE, ATTACHMENTS, ATTACHMENT_RULES, ATTACHMENT_SLOTS, ARMOR, GRENADES, OPTICS, kitStats, kitRating, opticOf, shotInterval, dpsOf, cycleWeapon } from '../public/armory-data.js';
+import { MARKERS, CLASSES, WEAPON_CYCLE, SLOT_RULES, PARTS, ARMOR, GRENADES, OPTICS, kitStats, kitRating, opticOf, shotInterval, dpsOf, cycleWeapon } from '../public/armory-data.js';
 import { Arena } from '../public/rules.js';
 import { PAINT_WEAPONS, PAINT_CLASSES, PAINT_OPTICS, PAINT_KIT_BORE, classOf } from '../../../engine/play/paint-arsenal.js';
 
@@ -20,7 +20,9 @@ const ENVELOPE = {
 };
 // No marker kills fast and far at once.
 const REACH_BUDGET = 360;
-const combos = parts => { const out = []; for (let mask = 0; mask < 1 << parts.length; mask++) { const c = parts.filter((_, i) => mask & (1 << i)); if (c.length <= ATTACHMENT_SLOTS) out.push(c); } return out; };
+// Every kit a marker allows: one part (or none) in each of its typed slots.
+const combos = weapon => Object.entries(SLOT_RULES[weapon]).reduce((kits, [slot, ids]) => kits.flatMap(k => [k, ...ids.map(id => ({ ...k, [slot]: id }))]), [{}]);
+const named = slots => Object.values(slots).join("+") || "bare";
 
 test('every marker has a model, a name from it and a class', () => {
   assert.deepEqual(MARKERS.map(m => m.id), Object.keys(PAINT_WEAPONS), 'menu order follows the kit');
@@ -37,11 +39,11 @@ test('every marker has a model, a name from it and a class', () => {
   assert.ok(!CLASSES.some(c => c.id === 'granadas'));
 });
 
-test('every marker stays inside its class envelope, with any attachments', () => {
+test('every marker stays inside its class envelope, with any parts in its slots', () => {
   for (const m of MARKERS) {
     const { dps, range } = ENVELOPE[m.class];
-    for (const parts of combos(ATTACHMENT_RULES[m.id])) {
-      const s = kitStats({ weapon: m.id, attachments: parts }), d = dpsOf(s), r = s.speed * s.life;
+    for (const slots of combos(m.id)) {
+      const s = kitStats({ weapon: m.id, slots }), parts = named(slots), d = dpsOf(s), r = s.speed * s.life;
       assert.ok(d >= dps[0] && d <= dps[1], `${m.id} ${parts} dps ${d.toFixed(2)} not in ${dps}`);
       assert.ok(r >= range[0] && r <= range[1], `${m.id} ${parts} range ${r.toFixed(1)} not in ${range}`);
       assert.ok(d * r <= REACH_BUDGET, `${m.id} ${parts} dps × range ${(d * r).toFixed(0)} over ${REACH_BUDGET}`);
@@ -76,9 +78,9 @@ test('shotInterval is the rate the arena really fires at', () => {
   }
 });
 
-test('kit ratings are bounded integers for every marker, armour, grenade and attachment set', () => {
-  for (const m of MARKERS) for (const parts of combos(ATTACHMENT_RULES[m.id])) for (const armor of ARMOR) for (const grenade of GRENADES) {
-    const score = kitRating({ weapon: m.id, attachments: parts, armor: armor.id, grenade: grenade.id });
+test('kit ratings are bounded integers for every marker, armour, grenade and slot set', () => {
+  for (const m of MARKERS) for (const slots of combos(m.id)) for (const armor of ARMOR) for (const grenade of GRENADES) {
+    const score = kitRating({ weapon: m.id, slots, armor: armor.id, grenade: grenade.id }), parts = named(slots);
     assert.ok(Number.isInteger(score) && score >= 100 && score <= 800, `${m.id} ${parts} ${armor.id} ${grenade.id}: ${score}`);
   }
 });
@@ -88,26 +90,29 @@ test('the Mira: zoom, steadier aim and slower look by kind', () => {
     assert.ok(o.zoom >= 1 && o.zoom <= 2.5, `${kind} zoom`); assert.ok(o.aimSpread > 0 && o.aimSpread <= 1, `${kind} aimSpread`);
     assert.ok(o.sens > 0 && o.sens <= 1, `${kind} sens`);
   }
-  for (const m of MARKERS) {
-    const base = kitStats({ weapon: m.id }), sighted = kitStats({ weapon: m.id, attachments: ['optic'] }), o = OPTICS[opticOf(m.id)];
-    assert.equal(sighted.optic, opticOf(m.id)); assert.equal(sighted.aims, true); assert.equal(sighted.sens, o.sens);
-    assert.ok(Math.abs(sighted.zoom - (base.scope ? base.scope * (o.scopeBoost || 1) : o.zoom)) < 1e-9, `${m.id} zoom`);
-    assert.ok(sighted.aimSpread <= (base.aimSpread ?? base.spread) + 1e-12, `${m.id} aims at least as straight`);
+  // Every Mira each marker may take, its stock one included.
+  for (const m of MARKERS) for (const kind of SLOT_RULES[m.id].optic) {
+    const base = kitStats({ weapon: m.id }), sighted = kitStats({ weapon: m.id, slots: { optic: kind } }), o = OPTICS[kind];
+    assert.equal(sighted.optic, kind); assert.equal(sighted.aims, true); assert.equal(sighted.sens, o.sens);
+    assert.ok(Math.abs(sighted.zoom - (base.scope ? base.scope * (o.scopeBoost || 1) : o.zoom)) < 1e-9, `${m.id} ${kind} zoom`);
+    assert.ok(sighted.aimSpread <= (base.aimSpread ?? base.spread) + 1e-12, `${m.id} ${kind} aims at least as straight`);
     assert.ok(Math.abs(sighted.mobility - (base.mobility - .02)) < 1e-9, `${m.id} carries the Mira`);
     assert.equal(base.optic, null); assert.equal(base.sens, 1);
   }
-  assert.equal(kitStats({ weapon: 'sniper', attachments: ['optic'] }).zoom, 3.5 * 1.3, 'La Lejana gets the long-range scope');
-  assert.ok(kitStats({ weapon: 'rapid', attachments: ['optic'] }).spread < kitStats({ weapon: 'rapid' }).spread, 'the laser tightens hip fire');
+  assert.ok(MARKERS.every(m => SLOT_RULES[m.id].optic[0] === opticOf(m.id)), 'the stock Mira comes first');
+  assert.ok(PARTS.filter(p => p.aim).every(p => OPTICS[p.id]), 'every Mira row has its tuning');
+  assert.equal(kitStats({ weapon: 'sniper', slots: { optic: 'scope' } }).zoom, 3.5 * 1.3, 'La Lejana gets the long-range scope');
+  assert.ok(kitStats({ weapon: 'rapid', slots: { optic: 'laser' } }).spread < kitStats({ weapon: 'rapid' }).spread, 'the laser tightens hip fire');
 });
 
 test('a Mira lets any marker aim on the server: steadier shot, slower walk', () => {
-  const shot = (attachments, aim) => {
-    const g = new Arena('plaza'); g.add(1, { name: 'A' }); g.add(2, { name: 'B' }); g.selectKit(1, { weapon: 'smg', attachments }); g.start(); g.go();
+  const shot = (optic, aim) => {
+    const g = new Arena('plaza'); g.add(1, { name: 'A' }); g.add(2, { name: 'B' }); g.selectKit(1, { weapon: 'smg', slots: { optic } }); g.start(); g.go();
     const p = g.players[0]; Object.assign(p, { x: -22, z: -22, shots: 1 }); g.step(.05, new Map([[1, { ax: 1, az: 0, fire: true, aim }]]));
     return { angle: Math.abs(Math.atan2(g.balls[0].vz, g.balls[0].vx)), aim: p.aim };
   };
-  assert.equal(shot([], true).aim, false, 'without a Mira aiming does nothing');
-  const hip = shot(['optic'], false), aimed = shot(['optic'], true);
+  assert.equal(shot(null, true).aim, false, 'without a Mira aiming does nothing');
+  const hip = shot('holo', false), aimed = shot('holo', true);
   assert.equal(aimed.aim, true); assert.ok(aimed.angle < hip.angle * .8, 'aimed through the Mira it flies straighter');
 });
 
@@ -138,5 +143,5 @@ test('Z/X cycle through every marker in class order, then the melee set, and wra
   assert.equal(cycleWeapon('pistol', 1), 'rapid'); assert.equal(cycleWeapon('pistol', -1), WEAPON_CYCLE.at(-1));
   assert.equal(cycleWeapon(WEAPON_CYCLE.at(-1), 1), 'pistol'); assert.equal(cycleWeapon('nope', 1), WEAPON_CYCLE[0]);
   let id = 'pistol'; for (let i = 0; i < WEAPON_CYCLE.length; i++) id = cycleWeapon(id, 1); assert.equal(id, 'pistol');
-  assert.ok(ATTACHMENTS.some(a => a.id === 'optic'));
+  assert.ok(PARTS.some(p => p.slot === 'optic'));
 });

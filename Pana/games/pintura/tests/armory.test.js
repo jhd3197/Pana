@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Arena, cleanInput, grenadeStart, grenadeFlight, TICK, THROW } from '../public/rules.js';
-import { cleanKit, kitStats, MARKERS, GRENADES, grenadeDef } from '../public/armory-data.js';
+import { cleanKit, kitStats, canFit, MARKERS, GRENADES, grenadeDef } from '../public/armory-data.js';
 import { traceLob } from '../../../engine/play/lob.js';
 const arena=kit=>{const a=new Arena('plaza');a.add(1,{name:'Ana'});a.add(2,{name:'Bea'});a.selectKit(1,kit);a.start();a.go();Object.assign(a.players[0],{x:-22,z:-22,shield:0});Object.assign(a.players[1],{x:-22,z:-15,shield:0});return a;};
-test('kits sanitize identifiers and cap three distinct attachments',()=>{
- assert.deepEqual(cleanKit({weapon:'hacked',attachments:['barrel','barrel','bad','hopper','stock','optic']}).attachments,['barrel','hopper','stock']);
+test('kits sanitize identifiers and fill each typed slot once',()=>{
+ assert.deepEqual(cleanKit({weapon:'hacked',attachments:['barrel','barrel','bad','hopper','stock','optic']}).slots,{optic:'dot',barrel:'barrel',hopper:null,stock:'stock'});
  assert.equal(cleanKit(null).weapon,'pistol');assert.equal(cleanInput({grenade:'true',weapon:'bad'}).grenade,false);
- for(const w of MARKERS){const base=kitStats({weapon:w.id}),barrel=kitStats({weapon:w.id,attachments:['barrel']}),hopper=kitStats({weapon:w.id,attachments:['hopper']});assert.ok(barrel.mobility<base.mobility);assert.ok(hopper.reload>base.reload);}
- assert.equal(kitStats({weapon:'rocket',armor:'wind',attachments:['stock']}).sprint,false);
+ for(const w of MARKERS){const base=kitStats({weapon:w.id}),barrel=kitStats({weapon:w.id,slots:{barrel:'barrel'}}),hopper=kitStats({weapon:w.id,slots:{hopper:'hopper'}});assert.ok(barrel.mobility<base.mobility);if(canFit(w.id,'hopper','hopper'))assert.ok(hopper.reload>base.reload);}
+ assert.equal(kitStats({weapon:'rocket',armor:'wind',slots:{stock:'stock'}}).sprint,false);
 });
 test('only lobby or results can change personal gear; armor changes actual aguante',()=>{
  const a=arena({armor:'padded'}),p=a.players[0];assert.equal(a.selectKit(1,{armor:'wind'}),false);
@@ -22,7 +22,7 @@ test('Cohetón is slow, cannot sprint and its blast applies one pepazo per rival
  const blast={id:123,owner:1,x:-22,z:-15,color:'#fff'};a.blast(blast,4);a.blast(blast,4);assert.equal(a.players[1].paint,2);
 });
 test('rocket reserves exhaust; changing weapon never refills rockets',()=>{
- const a=arena({weapon:'rocket',attachments:['hopper']}),p=a.players[0];assert.equal(p.reserve,4);
+ const a=arena({weapon:'rocket',slots:{hopper:'hopper'}}),p=a.players[0];assert.equal(p.reserve,4);
  p.reserve=0;p.ammo=0;a.step(.05,new Map([[1,{reload:true}]]));assert.equal(p.reload,0);
  p.shots=1;a.step(.05,new Map([[1,{weapon:'pistol'}]]));a.step(.05,new Map([[1,{weapon:'rocket'}]]));assert.equal(p.ammo,0);assert.equal(p.reserve,0);
 });

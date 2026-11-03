@@ -411,7 +411,8 @@ Chispa) or a Studio melee piece: origin at the grip, +Z down the barrel,
 sideways offset for side-mounted sights), `userData.bore` the barrel axis
 height, `userData.optic` the Mira kind when one is fitted, `userData.class`,
 `userData.spin` (a group to turn when firing: La Licuadora, the revolvers).
-Attachments `barrel hopper stock optic` sit on each marker's own mounts;
+Attachments `barrel hopper stock optic` sit on each marker's own mounts
+(`opticKind` swaps the mount's Mira kind, `hopperScale` sizes the hopper);
 `PAINT_PART_LABELS[id]` is the name every mesh of a fitted part starts with
 (melee `tape drip strap` too), so a menu can frame or draw one part alone.
 `PAINT_KIT_BORE[weapon]` is the barrel axis height for all eighteen.

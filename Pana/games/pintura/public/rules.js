@@ -1,4 +1,4 @@
-import { cleanKit, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO, rangedDamage } from './armory-data.js';
+import { cleanKit, changeWeapon, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO, rangedDamage } from './armory-data.js';
 import { createMelee, startSwing, stepMelee, swingHit, throwStart, stepThrown, aimThrow, inHand } from '../../../engine/play/melee.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, validOptions, teamPlay, roundTime, livesOf, objectivePlay } from './options.js';
@@ -412,7 +412,7 @@ export class Arena {
       // A thrown chancla has to come back before the pana can change weapon.
       if(input.weapon && input.weapon !== p.kit.weapon && this.options.weapons !== 'pistol' && inHand(p.melee)) {
         // Parts that do not fit the new marker come off, exactly as the client's armory drops them.
-        p.kit=cleanKit({...p.kit,weapon:input.weapon}); stats=kitStats(p.kit,this.options);
+        p.kit=changeWeapon(p.kit,input.weapon).kit; stats=kitStats(p.kit,this.options);
         p.ammo=Math.min(p.ammo,stats.magazine); p.reserve=0;
         if(p.shots>0 && !stats.melee) { p.ammo=0; p.reload=stats.reload; }
         // A switch mid-swing drops the blow but not the wait.
