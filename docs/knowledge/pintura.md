@@ -589,6 +589,19 @@ that input. Fast reload is 0.55 seconds instead of 1.3. Sticky paint slows the
 victim for seven seconds including the respawn wait. Friendly hits can consume
 a life when enabled but never award points.
 
+### Partida: Equipos or Todos contra todos
+
+The lobby asks "Partida" first (Equipos / Todos contra todos), then, for
+teams, "Modo" (Pintadas, Captura la bandera, Dominación). Both are
+lobby-only fields (`MENU_FIELDS` in `options.js`): `menuValues` derives
+`sides` from `teamPlay`, `menuPatch` turns a choice into the one `mode` the
+rules read (Equipos keeps a team game already picked). `FIELDS`, the server's
+allowlist and saved options are unchanged. Team rounds show the two teams in the
+main lobby through `engine/team-lobby.js` (each card carries the kit and its
+nivel); free-for-all hides them and the shell's player cards show. A pana who
+joins a team round takes the smaller team (`smallestTeam`), a tie keeps the
+lowest free seat; Unirme aquí / Cambiarme aquí / Organizar still move them.
+
 ### Capture the flag ("Captura la bandera")
 
 A third `mode` (`'ctf'`), with its own lobby limits: `flagGoal` (3, 1 or 5

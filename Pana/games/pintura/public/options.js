@@ -28,3 +28,12 @@ export const teamPlay = options => options?.mode === 'teams' || objectivePlay(op
 export const livesOf = options => objectivePlay(options) ? 0 : options?.lives || 0;
 export const roundTime = options => objectivePlay(options) ? options.flagTime || 600 : options?.duration || 180;
 export const validOptions = patch => applyRoomOptions(FIELDS, DEFAULT_OPTIONS, patch) !== null;
+
+// The lobby asks two things first: teams or everyone for themselves, then (for
+// teams) which team game. Both write the one `mode` the rules read, so the
+// room, its allowlist and saved options stay as they are.
+export const SIDES_FIELD = { id: 'sides', label: loc('Partida'), default: 'ffa', choices: [['teams', loc('Equipos')], ['ffa', loc('Todos contra todos')]], advanced: false };
+export const MENU_FIELDS = [SIDES_FIELD, { ...FIELDS[0], default: 'teams', choices: [['teams', loc('Pintadas')], ['ctf', loc('Captura la bandera')], ['dom', loc('Dominación')]], visibleWhen: { sides: ['teams'] } }, ...FIELDS.slice(1)];
+export const menuValues = options => ({ ...options, sides: teamPlay(options) ? 'teams' : 'ffa' });
+// A lobby choice as a room patch: Equipos keeps a team game already picked.
+export const menuPatch = (patch, options) => !('sides' in patch) ? patch : { mode: patch.sides === 'ffa' ? 'ffa' : teamPlay(options) ? options.mode : 'teams' };

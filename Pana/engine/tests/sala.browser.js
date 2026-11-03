@@ -30,10 +30,15 @@ try {
       await host.locator('[data-room-option=duration][data-value="300"]').click();
       await guest.waitForFunction(()=>document.querySelector('.sala-summary').textContent.includes('5 min'));
       assert.ok(await guest.locator('[data-room-option=duration][data-value="180"]').isDisabled());
-      await host.locator('[data-room-option=mode][data-value=teams]').click();
-      await host.locator('#pana-room-more').click();await host.locator('#team-roster').waitFor();
-      assert.equal(await host.locator('#team-roster .pk-roster-group').count(),2,'real team arrangement remains reachable');
-      await host.locator('#pana-room-done').click();
+      // Teams vs everyone is a main setting; the team panels stand in the main lobby.
+      await host.locator('[data-room-option=sides][data-value=teams]').click();
+      await guest.locator('.pk-game-lobby-roster #team-roster .pk-roster-group').first().waitFor();
+      assert.equal(await guest.locator('#team-roster .pk-roster-group').count(),2,'both teams show in the main lobby');
+      assert.equal(await host.locator('#pana-room-dialog #team-roster').count(),0,'teams are not hidden in Más ajustes');
+      assert.ok(await host.locator('[data-room-option=mode][data-value=ctf]').isVisible(),'team games are picked next to Equipos');
+      await host.locator('[data-room-option=sides][data-value=ffa]').click();
+      await guest.locator('#team-roster').waitFor({state:'hidden'});
+      await host.locator('[data-room-option=mode][data-value=ctf]').waitFor({state:'hidden'});
       const before=await guest.locator('.is-own .pk-kit-level').getAttribute('aria-label');
       await guest.locator('#open-armory').click();assert.ok(await guest.locator('#armory').isVisible());
       assert.equal(await guest.locator('#armory-rating .pk-kit-level').getAttribute('aria-label'),before);
