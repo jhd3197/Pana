@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El polígono de tiro de Pepazo ya dispara con ratón y con mando, y es práctica solo tuya.**
+  Una pantalla corta de carga al entrar; el primer clic ya dispara, el mando
+  mira, camina, dispara y sale con B o Start sin tocar la sala ni tu party.
+  Cambiar pana ya no aparece sobre la armería.
 - **Editar pana ya no te saca de la sala: el editor se abre encima y al cerrarlo sigues donde estabas.**
   Desde la sala de un juego o el inicio, tu puesto y tu party se quedan. Al
   guardar, los demás ven tu pana nuevo. Mi pana también abre bien cada vez,
