@@ -13,7 +13,7 @@ import { pressJump } from '../../../engine/play/jump.js';
 
 // A library jornada with every room already awake and nothing else hunting.
 function library(seed = 21, players = 1) {
-  const g = new Expedition(seed); for (let i = 1; i <= players; i++) g.addPlayer(i, `Pana ${i}`); g.start(seed); g.completeLevel();
+  const g = new Expedition(seed, { place: 'biblioteca' }); for (let i = 1; i <= players; i++) g.addPlayer(i, `Pana ${i}`); g.start(seed); g.completeLevel();
   assert.equal(g.layout.run.theme, 'biblioteca');
   for (const r of g.layout.run.rooms) g.woke[r.id] = 1;
   g.enemies = [];
@@ -136,9 +136,9 @@ test('Sustos never changes what it does', () => {
 test('the library deals Lectores into its shelves and archives, capped; the mine none', () => {
   let dealt = 0;
   for (let seed = 1; seed <= 30; seed++) {
-    for (const depth of [1, 3, 4]) assert.ok(!generateRun(seed, { depth }).sleepers.some(s => s.kind === 'lector' || s.kind === 'estatua'), 'none in the mine');
-    for (const depth of [2, 5]) {
-      const run = generateRun(seed, { depth }), lectores = run.sleepers.filter(s => s.kind === 'lector');
+    for (const depth of [1, 3, 4]) assert.ok(!generateRun(seed, { depth, theme: 'mina' }).sleepers.some(s => s.kind === 'lector' || s.kind === 'estatua'), 'none in the mine');
+    for (const depth of [1, 2, 5]) {
+      const run = generateRun(seed, { depth, theme: 'biblioteca' }), lectores = run.sleepers.filter(s => s.kind === 'lector');
       assert.ok(lectores.length <= lectorCap(depth), `${lectores.length} on jornada ${depth}`);
       for (const s of lectores) assert.ok(LECTOR_ROOMS.includes(run.rooms.find(r => r.id === s.room).kind));
       dealt += lectores.length;

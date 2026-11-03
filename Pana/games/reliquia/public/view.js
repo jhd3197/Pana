@@ -358,7 +358,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     movement(x, z) { return { x: -x * Math.cos(h) - z * Math.sin(h), z: x * Math.sin(h) - z * Math.cos(h) }; },
     shake(amount) { shake = Math.min(1.3, shake + amount); },
     // A new run has a new deck: rebuild the world from its seed.
-    reseed(next, depth) { if (world.run.seed === next && world.run.depth === depth) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, depth }); scene.add(world.group); },
+    reseed(next, depth, theme) { if (world.run.seed === next && world.run.depth === depth && (!theme || world.run.theme === theme)) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, depth, theme }); scene.add(world.group); },
     dispose() {
       removeEventListener('resize', resize); unbind?.(); puffs.clear(); waves.clear();
       for (const [id, a] of avatars) removeAvatar(a, id);

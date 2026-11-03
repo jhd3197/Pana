@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia arranca en la biblioteca sepultada, y en la sala eliges el Lugar: Alternar, Biblioteca o Mina.**
+  Con Alternar (lo normal) la primera jornada es la biblioteca y la siguiente
+  la mina, y así. El anuncio de cada jornada dice adónde bajan.
 - **Reliquia corre más fluido bajo tierra y en línea.**
   Abajo ya no dibuja la sombra del sol ni lo que la niebla tapa, y el
   anfitrión manda solo lo que cambió: unas diez veces menos datos. Los otros

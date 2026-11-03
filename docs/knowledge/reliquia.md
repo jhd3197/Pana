@@ -284,13 +284,20 @@ prototype that the map clones. Floors other than yours are hidden.
 
 ## La biblioteca sepultada (the library theme)
 
-`themeFor(depth)` in `deck.js` deals each jornada a theme: the mine, or
-`'biblioteca'` on jornada 2 and every third after (`depth % 3 === 2`: 2, 5,
-8…). It is pure, so every client deals the same library from the seed;
-`run.theme` travels nowhere. The library has its own deck (`estanterias`,
+`themeFor(depth, place)` in `deck.js` deals each jornada a theme from the
+room's **Lugar** option (`options.place`, a primary lobby choice the host
+sets): `'biblioteca'` or `'mina'` every jornada, or `'alternar'` (the
+default) with the library on odd jornadas, so a fresh run opens in the
+library and swaps after each completed jornada. `themeOf(state)` reads it
+from `state.level` and `state.options`, which every snapshot already
+carries, so `run.theme` itself travels nowhere; `generateRun`, `layoutFor`
+and `createExpeditionWorld` take the theme, and their caches key on it.
+Every seal kind works in both themes, the vault included (the reachability
+and quota tests walk both themes at depths 1–8). The start event and the
+end-of-jornada event name the place that comes next. The library has its own deck (`estanterias`,
 `lectura`, `archivo`, `copistas`, plus the idol, trap, sanctuary and pit rooms
 under library names, `roomName(kind, theme)`); the seals work as in the mine.
-`jornadaName(level)` is what the HUD and the descent shout call it.
+`jornadaName(level, theme)` is what the HUD and the descent shout call it.
 
 - **Solids.** Bookcases, reading tables and copyists' desks are axis-aligned
   rectangles in `run.solids`, cut out of the walkable bitmap in `layout.js`
@@ -508,7 +515,7 @@ npm run test:browser -- reliquia
 ```
 
 `tests/hiding.test.js` covers the spots: same seed same spots, every spot
-reachable with its front clear (depths 2, 5, 8), plain-sight relics, decoys
+reachable with its front clear (library at depths 1, 2, 3, 5, 8), plain-sight relics, decoys
 and empties, the quota still reachable, a search opening exactly once, the
 lantern opening the passage and the opened state in a guest's snapshot.
 The rules tests cover reachability across seeds, handfuls and one weapon, throwing,

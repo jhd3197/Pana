@@ -5,7 +5,7 @@ import { setBar } from '/engine/kit.js';
 import { ARTIFACT_AURA } from '/engine/models/props/reliquia-treasure.js';
 import { interaction, compassTarget, spreadTags, titles, tier, holds, alive, cartValue } from './rules.js';
 import { layoutFor, distance } from './layout.js';
-import { jornadaName, TRUCK, floorOf, inRect } from './deck.js';
+import { jornadaName, themeOf, TRUCK, floorOf, inRect } from './deck.js';
 import { ITEMS, heldValue, itemName, say } from './items.js';
 import { COLORS } from './view.js';
 
@@ -36,7 +36,7 @@ export function createHud() {
   }
 
   function compass(state, p, heading) {
-    const L = layoutFor(state.seed, state.level), f = floorOf(p.x), tags = [];
+    const L = layoutFor(state.seed, state.level, themeOf(state)), f = floorOf(p.x), tags = [];
     const stop = L.run.lifts.find(l => l.floor === f);
     if (f === 0) tags.push(['truck', 'truck', loc('CAMIÓN'), TRUCK]);
     if (stop) tags.push(['lift', 'down', loc('MONTACARGAS'), stop]);
@@ -59,7 +59,7 @@ export function createHud() {
   }
 
   function minimap(state, p) {
-    const L = layoutFor(state.seed, state.level), f = floorOf(p.x), c = map;
+    const L = layoutFor(state.seed, state.level, themeOf(state)), f = floorOf(p.x), c = map;
     c.fillStyle = '#120d2c'; c.fillRect(0, 0, 180, 180);
     const scale = f === 0 ? 3 : 1.5, sx = x => 90 + (x - p.x) * scale, sz = z => 90 + (z - p.z) * scale;
     const known = r => f === 0 || state.woke[r.id] || r.index === 0;
@@ -76,7 +76,7 @@ export function createHud() {
 
   // What Tab / View shows: where you are, the jornada's numbers, the map, the compass and the team.
   function intel(state, p, L, f, heading) {
-    $('floor-name').textContent = loc('Jornada {n} · {place}', { n: state.level, place: f === 0 ? loc('Superficie') : loc(jornadaName(state.level)) });
+    $('floor-name').textContent = loc('Jornada {n} · {place}', { n: state.level, place: f === 0 ? loc('Superficie') : loc(jornadaName(state.level, themeOf(state))) });
     const load = state.delivered || 0;
     $('quota-label').textContent = `${money(load)} / ${money(state.quota)}`; setBar($('quota-fill'), state.quota ? load / state.quota : 0);
     $('mangos').textContent = Math.floor(state.mangos);
@@ -102,7 +102,7 @@ export function createHud() {
 
   function update(state, p, room, { heading = 0, paused = false } = {}) {
     if (!p) return;
-    const L = layoutFor(state.seed, state.level), f = floorOf(p.x), playing = state.phase === 'playing';
+    const L = layoutFor(state.seed, state.level, themeOf(state)), f = floorOf(p.x), playing = state.phase === 'playing';
     document.body.classList.toggle('quota-met', (state.delivered || 0) >= state.quota);
     const t = tier(state); for (let i = 0; i <= 4; i++) document.body.classList.toggle(`greed-${i}`, t === i);
     $('health').textContent = Math.ceil(p.hp); setBar($('health-fill'), p.hp / 100);
