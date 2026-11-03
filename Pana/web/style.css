@@ -147,7 +147,8 @@ body[data-view="salas"] .rooms-panel { min-height: 320px; }
 }
 .game-body { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 14px; min-width: 0; }
 .game-name { margin: 0; font: 400 20px/1.1 var(--pk-display); letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 2px 0 rgba(0, 0, 0, .2); }
-.game-meta { font: 700 12px var(--pk-sans); color: rgba(255, 255, 255, .75); }
+.game-meta { display: inline-flex; align-items: center; gap: 4px; font: 800 12px var(--pk-sans); color: rgba(255, 255, 255, .8); }
+.game-meta .pk-ico, .feature-players .pk-ico { flex: none; }
 
 /* live rooms */
 .rooms-panel { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 0; box-shadow: none; align-self: stretch; }
@@ -276,9 +277,9 @@ body[data-view="jugar"] .feature-art canvas { position: absolute; inset: 8% 0 25
 body[data-view="jugar"] .feature-body { width: min(var(--pk-page-width),100%); margin: auto auto 12px; padding: 35px var(--pk-page-gutter) 22px; gap: 18px; }
 .feature-tag { border-radius: 0; background: var(--tone); color: white; letter-spacing: 1.4px; padding: 6px 12px; }
 .feature-name { font-size: clamp(48px,6.5vw,94px); max-width: 760px; line-height: .98; text-shadow: 0 6px 0 color-mix(in srgb,var(--tone),var(--pk-night) 30%); }
-.feature-copy { max-width: 470px; font-size: 18px; line-height: 1.5; flex: none; display: block; overflow: visible; }
+.feature-copy { max-width: 470px; font-size: 20px; font-weight: 800; line-height: 1.2; flex: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .feature-stats { display: flex; gap: 10px; flex-wrap: wrap; }
-.feature-stats span { padding: 7px 12px; border-radius: 0; background: rgba(255,255,255,.09); font-size: 13px; font-weight: 800; }
+.feature-stats span { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 0; background: rgba(255,255,255,.09); font-size: 15px; font-weight: 800; }
 .feature-cta { margin-top: 8px; align-items: center; flex-wrap: wrap; }
 .feature-cta .pk-btn--primary { padding: 18px 30px 13px; min-width: 190px; font-size: 29px; }
 .feature-room { min-height: 52px; padding: 12px 18px; background: rgba(14,11,36,.7); font-size: 14px; }

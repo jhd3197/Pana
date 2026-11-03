@@ -12,6 +12,20 @@ becomes the GitHub release's notes.
   Cada quien ve los tiros y los cráteres de los demás. Un equipo sin panas lo
   juega la máquina, y si alguien se va, su compañero o la máquina sigue por
   él. «Jugar solo» contra la máquina sigue igual.
+- **En la armería de Pepazo, Probar ahora abre un polígono de tiro de verdad: disparas en primera persona con tu kit a blancos de 10 a 100 m.**
+  Un pasillo techado con luces, distancias pintadas en el piso y en letreros,
+  siluetas de papel, una pizarra, blancos que suben y bajan, uno que corre
+  en un riel y uno grande al fondo. La pintura queda en los blancos y cada
+  impacto dice su distancia y sus pepazos; con las reglas de la ronda
+  (cadencia, dispersión, caída del daño, recarga, granada y pescozón). T
+  repone los blancos y Esc o Volver te regresan a la armería.
+- **En Bochinche, Elige tu pana ahora llena la pantalla con los trece panas en tres filas grandes.**
+  Sin números ni letras en las tarjetas y sin textos largos: el pana, su
+  poder y sus barras. Las flechas recorren la cuadrícula y Enter lo elige.
+- **Las tarjetas del inicio ahora se leen de un vistazo: cada juego trae una frase corta y un ícono con cuántos panas juegan.**
+  Las descripciones largas pasaron a dos o tres palabras ("Artillería de
+  pintura") y "tú vs la máquina" o "hasta 8 panas" ahora es un muñequito con
+  "1" o "1-8".
 - **La Estatua de Reliquia ahora se ve como una estatua de verdad: una doliente de mármol pálido que resalta en la oscuridad.**
   Sobre un pedestal bajo, con un velo roto, cuencas vacías y una boca
   entreabierta, manos de dedos largos y musgo en el ruedo. Cada vez que se

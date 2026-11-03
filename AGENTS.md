@@ -103,6 +103,8 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
 
 ## Conventions
 
+- Simple people don't like reading: few words, icons over text, short
+  taglines. Follow `docs/UI-RULES.md` for any player-facing text.
 - Every pre-game menu uses the Carreritas side-settings layout from
   `engine/game-entry.js` and `engine/sala.js`; keep game-specific controls,
   teams and start permissions within this shared shell. In-game HUDs remain
