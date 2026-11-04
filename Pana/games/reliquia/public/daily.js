@@ -73,7 +73,7 @@ export function createFosaDaily({ progress, start, shout, storage, now = () => n
     diving = isDiving;
     if (state.phase === 'playing') return;
     const host = room.connected && room.isHost, day = dayKey(now());
-    shown(lobbyButton, host); shown(againButton, host);
+    shown(lobbyButton, host && !state.resumed); shown(againButton, host);
     if (titled !== day) { titled = day; lobbyButton.title = againButton.title = pactNames(dailyPactos(day)); }
   }
   function draw(state, seen) {

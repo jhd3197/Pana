@@ -70,7 +70,7 @@ export function createHud() {
     c.fillStyle = '#ff6a3d';
     for (const id of Object.keys(state.rubble)) { const k = L.run.corridors.find(q => q.id === id); if (k?.floor === f) c.fillRect(sx(k.rect[0]), sz(k.rect[1]), (k.rect[2] - k.rect[0]) * scale, (k.rect[3] - k.rect[1]) * scale); }
     if (f === 0) { c.fillStyle = '#ffc23d'; c.beginPath(); c.arc(sx(TRUCK.x), sz(TRUCK.z), 6, 0, 7); c.fill(); }
-    for (const q of state.players) if (floorOf(q.x) === f) { c.fillStyle = q.downed ? '#ff4b4b' : COLORS[q.seat % 8]; c.beginPath(); c.arc(sx(q.x), sz(q.z), q.id === p.id ? 4 : 3, 0, 7); c.fill(); }
+    for (const q of state.players) if (floorOf(q.x) === f && !q.spectator) { c.fillStyle = q.downed ? '#ff4b4b' : COLORS[q.seat % 8]; c.beginPath(); c.arc(sx(q.x), sz(q.z), q.id === p.id ? 4 : 3, 0, 7); c.fill(); }
     c.save(); c.translate(90, 90); c.rotate(Math.PI - p.h); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(0, -9); c.lineTo(4, -2); c.lineTo(-4, -2); c.fill(); c.restore();
   }
 
