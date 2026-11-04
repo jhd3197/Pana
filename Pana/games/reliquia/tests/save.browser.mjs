@@ -69,6 +69,7 @@ try {
   assert.equal(await a.locator('#pana-lobby-roster').isVisible(), false, 'the slots replace the empty seats');
   assert.equal(await a.locator('#lobby-save').isVisible(), false);
   assert.equal(await a.locator('#start').textContent(), '¡Seguir!');
+  assert.equal(await a.locator('#daily-start').isVisible(), false, 'no daily dive in a resumed lobby');
   let slots = await slotText(a);
   assert.equal(slots.length, 4);
   assert.match(slots.find(s => /Juan/.test(s)), /Aquí/);

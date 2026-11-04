@@ -65,7 +65,7 @@ try {
   await waitFor(guest, () => reliquia.room.isHost && reliquia.room.game?.enemies.some(e => e.kind === 'silbon'));
   check('a new host keeps the boss');
   const seal = await guest.evaluate(() => {
-    const inRect = (x, z, [a, b, c, d], pad) => x > a - pad && x < c + pad && z > b - pad && z < d + pad, g = reliquia.room.game, room = g.layout.run.rooms.find(r => r.kind === 'puente'), pit = g.layout.run.pits.find(p => p.room === room.id), p = g.players[0], e = g.enemies.find(q => q.kind === 'silbon');
+    const inRect = (x, z, [a, b, c, d], pad) => x > a - pad && x < c + pad && z > b - pad && z < d + pad, g = reliquia.room.game, room = g.layout.run.rooms.find(r => r.kind === 'puente'), pit = g.layout.run.pits.find(p => p.room === room.id), p = g.players.find(q => !q.held), e = g.enemies.find(q => q.kind === 'silbon');
     g.enemies = [e]; g.director.duration = 1e6; Object.assign(p, { invulnerable: 1e6, stun: 0, exposed: 0, downed: false, hp: 100 });
     // West rim to east rim with the pit between them, clear of whatever nook this deal put there.
     const wx = pit.rect[0] - 1.4, ex = pit.rect[2] + 1.4, inNook = (x, z) => g.layout.run.nooks.some(n => inRect(x, z, n.rect, .3));
