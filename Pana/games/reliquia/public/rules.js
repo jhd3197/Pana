@@ -226,7 +226,7 @@ export class Expedition {
       lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       level: 1, mangos: 0, quota: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null }, origin: seed >>> 0 || 1,
       swarm: null, swarmSim: null, swarmAt: SWARM.firstAt, swarmId: 0, director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0,
-      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null, encargosWon: 0, silbonAt: 0 });
+      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null, encargosWon: 0, silbonAt: 0, daily: '', plainOptions: null });
     this.paths = new Map();
   }
   get layout() { return layoutFor(this.seed, this.level, themeOf(this)); }
