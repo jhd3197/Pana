@@ -41,6 +41,7 @@ the same tokens.
 | `pk-slots` > `pk-slot` (`.is-active`, `pk-slot-n`, `pk-slot-count`) | Inventory |
 | `pk-banner(--yellow/--teal)`, `pk-pop` | Tilted shout; `shout(text)` in kit.js |
 | `pk-toast` | Milestone toast; `createFeats(el)` in engine/feats.js (opt-in per game) |
+| `pk-rank` > `pk-chip`, `pk-bar`, `pk-rank-gain` | Rank chip; built by `createRankChip(progress)` in engine/progress-ui.js |
 | `pk-lobby`, `pk-lobby-top`, `pk-field`, `pk-lobby-foot`, `pk-lobby-room`, `pk-lobby-cta`, `pk-avatars`, `pk-check` | Game launcher column over the live scene |
 | `pk-loading` | Full-screen loading card |
 | `pk-touch` (`--go --coral --sm --lg`, `data-icon="left/right/up/down/jump"`), `pk-dpad`, `pk-touch-zone` | On-screen touch controls (engine/touch.js). See "Touch controls" below |
