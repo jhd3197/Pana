@@ -41,3 +41,5 @@ export function saveScares(value, storage = store()) {
 }
 // How much camera shake survives the setting (gameplay jolts included).
 export const shakeFor = mode => mode === 'apagados' ? 0 : mode === 'suaves' ? .4 : 1;
+// How loud the camp's far falls are: never much, and quieter the softer the setting.
+export const roarFor = mode => mode === 'apagados' ? .018 : mode === 'suaves' ? .03 : .04;
