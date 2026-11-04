@@ -2,6 +2,7 @@
 // A lancha is driven, not paddled: hold the throttle and steer the outboard.
 // Holding is always fastest, so there is nothing to mash. The river
 // (course.js on /engine/river/river.js) owns banks, levels and currents.
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { FIELDS, cleanOptions, migrateRivals } from './options.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { courseRiver, RIVER } from './course.js';
@@ -68,6 +69,7 @@ export class Race {
       const slot = this.boats.length;
       this.boats.push(this.newBoat({ id: `bot-c${slot}`, name: BOT_NAMES[(i + this.seed) % BOT_NAMES.length], avatar: { outfitColor: BOT_OUTFITS[slot % 8], hat: i % 3 ? 'none' : 'cap' }, bot: true, brain: this.brain(slot) }));
     }
+    applyFriendNames(this.boats.map(b => b.driver).filter(d => d.bot), friendNamesNow(), { rankBy: d => d.brain.skill, taken: humans.map(p => p.name) });
     for (const p of this.players) p.spectator = false;
     Object.assign(this, { phase: 'countdown', countdown: 3, time: 0, finishGrace: null, snaps: {}, photo: null, slowmo: 0 });
     this.raceId++; return true;

@@ -19,6 +19,28 @@ try {
       if (Math.abs(npc.neck.rotation.x) > .5 || Math.abs(npc.neck.rotation.z) > .061) throw new Error('Head rotation accumulated');
     }
     const { createPana } = await import('/g/trifulca/fighters.js');
+    // Only the helmet in a fight, whatever the pana wears, and all of it back afterwards.
+    const { WARDROBE } = await import('/engine/models/characters/pana/wardrobe-data.js');
+    const dressed = (slot, id) => ({ wardrobe: { top: 'franela', hat: 'none', glasses: 'none', neck: 'none', back: 'none', extras: {}, [slot]: id } });
+    const looks = [
+      ...['chef', 'band', 'gorra', 'gorra-atras', 'pesca', 'lana', 'llanero', 'corona'].map(hat => ({ hat, hatColor: '#ff4b4b' })),
+      ...['redondos', 'sol', 'fiesta'].map(glasses => ({ hat: 'none', glasses })),
+      ...WARDROBE.hat.map(([id]) => dressed('hat', id)),
+      ...WARDROBE.glasses.map(([id]) => dressed('glasses', id)),
+    ];
+    const face = /^(Sculpted head|Animated smile|Tongue|Retracting incisors|Broad cocoa muzzle|Inset nostril|Muzzle cleft|eyeL|eyeR|Dizzy stars|face:.*)$/;
+    for (const look of looks) {
+      const pana = createPana(look, { seed: 3 }), parts = pana.character.head.children, seen = () => parts.map(o => o.visible);
+      const helmet = parts.findLast(o => o.name === 'hat:casco'), before = seen();
+      for (const corner of ['red', 'blue']) {
+        pana.setCorner(corner); pana.update(.05, { act: 'idle', at: 0 });
+        const stray = parts.filter(o => o.visible && o !== helmet && !face.test(o.name)).map(o => o.name || 'unnamed');
+        if (stray.length || !helmet.visible) throw new Error(`${JSON.stringify(look)} under the helmet: ${stray}`);
+      }
+      pana.setCorner(null); pana.update(.05, { act: 'crowd' });
+      if (helmet.visible || seen().some((shown, i) => shown !== before[i] && parts[i].name !== 'Dizzy stars')) throw new Error(`${JSON.stringify(look)} not restored`);
+      pana.dispose();
+    }
     const fighter = createPana({});
     try {
       for (const act of ['kick', 'sweep', 'toss', 'tumble']) {

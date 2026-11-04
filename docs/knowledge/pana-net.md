@@ -187,3 +187,34 @@ capacity rejection; the client accepts 409 and legacy 4009. The plan-56
 `cup-failures.browser.js` capacity case joins as many independent sessions as
 Carreritas' `game.json` `players` (twelve) and asserts the next receives
 `full: true`, through the actual HTTP/SDK path.
+
+## Friend-named bots
+
+`engine/bot-names.js` gives the top 2-3 bots of a match the names of the player's
+friends. The other bots keep their own names, and with no friends known nothing
+changes. Rendering is untouched: a friend name is just the bot's `name`.
+
+- **Source.** `window.PanaSh.friends()` when the gateway offers it, otherwise
+  same-origin `GET /auth/friends` (only its `friends` array; `pana`, then `name`),
+  plus the `pana:friends` localStorage key (names or `{name}`), which is how local
+  play and tests get names. A 404, being offline, bad JSON or not being signed in
+  all count as no friends.
+- **Timing.** `loadFriendNames()` answers within 600 ms and never rejects; a late
+  answer still fills the page's memory and a 5-minute sessionStorage entry.
+  `friendNamesNow()` never waits: game starts use it.
+- **Host-run games** call `applyFriendNames(bots, friendNamesNow(), { rankBy, taken })`
+  in the rules, on the host only. In Node the list is empty, so seeded rule tests
+  are unaffected; `setFriendNames()` sets it in a test.
+- **Server rooms.** `engine/net.js` sends at most three names as `friendNames` on
+  join. `PanaRoom` re-cleans them and keeps them outside the room state; rooms use
+  `this.hostFriendNames()`, only the current host's list.
+- **Never all of them.** Of two or more bots at least one keeps its name, and a
+  lone bot gets a friend's name. A name equal to a pana in the room is skipped.
+- **Stable.** The same list and bots always give the same names, and the list is
+  fixed for the page, so a rematch keeps each seat's name. A seat a pana leaves
+  mid-match goes back to its default name until the next start.
+- **First-load cap.** `engine/net.js` and Carreritas' `game.js` import the module
+  dynamically: Carreritas sits at the module cap.
+- **Skipped.** Cocina: its helpers are removed and re-added as panas come and go,
+  so a name would jump between them mid-round. Capis: its opponent is "La máquina",
+  a translated label rather than a pana. Reliquia has no bots.

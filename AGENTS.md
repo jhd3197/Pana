@@ -88,6 +88,7 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Seeded randomness, noise, clamp/lerp/pick | `engine/random.js` (`rng`, `draw`, `fbm2`, `clamp`, `lerp`, `pick`) | no Three.js: safe in `rules.js`; import it by relative path from code a server room loads |
 | End-of-round screen | `.pk-results` + `engine/results.js` (`fillRoster`) | pana-kit.md, "Results screen" |
 | Status toast | `engine/hud.js` (`createToast`) | reads how the element hides from its markup |
+| Bots named after the player's friends | `engine/bot-names.js` (`applyFriendNames`, `friendNamesNow`); server rooms use `this.hostFriendNames()` | `docs/knowledge/pana-net.md`, "Friend-named bots" |
 | Mangos (the shared currency) | `engine/mangos.js` (`createMangoWallet`, `credit` with a receipt) | pay into it, never a game's own wallet; Carreritas' taller spends it |
 | Icons | `engine/icons.js` (SVG); never emoji or symbol glyphs | pana-kit.md, "Icons and colours" |
 | Touch controls, orientation | `engine/touch.js` | pana-kit.md, "Touch controls" |

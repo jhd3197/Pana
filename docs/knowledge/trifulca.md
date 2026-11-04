@@ -107,7 +107,7 @@ wins and the titles are handed out.
   (invulnerability only stops hits). Benched and knocked-out ones never move but
   nobody stands inside them; a body on the ropes can't give way, so the free one
   moves alone; a tag-in lands beside the foe, not in them. Three or more take a
-  second pass. Crowd panas and the ref step aside in the scene (`aside`). Only
+  second pass. Crowd panas and the ref give way outward in the scene (`ringside.js`). Only
   positions move, so knockback velocity is untouched. Same spot: the first
   body goes to −X. The duel's pull back to z = 0 runs before the step so the
   push has the last word; the ref's clinch range is `BODY_GAP + 0.2`.
@@ -121,7 +121,7 @@ wins and the titles are handed out.
 ## The ring and the night
 
 - Circle arenas have a human ring (`r` 4.1–4.5 m). A fighter more than 0.1 m
-  out for 0.55 s is shoved back by a neighbour; a pana in the crowd within 2 m
+  out for 0.55 s is sent back by the line, unstunned; a pana in the crowd within 2 m
   who presses golpe does it first and earns 2 dolitas (only when the fighter
   is out or within 0.35 m of the edge). El toldo is a square ring with ropes
   that bounce instead.
@@ -149,7 +149,11 @@ wins and the titles are handed out.
   body outward can flip it. `world.cameraSide` exposes the choice. The crowd
   never stands within `CROWD_GAP` (1.15 rad) of the camera side, and NPC
   neighbours on that side hide during a fight. The ref waits outside the
-  ring, 1.05 rad off the far side, and walks the edge to count. Crowd panas
+  ring, 1.05 rad off the far side, and walks around the edge to count. Everyone
+  outside the fight stays on the band in `ringside.js`: a straight line to a goal
+  across the ring goes through the fight, and a push away from a fighter flung past
+  the crowd points inward, so positions turn around the ring and only ever move
+  out. Bots in the crowd walk along it but never shove; that is a pana's move. Crowd panas
   and neighbours face the fight's middle rather than the centre mark, idle on
   their own seeded rhythm (`crowd-life.js`, deterministic across peers) and
   the neighbours near a landed trompón or a caída gasp; hits stagger the
@@ -223,13 +227,18 @@ duplicated. Reduced motion disables HUD transitions, not gameplay messages.
   at the victim's centre it sat inside the helmet, mostly hidden. It grows with
   the chain. Heavy blows add `hitStop` (fighters' poses freeze 50–80 ms, the host
   keeps simulating) and camera shake.
-- Fight proportions live in `fighter-look.js`: `HEAD_SIZE` .38 (the shared
-  character's is .58), arms ×`ARM_LENGTH` hanging and ×`ARM_GUARD` in guard, since
-  a straight arm that long pokes the rival at the body gap. A punch's arm stretches
-  to `punchLength(gap)`, so the glove stops at the rival at any distance.
-- Hats: `addLegacyHat` adds bare unnamed meshes to the head, not a `hat:` group,
-  so the old look's pesca, lana, corona and llanero stayed on under the helmet.
-  `createPana` hides them with the rest. The ref's llanero hat is on purpose.
+- Fight proportions live in `fighter-look.js`, close to the classic pana:
+  `HEAD_SIZE` .5 (the shared character's is .58; there two helmets intersect at the
+  1 m body gap, and at .38 the shell over a tiny head read as a football player),
+  arms ×`ARM_LENGTH` 1.05 hanging and ×`ARM_GUARD` 1.03 in guard, gloves
+  ×`GLOVE_SIZE` 1.2. A punch's arm stretches to `punchLength(gap)`, so the glove
+  stops at the rival at any distance.
+- Headwear: `helmetSwap` hides every child of the head except the head's own parts,
+  the `face:` extras and the helmet, and restores each one's visibility on `off()`.
+  It lists what stays rather than what goes because worn things come in many forms:
+  `hat:` groups, `outfit:` headwear, `glasses:`, `accessory:glasses` and
+  `addLegacyHat`'s unnamed meshes. A new part of the bare head has to join
+  `BARE_HEAD`. The ref's llanero hat is on purpose.
 - Props: there was no bat; `bate` is now a prop like the rest (`woodenBat`, shared
   with Chapita). Pick-up range is `PICKUP` 1.7 m. The old rule refused any pick-up
   with a foe within 1.3 m, which with bodies a metre apart meant nearly always.

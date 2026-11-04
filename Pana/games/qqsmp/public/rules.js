@@ -3,6 +3,7 @@
 // answers every question at once; answers stay secret in snapshots until the
 // reveal, each pana climbs their own ladder of mangos, and a bet on the final
 // question decides the Mango de oro.
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { draw, seedOf, clamp } from '/engine/random.js';
 import { pickLine } from '/engine/play/frases.js';
 import { defaultOptions, roomOptions } from './options.js';
@@ -159,6 +160,7 @@ export class QuizGame {
   start() {
     this.total = this.options.questions;
     for (const p of this.players) Object.assign(p, fresh(), { name: p.id === null ? BOT_NAMES[p.seat] : p.name, skill: this.skills(p.seat) });
+    if (this.options.mode !== 'panas') applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { rankBy: p => p.skill, taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     Object.assign(this, { index: 0, final: false, gold: null, winner: null, halfLast: null, titles: null, reveal: null, callouts: [] });
     this.deck = this.buildDeck(this.total + 1);
     this.round++; this.ask();

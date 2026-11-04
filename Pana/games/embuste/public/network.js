@@ -1,3 +1,4 @@
+import { applyFriendNames, friendNamesNow } from '/engine/bot-names.js';
 import { embusteOptions } from './options.js';
 // ¡Embuste!'s two ways to play the night, with one interface for game.js:
 // - OnlineNight: the game's own Colyseus room (games/embuste/server/room.js),
@@ -120,6 +121,7 @@ export class PracticeNight extends Emitter {
     for (const p of [...night.players.values()]) if (p.bot) night.players.delete(p.seat);
     const total = Math.min(MAX_PLAYERS, 1 + this.botCount);
     for (let i = 0; night.players.size < total; i++) night.addPlayer(200 + i, { name: BOT_NAMES[i % BOT_NAMES.length], avatar: randomAvatar(), bot: true });
+    applyFriendNames([...night.players.values()].filter(p => p.bot), friendNamesNow(), { taken: [...night.players.values()].filter(p => !p.bot).map(p => p.name) });
     Object.assign(night.options, { reveal: this.lobby.reveal, chat: this.lobby.chat });
     this.brains.minds.clear();
     night.start((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);

@@ -1,3 +1,4 @@
+import { friendNamesNow } from '/engine/bot-names.js';
 import { joinRoom, leadFromUrl } from '/engine/net.js';
 import { randomAvatar } from '/engine/avatar.js';
 import { Arena, cleanInput } from './rules.js';
@@ -79,7 +80,7 @@ export class PaintConnection {
   }
   // Practice seats its bots like the server does, from the room's `bots` option.
   start() {
-    if (this.local) { this.game.seatBots(i => ({ name: PRACTICE_BOTS[i % PRACTICE_BOTS.length], avatar: randomAvatar() })); this.game.start(); this.publish(); }
+    if (this.local) { this.game.seatBots(i => ({ name: PRACTICE_BOTS[i % PRACTICE_BOTS.length], avatar: randomAvatar() }), friendNamesNow()); this.game.start(); this.publish(); }
     else if (this.connected) this.link.send('start');
   }
   // Results → lobby to pick the next map. Practice keeps its bots on the lobby

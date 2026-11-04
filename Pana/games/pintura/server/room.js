@@ -38,7 +38,7 @@ export default class PaintRoom extends PanaRoom {
     this.onHostMessage('start', () => {
       if (this.game.phase !== 'lobby') return;
       // The room's `bots` option decides how many join (Auto: three for a pana alone).
-      this.game.seatBots(i => ({ name: BOT_NAMES[i % BOT_NAMES.length], avatar: randomAvatar() }));
+      this.game.seatBots(i => ({ name: BOT_NAMES[i % BOT_NAMES.length], avatar: randomAvatar() }), this.hostFriendNames());
       // A refused start (teams without a rival) leaves no bots behind in the lobby.
       if (!this.game.start()) this.game.players = this.game.players.filter(p => !p.bot);
       this.inputs.clear(); this.publish();

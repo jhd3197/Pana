@@ -11,7 +11,8 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
 import { Puffs, Shockwaves } from '/engine/fx.js';
-import { arenaOf, arenaIdOf, crowdSpot, BODY_GAP } from './fight-rules.js';
+import { arenaOf, arenaIdOf, crowdSpot } from './fight-rules.js';
+import { ringside, stepRingside } from './ringside.js';
 import { arenaSteps } from './arenas.js';
 import { fighterLook, HEAD_SIZE, ARM_LENGTH } from './fighter-look.js';
 import { createPana } from './fighters.js';
@@ -29,15 +30,7 @@ const PROP_MODELS = {
   bate: () => { const m = woodenBat({ length: 1.15 }); m.rotation.set(0, 0, Math.PI / 2); m.position.set(.55, .09, 0); const g = new THREE.Group(); g.add(m); g.userData.dispose = m.userData.dispose; return g; },
 };
 const ringOf = (bodies = []) => bodies.filter(b => !b.bench && !b.out);
-// Whoever stands by the ring steps aside when a fighter lands on their spot.
 const gapToFoe = (b, bodies) => { const foe = bodies.find(o => o.id === b.foe); return foe ? Math.hypot(foe.x - b.x, foe.z - b.z) : undefined; };
-function aside(spot, bodies) {
-  for (const b of ringOf(bodies)) {
-    const dx = spot.x - b.x, dz = spot.z - b.z, d = Math.hypot(dx, dz) || 1e-3;
-    if (d < BODY_GAP) { spot.x += dx / d * (BODY_GAP - d); spot.z += dz / d * (BODY_GAP - d); }
-  }
-  return spot;
-}
 // How many point lights a scene has decides every material's shader, so a map
 // with another count would recompile them all: every map shares this many.
 const LAMP_POOL = 2;
@@ -237,7 +230,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     const mid = midOf(bodies); // the crowd faces the fight, not the centre mark
     for (const p of state.players) {
       if (out.has(p.id)) continue;
-      const spot = aside(state.phase === 'lobby' || state.phase === 'finished' ? crowdSpot(shape, (k++ / Math.max(1, state.players.length)) * Math.PI * 2 + .4) : crowdSpot(shape, p.angle), bodies);
+      const spot = ringside(shape, state.phase === 'lobby' || state.phase === 'finished' ? crowdSpot(shape, (k++ / Math.max(1, state.players.length)) * Math.PI * 2 + .4) : crowdSpot(shape, p.angle), bodies);
       const face = gazeAt(spot.x, spot.z, mid);
       out.set(p.id, { x: spot.x, z: spot.z, y: 0, h: face, view: { act: state.phase === 'finished' && state.winner === p.id ? 'win' : 'crowd' }, corner: null });
     }
@@ -251,7 +244,8 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     const frozen = hitStop > 0; hitStop = Math.max(0, hitStop - dt);
     if (replay.on && current?.phase === 'after') { replay.clock += dt * .4; if (replay.clock > replay.frames.at(-1).t - replay.frames[0].t) replay.on = false; }
     else if (current?.phase !== 'after') replay.on = false;
-    const want = targets(), k = 1 - Math.exp(-dt * 14);
+    const want = targets(), k = 1 - Math.exp(-dt * 14), shape = arenaOf(arenaId);
+    const inPlay = current && ['intro', 'fight', 'after'].includes(current.phase) ? current.bodies : [];
     const inRingNow = current && ['intro', 'fight', 'after'].includes(current.phase) ? ringOf(current.bodies) : [];
     const fightMid = inRingNow.length ? { x: inRingNow.reduce((n, b) => n + b.x, 0) / inRingNow.length, z: inRingNow.reduce((n, b) => n + b.z, 0) / inRingNow.length } : null;
     for (const [id, entry] of panas) {
@@ -259,7 +253,9 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       const goal = v(t.x, t.y, t.z);
       if (!entry.placed) { entry.pos.copy(goal); entry.h = t.h; entry.placed = true; }
       const moved = entry.pos.distanceTo(goal), still = frozen && !!t.corner;
-      if (!still) entry.pos.lerp(goal, k);
+      // Fighters go where the fight says; everyone else walks around the ring.
+      if (!still && t.corner) entry.pos.lerp(goal, k);
+      else if (!still) { stepRingside(entry.pos, goal, shape, inPlay, dt, { rate: 14, speed: 6 }); entry.pos.y += (goal.y - entry.pos.y) * k; }
       let dh = t.h - entry.h; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); entry.h += dh * k;
       entry.pana.root.position.copy(entry.pos); entry.pana.root.rotation.y = entry.h;
       entry.pana.setCorner(t.corner);
@@ -312,8 +308,8 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   function updateRef(dt) {
     if (!ref || !current) return;
     const bodies = ringOf(current.bodies), fighting = current.phase === 'fight' || current.phase === 'after' || current.phase === 'intro';
-    // The ref watches from outside the ring, on the far side, and walks the
-    // edge to whoever is down to count over them.
+    // The ref watches from outside the ring, on the far side, and walks around
+    // the edge to whoever is down to count over them. Never through the ring.
     const shape = arenaOf(arenaId), outside = shape.shape === 'square' ? shape.half * 1.12 + 1 : shape.r + 1.1;
     let angle = Math.atan2(-camPerp.x, -camPerp.z) + 1.05, face = 0, pose = {};
     if (fighting && bodies.length >= 2) {
@@ -322,10 +318,11 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       if (current.phase === 'after') { const w = bodies.find(x => x.id === current.result?.winner); if (w) { angle = Math.atan2(w.x, w.z) + .3; pose = { pose: 'wave' }; } }
     }
     const goal = v(Math.sin(angle) * outside, 0, Math.cos(angle) * outside);
-    aside(goal, current.bodies);
+    const near = current.phase === 'lobby' || current.phase === 'finished' ? [] : current.bodies;
+    Object.assign(goal, ringside(shape, goal, near));
     if (cut) ref.pos.copy(goal);
-    face = Math.atan2(-goal.x, -goal.z);
-    ref.pos.lerp(goal, 1 - Math.exp(-dt * 3));
+    stepRingside(ref.pos, goal, shape, near, dt, { rate: 3, speed: 4 });
+    face = Math.atan2(-ref.pos.x, -ref.pos.z);
     ref.group.position.copy(ref.pos); ref.group.rotation.y = face;
     ref.update(dt, { walk: ref.pos.distanceTo(goal) > .3 ? 1 : 0, ...pose });
   }
@@ -424,6 +421,6 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     ref?.dispose(); lampLights.forEach(l => l.removeFromParent());
     puffs.clear(); rings.clear(); stage.dispose();
   }
-  const api = { renderer, scene, camera, update, react, frame, stickBasis, dispose, setArena, debugCamera: null, panas, get replaying() { return replay.on; }, get arenaId() { return arenaId; }, get cameraSide() { return sideIndex; }, get spareArena() { return spare?.id ?? null; }, get neighbours() { return npcs.length; }, get neighboursWanted() { return dressed?.spots.length ?? 0; } };
+  const api = { renderer, scene, camera, update, react, frame, stickBasis, dispose, setArena, debugCamera: null, panas, get replaying() { return replay.on; }, get arenaId() { return arenaId; }, get refPos() { return ref?.pos ?? null; }, get cameraSide() { return sideIndex; }, get spareArena() { return spare?.id ?? null; }, get neighbours() { return npcs.length; }, get neighboursWanted() { return dressed?.spots.length ?? 0; } };
   return api;
 }

@@ -1,3 +1,4 @@
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { propDefinition } from '/engine/models/props/plaza-definitions.js';
 import { huntLayout, nextLayoutSeed } from './layout.js';
@@ -100,6 +101,7 @@ export class HuntRound {
       this.addPlayer(-i, names[i - 1] || 'Coco', { hat: i % 2 ? 'llanero' : 'gorra', hatColor: '#ffc629', outfitColor: '#2ad1b2' }, true);
       this.players.at(-1).score = botScores.get(-i) || 0;
     }
+    applyFriendNames(this.players.filter(p => p.bot), friendNamesNow(), { taken: this.players.filter(p => !p.bot).map(p => p.name) });
     if (!this.round) {
       this.firstSeeker = preference === 'seek' ? hostId : this.players.find(p => p.id !== hostId).id;
     }

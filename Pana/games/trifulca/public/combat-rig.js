@@ -4,7 +4,7 @@ import * as THREE from 'three';
 // A straight arm held out in guard would poke the rival at the body gap, and the
 // same arm at full length would go through them: `arms` gives each arm's length
 // in guard (bent, in effect) and on a punch, which stretches to meet the rival.
-export function createCombatRig(character, gloves, shoulders, arms = { guard: 1, punch: 1 }) {
+export function createCombatRig(character, gloves, shoulders, arms = { guard: 1, punch: 1, glove: 1 / .6 }) {
   const ears = character.head.children.filter(o => o.name === 'Cupped ear');
   const earBase = ears.map(o => o.rotation.clone());
   let active = false;
@@ -42,7 +42,7 @@ export function createCombatRig(character, gloves, shoulders, arms = { guard: 1,
       arm.rotation.set(p[`${key}.rx`], p[`${key}.ry`], p[`${key}.rz`]);
       const width = 1 / Math.sqrt(p[`${key}.s`]);
       arm.scale.set(width, stretch, width);
-      gloves[i].scale.set(1 / .6 / width, 1 / .6 / stretch, 1 / .6 / width);
+      gloves[i].scale.set(arms.glove / width, arms.glove / stretch, arms.glove / width);
     });
     // Keep the shared walking cycle while moving, plant the stance otherwise.
     if (moving < .4) character.legs.forEach((leg, i) => {
