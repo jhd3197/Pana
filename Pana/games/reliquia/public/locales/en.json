@@ -489,6 +489,13 @@
     "one": "Today's best: {n} shift · {money}",
     "other": "Today's best: {n} shifts · {money}"
   },
+  "¡Jornada {level} lista! Subieron Bs. {value}. Sobretiempo: +{extra} mangos. Ahora toca {place}: Bs. {quota}.": "Shift {level} done! You sent up Bs. {value}. Overtime: +{extra} mangos. Next up, {place}: Bs. {quota}.",
+  "¡Jornada {level} lista! Subieron Bs. {value}. Sobretiempo: +{extra} mangos. Los que se quedaron abajo llegaron con lo justo. Ahora toca {place}: Bs. {quota}.": "Shift {level} done! You sent up Bs. {value}. Overtime: +{extra} mangos. Those left below made it back by a hair. Next up, {place}: Bs. {quota}.",
+  "¡Jornada {n} lista! Sobretiempo +{extra}": "Shift {n} done! Overtime +{extra}",
+  "Sobretiempo +{n}": "Overtime +{n}",
+  "Cumplido · {n} s": "Done · {n} s",
+  "Sobretiempo: +{n} mangos.": "Overtime: +{n} mangos.",
+  "Sobretiempo: suban más de la cuota y cobran mangos extra. Si el encargo tiene reloj, el tiempo que sobre también paga, pero si se acaba no cobran nada.": "Overtime: send up more than the quota for extra mangos. If the side job has a clock, time left pays too, but let it run out and you get nothing.",
   "Del día: la misma cueva y los mismos pactos para todos. Da XP extra una vez al día.": "Daily: the same cave and the same pacts for everyone. Pays extra XP once a day.",
   "Completa una jornada o saca botín cada día y sube tu racha. Cada 7 días ganas un comodín, que salva un día perdido.": "Finish a shift or bring out loot every day to grow your streak. Every 7 days you earn a freeze, which saves one missed day."
 }

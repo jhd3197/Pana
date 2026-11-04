@@ -33,6 +33,16 @@ farol, botiquín, machete, honda and the marcadora de pintura, each straight
 into a hand. Holding E at the truck ends the expedition; a wipe ends it with
 `wipeShare` %.
 
+**Sobretiempo** (`sobretiempoPay` in `rules.js`) pays bonus mangos when a jornada
+is completed: 1 per Bs. 50 above the quota, plus 1 per 30 s left on a `turno`
+encargo's clock, never more than `encargoPay(level)`. On a timed jornada a clock
+that ran out pays nothing, so hauling more risks the bonus. The Tab panel shows
+the running figure, and the clock stays visible once that encargo is paid.
+`state.sobretiempo` totals it across jornadas: the `level` event line and shout
+say each jornada's share, the results card shows the total. At the end it counts
+in the payout at Bs. 10 a mango (so Calor and `wipeShare` apply) and in `xpFor`.
+The mangos themselves are not multiplied: Calor only pays bolívares and XP.
+
 **Aiming.** E uses whatever the crosshair points at: every target in
 `interaction()` is a point and a radius, scored by its angle from the line
 of sight (`p.h`, `p.pitch`) and distance; something within 1.4 m in front
@@ -860,7 +870,7 @@ Each device keeps its own rank on `engine/progress.js` under
 state: 10 for the dive plus up to 20 for its length (full at five minutes), 15 a
 jornada cleared, 1 per Bs. 100 in the truck (at most 60), 10 per encargo won
 (`encargosWon`, kept across jornadas because `encargo` only holds the current
-one), 5 per revive (at most 20), and 20 for extracting with something in the
+one), 1 per 2 mangos of Sobretiempo (at most 20), 5 per revive (at most 20), and 20 for extracting with something in the
 truck. The length part and the truck condition keep a run that leaves at once
 at 10 XP, not worth farming. A pana who joined during the results is a spectator
 and earns nothing.

@@ -32,6 +32,7 @@ export function xpFor(state, playerId) {
     + 15 * Math.max(0, (state.level || 1) - 1)                   // jornadas cleared
     + Math.min(60, Math.floor(haul / 100))                       // what reached the truck
     + 10 * (state.encargosWon || 0)
+    + Math.min(20, Math.floor((state.sobretiempo || 0) / 2))      // mangos earned past the quota
     + Math.min(20, 5 * (p.stats?.revives || 0))
     + (state.outcome === 'extracted' && haul > 0 ? 20 : 0);
   return Math.round(earned * xpMult(calorOfOptions(state.options)));

@@ -10,6 +10,8 @@ becomes the GitHub release's notes.
 
 - **Fosa: el campamento ahora es una caverna enorme.**
   Un lago quieto, columnas de roca, cascadas a lo lejos, hongos que brillan y una cabeza dorada bajo el reflector. Se baja por el montacargas y se vuelve subiendo hasta la misma caverna.
+- **Fosa: Sobretiempo, ¿se quedan un rato más?**
+  Suban más de la cuota y cobran mangos extra, también en bolívares y XP. Si el encargo tiene reloj, el tiempo que sobre paga, pero si se acaba no cobran nada.
 - **Fosa y Pepazo: ahora ves tus manos con lo que cargas.**
   Guantes y mangas de tu color: en Fosa sostienen el machete, el farol y el botín, y en Pepazo la chancla, con el mismo balanceo y el mismo golpe.
 - **Galope: los caballos ahora corren como caballos.**
