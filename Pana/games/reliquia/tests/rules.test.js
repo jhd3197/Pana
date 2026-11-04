@@ -240,7 +240,7 @@ test('snapshots carry the run: restore continues the same simulation', () => {
   step(a, 5); step(b, 5); assert.deepEqual(a.snapshot(), b.snapshot());
   a.ledger[2] = 50; a.codicia = 33; a.touched[3] = 1;
   const restored = new Expedition(); restored.restore(a.snapshot(), new Map([[1, { id: 1, name: 'Pana 1' }]]));
-  assert.equal(restored.players.length, 1); assert.equal(restored.codicia, 33); assert.equal(restored.touched[3], 1);
+  assert.equal(restored.players.filter(p => !p.held).length, 1); assert.equal(restored.codicia, 33); assert.equal(restored.touched[3], 1);
   assert.equal(restored.accept(1, (restored.ledger[1] || 0), 'bark', { line: 0 }), false, 'old seq refused');
   assert.equal(restored.layout.run.rooms.length, a.layout.run.rooms.length);
 });

@@ -11,6 +11,10 @@ becomes the GitHub release's notes.
 - **Fosa: el campamento ahora es una caverna al borde del abismo.**
   Roca arriba, faroles que apenas alumbran, un rayo frío que cae al vacío, charcos que gotean y ruidos que suben de abajo. Se juega igual, y carga más liviano.
 
+- **Fosa: sigan la expedición otro día con Continuar.**
+  Se guarda sola en el campamento, en el navegador del anfitrión: jornada, lugares,
+  mangos y las herramientas de cada pana. Quien vuelve con su nombre cae en su puesto,
+  y el de quien falta queda guardado, también si alguien se va a mitad de partida.
 - **Fosa: bajen a la Expedición del día y cuiden su racha.**
   Una cueva y unos pactos iguales para todos cada día, con XP extra una vez al día y tu mejor del día en los resultados. Completar una jornada o sacar botín suma a la racha, y cada 7 días ganas un comodín que salva un día perdido.
 - **Fosa: ahora hay récord, y se puede romper.**
