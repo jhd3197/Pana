@@ -1,7 +1,7 @@
 import { object } from './objects.js';
 const source = '/g/trifulca/set.js';
 export const TRIFULCA = [
-  { id: 'trifulca-guante', name: 'Guante de boxeo', factory: 'boxingGlove', description: 'Guante grande de caricatura con puño hacia −Y, pulgar hacia +Z y puño de color; cuelga de la mano del pana.', previewOptions: { color: '#e8443a' } },
+  { id: 'trifulca-guante', name: 'Guante de boxeo', factory: 'boxingGlove', description: 'Guante grande de caricatura: nudillos hacia −Y, pulgar hacia +Z, puño acolchado y curvo y muñequera de color; cuelga de la mano del pana.', previewOptions: { color: '#e8443a' } },
   { id: 'trifulca-guante-azul', name: 'Guante de boxeo azul', factory: 'boxingGlove', description: 'El guante de la esquina azul.', previewOptions: { color: '#2f6fe0', cuff: '#ffc629' } },
   { id: 'trifulca-casco', name: 'Casco de moto abierto', factory: 'motoHelmet', description: 'Casco de moto abierto, un poco grande, usado como protector. Origen en el centro de la cabeza del pana, cara abierta hacia +Z.', previewOptions: { color: '#ffc629' } },
   { id: 'trifulca-chancleta', name: 'Chancleta', factory: 'chancleta', description: 'Chancleta de goma de 0,3 m, suela en y = 0 y punta hacia +Z: lo más liviano para lanzar en la trifulca libre.' },

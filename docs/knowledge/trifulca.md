@@ -233,6 +233,17 @@ duplicated. Reduced motion disables HUD transitions, not gameplay messages.
   arms ×`ARM_LENGTH` 1.05 hanging and ×`ARM_GUARD` 1.03 in guard, gloves
   ×`GLOVE_SIZE` 1.2. A punch's arm stretches to `punchLength(gap)`, so the glove
   stops at the rival at any distance.
+- Gloves don't inherit the arm's scale. The arm stretches along its length and
+  the body's squash skews everything under it, so `glove-rig.js` writes the
+  glove's matrix each frame from a squared-up copy of the arm's world axes
+  (`rigidFrame`): one uniform size at any pose, and the wrist point still rides
+  the stretched arm, so reach is unchanged. Don't set `glove.scale` or
+  `glove.position`: `matrixAutoUpdate` is off. `GLOVE_SIZE` is in world units,
+  because `character.group` is outside the .6 sculpt scale.
+- The hand turns on the arm through `userData.hand` (`handRoll` in
+  `glove-shape.js`): thumb up and in on guard, palm down at the end of a
+  straight punch or hook, palm up on an upper. Turning a child of the rigid glove
+  keeps it free of shear; turning the arm would twist the sleeve.
 - Headwear: `helmetSwap` hides every child of the head except the head's own parts,
   the `face:` extras and the helmet, and restores each one's visibility on `off()`.
   It lists what stays rather than what goes because worn things come in many forms:

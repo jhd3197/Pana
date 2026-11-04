@@ -11,14 +11,15 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { createAccessories } from '/engine/models/characters/pana/accessories.js';
 import { loc } from '/engine/i18n.js';
-import { boxingGlove, CORNER_COLORS, HELMET_COLORS } from './set.js';
+import { CORNER_COLORS, HELMET_COLORS } from './set.js';
+import { wearGlove, settleGlove } from './glove-rig.js';
+import { handRoll } from './glove-shape.js';
 import { T } from './fight-rules.js';
 import { rhythm } from './crowd-life.js';
 import { inkOutlines } from './toon.js';
 import { HEAD_SIZE, ARM_LENGTH, ARM_GUARD, GLOVE_SIZE, punchLength, helmetSwap } from './fighter-look.js';
 
 const SCULPT = .6;   // buildCharacter's sculpt scale: bones live in sculpt units
-const GLOVE = GLOVE_SIZE / SCULPT;
 const ease = (a, b, k) => a + (b - a) * k;
 
 // A name tag over a pana's head (yours says TÚ).
@@ -44,11 +45,11 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   root.add(tilt); tilt.add(character.group);
   const arms = [character.armL, character.armR], base = arms.map(a => a.position.clone());
   const gloves = arms.map((arm, i) => {
-    const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(GLOVE);
-    glove.position.set(0, -.86, .04); glove.visible = false; inkOutlines(glove); arm.add(glove); return glove;
+    const glove = wearGlove(arm, { side: i ? -1 : 1 });
+    glove.visible = false; inkOutlines(glove); return glove;
   });
-  const armReach = { guard: ARM_GUARD, punch: ARM_GUARD, glove: GLOVE };
-  const applyCombat = createCombatRig(character, gloves, base, armReach);
+  const armReach = { guard: ARM_GUARD, punch: ARM_GUARD };
+  const applyCombat = createCombatRig(character, base, armReach);
   // The wardrobe's kart helmet goes on to fight; whatever the pana wears up there comes off.
   const helmet = createAccessories(character, { hat: 'casco', glasses: null, neck: null, back: null, extras: {} });
   helmet.color('hat', 'casco', 'main', HELMET_COLORS[seed % HELMET_COLORS.length]);
@@ -61,7 +62,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   let tagShown = true;
   let corner = null, wobble = 0, wobbleV = 0, sway = 0, swayV = 0, spin = 0, time = 0, shove = 0, cheer = 0, cheerWas = 0, twist = 0;
   let recoil = 0, recoilV = 0, jolt = 0;
-  const pose = arms.map(() => ({ rx: -.04, rz: 0, s: 1, z: 0 })), bounce = seed * 1.7;
+  const pose = arms.map(() => ({ rx: -.04, rz: 0, s: 1, z: 0 })), rolls = arms.map(() => 0), bounce = seed * 1.7;
   const idle = rhythm(seed); // the crowd pana's own sway, seeded so peers agree
   // Each punch, block, taunt and win picks its own style when it starts, so
   // a fight is never the same move twice: jabs alternate hands as rectos,
@@ -148,7 +149,6 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
       p.rx = ease(p.rx, t.rx, k); p.rz = ease(p.rz, t.rz, k); p.s = ease(p.s, t.s, k); p.z = ease(p.z, t.z ?? 0, k);
       arm.rotation.set(p.rx, 0, p.rz); arm.scale.y = p.s * ARM_LENGTH;
       arm.position.copy(base[i]); arm.position.z += p.z;
-      gloves[i].scale.set(GLOVE, GLOVE / (p.s * ARM_LENGTH), GLOVE);
     });
     // The body: twist into punches, crouch to block or dodge, flop when down.
     const b = character.body, kb = 1 - Math.exp(-dt * 12);
@@ -212,7 +212,13 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     if (authored && T[act]?.whiff && at > T[act].total) authored['body.rx'] += .22;
     const striking = act === 'jab' || act === 'trompon';
     armReach.punch = punchLength(view.gap ?? 1.2);
-    applyCombat(authored, view.moving || 0, striking ? attackExtension(act, at) : 0);
+    const extension = striking ? attackExtension(act, at) : 0;
+    applyCombat(authored, view.moving || 0, extension);
+    if (corner) gloves.forEach((glove, i) => {
+      const want = handRoll(act, { style: move.style, striking: striking && i === (move.hand ?? 1), extension });
+      rolls[i] = ease(rolls[i], want, k);
+      settleGlove(glove, arms[i], character.group, GLOVE_SIZE, rolls[i]);
+    });
     if (tag) tag.visible = tagShown && act !== 'down';
     warn.visible = act === 'wind' || (['kick', 'sweep', 'toss'].includes(act) && at < T[act].active[0]); if (warn.visible) warn.scale.set(.7 + Math.sin(time * 30) * .06, .175, 1);
   }
