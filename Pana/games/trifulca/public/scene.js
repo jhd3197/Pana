@@ -421,6 +421,6 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     ref?.dispose(); lampLights.forEach(l => l.removeFromParent());
     puffs.clear(); rings.clear(); stage.dispose();
   }
-  const api = { renderer, scene, camera, update, react, frame, stickBasis, dispose, setArena, debugCamera: null, panas, get replaying() { return replay.on; }, get arenaId() { return arenaId; }, get cameraSide() { return sideIndex; }, get spareArena() { return spare?.id ?? null; }, get neighbours() { return npcs.length; }, get neighboursWanted() { return dressed?.spots.length ?? 0; } };
+  const api = { renderer, scene, camera, update, react, frame, stickBasis, dispose, setArena, debugCamera: null, panas, get replaying() { return replay.on; }, get arenaId() { return arenaId; }, get refPos() { return ref?.pos ?? null; }, get cameraSide() { return sideIndex; }, get spareArena() { return spare?.id ?? null; }, get neighbours() { return npcs.length; }, get neighboursWanted() { return dressed?.spots.length ?? 0; } };
   return api;
 }

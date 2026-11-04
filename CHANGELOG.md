@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Trifulca: el árbitro y el público ya no se meten en la pelea.**
+  Rodean el ring por fuera y se apartan hacia afuera. Los bots del público no
+  empujan, y volver al ring al salirte ya no te aturde.
 - **Reliquia: El Silbón no muere. Piérdelo, escóndete o llévalo al abismo.**
   Ningún arma lo mata. Si te pierde de vista te busca y se va; caza por el oído, y
   al correr hacia ti por encima del foso se cae y abre el sello. La sala del foso
