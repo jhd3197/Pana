@@ -177,6 +177,8 @@ export class CaidaGame {
   // A new match: the cachos pick the first dealer before any card moves.
   openMatch() {
     if (this.phase === 'finished') { this.round = 0; this.scores.fill(0); }
+    for (const p of this.players) if (p.id === null) p.name = BOT_NAMES[p.seat];
+    applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     this.table = []; this.stock = []; this.history = []; this.result = null; this.last = null; this.lastCapture = null; this.cutAt = null; this.dealCall = null;
     this.players.forEach(p => { p.hand = []; p.captured = []; p.announced = null; });
     this.phase = 'starter'; this.revision++;
@@ -214,8 +216,6 @@ export class CaidaGame {
   }
   dealOpening(seat) {
     if (this.phase !== 'dealing' || seat !== this.dealer || !['up', 'down'].includes(this.dealCall)) return false;
-    for (const p of this.players) if (p.id === null) p.name = BOT_NAMES[p.seat];
-    applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     this.phase = 'playing'; this.deal();
     const calls = this.dealCall === 'up' ? [1, 2, 3, 4] : [4, 3, 2, 1]; let points = 0;
     for (const call of calls) {
