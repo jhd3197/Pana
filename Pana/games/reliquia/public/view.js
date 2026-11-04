@@ -1,4 +1,4 @@
-// Reliquia in first person: the camera at your pana's eyes, your two paws
+// Reliquia in first person: the camera at your pana's eyes, your two hands
 // holding whatever you picked up, the other panas, the enemies, the paint,
 // and the light. The camp is sunlit; underground the headlamp, a farol and a
 // small pool of torch lights (a fixed number, so shaders never recompile)
@@ -28,6 +28,7 @@ import { SILBON } from './silbon.js';
 import { SEAT_COLORS, SUIT_HEAD, seatColor, suitedAvatar } from './suit-look.js';
 import { dressExplorer, disposeSuits } from './explorer-suit.js';
 import { createHeadlamps } from './headlamps.js';
+import { createHands } from './hand-view.js';
 import { createSwarmView } from './swarm-view.js';
 import { flareStick } from '/engine/models/props/fosa-biomes.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
@@ -79,7 +80,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 120 }); sun.shadow.bias = -.0008; sun.shadow.normalBias = .05; scene.add(sun, sun.target);
   // Headlamp and the farol in your hand ride on the camera.
   const headlamp = new THREE.SpotLight(0xfff0d8, 0, 24, .44, .42, 1.35); headlamp.position.set(0, .05, 0); headlamp.target.position.set(0, -.25, -5); camera.add(headlamp, headlamp.target);
-  const handLight = new THREE.PointLight(0xffa850, 0, 12, 1.6); handLight.position.set(.3, -.2, -.4); camera.add(handLight);
+  const handLight = new THREE.PointLight(0xffa850, 0, 12, 1.6); handLight.position.set(.42, -.05, -.8); camera.add(handLight);
   const pool = Array.from({ length: POOL }, () => { const l = new THREE.PointLight(0xffa04a, 0, 11, 1.7); scene.add(l); return l; });
   const diverLamps = createHeadlamps(scene, DIVER_LAMPS[getSettings().quality] ?? 2);
   // Dust drifting through the headlamp's beam.
@@ -91,11 +92,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   let world = createExpeditionWorld({ seed, depth }); scene.add(world.group);
   const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign); // i18n-ignore: signage painted in the world
   const puffs = new Puffs(scene), waves = new Shockwaves(scene), swarm = createSwarmView({ scene, puffs });
-  // Your gloves: the suit's colour, holding the two hand items in view.
-  const hands = [new THREE.Group(), new THREE.Group()]; hands[0].position.set(.32, -.36, -.7); hands[1].position.set(-.32, -.36, -.7);
-  const pawMaterial = new THREE.MeshStandardMaterial({ color: 0xb07a4a, roughness: .8 }), pawGeometry = new THREE.SphereGeometry(.042, 14, 10);
-  for (const h of hands) { const paw = new THREE.Mesh(pawGeometry, pawMaterial); paw.scale.set(1, .8, 1.2); h.add(paw); h.userData.slot = new THREE.Group(); h.userData.slot.position.set(0, .04, -.06); h.add(h.userData.slot); camera.add(h); }
-  const heldKeys = ['', ''];
+  // Your gloves and sleeves: the suit's colour, holding the two hand items in view.
+  const hands = createHands({ camera, itemModel });
   // Paint, darts and shots.
   const splatTextures = [1, 2, 3, 4].map(splatTexture), splatGeometry = new THREE.PlaneGeometry(.7, .7), splatMaterials = new Map();
   const splatMaterial = (seat, n) => { const key = `${seat}:${n}`; if (!splatMaterials.has(key)) splatMaterials.set(key, new THREE.MeshBasicMaterial({ color: COLORS[seat % 8], map: splatTextures[n % 4], transparent: true, alphaTest: .4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, side: THREE.DoubleSide })); return splatMaterials.get(key); };
@@ -111,7 +109,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
   const avatars = new Map(), enemies = new Map(), carts = new Map(), tmp = new THREE.Vector3();
   let lastState = null, snapAt = 0;
-  let scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', look = CAMP_LOOK, poolAt = 0, swingT = [0, 0], shakeScale = 1;
+  let scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', look = CAMP_LOOK, poolAt = 0, wallPush = 0, shakeScale = 1;
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
   function setLook(name) {
@@ -125,21 +123,6 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     // so no shader recompiles on the way down or up.
     renderer.shadowMap.autoUpdate = name === 'camp'; if (name === 'camp') renderer.shadowMap.needsUpdate = true;
     headlamp.color.set(look.lamp || 0xfff0d8); headlamp.decay = look.lampDecay ?? 1.35;
-  }
-  function heldModel(slot, held, i) {
-    const key = held ? `${held.id}:${held.kind}:${held.pile?.length || 0}` : '';
-    if (heldKeys[i] === key) return; heldKeys[i] = key;
-    slot.clear();
-    if (!held) return;
-    const model = itemModel(held.kind), info = ITEMS[held.kind];
-    if (held.pile) { model.scale.multiplyScalar(.28 + held.pile.length * .05); slot.add(model); model.position.y = -.04; return; }
-    const scale = held.kind === 'bengala' ? .9 : held.kind === 'cuerda' ? .6 : held.kind === 'farol' ? .24 : held.kind === 'machete' ? .5 : held.kind === 'honda' ? .42 : held.kind === 'marcadora' ? 1.1 : info.artifact ? .55 : .42;
-    model.scale.multiplyScalar(scale);
-    if (held.kind === 'machete') { model.rotation.set(0, Math.PI / 2, .6); model.position.set(0, .02, 0); }
-    else if (held.kind === 'honda') model.rotation.set(-.3, Math.PI, 0);
-    else if (held.kind === 'marcadora') { model.rotation.set(0, Math.PI, 0); model.position.set(0, -.02, -.05); }
-    else model.position.y = -.05;
-    slot.add(model);
   }
   function avatarFor(p, i) {
     const skin = JSON.stringify(p.avatar); let a = avatars.get(p.id);
@@ -358,16 +341,11 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       shake = Math.max(0, shake - dt * 2.5); const jolt = shake * shake * .06 * shakeScale;
       camera.position.set(me.x, (me.y || 0) + rideY(me) + EYE + lift * 1 + Math.abs(Math.sin(bob)) * .05 * sway, me.z);
       camera.rotation.set(pitch + (Math.random() - .5) * jolt, h + Math.PI + (Math.random() - .5) * jolt, Math.sin(bob) * .01 * sway + lift * -.35 + (me.reversed > 0 ? Math.sin(t * 2) * .06 : 0));
-      // Paws: bob with the stride, swing on use, hide when both hands grip a treasure.
-      me.hands.forEach((held, i) => heldModel(hands[i].userData.slot, held, i));
-      for (let i = 0; i < 2; i++) {
-        swingT[i] = me.swing > 0 && me.swingHand === i ? me.swing / .3 : Math.max(0, swingT[i] - dt * 4);
-        const s = Math.sin(swingT[i] * Math.PI);
-        hands[i].visible = !me.downed && me.grip == null && me.push == null;
-        hands[i].position.set((i ? -1 : 1) * (camera.aspect < 1 ? .16 : .32) + Math.sin(bob + i * Math.PI) * .012 * sway - s * (i ? -.12 : .12), -.36 + Math.abs(Math.cos(bob)) * .015 * sway + s * .1, -.7 - s * .18);
-        hands[i].rotation.set(-s * 1.2, 0, s * (i ? -.4 : .4));
-      }
-      pawMaterial.color.set(seatColor(me.seat));
+      // Hands: bob with the stride, swing on use, hide when both grip a treasure. A wall
+      // just ahead pulls them in, so they never poke through it.
+      const wall = world.layout.walkable(me.x + Math.sin(h) * .72, me.z + Math.cos(h) * .72, state, .02) ? 0 : .2;
+      wallPush += (wall - wallPush) * (1 - Math.exp(-dt * 12));
+      hands.update(dt, me, { bob, sway, push: wallPush, aspect: camera.aspect, color: seatColor(me.seat) });
       headlamp.intensity = lookName === 'camp' ? 0 : (look.lampPower || 58) * mood.farol * (.3 + .7 * out);
       handLight.intensity = (holds(me, 'farol') ? 9 : holds(me, 'sunCrown') ? 12 : 0) * (.4 + .6 * mood.farol) * (look.handPower ?? 1);
       motes.visible = lookName !== 'camp'; motes.userData.tick(t); motes.userData.strength(look.dust * mood.farol); motes.userData.scale(canvas.clientHeight * renderer.getPixelRatio());
@@ -417,7 +395,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   function resize() { canvas.style.width = '100vw'; canvas.style.height = '100dvh'; renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); camera.aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight); camera.updateProjectionMatrix(); }
   addEventListener('resize', resize); resize();
   return {
-    renderer, scene, camera, puffs, waves, avatars, enemies, swarm, draw, bark, mood,
+    renderer, scene, camera, puffs, waves, avatars, enemies, swarm, hands, draw, bark, mood,
     get look() { return lookName; },
     // The Sustos setting scales every camera shake (0 turns it off).
     set shakeScale(v) { shakeScale = v; },
@@ -438,7 +416,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
       disposeSprite(shopSign);
       swarm.dispose(); motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
-      [ballGeometry, dartGeometry, splatGeometry, ringGeometry, pawGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial, pawMaterial].forEach(m => m.dispose()); disposeSuits(); diverLamps.dispose();
+      [ballGeometry, dartGeometry, splatGeometry, ringGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial].forEach(m => m.dispose()); hands.dispose(); disposeSuits(); diverLamps.dispose();
       renderer.dispose();
     },
   };

@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa y Pepazo: ahora ves tus manos con lo que cargas.**
+  Guantes y mangas de tu color: en Fosa sostienen el machete, el farol y el botín, y en Pepazo la chancla, con el mismo balanceo y el mismo golpe.
 - **Fosa: bajen a la Expedición del día y cuiden su racha.**
   Una cueva y unos pactos iguales para todos cada día, con XP extra una vez al día y tu mejor del día en los resultados. Completar una jornada o sacar botín suma a la racha, y cada 7 días ganas un comodín que salva un día perdido.
 - **Fosa: ahora hay récord, y se puede romper.**
