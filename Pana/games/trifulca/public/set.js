@@ -6,7 +6,9 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
+import { surface } from '/engine/models/characters/pana/geometry.js';
 import { fbm2, rng } from '/engine/random.js';
+import { WRIST, fistPoint, thumbLine } from './glove-shape.js';
 
 export const CORNER_COLORS = { red: '#e8443a', blue: '#2f6fe0', yellow: '#f2b631', green: '#2aa876' };
 export const HELMET_COLORS = ['#ffffff', '#ffc629', '#2ad1b2', '#ff6fae', '#1f1f24', '#ff8a3d', '#9b5de5', '#6bbf59'];
@@ -27,20 +29,25 @@ function rope(parent, a, b, r, material) {
 
 // ---------- Guantes de boxeo ----------
 // One oversized glove, knuckles toward −Y and the cuff up (it hangs from a
-// pana's hand), thumb toward +Z. About 0.42 m long; `cuff` paints the cuff.
+// pana's hand), thumb toward +Z and the palm toward −side on X. A padded fist
+// curling toward the palm, a thumb lying along it, a contrasting cuff with a
+// strap; about 0.5 m cuff to knuckles. `cuff` paints the cuff. Corners tint the
+// leather by its low roughness (fighters.js). userData.hand turns on the arm.
 export function boxingGlove({ color = CORNER_COLORS.red, cuff = '#ffffff', side = 1 } = {}) {
   const group = new THREE.Group(); group.name = 'Guante de boxeo';
-  const leather = mat(color, { roughness: .32, metalness: .05 }), band = mat(cuff, { roughness: .45 });
-  const fist = part(group, new THREE.SphereGeometry(.2, 20, 16), leather, 0, -.17, .02);
-  fist.scale.set(1, 1.08, 1.12);
-  const knuckle = part(group, new THREE.SphereGeometry(.15, 16, 12), leather, 0, -.29, .06); knuckle.scale.set(1.15, .8, 1);
-  const thumb = part(group, new THREE.CapsuleGeometry(.07, .12, 6, 10), leather, side * .1, -.12, .17);
-  thumb.rotation.set(.5, 0, side * -.4);
-  part(group, new THREE.CylinderGeometry(.13, .15, .16, 16), band, 0, .02, 0);
-  // Laces across the cuff.
-  const lace = mat('#f4efe4', { roughness: .8 });
-  for (let i = 0; i < 3; i++) part(group, new THREE.BoxGeometry(.012, .012, .1), lace, 0, -.03 + i * .04, .14).rotation.y = i % 2 ? .5 : -.5;
-  group.userData.previewBounds = [[-.25, -.45, -.25], [.25, .15, .3]];
+  const hand = new THREE.Group(); hand.name = 'Mano'; group.add(hand); group.userData.hand = hand;
+  const leather = mat(color, { roughness: .32, metalness: .05 }), band = mat(cuff, { roughness: .55 }), dark = mat('#1f1f24', { roughness: .6 });
+  part(hand, surface((u, v) => fistPoint(u, v, side), 32, 24), leather);
+  const { from, to, radius } = thumbLine(side), start = new THREE.Vector3(...from), end = new THREE.Vector3(...to);
+  const thumb = part(hand, new THREE.CapsuleGeometry(radius, start.distanceTo(end), 6, 12), leather);
+  thumb.position.copy(start).add(end).multiplyScalar(.5);
+  thumb.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), start.clone().sub(end).normalize());
+  // The cuff closes over the wrist, its lower lip tucked into the fist's neck.
+  const lathe = (points, material) => part(hand, new THREE.LatheGeometry(points.map(([r, y]) => new THREE.Vector2(r, y)), 24), material);
+  const W = WRIST;
+  lathe([[0, -.05], [W * .8, -.05], [W * 1.02, -.04], [W * 1.06, -.015], [W * 1.03, .05], [W, .09], [W * .96, .105], [W * .8, .11], [0, .11]], band);
+  lathe([[W * 1.02, .018], [W * 1.06, .021], [W * 1.07, .035], [W * 1.05, .05], [W * 1.01, .054]], dark);
+  group.userData.previewBounds = [[-.28, -.42, -.22], [.22, .14, .26]];
   return owned(group);
 }
 

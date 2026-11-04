@@ -28,6 +28,7 @@ import { SILBON } from './silbon.js';
 import { SEAT_COLORS, SUIT_HEAD, seatColor, suitedAvatar } from './suit-look.js';
 import { dressExplorer, disposeSuits } from './explorer-suit.js';
 import { createHeadlamps } from './headlamps.js';
+import { createSwarmView } from './swarm-view.js';
 
 export const COLORS = SEAT_COLORS;
 const EYE = 1.45, POOL = 5, FAR = 220;
@@ -82,7 +83,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const mood = { light: 1, farol: 1, fog: 1, out: null };
   let world = createExpeditionWorld({ seed, depth }); scene.add(world.group);
   const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign); // i18n-ignore: signage painted in the world
-  const puffs = new Puffs(scene), waves = new Shockwaves(scene);
+  const puffs = new Puffs(scene), waves = new Shockwaves(scene), swarm = createSwarmView({ scene, puffs });
   // Your gloves: the suit's colour, holding the two hand items in view.
   const hands = [new THREE.Group(), new THREE.Group()]; hands[0].position.set(.32, -.36, -.7); hands[1].position.set(-.32, -.36, -.7);
   const pawMaterial = new THREE.MeshStandardMaterial({ color: 0xb07a4a, roughness: .8 }), pawGeometry = new THREE.SphereGeometry(.042, 14, 10);
@@ -270,6 +271,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       if (a.model.userData.dispose) a.model.userData.dispose(); else a.root.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.(); });
       a.root.removeFromParent(); a.ring.removeFromParent(); enemies.delete(id);
     }
+    // The swarm: one instanced mesh, however many snakes.
+    swarm.update(dt, state, me, vf, world.layout);
     // Carritos: their load sits in the hopper and the balance floats above.
     for (const c of state.carts || []) {
       let a = carts.get(c.id);
@@ -381,7 +384,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   function resize() { canvas.style.width = '100vw'; canvas.style.height = '100dvh'; renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); camera.aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight); camera.updateProjectionMatrix(); }
   addEventListener('resize', resize); resize();
   return {
-    renderer, scene, camera, puffs, waves, avatars, enemies, draw, bark, mood,
+    renderer, scene, camera, puffs, waves, avatars, enemies, swarm, draw, bark, mood,
     get look() { return lookName; },
     // The Sustos setting scales every camera shake (0 turns it off).
     set shakeScale(v) { shakeScale = v; },
@@ -401,7 +404,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       for (const [id, a] of avatars) removeAvatar(a, id);
       for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
       disposeSprite(shopSign);
-      motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
+      swarm.dispose(); motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
       [ballGeometry, dartGeometry, splatGeometry, ringGeometry, pawGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial, pawMaterial].forEach(m => m.dispose()); disposeSuits(); diverLamps.dispose();
       renderer.dispose();
     },

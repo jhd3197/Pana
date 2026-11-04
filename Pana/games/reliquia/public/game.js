@@ -18,6 +18,7 @@ import { FIELDS, DEFAULT_OPTIONS, SCARES, loadScares, saveScares, shakeFor } fro
 import { createEerieFx } from './eerie-fx.js';
 import { Expedition, BARKS, interaction } from './rules.js';
 import { spawnEnemy } from './enemies.js';
+import { startSwarm } from './swarm.js';
 import { ExpeditionRoom } from './network.js';
 import { createView } from './view.js';
 import { createHud, money } from './hud.js';
@@ -37,6 +38,7 @@ const canvas = $('world'), view = createView(canvas), hud = createHud(), ambienc
 // Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
 let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares); view.scares = scares;
 const presence = createPresence({ view, ambience, samples });
+view.swarm.onHiss = (x, z) => ambience.at('slither', me(), view.heading, x, z, 16);
 const fx = createEerieFx({ view, ambience, samples, dread: v => { const r = Math.round(v * 20) / 20; if (r !== dreadShown) { dreadShown = r; $('dread').style.opacity = r; } } });
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
@@ -128,6 +130,9 @@ function handle(e) {
     case 'delivered': sfx.bank(true); popCounter($('mangos')); if (e.met) shout(loc('¡Cuota lista! Al montacargas'), { tone: 'teal' }); break;
     case 'spider': sfx.awaken(); view.shake(.2); break;
     case 'scatter': if (near) sfx.flap(); break;
+    // The swarm's telegraph: a hiss from each crack, heard across the floor.
+    case 'swarm': if (p && floorOf(p.x) === e.floor) { for (const h of e.holes) ambience.at('swarmHiss', p, view.heading, h.x, h.z, 70); view.shake(.15); } break;
+    case 'snake-scatter': view.swarm.scatter(e); break;
     case 'screech': if (p) ambience.at('screech', p, view.heading, e.x, e.z, 26); break;
     case 'silbon-falling': { const b = state.enemies.find(q => q.id === e.enemy); if (p && b) ambience.at('plummet', p, view.heading, b.x, b.z, 40); view.shake(.3); break; }
     case 'silbon-down': sfx.seal(); view.shake(.6); break;
@@ -152,7 +157,7 @@ function receive(next) {
   view.reseed(state.seed, state.level || 1, themeOf(state));
   if (phase !== state.phase) {
     phase = state.phase; menu.close(); clearInput(); document.body.classList.toggle('playing', phase === 'playing');
-    if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; if (qs.has('debug') && Number(qs.get('jornada')) > 1) queueMicrotask(() => window.reliquia?.jornada(Number(qs.get('jornada')))); lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
+    if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; if (qs.has('debug') && Number(qs.get('jornada')) > 1) queueMicrotask(() => window.reliquia?.jornada(Number(qs.get('jornada')))); if (qs.has('debug') && Number(qs.get('snakes')) > 0) queueMicrotask(() => window.reliquia?.snakes(Number(qs.get('snakes')))); lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
     if (phase !== 'playing') looking.release(); intel.release();
   }
   // Local practice and a fresh host start a new count.
@@ -239,6 +244,13 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
     const h = p.h, x = p.x + Math.sin(h) * ahead - Math.cos(h) * side, z = p.z + Math.cos(h) * ahead + Math.sin(h) * side;
     let e = null; for (let r = 0; r < 3 && !e; r += .5) for (let a = 0; a < 8 && !e; a++) e = spawnEnemy(g, kind, x + Math.cos(a * .785) * r, z + Math.sin(a * .785) * r, { born: g.time - 9, awake: true, h: h + Math.PI });
     room.publish(); return e && { id: e.id, x: e.x, z: e.z };
+  },
+  // A swarm of n snakes now, on your floor (first down the shaft if you are at the camp): host only. Also ?debug&snakes=n.
+  snakes(n = 60) {
+    const g = room.game, p = g?.players.find(q => q.id === room.id); if (!room.isHost || !p || g.phase !== 'playing') return false;
+    if (!floorOf(p.x)) { const stop = g.layout.run.lifts.find(l => l.floor === 1); Object.assign(p, { x: stop.x, z: stop.z - 5, h: Math.PI }); }
+    g.swarm = null; g.swarmSim = null;
+    const started = startSwarm(g, floorOf(p.x), n); room.publish(); return started;
   },
   fx, samples,
   // The Tab / View layer: reliquia.info (open?) and reliquia.showInfo(true | false).

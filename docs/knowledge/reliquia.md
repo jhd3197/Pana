@@ -303,6 +303,64 @@ poison (2 HP/s for 5 s) and slide home when the pana leaves their reach.
 Director waves on floor 1 are 30 % bats; deeper, spiders join.
 Models: `engine/models/fauna/cave-creatures.js`.
 
+### The swarm (`swarm.js`, `swarm-view.js`)
+
+Now and then the Director's wave is dozens of snakes instead (`swarmDue`: from 45 s
+into a jornada, 20 % of waves plus 5 % per codicia tier, 75 s rest after one; size
+`swarmSize`, at most 90, debug up to 160). It has three phases. `hiss`, 2.4 s: the
+`swarm` event plays `swarmHiss` from each crack and dust rises there, with no text.
+`crawl`, 30 s: they pour out, at least 8 a second. `retreat`, 9 s: they go back down
+the holes, or at once if nobody is left on the floor.
+
+- **Holes** (`pickHoles`): 2 to 4, at the foot of a wall, one per room, never in the
+  `boveda` or `guardian` rooms or a sealed room. Each pass asks for less: unseen, 14 m
+  away and within 45 m of walking; then 9 m; then 5 m at any distance. Every layout
+  has been checked in `swarm.test.js`; a floor with no spot simply gets a normal wave.
+- **Bodies**: chains of 12 Verlet points, 0.17 m apart (`engine/play/verlet-chains.js`).
+  Heads steer; bodies only follow. No rigid bodies, no rotations.
+- **Walls**: a 0.25 m signed distance field baked from `layout.footprint(floor)`
+  (`swarmField`, about 10 to 20 ms). Pits, obstacles, cages and whole nooks are solid
+  too, so nothing enters a nook. A fallen tunnel or an opened wall rebakes it.
+- **Steering**: one breadth-first flow field from every chaseable pana, redone every
+  0.4 s; each head reads its own cell, plus a sine wiggle. Within 3 m in the open it
+  goes straight. Past 16 m of walking it hurries (x1.6), so far holes still arrive.
+  Without that field heads pile up against the first wall.
+- **Bite**: 3 HP (scaled by difficulty) at most every 0.9 s, plus `p.slow` for 1.4 s.
+  That is the existing x0.6 debuff, so walk speed is untouched. A snake near you (2.2
+  m/s, 2.53 on hard) is slower than a slowed pana (2.76), so you can always walk out.
+  A jump over 0.7 m clears them; a hidden pana is not bitten.
+- **Swing** (`swingAtSwarm`): the machete reaches 2.6 m, anything else 1.1 m, not
+  through walls. Points fly out, links let go for 1.1 s, then pull back over 0.7 s.
+  Snakes never die of it, and a loose snake neither steers nor bites.
+- **Light**: a farol's beam (7.5 m, the same cone as `lightOn`) or a sun crown (5.5 m)
+  makes a head turn and flee at x1.2 while lit and 0.7 s after. Modest on purpose: it
+  opens a gap and does not clear a room. Checked on a quarter of the heads per step.
+
+**Net.** `g.swarm` is plain JSON: phase, holes, and `heads`, one string of 5 base64
+characters per snake (13 bits x, 13 bits z at 1/16 m, 4 of flags), rewritten every
+0.15 s. As one string a delta sends it whole or not at all, about 2 KB/s for 60
+snakes. `g.swarmSim` (the typed arrays) is left out of `snapshot()`, and `restore()`
+clears it; `tickSwarm` rebuilds it from `heads`, so a new host loses only body poses
+and they straighten out within a moment. Every screen, the host's included, draws
+through a `SwarmFollower`: heads chase the synced ones and bodies run on the same
+solver. A swing reaches them as the `snake-scatter` event, and the `loose` flag covers
+a missed one. So a host runs two simulations (see Perf).
+
+**Perf.** 150 snakes x 12 points, median, from `swarm-perf.test.js`: about 0.3 to 0.6 ms a host
+step in the open, 0.6 to 0.9 ms with all of them packed around one pana, 0.3 to 0.7 ms a client
+step (30 and 45 steps a second). A step allocates nothing measurable (under 256 bytes,
+and the test fails above that). Separation goes through `engine/play/spatial-hash.js`,
+capped at 6 pushes a point, so a crowd costs less than double. Drawing is three draw
+calls at any count (`snake-swarm.js`: segments, eyes, cracks), checked at 30 and 150 in
+`swarm.browser.mjs`. A snake past 34 m writes no instances, since fog has hidden it.
+
+Colour slots are fixed per instance, so the bands stay put but a far snake that
+returns may swap skin; nobody can see it at that distance. Keep the bands light: a dark
+band reads as a gap in the body against the dark floor.
+
+Try it: `?debug&snakes=60` on the URL, or `reliquia.snakes(150)` in the console (host
+only; it puts you down the shaft if you are at the camp).
+
 ## Artifacts (all in hand)
 
 Echo mask: reveals a hidden room within 9 m / a phantom every 20–28 s.
@@ -570,7 +628,7 @@ every 2–7 s; the camp has a dry chirr and cicadas instead, no birds. Footsteps
 moving pana (0.42 s walking, 0.3 s running), others' panned and faded by
 distance. Creatures each have their own clock: mummy groans, spider
 skitter, cuaima hiss, bat squeaks and wing flutter (a sleeping one barely chirps),
-the Silbón's falling whistle, jaguar growls and a roar on the pounce. From tier 3 your heartbeat joins in.
+the Silbón's falling whistle, jaguar growls and a roar on the pounce. The swarm hisses from its cracks (`swarmHiss`) and then from whichever snake is closest (`slither`), more often as it nears. From tier 3 your heartbeat joins in.
 
 Recorded clips (`public/audio/*.mp3`, CC0, credited in `audio/SOURCE.md`)
 play through `samples.js` on `engine/sample-bank.js`, after the cave split,
@@ -668,6 +726,7 @@ extract and replay, plus solo pause, the offline fallback and the hub.
 `tests/silbon.browser.mjs` is two panas on a relay: the guest hides, the windup and the
 flush reach them, a new host keeps the boss, and it falls and opens the seal.
 `tests/silbon.test.js` and `carga.test.js` cover the logic, each difficulty included.
+`tests/swarm.test.js` covers the swarm on every place and jornada, `swarm-perf.test.js` its budget; `tests/swarm.browser.mjs` is two panas on a relay: telegraph, guest-side bodies, draw calls, a bite, a machete, a new host.
 `tests/studio.browser.mjs` opens the new models and the map in Studio.
 With `?debug`, `window.reliquia` exposes `room`, `view`, `state`, `me`,
 `place(id, x, z, h)`, `face(h)`, `step(seconds)` and `interaction`.
