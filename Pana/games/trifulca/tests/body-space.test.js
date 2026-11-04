@@ -70,10 +70,45 @@ test('a toss still reaches a guard pressed up at the gap', () => {
   assert.equal(b.mareo, T.toss.mareo);
 });
 
-test('benched and knocked-out panas take no room in the ring', () => {
-  const { a, b, step } = pair(0, 0);
-  b.bench = true; step(); assert.equal(a.x, 0); assert.equal(b.x, 0);
-  b.bench = false; b.out = true; step(); assert.equal(a.x, 0);
+test('nobody stands inside a benched or knocked-out pana, and they stay put', () => {
+  for (const still of ['bench', 'out']) {
+    const { a, b, step } = pair(.2, 0);
+    b[still] = true;
+    for (let i = 0; i < 5; i++) step();
+    assert.equal(b.x, 0, `${still} keeps their spot`);
+    assert.ok(gap(a, b) >= BODY_GAP - 1e-9, `${still}: ${gap(a, b)}`);
+  }
+});
+
+test('a pana pinned on the ropes keeps the gap too', () => {
+  const arena = arenaOf('toldo'), a = newBody(1, 'red', arena), b = newBody(2, 'blue', arena);
+  Object.assign(a, { x: arena.half - 1.5, z: 0, h: Math.PI / 2 }); Object.assign(b, { x: arena.half - .2, z: 0, h: -Math.PI / 2 });
+  const moves = new Map([[1, { x: 1, z: 0 }], [2, { x: 1, z: 0 }]]);
+  for (let i = 0; i < 40; i++) {
+    stepBodies([a, b], arena, DT, moves, () => {});
+    assert.ok(b.x <= arena.half + 1e-9, 'the ropes hold');
+    if (i > 20) assert.ok(gap(a, b) >= BODY_GAP - 1e-9, `tick ${i}: ${gap(a, b)}`);
+  }
+});
+
+test('libre and parejas keep every pair apart through a whole night', () => {
+  for (const modo of ['libre', 'parejas', 'torneo']) {
+    const game = new Trifulca(11);
+    game.configure({ modo, peleas: 5, seconds: 45 });
+    game.addPlayer('me', 'Ana');
+    game.start();
+    let closest = Infinity, ticks = 0;
+    for (let i = 0; i < 6000 && game.phase !== 'finished'; i++) {
+      const before = game.phase;
+      game.update(DT, new Map([['me', { x: i % 90 < 45 ? 1 : -1, z: 0, gp: Math.floor(i / 6) % 256, e: 0, a: Math.floor(i / 40) % 256, t: 0, k: Math.floor(i / 50) % 256, s: 0, v: 0 }]]));
+      const ring = game.bodies.filter(b => !b.out && !b.bench);
+      if (before !== 'fight' || game.phase !== 'fight') continue;
+      ticks++;
+      for (let x = 0; x < ring.length; x++) for (let y = x + 1; y < ring.length; y++) closest = Math.min(closest, gap(ring[x], ring[y]));
+    }
+    assert.ok(ticks > 500, `${modo} fought (${ticks} ticks)`);
+    assert.ok(closest > BODY_GAP * .9, `${modo}: closest ${closest}`);
+  }
 });
 
 test('a real fight never leaves two fighters inside each other', () => {

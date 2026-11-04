@@ -4,6 +4,7 @@ import { loc } from '/engine/i18n.js';
 export default {
   goal: loc('Tumba a tu rival tres veces, o gánale por puntos o con el público, y termina la noche con más dolitas que nadie.'),
   howTo: [
+    loc('Un toque justo después de pegar encadena el golpe. Machacar no.'),
     loc('Sin barra de vida: los golpes llenan tu mareo. Mareado, un golpe limpio te tumba. Tres caídas es K.O.'),
     loc('Jab le gana al trompón que todavía carga; cubrirse le gana al jab; esquivar le gana al trompón; agarrar le gana a cubrirse.'),
     loc('Si no estás peleando eres el ring: empuja al que se sale pa\' dentro y gana dolitas. Antes de la campana puedes apostar.'),

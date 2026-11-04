@@ -846,6 +846,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Pila de cajas de verdura · produce-crates | Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | produceCrates |
 | Carretilla de mercado · market-hand-truck | Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | marketHandTruck |
 | Silla plástica · plastic-chair | ¡Stop!, Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | plasticChair |
+| Bate de madera · wooden-bat | Chapita, Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | woodenBat |
 | Gradas de madera · wooden-stands | Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | woodenStands |
 | Puente sobre el lago · lake-bridge | Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | lakeBridge |
 

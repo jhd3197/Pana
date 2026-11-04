@@ -21,19 +21,19 @@ export function createCombatImpacts(scene) {
   }
   const pool = Array.from({ length: 8 }, () => {
     const group = new THREE.Group(); group.visible = false; scene.add(group);
-    const material = new THREE.MeshBasicMaterial({ color: '#ff8a2a', transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+    const material = new THREE.MeshBasicMaterial({ color: '#ff8a2a', transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide, toneMapped: false });
     const burst = new THREE.Mesh(geometry, material);
     const core = new THREE.Mesh(geometry, material.clone()); core.material.color.set('#fff9d5'); core.scale.setScalar(.62); core.position.z = .01;
-    const label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, toneMapped: false }));
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false, toneMapped: false }));
     label.position.y = .65; label.scale.set(1.3, .49, 1);
     group.add(burst, core, label);
     return { group, burst, core, label, age: 1, power: 1 };
   });
   let cursor = 0;
   return {
-    spawn(position, kind, move) {
+    spawn(position, kind, move, chain = 0) {
       const item = pool[cursor++ % pool.length];
-      item.age = 0; item.power = kind === 'trompon' ? 1.25 : .8;
+      item.age = 0; item.power = (kind === 'trompon' ? 1.25 : .8) * (1 + chain * .22);
       item.group.position.copy(position); item.group.visible = true;
       item.burst.material.color.set(kind === 'block' ? '#86dceb' : '#ff8a2a');
       item.label.material.map = labels.get(kind === 'block' ? '¡TAC!' : ({ kick: '¡PAM!', sweep: '¡ZAS!', toss: '¡PLAF!' }[move] || (kind === 'trompon' ? '¡PUM!' : '¡PAF!'))); // i18n-ignore
