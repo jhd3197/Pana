@@ -223,10 +223,12 @@ duplicated. Reduced motion disables HUD transitions, not gameplay messages.
   at the victim's centre it sat inside the helmet, mostly hidden. It grows with
   the chain. Heavy blows add `hitStop` (fighters' poses freeze 50–80 ms, the host
   keeps simulating) and camera shake.
-- Fight proportions live in `fighter-look.js`: `HEAD_SIZE` .38 (the shared
-  character's is .58), arms ×`ARM_LENGTH` hanging and ×`ARM_GUARD` in guard, since
-  a straight arm that long pokes the rival at the body gap. A punch's arm stretches
-  to `punchLength(gap)`, so the glove stops at the rival at any distance.
+- Fight proportions live in `fighter-look.js`, close to the classic pana:
+  `HEAD_SIZE` .5 (the shared character's is .58; there two helmets intersect at the
+  1 m body gap, and at .38 the shell over a tiny head read as a football player),
+  arms ×`ARM_LENGTH` 1.05 hanging and ×`ARM_GUARD` 1.03 in guard, gloves
+  ×`GLOVE_SIZE` 1.2. A punch's arm stretches to `punchLength(gap)`, so the glove
+  stops at the rival at any distance.
 - Hats: `addLegacyHat` adds bare unnamed meshes to the head, not a `hat:` group,
   so the old look's pesca, lana, corona and llanero stayed on under the helmet.
   `createPana` hides them with the rest. The ref's llanero hat is on purpose.

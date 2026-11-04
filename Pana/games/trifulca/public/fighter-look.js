@@ -1,6 +1,7 @@
-// Fight proportions, for everyone in the barrio: a smaller head than the shared
-// character's 0.58 and longer arms, so a punch visibly reaches the rival.
-export const HEAD_SIZE = .38, ARM_LENGTH = 1.28, ARM_GUARD = 1.08;
+// Fight proportions: close to the classic pana. The head is a little under the
+// shared character's .58, the largest where two helmets clear each other at the
+// body gap; arms a touch longer and gloves big enough to read a punch on TV.
+export const HEAD_SIZE = .5, ARM_LENGTH = 1.05, ARM_GUARD = 1.03, GLOVE_SIZE = 1.2;
 // A punch's arm length to reach a rival `gap` metres away: the glove stops at
 // their guard, whether they stand at the body gap or at the end of the reach.
 export const punchLength = (gap) => Math.max(ARM_GUARD, Math.min(2.1, (gap - .65) / .52));

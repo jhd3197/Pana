@@ -6,6 +6,7 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { createAccessories } from '/engine/models/characters/pana/accessories.js';
 import { boxingGlove } from './set.js';
+import { HEAD_SIZE, GLOVE_SIZE } from './fighter-look.js';
 import { mountCard } from '/engine/card.js';
 
 export function mount(canvas) {
@@ -14,9 +15,9 @@ export function mount(canvas) {
   return mountCard(canvas, { camera, toneMapping: true, build(scene) {
     scene.add(new THREE.HemisphereLight('#fff6df', '#6d5a48', 3));
     const sun = new THREE.DirectionalLight('#ffffff', 2.4); sun.position.set(-2, 5, 4); scene.add(sun);
-    const pana = buildCharacter(loadAvatar()); scene.add(pana.group);
+    const pana = buildCharacter(loadAvatar(), { head: HEAD_SIZE }); scene.add(pana.group);
     const gloves = [pana.armL, pana.armR].map((arm, i) => {
-      const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(1 / .6); glove.position.set(0, -.86, .04); arm.add(glove); return glove;
+      const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(GLOVE_SIZE / .6); glove.position.set(0, -.86, .04); arm.add(glove); return glove;
     });
     pana.wardrobe.setHeadwear('none'); pana.head.children.forEach(o => { if (o.name.startsWith('hat:')) o.visible = false; });
     const helmet = createAccessories(pana, { hat: 'casco', glasses: null, neck: null, back: null, extras: {} });
@@ -28,7 +29,7 @@ export function mount(canvas) {
         pana.update(dt, {});
         pana.armL.rotation.set(-1.85 + .25 * jab, 0, -.3 + .24 * jab); pana.armL.scale.y = 1.15 + .5 * jab;
         pana.armR.rotation.set(-1.85, 0, .3); pana.armR.scale.y = 1.15;
-        gloves.forEach((g, i) => g.scale.set(1 / .6, 1 / .6 / [pana.armL, pana.armR][i].scale.y, 1 / .6));
+        gloves.forEach((g, i) => g.scale.set(GLOVE_SIZE / .6, GLOVE_SIZE / .6 / [pana.armL, pana.armR][i].scale.y, GLOVE_SIZE / .6));
       },
       dispose() { gloves.forEach(g => g.userData.dispose()); helmet.dispose(); pana.dispose(); },
     };
