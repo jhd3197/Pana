@@ -35,6 +35,26 @@ renderRecord(node, board, { me: 'Ana', standings: run.summary('Ana') });
 
 Used by: Fosa. Notes: `docs/knowledge/reliquia.md`, "The record".
 
+## Save and resume
+
+`engine/save-game.js` (no DOM): `createSaveStore({ game, version })` keeps the
+newest few sessions under `pana:save:<game>` in the host's browser (`save`, `list`,
+`load`, `remove`; a new `version` hides old saves), `createAutosave({ store, ready,
+key, make })` writes when the game says it may, and `findSlot(slots, name)` finds a
+returning player's slot. `engine/save-widget.js`, in the shared lobby's buttons and
+cards: `renderContinue(node, saves, { describe, onContinue, onDiscard })` on a
+`data-room-personal` node, and `renderSlots(node, { heading, slots, action })` on a
+`data-pana-roster` one. The game decides what a save holds and what a missing
+player does.
+
+```js
+const store = createSaveStore({ game: 'trompo', version: 1 });
+const autosave = createAutosave({ store, ready: () => room.isHost && betweenRounds(), key: () => round, make: () => ({ id, data: room.state, meta: { round } }) });
+renderContinue(node, store.list(), { describe: s => `${s.meta.round}`, onContinue: s => room.load(store.load(s.id)), onDiscard: s => store.remove(s.id) });
+```
+
+Used by: Fosa. Notes: `docs/knowledge/reliquia.md`, "Saved expeditions".
+
 ## On foot
 
 ### Player controller (walk, sprint, stamina, collision)

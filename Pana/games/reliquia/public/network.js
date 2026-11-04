@@ -1,4 +1,4 @@
-import { Expedition, stepExplorer, alive } from './rules.js';
+import { Expedition, stepExplorer, alive, validSave } from './rules.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
 import { jumpCount } from '/engine/play/jump.js';
 import { loc, locn } from '/engine/i18n.js';
@@ -58,12 +58,12 @@ export class ExpeditionRoom extends LiveRoom {
   takeOver(previous) {
     super.takeOver(previous); this.wire.reset(); this.unwire.reset();
     this.game = new Expedition(this.state.seed || 1, this.state.options);
-    if (this.state.phase !== 'lobby') this.game.restore(this.state, this.members);
+    if (this.state.phase !== 'lobby' || this.state.resumed) this.game.restore(this.state, this.members);
     for (const p of this.members.values()) this.game.addPlayer(p.id, p.name, p.id === this.id ? this.avatar : p.avatar || this.state.players.find(q => q.id === p.id)?.avatar || {});
     this.publish(); if (previous != null) this.onNotice(loc('Cambió el anfitrión. La expedición continúa.'));
   }
   memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar); this.wire.reset(); this.publish(); } }
-  memberLeft(id) { super.memberLeft(id); if (this.isHost) { this.game.removePlayer(id); this.publish(); } }
+  memberLeft(id) { super.memberLeft(id); if (this.isHost) { this.game.leave(id); this.publish(); } }
   memberHello(id, m) { if (this.isHost) { this.game.addPlayer(id, m.name, m.avatar); this.wire.reset(); this.publish(); } }
   // The expedition's own ledger also travels in snapshots, so a new host never
   // replays an action the old one already applied.
@@ -73,9 +73,27 @@ export class ExpeditionRoom extends LiveRoom {
     else if (data.action === 'start') {
       if (id !== this.hostId || this.game.phase === 'playing') return;
       this.game.ledger[id] = data.seq;
-      this.game.start((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0 || 1);
-    } else if (ACTIONS.has(data.action)) this.game.accept(id, data.seq, data.action, { hand: data.hand, line: data.line });
+      if (this.game.resumed) this.game.resume();
+      else this.game.start((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0 || 1);
+    } else if (data.action === 'take') { if (!this.game.takeSlot(id, data.seat)) return; }
+    else if (data.action === 'abandon') { if (id !== this.hostId || !this.game.resumed) return; this.freshLobby(); }
+    else if (ACTIONS.has(data.action)) this.game.accept(id, data.seq, data.action, { hand: data.hand, line: data.line });
     this.publish();
+  }
+  roster() { return [...this.members].map(([id, m]) => ({ id, name: m.name, avatar: id === this.id ? this.avatar : m.avatar || {} })); }
+  // The host opens a saved session: the snapshot comes from its own storage.
+  continueSave(data) {
+    if (!this.isHost || !this.game || this.game.phase !== 'lobby' || this.game.resumed || !validSave(data)) return false;
+    this.game = new Expedition(data.seed, data.options);
+    this.game.loadSave(data, this.roster());
+    this.wire.reset(); this.publish();
+    return true;
+  }
+  // Back from a resumed lobby to a new expedition; the save stays in the list.
+  freshLobby() {
+    this.game = new Expedition(1, this.state.options);
+    for (const m of this.roster()) this.game.addPlayer(m.id, m.name, m.avatar);
+    this.wire.reset();
   }
   practice() {
     this.state = new Expedition(1, this.state.options).snapshot(); this.game = null;

@@ -44,6 +44,7 @@ export default {
     loc('Apunta adentro del carrito. Una carga montada se te cae si frenas, giras o chocas de golpe.'),
     loc('Cada tesoro que levantan sube la codicia: más trampas, momias bravas, túneles que se derrumban y un jaguar negro que los caza.'),
     loc('Si caen todos, del camión solo se salva una parte.'),
+    loc('La expedición se guarda en el campamento, en el navegador del anfitrión. Para seguir otro día: Continuar en la sala. Entra con tu mismo nombre y caes en tu puesto.'),
     loc('Récord: las jornadas que terminas de pie en una expedición. Remontada: caer, levantarte y terminar esa jornada de pie.'),
     loc('La cuerda se amarra en las estacas (E): abre una bajada o un puente para todos. Abajo, lanza el botín (G) arriba a tus panas.'),
     loc('Bajar y subir por la cuerda es más rápido si un pana te la aguanta desde una punta.'),

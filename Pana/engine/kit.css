@@ -313,6 +313,19 @@
 .pk-record-tile.is-broken, .pk-record-tile.is-first { border-color: var(--pk-yellow); }
 .pk-record-open { justify-self: start; }
 .pk-record-table[hidden] { display: none; }
+/* saved games (engine/save-widget.js), lobby */
+.pk-save { display: grid; gap: 6px; }
+.pk-save[hidden], .pk-save-roster[hidden] { display: none; }
+.pk-save-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px 8px; border: 1px solid var(--pk-line); border-radius: 0; background: var(--pk-purple); }
+.pk-save-text { flex: 1; min-width: 0; font: 800 13px/1.2 var(--pk-sans); color: var(--pk-text); }
+.pk-save-discard { min-width: 34px; padding: 6px; }
+.pk-save-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 14px; }
+/* :root lifts the card over the shared lobby's fixed height: a slot has more lines. */
+:root .pk-game-lobby-player.pk-save-slot { height: auto; min-height: 176px; gap: 5px; padding: 12px 8px 10px; }
+:root .pk-game-lobby-player.pk-save-slot img { width: 72px; height: 72px; max-height: none; }
+.pk-save-slot.is-held > img { filter: grayscale(.8); opacity: .7; }
+.pk-save-detail { max-width: 100%; font: 700 11px/1.2 var(--pk-sans); color: var(--pk-muted); text-align: center; overflow-wrap: anywhere; }
+.pk-save-take { margin-top: 2px; }
 /* one line per tile, for a lobby: <renderRecord … compact> */
 .pk-record--compact { grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
 .pk-record--compact .pk-record-tile { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; padding: 7px 12px; }

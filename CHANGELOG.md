@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: sigan la expedición otro día con Continuar.**
+  Se guarda sola en el campamento, en el navegador del anfitrión: jornada, lugares,
+  mangos y las herramientas de cada pana. Quien vuelve con su nombre cae en su puesto,
+  y el de quien falta queda guardado, también si alguien se va a mitad de partida.
 - **Fosa: ahora hay récord, y se puede romper.**
   Cuenta las jornadas que terminas de pie y las remontadas (caer, levantarte y
   terminar de pie). La sala muestra quién lo tiene y la pantalla final avisa cuando

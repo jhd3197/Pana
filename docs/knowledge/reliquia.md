@@ -72,6 +72,35 @@ leaving mid-expedition keeps what was earned. The lobby and the Tab panel read
 the holder; the results say what fell. The readout has `data-room-personal`, so
 the shared lobby stands it under the roster.
 
+## Saved expeditions
+
+`save.js` keeps sessions on the shared store (`engine/save-game.js`, drawn by
+`engine/save-widget.js`), up to three, in the host's browser. The save is the
+whole `snapshot()`: jornada, `origin` (the place order), `seed`, options, the deck
+as played, mangos, encargo, carts and each diver (name, avatar, seat, hands,
+stats). It is written only between floors (`saveable`: everyone at the camp, cage
+and cargo at rest), at once on a new jornada and every 5 s while at the camp, so
+shop purchases count. Only the host writes; a new host keeps saving in its own
+browser. A finished expedition removes its save. Bump `SAVE_VERSION` when a saved
+state stops loading.
+
+**Continuar** loads it into the lobby (`loadSave`, `resumed: true`, phase
+`lobby`): every diver starts as a held slot, and whoever is in the room finds
+theirs by name (`addPlayer`, `findSlot`). The slots replace the lobby's seat cards
+(`data-pana-roster`). Someone new gets their own diver and can press Tomar on a
+missing pana's slot (`takeSlot`, which also renames it). `¡Seguir!` calls
+`resume()`. Options are locked while resumed, because they decide the place
+order. Slots that nobody claims stay **held**: Fosa has no bots, so the team plays
+short-handed and the owner can walk in later.
+
+A held slot is `held` + `spectator`, so everything that already skips spectators
+(enemies, quota, extraction, wipe, the view) skips it. `leave()` is what a
+departure calls now: during play it holds the slot at the camp with its tools and
+drops any treasure, so loot and a quota are never lost with a person. Coming back
+by name claims it mid-session. A slot's `id` becomes `held-<seat>`: room ids are
+seat numbers and come back, so a slot must not answer to its old one.
+Names are the only identity a host-run game has: the device key stays on the server.
+
 ## Hands and treasure (`items.js`)
 
 There is no bag: everything travels in the two hands, in a carrito or

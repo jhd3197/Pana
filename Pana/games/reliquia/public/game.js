@@ -29,6 +29,7 @@ import { createAmbience } from './ambience.js';
 import { createSamples } from './samples.js';
 import { createPresence } from './presence.js';
 import { createFosaRecord } from './record.js';
+import { createFosaSave } from './save.js';
 import { floorOf, jornadaName, themeOf } from './deck.js';
 import { ITEMS, say } from './items.js';
 import { loc } from '/engine/i18n.js';
@@ -72,6 +73,7 @@ $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: '
 const room = new ExpeditionRoom({ code, name, avatar, onState: receive, onNotice: notify,
   onStatus(text, error = false) { failed = error; $('connection').textContent = text; show('practice', error); show('disconnect', error && state.phase === 'playing'); menu.update(); lobby(); },
 });
+const saves = createFosaSave({ room, list: $('lobby-save'), slots: $('lobby-slots'), notify });
 // The tagline sits beside the name in the shared lobby's header.
 { const tagline = document.createElement('p'); tagline.className = 'lobby-tagline'; tagline.textContent = loc('Bajen juntos. No se desarmen.'); document.querySelector('.pk-game-lobby-head > .pk-title')?.after(tagline); }
 const optionsUI = createRoomOptions($('room-options'), { title: 'Fosa', fields: fieldsFor(diver.progress.isUnlocked), change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
@@ -83,12 +85,13 @@ const looking = createLookControls(canvas, { enabled: () => playing(), look: (ya
   unlocked: () => { if (state.phase === 'playing') menu.open('game'); } });
 
 function lobby() {
-  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing'); showCalor(state.options);
+  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing' && !state.resumed); showCalor(state.options);
   if (state.phase === 'playing' && optionsUI.isOpen) optionsUI.close();
   show('lobby', state.phase === 'lobby'); show('hud', state.phase === 'playing'); show('results', state.phase === 'results');
   $('start').disabled = !room.connected || !room.isHost;
-  $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? loc('¡A la mina!') : loc('El anfitrión prepara la salida');
-  if (state.phase === 'results') { hud.results(state, room); diver.settle(state, room.id); }
+  $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? state.resumed ? loc('¡Seguir!') : loc('¡A la mina!') : loc('El anfitrión prepara la salida');
+  saves.render(state);
+  if (state.phase === 'results') { hud.results(state, room); diver.settle(state, room.id); saves.finished(state); }
 }
 
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.
@@ -218,7 +221,7 @@ function input() {
 }
 // Real elapsed time: a host in a background tab gets timers once a second.
 const simClock = elapsedClock();
-const ticker = setInterval(() => { const dt = simClock(); if (!qs.has('manual')) room.tick(dt, input(), menu.isOpen && solo()); }, 50);
+const ticker = setInterval(() => { const dt = simClock(); if (!qs.has('manual')) room.tick(dt, input(), menu.isOpen && solo()); saves.tick(); }, 50);
 function frame(now) {
   if (dead) return;
   const dt = Math.min(.06, (now - last) / 1000); last = now;
@@ -242,7 +245,7 @@ function frame(now) {
 }
 record.showLobby(name); show('loading', false); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
-if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record,
+if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record, saves,
   get state() { return state; }, get me() { return me(); },
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += .05) room.game.update(Math.min(.05, seconds - t), room.inputs); room.publish(); },
   place(id, x, z, h) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; if (h !== undefined) p.h = h; room.publish(); } },

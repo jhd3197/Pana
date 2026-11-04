@@ -18,6 +18,7 @@ import { resetJump } from '../../../engine/play/jump.js';
 import { stepWalker } from '../../../engine/play/walker.js';
 import { pickLine } from '../../../engine/play/frases.js';
 import { locKey } from '../../../engine/i18n.js';
+import { findSlot } from '../../../engine/save-game.js';
 import { tickHazards, throwFlare, startClimb, endClimb, firstSucesoIn } from './sucesos.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -206,8 +207,13 @@ export function titles(s) {
   return out;
 }
 
+// A save holds a whole state, so it is only written between floors: everyone at
+// the camp and nothing on its way. Bump the version when a saved state stops loading.
+export const SAVE_VERSION = 1;
+export const saveable = s => s?.phase === 'playing' && !s.lift.moving && s.cargo.phase === 'idle' && s.players.every(p => p.spectator || (floorOf(p.x) === 0 && !p.riding && !p.rope));
+export const validSave = d => !!d && d.phase === 'playing' && Array.isArray(d.players) && d.players.length > 0 && Number.isFinite(d.level) && Number.isFinite(d.origin);
 // The record's rows (engine/records.js) for this expedition's panas.
-export const recordRows = (s, myId) => s.players.filter(p => !p.spectator).map(p => ({ name: p.name, me: p.id === myId, values: { rounds: p.stats.rounds, comebacks: p.stats.comebacks } }));
+export const recordRows = (s, myId) => s.players.filter(p => !p.spectator || p.held).map(p => ({ name: p.name, me: p.id === myId, values: { rounds: p.stats.rounds, comebacks: p.stats.comebacks } }));
 
 // What a jornada asks the cargo lift to bring up: more each level and more
 // with more panas.
@@ -233,9 +239,11 @@ export class Expedition {
     this.paths = new Map();
   }
   get layout() { return layoutFor(this.seed, this.level, themeOf(this)); }
-  configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); return true; }
+  configure(options) { if (this.phase === 'playing' || this.resumed || !validOptions(options)) return false; Object.assign(this.options, options); return true; }
   addPlayer(id, name, avatar = {}) {
     let p = this.players.find(p => p.id === id); if (p) { p.avatar = avatar; return p; }
+    const slot = this.phase !== 'results' && findSlot(this.players, name);
+    if (slot) return this.claimSlot(slot, id, avatar);
     const index = this.players.length;
     p = { id, name: String(name).slice(0, 16), avatar, seat: this.seats++, x: CAMP.x + (index % 4 - 1.5) * 1.6, z: CAMP.z + 4 + Math.floor(index / 4) * 1.6, y: 0, h: Math.PI, pitch: 0,
       vx: 0, vz: 0, hp: 100, downed: false, spectator: this.phase === 'results', revive: 0, hands: [null, null], grip: null, drag: null, draggedBy: null,
@@ -249,6 +257,57 @@ export class Expedition {
     for (const q of this.players) if (q.drag === id) this.stopDrag(q);
     if (this.phase === 'playing') p.hands.forEach((h, i) => h && this.drop(p, i));
     this.players = this.players.filter(q => q.id !== id); delete this.ledger[id];
+  }
+  // A pana who leaves a running expedition keeps their slot (name, colour, numbers,
+  // tools): a spectator at the camp until someone claims it. Treasure stays behind
+  // for the team. Anywhere else leaving is leaving.
+  leave(id) {
+    const p = this.players.find(p => p.id === id); if (!p) return;
+    if (this.phase !== 'playing' && !(this.resumed && p.saved)) return this.removePlayer(id);
+    if (this.phase === 'playing') this.event('slot-held', locKey('{name} se fue. Su puesto queda guardado.'), { vars: { name: p.name } });
+    this.holdSlot(p, this.phase === 'playing');
+  }
+  holdSlot(p, dropHands) {
+    if (p.rope) endClimb(this, p);
+    this.release(p); this.unpush(p); this.stopDrag(p);
+    for (const q of this.players) if (q.drag === p.id) this.stopDrag(q);
+    if (dropHands) p.hands.forEach((h, i) => h && !ITEMS[h.kind].tool && this.drop(p, i));
+    this.lift.riders = this.lift.riders.filter(id => id !== p.id);
+    delete this.ledger[p.id];
+    // Room ids are seat numbers and come back: a slot must not answer to its old one.
+    p.id = `held-${p.seat}`;
+    if (floorOf(p.x) !== 0) Object.assign(p, { x: CAMP.x, z: CAMP.z + 4, y: 0 });
+    Object.assign(p, { held: true, spectator: true, downed: false, revive: 0, riding: false, moving: false, hp: Math.max(1, p.hp), fell: false });
+  }
+  claimSlot(p, id, avatar) {
+    Object.assign(p, { id, held: false, spectator: false, invulnerable: 2 });
+    if (avatar && Object.keys(avatar).length) p.avatar = avatar;
+    if (this.phase === 'playing') this.event('slot-back', locKey('{name} volvió a su puesto.'), { vars: { name: p.name } });
+    return p;
+  }
+  // In the resumed lobby a pana whose name matches nothing can take a missing
+  // pana's slot. A new diver goes away; a saved one is held for its owner.
+  takeSlot(id, seat) {
+    const me = this.players.find(p => p.id === id), slot = this.players.find(p => p.held && p.seat === seat);
+    if (!this.resumed || !me || !slot) return false;
+    if (me.saved) this.holdSlot(me, false); else this.removePlayer(id);
+    slot.name = me.name;
+    this.claimSlot(slot, id, me.avatar);
+    return true;
+  }
+  // A saved session back in the lobby: everyone starts missing, and whoever is
+  // here finds their slot by name. resume() goes back to the jornada.
+  loadSave(data, members) {
+    Object.assign(this, clone(data), { phase: 'lobby', resumed: true, events: [], ledger: {}, extraction: 0, wipe: 0 });
+    this.paths = new Map(); this.noise = createNoiseBoard(); this.swarmSim = null;
+    this.players = this.players.filter(p => !p.spectator || p.held);
+    for (const p of this.players) { p.saved = true; this.holdSlot(p, false); }
+    for (const m of members.values()) this.addPlayer(m.id, m.name, m.avatar || {});
+  }
+  resume() {
+    this.phase = 'playing'; this.resumed = false;
+    for (const p of this.players) delete p.saved;
+    this.event('resume', locKey('Seguimos: jornada {level}.'), { vars: { level: this.level } });
   }
   // A noise where something loud happened (engine/play/noise.js): the host's
   // ears, never in a snapshot. `source` is the pana who made it, if any.
@@ -1101,7 +1160,7 @@ export class Expedition {
   }
   restore(snapshot, members) {
     Object.assign(this, clone(snapshot)); this.paths = new Map(); this.noise = createNoiseBoard(); this.swarmSim = null;
-    for (const p of [...this.players]) if (!members.has(p.id)) this.removePlayer(p.id);
+    for (const p of [...this.players]) if (!p.held && !members.has(p.id)) this.leave(p.id);
     for (const p of members.values()) if (!this.players.some(q => q.id === p.id)) this.addPlayer(p.id, p.name, p.avatar || {});
   }
 }
