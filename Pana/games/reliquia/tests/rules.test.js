@@ -100,7 +100,7 @@ test('big treasures need their panas: alone they crawl, together they reach the 
 
 test('letting go of a moving treasure tips it over and chips its worth', () => {
   const g = setup(1), [a] = g.players, drum = g.spawnItem('drum', 0, 12, { y: 0 });
-  place(g, 1, drum.x, drum.z + 1.4); a.h = facing(a, drum); g.action(1, 'interact');
+  place(g, 1, drum.x, drum.z + 1.4); a.h = facing(a, drum); a.pitch = -.6; g.action(1, 'interact');
   step(g, .5, new Map([[1, { x: 1, z: 0 }]]));
   drum.vx = 2; g.release(a);
   assert.ok(drum.worth < 1); assert.ok(a.stats.dropped > 0); assert.ok(g.events.some(e => e.kind === 'tip'));

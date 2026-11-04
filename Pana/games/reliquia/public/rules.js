@@ -130,7 +130,7 @@ export function interaction(s, p) {
     else if (info.size === 'small' && !p.hands.some(h => !h || (h.pile && h.pile.length < HANDFUL))) text = locKey('Manos llenas · échalo al carrito');
     else if (info.size === 'hand' && p.hands.every(Boolean)) text = locKey('Manos llenas · suelta algo con Q');
     if (info.size === 'big' && p.hands.some(Boolean)) text = locKey('Necesitas las dos manos libres');
-    offer({ kind: 'pick', id: item.id, text, vars, press: true }, { x: item.x, y: (item.y || 0) + (info.size === 'big' ? .8 : .2), z: item.z }, info.size === 'big' ? (info.radius || 1) : .38);
+    offer({ kind: 'pick', id: item.id, text, vars, press: true }, { x: item.x, y: (item.y || 0) + (info.size === 'big' ? info.halo ? .45 : .8 : .2), z: item.z }, info.size === 'big' ? Math.max(.8, info.radius || 1) : .38);
   }
   options.sort((a, b) => a.score - b.score);
   return options[0] || null;

@@ -126,13 +126,15 @@ export function emeraldChest() {
   return finish(g, 'Cofre de esmeraldas', [[-.7, 0, -.7], [.7, 1.1, .5]]);
 }
 export function ceremonialDrum() {
-  const g = new THREE.Group(), hide = paint(0xffe2b0, { roughness: .7 }), red = paint(0xe0452e, { roughness: .6 }), teal = paint(0x2fb5a8, { roughness: .6 });
-  part(g, cyl(.5, .42, .95, 24), red, 0, .55, 0);
-  for (const y of [.12, .98]) part(g, new THREE.TorusGeometry(.48, .04, 6, 24), GOLD(), 0, y, 0, Math.PI / 2);
-  part(g, cyl(.49, .49, .04, 24), hide, 0, 1.03, 0);
-  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; part(g, new THREE.BoxGeometry(.12, .5, .04), i % 2 ? teal : GOLD(), Math.sin(a) * .47, .55, Math.cos(a) * .47, 0, a, 0); }
-  for (const s of [-1, 1]) part(g, cyl(.04, .04, .7, 8), WOOD(), s * .6, .45, 0, 0, 0, s * .25);
-  return finish(g, 'Tambor ceremonial', [[-.75, 0, -.55], [.75, 1.1, .55]]);
+  // Knee-high now: dark wood and worn hide with a thin, unlit brass band. It used
+  // to stand a metre tall in saturated red, teal and glowing gold.
+  const g = new THREE.Group(), hide = paint(0xd9c29a, { roughness: .8 }), wood = paint(0x6a3f26, { roughness: .75 }), band = paint(0xb08a4a, { metalness: .3, roughness: .55 });
+  part(g, cyl(.3, .25, .52, 20), wood, 0, .28, 0);
+  for (const y of [.05, .53]) part(g, new THREE.TorusGeometry(.285, .018, 6, 20), band, 0, y, 0, Math.PI / 2);
+  part(g, cyl(.29, .29, .025, 20), hide, 0, .56, 0);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; part(g, new THREE.BoxGeometry(.018, .46, .012), band, Math.sin(a) * .29, .29, Math.cos(a) * .29, 0, a, 0); }
+  part(g, cyl(.018, .018, .42, 6), WOOD(), .1, .6, .04, 0, .6, 1.45);
+  return finish(g, 'Tambor ceremonial', [[-.33, 0, -.33], [.33, .68, .33]]);
 }
 export function cursedMirror() {
   const g = new THREE.Group(), glass = paint(0xb48cff, { metalness: .9, roughness: .05, emissive: 0x3a1a7a, emissiveIntensity: .7 });

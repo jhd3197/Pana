@@ -468,7 +468,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       let shown = items.get(item.id);
       if (!shown) {
         const model = itemModel(item.kind), aura = new THREE.Sprite(haloMaterial(glowColor(item.kind)));
-        const size = ITEMS[item.kind].size; aura.scale.setScalar(size === 'big' ? 3.2 : 1.1); aura.position.y = size === 'big' ? 1 : .35;
+        const size = ITEMS[item.kind].size; aura.scale.setScalar(ITEMS[item.kind].halo || (size === 'big' ? 3.2 : 1.1)); aura.position.y = size === 'big' ? ITEMS[item.kind].halo ? .35 : 1 : .35;
         const root = new THREE.Group(); root.add(model, aura); itemRoot.add(root);
         shown = { root, model, aura, kind: item.kind, spin: Math.random() * 6 }; items.set(item.id, shown);
         root.position.set(item.x, item.y || 0, item.z);
