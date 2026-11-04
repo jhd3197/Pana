@@ -205,6 +205,9 @@ export function titles(s) {
   return out;
 }
 
+// The record's rows (engine/records.js) for this expedition's panas.
+export const recordRows = (s, myId) => s.players.filter(p => !p.spectator).map(p => ({ name: p.name, me: p.id === myId, values: { rounds: p.stats.rounds, comebacks: p.stats.comebacks } }));
+
 // What a jornada asks the cargo lift to bring up: more each level and more
 // with more panas.
 export function quotaFor(level, roster) {
@@ -234,7 +237,7 @@ export class Expedition {
     p = { id, name: String(name).slice(0, 16), avatar, seat: this.seats++, x: CAMP.x + (index % 4 - 1.5) * 1.6, z: CAMP.z + 4 + Math.floor(index / 4) * 1.6, y: 0, h: Math.PI, pitch: 0,
       vx: 0, vz: 0, hp: 100, downed: false, spectator: this.phase === 'results', revive: 0, hands: [null, null], grip: null, drag: null, draggedBy: null,
       cooldown: 0, swing: 0, swingHand: 0, stamina: 1, stun: 0, reversed: 0, invulnerable: 0, hit: 0, interactCooldown: 0, barkAt: -9, moving: false, drain: 0,
-      stats: { unaMas: 0, nosVamos: 0, dropped: 0, banked: 0, curses: 0, last: 0, revives: 0, kills: 0 } };
+      stats: { unaMas: 0, nosVamos: 0, dropped: 0, banked: 0, curses: 0, last: 0, revives: 0, kills: 0, rounds: 0, comebacks: 0 }, fell: false };
     this.players.push(p); return p;
   }
   removePlayer(id) {
@@ -563,7 +566,7 @@ export class Expedition {
   }
   down(p) {
     if (p.rope) endClimb(this, p);
-    p.downed = true; this.release(p); this.unpush(p); this.stopDrag(p);
+    p.downed = true; p.fell = true; this.release(p); this.unpush(p); this.stopDrag(p);
     if (this.encargo?.kind === 'sinBajas' && floorOf(p.x) > 0) this.settleEncargo(false, locKey('Encargo perdido: cayó un pana.'));
     p.hands.forEach((h, i) => { if (h) { p.stats.dropped += heldValue(h); this.drop(p, i); } });
     this.event('down', this.options.revive ? locKey('{name} cayó. Levántenlo (E) o arrástrenlo al camión (R).') : locKey('{name} cayó. Esta expedición no permite revivir.'), { player: p.id, vars: { name: p.name } });
@@ -770,6 +773,7 @@ export class Expedition {
   // Up with the quota delivered: the jornada is done. Whoever stayed below
   // is hauled up with 1 HP, and the next, deeper jornada is dealt.
   completeLevel() {
+    this.tallyRound();
     const done = this.level, stop = this.layout.run.lifts.find(l => l.floor === 0), delivered = this.delivered;
     // A new deck for the next jornada; the camp's own pieces stay as they are.
     const campLoot = Object.fromEntries(Object.entries(this.touched).filter(([id]) => this.layout.run.loot.find(l => l.id === +id)?.floor === 0));
@@ -791,6 +795,16 @@ export class Expedition {
     // The next jornada's place (Alternar swaps it) rides in the same line.
     this.event('level', left ? locKey('¡Jornada {level} lista! Subieron Bs. {value}. Los que se quedaron abajo llegaron con lo justo. Ahora toca {place}: Bs. {quota}.')
       : locKey('¡Jornada {level} lista! Subieron Bs. {value}. Ahora toca {place}: Bs. {quota}.'), { level: done, value: delivered, left, vars: { level: done, value: delivered, next: this.level, quota: this.quota, place: jornadaName(this.level, themeOf(this)) } });
+  }
+  // The record's numbers. A jornada counts for whoever is standing when it is
+  // completed; a comeback is falling in it, getting back up and still standing
+  // then, at most one per pana per jornada. Being hauled up fallen is neither.
+  tallyRound() {
+    for (const p of this.players) {
+      if (p.spectator) continue;
+      if (!p.downed) { p.stats.rounds++; if (p.fell) p.stats.comebacks++; }
+      p.fell = false;
+    }
   }
   // The cargo lift: the carrito on its pad rides up alone, its load banks
   // and counts for the quota, and it comes back down empty.

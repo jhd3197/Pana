@@ -54,6 +54,24 @@ it. A pana down elsewhere is left behind. A wipe (everyone down for 3 s)
 pays `wipeShare` % of the truck (option: 20, 0 or 50). Downed panas inside
 the truck zone get up after 3 s (the truck's botiquín).
 
+## The record
+
+`record.js` keeps two records on the shared board (`engine/records.js`, drawn by
+`engine/record-widget.js`): most **jornadas** and most **remontadas** in one
+expedition. `tallyRound()` in `rules.js` is the definition:
+
+- A **jornada** counts for each pana standing when it is completed (`rounds`). A
+  pana hauled up while still down gets the 1 HP ride, not the number.
+- A **remontada** is falling in that jornada, getting back up (a pana's E, a
+  botiquín, the truck) and standing when it is completed (`comebacks`), at most
+  one per pana per jornada. `p.fell` carries the fall and clears each jornada.
+
+Both live in `p.stats`, so they travel in snapshots and survive a new host. A
+client reports every pana's numbers when a jornada ends and at the results, so
+leaving mid-expedition keeps what was earned. The lobby and the Tab panel read
+the holder; the results say what fell. The readout has `data-room-personal`, so
+the shared lobby stands it under the roster.
+
 ## Hands and treasure (`items.js`)
 
 There is no bag: everything travels in the two hands, in a carrito or

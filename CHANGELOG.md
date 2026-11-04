@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: ahora hay récord, y se puede romper.**
+  Cuenta las jornadas que terminas de pie y las remontadas (caer, levantarte y
+  terminar de pie). La sala muestra quién lo tiene y la pantalla final avisa cuando
+  cae.
 - **Fosa ya no se repite: tres lugares nuevos, salas de cuerda y cosas que pasan solas.**
   Túneles inundados, gruta de hongos y templo caído se suman a la biblioteca y la mina,
   y cada expedición los recorre en otro orden. Hay cuerdas para bajar a plataformas,

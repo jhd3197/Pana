@@ -51,7 +51,7 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
 .haul .pk-eyebrow,.bag .pk-eyebrow{font-size:10px}.haul em,.quota em{font-style:normal;color:var(--pk-text);margin-left:6px}
 .quota{display:grid;gap:4px}.quota .pk-eyebrow{font-size:10px}.quota-bar{--pk-bar-color:var(--rel-jade);height:8px}body.quota-met .quota-bar{--pk-bar-color:var(--rel-gold)}
 .encargo{display:grid;gap:2px}.encargo .pk-eyebrow{font-size:10px}.encargo em{font-style:normal;color:var(--rel-gold,var(--pk-text));margin-left:6px}.encargo p{margin:0;font:700 12px var(--pk-sans);color:var(--pk-text)}
-.lift-line{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.lift-line .pk-eyebrow{font-size:10px}.lift-line em{font:800 12px var(--pk-sans);font-style:normal;color:var(--rel-jade)}.haul .pk-num{font-size:20px;color:var(--rel-gold)}
+#record-row[hidden]{display:none}.lift-line{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.lift-line .pk-eyebrow{font-size:10px}.lift-line em{font:800 12px var(--pk-sans);font-style:normal;color:var(--rel-jade)}.haul .pk-num{font-size:20px;color:var(--rel-gold)}
 .bag strong{color:var(--rel-gold)}
 .effects{margin:0;font:800 11px var(--pk-sans);color:var(--rel-jade)}
 .effects:empty{display:none}
