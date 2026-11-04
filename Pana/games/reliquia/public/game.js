@@ -23,6 +23,7 @@ import { startSuceso } from './sucesos.js';
 import { ExpeditionRoom } from './network.js';
 import { createView } from './view.js';
 import { createHud, money } from './hud.js';
+import { createFosaProgress } from './progress.js';
 import { sfx } from './sounds.js';
 import { createAmbience } from './ambience.js';
 import { createSamples } from './samples.js';
@@ -36,7 +37,7 @@ const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.
 const notify = createToast($('toast'), { ms: 3400 });
 const qs = new URLSearchParams(location.search), code = roomCode();
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
-const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience(), samples = createSamples();
+const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience(), samples = createSamples(), diver = createFosaProgress();
 // Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
 let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares); view.scares = scares;
 const presence = createPresence({ view, ambience, samples });
@@ -86,7 +87,7 @@ function lobby() {
   show('lobby', state.phase === 'lobby'); show('hud', state.phase === 'playing'); show('results', state.phase === 'results');
   $('start').disabled = !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? loc('¡A la mina!') : loc('El anfitrión prepara la salida');
-  if (state.phase === 'results') hud.results(state, room);
+  if (state.phase === 'results') { hud.results(state, room); diver.settle(state, room.id); }
 }
 
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.

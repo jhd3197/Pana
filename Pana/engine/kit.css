@@ -179,6 +179,11 @@
 .pk-chip--teal { background: var(--pk-teal); border-color: transparent; color: #062a23; }
 .pk-chip--yellow { background: var(--pk-yellow); border-color: transparent; color: var(--pk-yellow-ink); }
 .pk-chip--coral { background: var(--pk-coral); border-color: transparent; color: #fff; }
+/* Rank chip (engine/progress-ui.js): title, thin XP bar, "+N XP". */
+.pk-rank { display: flex; align-items: center; gap: 10px; width: 100%; }
+.pk-rank > .pk-chip, .pk-rank-gain { flex: none; }
+.pk-rank > .pk-bar { flex: 1; min-width: 40px; height: 6px; }
+.pk-rank-gain { color: var(--pk-yellow); font: 800 14px var(--pk-sans); }
 .pk-dot { width: 8px; height: 8px; border-radius: var(--pk-radius-round); background: var(--pk-teal); flex: none; }
 
 /* segmented control: buttons with aria-pressed / aria-checked / .is-on */
