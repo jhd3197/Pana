@@ -1,7 +1,8 @@
 // What hunts the panas, renderer-free. Mummies freeze in a farol's beam and
 // rush you in the dark; phantoms come with the echo mask; the guardian slams;
 // jaguars prowl, crouch and pounce, and a farol dazes them once in a while.
-// Guácharos fly in flocks and scatter from a beam; spiders hang from the
+// Bats roost on the ceiling, drop screeching when disturbed, fly in jittery
+// flocks and scatter from a beam; spiders hang from the
 // ceiling until a pana walks under and their bite slows; cuaimas lie coiled
 // by the loot, strike and poison, but never leave home for long. In the
 // library El Lector hunts by ear (lector.js) and La Estatua only moves unseen
@@ -12,6 +13,7 @@ import { floorOf } from './deck.js';
 import { distance } from './layout.js';
 import { updateLector } from './lector.js';
 import { updateEstatua } from './estatua.js';
+import { hearNoise } from '../../../engine/play/noise.js';
 
 export const KINDS = {
   mummy: { hp: 60, speed: 2.6, reach: 1.7, windup: .65, radius: 2.1, damage: 12, cooldown: 1.15, light: 'freeze' },
@@ -97,6 +99,13 @@ export function updateEnemies(g, dt) {
     e.hit = Math.max(0, e.hit - dt); e.stun = Math.max(0, e.stun - dt); e.immune = Math.max(0, e.immune - dt); e.cooldown -= dt; e.modeT += dt;
     if (g.time - e.born < 1) continue;
     const target = targetFor(g, e);
+    // A bat sleeps on the ceiling until someone passes under it or a noise lands
+    // close: it drops screeching, and that screech carries (the Silbón comes).
+    if (e.hanging && k.flying) {
+      const noise = hearNoise(g.noise, e, { floor: floorOf(e.x), since: e.born, time: g.time }), close = noise && (noise.kind !== 'screech' || Math.hypot(noise.x - e.x, noise.z - e.z) < 7);
+      if ((target && distance(target, e) < 3.8) || close) screech(g, e);
+      continue;
+    }
     // A spider waits on the ceiling until someone walks under it.
     if (e.hanging) { if (target && distance(target, e) < 4.5) { e.hanging = false; e.cooldown = .6; g.event('spider', locKey('¡Cayó una araña del techo!'), { enemy: e.id }); } continue; }
     // A statue wakes, silently, once its room has been entered.
@@ -147,10 +156,16 @@ export function updateEnemies(g, dt) {
   g.enemies = g.enemies.filter(e => e.hp > 0);
 }
 
-// Guácharos circle a pana, dive in to peck and scatter from a farol's beam.
+// Woken from the roost: a screech the whole room hears.
+export function screech(g, e) {
+  e.hanging = false; e.fleeT = Math.max(e.fleeT || 0, .6); e.cooldown = .6;
+  g.noisy('screech', e); g.event('screech', '', { enemy: e.id, x: e.x, z: e.z });
+}
+// Bats flutter around a pana in jittery bursts, dive to bite and scatter from a farol's beam.
 function bat(g, e, target, speed, damage, dt) {
-  e.y = 2 + Math.sin(g.time * 3 + e.id) * .35;
-  if (e.lit === 'beam' && (e.fleeT || 0) <= 0) { e.fleeT = 1.6; g.event('scatter', '', { enemy: e.id }); }
+  const t = g.time + e.id * 1.7;
+  e.y = 2 + Math.sin(t * 3) * .3 + Math.sin(t * 11) * .16;
+  if (e.lit === 'beam' && (e.fleeT || 0) <= 0) { e.fleeT = 1.6; g.noisy('screech', e); g.event('scatter', '', { enemy: e.id }); }
   e.fleeT = Math.max(0, (e.fleeT || 0) - dt);
   const d = distance(e, target) || 1, ax = (target.x - e.x) / d, az = (target.z - e.z) / d;
   let vx, vz;
@@ -160,6 +175,8 @@ function bat(g, e, target, speed, damage, dt) {
     if (e.windup <= 0) { if (d < k(e).reach + .4 && standing(target)) g.damage(target, damage, e); e.cooldown = k(e).cooldown; }
   } else if (d < k(e).reach && e.cooldown <= 0) { e.windup = k(e).windup; vx = ax; vz = az; }
   else { const orbit = d < 4 ? .9 : .2, side = e.id % 2 ? 1 : -1; vx = ax * (1 - orbit) - az * side * orbit; vz = az * (1 - orbit) + ax * side * orbit; }
+  // The jitter: the heading twitches on two fast, unrelated beats (a fleeing bat too).
+  if (e.windup <= 0) { const twitch = Math.sin(t * 9) * .55 + Math.sin(t * 17.3) * .35, c = Math.cos(twitch), sn = Math.sin(twitch); [vx, vz] = [vx * c - vz * sn, vx * sn + vz * c]; }
   g.layout.moveBody(e, vx * speed * dt, vz * speed * dt, g, .25);
   e.h = Math.atan2(vx, vz);
 }

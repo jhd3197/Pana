@@ -11,7 +11,7 @@ import { blindLibrarian } from '/engine/models/props/blind-librarian.js';
 import { libraryStatue } from '/engine/models/props/library-statue.js';
 import { mineCart } from '/engine/models/props/mine.js';
 import { jaguar } from '/engine/models/fauna/jaguar.js';
-import { guacharo, caveSpider, cuaima } from '/engine/models/fauna/cave-creatures.js';
+import { caveBat, caveSpider, cuaima } from '/engine/models/fauna/cave-creatures.js';
 import { splatTexture } from '/engine/models/props/paintball.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
@@ -127,7 +127,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   }
   function removeAvatar(a, id) { a.bubble && disposeSprite(a.bubble); disposeSprite(a.tag); a.character.dispose(); a.root.removeFromParent(); avatars.delete(id); }
   function enemyModel(e) {
-    if (e.kind === 'bat') { const b = guacharo({ seed: e.id }); b.scale.setScalar(1.3); return b; }
+    if (e.kind === 'bat') { const b = caveBat({ seed: e.id }); b.scale.setScalar(1.3); return b; }
     if (e.kind === 'spider') { const sp = caveSpider({ seed: e.id }); sp.scale.setScalar(1.15); return sp; }
     if (e.kind === 'snake') { const sn = cuaima({ seed: e.id }); sn.scale.setScalar(1.6); return sn; }
     if (e.kind === 'lector') return blindLibrarian({ seed: e.id });

@@ -291,7 +291,7 @@ test('the carrito takes a handful and a big treasure; the cargo lift banks them'
   assert.equal(g.haul, ITEMS.coins.value + ITEMS.emerald.value + ITEMS.sunDisk.value); assert.equal(g.delivered, g.haul);
 });
 
-test('guácharos scatter from a beam, spiders drop and slow, cuaimas poison but stay home', () => {
+test('bats scatter from a beam, spiders drop and slow, cuaimas poison but stay home', () => {
   const g = setup(1), [a] = g.players, at = firstFloor(g);
   place(g, 1, at.x, at.z - 2, Math.PI); a.invulnerable = 0; g.woke[g.layout.regionAt(a).id] = 1;
   const bat = spawnEnemy(g, 'bat', at.x, at.z - 6); bat.born = -9; a.hands[0] = { id: 1, kind: 'farol' }; a.h = facing(a, bat);

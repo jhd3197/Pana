@@ -69,12 +69,16 @@ export function createAmbience() {
     pebbles: (ctx, out, t) => { for (let i = 0; i < 6; i++) noiseBurst(ctx, out, t + i * (.05 + Math.random() * .08), { dur: .05, freq: 1400 + Math.random() * 1200, type: 'bandpass', q: 4, vol: .15 }); },
     moan: (ctx, out, t) => osc(ctx, out, t, { type: 'sawtooth', from: 110 + Math.random() * 30, to: 75, dur: 2.2, vol: .045, vibrato: 5 }),
     whisper: (ctx, out, t) => noiseBurst(ctx, out, t, { dur: 1.4, freq: 1800 + Math.random() * 800, type: 'bandpass', q: 9, vol: .06, sweep: .5 }),
-    bird: (ctx, out, t) => { for (let i = 0; i < 3; i++) osc(ctx, out, t + i * .11, { from: 2400 + Math.random() * 700, to: 3300, dur: .08, vol: .05 }); },
+    // The camp at dusk: a low dry chirr, no birds.
+    chirr: (ctx, out, t) => { for (let i = 0; i < 5; i++) noiseBurst(ctx, out, t + i * .07, { dur: .05, freq: 3300 + Math.random() * 300, type: 'bandpass', q: 12, vol: .05 }); },
     cicada: (ctx, out, t) => noiseBurst(ctx, out, t, { dur: 1.2, freq: 5200, type: 'bandpass', q: 14, vol: .03 }),
     groan: (ctx, out, t) => osc(ctx, out, t, { type: 'sawtooth', from: 130 + Math.random() * 40, to: 90, dur: 1.1, vol: .09, vibrato: 7 }),
     skitter: (ctx, out, t) => { for (let i = 0; i < 8; i++) noiseBurst(ctx, out, t + i * .035, { dur: .02, freq: 3800, type: 'bandpass', q: 6, vol: .1 }); },
     hiss: (ctx, out, t) => noiseBurst(ctx, out, t, { dur: .8, freq: 5000, type: 'highpass', vol: .12 }),
-    screech: (ctx, out, t) => osc(ctx, out, t, { type: 'square', from: 2600, to: 1500, dur: .14, vol: .05 }),
+    // Bats: a thin high squeak and the soft leathery beat of wings.
+    squeak: (ctx, out, t) => { const n = 1 + Math.floor(Math.random() * 3); for (let i = 0; i < n; i++) osc(ctx, out, t + i * .09, { from: 5200 + Math.random() * 1400, to: 3600 + Math.random() * 800, dur: .05 + Math.random() * .03, vol: .035 }); },
+    flutter: (ctx, out, t) => { const n = 5 + Math.floor(Math.random() * 5); for (let i = 0; i < n; i++) noiseBurst(ctx, out, t + i * (.055 + Math.random() * .03), { dur: .05, freq: 620 + Math.random() * 260, type: 'bandpass', q: .8, vol: .1 }); },
+    screech: (ctx, out, t) => { osc(ctx, out, t, { type: 'square', from: 6200, to: 3400, dur: .22, vol: .05 }); osc(ctx, out, t + .05, { type: 'sawtooth', from: 4800, to: 2600, dur: .28, vol: .03 }); for (let i = 0; i < 7; i++) noiseBurst(ctx, out, t + .1 + i * .06, { dur: .05, freq: 700, type: 'bandpass', q: .8, vol: .1 }); },
     growl: (ctx, out, t) => osc(ctx, out, t, { type: 'sawtooth', from: 70, to: 55, dur: 1.2, vol: .14, vibrato: 22 }),
     roar: (ctx, out, t) => { osc(ctx, out, t, { type: 'sawtooth', from: 160, to: 60, dur: 1, vol: .2, vibrato: 30 }); noiseBurst(ctx, out, t, { dur: .8, freq: 900, vol: .2, sweep: .3 }); },
     heartbeat: (ctx, out, t) => { osc(ctx, out, t, { from: 60, to: 40, dur: .16, vol: .25 }); osc(ctx, out, t + .22, { from: 55, to: 38, dur: .18, vol: .2 }); },
@@ -155,7 +159,7 @@ export function createAmbience() {
       const a = Math.random() * Math.PI * 2, r = 4 + Math.random() * 12, at = place(me, heading, me.x + Math.cos(a) * r, me.z + Math.sin(a) * r, 20);
       if (library) { const pick = Math.random(), name = pick < .3 ? 'timber' : pick < .5 ? 'pages' : pick < .64 ? 'book' : pick < .8 ? 'wind' : pick < .9 ? 'whisper' : 'moan'; play(name, { ...at, gain: at.gain * (name === 'book' ? .6 : .85) }); eventIn = (2.5 + Math.random() * 5) * (1 - tier * .13); }
       else if (deep) { const pick = Math.random(), name = pick < .4 ? 'drip' : pick < .6 ? 'pebbles' : pick < .78 ? 'creak' : pick < .92 ? 'moan' : 'whisper'; play(name, { ...at, gain: at.gain * (name === 'drip' ? 1 : .8) }); eventIn = (2 + Math.random() * 5) * (1 - tier * .12); }
-      else { play('bird', { ...at, gain: .6 }); eventIn = 2 + Math.random() * 4; }
+      else { play('chirr', { ...at, gain: .6 }); eventIn = 2 + Math.random() * 4; }
     }
     if (!deep) { cricketIn -= dt; if (cricketIn <= 0) { play('cicada', { pan: Math.random() - .5, gain: .5 }); cricketIn = 1.5 + Math.random() * 2; } }
     // A clock somewhere in the library: it ticks for a while, then stops.

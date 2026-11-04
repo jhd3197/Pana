@@ -476,7 +476,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Jaguar sentado · jaguar-sitting | Preview only | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
 | Jaguar negro · black-jaguar | Preview only | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
 | Jaguar de oro maldito · gold-jaguar | Reliquia | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
-| Guácharo · guacharo | Reliquia | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | guacharo |
+| Murciélago · cave-bat | Reliquia | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | caveBat |
 | Araña de la cueva · cave-spider | Reliquia | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | caveSpider |
 | Cuaima · cuaima | Reliquia | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | cuaima |
 

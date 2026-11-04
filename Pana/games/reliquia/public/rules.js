@@ -28,7 +28,7 @@ const GREED = { soft: .65, normal: 1, fierce: 1.5 };
 // standing still and riding make none; running, landing a jump, a book or a
 // treasure hitting the boards, searching and fighting do. `book` multiplies
 // a falling book's reach.
-export const NOISE = { run: 10, land: 8, search: 7, open: 10, chest: 11, hit: 10, swing: 4, hurt: 8, shot: 6, splat: 6, cart: 8, dart: 9, laugh: 30, collapse: 30, drop: 5, book: 1.35 };
+export const NOISE = { run: 10, land: 8, search: 7, open: 10, chest: 11, hit: 10, swing: 4, hurt: 8, shot: 6, splat: 6, cart: 8, dart: 9, laugh: 30, collapse: 30, drop: 5, book: 1.35, screech: 24 };
 // What E says at each hiding spot, and where on it the crosshair aims.
 export const SEARCH = {
   trunk: [locKey('Mantén E: abrir el baúl'), .45], drawer: [locKey('Mantén E: registrar los cajones'), .75], sheet: [locKey('Mantén E: quitar la sábana'), .7],
@@ -929,7 +929,7 @@ export class Expedition {
   // Ambient waves arrive out of sight, somewhere they can reach a pana.
   wave(floor, count, near = null, kind = null) {
     if (floor <= 0) return false;
-    // The Director's waves mix creatures by depth: guácharos come in flocks.
+    // The Director's waves mix creatures by depth: bats come in flocks.
     if (!kind) { const roll = random(this); kind = roll < .3 ? 'bat' : floor > 1 && roll < .3 + .1 * Math.min(3, floor) ? 'spider' : 'mummy'; if (kind === 'bat') count = Math.min(6, count * 2 + 1); }
     // In the library, now and then a Lector comes instead (never past its cap).
     if (kind === 'mummy' && this.layout.run.theme === 'biblioteca' && random(this) < .12 + .02 * tier(this)) { kind = 'lector'; count = 1; }
@@ -945,7 +945,7 @@ export class Expedition {
       if (spawnEnemy(this, kind, x, z)) spawned++;
     }
     if (spawned && kind === 'mummy') this.event('wave', locKey('Se oyen pasos entre las piedras…'), { floor });
-    if (spawned && kind === 'bat') this.event('wave', locKey('¡Guácharos! Alumbren con el farol.'), { floor });
+    if (spawned && kind === 'bat') this.event('wave', locKey('¡Murciélagos! Alumbren con el farol.'), { floor });
     if (spawned && kind === 'spider') this.event('wave', locKey('Algo corre por el techo…'), { floor });
     if (spawned && kind === 'lector') this.event('wave', locKey('Alguien pasa las páginas en la oscuridad…'), { floor });
     return spawned > 0;

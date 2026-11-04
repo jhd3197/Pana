@@ -374,11 +374,11 @@
       "status": "in-use"
     },
     {
-      "id": "guacharo",
-      "name": "Guácharo",
+      "id": "cave-bat",
+      "name": "Murciélago",
       "category": "Fauna",
       "source": "Pana/engine/models/fauna/cave-creatures.js",
-      "factory": "guacharo",
+      "factory": "caveBat",
       "usedBy": [
         "Reliquia"
       ],

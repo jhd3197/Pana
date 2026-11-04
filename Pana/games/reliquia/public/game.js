@@ -126,6 +126,7 @@ function handle(e) {
     case 'delivered': sfx.bank(true); popCounter($('mangos')); if (e.met) shout(loc('¡Cuota lista! Al montacargas'), { tone: 'teal' }); break;
     case 'spider': sfx.awaken(); view.shake(.2); break;
     case 'scatter': if (near) sfx.flap(); break;
+    case 'screech': if (p) ambience.at('screech', p, view.heading, e.x, e.z, 26); break;
     case 'cart-load': case 'cart-catch': case 'cart-big': sfx.coin(); if (e.kind !== 'cart-load') sfx.bank(false); break;
     case 'cart-grab': sfx.grab(); break;
     case 'lift': sfx.lift(); if (e.players?.includes(room.id)) view.shake(.25); break;
