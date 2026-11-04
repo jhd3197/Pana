@@ -47,11 +47,12 @@ export function createProgress({ game, ranks = [], storage = defaultStorage() })
   const summary = doc => ({ xp: doc.xp, dives: doc.dives, rank: rankAt(ranks, doc.xp) });
   return {
     // Adds XP once per receipt and counts one dive. A receipt already paid changes nothing.
-    award(amount, receipt) {
+    // `dive: false` is a bonus on a dive already counted.
+    award(amount, receipt, { dive = true } = {}) {
       const doc = read(), before = rankAt(ranks, doc.xp);
       if (receipt && doc.receipts.includes(receipt)) return { gained: 0, xp: doc.xp, rank: before, rankedUp: false, newUnlocks: [] };
       const gained = count(amount), xp = doc.xp + gained, rank = rankAt(ranks, xp), owned = new Set(unlocksAt(ranks, doc.xp));
-      const saved = write({ xp, dives: doc.dives + 1, receipts: receipt ? [...doc.receipts, receipt] : doc.receipts });
+      const saved = write({ xp, dives: doc.dives + (dive ? 1 : 0), receipts: receipt ? [...doc.receipts, receipt] : doc.receipts });
       for (const fn of listeners) fn(summary(saved));
       return { gained, xp, rank, rankedUp: rank !== before, newUnlocks: unlocksAt(ranks, xp).filter(id => !owned.has(id)) };
     },

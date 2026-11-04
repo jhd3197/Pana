@@ -830,6 +830,37 @@ rank can turn it off. No engine change was needed.
 - "¡Otra expedición!" starts straight from the results with the same options,
   since the lobby only shows before a room's first dive.
 
+## Del día and Racha (`daily.js`)
+
+The host presses "Del día" (lobby, or results for a room past its first dive) and the
+squad dives `dailySeed('reliquia', day)` with `dailyPactos(day)`: one of the 21 sets of
+one or two pacts, each used once before any repeats. Rank is ignored, since the host's
+`configure` already takes any real pact.
+
+- **Same cave means every rule.** `dailyPlan` replaces all options with the defaults
+  plus the day's pacts; `place` alone would deal another cave. Only `crude` stays.
+- **The options come back.** The lobby only shows before a room's first dive, so pacts
+  left on after a daily could not be turned off. `plainOptions` holds the host's own
+  and `startDive` restores them on the next plain dive; both it and `daily` (the day
+  key) travel in snapshots, so a new host keeps them.
+- **A daily's seed repeats**, which breaks `receiptFor`: a second try with the same
+  level and outcome would pay nothing. A daily's receipt adds the dive's time.
+- **The lobby button clicks `#start`** with the day armed (`startOptions`), so
+  `game-entry.js`'s "everyone ready" barrier holds it. A button of its own would skip it.
+- A guest uses `state.daily`, the host's day, for the best and the bonus, and its own
+  local date for the streak, so timezones never split a squad's dive.
+
+The first daily of a day pays +25 % of that dive's XP (receipt `daily:<day>`,
+`dive: false` so `dives` stays true). A reload has `gained` 0 and does not spend it.
+The day's best is one local key, `pana:reliquia:daily-best`, behind `reportBest`, so a
+shared record store can replace it.
+
+**Streak.** `engine/daily.js`, per device. A day counts with a jornada cleared or an
+extraction with something in the truck, the same condition that keeps `xpFor` from
+paying a run that leaves at once. Any dive counts, daily or not. Kit classes set their
+own `display`, which beats `[hidden]`, so these chips and buttons toggle
+`style.display`. A rank-up keeps the toast; the streak's waits for it to end.
+
 ## Networking
 
 Host simulation at 20 Hz on `LiveRoom` (`reliquia-v3`). Input:
@@ -866,6 +897,8 @@ reach every client.
 node --test Pana/games/reliquia/tests/rules.test.js Pana/games/reliquia/tests/options.test.js Pana/games/reliquia/tests/library.test.js Pana/games/reliquia/tests/hiding.test.js Pana/games/reliquia/tests/silbon.test.js Pana/games/reliquia/tests/carga.test.js Pana/engine/tests/hiding-spots.test.js
 npm run test:browser -- reliquia
 ```
+
+`tests/daily.test.js` covers the day's plan, restored options, receipts and the best; `tests/daily.browser.mjs` is two panas through the button, the barrier, a retry and a plain dive.
 
 `tests/variety.test.js` covers places, rope work, planks, the golden chamber, sucesos,
 flares and el encargo; `tests/variety.browser.mjs` proves ropes, a tied bridge, a
