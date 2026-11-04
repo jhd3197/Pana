@@ -40,7 +40,7 @@ of your feet counts too. Levers, the carrito, the call at the empty shaft,
 the shop's goods, items, chests, winches, rubble and fallen panas all work
 this way.
 
-Camp (floor 0, a cavern on a ledge above the dark) → floor 1 … floor N (option `floors`, 2–4,
+Camp (floor 0, a terrace in a vast cavern above an underground lake) → floor 1 … floor N (option `floors`, 2–4,
 default 3) → the vault on the last floor. Seals:
 `ruedas` (two winches, hold E 1.6 s each, latch 12 s, one pana can do both),
 `guardian` (the sun guardian falls) and, on the last floor, the `boveda`
@@ -442,7 +442,7 @@ A run builds in about 5 ms. A test walks 25 seeds and reaches every room.
 
 `view.js` is the first-person camera (eye 1.45 m, pitch −1.2…1.1) and owns
 the light. There is no sun and no shadow pass anywhere: the camp is a look like
-any other (`caverna`), with dark fog (5–30 m), the headlamp spot on the camera, a hand light when you hold a farol or the
+any other (`caverna`), with dark fog (8–60 m, the far hall carries its own haze past it), the headlamp spot on the camera, a hand light when you hold a farol or the
 crown, and a fixed pool of five point lights moved to the nearest braziers
 and other panas' faroles (at the camp, to its `LAMPS`) every 0.25 s. The light
 count never changes, so shaders never recompile on the way down. Your hands are the engine's rig
@@ -516,31 +516,53 @@ instanced with their own shader and must not go through `bake`. A revealed
 hidden room rebuilds that floor's shell once. Every item kind has one
 prototype that the map clones. Floors other than yours are hidden.
 
-## The camp's cavern (`camp-cave.js`)
+## The camp's cavern (`camp-cave.js`, `camp-vista.js`, `camp-falls.js`, `camp-gear.js`)
 
-The camp is a ledge above the dark, not a sunny clearing, and it is looks only:
-`layout.js` still decides where you can walk, from the same `CAMP_RECT` as before.
-The walls stand past the rect's edge, and whatever stands inside it hangs overhead
-or lies flat, so nothing looks solid and walks through. The chasm is the north-east
-corner the floor leaves out: its lip only breaks outward, past the rect, and a rail
-stands beyond anyone's reach, so no pana can seem to stand on air.
+The camp is a terrace in a vast dark hall above a still underground lake: the base camp
+of an old expedition, with the mine and the pit as the way down. It is looks only:
+`layout.js` still decides where you can walk, from the same `CAMP_RECT` as before, and
+`tests/cavern.test.js` checks nothing of the hall stands in that rect. The rock tower that
+holds the mine mouth and the low berm stand past the rect's edge, and whatever stands inside
+it hangs overhead or lies flat (the pale walkway is a decal), so nothing looks solid and
+walks through. Past the berm a pana is stopped by the same invisible rect edge, so the gap
+where the road leaves is closed by a low timber barricade.
 
-- **One rock mesh.** Walls, ceiling, cliff, teeth, stalactites and the spires in the
-  chasm are one vertex-coloured, flat-shaded geometry (about 10 k triangles), built
-  once per page and reused by every jornada's world. Leaving out the old jungle
-  took the camp from about 330 k triangles and 330 draws to about 40 k and 165
-  (1280 × 720, `media`, spawn looking at the shop).
+- **The far plane is the trap.** `setLook` names the camp's look `caverna`, and the far plane
+  used to test for `camp`, so it was clamped to the fog's far end (47 m): nothing past that
+  drew at all. The look now gets `CAVERN_FAR`; `view.lookName` reads it (`view.look` is the
+  turning method, which had silently overwritten a getter of the same name).
+- **One unlit draw for the far hall.** `camp-vista.js` is renderer-free and builds triangle
+  soup: `MeshBasicMaterial`, no fog, no tone mapping, about 29 k triangles, so a colour
+  written there is the colour on screen. Each object takes a stepped tone from its distance
+  (`TONES`, darkest nearest), which is what makes the layers read as miles of air; facets
+  and warm pools (`POOLS`) are baked per vertex, since no light could reach that far.
+- **The reflection is real geometry.** The lower parts of the soup are mirrored below the lake
+  (`Reflejos`, about 9 k triangles) and `createLake` is a translucent sheet over them, clearer
+  at a grazing look. No render target, no second pass.
+- **Keep the roof above what you carve.** The head's crown first went through the ceiling and
+  read as a face with no top; `ceilingAt` lifts the roof around it, and a test holds it there.
+- **Additive tints are display values.** `ShaderMaterial` output has no colour-space step, so
+  a beam tinted with a linear amber looks mauve over navy: `createBeams` converts to sRGB first.
+  Anything additive near the lift also washes out the view through the gallery, so the warm
+  spill down the shaft ends at the floor.
 - **No new lights.** `LAMPS` borrows the view's five pool lights while you are at the
   camp, which is also why the campfire no longer brings its own. A lamp past the
-  nearest five keeps its emissive glass and halo, and goes dark on the rock.
+  nearest five keeps its emissive glass and halo, and goes dark on the rock. Far lanterns,
+  fungi and mist are one `Points` draw with a size per point (`createFarGlows`).
 - **No sun at all.** A `castShadow` light whose shadow map has never rendered makes
   every lit material fail to draw, with no error: only unlit materials appear. That
   is what happens once the camp has no sun, so the light was removed, not dimmed.
-- **The shaft.** The hole in the ceiling is over the chasm, so nobody walks through
-  the additive cone. The sky is one unlit disc above the chimney.
+- **What it costs.** About 91 k triangles and 200 draws at spawn (1280 × 800, `baja`), from 42 k
+  and 173; `cavern.browser.mjs` fails above 95 k or 260. Roughly a third is the soup and its image.
+- **Coming up.** A level is finished by riding the lift up with the quota; the truck ends the
+  run. While you ride at the camp's stop, `view.js` lifts a `veil` (fog, hemisphere, exposure)
+  as the cage rises and eases your heading toward the gallery's mouth, so the first thing you
+  see is the cavern through the mine's frame. It only touches this screen's picture; the
+  mouse still works and rules, timing and arrival are untouched.
 - **Rails.** `mineTrack` is sized for a roller coaster; at eye height its sleepers
   fill the screen, hence `RAIL`, a scale of .6 with the points divided to match.
-- **Sound.** `ambience.js` plays a low draft, far rock and pebbles, and each visible
+- **Sound.** `ambience.js` plays a low draft, far rock and pebbles, the steady far roar of
+  the falls (`roarFor` in `options.js`, quieter on softer Sustos), and each visible
   drop lands with its own sound (`DRIPS`, `dripLands`, on the view's clock). Metal,
   a scrape and the faint whistle go through `scareSound`: half and quieter on
   Suaves, none on Apagados. Eerie events and `presence.js` still never run here.
