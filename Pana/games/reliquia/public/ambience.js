@@ -76,6 +76,10 @@ export function createAmbience() {
     groan: (ctx, out, t) => osc(ctx, out, t, { type: 'sawtooth', from: 130 + Math.random() * 40, to: 90, dur: 1.1, vol: .09, vibrato: 7 }),
     skitter: (ctx, out, t) => { for (let i = 0; i < 8; i++) noiseBurst(ctx, out, t + i * .035, { dur: .02, freq: 3800, type: 'bandpass', q: 6, vol: .1 }); },
     hiss: (ctx, out, t) => noiseBurst(ctx, out, t, { dur: .8, freq: 5000, type: 'highpass', vol: .12 }),
+    // The swarm: a hiss that swells out of the walls with a dry rattle under it...
+    swarmHiss: (ctx, out, t) => { noiseBurst(ctx, out, t, { dur: 2.2, freq: 2600, type: 'bandpass', q: 1.4, vol: .3, sweep: 2.6 }); noiseBurst(ctx, out, t + .3, { dur: 1.9, freq: 6200, type: 'highpass', vol: .1, sweep: 1.2 }); for (let i = 0; i < 16; i++) noiseBurst(ctx, out, t + .2 + i * (.09 + Math.random() * .05), { dur: .035, freq: 3400 + Math.random() * 1800, type: 'bandpass', q: 7, vol: .1 + i * .008 }); osc(ctx, out, t, { type: 'sawtooth', from: 58, to: 74, dur: 2.2, vol: .05, vibrato: 19 }); },
+    // ...and one snake close by: a short, wet breath of it.
+    slither: (ctx, out, t) => { noiseBurst(ctx, out, t, { dur: .32 + Math.random() * .3, freq: 3600 + Math.random() * 1800, type: 'bandpass', q: 2.2, vol: .14, sweep: .75 }); for (let i = 0; i < 4; i++) noiseBurst(ctx, out, t + i * .05, { dur: .02, freq: 5200, type: 'bandpass', q: 9, vol: .04 }); },
     // Bats: a thin high squeak and the soft leathery beat of wings.
     squeak: (ctx, out, t) => { const n = 1 + Math.floor(Math.random() * 3); for (let i = 0; i < n; i++) osc(ctx, out, t + i * .09, { from: 5200 + Math.random() * 1400, to: 3600 + Math.random() * 800, dur: .05 + Math.random() * .03, vol: .035 }); },
     flutter: (ctx, out, t) => { const n = 5 + Math.floor(Math.random() * 5); for (let i = 0; i < n; i++) noiseBurst(ctx, out, t + i * (.055 + Math.random() * .03), { dur: .05, freq: 620 + Math.random() * 260, type: 'bandpass', q: .8, vol: .1 }); },

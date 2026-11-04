@@ -38,6 +38,7 @@ export default {
     loc('La Estatua solo se mueve cuando nadie la mira. Mientras un pana la tenga a la vista se queda quieta, y los golpes apenas la aturden: no la pierdan de vista o aléjense de ella.'),
     loc('A El Silbón nada lo mata. Si te pierde de vista te busca un rato y se va: métete en un hueco (la mano de tiza) o llévalo al abismo, que no mira dónde pisa.'),
     loc('El chillido de los murciélagos lo atrae. Cuando huele un hueco se oye la piedra: sal a tiempo.'),
+    loc('Si oyes un siseo, salen culebras de las grietas: muerden y te frenan. El machete las desparrama y el farol las espanta. No caben en los huecos.'),
     loc('Apunta adentro del carrito. Una carga montada se te cae si frenas, giras o chocas de golpe.'),
     loc('Cada tesoro que levantan sube la codicia: más trampas, momias bravas, túneles que se derrumban y un jaguar negro que los caza.'),
     loc('Si caen todos, del camión solo se salva una parte.'),
