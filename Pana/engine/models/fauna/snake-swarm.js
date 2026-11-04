@@ -95,6 +95,8 @@ export function snakeSwarm({ snakes = 14, segments = 12, link = .17 } = {}) {
   swarm.crack(0, 0, 0, 0, .4, .9); swarm.cracks(1);
   g.userData = { assetId: 'snake-swarm', previewBounds: [[-2.4, 0, -2.4], [2.4, .4, 2.4]], dispose: swarm.dispose,
     tick(t = 0) {
+      // The pile drifts a little as a whole too, and is back in place at t = 0.
+      g.rotation.y = Math.sin(t * .4) * .15;
       swarm.begin();
       for (let c = 0; c < snakes; c++) {
         const a = c * 2.4, r0 = .3 + (c % 4) * .28, start = c * segments;
