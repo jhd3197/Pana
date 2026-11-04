@@ -14,7 +14,7 @@ import { createLookControls } from '/engine/play/first-person.js';
 import { pressJump } from '/engine/play/jump.js';
 import { createFootsteps } from '/engine/play/footsteps.js';
 import { sfx as sfxLib } from '/engine/sfx.js';
-import { FIELDS, DEFAULT_OPTIONS, SCARES, loadScares, saveScares, shakeFor } from './options.js';
+import { fieldsFor, DEFAULT_OPTIONS, SCARES, loadScares, saveScares, shakeFor } from './options.js';
 import { createEerieFx } from './eerie-fx.js';
 import { Expedition, BARKS, interaction } from './rules.js';
 import { spawnEnemy } from './enemies.js';
@@ -74,7 +74,8 @@ const room = new ExpeditionRoom({ code, name, avatar, onState: receive, onNotice
 });
 // The tagline sits beside the name in the shared lobby's header.
 { const tagline = document.createElement('p'); tagline.className = 'lobby-tagline'; tagline.textContent = loc('Bajen juntos. No se desarmen.'); document.querySelector('.pk-game-lobby-head > .pk-title')?.after(tagline); }
-const optionsUI = createRoomOptions($('room-options'), { title: 'Fosa', fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
+const optionsUI = createRoomOptions($('room-options'), { title: 'Fosa', fields: fieldsFor(diver.progress.isUnlocked), change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
+const showCalor = diver.calorChip($('room-options').querySelector('.pk-room-primary'));
 // A guest draws its own explorer where it predicts it, not a round trip behind.
 const me = () => { const p = state.players.find(p => p.id === room.id); const predicted = room.predicted; return predicted && p ? { ...p, x: predicted.x, z: predicted.z, y: predicted.y, vx: predicted.vx, vz: predicted.vz, moving: predicted.moving, stamina: predicted.stamina, jumpHeight: predicted.jumpHeight ?? p.jumpHeight } : p; };
 const looking = createLookControls(canvas, { enabled: () => playing(), look: (yaw, pitch) => view.look(yaw, pitch),
@@ -82,7 +83,7 @@ const looking = createLookControls(canvas, { enabled: () => playing(), look: (ya
   unlocked: () => { if (state.phase === 'playing') menu.open('game'); } });
 
 function lobby() {
-  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
+  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing'); showCalor(state.options);
   if (state.phase === 'playing' && optionsUI.isOpen) optionsUI.close();
   show('lobby', state.phase === 'lobby'); show('hud', state.phase === 'playing'); show('results', state.phase === 'results');
   $('start').disabled = !room.connected || !room.isHost;
