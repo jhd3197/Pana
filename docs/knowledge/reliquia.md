@@ -40,7 +40,7 @@ of your feet counts too. Levers, the carrito, the call at the empty shaft,
 the shop's goods, items, chests, winches, rubble and fallen panas all work
 this way.
 
-Camp (floor 0, outdoors, sunlit) → floor 1 … floor N (option `floors`, 2–4,
+Camp (floor 0, a cavern on a ledge above the dark) → floor 1 … floor N (option `floors`, 2–4,
 default 3) → the vault on the last floor. Seals:
 `ruedas` (two winches, hold E 1.6 s each, latch 12 s, one pana can do both),
 `guardian` (the sun guardian falls) and, on the last floor, the `boveda`
@@ -441,11 +441,11 @@ A run builds in about 5 ms. A test walks 25 seeds and reaches every room.
 ## Rendering
 
 `view.js` is the first-person camera (eye 1.45 m, pitch −1.2…1.1) and owns
-the light: camp = sky, sun and shadows; underground = dark fog (5–30 m),
-the headlamp spot on the camera, a hand light when you hold a farol or the
+the light. There is no sun and no shadow pass anywhere: the camp is a look like
+any other (`caverna`), with dark fog (5–30 m), the headlamp spot on the camera, a hand light when you hold a farol or the
 crown, and a fixed pool of five point lights moved to the nearest braziers
-and other panas' faroles every 0.25 s. The light count never changes, so
-shaders never recompile on the way down. Your hands are the engine's rig
+and other panas' faroles (at the camp, to its `LAMPS`) every 0.25 s. The light
+count never changes, so shaders never recompile on the way down. Your hands are the engine's rig
 (`hand-view.js`): sleeves in your seat colour, holding the hand items, each with a
 row in `grips.js` (shape, rest, model turn and the blow it plays). The hand light sits
 ahead of the held farol, not on it: at about 10 cm it burns the glove white. Blades
@@ -499,11 +499,9 @@ Studio models: `ruinShell` (brick walls, slabs, grout, ceiling, painted
 InstancedMesh per 24 m tile and part, plain boxes, so the camera culls the
 floor tile by tile) plus ruins, mine, cave, cemetery, camp and crystal props.
 
-**What a frame costs.** Underground the sun is off, so `setLook` stops its
-shadow pass (`renderer.shadowMap.autoUpdate`; `castShadow` stays, so no
-shader recompiles on the lift) and the camera's far plane sits at the fog's
-far end (`scene.fog.far + 1`; fog depth and the far plane are the same view
-depth, so nothing visible is lost; the camp keeps 220 m for the sky).
+**What a frame costs.** The camera's far plane sits at the fog's far end
+(`scene.fog.far + 1`; fog depth and the far plane are the same view depth, so
+nothing visible is lost).
 Measured headless (SwiftShader, 1280 × 800, seed 424242, one pana on floor
 1): the mine went from 267 draw calls and 133 k triangles to 66 and 35 k,
 the library from 212 and 223 k to 81 and 107 k, and frames came twice as
@@ -517,6 +515,35 @@ Static decor is baked per floor; braziers animate; crystal clusters are
 instanced with their own shader and must not go through `bake`. A revealed
 hidden room rebuilds that floor's shell once. Every item kind has one
 prototype that the map clones. Floors other than yours are hidden.
+
+## The camp's cavern (`camp-cave.js`)
+
+The camp is a ledge above the dark, not a sunny clearing, and it is looks only:
+`layout.js` still decides where you can walk, from the same `CAMP_RECT` as before.
+The walls stand past the rect's edge, and whatever stands inside it hangs overhead
+or lies flat, so nothing looks solid and walks through. The chasm is the north-east
+corner the floor leaves out: its lip only breaks outward, past the rect, and a rail
+stands beyond anyone's reach, so no pana can seem to stand on air.
+
+- **One rock mesh.** Walls, ceiling, cliff, teeth, stalactites and the spires in the
+  chasm are one vertex-coloured, flat-shaded geometry (about 10 k triangles), built
+  once per page and reused by every jornada's world. Leaving out the old jungle
+  took the camp from about 330 k triangles and 330 draws to about 40 k and 165
+  (1280 × 720, `media`, spawn looking at the shop).
+- **No new lights.** `LAMPS` borrows the view's five pool lights while you are at the
+  camp, which is also why the campfire no longer brings its own. A lamp past the
+  nearest five keeps its emissive glass and halo, and goes dark on the rock.
+- **No sun at all.** A `castShadow` light whose shadow map has never rendered makes
+  every lit material fail to draw, with no error: only unlit materials appear. That
+  is what happens once the camp has no sun, so the light was removed, not dimmed.
+- **The shaft.** The hole in the ceiling is over the chasm, so nobody walks through
+  the additive cone. The sky is one unlit disc above the chimney.
+- **Rails.** `mineTrack` is sized for a roller coaster; at eye height its sleepers
+  fill the screen, hence `RAIL`, a scale of .6 with the points divided to match.
+- **Sound.** `ambience.js` plays a low draft, far rock and pebbles, and each visible
+  drop lands with its own sound (`DRIPS`, `dripLands`, on the view's clock). Metal,
+  a scrape and the faint whistle go through `scareSound`: half and quieter on
+  Suaves, none on Apagados. Eerie events and `presence.js` still never run here.
 
 ## El tambor ceremonial
 
@@ -756,7 +783,7 @@ page with a split into a dry path and a cave (generated-impulse convolver
 plus a 0.34 s feedback echo) whose wet level rises underground, so every
 sound in Reliquia echoes below. A brown-noise rumble and a detuned drone
 thicken with la codicia; drips, pebbles, creaks, moans and whispers come
-every 2–7 s; the camp has a dry chirr and cicadas instead, no birds. Footsteps follow every
+every 2–7 s; the camp has its own ("The camp's cavern"). Footsteps follow every
 moving pana (0.42 s walking, 0.3 s running), others' panned and faded by
 distance. Creatures each have their own clock: mummy groans, spider
 skitter, cuaima hiss, bat squeaks and wing flutter (a sleeping one barely chirps),
@@ -767,7 +794,7 @@ play through `samples.js` on `engine/sample-bank.js`, after the cave split,
 so they echo too. They load when a run starts; until a set has decoded your
 own steps stay synthesised (`sfx.step`) and the rest is silent. Your steps
 are `step_wood_*` in a library jornada and `step_stone_*` in the mine
-(the camp keeps the synth `dirt`), on the distance ticker of
+and at the camp, on the distance ticker of
 `engine/play/footsteps.js`; while the clips play, `ambience.js` skips your
 own synthesised board knock so a footfall never doubles (others' steps stay
 synthesised). A search makes its spot's sound once, when its progress first
