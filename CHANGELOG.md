@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Galope: los caballos ahora corren como caballos.**
+  Caminan, trotan, van a medio galope y galopan según la velocidad, con cada pata a su
+  tiempo y los cascos fijos en el suelo. Cabeza, crin, cola y jinete siguen el ritmo.
+  También en el Coleo de Bululú.
+
 - **Fosa: el campamento ahora es una caverna al borde del abismo.**
   Roca arriba, faroles que apenas alumbran, un rayo frío que cae al vacío, charcos que gotean y ruidos que suben de abajo. Se juega igual, y carga más liviano.
 

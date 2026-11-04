@@ -97,6 +97,18 @@ feet.update(dt, { speed, height: p.jumpHeight, sprint, surface: 'wood' }, sfx);
 
 Used by: Reliquia, Pepazo.
 
+### Four-legged gaits (walk, trot, canter, gallop)
+
+`engine/models/animation/quadruped-gait.js`, no Three.js. `poseQuadruped(rig, phase,
+speed, jump, climb, pose)` fills a reused pose: footfalls blended by ground speed, leg
+IK with a hoof joint, body bob and pitch, head nod, delayed mane and tail. Advance the
+phase with `strideRate(speed, blendGait(speed))` or the feet slide. Describe a new
+animal's legs with `createQuadrupedRig`.
+
+Used by: `engine/models/fauna/farm/rig.js` for the mounted horse, so Galope and
+Bululú's Coleo. The cow keeps its own simple gait. Notes:
+`docs/knowledge/procedural-farm-animals.md`.
+
 ### First-person look
 
 `engine/play/first-person.js`. `createLookControls(canvas, {look, press, release})`
