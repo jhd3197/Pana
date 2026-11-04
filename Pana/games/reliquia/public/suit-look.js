@@ -21,54 +21,63 @@ export function suitedAvatar(avatar) {
 }
 
 // `main` and `shade` come from the seat colour; the rest are the same on everyone.
-export const TONES = { trim: '#2a2c3a', boot: '#3a3140', metal: '#aab2be', hose: '#20222c', dial: '#7bffb0' };
-export const SHADE = .68;
+export const TONES = { trim: '#2a2c3a', boot: '#3a3140', metal: '#d6dde6', hose: '#20222c', dial: '#7bffb0' };
+export const SHADE = .6;
 
 // The dome, in the head's units (the head's pivot is its centre). Open at the
-// bottom, where the rim sits on the collar.
-export const DOME = { center: [0, .1, .18], radius: 1.28, openAt: -.85 };
+// bottom, where the rim sits on the collar: well under the widest point, so it
+// reads as a round bowl on a slim neck ring.
+export const DOME = { center: [0, .1, .18], radius: 1.28, openAt: -1.02 };
 export const domeOpening = () => Math.sqrt(DOME.radius ** 2 - (DOME.openAt - DOME.center[1]) ** 2);
+
+// How the glass is painted, facing the viewer (explorer-suit.js): a clear middle
+// so the face shows, an edge that brightens as the glass turns away, and a
+// curved streak with a small glint opposite. Alpha values.
+export const GLASS = { tint: '#a9dcff', edgeTint: '#d8f1ff', clear: .1, edge: .85, edgePower: 2.4, streak: .95, glint: .8 };
 
 const ball = (at, size, tone = 'main') => ({ shape: 'ball', at, size, tone });
 const ring = (at, radius, tube, tone = 'trim', squash = 1) => ({ shape: 'ring', at, radius, tube, tone, squash });
 const box = (at, size, tone = 'trim') => ({ shape: 'box', at, size, tone });
 const can = (at, radius, height, tone = 'metal', axis = 'y') => ({ shape: 'can', at, radius, height, tone, axis });
-const hose = points => ({ shape: 'tube', points, radius: .045, tone: 'hose' });
+const hose = points => ({ shape: 'tube', points, radius: .032, tone: 'hose' });
+// One smooth turned surface instead of stacked balls: [radius, y] from the
+// bottom up, z flattened by `squash`.
+const turned = (at, profile, tone = 'main', squash = 1) => ({ shape: 'turned', at, profile, tone, squash });
+
+// A flatter body than a round one, so a suit fits a chest and not a barrel.
+export const BODY_SQUASH = .78;
+const COLLAR_Y = 1.635, COLLAR_Z = .155;
 
 // Each list becomes one merged mesh on that bone of the sculpt.
 export const SUIT_PARTS = {
   torso: [
-    ball([0, .70, 0], [.80, .30, .60]),                // hips
-    ring([0, .88, 0], .74, .05, 'trim', .75),          // belt
-    ball([0, 1.08, 0], [.90, .34, .68]),               // belly
-    ball([0, 1.40, 0], [.86, .34, .66], 'shade'),      // chest
-    ball([0, 1.62, .10], [.88, .24, .80]),             // shoulders, under the collar
-    ball([0, 1.78, .155], [.72, .08, .72], 'trim'),    // seals the collar under the head
-    ring([0, 1.74, .155], .74, .09, 'shade'),          // collar
-    box([0, 1.22, .68], [.62, .40, .22]),              // chest pack
-    can([-.16, 1.27, .80], .06, .03, 'dial', 'z'),
-    box([.14, 1.17, .795], [.20, .08, .02], 'metal'),
-    hose([[.22, 1.40, .76], [.40, 1.56, .86], [.52, 1.72, .76], [.50, 1.80, .60]]),
-    hose([[-.22, 1.40, .76], [-.40, 1.56, .86], [-.52, 1.72, .76], [-.50, 1.80, .60]]),
-    can([.19, 1.22, -.74], .17, .72),                  // air tanks on the back
-    can([-.19, 1.22, -.74], .17, .72),
+    turned([0, 0, .03], [[0, .46], [.48, .5], [.635, .64], [.625, .84], [.585, .98]], 'shade', BODY_SQUASH),   // hips
+    turned([0, 0, .03], [[.585, .98], [.59, 1.12], [.625, 1.32], [.6, 1.48], [.44, 1.6], [0, 1.66]], 'main', BODY_SQUASH),   // chest
+    ring([0, .97, .03], .592, .036, 'trim', BODY_SQUASH),   // belt
+    box([0, .97, .50], [.15, .10, .035], 'metal'),          // buckle
+    turned([0, 0, COLLAR_Z], [[.40, 1.42], [.48, 1.54], [.54, COLLAR_Y]], 'shade'),     // neck ring, up to the helmet
+    ball([0, COLLAR_Y + .02, COLLAR_Z], [.5, .17, .5], 'trim'),   // seals the collar under the head
+    box([0, 1.26, .56], [.40, .25, .12]),                   // chest pack
+    can([-.10, 1.28, .625], .05, .02, 'dial', 'z'),
+    box([.09, 1.24, .625], [.14, .05, .015], 'metal'),
+    hose([[.17, 1.36, .58], [.30, 1.46, .60], [.40, 1.56, .54], [.44, 1.62, .42]]),
+    can([0, 1.27, -.56], .13, .52),                         // small air tank on the back
+    can([0, 1.56, -.56], .05, .07, 'trim'),
+    ring([0, 1.27, -.56], .135, .02),
   ],
   arm: [
-    ball([0, -.04, .02], [.33, .27, .33]),
-    ball([0, -.33, .02], [.29, .20, .30], 'shade'),
-    ball([0, -.58, .02], [.27, .18, .28]),
-    ring([0, -.74, .02], .21, .05),                    // cuff
-    ball([0, -.88, .03], [.25, .19, .27]),             // glove
+    turned([0, 0, .01], [[0, -.8], [.12, -.76], [.125, -.56], [.145, -.32], [.165, -.22], [.10, -.13], [0, -.1]]),
+    ring([0, -.70, .01], .13, .032),                        // cuff
+    ball([0, -.84, .02], [.165, .145, .175]),               // glove
   ],
   leg: [
-    ball([0, .02, 0], [.38, .25, .40]),
-    ball([0, -.22, .01], [.35, .17, .37], 'shade'),
-    ring([0, -.33, .02], .29, .05),                    // boot cuff
-    ball([0, -.46, .12], [.37, .18, .44], 'boot'),
+    turned([0, 0, 0], [[0, -.42], [.16, -.36], [.17, -.2], [.19, 0], [.17, .1], [0, .14]], 'shade'),
+    ring([0, -.31, .01], .178, .032),                       // boot cuff
+    ball([0, -.48, .07], [.235, .155, .32], 'boot'),
   ],
   helmet: [
-    ring([0, DOME.openAt, DOME.center[2]], domeOpening(), .085),
-    box([0, 1.02, 1.0], [.26, .17, .14]),              // lamp housing
+    ring([0, DOME.openAt, DOME.center[2]], domeOpening() + .02, .09, 'metal'),
+    box([0, 1.02, 1.0], [.26, .17, .14]),                   // lamp housing
   ],
   lens: [can([0, 1.02, 1.08], .085, .03, 'dial', 'z')],
 };

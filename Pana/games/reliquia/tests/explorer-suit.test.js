@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { DOME, SEAT_COLORS, SUIT_HEAD, SUIT_PARTS, TONES, domeOpening, seatColor, suitedAvatar } from '../public/suit-look.js';
+import { DOME, GLASS, SEAT_COLORS, SUIT_HEAD, SUIT_PARTS, TONES, domeOpening, seatColor, suitedAvatar } from '../public/suit-look.js';
 
 const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 const apart = (a, b) => Math.hypot(...rgb(a).map((v, i) => v - rgb(b)[i]));
@@ -38,12 +38,27 @@ test('the dome holds the head, ears and muzzle included', () => {
   for (const [x, y, z] of points) assert.ok(Math.hypot(x - cx, y - cy, z - cz) < DOME.radius, `(${x}, ${y}, ${z}) pokes out`);
   assert.ok(DOME.openAt < -.8, 'the rim stays under the chin');
   assert.ok(SUIT_HEAD <= .58, 'the head never grows');
-  assert.ok(domeOpening() > .8);
+  assert.ok(domeOpening() > .55 && domeOpening() < DOME.radius * .6, 'the rim is a narrow neck ring, well inside the bowl');
 });
 
-test('the suit has its pack, hoses, boots, gloves and lamp', () => {
+test('the glass stays clear over the face and shows at its edge', () => {
+  assert.ok(GLASS.clear <= .15, 'the face shows through');
+  assert.ok(GLASS.edge >= .6 && GLASS.streak >= .8, 'the bowl reads from across a room');
+});
+
+test('the suit fits close: no part is wider than the slim body allows', () => {
+  const widest = list => Math.max(...list.filter(p => p.shape === 'turned').flatMap(p => p.profile.map(([r]) => r)));
+  assert.ok(widest(SUIT_PARTS.torso) <= .65, 'the torso is not a barrel');
+  assert.ok(widest(SUIT_PARTS.arm) <= .17 && widest(SUIT_PARTS.leg) <= .2, 'limbs are slim');
+  // Bottom up, or the lathe's surface faces inwards.
+  for (const list of Object.values(SUIT_PARTS)) for (const p of list) if (p.shape === 'turned') p.profile.forEach(([, y], i, all) => { if (i) assert.ok(y > all[i - 1][1], 'profile runs bottom up'); });
+});
+
+test('the suit has its pack, tank, hose, belt, boots, gloves and lamp', () => {
   const { torso, arm, leg, helmet, lens } = SUIT_PARTS;
-  assert.equal(torso.filter(p => p.shape === 'tube').length, 2, 'two hoses');
+  assert.equal(torso.filter(p => p.shape === 'tube').length, 1, 'one hose');
+  assert.ok(torso.some(p => p.shape === 'can' && p.at[2] < -.4 && p.height > .4), 'a small tank on the back');
+  assert.ok(torso.some(p => p.shape === 'ring' && p.tone === 'trim' && p.at[1] < 1.2), 'a belt');
   assert.ok(torso.some(p => p.shape === 'box' && p.at[2] > .5), 'a pack on the chest');
   assert.ok(leg.some(p => p.tone === 'boot') && arm.at(-1).at[1] < -.8, 'boots and gloves');
   assert.ok(helmet.some(p => p.shape === 'ring') && lens.length === 1, 'a rim and a lamp');
