@@ -23,7 +23,6 @@
   "¡El guardián cayó! El sello se abre.": "The guardian fell! The seal opens.",
   "¡El jaguar de oro despertó!": "The golden jaguar woke up!",
   "¡Encestó {item} en el carrito!": "Tossed the {item} right into the cart!",
-  "¡Guácharos! Alumbren con el farol.": "Oilbirds! Shine the lantern on them.",
   "¡Guardián vencido!": "Guardian defeated!",
   "¡JA, JA, JA! El ídolo se ríe a carcajadas.": "HA, HA, HA! The idol roars with laughter.",
   "¡Jaguar vencido!": "Jaguar defeated!",
@@ -373,5 +372,15 @@
   "Ver el mapa, la brújula, la jornada y al equipo mientras lo mantienes (en táctil, toca para abrir y cerrar)": "See the map, the compass, the shift and the team while you hold it (on touch, tap to open and close)",
   "Visible": "Visible",
   "Vitalidad": "Health",
-  "Volver a la mina": "Back to the mine"
+  "Volver a la mina": "Back to the mine",
+  "¡Murciélagos! Alumbren con el farol.": "Bats! Shine the lantern on them.",
+  "Apunta adentro": "Aim inside",
+  "¡El Silbón sacó a {name}!": "El Silbón dragged {name} out!",
+  "¡El Silbón se fue al abismo!": "El Silbón went into the abyss!",
+  "El Silbón se levantó.": "El Silbón got up.",
+  "El Silbón": "El Silbón",
+  "¡Se fue al abismo!": "Into the abyss!",
+  "A El Silbón nada lo mata. Si te pierde de vista te busca un rato y se va: métete en un hueco (la mano de tiza) o llévalo al abismo, que no mira dónde pisa.": "Nothing kills El Silbón. If it loses sight of you it searches a while and leaves: slip into a nook (the chalk hand) or lead it to the abyss, it never looks where it steps.",
+  "El chillido de los murciélagos lo atrae. Cuando huele un hueco se oye la piedra: sal a tiempo.": "Bat screeches draw it. When it sniffs at a nook you hear the stone: get out in time.",
+  "Apunta adentro del carrito. Una carga montada se te cae si frenas, giras o chocas de golpe.": "Aim inside the cart. A heaped load falls off if you stop, turn or crash hard."
 }

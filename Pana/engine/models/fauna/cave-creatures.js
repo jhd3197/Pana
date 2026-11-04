@@ -1,12 +1,13 @@
 // Cave creatures for Reliquia's ruins, cartoon-sized for reading at a glance.
 // +Z forward. Each has userData.tick(t) and its own materials (disposed by
 // userData.dispose):
-//   guacharo   the oilbird of the Venezuelan caves: brown, hooked beak, big
-//              speckled wings that flap; flies, origin at its body centre.
+//   caveBat    a dark furry bat with big ears and leathery wings that flutter in
+//              stuttering bursts; flies, origin at its body centre; hangs asleep.
 //   caveSpider a fat orange-and-black spider with eight jointed legs that
 //              scuttle; origin on the floor.
 //   cuaima     a coiled bushmaster with a raised head; tick(t, strike) lunges.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 function kit() {
   const owned = [], geometries = [];
@@ -17,23 +18,57 @@ function kit() {
   return { mat, part, dispose: () => { owned.forEach(m => m.dispose()); geometries.forEach(g => g.dispose()); } };
 }
 
-export function guacharo({ seed = 1 } = {}) {
-  const k = kit(), g = new THREE.Group(); g.name = 'Guácharo';
-  const brown = k.mat(0x8a4a24), light = k.mat(0xc98a52), beak = k.mat(0xf2c25a), eye = k.mat(0xfff0a0, { emissive: 0xffd040, emissiveIntensity: 1.6 }), spot = k.mat(0xfff6e0);
-  const body = k.part(g, new THREE.SphereGeometry(.22, 14, 10), brown); body.scale.set(.9, .85, 1.35);
-  k.part(g, new THREE.SphereGeometry(.15, 12, 10), brown, 0, .08, .24);
-  k.part(g, new THREE.ConeGeometry(.05, .14, 8), beak, 0, .04, .4, Math.PI / 2 + .4);
-  for (const s of [-1, 1]) k.part(g, new THREE.SphereGeometry(.045, 8, 6), eye, s * .08, .13, .34);
-  k.part(g, new THREE.ConeGeometry(.13, .32, 6), light, 0, -.02, -.36, -Math.PI / 2);
+// The body is one merged, vertex-coloured mesh and each wing two panels: six
+// draws, so a flock stays cheap. Set userData.hang to fold it up on the ceiling.
+export function caveBat({ seed = 1 } = {}) {
+  const k = kit(), g = new THREE.Group(); g.name = 'Murciélago';
+  const fur = 0x120d14, chest = 0x1d1518, skin = 0x0c080c, ear = 0x24151a, tooth = 0x8a8476;
+  const pieces = [], paint = (geometry, color, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => {
+    const o = new THREE.Object3D(); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.scale.set(sx, sy, sz); o.updateMatrix();
+    const shape = geometry.applyMatrix4(o.matrix), flat = shape.index ? shape.toNonIndexed() : shape, c = new THREE.Color(color), n = flat.attributes.position.count, colors = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) colors.set([c.r, c.g, c.b], i * 3);
+    flat.setAttribute('color', new THREE.BufferAttribute(colors, 3)); pieces.push(flat);
+  };
+  paint(new THREE.SphereGeometry(.17, 10, 8), fur, 0, 0, 0, 0, 0, 0, .95, .9, 1.25);
+  paint(new THREE.SphereGeometry(.12, 8, 6), chest, 0, -.05, .06, 0, 0, 0, 1, .9, 1.1);
+  paint(new THREE.SphereGeometry(.115, 10, 8), fur, 0, .07, .2);
+  paint(new THREE.ConeGeometry(.05, .1, 6), skin, 0, .05, .31, Math.PI / 2);
+  for (const s of [-1, 1]) {
+    paint(new THREE.ConeGeometry(.055, .2, 5), ear, s * .08, .23, .17, -.1, 0, s * -.28, 1, 1, .45);
+    paint(new THREE.ConeGeometry(.009, .04, 4), tooth, s * .028, -.015, .3, Math.PI);
+    paint(new THREE.ConeGeometry(.026, .14, 5), fur, s * .05, -.13, -.17, -Math.PI / 2 - .25);
+  }
+  const merged = mergeGeometries(pieces, false); pieces.forEach(p => p.dispose());
+  const bodyMat = k.mat(0xffffff, { vertexColors: true, roughness: .95 }), body = k.part(g, merged, bodyMat);
+  // Two small lit eyes, one draw.
+  const eyes = mergeGeometries([-1, 1].map(s => new THREE.SphereGeometry(.018, 6, 5).translate(s * .05, .1, .3)), false);
+  k.part(g, eyes, k.mat(0x402008, { emissive: 0xff8a18, emissiveIntensity: 1.6 }));
+  const skinMat = k.mat(0x170f18, { side: THREE.DoubleSide, roughness: .85 });
+  const panel = points => { const shape = new THREE.Shape(); shape.moveTo(points[0][0], points[0][1]); for (let i = 1; i < points.length; i += 2) shape.quadraticCurveTo(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1]); return new THREE.ShapeGeometry(shape); };
+  // The membrane scallops between long finger bones: inner panel at the shoulder,
+  // outer panel on a joint halfway, so a beat folds like a hand, not a board.
   const wings = [-1, 1].map(s => {
-    const pivot = new THREE.Group(); pivot.position.set(s * .14, .06, 0); g.add(pivot);
-    const shape = new THREE.Shape(); shape.moveTo(0, -.18); shape.quadraticCurveTo(.5, -.25, .72, .02); shape.lineTo(.5, .06); shape.lineTo(.36, .02); shape.lineTo(.22, .1); shape.quadraticCurveTo(.1, .16, 0, .14); shape.closePath();
-    const wing = k.part(pivot, new THREE.ShapeGeometry(shape), k.mat(0x6e3a1c, { side: THREE.DoubleSide }), 0, 0, 0, -Math.PI / 2, 0, 0); wing.scale.x = s;
-    for (let i = 0; i < 4; i++) k.part(pivot, new THREE.SphereGeometry(.018, 6, 4), spot, s * (.2 + i * .12), .01, -.02 - i * .02);
-    return pivot;
+    const shoulder = new THREE.Group(); shoulder.position.set(s * .13, .05, .02); g.add(shoulder);
+    const inner = k.part(shoulder, panel([[0, .14], [.2, .2], [.36, .14], [.34, .03], [.36, -.14], [.2, -.1], [.12, -.2], [.05, -.1], [0, -.16]]), skinMat, 0, 0, 0, -Math.PI / 2); inner.scale.x = s;
+    const elbow = new THREE.Group(); elbow.position.x = s * .36; shoulder.add(elbow);
+    const outer = k.part(elbow, panel([[0, .14], [.28, .22], [.46, .02], [.3, -.01], [.28, -.13], [.14, -.07], [0, -.14]]), skinMat, 0, 0, 0, -Math.PI / 2); outer.scale.x = s;
+    return { shoulder, elbow, s };
   });
-  g.userData = { assetId: 'guacharo', previewBounds: [[-.8, -.3, -.6], [.8, .5, .6]],
-    tick(t) { const flap = Math.sin(t * 14 + seed); wings.forEach((w, i) => { w.rotation.z = (i ? -1 : 1) * (.2 + flap * .7); }); body.position.y = Math.sin(t * 14 + seed) * .03; },
+  g.userData = { assetId: 'cave-bat', hang: false, previewBounds: [[-.85, -.3, -.3], [.85, .35, .4]],
+    tick(t) {
+      const hang = g.userData.hang;
+      if (hang) {
+        // Asleep upside down, wrapped in its own wings, breathing.
+        g.rotation.x = Math.PI; body.position.y = Math.sin(t * 1.4 + seed) * .004;
+        for (const w of wings) { w.shoulder.rotation.z = w.s * -1.25; w.elbow.rotation.z = w.s * -2.3; }
+        return;
+      }
+      g.rotation.x = 0;
+      // Not a steady beat: bursts of flutter that stutter and catch, a glide now and then.
+      const warp = t * 21 + Math.sin(t * 5.3 + seed) * 1.6 + Math.sin(t * 2.1 + seed * 2) * 1.2, glide = Math.max(0, Math.sin(t * .9 + seed)) ** 6, beat = Math.sin(warp) * (1 - glide * .8);
+      for (const w of wings) { w.shoulder.rotation.z = w.s * (.12 + beat * .75); w.elbow.rotation.z = w.s * (.22 - Math.cos(warp) * .55 * (1 - glide * .8)); }
+      body.position.y = -beat * .025; g.rotation.z = Math.sin(t * 7.7 + seed) * .22;
+    },
     dispose: k.dispose };
   return g;
 }

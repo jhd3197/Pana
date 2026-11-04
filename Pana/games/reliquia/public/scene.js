@@ -30,6 +30,8 @@ import { ceiba } from '/engine/models/vegetation/ceiba.js';
 import { monstera } from '/engine/models/vegetation/monstera.js';
 import { heliconia } from '/engine/models/vegetation/heliconia.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { hideNook } from '/engine/models/props/reliquia-boss.js';
 import { layoutFor } from './layout.js';
 import { visibleItems, liftView, SHOP, SHOP_AT, shopSpot } from './rules.js';
 import { ITEMS, ARTIFACTS } from './items.js';
@@ -37,7 +39,7 @@ import { TRUCK, TABLE, HEIGHT, CAGE, floorOf, inRect } from './deck.js';
 
 const PALETTES = ['sol', 'jade', 'maldita'];
 export const paletteFor = (floor, theme = 'mina') => theme === 'biblioteca' ? RUIN_PALETTES.biblioteca : RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
-const FACTORIES = { ...treasure, oldBook, mineCart: () => mineCart({ load: 'gold' }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
+const FACTORIES = { ...treasure, oldBook, mineCart: () => mineCart({ load: 'gold', hollow: true }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
 const GLOW = { tool: 0xfff1d6, treasure: 0xffc23d, big: 0xffd36a, junk: 0x9aa4b0 };
 
 // One prototype per item kind; every copy on the map is a cheap clone.
@@ -164,6 +166,9 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       const [ia, ib, ic, id] = pit.island, island = new THREE.Mesh(new THREE.BoxGeometry(ic - ia, 6.8, id - ib), mat(0x8a7356, { flatShading: true }));
       island.position.set((ia + ic) / 2, -3.55, (ib + id) / 2); root.add(island);
     }
+    for (const pit of run.pits.filter(p => p.floor === f)) pitEdge(pit, root, run.bridges.filter(q => q.floor === f && q.room === pit.room).map(q => q.rect), run.theme === 'biblioteca');
+    // Hiding nooks, baked with the floor: two slabs, a dark gap, a chalk hand.
+    for (const n of run.nooks.filter(q => q.floor === f)) { const library = run.theme === 'biblioteca', model = hideNook(library ? { stone: 0x4c4a4c, dark: 0x302e32, chalk: 0xd6d8d0 } : {}); place(statics, model, n.mouth.x, 0, n.mouth.z, n.h); }
     for (const b of run.bridges.filter(b => b.floor === f)) {
       const span = b.rect[3] - b.rect[1], bridge = ropeBridge({ span: Math.max(4, span), seed: f * 9 });
       place(root, bridge, (b.rect[0] + b.rect[2]) / 2, -1.7, (b.rect[1] + b.rect[3]) / 2, Math.PI / 2);
@@ -191,6 +196,30 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
   // Walls and corridors get dressed so no stretch of brick is bare: lanterns
   // and timber sets in the mine, jaguar reliefs, hanging roots and doorway
   // pillars deeper down. Nothing here collides; it all hugs the walls.
+  // The pit's edge: a low stone lip and a pale band you cannot miss in the dark,
+  // and sheer walls so the drop reads as a drop. Three draws per pit.
+  function pitEdge(pit, root, gaps, library) {
+    const [a, b, c, d] = pit.rect, [ia, ib, ic, id] = pit.island, lip = [], band = [], side = [];
+    const piece = (list, x0, x1, z0, z1, y, h) => { const g = new THREE.BoxGeometry(x1 - x0, h, z1 - z0); g.translate((x0 + x1) / 2, y, (z0 + z1) / 2); list.push(g); };
+    const curb = (x0, x1, z0, z1, along) => {
+      // Split around the bridge's foot.
+      let spans = [along === 'x' ? [x0, x1] : [z0, z1]];
+      for (const q of gaps) if (along === 'x' ? q[1] < z1 + .4 && q[3] > z0 - .4 : q[0] < x1 + .4 && q[2] > x0 - .4) { const g0 = along === 'x' ? q[0] : q[1], g1 = along === 'x' ? q[2] : q[3]; spans = spans.flatMap(([u, v]) => [[u, Math.min(v, g0)], [Math.max(u, g1), v]]).filter(([u, v]) => v - u > .2); }
+      for (const [u, v] of spans) {
+        const [xa, xb, za, zb] = along === 'x' ? [u, v, z0, z1] : [x0, x1, u, v];
+        piece(lip, xa, xb, za, zb, .05, .1);
+        if (along === 'x') piece(band, xa, xb, (za + zb) / 2 - .05, (za + zb) / 2 + .05, .106, .012); else piece(band, (xa + xb) / 2 - .05, (xa + xb) / 2 + .05, za, zb, .106, .012);
+      }
+    };
+    curb(a - .28, c + .28, b - .28, b + .02, 'x'); curb(a - .28, c + .28, d - .02, d + .28, 'x'); curb(a - .28, a + .02, b, d, 'z'); curb(c - .02, c + .28, b, d, 'z');
+    curb(ia - .2, ic + .2, ib - .2, ib + .02, 'x'); curb(ia - .2, ic + .2, id - .02, id + .2, 'x'); curb(ia - .2, ia + .02, ib, id, 'z'); curb(ic - .02, ic + .2, ib, id, 'z');
+    piece(side, a - .02, c + .02, b - .06, b, -3.6, 7); piece(side, a - .02, c + .02, d, d + .06, -3.6, 7); piece(side, a - .06, a, b, d, -3.6, 7); piece(side, c, c + .06, b, d, -3.6, 7);
+    const merged = list => { const g = mergeGeometries(list, false); list.forEach(q => q.dispose()); return g; };
+    const edge = new THREE.Mesh(merged(lip), mat(library ? 0x4a4c52 : 0x6a5c48, { flatShading: true })); edge.receiveShadow = true;
+    const walls = new THREE.Mesh(merged(side), mat(0x0d0a10));
+    const stripe = new THREE.Mesh(merged(band), mat(library ? 0xc9ccc4 : 0xe0b860, { emissive: library ? 0x5a5c58 : 0x7a4f12, emissiveIntensity: 1 }));
+    root.add(edge, walls, stripe);
+  }
   function dress(f, statics, root) {
     if (run.theme === 'biblioteca') return;
     const openings = [...run.corridors, ...run.stubs].filter(c => c.floor === f).map(c => c.rect);
@@ -300,6 +329,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
         }
         for (const q of run.seals.filter(q => q.room === room.id)) if (w.along === 'x') cut(q.x - 3.4, q.x + 3.4);
         for (const p of run.plates.filter(p => p.room === room.id)) if (w.along === 'z') cut(p.z - 1.2, p.z + 1.2);
+        for (const n of run.nooks.filter(n => n.room === room.id)) { const near = w.along === 'x' ? Math.abs(n.z - w.fixed) < 1.6 : Math.abs(n.x - w.fixed) < 1.6; if (near) { if (w.along === 'x') cut(n.rect[0] - .3, n.rect[2] + .3); else cut(n.rect[1] - .3, n.rect[3] + .3); } }
         for (const pad of run.cargo.filter(c => c.floor === f && inRect(c.x, c.z, room.rect))) { if (w.along === 'x') cut(pad.x - 2.4, pad.x + 2.4); else cut(pad.z - 2.4, pad.z + 2.4); }
         for (const sp of run.spots.filter(sp => sp.room === room.id && (sp.wall || sp.kind === 'lantern'))) {
           const near = w.along === 'x' ? Math.abs(sp.z - w.fixed) < 1.6 : Math.abs(sp.x - w.fixed) < 1.6, half = (sp.len || 1) / 2 + .3;
@@ -438,7 +468,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       let shown = items.get(item.id);
       if (!shown) {
         const model = itemModel(item.kind), aura = new THREE.Sprite(haloMaterial(glowColor(item.kind)));
-        const size = ITEMS[item.kind].size; aura.scale.setScalar(size === 'big' ? 3.2 : 1.1); aura.position.y = size === 'big' ? 1 : .35;
+        const size = ITEMS[item.kind].size; aura.scale.setScalar(ITEMS[item.kind].halo || (size === 'big' ? 3.2 : 1.1)); aura.position.y = size === 'big' ? ITEMS[item.kind].halo ? .35 : 1 : .35;
         const root = new THREE.Group(); root.add(model, aura); itemRoot.add(root);
         shown = { root, model, aura, kind: item.kind, spin: Math.random() * 6 }; items.set(item.id, shown);
         root.position.set(item.x, item.y || 0, item.z);

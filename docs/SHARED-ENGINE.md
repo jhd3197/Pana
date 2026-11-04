@@ -829,6 +829,10 @@ Used by: Pepazo (team rounds, Bandera and Dominación too).
   (Cocina, Escondidas), `bolas-world` (Bululú, Criollas), the island set
   (Bululú), the coastal set (Carreritas, Parapente), `colonial-street`
   (Trifulca).
+- **Reliquia's boss**: `props/reliquia-boss` has `silbon` (posed by
+  `userData.animate`) and `hideNook`; `fauna/cave-creatures` has `caveBat` (replaces
+  the guácharo) and `props/mine` has `mineCart({ hollow: true })`, an open cart to
+  fill with real objects. Used by: Reliquia.
 - **Dusty interiors**: `props/reliquia-library` builds a room's bookcases
   in a few instanced meshes per call (`bookcases`, with variants: plain,
   arched, between stone pillars, with a ladder, collapsed, low), every small

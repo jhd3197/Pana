@@ -259,8 +259,8 @@ export default [
     tags: ["animal","fauna","felino","reliquia","jefe","animado"],
     pack: "big-cats"
   },
-  { id: 'guacharo', name: 'Guácharo', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'guacharo', usedBy: ['Reliquia'], previewOptions: null, pack: 'wildlife',
-    description: 'El ave de las cuevas venezolanas: pico ganchudo, ojos encendidos y alas moteadas que aletean; vuela en bandadas.', tags: ['animal', 'fauna', 'ave', 'cueva', 'animado'] },
+  { id: 'cave-bat', name: 'Murciélago', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'caveBat', usedBy: ['Reliquia'], previewOptions: null, pack: 'wildlife',
+    description: 'Murciélago de cueva: pelaje oscuro, orejas grandes y alas de cuero que aletean a tirones; vuela en bandadas y duerme colgado del techo.', tags: ['animal', 'fauna', 'murciélago', 'cueva', 'animado'] },
   { id: 'cave-spider', name: 'Araña de la cueva', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'caveSpider', usedBy: ['Reliquia'], previewOptions: null, pack: 'wildlife',
     description: 'Araña gorda naranja y negra con ocho patas articuladas que corren; cae del techo.', tags: ['animal', 'fauna', 'araña', 'cueva', 'animado'] },
   { id: 'cuaima', name: 'Cuaima', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'cuaima', usedBy: ['Reliquia'], previewOptions: null, pack: 'wildlife',

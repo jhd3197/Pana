@@ -83,7 +83,7 @@ function lobby() {
 }
 
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.
-const SHOUTS = { seal: [loc('¡Se abrió la bajada!'), 'teal'], boss: [loc('¡Despertó algo grande!'), 'coral'], guardian: [loc('¡Guardián vencido!'), 'yellow'], jaguar: [loc('¡Jaguar vencido!'), 'yellow'],
+const SHOUTS = { seal: [loc('¡Se abrió la bajada!'), 'teal'], boss: [loc('¡Despertó algo grande!'), 'coral'], guardian: [loc('¡Guardián vencido!'), 'yellow'], 'silbon-down': [loc('¡Se fue al abismo!'), 'yellow'], jaguar: [loc('¡Jaguar vencido!'), 'yellow'],
   curse: [loc('¡Maldición!'), 'coral'], collapse: [loc('¡Derrumbe!'), 'coral'], stalker: [loc('¡Los están cazando!'), 'coral'], down: [loc('¡Pana caído!'), 'coral'], reveal: [loc('¡Sala escondida!'), 'teal'] };
 const QUIET = new Set(['pick', 'hit', 'swing', 'shot', 'hurt', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch', 'search']);
 function handle(e) {
@@ -126,6 +126,11 @@ function handle(e) {
     case 'delivered': sfx.bank(true); popCounter($('mangos')); if (e.met) shout(loc('¡Cuota lista! Al montacargas'), { tone: 'teal' }); break;
     case 'spider': sfx.awaken(); view.shake(.2); break;
     case 'scatter': if (near) sfx.flap(); break;
+    case 'screech': if (p) ambience.at('screech', p, view.heading, e.x, e.z, 26); break;
+    case 'silbon-falling': { const b = state.enemies.find(q => q.id === e.enemy); if (p && b) ambience.at('plummet', p, view.heading, b.x, b.z, 40); view.shake(.3); break; }
+    case 'silbon-down': sfx.seal(); view.shake(.6); break;
+    case 'flush': sfx.bonk(); if (mine) view.shake(.7); break;
+    case 'cart-spill': case 'cart-bounce': sfx.tip(); break;
     case 'cart-load': case 'cart-catch': case 'cart-big': sfx.coin(); if (e.kind !== 'cart-load') sfx.bank(false); break;
     case 'cart-grab': sfx.grab(); break;
     case 'lift': sfx.lift(); if (e.players?.includes(room.id)) view.shake(.25); break;

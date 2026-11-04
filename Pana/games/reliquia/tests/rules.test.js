@@ -23,6 +23,8 @@ function ride(g, id) { aimButton(g, id); step(g, 1.6, new Map([[id, { hold: true
 // Look at the cargo lift's yellow button from a step away.
 function aimCargo(g, id) { const pad = run(g).cargo.find(c => c.floor === 1), at = { x: pad.bx, z: pad.bz }, p = g.players.find(p => p.id === id); place(g, id, at.x + Math.sign(at.x - pad.x) * 1.2, at.z); p.h = facing(p, at); p.pitch = Math.atan2(1.1 - 1.45, 1.2); return pad; }
 // A deck loot item of this size on floor 1, placed where a pana can stand next to it.
+// Stand behind the cart and look down into its open hopper.
+function aimCart(g, id, cart) { place(g, id, cart.x, cart.z + 1.6); const p = g.players.find(p => p.id === id); p.h = facing(p, cart); p.pitch = -Math.atan2(.43, 1.6); return p; }
 function lootOn(g, size, floor = 1) { return run(g).loot.find(l => l.floor === floor && ITEMS[l.kind].size === size && g.layout.walkable(l.x, l.z + 1.2, g)); }
 function stand(g, id, item) { place(g, id, item.x, item.z + 1.2); const p = g.players.find(p => p.id === id); p.h = facing(p, item); return p; }
 
@@ -98,7 +100,7 @@ test('big treasures need their panas: alone they crawl, together they reach the 
 
 test('letting go of a moving treasure tips it over and chips its worth', () => {
   const g = setup(1), [a] = g.players, drum = g.spawnItem('drum', 0, 12, { y: 0 });
-  place(g, 1, drum.x, drum.z + 1.4); a.h = facing(a, drum); g.action(1, 'interact');
+  place(g, 1, drum.x, drum.z + 1.4); a.h = facing(a, drum); a.pitch = -.6; g.action(1, 'interact');
   step(g, .5, new Map([[1, { x: 1, z: 0 }]]));
   drum.vx = 2; g.release(a);
   assert.ok(drum.worth < 1); assert.ok(a.stats.dropped > 0); assert.ok(g.events.some(e => e.kind === 'tip'));
@@ -265,6 +267,9 @@ test('the jaguar crouches before it pounces, and a farol dazes it once in a whil
   const vault = run(g).rooms.find(r => r.kind === 'boveda'), [a] = g.players;
   place(g, 1, vault.x, vault.z + 6); step(g, .1);
   const cat = g.enemies.find(e => e.kind === 'jaguar'); assert.ok(cat); cat.awake = true; cat.born = -9;
+  // Somewhere in the room with a clear pounce at the cat (furniture is dealt).
+  const open = [-6, -3, 0, 3, 6].flatMap(dx => [4, 2, 0, -2, 6].map(dz => ({ x: vault.x + dx, z: vault.z + dz }))).find(q => g.layout.walkable(q.x, q.z, g) && g.layout.lineClear(cat, q, g, .5) && distance(cat, q) > 3);
+  place(g, 1, open.x, open.z);
   a.h = facing(a, cat);
   let crouched = false;
   for (let i = 0; i < 120 && !g.events.some(e => e.kind === 'pounce'); i++) { g.update(.05); crouched ||= cat.mode === 'crouch'; }
@@ -276,13 +281,13 @@ test('the jaguar crouches before it pounces, and a farol dazes it once in a whil
 
 test('the carrito takes a handful and a big treasure; the cargo lift banks them', () => {
   const g = setup(1), [a] = g.players, cart = g.carts[0];
-  a.hands[0] = { id: 70, kind: 'coins', pile: ['coins', 'emerald'] }; place(g, 1, cart.x, cart.z + 1.6); a.h = facing(a, cart);
+  a.hands[0] = { id: 70, kind: 'coins', pile: ['coins', 'emerald'] }; aimCart(g, 1, cart);
   assert.equal(interaction(g, a).kind, 'cart-load'); g.action(1, 'interact'); assert.equal(cart.contents.length, 2); assert.equal(a.hands[0], null);
   const disk = g.spawnItem('sunDisk', cart.x - 3.2, cart.z, { y: 0 });
   place(g, 1, disk.x - 1.6, disk.z); a.h = facing(a, disk); a.interactCooldown = 0; g.action(1, 'interact');
   for (let i = 0; i < 80 && !cart.big; i++) g.update(.05, new Map([[1, { x: 1, z: 0 }]]));
   assert.equal(cart.big?.kind, 'sunDisk'); assert.equal(a.grip, null);
-  place(g, 1, cart.x, cart.z + 1.6); a.h = facing(a, cart); a.interactCooldown = 0;
+  aimCart(g, 1, cart); a.interactCooldown = 0;
   assert.equal(interaction(g, a).kind, 'cart-push'); g.action(1, 'interact'); assert.equal(a.push, cart.id);
   const pad = run(g).cargo.find(c => c.floor === 1);
   for (let i = 0; i < 300 && Math.hypot(cart.x - pad.x, cart.z - pad.z) > .8; i++) { const d = Math.hypot(pad.x - cart.x, pad.z - cart.z) || 1; g.update(.05, new Map([[1, { x: (pad.x - cart.x) / d, z: (pad.z - cart.z) / d }]])); }
@@ -291,7 +296,7 @@ test('the carrito takes a handful and a big treasure; the cargo lift banks them'
   assert.equal(g.haul, ITEMS.coins.value + ITEMS.emerald.value + ITEMS.sunDisk.value); assert.equal(g.delivered, g.haul);
 });
 
-test('guácharos scatter from a beam, spiders drop and slow, cuaimas poison but stay home', () => {
+test('bats scatter from a beam, spiders drop and slow, cuaimas poison but stay home', () => {
   const g = setup(1), [a] = g.players, at = firstFloor(g);
   place(g, 1, at.x, at.z - 2, Math.PI); a.invulnerable = 0; g.woke[g.layout.regionAt(a).id] = 1;
   const bat = spawnEnemy(g, 'bat', at.x, at.z - 6); bat.born = -9; a.hands[0] = { id: 1, kind: 'farol' }; a.h = facing(a, bat);

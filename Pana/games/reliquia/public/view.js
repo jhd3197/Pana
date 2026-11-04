@@ -11,7 +11,8 @@ import { blindLibrarian } from '/engine/models/props/blind-librarian.js';
 import { libraryStatue } from '/engine/models/props/library-statue.js';
 import { mineCart } from '/engine/models/props/mine.js';
 import { jaguar } from '/engine/models/fauna/jaguar.js';
-import { guacharo, caveSpider, cuaima } from '/engine/models/fauna/cave-creatures.js';
+import { caveBat, caveSpider, cuaima } from '/engine/models/fauna/cave-creatures.js';
+import { silbon } from '/engine/models/props/reliquia-boss.js';
 import { splatTexture } from '/engine/models/props/paintball.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
@@ -23,6 +24,8 @@ import { floorOf, HEIGHT } from './deck.js';
 import { ITEMS } from './items.js';
 import { formatNumber } from '/engine/i18n.js';
 import { holds, alive, cartValue, liftView } from './rules.js';
+import { HOPPER, packCart } from './carga.js';
+import { SILBON } from './silbon.js';
 
 export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
 const EYE = 1.45, POOL = 5, FAR = 220;
@@ -127,7 +130,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   }
   function removeAvatar(a, id) { a.bubble && disposeSprite(a.bubble); disposeSprite(a.tag); a.character.dispose(); a.root.removeFromParent(); avatars.delete(id); }
   function enemyModel(e) {
-    if (e.kind === 'bat') { const b = guacharo({ seed: e.id }); b.scale.setScalar(1.3); return b; }
+    if (e.kind === 'bat') { const b = caveBat({ seed: e.id }); b.scale.setScalar(1.3); return b; }
+    if (e.kind === 'silbon') return silbon({ seed: e.id });
     if (e.kind === 'spider') { const sp = caveSpider({ seed: e.id }); sp.scale.setScalar(1.15); return sp; }
     if (e.kind === 'snake') { const sn = cuaima({ seed: e.id }); sn.scale.setScalar(1.6); return sn; }
     if (e.kind === 'lector') return blindLibrarian({ seed: e.id });
@@ -189,7 +193,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         const root = new THREE.Group(), model = enemyModel(e), ring = new THREE.Mesh(ringGeometry, dangerMaterial);
         ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; root.add(model); scene.add(root, ring);
         root.position.set(e.x, 0, e.z); root.rotation.y = e.h || 0;
-        a = { root, model, ring, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), stone: e.kind === 'estatua', pose: { frozen: false, look: 0, lit: 'dark', scares, mode: 'prowl', pose: 0 }, speed: 0, x: e.x, z: e.z, steps: e.steps || 0 }; enemies.set(e.id, a);
+        a = { root, model, ring, boss: e.kind === 'silbon', fall: 0, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), stone: e.kind === 'estatua', pose: { frozen: false, look: 0, lit: 'dark', scares, mode: 'prowl', pose: 0 }, speed: 0, x: e.x, z: e.z, steps: e.steps || 0 }; enemies.set(e.id, a);
         // A statue was there all along: no puff when it first appears.
         if (!a.stone) puffs.spawn({ x: e.x, y: .6, z: e.z }, { color: e.kind === 'phantom' ? 0x9fd8ff : lookName === 'biblioteca' ? 0x8e949c : 0xd8c49a, count: 6, spread: .8, size: .7, rise: 1.2, life: .7 });
       }
@@ -214,9 +218,18 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       const target = tmp.set(e.x, 0, e.z);
       a.root.position.lerp(target, Math.min(1, dt * (e.mode === 'leap' ? 30 : 12)));
       const turn = Math.atan2(Math.sin(e.h - a.root.rotation.y), Math.cos(e.h - a.root.rotation.y)); a.root.rotation.y += turn * Math.min(1, dt * 10);
-      if (a.critter) {
-        a.root.position.y = e.kind === 'bat' ? (e.y ?? 2) : e.kind === 'spider' && e.hanging ? HEIGHT - .4 : 0;
-        a.model.rotation.z = e.kind === 'spider' && e.hanging ? Math.PI : 0;
+      if (a.boss) {
+        // Drawn from the host's own numbers: its pose, and the drop into the pit.
+        const step = dt > 0 ? Math.hypot(e.x - a.x, e.z - a.z) / dt : 0; a.x = e.x; a.z = e.z;
+        a.speed += (Math.min(1, step / 2) - a.speed) * (1 - Math.exp(-dt * 6));
+        a.fall = e.mode === 'fall' ? Math.min(1, (e.modeT || 0) / SILBON.fall) : 0;
+        a.root.position.y = -a.fall * a.fall * 9;
+        a.model.userData.animate(t, { walk: a.speed, windup: e.windup > 0 ? 1 - e.windup / .8 : 0, peek: e.peek ? 1 : 0, sniff: e.mode === 'sniff' ? 1 : 0, stun: e.stun > 0 ? 1 : 0, fall: a.fall });
+        a.ring.visible = e.windup > 0; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(2.2);
+      } else if (a.critter) {
+        a.root.position.y = e.kind === 'bat' ? (e.hanging ? HEIGHT - .35 : e.y ?? 2) : e.kind === 'spider' && e.hanging ? HEIGHT - .4 : 0;
+        if (e.kind === 'bat') a.model.userData.hang = !!e.hanging;
+        if (e.kind === 'spider') a.model.rotation.z = e.hanging ? Math.PI : 0;
         if (e.kind === 'spider') a.model.userData.pace = e.hanging || e.stun > 0 ? .1 : 1;
         a.model.userData.tick(t + e.id, e.kind === 'snake' ? (e.windup > 0 ? 1 - e.windup / .35 : 0) : undefined);
         a.ring.visible = e.kind === 'snake' && e.windup > 0; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(2.5);
@@ -250,20 +263,30 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     // Carritos: their load sits in the hopper and the balance floats above.
     for (const c of state.carts || []) {
       let a = carts.get(c.id);
-      if (!a) { const root = new THREE.Group(), model = mineCart({ seed: 41, load: 'empty' }), bed = new THREE.Group(); model.scale.setScalar(.7); bed.position.y = .88; bed.scale.setScalar(.7); root.add(model, bed); scene.add(root); root.position.set(c.x, 0, c.z); a = { root, bed, key: null, tag: null }; carts.set(c.id, a); }
+      if (!a) { const root = new THREE.Group(), model = mineCart({ seed: 41, load: 'empty', hollow: true }), bed = new THREE.Group(); bed.position.y = HOPPER.floor; root.add(model, bed); scene.add(root); root.position.set(c.x, 0, c.z); a = { root, bed, key: null, tag: null }; carts.set(c.id, a); }
       a.root.visible = floorOf(c.x) === vf;
       // A carrito on the montacargas rides it down the shaft with everyone.
       // The cargo lift hauls it up through the ceiling and lowers it back empty.
       const cargo = state.cargo?.cart === c.id ? state.cargo : null, up = cargo ? Math.min(1, cargo.t / 3) : 0;
       const target = tmp.set(c.x, cargo ? (cargo.phase === 'up' ? up : 1 - up) * 7 : 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       a.root.rotation.y = c.h;
+      // A load on a rough ride rocks; what is inside is only drawn up close.
+      const rock = (c.wobble || 0) * .07; a.root.rotation.z = Math.sin(t * 17) * rock; a.root.rotation.x = Math.cos(t * 13) * rock * .6;
+      a.bed.visible = !me || Math.hypot(c.x - me.x, c.z - me.z) < 18;
       // Your own cart's balance is on the HUD, not floating in your face.
       if (a.tag) a.tag.visible = !c.pushers.includes(me?.id) && (!me || Math.hypot(c.x - me.x, c.z - me.z) > 2.2);
       const key = `${c.contents.map(x => x.kind).join()}|${c.big?.kind || ''}`;
       if (key !== a.key) {
         a.key = key; a.bed.clear();
-        c.contents.slice(-9).forEach((x, i) => { const m = itemModel(x.kind); m.scale.multiplyScalar(ITEMS[x.kind].size === 'small' ? 1 : .45); m.position.set((i % 3 - 1) * .3, Math.floor(i / 3) * .12, (Math.floor(i / 3) % 3 - 1) * .4); m.rotation.y = i; a.bed.add(m); });
-        if (c.big) { const m = itemModel(c.big.kind); m.scale.multiplyScalar(.42); m.position.y = .2; a.bed.add(m); }
+        // Everything at its true size, where carga.js packed it; flat pieces lie on their backs.
+        const { slots, top } = packCart(c.contents);
+        c.contents.forEach((x, i) => {
+          const m = itemModel(x.kind), s = slots[i]; m.position.set(s.x, s.y, s.z);
+          if (s.lay) { m.rotation.x = -Math.PI / 2; m.position.y += s.h / 2; } else m.rotation.y = i * 2.4;
+          a.bed.add(m);
+        });
+        // A big treasure sits on the load, edge-on so whoever pushes still sees past it.
+        if (c.big) { const m = itemModel(c.big.kind); m.position.y = top * .5; m.rotation.y = Math.PI / 2; a.bed.add(m); }
         a.tag && disposeSprite(a.tag); a.tag = null;
         const value = cartValue(c);
         if (value) { a.tag = label(`Bs. ${formatNumber(Math.round(value))}`, '#ffd36a'); a.tag.position.y = 1.7; a.tag.scale.set(2, .38, 1); a.root.add(a.tag); }

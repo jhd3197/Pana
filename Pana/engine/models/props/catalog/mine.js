@@ -7,6 +7,7 @@ const mine = (id, name, factory, description, tags, previewOptions = null, sourc
 export default [
   mine('gold-miner', 'Minero', 'miner', 'Minero con casco y lámpara; poses de caminar, picar, sentarse, empujar y descansar.', ['personaje', 'animado'], { seed: 3, pose: 'dig' }, '/engine/models/props/mine-miner.js'),
   mine('mine-cart', 'Vagoneta minera', 'mineCart', 'Vagoneta de hierro sobre ruedas, cargada de roca y pepitas de oro.', ['vagoneta', 'oro', 'rieles'], { seed: 41, load: 'gold' }),
+  mine('mine-cart-open', 'Carrito abierto', 'mineCart', 'Carrito de hierro con borde de latón, paredes y fondo de verdad: lo que lleva se ve adentro.', ['vagoneta', 'carrito', 'abierto'], { seed: 41, load: 'empty', hollow: true }),
   mine('mine-track', 'Vía minera con caballetes', 'mineTrack', 'Rieles sobre durmientes que levantan caballetes arriostrados donde el terreno se hunde.', ['rieles', 'puente', 'caballete'], { groundHeight: 0 }),
   mine('gold-vein', 'Veta de oro', 'goldVein', 'Cristales de oro brotando de una pared de roca, con destellos.', ['oro', 'cristales', 'roca'], { seed: 21 }),
   mine('ore-pile', 'Montón de mineral', 'orePile', 'Montículo de roca con pepitas de oro mezcladas.', ['oro', 'roca', 'mineral'], { seed: 22 }),

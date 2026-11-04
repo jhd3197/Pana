@@ -80,14 +80,37 @@ botiquín heals 50 or instantly revives a pana in front, miche drinks.
 ## El carrito
 
 Carritos (`state.carts`: at the mine mouth, in the camp, by the montacargas
-on every floor, and in many vein rooms) hold 14 items and one big treasure.
-E with a hand treasure or a handful loads it, with empty hands takes the
-handle (two panas can push from 1.9 m behind, 4.4 m/s less up to 40 % for
-the load). The model is drawn at 70 % so it stays below eye level; its
-balance floats above it except for the pana pushing it, whose hand slot
-shows it instead. A big treasure walked up to an empty cart
-climbs in; a thrown item that drops into the hopper stays (¡encestó!). A
-cart inside the truck zone banks everything. Its balance floats above it.
+on every floor, and in many vein rooms) are an open hopper with real walls and
+a floor (`mineCart({ hollow: true })`, interior 1 × 1.5 m, floor .6, rim 1.02,
+low enough to look into from eye height). E with a hand treasure or a handful
+loads it, with empty hands takes the handle (two panas can push from 1.9 m
+behind, 4.4 m/s less up to 40 % for the load). Its balance floats above it,
+except for the pana pushing it, whose hand slot shows it instead. A cart inside
+the truck zone banks everything.
+
+**Capacity is what fits** (`carga.js`, pure). `BULK` is each piece's true
+footprint from its model's bounds; `packCart` drops each piece on the lowest
+place of a 0.25 m height map of the hopper, far end first, and the view draws
+them there at scale 1 (`lay` pieces on their backs; a piece never shrinks).
+`fitsIn` is whether the next one stays under the heap line, .75 m above the
+floor: 18 coin piles, a dozen cups or emeralds, six masks. `state` keeps only
+`contents`, so every client and a new host pack it the same. A big treasure sits
+on the load at true size, edge-on so the pusher sees past it; it fills the cart
+and shoves out whatever stood above the rim. Contents are drawn within 18 m.
+
+**Loading has a little skill to it, and no speed changes anywhere.** The
+crosshair has to land in the opening (`aimInto`: `in`, or `rim` up to .35 m past
+the edge); off it the prompt only says to aim inside. Handfuls are a tap, hand
+treasures a held E (`placeTime`, .25 s + .5 × heft; `p.placing`). `bounceChance`
+is the one formula for a piece bouncing out, and a careful drop into a calm cart
+with room is always 0: the rim, a load past two thirds, a rolling cart, a hard
+throw and the piece's heft (`HEFT`) add to it. A bounced piece is ordinary loot
+on the floor (`spill`; `spilled` stops it falling straight back in). G throws
+heavier pieces shorter (`throwPower`); a throw only lands from above the opening.
+A big treasure takes `climbTime` (.5 + .4 × need s) beside the cart. While
+pushed, `stepWobble` turns hard starts, stops, turns and bumps into `cart.wobble`,
+scaled by how heaped the load is; at 1 the top piece falls off and the cart rocks
+(view). Under about half full it never spills.
 
 ## La codicia and the Director
 
@@ -207,12 +230,73 @@ mine deals neither.
 - Debug: `reliquia.spawn('lector' | 'estatua', ahead, side)`; suite
   `tests/enemies.browser.mjs`, unit tests `lector.test.js`, `estatua.test.js`.
 
-Guácharos (`bat`) fly at 2 m in flocks (waves double their count), orbit,
-dive to peck, and scatter 1.6 s from a beam. Spiders hang on the ceiling
+### El Silbón (`silbon.js`)
+
+One per jornada, and nothing kills it: `wound()` refuses it and `stagger()` gives
+a .9 s stun at most, then 5 s of shrugging blows off (no stun lock). It sleeps on
+the rim of the pit room, which every jornada now deals (`deck.js`), and gets up
+when a pana enters. Model: `props/reliquia-boss.js`, about 3.2 m, a wide hat, arms
+past the knees, a sack of bones; eight draws, no lights. HUD: the shared boss
+panel, its name and a bar that is its attention (`e.alert`), not health.
+
+- **You lose it.** It chases what it can see (`layout.sightClear`, 20 m) at 3.4 m/s
+  × difficulty, below a walking pana. Out of sight for .8 s it goes to the last
+  spot it saw you (`search`, 14 s in all), tries up to three nooks within 13 m and
+  then wanders off (`wander`) from room to room.
+- **You lure it.** It hears the noise board like the Lector does. A bat's
+  `screech` (`NOISE.screech`, 24 m) is the bait: a bat woken from its roost or
+  caught in a beam, and it comes running (`hunt`), even while you stay hidden.
+- **You drop it.** Hunting, it takes the straight line whenever one exists
+  (`layout.crossable`), and a pit is floor to it until its centre is over one
+  (`layout.moveAcross`), so it never looks down: get it to run at you (or at a
+  screech) across the pit. `mode: 'fall'` is 1.4 s (the view drops it), then
+  `defeated()` opens the floor's seal, whichever kind, and leaves a mask, a cup and
+  coins on the rim. Paths (search, wander) go around the pit, so it never falls by
+  accident. The two wheels are unchanged and still open the seal on their own.
+- **The pit's edge** (`pitEdge` in `scene.js`): a stone lip with a pale band around
+  the pit and the island, broken at the bridge, and sheer walls: three draws.
+
+### Hiding nooks (`run.nooks`, `dealLair` in `deck.js`)
+
+Two stone slabs against a wall leave a 1.25 m gap, 1.5 m deep, with a chalk hand on
+the lintel and no text (`hideNook`). The boss's body (`SILBON_BODY`, .72 m radius)
+does not fit; a pana's (.42) slips in and out. Edges sit on the .25 m collision
+grid (hence the odd eighth in `dig`). Three in the pit room, sometimes one or two
+in others, never in the entrance, the vault or a hidden room; dealt last from their
+own stream with the roosting bats, the same map on every difficulty. Slabs live in
+`nook.slabs`, not `run.solids`, so library furniture code never sees them. Inside,
+`p.hidden` is the nook's id: to the boss that pana is not there, its blows pass over
+them, and the screen closes in (`body.in-nook`, no text). Other enemies still come
+in: only the boss is too wide.
+
+**How hard it looks is one table, `PEEK` in `silbon.js`:**
+
+| | looks in | warning | finds you | then |
+|---|---|---|---|---|
+| Tranquila (`easy`) | never | none | never | sniffs around outside |
+| Normal | 50 % of nooks | 1 s | within .6 m of the opening | 1.1 s stun, pushed out |
+| Momia brava (`hard`) | 90 % | .7 s | anywhere inside | 1.6 s stun, 14 damage, pushed out |
+
+**The warning (`e.peek`)** is plain JSON: `{ spot, t, of, seq }`. Nothing can happen
+to anyone until `t` runs out (`stepPeek`), and while it runs the boss is looking at
+the nook, so slipping out then is safe. `ambience.js` plays the `peek` cue (stone
+scrape, two sniffs) once per `seq` on every client (`peekCueDue`), panned from where
+the boss stands and never below a quarter of full level. A pana pulled out has
+`p.exposed` for 5 s: no nook hides them. All of it restores on a new host.
+
+### Bats and the rest
+
+Bats (`bat`, `caveBat` in `cave-creatures.js`: dark fur, big ears, two-panel leather
+wings, six draws) roost on ceilings (`hanging`, `dealLair`: a colony in the pit room,
+sometimes a few elsewhere). A pana within 3.8 m or a noise that reaches them (a
+screech only within 7 m, so one colony does not wake the floor) drops them with a
+`screech`. They fly at 2 m in jittery flocks (two unrelated beats on the heading and
+height; waves double their count), orbit, dive to bite, and scatter 1.6 s from a beam,
+screeching. Spiders hang on the ceiling
 (`hanging`) until a pana is within 4.5 m; their bite slows (×0.6, 2.5 s).
 Cuaimas (`snake`) are dealt beside a room's loot; they strike within 2.4 m,
 poison (2 HP/s for 5 s) and slide home when the pana leaves their reach.
-Director waves on floor 1 are 30 % guácharos; deeper, spiders join.
+Director waves on floor 1 are 30 % bats; deeper, spiders join.
 Models: `engine/models/fauna/cave-creatures.js`.
 
 ## Artifacts (all in hand)
@@ -281,6 +365,16 @@ Static decor is baked per floor; braziers animate; crystal clusters are
 instanced with their own shader and must not go through `bake`. A revealed
 hidden room rebuilds that floor's shell once. Every item kind has one
 prototype that the map clones. Floors other than yours are hidden.
+
+## El tambor ceremonial
+
+It was a metre tall and 1.5 m across with its sticks, in saturated red and teal with
+glowing gold, under the 3.2 m halo of a big treasure: from eye height it blocked the
+view and outshone everything in the room, and it is a third of jornada one's big
+treasures. It has no sound or mechanic of its own, so looks were the whole problem.
+Now knee-high (.68 m, radius .33): dark wood, worn hide, a thin unlit brass band, a
+1.3 m halo (`halo` in `items.js`), and a .5 m collision radius. It still takes two
+panas and pays Bs. 420, and carrying is exactly as fast as before.
 
 ## La biblioteca sepultada (the library theme)
 
@@ -429,11 +523,11 @@ page with a split into a dry path and a cave (generated-impulse convolver
 plus a 0.34 s feedback echo) whose wet level rises underground, so every
 sound in Reliquia echoes below. A brown-noise rumble and a detuned drone
 thicken with la codicia; drips, pebbles, creaks, moans and whispers come
-every 2–7 s; the camp has birds and cicadas instead. Footsteps follow every
+every 2–7 s; the camp has a dry chirr and cicadas instead, no birds. Footsteps follow every
 moving pana (0.42 s walking, 0.3 s running), others' panned and faded by
 distance. Creatures each have their own clock: mummy groans, spider
-skitter, cuaima hiss, guácharo screeches, jaguar growls and a roar on the
-pounce. From tier 3 your heartbeat joins in.
+skitter, cuaima hiss, bat squeaks and wing flutter (a sleeping one barely chirps),
+the Silbón's falling whistle, jaguar growls and a roar on the pounce. From tier 3 your heartbeat joins in.
 
 Recorded clips (`public/audio/*.mp3`, CC0, credited in `audio/SOURCE.md`)
 play through `samples.js` on `engine/sample-bank.js`, after the cave split,
@@ -510,7 +604,7 @@ reach every client.
 ## Verification
 
 ```powershell
-node --test Pana/games/reliquia/tests/rules.test.js Pana/games/reliquia/tests/options.test.js Pana/games/reliquia/tests/library.test.js Pana/games/reliquia/tests/hiding.test.js Pana/engine/tests/hiding-spots.test.js
+node --test Pana/games/reliquia/tests/rules.test.js Pana/games/reliquia/tests/options.test.js Pana/games/reliquia/tests/library.test.js Pana/games/reliquia/tests/hiding.test.js Pana/games/reliquia/tests/silbon.test.js Pana/games/reliquia/tests/carga.test.js Pana/engine/tests/hiding-spots.test.js
 npm run test:browser -- reliquia
 ```
 
@@ -528,6 +622,9 @@ parity, snapshots, the guardian fight and the jaguar's pounce and daze.
 together, shout a vote, ride the montacargas (the guest left behind can
 only call it), revive, migrate the host,
 extract and replay, plus solo pause, the offline fallback and the hub.
+`tests/silbon.browser.mjs` is two panas on a relay: the guest hides, the windup and the
+flush reach them, a new host keeps the boss, and it falls and opens the seal.
+`tests/silbon.test.js` and `carga.test.js` cover the logic, each difficulty included.
 `tests/studio.browser.mjs` opens the new models and the map in Studio.
 With `?debug`, `window.reliquia` exposes `room`, `view`, `state`, `me`,
 `place(id, x, z, h)`, `face(h)`, `step(seconds)` and `interaction`.

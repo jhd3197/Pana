@@ -40,6 +40,7 @@ function T(x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) {
   _q.setFromEuler(_e.set(rx, ry, rz));
   return new THREE.Matrix4().compose(V(x, y, z), _q.clone(), V(sx, sy, sz));
 }
+const T_ = T;
 const C = (P, L) => P.clone().multiply(L);
 
 // Add one unit primitive under `g`, positioned by an arbitrary matrix.
@@ -250,7 +251,36 @@ export function mineWheelbarrow({ seed = 31, load = true } = {}) {
   return done(g, 'mine-wheelbarrow');
 }
 
-export function mineCart({ seed = 41, load = 'gold' } = {}) {
+// `hollow`: an open hopper with real walls and a floor you can see into
+// (interior 1 × 1.5 m, floor at .6, rim at 1.02), brass-rimmed, low enough to
+// look into from eye height; what it holds sits inside at its true size.
+function hollowCart(seed, load) {
+  const g = new THREE.Group(), R = rng(seed), W = 1, L = 1.5, FLOOR = .6, RIM = 1.02, T = .05, H = RIM - FLOOR, MID = FLOOR + H / 2;
+  box(g, 'woodD', I, 0, .36, 0, W + .1, .12, L + .1);
+  box(g, 'iron', I, 0, (FLOOR + .42) / 2, 0, W + T * 2, FLOOR - .42, L + T * 2);
+  box(g, 'woodL', I, 0, FLOOR - .01, 0, W + T, .02, L + T);
+  for (const s of [-1, 1]) {
+    box(g, 'iron', I, s * (W + T) / 2, MID, 0, T, H, L + T * 2);
+    box(g, 'iron', I, 0, MID, s * (L + T) / 2, W, H, T);
+    box(g, 'goldD', I, s * (W + T) / 2, RIM + .02, 0, T + .05, .04, L + T * 2 + .05);
+    box(g, 'goldD', I, 0, RIM + .02, s * (L + T) / 2, W, .04, T + .05);
+    for (const z of [-.5, .5]) box(g, 'ironL', I, s * ((W + T) / 2 + .03), MID, z, .02, H, .07);
+  }
+  for (const z of [-.55, .55]) {
+    box(g, 'iron', I, 0, .24, z, 1.25, .08, .08);
+    for (const x of [-.6, .6]) cyl(g, 'iron', I, x, .24, z, .24, .12, 0, 0, Math.PI / 2);
+  }
+  const glints = [];
+  // The gold vagoneta: a real heap in there, gold over ore, under the rim.
+  if (load !== 'empty') for (let i = 0; i < 16; i++) {
+    const gold = load === 'gold' ? i % 2 === 0 : i % 5 === 0, p = V((R() - .5) * .78, FLOOR + .1 + R() * .26, (R() - .5) * 1.26);
+    add(g, gold ? 'gold' : 'rockL', 'dod', T_(p.x, p.y, p.z, R() * 3, R() * 3, R() * 3, .14 + R() * .1, .1 + R() * .08, .14 + R() * .1));
+    if (gold && i < 8) glints.push(p);
+  }
+  return done(g, 'mine-cart', { glints, bounds: [[-.75, 0, -.9], [.75, 1.15, .9]] });
+}
+export function mineCart({ seed = 41, load = 'gold', hollow = false } = {}) {
+  if (hollow) return hollowCart(seed, load);
   const g = new THREE.Group(), R = rng(seed);
   box(g, 'woodD', I, 0, 0.36, 0, 1.0, 0.12, 1.6);
   const hopper = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.62, 0.78, 4, 1).rotateY(Math.PI / 4).scale(1, 1, 1.3), mat(R() < 0.5 ? 'iron' : 'ironL'));

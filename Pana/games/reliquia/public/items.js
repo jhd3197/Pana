@@ -18,7 +18,7 @@ export const ITEMS = {
   // Big treasures.
   sunDisk: { name: locKey('Disco del sol'), size: 'big', need: 2, value: 600, radius: 1, model: 'sunDisk' },
   emeraldChest: { name: locKey('Cofre de esmeraldas'), size: 'big', need: 2, value: 700, radius: .9, model: 'emeraldChest' },
-  drum: { name: locKey('Tambor ceremonial'), size: 'big', need: 2, value: 420, radius: .8, model: 'ceremonialDrum' },
+  drum: { name: locKey('Tambor ceremonial'), size: 'big', need: 2, value: 420, radius: .5, halo: 1.3, model: 'ceremonialDrum' },
   mirror: { name: locKey('Espejo maldito'), size: 'big', need: 2, value: 520, radius: .9, model: 'cursedMirror' },
   cart: { name: locKey('Vagoneta de oro'), size: 'big', need: 2, value: 560, radius: 1, model: 'mineCart' },
   stoneHead: { name: locKey('Cabeza de piedra'), size: 'big', need: 3, value: 850, radius: 1.1, model: 'olmecHead' },
