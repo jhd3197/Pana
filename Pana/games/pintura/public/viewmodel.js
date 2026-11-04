@@ -1,9 +1,10 @@
-// The marker you hold in first person: idle breathing, the walking bob, a
-// recoil that suits each weapon, the reload (it dips away, wobbles, comes back),
-// the raise when you switch, the lowered, tilted carry while sprinting, and the
-// raise to the eye while aiming. Pure: it only sets position and rotation on the
-// object it is given. The kick itself is the engine's shared recoil.
+// The marker you hold in first person. Breathing, the bob, the sprint carry, the
+// raise and melee swings are the engine's (engine/play/viewmodel.js); this adds a
+// recoil that suits each weapon, the reload (it dips away, wobbles, comes back) and
+// the raise to the eye while aiming. Pure: it only sets position and rotation on
+// the object it is given. The kick itself is the engine's shared recoil.
 import { createRecoil } from '../../../engine/play/recoil.js';
+import { applyHeld, createHeldMotion, ease, swingPose } from '../../../engine/play/viewmodel.js';
 import { MARKERS } from './armory-data.js';
 
 // back/rot: how far the marker jumps; decay: how fast it settles; cam: how far the
@@ -30,64 +31,46 @@ const CLASS_RECOIL = {
   lanzadores: { back: .14, rot: .34, decay: 3.4, cam: 2, shake: .45 },
 };
 export const recoilOf = weapon => RECOIL[weapon] || CLASS_RECOIL[MARKERS.find(m => m.id === weapon)?.class] || RECOIL.pistol;
-const ease = t => t * t * (3 - 2 * t);
 
-// A melee weapon (its model stands on +Y from the grip) in three poses: carried
-// leaning forward, cocked over the right shoulder, and swung through to the left.
-// [rotation x, rotation z, x, y] for each; a swing blends rest → cocked over the
-// windup, snaps to the strike in STRIKE seconds and eases back over the recovery.
-const REST = [-.45, -.35, .24, -.32], COCKED = [.55, -1.05, .3, -.2], THROUGH = [-1.65, .55, -.02, -.36], STRIKE = .09;
-const mix = (a, b, k, out) => { for (let i = 0; i < 4; i++) out[i] = a[i] + (b[i] - a[i]) * k; return out; };
-// The pose `since` seconds into a swing with this windup and recovery, into `out` (no allocation).
-export function swingPose(since, windup, recovery, out = [0, 0, 0, 0]) {
-  if (!(since >= 0)) return mix(REST, REST, 0, out);
-  if (since < windup) return mix(REST, COCKED, ease(since / windup), out);
-  if (since < windup + STRIKE) return mix(COCKED, THROUGH, (since - windup) / STRIKE, out);
-  const back = Math.max(.05, recovery - STRIKE);
-  return mix(THROUGH, REST, ease(Math.min(1, (since - windup - STRIKE) / back)), out);
-}
+// How a marker moves with the body; a melee weapon uses the engine's MELEE_CARRY.
+const MARKER_CARRY = { bobX: .012, bobY: .01, bobSprintX: 1, bobSprintY: 1.4, idleX: .003, idleY: .004, idleRz: .004, sprint: [.05, -.11, .03, -.5, .3, -.35], rock: .02, air: .04, swapY: .3, swapRx: .9 };
 
 export function createViewmodel() {
-  let swap = 0, sprint = 0, flash = 0, lastFired = null, lastWeapon = '', t = 0, lastSwings = null, since = -1;
-  const recoil = createRecoil(), pose = [0, 0, 0, 0];
+  let flash = 0, lastFired = null;
+  const recoil = createRecoil(), motion = createHeldMotion(), pose = [0, 0, 0, 0, 0, 0], carry = {};
   return {
     // o: { held, weapon, fired, reload, reloadTime, sprint, bob, sway, down, air, push, aim,
     //      melee: { swings, windup, recovery } for a melee weapon }
     update(dt, o) {
-      t += dt; const r = recoilOf(o.weapon), held = o.held;
-      if (o.weapon !== lastWeapon) { swap = lastWeapon ? 1 : 0; lastWeapon = o.weapon; recoil.reset(); lastFired = o.fired; lastSwings = o.melee?.swings ?? null; since = -1; }
+      const r = recoilOf(o.weapon), held = o.held;
+      if (motion.equip(o.weapon, o.melee?.swings ?? null)) { recoil.reset(); lastFired = o.fired; }
+      motion.step(dt, { sprint: o.sprint, down: o.down });
       if (o.melee) {
-        // A new swing count starts the swing; it plays on its own clock, smooth between snapshots.
-        if (lastSwings !== null && o.melee.swings > lastSwings) since = 0; else if (since >= 0) since += dt;
-        lastSwings = o.melee.swings; if (since > o.melee.windup + o.melee.recovery + .2) since = -1;
-        swap = Math.max(0, swap - dt * 3.2); sprint += ((o.sprint && !o.down ? 1 : 0) - sprint) * (1 - Math.exp(-dt * 9));
+        const since = motion.swing(dt, o.melee);
         swingPose(since, o.melee.windup, o.melee.recovery, pose);
-        const sway = o.sway || 0, air = o.air || 0;
-        held.position.set(pose[2] + Math.sin(o.bob) * .014 * sway + sprint * .04, pose[3] + Math.abs(Math.cos(o.bob)) * .012 * sway - sprint * .08 - swap * .3 - air * .04 + Math.sin(t * 1.4) * .004, -.42 + (o.push || 0));
-        held.rotation.set(pose[0] - sprint * .35 - swap * .9, 0, pose[1] - sprint * .25);
+        applyHeld(held, pose, motion.carry(carry, { bob: o.bob, sway: o.sway || 0, air: o.air || 0, push: o.push || 0 }));
         return { flash: 0, kick: 0, shot: false, swing: since };
       }
       const shot = lastFired !== null && o.fired > lastFired;
       if (shot) { recoil.fire(r); flash = 1; }
       lastFired = o.fired;
-      const { kick } = recoil.update(dt, { decay: r.decay }); flash = Math.max(0, flash - dt * 18); swap = Math.max(0, swap - dt * 3.2);
-      sprint += ((o.sprint && !o.down ? 1 : 0) - sprint) * (1 - Math.exp(-dt * 9));
+      const { kick } = recoil.update(dt, { decay: r.decay }); flash = Math.max(0, flash - dt * 18);
       const p = o.reload > 0 && o.reloadTime > 0 ? 1 - o.reload / o.reloadTime : -1;
       const dip = p < 0 ? 0 : ease(p < .18 ? p / .18 : p > .82 ? (1 - p) / .18 : 1), wobble = p < 0 ? 0 : Math.sin(p * 36) * dip;
       // Aiming brings the sight line to the middle of the view and steadies the sway.
       // A side-mounted Mira (`sightX`) slides the marker over so its sight line, not the barrel, centres.
       const aim = ease(Math.min(1, Math.max(0, o.aim || 0))), sight = (held.userData.sight ?? .3) * (held.scale?.x || .3), side = (held.userData.sightX || 0) * (held.scale?.x || .3);
-      const calm = (1 - sprint) * (1 - aim * .8), sway = (o.sway || 0) * (1 - aim * .7), air = o.air || 0;
-      const x = .2 * (1 - aim) + side * aim + Math.sin(o.bob) * .012 * sway * (1 + sprint) + Math.sin(t * .8) * .003 * calm + sprint * .05 - dip * .05 + wobble * .006;
-      const y = -.25 + (.25 - sight - .02) * aim + Math.abs(Math.cos(o.bob)) * .01 * sway * (1 + sprint * 1.4) + Math.sin(t * 1.4) * .004 * calm - kick * r.back * .2 - sprint * .11 - dip * .12 - swap * .3 - air * .04;
-      const z = -.34 + aim * .06 + kick * r.back + (o.push || 0) + sprint * .03 + dip * .05;
+      const c = motion.carry(carry, { bob: o.bob, sway: (o.sway || 0) * (1 - aim * .7), air: o.air || 0, push: o.push || 0, calm: (1 - motion.sprint) * (1 - aim * .8) }, MARKER_CARRY);
+      const x = .2 * (1 - aim) + side * aim + c.x - dip * .05 + wobble * .006;
+      const y = -.25 + (.25 - sight - .02) * aim + c.y - kick * r.back * .2 - dip * .12;
+      const z = -.34 + aim * .06 + kick * r.back + c.z + dip * .05;
       held.position.set(x, y, z);
-      held.rotation.set(kick * r.rot * (1 - aim * .5) - sprint * .5 - dip * .55 - swap * .9 + Math.sin(o.bob * 2) * .02 * sprint, Math.PI + sprint * .3 - dip * .15, -sprint * .35 + wobble * .06 + Math.sin(t * .8) * .004 * calm);
+      held.rotation.set(kick * r.rot * (1 - aim * .5) + c.rx - dip * .55, Math.PI + c.ry - dip * .15, c.rz + wobble * .06);
       // La Licuadora's barrels and the revolvers' cylinders turn as they fire.
       if (held.userData.spin && shot) held.userData.spin.rotation.z += o.weapon === 'minigun' ? .9 : Math.PI / 3;
       held.userData.hands?.forEach((hand, i) => { hand.position.z = lastFired % 2 === i ? kick * r.back * 2.5 : 0; });
       return { flash, kick, shot };
     },
-    reset() { recoil.reset(); swap = sprint = flash = 0; lastFired = null; lastWeapon = ''; lastSwings = null; since = -1; },
+    reset() { recoil.reset(); motion.reset(); flash = 0; lastFired = null; },
   };
 }
