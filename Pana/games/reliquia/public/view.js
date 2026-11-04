@@ -34,13 +34,14 @@ import { flareStick } from '/engine/models/props/fosa-biomes.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 
 export const COLORS = SEAT_COLORS;
-const EYE = 1.45, POOL = 5, FAR = 220;
+const EYE = 1.45, POOL = 5, FAR = 220, CAVERN_FAR = 720;
 const TAG_Y = 2.85;   // clears the helmet's lamp
 const MUSHROOM_LIGHT = { power: 5, reach: 7, within: 13 };
 // Real lights for the nearest other divers: fixed, as every light costs every lit pixel.
 const DIVER_LAMPS = { baja: 1, media: 2, alta: 3 }, DIVER_LAMP_POWER = .55;
-// The camp's cavern: damp and cold, warm only around its few lamps, which borrow the pool.
-const CAMP_LOOK = { background: 0x05070b, fog: [6, 46], hemi: [0x6e86ae, 0x3e4858, 1.9], exposure: 1.12, dust: .7, lamp: 0xfff0d8, hand: 0xffa850, lampPower: 26, candle: [0xffa24a, 5.5, 11] };
+// The camp's cavern: dark navy, warm only around its few lamps, which borrow the pool. The
+// fog closes on what is lit; the far hall (camp-vista.js) carries its own haze past it.
+const CAMP_LOOK = { background: 0x040816, fog: [8, 60], hemi: [0x5a78a8, 0x2a3850, 1.55], exposure: 1.12, dust: .7, lamp: 0xfff0d8, hand: 0xffa850, lampPower: 26, candle: [0xffa24a, 5.5, 11] };
 // Underground: the mine is a dark violet black; the buried library cold and
 // grey-blue, a thin haze (no thick fog: the mist is a few rooms' accent), a
 // faint moonlight-cold hemisphere over near-black floors. The farol in the
@@ -108,7 +109,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
   const avatars = new Map(), enemies = new Map(), carts = new Map(), tmp = new THREE.Vector3();
   let lastState = null, snapAt = 0;
-  let scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = '', look = CAMP_LOOK, poolAt = 0, wallPush = 0, shakeScale = 1;
+  let veil = 0, scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = '', look = CAMP_LOOK, poolAt = 0, wallPush = 0, shakeScale = 1;
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
   function setLook(name) {
@@ -154,10 +155,17 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     // Riders sink and rise with the cage through the shaft.
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
     setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'caverna' : world.run.theme);
+    // Riding the lift at the camp: the dark of the shaft lifts as you come up (and
+    // settles as you go down), so the cavern opens around you. Only ever this screen's picture.
+    const inShaft = vf === 0 ? Math.max(0, Math.min(1, -rideY(me || {}) / 6)) : 0, comingUp = vf === 0 && state.lift?.moving && state.lift.to === 0 && state.lift.riders.includes(me?.id);
+    veil += (inShaft - veil) * (1 - Math.exp(-dt * (inShaft > veil ? 5 : 1.1)));
+    // You turn to face the way out and look up a little; the mouse still has the last word.
+    if (comingUp) { const ease = 1 - Math.exp(-dt * 1.5), turn = Math.atan2(Math.sin(-h), Math.cos(-h)); h += turn * ease; pitch += (.12 - pitch) * ease; }
     // El apagón: every torch stutters and sinks, your lamp with them. "Sustos" softens the show, never the rule.
     const stutter = Math.sin(t * 31) * Math.sin(t * 17 + 1.1) > -.1 ? 1 : .35, out = vf === 0 || state.suceso?.kind !== 'apagon' ? 1 : scares === 'apagados' ? .7 : scares === 'suaves' ? .45 + .2 * stutter : .1 + .3 * stutter;
     // Scares squeeze the fog in; the candles fade with it.
-    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog * (.6 + .4 * out); hemi.intensity = look.hemi[2] * (.2 + .8 * Math.min(1, Math.max(mood.light, mood.farol))) * (.25 + .75 * out); }
+    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog * (.6 + .4 * out) * (1 - veil * .6); hemi.intensity = look.hemi[2] * (.2 + .8 * Math.min(1, Math.max(mood.light, mood.farol))) * (.25 + .75 * out) * (1 - veil * .7); }
+    renderer.toneMappingExposure = look.exposure * (1 - veil * .35);
     world.candles({ level: mood.light * out, out: mood.out, near: scene.fog.near, far: scene.fog.far });
     world.update(t, state, dt, me);
     sky.update(t); shopSign.visible = vf === 0;
@@ -378,7 +386,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     // Past the fog's far end everything is the background colour already
     // (fog depth and the far plane are the same view depth), so the far plane
     // sits there: rooms and shelves beyond it are culled instead of drawn.
-    camera.far = lookName === 'camp' ? FAR : Math.min(FAR, scene.fog.far + 1);
+    camera.far = lookName === 'caverna' ? CAVERN_FAR : Math.min(FAR, scene.fog.far + 1);
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);
   }
@@ -391,7 +399,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   addEventListener('resize', resize); resize();
   return {
     renderer, scene, camera, puffs, waves, avatars, enemies, swarm, hands, draw, bark, mood,
-    get look() { return lookName; },
+    get lookName() { return lookName; },
     // The Sustos setting scales every camera shake (0 turns it off).
     set shakeScale(v) { shakeScale = v; },
     // The Sustos setting, for how the mummies twitch and whether their eyes gutter.

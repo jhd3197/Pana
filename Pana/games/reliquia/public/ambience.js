@@ -6,8 +6,8 @@
 // The buried library has its own room tone: boards that creak under every
 // step, long timber groans, pages turning, a book falling somewhere, a
 // clock that ticks and stops, wind through broken windows and whispers.
-// The camp's cavern breathes on the chasm: a low draft, drops on its puddles and,
-// under the Sustos setting, far metal and a whistle from somewhere below.
+// The camp's cavern breathes on the lake: a low draft, drops on its puddles, the far
+// roar of its falls and, under the Sustos setting, far metal and a whistle from below.
 // eerie() plays the scare layers for eerie-fx.js: stingers, swells, slams,
 // breath on your neck. No music, no files.
 import { sound } from '/engine/fx.js';
@@ -15,6 +15,7 @@ import { scareSound } from '/engine/eerie.js';
 import { floorOf } from './deck.js';
 import { peekCueDue } from './silbon.js';
 import { DRIPS, dripLands } from './camp-cave.js';
+import { roarFor } from './options.js';
 
 export function createAmbience() {
   let graph = null, near = 0, stepAt = 0, eventIn = 2, clockIn = 6, ticks = 0;
@@ -44,7 +45,11 @@ export function createAmbience() {
     gust.buffer = noise; gust.loop = true; band.type = 'bandpass'; band.frequency.value = 520; band.Q.value = 1.6; wind.gain.value = 0; swell.gain.value = .5;
     lfo.frequency.value = .09; depth.gain.value = .45; lfo.connect(depth).connect(swell.gain);
     gust.connect(band).connect(swell).connect(wind).connect(input); gust.start(); lfo.start();
-    graph = { ctx, input, wet, bed, drone, noise, wind };
+    // The falls, far across the lake: the same noise, narrowed to a steady far-off roar.
+    const falls = ctx.createBufferSource(), high = ctx.createBiquadFilter(), body = ctx.createBiquadFilter(), roar = ctx.createGain();
+    falls.buffer = noise; falls.loop = true; falls.playbackRate.value = 1.6; high.type = 'highpass'; high.frequency.value = 170; body.type = 'lowpass'; body.frequency.value = 620; roar.gain.value = 0;
+    falls.connect(high).connect(body).connect(roar).connect(input); falls.start();
+    graph = { ctx, input, wet, bed, drone, noise, wind, roar };
   }
 
   // A short sound placed in stereo, quieter with distance.
@@ -139,6 +144,7 @@ export function createAmbience() {
     const library = deep && theme === 'biblioteca';
     graph.wet.gain.setTargetAtTime(deep ? library ? .42 : .55 : cave ? .4 : .06, now, .4);
     graph.wind.gain.setTargetAtTime(library ? .05 + tier * .015 : cave ? .03 : 0, now, 1.5);
+    graph.roar.gain.setTargetAtTime(cave ? roarFor(scares) : 0, now, 1.8);
     graph.bed.gain.setTargetAtTime(deep ? .05 + tier * .015 : cave ? .03 : 0, now, .8);
     // presence.js swells the drone while a mummy closes in (0…1).
     graph.drone.gain.setTargetAtTime(deep ? .012 + tier * .01 + near * .03 : cave ? .007 : 0, now, 1.2);
