@@ -144,7 +144,7 @@ function handle(e) {
     case 'twin': sound.clickDown(); break;
     case 'encargo-paid': sfx.bank(true); popCounter($('mangos')); break;
     case 'laugh': sfx.laugh(); break;
-    case 'level': sfx.win(); shout(record.report(state, room.id) ? loc('¡Récord roto!') : loc('¡Jornada {n} lista!', { n: e.level }), { tone: 'yellow' }); break;
+    case 'level': sfx.win(); if (e.extra) popCounter($('mangos')); shout(record.report(state, room.id) ? loc('¡Récord roto!') : e.extra ? loc('¡Jornada {n} lista! Sobretiempo +{extra}', { n: e.level, extra: e.extra }) : loc('¡Jornada {n} lista!', { n: e.level }), { tone: 'yellow' }); break;
     case 'buy': sfx.bank(false); break;
     case 'cargo': sfx.lift(); break;
     case 'delivered': sfx.bank(true); popCounter($('mangos')); if (e.met) shout(loc('¡Cuota lista! Al montacargas'), { tone: 'teal' }); break;

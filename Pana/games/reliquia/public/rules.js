@@ -226,6 +226,18 @@ export const floorWorth = run => [...run.loot.filter(l => l.floor > 0).map(l => 
 export const ENCARGO_TEXT = { pedido: locKey('Encargo: suban la cajita sellada.'), turno: locKey('Encargo: junten la cuota antes de que se acabe el turno.'), sinBajas: locKey('Encargo: que no caiga nadie.'), todos: locKey('Encargo: suban todos juntos en la jaula.') };
 export const encargoPay = level => 20 + 5 * level;
 export const turnoSeconds = level => 210 + 45 * level;
+// Sobretiempo: bonus mangos for going past the quota, on top of the one per
+// BS_PER_MANGO every banked bolívar already pays. A running turno clock adds for
+// the time left, and letting it run out forfeits the bonus: that is the gamble.
+// Never more than the jornada's encargo pays.
+export const BS_PER_MANGO = 10;
+export const SOBRETIEMPO = { bsPerMango: 50, secondsPerMango: 30 };
+export function sobretiempoPay(level, delivered, quota, secondsLeft = 0) {
+  if (!(quota > 0) || delivered < quota || secondsLeft < 0) return 0;
+  return Math.min(encargoPay(level), Math.floor((delivered - quota) / SOBRETIEMPO.bsPerMango) + Math.floor(secondsLeft / SOBRETIEMPO.secondsPerMango));
+}
+// What this jornada's sobretiempo stands at now; the host pays it, the Tab panel shows it.
+export const sobretiempoOf = s => sobretiempoPay(s.level, s.delivered || 0, s.quota, s.encargo?.kind === 'turno' && s.encargo.until ? s.encargo.until - s.time : 0);
 const levelSeed = (seed, level) => level === 1 ? seed : ((seed ^ Math.imul(level, 2654435761)) >>> 0) || 1;
 export class Expedition {
   constructor(seed = 1, options = {}) {
@@ -235,7 +247,7 @@ export class Expedition {
       lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       level: 1, mangos: 0, quota: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null }, origin: seed >>> 0 || 1,
       swarm: null, swarmSim: null, swarmAt: SWARM.firstAt, swarmId: 0, director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0,
-      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null, encargosWon: 0, silbonAt: 0, daily: '', plainOptions: null });
+      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null, encargosWon: 0, sobretiempo: 0, silbonAt: 0, daily: '', plainOptions: null });
     this.paths = new Map();
   }
   get layout() { return layoutFor(this.seed, this.level, themeOf(this)); }
@@ -460,7 +472,7 @@ export class Expedition {
   stopDrag(p) { if (p.drag == null) return; const q = this.players.find(q => q.id === p.drag); if (q) q.draggedBy = null; p.drag = null; }
   bank(kind, worth = 1, by = null, bonus = 1) {
     const value = Math.round(valueOf(kind) * worth * bonus); if (!value) return 0;
-    this.haul += value; this.mangos += value / 10; this.truck.push(kind); this.truck = this.truck.slice(-40);
+    this.haul += value; this.mangos += value / BS_PER_MANGO; this.truck.push(kind); this.truck = this.truck.slice(-40);
     if (kind === 'encomienda' && this.encargo?.kind === 'pedido') this.settleEncargo(true);
     if (by) by.stats.banked += value;
     return value;
@@ -735,8 +747,8 @@ export class Expedition {
   finish(outcome) {
     this.phase = 'results'; this.outcome = outcome;
     // Calor pays on both outcomes: a failed dive still gets its share, with the bonus.
-    const bonus = payoutMult(calorOfOptions(this.options));
-    this.payout = outcome === 'extracted' ? this.haul * bonus : Math.round(this.haul * (this.options.wipeShare ?? 20) / 100 * bonus);
+    const bonus = payoutMult(calorOfOptions(this.options)), worth = this.haul + (this.sobretiempo || 0) * BS_PER_MANGO;
+    this.payout = outcome === 'extracted' ? worth * bonus : Math.round(worth * (this.options.wipeShare ?? 20) / 100 * bonus);
     const crude = this.options.crude;
     this.event(outcome, outcome === 'extracted' ? locKey('¡Nos vamos! Bs. {value} en el camión.') : crude ? locKey('Por pajúos. La ruina se quedó con todo.')
       : pickLine([locKey('Por confiados. La ruina se quedó con todo.'), locKey('Por gafos. La ruina se quedó con todo.'), locKey('Te quedaste sin el chivo y sin el mecate. La ruina se quedó con todo.')], this.seed), { vars: { value: this.haul } });
@@ -853,6 +865,7 @@ export class Expedition {
   // is hauled up with 1 HP, and the next, deeper jornada is dealt.
   completeLevel() {
     this.tallyRound();
+    const extra = sobretiempoOf(this); this.mangos += extra; this.sobretiempo = (this.sobretiempo || 0) + extra;
     const done = this.level, stop = this.layout.run.lifts.find(l => l.floor === 0), delivered = this.delivered;
     // A new deck for the next jornada; the camp's own pieces stay as they are.
     const campLoot = Object.fromEntries(Object.entries(this.touched).filter(([id]) => this.layout.run.loot.find(l => l.id === +id)?.floor === 0));
@@ -872,8 +885,10 @@ export class Expedition {
     });
     this.quota = pactoQuota(this.options, quotaFor(this.level, this.players.filter(p => !p.spectator).length), floorWorth(this.layout.run)); this.placeStatues();
     // The next jornada's place (Alternar swaps it) rides in the same line.
-    this.event('level', left ? locKey('¡Jornada {level} lista! Subieron Bs. {value}. Los que se quedaron abajo llegaron con lo justo. Ahora toca {place}: Bs. {quota}.')
-      : locKey('¡Jornada {level} lista! Subieron Bs. {value}. Ahora toca {place}: Bs. {quota}.'), { level: done, value: delivered, left, vars: { level: done, value: delivered, next: this.level, quota: this.quota, place: jornadaName(this.level, themeOf(this)) } });
+    const line = extra
+      ? left ? locKey('¡Jornada {level} lista! Subieron Bs. {value}. Sobretiempo: +{extra} mangos. Los que se quedaron abajo llegaron con lo justo. Ahora toca {place}: Bs. {quota}.') : locKey('¡Jornada {level} lista! Subieron Bs. {value}. Sobretiempo: +{extra} mangos. Ahora toca {place}: Bs. {quota}.')
+      : left ? locKey('¡Jornada {level} lista! Subieron Bs. {value}. Los que se quedaron abajo llegaron con lo justo. Ahora toca {place}: Bs. {quota}.') : locKey('¡Jornada {level} lista! Subieron Bs. {value}. Ahora toca {place}: Bs. {quota}.');
+    this.event('level', line, { level: done, value: delivered, left, extra, vars: { level: done, value: delivered, extra, next: this.level, quota: this.quota, place: jornadaName(this.level, themeOf(this)) } });
   }
   // The record's numbers. A jornada counts for whoever is standing when it is
   // completed; a comeback is falling in it, getting back up and still standing

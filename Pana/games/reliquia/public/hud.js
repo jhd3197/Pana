@@ -3,7 +3,7 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { loc, locn, formatNumber } from '/engine/i18n.js';
 import { setBar } from '/engine/kit.js';
 import { ARTIFACT_AURA } from '/engine/models/props/reliquia-treasure.js';
-import { interaction, compassTarget, spreadTags, titles, tier, holds, alive, cartValue, ENCARGO_TEXT, encargoPay } from './rules.js';
+import { interaction, compassTarget, spreadTags, titles, tier, holds, alive, cartValue, ENCARGO_TEXT, encargoPay, sobretiempoOf } from './rules.js';
 import { layoutFor, distance } from './layout.js';
 import { jornadaName, themeOf, TRUCK, floorOf, inRect } from './deck.js';
 import { ITEMS, heldValue, itemName, say } from './items.js';
@@ -78,11 +78,12 @@ export function createHud() {
   function intel(state, p, L, f, heading) {
     $('floor-name').textContent = loc('Jornada {n} · {place}', { n: state.level, place: f === 0 ? loc('Superficie') : loc(jornadaName(state.level, themeOf(state))) });
     const load = state.delivered || 0;
-    $('quota-label').textContent = `${money(load)} / ${money(state.quota)}`; setBar($('quota-fill'), state.quota ? load / state.quota : 0);
+    const extra = sobretiempoOf(state), tally = `${money(load)} / ${money(state.quota)}`;
+    $('quota-label').textContent = extra ? `${tally} · ${loc('Sobretiempo +{n}', { n: extra })}` : tally; setBar($('quota-fill'), state.quota ? load / state.quota : 0);
     $('mangos').textContent = Math.floor(state.mangos);
     const job = state.encargo, left = job?.kind === 'turno' && job.until ? Math.max(0, Math.ceil(job.until - state.time)) : 0;
     $('encargo-text').textContent = job ? loc(ENCARGO_TEXT[job.kind]) : '';
-    $('encargo-state').textContent = !job ? '' : job.state === 'paid' ? loc('Cumplido') : job.state === 'lost' ? loc('Perdido') : left ? loc('{n} s · +{pay} mangos', { n: left, pay: encargoPay(state.level) }) : loc('+{pay} mangos', { pay: encargoPay(state.level) });
+    $('encargo-state').textContent = !job ? '' : job.state === 'paid' ? left ? loc('Cumplido · {n} s', { n: left }) : loc('Cumplido') : job.state === 'lost' ? loc('Perdido') : left ? loc('{n} s · +{pay} mangos', { n: left, pay: encargoPay(state.level) }) : loc('+{pay} mangos', { pay: encargoPay(state.level) });
     const region = L.regionAt(p)?.name;
     $('room-name').textContent = f === 0 ? loc('El campamento') : region ? loc(region) : loc('Los pasillos');
     setBar($('greed-fill'), state.codicia / 100); $('greed-label').textContent = GREED[tier(state)];
@@ -170,9 +171,10 @@ export function createHud() {
     $('result-eyebrow').textContent = win ? loc('Expedición completada') : loc('La ruina se quedó con todo');
     $('result-title').textContent = win ? loc('¡Nos vamos!') : loc('Una vuelta más.');
     const value = money(state.haul), last = state.events.at(-1);
-    $('result-copy').textContent = !win ? loc('Cayeron todos. Del camión solo se salvó {share} %. {why}', { share: state.options?.wipeShare ?? 20, why: say(last?.text, last?.vars) })
+    const overtime = state.sobretiempo ? ` ${loc('Sobretiempo: +{n} mangos.', { n: formatNumber(state.sobretiempo) })}` : '';
+    $('result-copy').textContent = (!win ? loc('Cayeron todos. Del camión solo se salvó {share} %. {why}', { share: state.options?.wipeShare ?? 20, why: say(last?.text, last?.vars) })
       : state.level > 1 ? locn(state.level - 1, 'Subieron {value} al camión. Completaron {n} jornada.', 'Subieron {value} al camión. Completaron {n} jornadas.', { value })
-      : loc('Subieron {value} al camión. ¿Y si la próxima completan una jornada?', { value });
+      : loc('Subieron {value} al camión. ¿Y si la próxima completan una jornada?', { value })) + overtime;
     $('result-payout').textContent = formatNumber(Math.round(state.payout)); $('result-depth').textContent = state.level - 1; $('result-time').textContent = clock(state.time);
     const list = titles(state);
     $('titles').replaceChildren(...list.map(t => {
