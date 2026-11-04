@@ -1,3 +1,4 @@
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { BOT_PERSONAS, botDelay } from './bot-personas.js';
 import { FIELDS, cleanOptions, maxPip, groupOf, CHAT } from './options.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
@@ -99,6 +100,8 @@ export class DominoGame {
   start() {
     if (['playing', 'starter'].includes(this.phase)) return false;
     if (this.phase === 'finished') { this.round = 0; this.scores = Array(this.options.mode==='teams'?2:this.players.length).fill(0); this.starter = 0; }
+    for (const p of this.players) if (p.id === null) p.name = BOT_NAMES[p.seat];
+    applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     this.round++; this.chain = []; this.passes = 0; this.result = null; this.history = [];
     const tiles = deck(maxPip(this.options));
     for (let i = tiles.length - 1; i > 0; i--) {

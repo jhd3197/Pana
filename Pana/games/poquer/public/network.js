@@ -1,3 +1,4 @@
+import { applyFriendNames, friendNamesNow } from '/engine/bot-names.js';
 import { joinRoom, leadFromUrl } from '/engine/net.js';
 import { randomAvatar } from '/engine/avatar.js';
 import { Poker } from './rules.js';
@@ -56,6 +57,7 @@ export class PokerConnection {
     this.local = true; this.link?.leave(); this.connected = true; this.game = new Poker(); this.game.setMap(mapId); this.game.configure(options);
     this.game.add(1, { name: this.name, avatar: this.avatar, bot: false });
     ['Coco', 'Lola', 'Cheo'].forEach((name, i) => this.game.add(1000 + i, { name, avatar: randomAvatar(), bot: true }));
+    applyFriendNames(this.game.players.filter(p => p.bot), friendNamesNow(), { taken: [this.name] });
     this.onStatus(loc('Práctica con bots · a tu ritmo')); this.start();
   }
   publish() { this.state = this.game.view(1); this.elapsed = 0; this.onState(this.state); }

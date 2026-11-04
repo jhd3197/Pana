@@ -1,3 +1,4 @@
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { validArena } from '../../../engine/worlds/arena-layouts.js';
 import { DEFAULT_DIFFICULTY, validDifficulty, difficultyInfo } from '../../../engine/play/difficulty.js';
 import { rng, seedOf } from '../../../engine/random.js';
@@ -47,7 +48,7 @@ export function rack(variant = 'eight') {
 // practice: one pana clears the whole rack. bot: a full match against Pana Bot.
 export function createGame(practice = false, { bot = false } = {}) {
   const players = Array.from({ length: 6 }, () => ({ id: null, name: locKey('Esperando pana'), avatar: {} }));
-  if (bot) players[1] = botPlayer();
+  if (bot) players[1] = applyFriendNames([botPlayer()], friendNamesNow())[0];
   return { phase: 'lobby', mapId: 'plaza', difficulty: DEFAULT_DIFFICULTY, practice: practice && !bot, bot, players,
     balls: rack(), groups: [null, null], turn: 0, revision: 0, round: 0, shots: 0, ballInHand: false,
     options: defaultPoolOptions(), activeSeats: [], teamTurns: [-1, -1], scores: [0, 0], breaker: 0, turnElapsed: 0, starter: null, breakMessage: '',

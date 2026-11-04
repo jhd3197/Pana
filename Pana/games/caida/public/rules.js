@@ -1,3 +1,4 @@
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
 import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
@@ -213,6 +214,8 @@ export class CaidaGame {
   }
   dealOpening(seat) {
     if (this.phase !== 'dealing' || seat !== this.dealer || !['up', 'down'].includes(this.dealCall)) return false;
+    for (const p of this.players) if (p.id === null) p.name = BOT_NAMES[p.seat];
+    applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     this.phase = 'playing'; this.deal();
     const calls = this.dealCall === 'up' ? [1, 2, 3, 4] : [4, 3, 2, 1]; let points = 0;
     for (const call of calls) {

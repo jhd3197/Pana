@@ -59,8 +59,10 @@ export async function joinRoom(game, { resume = true, ...options }) {
   if (token) {
     try { room = await client.reconnect(token); } catch { room = null; }
   }
+  // At most a moment's wait: a slow or missing friend list just means no names.
+  const friendNames = await import('./bot-names.js').then(m => m.loadFriendNames()).catch(() => []);
   try {
-    room ??= await client.joinOrCreate(game, { ...options, lead: options.lead || '', lobbyLoading: !!window.PANA_LOBBY_LOADING, rejoin: deviceKey() });
+    room ??= await client.joinOrCreate(game, { ...options, friendNames, lead: options.lead || '', lobbyLoading: !!window.PANA_LOBBY_LOADING, rejoin: deviceKey() });
   } catch (error) {
     if (isFull(error)) error.full = true;
     throw error;

@@ -1,6 +1,7 @@
 // Parapente race simulation. Pure: the host runs it, guests render snapshots
 // and predict their own wing with the same fly(). The course (course.js) owns
 // beacons, thermals, rings and the ground under them.
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { clamp } from '../../../engine/random.js';
 import { defaultOptions, roomOptions, migrateRivals } from './options.js';
 import { airAt, targetOf, remaining, outside } from './course.js';
@@ -130,6 +131,7 @@ export class Race {
       const avatar = { fur: BOT_FUR[i % BOT_FUR.length], outfitColor: COLORS[i % COLORS.length], face: 'feliz' };
       this.pilots.push(this.pilot(i, { id: BOT_SEAT + i, name: BOT_NAMES[k % BOT_NAMES.length], avatar }, { skill, side: random() < .5 ? -1 : 1, wobble: random() * 6 }));
     }
+    applyFriendNames(this.pilots.filter(p => p.bot), friendNamesNow(), { rankBy: p => p.bot.skill, taken: this.players.map(p => p.name) });
     Object.assign(this, { phase: 'countdown', countdown: COUNTDOWN, time: 0, closing: 0 }); this.raceId++;
     return true;
   }
