@@ -24,6 +24,7 @@ import { floorOf, HEIGHT } from './deck.js';
 import { ITEMS } from './items.js';
 import { formatNumber } from '/engine/i18n.js';
 import { holds, alive, cartValue, liftView } from './rules.js';
+import { HOPPER, packCart } from './carga.js';
 import { SILBON } from './silbon.js';
 
 export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
@@ -262,20 +263,30 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     // Carritos: their load sits in the hopper and the balance floats above.
     for (const c of state.carts || []) {
       let a = carts.get(c.id);
-      if (!a) { const root = new THREE.Group(), model = mineCart({ seed: 41, load: 'empty' }), bed = new THREE.Group(); model.scale.setScalar(.7); bed.position.y = .88; bed.scale.setScalar(.7); root.add(model, bed); scene.add(root); root.position.set(c.x, 0, c.z); a = { root, bed, key: null, tag: null }; carts.set(c.id, a); }
+      if (!a) { const root = new THREE.Group(), model = mineCart({ seed: 41, load: 'empty', hollow: true }), bed = new THREE.Group(); bed.position.y = HOPPER.floor; root.add(model, bed); scene.add(root); root.position.set(c.x, 0, c.z); a = { root, bed, key: null, tag: null }; carts.set(c.id, a); }
       a.root.visible = floorOf(c.x) === vf;
       // A carrito on the montacargas rides it down the shaft with everyone.
       // The cargo lift hauls it up through the ceiling and lowers it back empty.
       const cargo = state.cargo?.cart === c.id ? state.cargo : null, up = cargo ? Math.min(1, cargo.t / 3) : 0;
       const target = tmp.set(c.x, cargo ? (cargo.phase === 'up' ? up : 1 - up) * 7 : 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       a.root.rotation.y = c.h;
+      // A load on a rough ride rocks; what is inside is only drawn up close.
+      const rock = (c.wobble || 0) * .07; a.root.rotation.z = Math.sin(t * 17) * rock; a.root.rotation.x = Math.cos(t * 13) * rock * .6;
+      a.bed.visible = !me || Math.hypot(c.x - me.x, c.z - me.z) < 18;
       // Your own cart's balance is on the HUD, not floating in your face.
       if (a.tag) a.tag.visible = !c.pushers.includes(me?.id) && (!me || Math.hypot(c.x - me.x, c.z - me.z) > 2.2);
       const key = `${c.contents.map(x => x.kind).join()}|${c.big?.kind || ''}`;
       if (key !== a.key) {
         a.key = key; a.bed.clear();
-        c.contents.slice(-9).forEach((x, i) => { const m = itemModel(x.kind); m.scale.multiplyScalar(ITEMS[x.kind].size === 'small' ? 1 : .45); m.position.set((i % 3 - 1) * .3, Math.floor(i / 3) * .12, (Math.floor(i / 3) % 3 - 1) * .4); m.rotation.y = i; a.bed.add(m); });
-        if (c.big) { const m = itemModel(c.big.kind); m.scale.multiplyScalar(.42); m.position.y = .2; a.bed.add(m); }
+        // Everything at its true size, where carga.js packed it; flat pieces lie on their backs.
+        const { slots, top } = packCart(c.contents);
+        c.contents.forEach((x, i) => {
+          const m = itemModel(x.kind), s = slots[i]; m.position.set(s.x, s.y, s.z);
+          if (s.lay) { m.rotation.x = -Math.PI / 2; m.position.y += s.h / 2; } else m.rotation.y = i * 2.4;
+          a.bed.add(m);
+        });
+        // A big treasure sits on the load, edge-on so whoever pushes still sees past it.
+        if (c.big) { const m = itemModel(c.big.kind); m.position.y = top * .5; m.rotation.y = Math.PI / 2; a.bed.add(m); }
         a.tag && disposeSprite(a.tag); a.tag = null;
         const value = cartValue(c);
         if (value) { a.tag = label(`Bs. ${formatNumber(Math.round(value))}`, '#ffd36a'); a.tag.position.y = 1.7; a.tag.scale.set(2, .38, 1); a.root.add(a.tag); }

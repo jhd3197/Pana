@@ -39,7 +39,7 @@ import { TRUCK, TABLE, HEIGHT, CAGE, floorOf, inRect } from './deck.js';
 
 const PALETTES = ['sol', 'jade', 'maldita'];
 export const paletteFor = (floor, theme = 'mina') => theme === 'biblioteca' ? RUIN_PALETTES.biblioteca : RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
-const FACTORIES = { ...treasure, oldBook, mineCart: () => mineCart({ load: 'gold' }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
+const FACTORIES = { ...treasure, oldBook, mineCart: () => mineCart({ load: 'gold', hollow: true }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
 const GLOW = { tool: 0xfff1d6, treasure: 0xffc23d, big: 0xffd36a, junk: 0x9aa4b0 };
 
 // One prototype per item kind; every copy on the map is a cheap clone.

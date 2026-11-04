@@ -130,6 +130,7 @@ function handle(e) {
     case 'silbon-falling': { const b = state.enemies.find(q => q.id === e.enemy); if (p && b) ambience.at('plummet', p, view.heading, b.x, b.z, 40); view.shake(.3); break; }
     case 'silbon-down': sfx.seal(); view.shake(.6); break;
     case 'flush': sfx.bonk(); if (mine) view.shake(.7); break;
+    case 'cart-spill': case 'cart-bounce': sfx.tip(); break;
     case 'cart-load': case 'cart-catch': case 'cart-big': sfx.coin(); if (e.kind !== 'cart-load') sfx.bank(false); break;
     case 'cart-grab': sfx.grab(); break;
     case 'lift': sfx.lift(); if (e.players?.includes(room.id)) view.shake(.25); break;

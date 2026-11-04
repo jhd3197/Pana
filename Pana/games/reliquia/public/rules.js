@@ -4,6 +4,7 @@
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS, nookAt } from './deck.js';
+import { HOPPER, aimInto, overHopper, fitsIn, fillOf, overRim, bounceChance, placeTime, climbTime, throwPower, heftOf, stepWobble } from './carga.js';
 import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
 import { layoutFor, distance } from './layout.js';
 import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from './items.js';
@@ -22,7 +23,7 @@ export { holds };
 // Text in state and events is a Spanish key (locKey) plus `vars`; each client
 // shows it in its own language with say() from items.js.
 export const BARKS = [locKey('¿Nos vamos ya?'), locKey('¡Una sala más!'), locKey('¡Agárrala por el otro lado!'), locKey('¡No toques eso!'), locKey('¡Suelta, suelta, suelta!'), locKey('¡Pásame el farol!'), locKey('Ábrela.')];
-const REACH = 2.5, GRAVITY = 14, REVIVE = 2.4, CART_SIZE = 14, BOARD = 1.5, SHAFT = 14, CARGO = 3;
+const REACH = 2.5, GRAVITY = 14, REVIVE = 2.4, BOARD = 1.5, SHAFT = 14, CARGO = 3;
 const GREED = { soft: .65, normal: 1, fierce: 1.5 };
 // How far each noise carries (m), for what hunts by ear (El Lector). Walking,
 // standing still and riding make none; running, landing a jump, a book or a
@@ -65,7 +66,7 @@ export function stepExplorer(p, input, dt, world) {
 // right at your feet in front of you counts too, so the floor is easy.
 export function interaction(s, p) {
   if (!p || !alive(p)) return null;
-  if (p.grip != null) return { kind: 'release', text: locKey('Soltar el tesoro'), press: true };
+  if (p.grip != null) { const big = s.items.find(i => i.id === p.grip); return { kind: 'release', text: locKey('Soltar el tesoro'), press: true, progress: big?.climb ? big.climb / climbTime(big.kind) : 0 }; }
   if (p.push != null) return { kind: 'release', text: locKey('Soltar el carrito'), press: true };
   const L = layoutFor(s.seed, s.level, themeOf(s)), f = floorOf(p.x), pitch = p.pitch || 0, cp = Math.cos(pitch);
   const eye = { x: p.x, y: (p.y || 0) + 1.45, z: p.z }, look = { x: Math.sin(p.h) * cp, y: Math.sin(pitch), z: Math.cos(p.h) * cp };
@@ -109,8 +110,10 @@ export function interaction(s, p) {
   }
   for (const cart of s.carts || []) {
     if (cart.pushers.length >= 2 || cart.away) continue;
-    const held = p.hands.find(h => h && !ITEMS[h.kind].tool), full = cart.contents.length >= CART_SIZE;
-    const target = held && !full ? { kind: 'cart-load', id: cart.id, text: !held.pile ? locKey('Echar {item} al carrito') : held.pile.length > 1 ? locKey('Echar {n} piezas al carrito') : locKey('Echar 1 pieza al carrito'), vars: { item: held.kind, n: held.pile?.length }, press: true }
+    const held = p.hands.find(h => h && !ITEMS[h.kind].tool), room = held && fitsIn(cart, held.pile ? held.pile.at(-1) : held.kind), place = held ? placeTime(held) : 0;
+    // Into the opening: look into the hopper, and a heavy piece takes a moment.
+    const target = room && aimInto(p, cart) === 'out' ? { kind: 'info', text: locKey('Apunta adentro') }
+      : room ? { kind: 'cart-load', id: cart.id, text: !held.pile ? locKey('Echar {item} al carrito') : held.pile.length > 1 ? locKey('Echar {n} piezas al carrito') : locKey('Echar 1 pieza al carrito'), vars: { item: held.kind, n: held.pile?.length }, ...(place ? { hold: true, progress: (p.placing || 0) / place } : { press: true }) }
       : !p.hands.some(Boolean) ? { kind: 'cart-push', id: cart.id, text: locKey('Empujar el carrito · Bs. {value}'), vars: { value: cartValue(cart) }, press: true } : { kind: 'info', text: locKey('El carrito lleva Bs. {value} · suelta lo que tienes para empujarlo'), vars: { value: cartValue(cart) } };
     offer(target, { x: cart.x, y: .7, z: cart.z }, .95, 3);
   }
@@ -281,11 +284,11 @@ export class Expedition {
   drop(p, hand, throwIt = false) {
     const held = p.hands[hand]; if (!held) return null;
     p.hands[hand] = null;
-    const forward = { x: Math.sin(p.h), z: Math.cos(p.h) }, power = throwIt ? 10 : 0;
+    const forward = { x: Math.sin(p.h), z: Math.cos(p.h) }, power = throwIt ? throwPower(held.kind, 10) : 0;
     // A handful leaves as separate pieces, fanned out a little.
     if (held.pile) {
       const pieces = held.pile.map((kind, i) => {
-        const a = p.h + (i - (held.pile.length - 1) / 2) * .18, speed = throwIt ? 9 + i * .4 : 1.2;
+        const a = p.h + (i - (held.pile.length - 1) / 2) * .18, speed = throwIt ? throwPower(kind, 9 + i * .4) : 1.2;
         return this.spawnItem(kind, p.x + forward.x * .5, p.z + forward.z * .5, { state: 'air', y: 1.2, vx: Math.sin(a) * speed, vz: Math.cos(a) * speed, vy: throwIt ? 3 + Math.sin(p.pitch || 0) * 6 : 1.5, thrower: p.id, thrownAt: this.time });
       });
       return pieces[0];
@@ -338,18 +341,30 @@ export class Expedition {
     const cart = this.carts.find(c => c.id === p.push); p.push = null;
     if (cart) cart.pushers = cart.pushers.filter(id => id !== p.id);
   }
-  // Load a hand (a handful goes in piece by piece), or take the handle.
+  // Load a hand (a handful goes in piece by piece), or take the handle. A piece
+  // can bounce back out: see bounceChance in carga.js.
   cartAction(p, target) {
     const cart = this.carts.find(c => c.id === target.id); if (!cart) return false;
     if (target.kind === 'cart-push') { cart.pushers.push(p.id); p.push = cart.id; this.event('cart-grab', '', { player: p.id }); return true; }
     if (target.kind === 'cart-load') {
       const hand = p.hands.findIndex(h => h && !ITEMS[h.kind].tool); if (hand < 0) return false;
-      const held = p.hands[hand];
-      if (held.pile) { while (held.pile.length && cart.contents.length < CART_SIZE) cart.contents.push({ kind: held.pile.pop(), worth: 1 }); if (!held.pile.length) p.hands[hand] = null; }
-      else { cart.contents.push({ kind: held.kind, worth: held.worth ?? 1 }); p.hands[hand] = null; }
+      const held = p.hands[hand], aim = aimInto(p, cart), speed = Math.hypot(cart.vx || 0, cart.vz || 0);
+      const settle = (kind, worth) => {
+        if (random(this) < bounceChance({ heft: heftOf(kind), aim, fill: fillOf(cart), speed, wobble: cart.wobble || 0 })) { this.spill(cart, kind, worth); return; }
+        cart.contents.push({ kind, worth });
+      };
+      if (held.pile) { while (held.pile.length && fitsIn(cart, held.pile.at(-1))) settle(held.pile.pop(), 1); if (!held.pile.length) p.hands[hand] = null; }
+      else { settle(held.kind, held.worth ?? 1); p.hands[hand] = null; }
     }
     this.event('cart-load', '', { player: p.id, cart: cart.id, value: cartValue(cart) });
     return true;
+  }
+  // A piece leaves the cart over the side: real loot on the floor again, and it
+  // does not fall straight back in.
+  spill(cart, kind, worth = 1) {
+    const a = random(this) * Math.PI * 2, speed = 2.4 + random(this);
+    this.spawnItem(kind, cart.x, cart.z, { state: 'air', y: HOPPER.rim + .3, vx: Math.sin(a) * speed, vz: Math.cos(a) * speed, vy: 2.6, worth, spilled: cart.id });
+    this.event('cart-spill', locKey('¡Se cayó {item}!'), { cart: cart.id, item: kind, vars: { item: kind } });
   }
   stopDrag(p) { if (p.drag == null) return; const q = this.players.find(q => q.id === p.drag); if (q) q.draggedBy = null; p.drag = null; }
   bank(kind, worth = 1, by = null, bonus = 1) {
@@ -530,8 +545,11 @@ export class Expedition {
       if (p.moving && p.stamina < stamina - 1e-6) this.noisy('run', p, p.id);
       if (airborne && !(p.jumpHeight > 0) && !p.riding) this.noisy('land', p, p.id);
       if (holds(p, 'jaguarHeart')) { p.drain += dt; if (p.drain > .5) { p.drain = 0; this.damage(p, 1); if (p.downed) { this.event('heart', locKey('El corazón de jaguar consumió a {name}.'), { player: p.id, vars: { name: p.name } }); continue; } } }
+      if (!input.hold) p.placing = 0;
       if (input.hold) {
         const target = interaction(this, p);
+        if (target?.kind === 'cart-load' && target.hold) { p.placing = (p.placing || 0) + dt; if (p.placing >= placeTime(p.hands.find(h => h && !ITEMS[h.kind].tool))) { p.placing = 0; this.cartAction(p, target); } }
+        else p.placing = 0;
         if (target?.kind === 'winch' && !used.has(target.id)) {
           used.add(target.id); const w = this.winches[target.id] ||= { progress: 0, latched: 0 };
           w.progress = Math.min(1.6, w.progress + dt); if (w.progress >= 1.6 && w.latched <= 0) { w.latched = 12; this.event('winch', locKey('Rueda activa por doce segundos. ¡La otra!'), { winch: target.id }); }
@@ -614,8 +632,13 @@ export class Expedition {
       item.tip = Math.max(0, (item.tip || 0) - dt);
       // Walk a big treasure up to an empty carrito and it climbs in.
       const cart = this.carts.find(c => !c.big && !c.away && floorOf(c.x) === floorOf(item.x) && distance(c, item) < (info.radius || 1) + 1);
-      if (cart) {
-        cart.big = { kind: item.kind, worth: item.worth ?? 1 }; item.loaded = true;
+      item.climb = cart ? (item.climb || 0) + dt : 0;
+      if (cart && item.climb >= climbTime(item.kind)) {
+        // It sits on the load: what stood above the rim goes over the side, and
+        // coming in at speed rocks the cart.
+        for (const piece of overRim(cart)) { cart.contents.splice(cart.contents.lastIndexOf(piece), 1); this.spill(cart, piece.kind, piece.worth ?? 1); }
+        cart.big = { kind: item.kind, worth: item.worth ?? 1 }; item.loaded = true; item.climb = 0;
+        if (length > .2) cart.wobble = Math.min(1, (cart.wobble || 0) + .4);
         for (const p of carriers) p.grip = null;
         this.event('cart-big', locKey('¡{Item} al carrito!'), { cart: cart.id, item: item.kind, value: cartValue(cart), vars: { item: item.kind } });
         continue;
@@ -635,13 +658,18 @@ export class Expedition {
       if (cart.away) continue;
       const pushers = cart.pushers.map(id => this.players.find(p => p.id === id)).filter(p => p && alive(p));
       cart.pushers = pushers.map(p => p.id);
-      if (!pushers.length) { cart.vx = cart.vz = 0; continue; }
+      if (!pushers.length) { cart.vx = cart.vz = 0; cart.wobble = stepWobble(cart.wobble, { dt }); continue; }
       let mx = 0, mz = 0; for (const p of pushers) { const input = this.inputFor(p); mx += input.x || 0; mz += input.z || 0; }
       mx /= pushers.length; mz /= pushers.length;
       const length = Math.hypot(mx, mz), load = Math.min(.4, cart.contents.length * .02 + (cart.big ? .22 : 0));
       const speed = 4.4 * (1 + .12 * (pushers.length - 1)) * (1 - load), ux = length > 1 ? mx / length : mx, uz = length > 1 ? mz / length : mz;
+      const jerk = Math.hypot(ux * speed - (cart.vx || 0), uz * speed - (cart.vz || 0)), fromX = cart.x, fromZ = cart.z;
       cart.vx = ux * speed; cart.vz = uz * speed;
       this.layout.moveBody(cart, cart.vx * dt, cart.vz * dt, this, .6);
+      // A rough ride rocks the load (the push itself is as fast as ever): a heap
+      // loses its top piece, then settles.
+      cart.wobble = stepWobble(cart.wobble, { jerk, bump: length > .5 && Math.hypot(cart.x - fromX, cart.z - fromZ) < speed * dt * .4, fill: fillOf(cart), big: !!cart.big, dt });
+      if (cart.wobble >= 1) { cart.wobble = .5; const piece = cart.contents.pop(); if (piece) { this.spill(cart, piece.kind, piece.worth ?? 1); pushers[0].stats.dropped += valueOf(piece.kind); } }
       if (length > .2) this.noisy('cart', cart, pushers[0].id);
       if (length > .2) { const want = Math.atan2(ux, uz), turn = Math.atan2(Math.sin(want - cart.h), Math.cos(want - cart.h)); cart.h += clamp(turn, -dt * 3, dt * 3); }
       pushers.forEach((p, i) => {
@@ -783,8 +811,12 @@ export class Expedition {
         }
       }
       // A throw that drops into a carrito stays there: ¡encestó!
-      const basket = !ITEMS[item.kind].tool && item.vy < 0 && item.y < 1.5 && this.carts.find(c => !c.away && c.contents.length < CART_SIZE && floorOf(c.x) === floorOf(item.x) && distance(c, item) < .85);
-      if (basket) {
+      const basket = !ITEMS[item.kind].tool && item.vy < 0 && item.y < HOPPER.rim + .4 && item.y > HOPPER.rim - .4 && this.carts.find(c => !c.away && c.id !== item.spilled && floorOf(c.x) === floorOf(item.x) && overHopper(item, c) && fitsIn(c, item.kind));
+      // Thrown too hard, into a heap or a moving cart, it bounces back out.
+      if (basket && random(this) < bounceChance({ heft: heftOf(item.kind), fill: fillOf(basket), speed: Math.hypot(basket.vx || 0, basket.vz || 0), wobble: basket.wobble || 0, impact: Math.hypot(item.vx, item.vy, item.vz) })) {
+        item.spilled = basket.id; item.vy = Math.abs(item.vy) * .45 + 1; item.vx = item.vx * -.45; item.vz = item.vz * -.45;
+        this.event('cart-bounce', '', { cart: basket.id });
+      } else if (basket) {
         basket.contents.push({ kind: item.kind, worth: item.worth ?? 1 }); item.lost = true;
         this.event('cart-catch', item.thrower != null ? locKey('¡Encestó {item} en el carrito!') : '', { cart: basket.id, item: item.kind, value: cartValue(basket), vars: { item: item.kind } });
         continue;
@@ -798,7 +830,7 @@ export class Expedition {
         // It hits the boards: the harder it lands the farther it carries; a book thuds loudest.
         const impact = Math.hypot(item.vx, item.vy, item.vz), book = item.kind === 'oldBook';
         this.noisy(book ? 'book' : 'drop', item, item.thrower, (NOISE.drop + impact * .55) * (book ? NOISE.book : 1));
-        item.y = ground; item.state = 'ground'; item.vx = item.vz = item.vy = 0; item.thrower = null;
+        item.y = ground; item.state = 'ground'; item.vx = item.vz = item.vy = 0; item.thrower = null; delete item.spilled;
       }
     }
     this.items = this.items.filter(i => !i.lost);
