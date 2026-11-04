@@ -205,6 +205,16 @@ export function plasticChair({ color = '#ff4b4b' } = {}) {
   return done();
 }
 
+// ---------- Bate de madera ----------
+// A turned wooden bat. Origin at the knob, along +Y, `length` m long.
+export function woodenBat({ length = 1.25 } = {}) {
+  const { group, mat, part, done } = kit('Bate de madera');
+  const k = length / 1.7;
+  const profile = [[.045, 0], [.055, .06], [.035, .1], [.04, .45], [.085, 1.05], [.09, 1.6], [.065, 1.68], [0, 1.7]].map(([r, y]) => new THREE.Vector2(r * k, y * k));
+  part(group, new THREE.LatheGeometry(profile, 24), mat('#b77d42', { roughness: .5 }));
+  return done();
+}
+
 // ---------- Gradas de madera ----------
 // Stepped wooden stands for a manga de coleo or a barrio court, `length` m
 // along X with `rows` steps rising toward −Z under a zinc roof on posts.

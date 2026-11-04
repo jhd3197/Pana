@@ -32,8 +32,8 @@ wins and the titles are handed out.
 - `queda`, ganador se queda: two fight, the winner stays.
 - `libre`, trifulca libre: up to four in the ring (corners red, blue, yellow,
   green), each facing the nearest foe still standing. Four props spawn at
-  62 % of the ring radius (silla, caja, casco, chancleta). Agarrar picks one
-  up within 1.2 m when no foe is within 1.3 m; with one in hand golpe swings
+  62 % of the ring radius (silla, caja, casco, chancleta, bate). Agarrar picks one
+  up (see "Hit feedback and proportions"); with one in hand golpe swings
   it (+0.35 m reach, ×1.4 mareo, ignores blocking) and agarrar throws it
   (9.5 m/s, 7 m, 22 mareo, 0.55 m hit radius). A knocked-out pana leaves
   (`out`); the last one standing wins; odds are the number of fighters.
@@ -73,7 +73,24 @@ wins and the titles are handed out.
   counter change, and mashing after a caída is just the counter delta.
 - Golpe: a tap (released before `T.hold` = 0.16 s) is a jab; held past it is
   the trompón's 0.43 s windup (`wind`, the glove shakes back), which fires on
-  its own. A press while busy is buffered for 0.2 s.
+  its own.
+- Tap buffering: every button (golpe, patada, barrida, volteo, agarrar,
+  esquivar) goes in one slot (`queued`, last press wins) for `T.buffer` = 0.3 s;
+  a press from an attack's contact on waits for the end of that attack. Kicks
+  used to fire only on a tick the fighter was already free, and a tap on a
+  recovery's last tick read its still-down key as a held trompón: a buffered
+  golpe now counts as held only for as long as the press is old (`pressAge`).
+  Bots skip this for moves other than golpe: their plans would otherwise pile
+  up into kicks.
+- Weight: a whiff adds `whiff` s of recovery (leaning into the air). A clean hit
+  opens a chain for `T.combo.window` = 0.4 s: one tap after contact skips the
+  rest of the recovery and the next attack gets +0.2/+0.35 m reach and ×1.15/×1.35
+  mareo; the third hit shoves ×1.6 and ends it. Tapping before contact or twice
+  in one attack is mashing (`mashed`): it fires after a full recovery, no bonus.
+  A block, a dodge or being hit breaks the chain. Bots chain with `CHAIN_SKILL`.
+- Reaches went up (jab 1.6, trompón 1.7, kick 2, sweep 1.6, toss 1.25) because a
+  jab's own 0.4 m knockback left the next one out of its old 1.4 m, so only the
+  lunging trompón reliably landed. Trompón mareo 24, jab 8 to pay for it.
 - Rock-paper-scissors: a jab landing on a `wind` interrupts it (+6 mareo
   counter); blocking from the front turns jabs into 1.5 chip; a dodge's
   invulnerable window (0.03–0.34 s) makes a trompón whiff and leaves the
@@ -87,16 +104,19 @@ wins and the titles are handed out.
   out in a few ticks while walking in or a trompón lunge still stops at the
   gap. 0.85 m let the kart helmets and the guard's forward lean fuse heads.
   Everyone in the ring takes part, also down, dodging or invulnerable bodies
-  (invulnerability only stops hits); benched and knocked-out ones don't. Only
+  (invulnerability only stops hits). Benched and knocked-out ones never move but
+  nobody stands inside them; a body on the ropes can't give way, so the free one
+  moves alone; a tag-in lands beside the foe, not in them. Three or more take a
+  second pass. Crowd panas and the ref step aside in the scene (`aside`). Only
   positions move, so knockback velocity is untouched. Same spot: the first
   body goes to −X. The duel's pull back to z = 0 runs before the step so the
   push has the last word; the ref's clinch range is `BODY_GAP + 0.2`.
 - The bell after `seconds`: card = jabs + 3 × trompones + 6 × caídas
   inflicted + 0.35 × seconds pressing forward + 0.25 × blocks. A gap under 1
   point goes to the crowd (cheers plus bets per corner).
-- Bot balance (12-fight nights, seeds 1–3): roughly a third of fights end by
-  K.O. or count at every level; bravos throw about 1.5× the trompones of
-  tranquilos.
+- Bot balance (12-fight nights, seeds 1–6): about 33 % of fights end by K.O. or
+  count at level 0, 50–55 % at levels 1 and 2; bravos throw about 1.3× the
+  trompones of tranquilos.
 
 ## The ring and the night
 
@@ -142,6 +162,19 @@ wins and the titles are handed out.
 - The replay records every render frame for 6 s and, on a K.O. or a count,
   plays from 1.5 s before the last caída to 0.5 s after it at 0.4× during
   the verdict.
+- Arena rotation: `options.arena` defaults to `rotar` (Varios); any arena can be
+  pinned. `Trifulca.rotation()` keeps a shuffled cycle in the snapshot (a new host
+  continues it), never starting one on the map just played; `arenaNow` is what's
+  on stage. A torneo leaves el toldo out of the cycle for its final. `arenaNext`
+  is published during the verdict so every client dresses the next map then:
+  builders are generators (`arenaSteps`) and the scene runs them `BUILD_MS` per
+  frame, because la calle alone stalls for over a second built at once. The swap
+  is then a camera cut. The scene keeps `LAMP_POOL` point lights on every map
+  (unused ones at intensity 0): another count would recompile every material.
+  The pool is 2 (the ring light and the nearest lamp): software WebGL lost a
+  quarter of its frame rate at 6, and day maps use none. A character costs far
+  more triangles than any prop, so a map gets `NPC_MAX` = 14 neighbours; together
+  these keep the frame rate of the old single-map build.
 - Seven arenas (`ARENAS` in fight-rules.js, dressed in arenas.js): la calle,
   el toldo, el mercado, las motos (night), la manga de coleo (llanero hats on
   the neighbours, wooden stands with seated crowd), el paso de cebra (dusk,
@@ -181,6 +214,27 @@ bars remain mareo and aguante, diamonds count received knockdowns, and ¡Dale!
 remains a taunt. The shared controller strip is styled in-game rather than
 duplicated. Reduced motion disables HUD transitions, not gameplay messages.
 
+## Hit feedback and proportions
+
+- `pana.flash()` lerps emissive white to red on that fighter's own materials
+  (`buildCharacter` makes them per character; ink hulls have no emissive) and
+  restores each one's own emissive afterwards.
+- The burst (`combat-impact.js`) draws without depth test at the contact side:
+  at the victim's centre it sat inside the helmet, mostly hidden. It grows with
+  the chain. Heavy blows add `hitStop` (fighters' poses freeze 50–80 ms, the host
+  keeps simulating) and camera shake.
+- Fight proportions live in `fighter-look.js`: `HEAD_SIZE` .38 (the shared
+  character's is .58), arms ×`ARM_LENGTH` hanging and ×`ARM_GUARD` in guard, since
+  a straight arm that long pokes the rival at the body gap. A punch's arm stretches
+  to `punchLength(gap)`, so the glove stops at the rival at any distance.
+- Hats: `addLegacyHat` adds bare unnamed meshes to the head, not a `hat:` group,
+  so the old look's pesca, lana, corona and llanero stayed on under the helmet.
+  `createPana` hides them with the rest. The ref's llanero hat is on purpose.
+- Props: there was no bat; `bate` is now a prop like the rest (`woodenBat`, shared
+  with Chapita). Pick-up range is `PICKUP` 1.7 m. The old rule refused any pick-up
+  with a foe within 1.3 m, which with bodies a metre apart meant nearly always.
+  Now only a foe nearer than a prop beyond `GRAB_FIRST` turns agarrar into a grab.
+
 ## Contact timing
 
 `attack-timing.js` supplies the same impact/release times to rules and procedural
@@ -190,8 +244,8 @@ at the first strike tick. Windup shortens to 0.43 s, preserving the original
 sub-tick overshoot forward instead of dropping it, so server cadence cannot add
 an extra tick before contact; jab contact remains 0.10–0.18 s and grab 0.14–0.24 s.
 The pure `analyseImpact` sampler follows grandma-gta's maximum-extension idea
-to test authored pose curves; it is not a runtime animation-clip loader. Existing
-0.2 s input buffering, directional push, mareo, stars and mash-to-rise remain
+to test authored pose curves; it is not a runtime animation-clip loader. Input
+buffering, directional push, mareo, stars and mash-to-rise remain
 the combat core. A short filtered noise layer sharpens clean jab sounds through
 the shared sound context. Timing tests prove no early or repeated heavy damage.
 

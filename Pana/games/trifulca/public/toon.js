@@ -13,6 +13,7 @@ function material(color, thickness) {
   if (!shared) {
     shared = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide });
     shared.name = 'ink-outline';
+    shared.dispose = () => {}; // one for the whole game: a map's clean-up must not recompile it
     shared.onBeforeCompile = (shader) => {
       shader.uniforms.inkThickness = { value: thickness };
       // MeshBasicMaterial has no beginnormal_vertex, so displace along the

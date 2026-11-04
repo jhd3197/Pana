@@ -2,9 +2,10 @@
 // cubrirse, press counters), decided every few tenths of a second with the
 // game's seeded randomness so a restored host plays on identically. Pure.
 import { draw, clamp } from '/engine/random.js';
-import { edge, crowdSpot, inRing } from './fight-rules.js';
+import { edge, crowdSpot, inRing, canAct } from './fight-rules.js';
 import { INTRO, AFTER, TUTORIAL } from './rules.js';
 
+const CHAIN_SKILL = [.1, .25, .4];
 const AFTER_MANO = { min: .8, spread: 2 };
 const bump = (ai, key) => (ai[key] = ((ai[key] || 0) + 1) % 256);
 
@@ -59,6 +60,11 @@ export function botInput(game, p, dt) {
     }
     if (draw(game) < .25) ai.side = -ai.side;
     if (body.mareo > 75 && draw(game) < .6 && ai.plan !== 'grab') ai.plan = ai.plan === 'jab' ? 'jab' : 0;
+    // A pana's tap waits for the hands to be free; a bot just decides again then,
+    // or every plan it had while busy would pile up into kicks.
+    if (!canAct(body) && body.act !== 'block' && !['jab', 'trompon'].includes(ai.plan)) ai.plan = 0;
+    // Chaining is a skill: a bot's next hit counts as timed only so often.
+    if (body.chainLeft > 0 && draw(game) > CHAIN_SKILL[level]) body.mashed = true;
     if (ai.plan === 'kick') out.k = bump(ai, 'k');
     if (ai.plan === 'sweep') out.s = bump(ai, 's');
     if (ai.plan === 'toss') out.v = bump(ai, 'v');
