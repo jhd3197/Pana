@@ -6,7 +6,7 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { createAccessories } from '/engine/models/characters/pana/accessories.js';
 import { boxingGlove } from './set.js';
-import { HEAD_SIZE, GLOVE_SIZE } from './fighter-look.js';
+import { HEAD_SIZE, GLOVE_SIZE, helmetSwap } from './fighter-look.js';
 import { mountCard } from '/engine/card.js';
 
 export function mount(canvas) {
@@ -19,9 +19,8 @@ export function mount(canvas) {
     const gloves = [pana.armL, pana.armR].map((arm, i) => {
       const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(GLOVE_SIZE / .6); glove.position.set(0, -.86, .04); arm.add(glove); return glove;
     });
-    pana.wardrobe.setHeadwear('none'); pana.head.children.forEach(o => { if (o.name.startsWith('hat:')) o.visible = false; });
     const helmet = createAccessories(pana, { hat: 'casco', glasses: null, neck: null, back: null, extras: {} });
-    helmet.show('hat', 'casco'); helmet.color('hat', 'casco', 'main', '#ffc629');
+    helmetSwap(pana.head, helmet.hats.casco.root).on(); helmet.color('hat', 'casco', 'main', '#ffc629');
     return {
       update(dt, _t, now) {
         const t = now / 1000, jab = Math.max(0, Math.sin(t * 2.2) - .85) / .15;

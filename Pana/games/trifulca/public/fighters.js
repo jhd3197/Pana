@@ -15,7 +15,7 @@ import { boxingGlove, CORNER_COLORS, HELMET_COLORS } from './set.js';
 import { T } from './fight-rules.js';
 import { rhythm } from './crowd-life.js';
 import { inkOutlines } from './toon.js';
-import { HEAD_SIZE, ARM_LENGTH, ARM_GUARD, GLOVE_SIZE, punchLength } from './fighter-look.js';
+import { HEAD_SIZE, ARM_LENGTH, ARM_GUARD, GLOVE_SIZE, punchLength, helmetSwap } from './fighter-look.js';
 
 const SCULPT = .6;   // buildCharacter's sculpt scale: bones live in sculpt units
 const GLOVE = GLOVE_SIZE / SCULPT;
@@ -49,13 +49,11 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   });
   const armReach = { guard: ARM_GUARD, punch: ARM_GUARD, glove: GLOVE };
   const applyCombat = createCombatRig(character, gloves, base, armReach);
-  // The wardrobe's kart helmet goes on to fight; the pana's own hat comes off.
-  // The old look's hats (pesca, lana, corona, llanero) are bare unnamed meshes on the head.
-  const ownHats = character.head.children.filter(o => o.name.startsWith('hat:') || (o.isMesh && !o.name));
+  // The wardrobe's kart helmet goes on to fight; whatever the pana wears up there comes off.
   const helmet = createAccessories(character, { hat: 'casco', glasses: null, neck: null, back: null, extras: {} });
   helmet.color('hat', 'casco', 'main', HELMET_COLORS[seed % HELMET_COLORS.length]);
   helmet.color('hat', 'casco', 'stripe', seed % HELMET_COLORS.length === 0 ? '#e8443a' : '#ffffff');
-  let ownHeadwear = character.wardrobe.headwear, hatsShown = ownHats.map(o => o.visible);
+  const headgear = helmetSwap(character.head, helmet.hats.casco.root);
   // A ¡! over a pana winding up a trompón: the cue to dodge.
   const warn = nameTag(loc('¡OJO!'), { me: true }); warn.scale.set(.7, .175, 1); warn.position.y = 2.7; warn.visible = false; root.add(warn);
   const tag = name ? nameTag(me ? loc('{name} · tú', { name }) : name, { me }) : null;
@@ -85,9 +83,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
       glove.visible = !!corner;
       if (corner) glove.traverse(o => { if (o.isMesh && o.material.roughness < .35) o.material.color.set(CORNER_COLORS[corner]); });
     }
-    helmet.show('hat', corner ? 'casco' : 'none');
-    if (corner) { ownHeadwear = character.wardrobe.headwear; hatsShown = ownHats.map(o => o.visible); character.wardrobe.setHeadwear('none'); ownHats.forEach(o => { o.visible = false; }); }
-    else { character.wardrobe.setHeadwear(ownHeadwear); ownHats.forEach((o, i) => { o.visible = hatsShown[i]; }); }
+    if (corner) headgear.on(); else headgear.off();
   }
 
   // The hit flash: white, cooling to red. Emissive only, on this pana's own
