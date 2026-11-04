@@ -342,8 +342,8 @@ through a `SwarmFollower`: heads chase the synced ones and bodies run on the sam
 solver. A swing reaches them as the `snake-scatter` event, and the `loose` flag covers
 a missed one. So a host runs two simulations (see Perf).
 
-**Perf.** 150 snakes x 12 points, median, from `swarm-perf.test.js`: about 0.4 ms a host
-step in the open, 0.6 to 0.9 ms with all of them packed around one pana, 0.4 ms a client
+**Perf.** 150 snakes x 12 points, median, from `swarm-perf.test.js`: about 0.3 to 0.6 ms a host
+step in the open, 0.6 to 0.9 ms with all of them packed around one pana, 0.3 to 0.7 ms a client
 step (30 and 45 steps a second). A step allocates nothing measurable (under 256 bytes,
 and the test fails above that). Separation goes through `engine/play/spatial-hash.js`,
 capped at 6 pushes a point, so a crowd costs less than double. Drawing is three draw
