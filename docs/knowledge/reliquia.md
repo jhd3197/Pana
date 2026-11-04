@@ -347,8 +347,14 @@ garment; fur, face and glasses stay) with `head: SUIT_HEAD`, then hides every
 mesh on the body except the neck's subtree and hangs the suit on the same
 bones, so poses, squash and stagger still apply. A remote pana goes from 142
 draws bare to about 40. Parts merge per bone into shared per-colour geometry
-with one vertex-coloured material; the dome is one shared geometry whose alpha
-is in its vertex colours (RGBA, so a highlight and a rim survive a dark room).
+with one vertex-coloured material. The body is smooth turned surfaces, not
+stacked balls: balls meeting at seams read as a puffer jacket however small
+they get. The dome is one shared geometry with an unlit shader patch on
+`MeshBasicMaterial`: a clear middle, an edge from the view angle and a crescent
+drawn in view space, so the glass shows from behind and in an unlit room, and
+fog still takes it far away. Nothing transmissive or environment-mapped. The
+crescent's ends must be masked by angle, or its zero width still leaves a thin
+full circle. The rim sits well under the bowl's widest point (`DOME.openAt`).
 The dome clears the real sculpt's farthest vertex, the ear cup at 1.20 of its
 1.28 radius. Character disposal frees whatever is under the sculpt, so call
 `suit.remove()` first. The helmet lamp is an unlit lens: no suit adds a light.
