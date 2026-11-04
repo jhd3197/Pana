@@ -53,6 +53,15 @@ test('a receipt never pays twice, even after a reload', () => {
   assert.equal(p.paid('run2'), false);
 });
 
+test('a bonus pays once without counting another dive', () => {
+  const p = open();
+  p.award(40, 'run1');
+  assert.equal(p.award(10, 'bonus', { dive: false }).gained, 10);
+  assert.equal(p.award(10, 'bonus', { dive: false }).gained, 0);
+  assert.equal(p.xp(), 50);
+  assert.equal(p.dives(), 1);
+});
+
 test('a rank-up reports the rank and only what it newly unlocks', () => {
   const p = open();
   const first = p.award(120, 'one');
