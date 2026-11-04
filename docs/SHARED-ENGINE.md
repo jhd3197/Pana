@@ -774,6 +774,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Portraits | `engine/portrait.js`, `portrait-cache.js` | Bochinche, Trifulca |
 | Menu card pictures of any 3D object (built, framed by its bounds, drawn once on the shared offscreen renderer, cached by key; `keep(mesh)` draws one part alone) | `engine/object-thumb.js` (`objectThumb(key, build, { width, height, turn, tilt, keep, margin })`) on `engine/snapshot.js` | Pepazo (armory cards: every weapon, part, charm and grenade) |
 | Wardrobe | `engine/wardrobe.js`, `wardrobe-preview.js` | Bochinche, Carreritas, Pepazo, Trifulca (the page also loads `wardrobe-preview` through `pana.sh`) |
+| Friend-named bots (the top 2-3 bots wear the names of the player's friends; `applyFriendNames`, `friendNamesNow`, `loadFriendNames`, `cleanJoinNames`) | `engine/bot-names.js`; server rooms use `hostFriendNames()` in `server/src/room-kit.js`, `engine/net.js` sends the list on join | Bochinche, Billar, Bululú, Caída, Carreritas, Chapita, Criollas, Curiara, Dominó, Embuste, Escondidas, Galope, Lancha, Ludo, Parapente, Pepazo, Póquer, QQSMP, Stop, Tambor, Trifulca |
 | Mangos (shared currency) | `engine/mangos.js` | Bochinche, Carreritas |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
 | Text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`) | all 24 |

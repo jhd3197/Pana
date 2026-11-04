@@ -1,3 +1,4 @@
+import { applyFriendNames } from '../../../engine/bot-names.js';
 import { cleanKit, changeWeapon, kitStats, grenadeDef, WEAPONS, ownsCamo, FALLBACK_CAMO, rangedDamage, allowedIn } from './armory-data.js';
 import { createMelee, startSwing, stepMelee, swingHit, throwStart, stepThrown, aimThrow, inHand } from '../../../engine/play/melee.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
@@ -232,7 +233,7 @@ export class Arena {
   // Seats this round's bots from the `bots` option: the old bots leave, then
   // botCount() new ones join, each on the smaller team in team and flag
   // rounds. `make(i)` gives bot i its name and avatar. Lobby only.
-  seatBots(make) {
+  seatBots(make, friendNames = []) {
     if (this.phase !== 'lobby') return 0;
     this.players = this.players.filter(p => !p.bot && p.connected);
     const count = botCount(this.options.bots, this.players.length), teams = teamPlay(this.options);
@@ -243,6 +244,7 @@ export class Arena {
       const team = size(0) === size(1) ? free[0] % 2 : size(0) < size(1) ? 0 : 1;
       this.add(BOT_ID + i, { ...make(i), bot: true }, teams ? free.find(s => s % 2 === team) : free[0]);
     }
+    applyFriendNames(this.players.filter(p => p.bot), friendNames, { taken: this.players.filter(p => !p.bot).map(p => p.name) });
     return count;
   }
   // "Otra ronda": back to the lobby so the host can pick the next map. The

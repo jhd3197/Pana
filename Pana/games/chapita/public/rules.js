@@ -4,6 +4,7 @@
 // a pitch in secret; the batter reads the cap and swings with timing and a
 // height; where the chapita lands is the hit, and runners move on their own.
 // The host calls advance(dt) for bots and timers; everything else is accept().
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { draw, clamp } from '/engine/random.js';
 import { locKey } from '../../../engine/i18n.js';
 import { defaultOptions, roomOptions } from './options.js';
@@ -95,6 +96,7 @@ export class ChapitaGame {
     const bots = this.players.filter(p => p.id === null);
     for (const p of bots) Object.assign(p, bot(p.seat), { zurdo: draw(this) < .25 });
     if (bots.length && draw(this) < .3) Object.assign(pick(this, bots), { name: ABUELO, style: 'abuelo', skill: .93 });
+    applyFriendNames(bots.filter(p => p.style !== 'abuelo'), friendNamesNow(), { rankBy: p => p.skill, taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     this.rules = this.options.houseRules === 'ruleta' && this.options.mode === 'caimanera'
       ? Object.keys(HOUSE_RULES).sort(() => draw(this) - .5).slice(0, 2).sort() : [];
     Object.assign(this, { inning: 1, half: 0, outs: 0, strikes: 0, balls: 0, bases: [null, null, null], lineup: [0, 0],

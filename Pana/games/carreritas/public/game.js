@@ -622,6 +622,7 @@ const lapProgress = (c) => paramOf(c.x, c.z, c.y) / T.TOTAL;
 // ======================================================================
 const BATTLE_RACERS = 4;   // races and cups take the field size from setup (online-rules.js fieldSize)
 const localField = cup => fieldSize({ humans: setup.split ? 2 : 1, cup, field: setup.field });
+let friendBots = null; import('/engine/bot-names.js').then(m => { friendBots = m; m.loadFriendNames(); }).catch(() => {});
 const LOCAL_PLAYER = 'local-player';
 const LOCAL_GUEST = 'local-guest';
 
@@ -647,6 +648,7 @@ function createLocalCup(cupId, playerIndex, wheelId, split, difficulty) {
       loadout: { car, wheel: AI_WHEELS[CARS[car].id] || 'calle', ...aiVessels(CARS[car].id) }, skillSeed: `${sessionId}:bot-${i + 1}`,
     });
   }
+  friendBots?.applyFriendNames(entrants.filter(e => e.kind === 'bot'), friendBots.friendNamesNow(), { rankBy: e => cupSkill(e, difficultyById(difficulty)), taken: [ME.name] });
   return createCupSession({ cupId, sessionId, seed, difficulty, bots: true, entrants });
 }
 
@@ -915,6 +917,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
       const RACERS = race.mode === 'battle' ? BATTLE_RACERS : localField(false), pool = [...names, ...RIVALS.slice(6)];
       const rivals = others.slice(0, RACERS - 1).map((car, i) => ({ car, name: rivalName(pool, i), wheel: AI_WHEELS[CARS[car].id] }));
+      friendBots?.applyFriendNames(rivals, friendBots.friendNamesNow(), { rankBy: r => CARS[r.car].tune.top, taken: [ME.name] });
       race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
       if (race.split) {
         const p2 = makeRacer((playerIndex + 1) % CARS.length, false, loc('Jugador 2'), 'calle');

@@ -1,4 +1,5 @@
 import { prepareScene } from '/engine/game-load.js';
+import { applyFriendNames, loadFriendNames } from '/engine/bot-names.js';
 import * as THREE from 'three';
 import { sound, Puffs, Shockwaves, popCounter } from '/engine/fx.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
@@ -80,6 +81,7 @@ const players = (() => {
     };
   });
 })();
+if (!online) loadFriendNames().then(names => applyFriendNames(players.filter(p => !p.human), names, { taken: [players[0].name] }));
 let me = players[0];
 const isHuman = (p) => p.human && !AUTO;
 // Who plays when in each round, decided by ¿Quién empieza? (starter.js);

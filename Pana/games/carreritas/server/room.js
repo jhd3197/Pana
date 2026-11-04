@@ -16,8 +16,9 @@ import { CAR_DEFINITIONS } from '../public/car-definitions.js';
 import { CUPS, canonicalCupId, cupById } from '../public/cup-definitions.js';
 import {
   abandonCup, acceptFinish, advanceStage, beginStage, createCupSession,
-  finalizeStage, markRacing, markStarted, retireEntrant, retryStage, seededOrder,
+  finalizeStage, markRacing, markStarted, retireEntrant, retryStage, seededOrder, seededUnit,
 } from '../public/cup-rules.js';
+import { applyFriendNames } from '../../../engine/bot-names.js';
 import { locKey } from '../../../engine/i18n.js';
 
 const RACE_CAP_MS = 20 * 60 * 1000;   // a race nobody finishes still ends
@@ -372,6 +373,7 @@ export default class CarreritasRoom extends PanaRoom {
         car, wheel: AI_WHEELS[CAR_DEFINITIONS[car].id] || 'calle', slot: slots.pop(), lap: 0,
       }));
     }
+    applyFriendNames([...this.state.racers.values()].filter(r => r.kind === 'bot'), this.hostFriendNames(), { rankBy: r => CAR_DEFINITIONS[r.car].tune.top, taken: humans.map(([, p]) => p.name) });
     this.state.startAt = 0;
     this.state.intermissionEndsAt = 0;
     this.state.raceId = (this.state.raceId + 1) % 65535 || 1;
@@ -404,6 +406,7 @@ export default class CarreritasRoom extends PanaRoom {
         skillSeed: `${sessionId}:${botId}`,
       });
     }
+    applyFriendNames(entrants.filter(e => e.kind === 'bot'), this.hostFriendNames(), { rankBy: e => seededUnit(e.skillSeed), taken: humans.map(([, p]) => p.name) });
     this.cupDef = cup;
     this.cupSession = createCupSession({
       cupId: cup.id, sessionId, seed, difficulty: this.state.difficulty, bots: this.state.bots, entrants,

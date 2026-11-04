@@ -8,6 +8,7 @@
 // Whoever isn't fighting is the ring: they shove fighters back in, bet
 // dolitas and give water in the corner. fight-rules.js owns the punches,
 // bot-rules.js the bots.
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { draw, clamp, seedOf } from '/engine/random.js';
 import { defaultOptions, roomOptions, ROTATE } from './options.js';
 import { locKey } from '../../../engine/i18n.js';
@@ -51,6 +52,7 @@ export function cleanInput(raw) {
 }
 
 const stats = () => ({ wins: 0, streak: 0, best: 0, kos: 0, caidas: 0, trompones: 0, manos: 0, skipped: 0, betWon: 0, shoves: 0, calmas: 0, agua: 0, fights: 0, throws: 0 });
+const humanNames = (players) => players.filter(p => !p.bot).map(p => p.name);
 const NO_PRESS = { gp: 0, e: 0, a: 0, t: 0, k: 0, s: 0, v: 0 };
 
 export class Trifulca {
@@ -146,6 +148,7 @@ export class Trifulca {
     const humanIds = this.players.filter(p => !p.bot).map(p => p.id), bots = this.players.filter(p => p.bot);
     this.ladder = this.mode === 'queda' && humanIds.length === 1 && bots.length ? { me: humanIds[0], rivals: bots.map(b => b.id), step: 0, lives: LADDER_LIVES } : null;
     if (this.ladder) bots.forEach((b, i) => { b.level = Math.max(0, Math.min(2, (LADDER[i] ?? 2) + this.options.nivel - 1)); });
+    applyFriendNames(bots, friendNamesNow(), { rankBy: b => b.level ?? this.options.nivel, taken: humanNames(this.players) });
     if (this.mode === 'torneo') this.bracket = { rounds: [this.queue.slice(0, this.queue.length >= 8 ? 8 : 4)], round: 0, match: 0, next: [] };
     this.beginIntro();
   }
@@ -497,8 +500,9 @@ export class Trifulca {
     this.endFight(winners, losers, how, calmedBy);
   }
 
-  // The human ring: out of the circle, whoever is near shoves you back in.
-  // If no pana does it in half a second, a neighbour does.
+  // The human ring: out of the circle, a pana nearby can shove you back in. If
+  // none does in half a second the line itself sends you back. No NPC walks over
+  // and nothing stuns you: you keep your hands and your guard.
   ringEdge(arena, dt) {
     if (arena.shape === 'square') return;
     for (const b of this.bodies.filter(inRing)) {
@@ -508,7 +512,6 @@ export class Trifulca {
         b.outside += dt;
         if (b.outside > .55) {
           b.vx = e.nx * 5; b.vz = e.nz * 5; b.outside = 0;
-          if (b.act !== 'down') { setAct(b, 'stun'); b.stun = .3; }
           this.emit({ type: 'vecino', id: b.id, angle: Math.atan2(b.x, b.z) });
         }
       } else b.outside = 0;
@@ -573,7 +576,7 @@ export class Trifulca {
         p.dolitas += PAY.agua; p.stats.agua++;
         this.emit({ type: 'agua', id: nearest.b.id, by: p.id });
       }
-    } else if (press?.gp && this.phase === 'fight' && p.cd <= 0) {
+    } else if (press?.gp && this.phase === 'fight' && p.cd <= 0 && !p.bot) {
       p.cd = .8;
       const e = nearest && edge(arena, nearest.b.x, nearest.b.z);
       if (nearest && nearest.d < 2 && e.out > -1 && nearest.b.act !== 'down') {

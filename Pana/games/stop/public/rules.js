@@ -5,6 +5,7 @@
 // time and votes on the answers the game doesn't know. Sheets never travel in
 // snapshots before the review: each client keeps its own and sends it at
 // pencils-down.
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { draw } from '/engine/random.js';
 import { findEntry, wordsFor, letterOf, soundKey, isCrude } from '/engine/play/saber-match.js';
 import { defaultOptions, roomOptions } from './options.js';
@@ -227,6 +228,8 @@ export class StopGame {
     this.rounds = this.options.rounds; this.limit = this.options.mode === 'rapido' ? TIMES.rapido : this.options.seconds;
     this.categories = pickCategories(this, this.options);
     for (const p of this.players) Object.assign(p, { total: 0, round: 0, filled: 0, submitted: false, sheet: null, stats: freshStats() });
+    for (const p of this.players) if (p.id === null) p.name = BOT_NAMES[p.seat];
+    applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     // `used` carries over: the next game starts with the letters this room hasn't played.
     Object.assign(this, { round: 0, winner: null, titles: null, review: null, stopper: null, letter: null, history: [] });
     this.spinFrom = Math.floor(draw(this) * SEATS); this.games++;

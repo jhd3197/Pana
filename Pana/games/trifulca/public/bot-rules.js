@@ -2,7 +2,7 @@
 // cubrirse, press counters), decided every few tenths of a second with the
 // game's seeded randomness so a restored host plays on identically. Pure.
 import { draw, clamp } from '/engine/random.js';
-import { edge, crowdSpot, inRing, canAct } from './fight-rules.js';
+import { edge, inRing, canAct } from './fight-rules.js';
 import { INTRO, AFTER, TUTORIAL } from './rules.js';
 
 const CHAIN_SKILL = [.1, .25, .4];
@@ -19,7 +19,7 @@ export function botInput(game, p, dt) {
     if (body && AFTER - game.time > ai.manoAt && !p.mano && draw(game) < .9) out.a = bump(ai, 'a');
     return out;
   }
-  if (!body || game.phase === 'intro') return botCrowd(game, p, ai, out, dt);
+  if (!body || game.phase === 'intro') return botCrowd(game, p, ai, out);
   if (!inRing(body)) return out;
   const other = game.body(body.foe);
   if (!other) return out;
@@ -105,8 +105,9 @@ function profe(game, body, ai, out, dt) {
   return out;
 }
 
-// A bot in the crowd: bet, walk toward trouble at the edge, shove it back in.
-function botCrowd(game, p, ai, out, dt) {
+// A bot in the crowd: bet and walk around the ring toward the action. Shoving is
+// a pana's move: a bot in the crowd never touches a fighter.
+function botCrowd(game, p, ai, out) {
   if (game.phase === 'intro') {
     if (!game.fighting(p.id)) {
       if (!p.bet && INTRO - game.time > ai.betAt) {
@@ -117,13 +118,12 @@ function botCrowd(game, p, ai, out, dt) {
     }
     return out;
   }
-  const arena = game.arena, spot = crowdSpot(arena, p.angle);
+  const arena = game.arena;
   const near = game.bodies.filter(inRing).map(b => ({ b, e: edge(arena, b.x, b.z) })).sort((x, y) => y.e.out - x.e.out)[0];
   if (!near || near.e.out < -1.2) return out;
   const target = Math.atan2(near.b.x, near.b.z);
   let diff = target - p.angle; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
   const tx = Math.cos(p.angle), tz = -Math.sin(p.angle), s = clamp(diff * 3, -1, 1);
   out.x = tx * s; out.z = tz * s;
-  if (Math.hypot(near.b.x - spot.x, near.b.z - spot.z) < 1.8 && near.e.out > -.4 && p.cd <= 0 && draw(game) < dt * 4) out.gp = bump(ai, 'gp');
   return out;
 }

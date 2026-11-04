@@ -107,7 +107,7 @@ wins and the titles are handed out.
   (invulnerability only stops hits). Benched and knocked-out ones never move but
   nobody stands inside them; a body on the ropes can't give way, so the free one
   moves alone; a tag-in lands beside the foe, not in them. Three or more take a
-  second pass. Crowd panas and the ref step aside in the scene (`aside`). Only
+  second pass. Crowd panas and the ref give way outward in the scene (`ringside.js`). Only
   positions move, so knockback velocity is untouched. Same spot: the first
   body goes to −X. The duel's pull back to z = 0 runs before the step so the
   push has the last word; the ref's clinch range is `BODY_GAP + 0.2`.
@@ -121,7 +121,7 @@ wins and the titles are handed out.
 ## The ring and the night
 
 - Circle arenas have a human ring (`r` 4.1–4.5 m). A fighter more than 0.1 m
-  out for 0.55 s is shoved back by a neighbour; a pana in the crowd within 2 m
+  out for 0.55 s is sent back by the line, unstunned; a pana in the crowd within 2 m
   who presses golpe does it first and earns 2 dolitas (only when the fighter
   is out or within 0.35 m of the edge). El toldo is a square ring with ropes
   that bounce instead.
@@ -149,7 +149,11 @@ wins and the titles are handed out.
   body outward can flip it. `world.cameraSide` exposes the choice. The crowd
   never stands within `CROWD_GAP` (1.15 rad) of the camera side, and NPC
   neighbours on that side hide during a fight. The ref waits outside the
-  ring, 1.05 rad off the far side, and walks the edge to count. Crowd panas
+  ring, 1.05 rad off the far side, and walks around the edge to count. Everyone
+  outside the fight stays on the band in `ringside.js`: a straight line to a goal
+  across the ring goes through the fight, and a push away from a fighter flung past
+  the crowd points inward, so positions turn around the ring and only ever move
+  out. Bots in the crowd walk along it but never shove; that is a pana's move. Crowd panas
   and neighbours face the fight's middle rather than the centre mark, idle on
   their own seeded rhythm (`crowd-life.js`, deterministic across peers) and
   the neighbours near a landed trompón or a caída gasp; hits stagger the

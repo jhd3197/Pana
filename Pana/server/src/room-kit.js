@@ -20,6 +20,7 @@
 // fillBots() and InputBuffer. The room's cap comes from game.json `players`
 // (colyseus.js), so a room never sets maxClients itself.
 
+import { cleanJoinNames } from '../../engine/bot-names.js';
 import crypto from 'node:crypto';
 import { Room, CloseCode, ServerError } from '@colyseus/core';
 import { schema, t } from '@colyseus/schema';
@@ -168,6 +169,7 @@ export class PanaRoom extends Room {
   onJoin(client, options = {}) {
     const member = this.createMember(client, options);
     this.state.players.set(client.sessionId, member);
+    (this.friendLists ||= new Map()).set(client.sessionId, cleanJoinNames(options.friendNames));
     // The party's Pana Mayor hosts, even when a guest's tab got here first.
     if (isLead(this, options.lead) && !this.lead && Date.now() - this.createdAt < LEAD_WINDOW_MS) {
       this.lead = client.sessionId;
@@ -178,6 +180,10 @@ export class PanaRoom extends Room {
     roomLog(this, 'join', { seat: member.seat, name: member.name, lead: options.lead ? 1 : 0, host: this.state.host === client.sessionId ? 1 : 0, ...this.counts() });
     this.updateMetadata();
   }
+
+  // Friend names for this room's bots (engine/bot-names.js): only the host's, never
+  // kept in room state until a bot wears one.
+  hostFriendNames() { return this.friendLists?.get(this.state.host) ?? []; }
 
   counts() {
     const all = [...this.state.players.values()];
@@ -206,6 +212,7 @@ export class PanaRoom extends Room {
   onLeave(client, code) {
     const id = client.sessionId, member = this.state.players.get(id);
     this.state.players.delete(id);
+    this.friendLists?.delete(id);
     roomLog(this, 'leave', { seat: member?.seat, code, ...this.counts() });
     if (this.lead === id) this.lead = '';
     this.left?.(client, member);

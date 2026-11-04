@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Trifulca: el árbitro y el público ya no se meten en la pelea.**
+  Rodean el ring por fuera y se apartan hacia afuera. Los bots del público no
+  empujan, y volver al ring al salirte ya no te aturde.
+- **Tus panas ahora salen de rivales.**
+  Los bots más fuertes llevan el nombre de tus panas en 21 juegos, cuando
+  entras con tu cuenta de pana.sh. Sin panas, todo sigue igual.
 - **Reliquia: ahora bajas con traje de explorador y casco de vidrio.**
   Cada pana lleva el color de su puesto, con mochila, mangueras, botas y una
   lamparita; la cara se ve por el vidrio. Solo cambia el look, no cómo se juega.

@@ -1,3 +1,4 @@
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
 import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
@@ -176,6 +177,8 @@ export class CaidaGame {
   // A new match: the cachos pick the first dealer before any card moves.
   openMatch() {
     if (this.phase === 'finished') { this.round = 0; this.scores.fill(0); }
+    for (const p of this.players) if (p.id === null) p.name = BOT_NAMES[p.seat];
+    applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     this.table = []; this.stock = []; this.history = []; this.result = null; this.last = null; this.lastCapture = null; this.cutAt = null; this.dealCall = null;
     this.players.forEach(p => { p.hand = []; p.captured = []; p.announced = null; });
     this.phase = 'starter'; this.revision++;
