@@ -830,6 +830,11 @@ Used by: Pepazo (team rounds, Bandera and Dominación too).
   (Cocina, Escondidas), `bolas-world` (Bululú, Criollas), the island set
   (Bululú), the coastal set (Carreritas, Parapente), `colonial-street`
   (Trifulca).
+- **Glowing cave fungi**: `props/glow-mushrooms` has `glowMushrooms` (a floor
+  clump, or `wall: true` for shelves; shared materials, so a map's clumps bake
+  into a couple of draws) and `mushroomHalos` (every halo of a floor in one
+  `THREE.Points` draw). No lights of its own: `userData.glow` says where one could
+  go. Used by: Fosa.
 - **Reliquia's boss**: `props/reliquia-boss` has `silbon` (posed by
   `userData.animate`) and `hideNook`; `fauna/cave-creatures` has `caveBat` (replaces
   the guácharo) and `props/mine` has `mineCart({ hollow: true })`, an open cart to

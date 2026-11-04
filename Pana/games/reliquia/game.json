@@ -1,6 +1,6 @@
 {
-  "name": "Reliquia",
-  "description": "Tesoros en la mina",
+  "name": "Fosa",
+  "description": "Bajen juntos. No se desarmen.",
   "players": 8,
-  "color": "#ffc23d"
+  "color": "#a58bff"
 }

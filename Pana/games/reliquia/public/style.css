@@ -1,5 +1,5 @@
-/* Reliquia: Pana Kit lobby + a first-person HUD over the ruins. */
-body{--pk-game:#ffc23d;--pk-game-ink:#2a1a06;--rel-gold:#ffd36a;--rel-jade:#4fe3c1;--rel-greed:#ff6a3d;--rel-greed-hot:#ff3d7a;--rel-dark:#0d0814e6;
+/* Fosa: Pana Kit lobby + a first-person HUD over the ruins. */
+body{--pk-game:#a58bff;--pk-game-ink:#160b2e;--rel-gold:#ffd36a;--rel-jade:#4fe3c1;--rel-greed:#ff6a3d;--rel-greed-hot:#ff3d7a;--rel-dark:#0d0814e6;
   margin:0;overflow:hidden;background:var(--pk-night);color:var(--pk-text);font-family:var(--pk-sans);color-scheme:dark}
 *{box-sizing:border-box}button,a{-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:disabled{cursor:default}
 .hidden{display:none!important}#world{display:block;position:fixed;inset:0;width:100vw;height:100dvh;touch-action:none;outline:none}
@@ -18,6 +18,7 @@ body.is-down #world{filter:grayscale(.75) brightness(.7)}
 /* lobby */
 .pk-lobby{padding-top:28px}
 .lobby .pk-title{font-size:clamp(56px,7vw,80px)}
+.lobby-tagline{margin:0;max-width:17ch;color:var(--pk-game);font:800 14px/1.15 var(--pk-sans)}
 .lobby .subtitle{margin-top:10px;color:var(--pk-game);letter-spacing:4px}
 .lobby .pk-copy b{display:block;margin-bottom:6px;font-weight:900;color:var(--pk-text)}
 .lobby-team{display:flex;flex-wrap:wrap;gap:6px;min-height:32px}

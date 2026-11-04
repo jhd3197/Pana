@@ -1,6 +1,10 @@
-# Reliquia · La mina del sol
+# Fosa · La mina del sol
 
-First-person co-op treasure extraction at `/g/reliquia/`, 1–8 panas, tuned
+Players know this game as **Fosa** ("Bajen juntos. No se desarmen."). It
+was called Reliquia: the folder, route, protocol and storage keys keep that id
+so old links and saved settings still work, and internal notes may use either.
+
+First-person co-op cave extraction at `/g/reliquia/`, 1–8 panas, tuned
 for 5. The run's one decision: *¿nos vamos ya con lo que tenemos, o bajamos
 un piso más?* Only loot that reaches the truck at the camp counts.
 
@@ -358,6 +362,15 @@ full circle. The rim sits well under the bowl's widest point (`DOME.openAt`).
 The dome clears the real sculpt's farthest vertex, the ear cup at 1.20 of its
 1.28 radius. Character disposal frees whatever is under the sculpt, so call
 `suit.remove()` first. The helmet lamp is an unlit lens: no suit adds a light.
+
+**Glowing mushrooms** (`sowMushrooms` in `scene.js`) grow on every floor of both
+themes: shelves on mine walls, clumps at wall feet (the library's walls are full
+of cases, so only clumps there) and in the pits. They use their own seeded stream
+and never touch the deck, `layout.js` or `run.lights`: mummies avoid `run.lights`,
+so adding them there would change play. No new lights: the last two of the five
+pool slots go to the nearest clumps within 13 m, displacing the farthest warm
+sources; halos are one `THREE.Points` draw per floor. Caps use deep colours because
+ACES tone mapping bleaches a bright emissive to white.
 
 `scene.js` builds the camp at once and each floor when it becomes
 reachable (floor 1 at start, floor f+1 when seal f opens), only from

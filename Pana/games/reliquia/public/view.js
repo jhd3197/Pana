@@ -30,6 +30,7 @@ import { dressExplorer, disposeSuits } from './explorer-suit.js';
 
 export const COLORS = SEAT_COLORS;
 const EYE = 1.45, POOL = 5, FAR = 220;
+const MUSHROOM_LIGHT = { power: 5, reach: 7, within: 13 };
 const CAMP_LOOK = { background: 0xf6d6a4, fog: [45, 150], hemi: [0xfff1d6, 0x8a6a4a, 2.1], sun: 3, exposure: 1.05 };
 // Underground: the mine is a dark violet black; the buried library cold and
 // grey-blue, a thin haze (no thick fog: the mist is a few rooms' accent), a
@@ -340,6 +341,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z) });
       for (const p of state.players) if (p.id !== me.id && alive(p) && floorOf(p.x) === vf && (holds(p, 'farol') || holds(p, 'sunCrown'))) sources.push({ x: p.x, y: 1.4, z: p.z, color: holds(p, 'sunCrown') ? 0xffd36a : look.hand || 0xffa850, power: 8, reach: 11, d: Math.hypot(p.x - me.x, p.z - me.z) - 6 });
       sources.sort((a, b) => a.d - b.d);
+      // The last two slots go to the nearest glowing mushrooms: no extra lights,
+      // and the warm sources they displace are the farthest of the five.
+      const glows = (world.floors.get(vf)?.glows || []).map(g => ({ ...g, power: MUSHROOM_LIGHT.power, reach: MUSHROOM_LIGHT.reach, d: Math.hypot(g.x - me.x, g.z - me.z) })).filter(g => g.d < MUSHROOM_LIGHT.within).sort((a, b) => a.d - b.d).slice(0, 2);
+      sources.splice(POOL - glows.length, sources.length, ...glows);
       pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); light.distance = s.reach; } });
     }
     // La codicia shows in the world: torches gutter and dust sifts from the ceiling.

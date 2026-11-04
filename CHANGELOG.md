@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia ahora se llama Fosa: bajen juntos, no se desarmen.**
+  Mismo juego y mismos enlaces, en una fosa oscura de la selva. Hongos azules y
+  morados brillan en paredes, suelos y abismos de todas las jornadas.
 - **Trifulca: el árbitro y el público ya no se meten en la pelea.**
   Rodean el ring por fuera y se apartan hacia afuera. Los bots del público no
   empujan, y volver al ring al salirte ya no te aturde.
