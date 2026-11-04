@@ -8,6 +8,23 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia: El Silbón no muere. Piérdelo, escóndete o llévalo al abismo.**
+  Ningún arma lo mata. Si te pierde de vista te busca y se va; caza por el oído, y
+  al correr hacia ti por encima del foso se cae y abre el sello. La sala del foso
+  sale en cada jornada, con el borde bien marcado.
+- **Reliquia: huecos para esconderte, según la dificultad.**
+  Busca la mano de tiza: el Silbón no cabe. En Tranquila nunca mira adentro, en
+  Normal a veces y solo la entrada, en Momia brava te saca a golpes. Antes de mirar
+  se oye la piedra y olfatea: sal a tiempo.
+- **Reliquia: ahora son murciélagos.**
+  Duermen colgados del techo, caen chillando si pasas o haces ruido, y ese chillido
+  atrae al Silbón. Se acabaron los pájaros del campamento.
+- **Reliquia: carrito abierto, y cargarlo tiene su maña.**
+  Se ve por dentro y todo va a su tamaño real, así que cabe lo que quepa. Apunta
+  adentro, lo pesado tarda un poco y rebota más, y una carga montada se cae si frenas
+  o chocas de golpe. Nadie camina más lento.
+- **Reliquia: el tambor ceremonial ya no tapa la sala.**
+  Ahora llega a la rodilla, en madera y cuero, sin tanto brillo.
 - **Pepazo: Acabado, Camuflaje y Llavero juntos en Estilo.**
   Cada arma tiene un solo botón Estilo con los tres; Atrás, Esc, Retroceso o
   B suben un nivel a la vez, y las flechas recorren la armería.
