@@ -109,7 +109,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
   const avatars = new Map(), enemies = new Map(), carts = new Map(), tmp = new THREE.Vector3();
   let lastState = null, snapAt = 0;
-  let scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = '', look = CAMP_LOOK, poolAt = 0, wallPush = 0, shakeScale = 1;
+  let veil = 0, scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = '', look = CAMP_LOOK, poolAt = 0, wallPush = 0, shakeScale = 1;
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
   function setLook(name) {
@@ -155,10 +155,17 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     // Riders sink and rise with the cage through the shaft.
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
     setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'caverna' : world.run.theme);
+    // Riding the lift at the camp: the dark of the shaft lifts as you come up (and
+    // settles as you go down), so the cavern opens around you. Only ever this screen's picture.
+    const inShaft = vf === 0 ? Math.max(0, Math.min(1, -rideY(me || {}) / 6)) : 0, comingUp = vf === 0 && state.lift?.moving && state.lift.to === 0 && state.lift.riders.includes(me?.id);
+    veil += (inShaft - veil) * (1 - Math.exp(-dt * (inShaft > veil ? 5 : 1.1)));
+    // You turn to face the way out and look up a little; the mouse still has the last word.
+    if (comingUp) { const ease = 1 - Math.exp(-dt * 1.5), turn = Math.atan2(Math.sin(-h), Math.cos(-h)); h += turn * ease; pitch += (.12 - pitch) * ease; }
     // El apagón: every torch stutters and sinks, your lamp with them. "Sustos" softens the show, never the rule.
     const stutter = Math.sin(t * 31) * Math.sin(t * 17 + 1.1) > -.1 ? 1 : .35, out = vf === 0 || state.suceso?.kind !== 'apagon' ? 1 : scares === 'apagados' ? .7 : scares === 'suaves' ? .45 + .2 * stutter : .1 + .3 * stutter;
     // Scares squeeze the fog in; the candles fade with it.
-    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog * (.6 + .4 * out); hemi.intensity = look.hemi[2] * (.2 + .8 * Math.min(1, Math.max(mood.light, mood.farol))) * (.25 + .75 * out) }
+    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog * (.6 + .4 * out) * (1 - veil * .6); hemi.intensity = look.hemi[2] * (.2 + .8 * Math.min(1, Math.max(mood.light, mood.farol))) * (.25 + .75 * out) * (1 - veil * .7); }
+    renderer.toneMappingExposure = look.exposure * (1 - veil * .35);
     world.candles({ level: mood.light * out, out: mood.out, near: scene.fog.near, far: scene.fog.far });
     world.update(t, state, dt, me);
     sky.update(t); shopSign.visible = vf === 0;
