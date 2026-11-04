@@ -265,4 +265,6 @@ export default [
     description: 'Araña gorda naranja y negra con ocho patas articuladas que corren; cae del techo.', tags: ['animal', 'fauna', 'araña', 'cueva', 'animado'] },
   { id: 'cuaima', name: 'Cuaima', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'cuaima', usedBy: ['Reliquia'], previewOptions: null, pack: 'wildlife',
     description: 'Serpiente enroscada con la cabeza en alto; tick(t, strike) la lanza al ataque.', tags: ['animal', 'fauna', 'serpiente', 'cueva', 'animado'] },
+  { id: 'snake-swarm', name: 'Enjambre de culebras', category: 'Fauna', source: '/engine/models/fauna/snake-swarm.js', factory: 'snakeSwarm', usedBy: ['Reliquia'], previewOptions: null, pack: 'wildlife',
+    description: 'Culebras instanciadas alrededor de una grieta: tres draw calls, sean las que sean; createSnakeInstances dibuja cadenas de puntos.', tags: ['animal', 'fauna', 'serpiente', 'cueva', 'animado', 'enjambre'] },
 ];

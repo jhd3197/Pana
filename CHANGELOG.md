@@ -21,6 +21,9 @@ becomes the GitHub release's notes.
 - **Trifulca: los peleadores vuelven a verse como panas, y solo con el casco.**
   Cabeza y brazos casi como antes, guantes más grandes para leer cada golpe. Ni
   sombrero, ni lentes, ni nada asoma por el casco; al bajar del ring vuelve tu ropa.
+- **Reliquia: si oyes un siseo, vienen las culebras.**
+  Salen a montones de las grietas de otra sala. Muerden poco y te frenan un rato; el
+  machete las desparrama, el farol las espanta y en los huecos no caben.
 - **Reliquia: El Silbón no muere. Piérdelo, escóndete o llévalo al abismo.**
   Ningún arma lo mata. Si te pierde de vista te busca y se va; caza por el oído, y
   al correr hacia ti por encima del foso se cae y abre el sello. La sala del foso

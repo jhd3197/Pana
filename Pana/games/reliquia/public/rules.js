@@ -11,6 +11,7 @@ import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from '.
 import { spawnEnemy, updateEnemies, holds, wound, stagger } from './enemies.js';
 import { createNoiseBoard, emitNoise, pruneNoises } from '../../../engine/play/noise.js';
 import { createDirector, updateDirector, random } from './director.js';
+import { startSwarm, tickSwarm, swarmDue, swingAtSwarm, SWARM } from './swarm.js';
 import { clamp } from '../../../engine/random.js';
 import { resetJump } from '../../../engine/play/jump.js';
 import { stepWalker } from '../../../engine/play/walker.js';
@@ -207,7 +208,7 @@ export class Expedition {
       touched: {}, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, carts: [], haul: 0,
       lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       level: 1, mangos: 0, quota: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null }, origin: seed >>> 0 || 1,
-      director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0 });
+      swarm: null, swarmSim: null, swarmAt: SWARM.firstAt, swarmId: 0, director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0 });
     this.paths = new Map();
   }
   get layout() { return layoutFor(this.seed, this.level, themeOf(this)); }
@@ -482,6 +483,8 @@ export class Expedition {
       if (e.hp <= 0) this.defeated(e, p);
       if (hits >= 3) break;
     }
+    // Snakes do not die of it: they fly apart and pull themselves together (swarm.js).
+    if (swingAtSwarm(this, p, kind)) hits++;
     this.noisy(hits ? 'hit' : 'swing', p, p.id); this.event(hits ? 'hit' : 'swing', '', { player: p.id, hand, item: kind || 'fist' });
     return true;
   }
@@ -593,7 +596,7 @@ export class Expedition {
     this.lifting(dt, used.has('lift')); this.cargoTick(dt); this.carry(dt); this.pushing(dt); this.dragging(dt); this.flying(dt); this.traps(dt); this.paint(dt); this.truckZone(dt); this.artifacts(dt); this.collapses(dt);
     // Inside a nook a pana is out of the Silbón's world, unless it just pulled them out.
     for (const p of this.players) { p.exposed = Math.max(0, (p.exposed || 0) - dt); const n = alive(p) && p.exposed <= 0 ? nookAt(run, p.x, p.z) : null; p.hidden = n ? n.id : null; }
-    updateEnemies(this, dt); this.stalk(dt); pruneNoises(this.noise, this.time);
+    updateEnemies(this, dt); tickSwarm(this, dt); this.stalk(dt); pruneNoises(this.noise, this.time);
     // Who trails the expedition the most: "el cobarde".
     const standing = this.players.filter(alive);
     if (standing.length > 1 && standing.some(p => floorOf(p.x) > 0)) {
@@ -605,7 +608,7 @@ export class Expedition {
     this.wipe = this.players.some(p => !p.spectator) && !this.players.some(alive) ? this.wipe + dt : 0;
     if (this.wipe >= 3) return this.finish('wipe');
     if (standing.some(p => floorOf(p.x) > 0)) this.greed(dt * .04 * Math.max(...standing.map(p => floorOf(p.x))));
-    updateDirector(this, dt, (floor, count) => this.wave(floor, count));
+    updateDirector(this, dt, (floor, count) => (swarmDue(this) && startSwarm(this, floor)) || this.wave(floor, count));
   }
   finish(outcome) {
     this.phase = 'results'; this.outcome = outcome;
@@ -723,7 +726,7 @@ export class Expedition {
     // A new deck for the next jornada; the camp's own pieces stay as they are.
     const campLoot = Object.fromEntries(Object.entries(this.touched).filter(([id]) => this.layout.run.loot.find(l => l.id === +id)?.floor === 0));
     this.level++; this.seed = levelSeed(this.origin, this.level);
-    Object.assign(this, { touched: campLoot, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, enemies: [], darts: [], shots: [], splats: [],
+    Object.assign(this, { touched: campLoot, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, enemies: [], darts: [], shots: [], splats: [], swarm: null, swarmSim: null, swarmAt: this.time + SWARM.firstAt,
       codicia: 0, deepest: 0, director: createDirector(), noise: createNoiseBoard(), collapseIn: 30, stalkerRest: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null } });
     this.items = this.items.filter(i => floorOf(i.x) === 0); this.paths.clear();
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));
@@ -993,14 +996,14 @@ export class Expedition {
     if (spawned && kind === 'lector') this.event('wave', locKey('Alguien pasa las páginas en la oscuridad…'), { floor });
     return spawned > 0;
   }
-  snapshot() { const { paths, lastInputs, noise, ...state } = this; return clone(state); }
+  snapshot() { const { paths, lastInputs, noise, swarmSim, ...state } = this; return clone(state); }
   // La Estatua stands in its room from the start of the jornada, asleep
   // (and, to anyone who looks, just a statue) until someone walks in.
   placeStatues() {
     for (const s of this.layout.run.sleepers) if (s.kind === 'estatua') { const e = spawnEnemy(this, 'estatua', s.x, s.z, { room: s.room, awake: false, h: s.h ?? 0, pose: s.pose ?? 0, born: this.time - 1 }); if (e) e.mode = 'still'; }
   }
   restore(snapshot, members) {
-    Object.assign(this, clone(snapshot)); this.paths = new Map(); this.noise = createNoiseBoard();
+    Object.assign(this, clone(snapshot)); this.paths = new Map(); this.noise = createNoiseBoard(); this.swarmSim = null;
     for (const p of [...this.players]) if (!members.has(p.id)) this.removePlayer(p.id);
     for (const p of members.values()) if (!this.players.some(q => q.id === p.id)) this.addPlayer(p.id, p.name, p.avatar || {});
   }

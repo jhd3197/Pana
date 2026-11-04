@@ -614,6 +614,31 @@ them, `rules.js` searches them). Models: `props/reliquia-hideouts.js`
 (`userData.open(t)` poses each piece from shut to searched). Tests:
 `engine/tests/hiding-spots.test.js`, `games/reliquia/tests/hiding.test.js`.
 
+### Crowds of crawling things: chains, distance fields, flow fields
+
+Four small renderer-free modules in `engine/play/`, usable together or alone. All are
+allocation-free once built.
+
+- `distance-field.js`: `bakeDistanceField({ w, h, cell, x0, z0, solid })` makes a signed
+  2D field from any grid. `at(x, z)`, `sample(x, z)` (way out in `gx`, `gz`), `clear(ax, az, bx, bz, margin)`.
+- `spatial-hash.js`: `SpatialHash` answers "who is near?" through neighbouring cells only.
+- `flow-field.js`: `flowFromField(field)`, one search for any number of walkers.
+  `add` the targets, `compute`, then `toward(x, z)` gives the way in `dx`, `dz`.
+- `verlet-chains.js`: `VerletChains`, chains of point masses that keep their length, stay
+  out of a field and apart through a hash. `nudge` steers a head, `scatter` throws
+  points apart until they reform.
+
+```js
+const chains = new VerletChains({ chains: 100, points: 12, rest: .17, field, gap: .16, grid: { cell: .4, x0, z0, w, h } });
+chains.place(0, x, z);
+flow.toward(chains.x[0], chains.z[0]); chains.nudge(0, flow.dx * speed * chains.h, flow.dz * speed * chains.h); chains.step();
+```
+
+Draw them with `createSnakeInstances` (`engine/models/fauna/snake-swarm.js`): one
+`InstancedMesh` per part, three draw calls at any count. Used by: Reliquia (`swarm.js`,
+150 snakes x 12 points in under 1 ms a step). Tests: `engine/tests/distance-field.test.js`,
+`spatial-hash.test.js`, `flow-field.test.js`, `verlet-chains.test.js`.
+
 ### Music
 
 `engine/music.js` (+ `music-tracks.js`): songs, styles, the lobby song.

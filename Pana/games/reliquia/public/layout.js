@@ -31,7 +31,7 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
     for (const s of run.solids || []) if (s.floor === f) fill(s.rect, 0);
     // A nook's two slabs: stone like any wall.
     for (const n of run.nooks || []) if (n.floor === f) for (const slab of n.slabs) fill(slab, 0);
-    grids.push({ x0, z0, w, h, bits, obstacles: run.obstacles.filter(o => o.floor === f) });
+    grids.push({ x0, z0, w, h, bits, res: RES, obstacles: run.obstacles.filter(o => o.floor === f) });
   }
   const cell = (x, z) => {
     const g = grids[Math.min(floors, floorOf(x))]; if (!g) return 0;
@@ -161,7 +161,9 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
   }
   // A pearl the deck rolled against a pit edge or a wall would be unreachable.
   run.loot = run.loot.filter(l => ITEMS[l.kind]?.size === 'big' || l.y || walkable(l.x, l.z, { open: {}, revealed: Object.fromEntries(run.hidden.map(h => [h.id, true])) }, .3));
-  const layout = { run, walkable, lineClear, sightClear, moveBody, moveAcross, crossable, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
+  // A floor's raw bitmap (1: floor, 2: pit, 0: rock), for whoever bakes something from it.
+  const footprint = f => grids[f] || null;
+  const layout = { run, footprint, walkable, lineClear, sightClear, moveBody, moveAcross, crossable, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
   layouts.set(key, layout);
   return layout;
 }
