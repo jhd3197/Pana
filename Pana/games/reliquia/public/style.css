@@ -7,6 +7,7 @@ body{--pk-game:#ffc23d;--pk-game-ink:#2a1a06;--rel-gold:#ffd36a;--rel-jade:#4fe3
 body.playing .vignette{background:radial-gradient(ellipse at 50% 48%,transparent 34%,rgba(5,3,8,.5) 72%,rgba(2,1,4,.86) 100%)}
 /* A scare closes the dark in around the screen (eerie-fx.js sets the opacity). */
 .dread{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 50%,transparent 18%,rgba(0,0,0,.75) 60%,#000 100%)}
+body.playing.in-nook .vignette{background:radial-gradient(ellipse at 50% 48%,transparent 16%,rgba(3,2,5,.74) 52%,rgba(1,0,2,.97) 100%)}
 body.hurt .vignette{box-shadow:inset 0 0 110px rgba(255,75,75,.5)}
 body.reversed #world{filter:hue-rotate(40deg) saturate(1.3)}
 body.is-down #world{filter:grayscale(.75) brightness(.7)}

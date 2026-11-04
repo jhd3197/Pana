@@ -3,11 +3,11 @@
 // loot back to the truck to bank it, and la codicia rises with every
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
-import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS } from './deck.js';
+import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS, nookAt } from './deck.js';
 import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
 import { layoutFor, distance } from './layout.js';
 import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from './items.js';
-import { spawnEnemy, updateEnemies, holds, wound } from './enemies.js';
+import { spawnEnemy, updateEnemies, holds, wound, stagger } from './enemies.js';
 import { createNoiseBoard, emitNoise, pruneNoises } from '../../../engine/play/noise.js';
 import { createDirector, updateDirector, random } from './director.js';
 import { clamp } from '../../../engine/random.js';
@@ -456,13 +456,13 @@ export class Expedition {
     let hits = 0;
     for (const e of this.enemies) {
       if (e.hp <= 0 || floorOf(e.x) !== floorOf(p.x)) continue;
-      const d = distance(p, e), reach = range + (e.kind === 'guardian' ? .9 : e.kind === 'jaguar' || e.kind === 'stalker' ? .7 : 0);
+      const d = distance(p, e), reach = range + (e.kind === 'guardian' || e.kind === 'silbon' ? .9 : e.kind === 'jaguar' || e.kind === 'stalker' ? .7 : 0);
       if (d > reach) continue;
       const ahead = ((e.x - p.x) * Math.sin(p.h) + (e.z - p.z) * Math.cos(p.h)) / (d || 1);
       if (ahead < .35 || !this.layout.lineClear(p, e, this, .1)) continue;
       hits++; e.hit = .2; e.awake = true;
-      // Stone only staggers: a statue takes no damage and does not budge.
-      if (!wound(e, damage)) e.stun = Math.max(e.stun, .9);
+      // Stone only staggers, and so does the Silbón: no damage, it does not budge.
+      if (!wound(e, damage)) stagger(e, .9);
       else if (!['guardian', 'jaguar', 'stalker'].includes(e.kind)) { e.stun = .3; this.layout.moveBody(e, Math.sin(p.h) * .6, Math.cos(p.h) * .6, this, .5); }
       if (e.hp <= 0) this.defeated(e, p);
       if (hits >= 3) break;
@@ -479,6 +479,14 @@ export class Expedition {
       this.event('guardian', locKey('¡El guardián cayó! El sello se abre.'), { enemy: e.id });
     }
     if (e.kind === 'jaguar') { this.spawnItem('jaguarHeart', e.x, e.z, { state: 'air', vy: 5 }); this.event('jaguar', locKey('¡Vencieron al jaguar de oro! Dejó su corazón.'), { enemy: e.id }); }
+    if (e.kind === 'silbon') {
+      // Into the pit: the way down opens and what it carried lands on the rim.
+      const f = floorOf(e.x), seal = this.layout.run.seals.find(s => s.floor === f), pit = this.layout.run.pits.find(q => q.floor === f);
+      if (seal) this.openSeal(seal);
+      const at = pit ? { x: (pit.rect[0] + pit.rect[2]) / 2, z: pit.rect[1] - 1.4 } : e;
+      for (const [i, kind] of ['mask', 'cup', 'coins'].entries()) this.spawnItem(kind, at.x + (i - 1) * .9, at.z, { state: 'air', y: 1, vy: 4 });
+      this.event('silbon-down', locKey('¡El Silbón se fue al abismo!'), { enemy: e.id });
+    }
     if (e.kind === 'stalker') { this.stalkerRest = 60; this.event('stalker-down', locKey('El jaguar negro huyó a la oscuridad… por ahora.'), { enemy: e.id }); }
   }
   openSeal(seal) {
@@ -550,7 +558,8 @@ export class Expedition {
       if (room && room.floor > 0 && !this.woke[room.id] && inRect(p.x, p.z, room.rect, -1.5)) {
         this.woke[room.id] = 1;
         let woke = 0;
-        for (const s of run.sleepers) if (s.room === room.id && s.kind !== 'estatua' && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' }) && s.kind === 'mummy') woke++;
+        for (const s of run.sleepers) if (s.room === room.id && s.kind !== 'estatua' && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' || s.kind === 'bat', ...(s.kind === 'silbon' ? { mode: 'wander', stun: 1.2 } : {}) }) && s.kind === 'mummy') woke++;
+        if (run.sleepers.some(s => s.room === room.id && s.kind === 'silbon')) this.event('boss', locKey('El Silbón se levantó.'), { room: room.id, boss: 'silbon' });
         if (woke && room.kind !== 'guardian' && room.kind !== 'boveda') this.event('awaken', locKey('Las vendas se mueven. Prepárense.'), { room: room.id });
         if (room.kind === 'boveda') this.event('vault', locKey('La bóveda de oro. Algo grande respira en la oscuridad…'), { room: room.id });
       }
@@ -564,6 +573,8 @@ export class Expedition {
       if (seal.winches.every(q => this.winches[q.id]?.latched > 0)) this.openSeal(seal);
     }
     this.lifting(dt, used.has('lift')); this.cargoTick(dt); this.carry(dt); this.pushing(dt); this.dragging(dt); this.flying(dt); this.traps(dt); this.paint(dt); this.truckZone(dt); this.artifacts(dt); this.collapses(dt);
+    // Inside a nook a pana is out of the Silbón's world, unless it just pulled them out.
+    for (const p of this.players) { p.exposed = Math.max(0, (p.exposed || 0) - dt); const n = alive(p) && p.exposed <= 0 ? nookAt(run, p.x, p.z) : null; p.hidden = n ? n.id : null; }
     updateEnemies(this, dt); this.stalk(dt); pruneNoises(this.noise, this.time);
     // Who trails the expedition the most: "el cobarde".
     const standing = this.players.filter(alive);
@@ -819,7 +830,7 @@ export class Expedition {
       for (let i = 0; i < steps && s.life > 0; i++) {
         const nx = s.x + s.vx * dt / steps, nz = s.z + s.vz * dt / steps; s.y += s.vy * dt / steps; s.vy -= 4 * dt / steps;
         const enemy = this.enemies.find(e => e.hp > 0 && Math.hypot(e.x - nx, e.z - nz) < (e.kind === 'guardian' || e.kind === 'jaguar' ? 1.3 : .7) && s.y < 3.2);
-        if (enemy) { wound(enemy, s.marker ? 5 : 6); this.noisy('splat', { x: nx, z: nz }); enemy.stun = Math.max(enemy.stun, (enemy.kind === 'mummy' || enemy.kind === 'phantom' ? 1.2 : .7) * (s.marker ? .5 : 1)); enemy.hit = .2; enemy.awake = true; if (enemy.hp <= 0) this.defeated(enemy, this.players.find(p => p.id === s.owner)); this.splat(s, nx, nz, 0, 0, true); s.life = 0; break; }
+        if (enemy) { wound(enemy, s.marker ? 5 : 6); this.noisy('splat', { x: nx, z: nz }); stagger(enemy, (enemy.kind === 'mummy' || enemy.kind === 'phantom' ? 1.2 : .7) * (s.marker ? .5 : 1)); enemy.hit = .2; enemy.awake = true; if (enemy.hp <= 0) this.defeated(enemy, this.players.find(p => p.id === s.owner)); this.splat(s, nx, nz, 0, 0, true); s.life = 0; break; }
         if (!this.layout.walkable(nx, nz, this, .05) && !this.layout.overPit(nx, nz)) {
           const blockedX = !this.layout.walkable(nx, s.z, this, .05);
           this.splat(s, s.x, s.z, blockedX ? Math.sign(s.vx) : 0, blockedX ? 0 : Math.sign(s.vz)); s.life = 0; break;

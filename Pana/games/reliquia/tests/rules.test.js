@@ -265,6 +265,9 @@ test('the jaguar crouches before it pounces, and a farol dazes it once in a whil
   const vault = run(g).rooms.find(r => r.kind === 'boveda'), [a] = g.players;
   place(g, 1, vault.x, vault.z + 6); step(g, .1);
   const cat = g.enemies.find(e => e.kind === 'jaguar'); assert.ok(cat); cat.awake = true; cat.born = -9;
+  // Somewhere in the room with a clear pounce at the cat (furniture is dealt).
+  const open = [-6, -3, 0, 3, 6].flatMap(dx => [4, 2, 0, -2, 6].map(dz => ({ x: vault.x + dx, z: vault.z + dz }))).find(q => g.layout.walkable(q.x, q.z, g) && g.layout.lineClear(cat, q, g, .5) && distance(cat, q) > 3);
+  place(g, 1, open.x, open.z);
   a.h = facing(a, cat);
   let crouched = false;
   for (let i = 0; i < 120 && !g.events.some(e => e.kind === 'pounce'); i++) { g.update(.05); crouched ||= cat.mode === 'crouch'; }

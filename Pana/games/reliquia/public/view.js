@@ -12,6 +12,7 @@ import { libraryStatue } from '/engine/models/props/library-statue.js';
 import { mineCart } from '/engine/models/props/mine.js';
 import { jaguar } from '/engine/models/fauna/jaguar.js';
 import { caveBat, caveSpider, cuaima } from '/engine/models/fauna/cave-creatures.js';
+import { silbon } from '/engine/models/props/reliquia-boss.js';
 import { splatTexture } from '/engine/models/props/paintball.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
@@ -23,6 +24,7 @@ import { floorOf, HEIGHT } from './deck.js';
 import { ITEMS } from './items.js';
 import { formatNumber } from '/engine/i18n.js';
 import { holds, alive, cartValue, liftView } from './rules.js';
+import { SILBON } from './silbon.js';
 
 export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
 const EYE = 1.45, POOL = 5, FAR = 220;
@@ -128,6 +130,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   function removeAvatar(a, id) { a.bubble && disposeSprite(a.bubble); disposeSprite(a.tag); a.character.dispose(); a.root.removeFromParent(); avatars.delete(id); }
   function enemyModel(e) {
     if (e.kind === 'bat') { const b = caveBat({ seed: e.id }); b.scale.setScalar(1.3); return b; }
+    if (e.kind === 'silbon') return silbon({ seed: e.id });
     if (e.kind === 'spider') { const sp = caveSpider({ seed: e.id }); sp.scale.setScalar(1.15); return sp; }
     if (e.kind === 'snake') { const sn = cuaima({ seed: e.id }); sn.scale.setScalar(1.6); return sn; }
     if (e.kind === 'lector') return blindLibrarian({ seed: e.id });
@@ -189,7 +192,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         const root = new THREE.Group(), model = enemyModel(e), ring = new THREE.Mesh(ringGeometry, dangerMaterial);
         ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; root.add(model); scene.add(root, ring);
         root.position.set(e.x, 0, e.z); root.rotation.y = e.h || 0;
-        a = { root, model, ring, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), stone: e.kind === 'estatua', pose: { frozen: false, look: 0, lit: 'dark', scares, mode: 'prowl', pose: 0 }, speed: 0, x: e.x, z: e.z, steps: e.steps || 0 }; enemies.set(e.id, a);
+        a = { root, model, ring, boss: e.kind === 'silbon', fall: 0, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), stone: e.kind === 'estatua', pose: { frozen: false, look: 0, lit: 'dark', scares, mode: 'prowl', pose: 0 }, speed: 0, x: e.x, z: e.z, steps: e.steps || 0 }; enemies.set(e.id, a);
         // A statue was there all along: no puff when it first appears.
         if (!a.stone) puffs.spawn({ x: e.x, y: .6, z: e.z }, { color: e.kind === 'phantom' ? 0x9fd8ff : lookName === 'biblioteca' ? 0x8e949c : 0xd8c49a, count: 6, spread: .8, size: .7, rise: 1.2, life: .7 });
       }
@@ -214,9 +217,18 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       const target = tmp.set(e.x, 0, e.z);
       a.root.position.lerp(target, Math.min(1, dt * (e.mode === 'leap' ? 30 : 12)));
       const turn = Math.atan2(Math.sin(e.h - a.root.rotation.y), Math.cos(e.h - a.root.rotation.y)); a.root.rotation.y += turn * Math.min(1, dt * 10);
-      if (a.critter) {
-        a.root.position.y = e.kind === 'bat' ? (e.y ?? 2) : e.kind === 'spider' && e.hanging ? HEIGHT - .4 : 0;
-        a.model.rotation.z = e.kind === 'spider' && e.hanging ? Math.PI : 0;
+      if (a.boss) {
+        // Drawn from the host's own numbers: its pose, and the drop into the pit.
+        const step = dt > 0 ? Math.hypot(e.x - a.x, e.z - a.z) / dt : 0; a.x = e.x; a.z = e.z;
+        a.speed += (Math.min(1, step / 2) - a.speed) * (1 - Math.exp(-dt * 6));
+        a.fall = e.mode === 'fall' ? Math.min(1, (e.modeT || 0) / SILBON.fall) : 0;
+        a.root.position.y = -a.fall * a.fall * 9;
+        a.model.userData.animate(t, { walk: a.speed, windup: e.windup > 0 ? 1 - e.windup / .8 : 0, peek: e.peek ? 1 : 0, sniff: e.mode === 'sniff' ? 1 : 0, stun: e.stun > 0 ? 1 : 0, fall: a.fall });
+        a.ring.visible = e.windup > 0; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(2.2);
+      } else if (a.critter) {
+        a.root.position.y = e.kind === 'bat' ? (e.hanging ? HEIGHT - .35 : e.y ?? 2) : e.kind === 'spider' && e.hanging ? HEIGHT - .4 : 0;
+        if (e.kind === 'bat') a.model.userData.hang = !!e.hanging;
+        if (e.kind === 'spider') a.model.rotation.z = e.hanging ? Math.PI : 0;
         if (e.kind === 'spider') a.model.userData.pace = e.hanging || e.stun > 0 ? .1 : 1;
         a.model.userData.tick(t + e.id, e.kind === 'snake' ? (e.windup > 0 ? 1 - e.windup / .35 : 0) : undefined);
         a.ring.visible = e.kind === 'snake' && e.windup > 0; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(2.5);

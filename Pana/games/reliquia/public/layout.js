@@ -29,6 +29,8 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
     for (const p of pits) fill(p.rect, 2, (x, z) => !inRect(x, z, p.island) && !bridges.some(b => inRect(x, z, b.rect)));
     // Bookcases and reading tables are walls as far as anyone can tell.
     for (const s of run.solids || []) if (s.floor === f) fill(s.rect, 0);
+    // A nook's two slabs: stone like any wall.
+    for (const n of run.nooks || []) if (n.floor === f) for (const slab of n.slabs) fill(slab, 0);
     grids.push({ x0, z0, w, h, bits, obstacles: run.obstacles.filter(o => o.floor === f) });
   }
   const cell = (x, z) => {
@@ -85,6 +87,32 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
     }
     return moved;
   }
+  // Floor or open pit: what a body that never looks down can step on. Walls,
+  // solids and obstacles still stop it.
+  function passable(x, z, state, radius) {
+    if (!Number.isFinite(x) || !Number.isFinite(z) || cell(x, z) === 0) return false;
+    for (let i = 0; i < 8; i++) if (cell(x + Math.cos(i * Math.PI / 4) * radius, z + Math.sin(i * Math.PI / 4) * radius) === 0) return false;
+    if (blocked(x, z, state, radius)) return false;
+    const g = grids[floorOf(x)];
+    return !g?.obstacles.some(o => (x - o.x) ** 2 + (z - o.z) ** 2 < (o.r + radius) ** 2);
+  }
+  // moveBody for that body: a pit is floor until its centre is over it.
+  function moveAcross(body, dx, dz, state, radius = .7) {
+    const n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / .2));
+    let moved = false;
+    for (let i = 0; i < n; i++) {
+      if (passable(body.x + dx / n, body.z, state, radius)) { body.x += dx / n; moved = true; }
+      if (passable(body.x, body.z + dz / n, state, radius)) { body.z += dz / n; moved = true; }
+    }
+    return moved;
+  }
+  // A straight run from a to b for that body, pits included.
+  function crossable(a, b, state, radius = .7) {
+    if (floorOf(a.x) !== floorOf(b.x)) return false;
+    const n = Math.ceil(distance(a, b) / .4);
+    for (let i = 1; i <= n; i++) if (!passable(a.x + (b.x - a.x) * i / n, a.z + (b.z - a.z) * i / n, state, radius)) return false;
+    return true;
+  }
   function groundAt(x, z) {
     for (const s of run.stubs) if (s.floor === floorOf(x) && inRect(x, z, s.rect)) {
       const t = Math.max(0, Math.min(1, (z - s.a) / (s.b - s.a)));
@@ -133,7 +161,7 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
   }
   // A pearl the deck rolled against a pit edge or a wall would be unreachable.
   run.loot = run.loot.filter(l => ITEMS[l.kind]?.size === 'big' || l.y || walkable(l.x, l.z, { open: {}, revealed: Object.fromEntries(run.hidden.map(h => [h.id, true])) }, .3));
-  const layout = { run, walkable, lineClear, sightClear, moveBody, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
+  const layout = { run, walkable, lineClear, sightClear, moveBody, moveAcross, crossable, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
   layouts.set(key, layout);
   return layout;
 }

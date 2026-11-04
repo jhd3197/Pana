@@ -82,7 +82,7 @@ const cache = new Map();
 export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {}) {
   const floors = 1, key = `${seed}:${depth}:${theme}`, library = theme === 'biblioteca';
   if (cache.has(key)) return cache.get(key);
-  const run = { seed, floors, depth, theme, solids: [], spots: [], rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
+  const run = { seed, floors, depth, theme, solids: [], spots: [], nooks: [], rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
     sleepers: [], obstacles: [], lights: [], decor: [], pits: [], bridges: [] };
   const id = { loot: 0, chest: 0, plate: 0, sleeper: 0, spot: 0 };
   // ---- Camp: outdoors, the truck and the mine mouth at its north edge.
@@ -116,6 +116,8 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
     }
     const deck = [...(library ? LIBRARY_DECK : DECK)]; for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
     if (!deck.slice(0, path.length - 2).includes('idolo')) deck[Math.floor(R() * Math.max(1, path.length - 2))] = 'idolo';
+    // Every jornada has its pit: it is the Silbón's arena (dealLair).
+    if (!deck.slice(0, path.length - 2).includes('puente')) deck[Math.max(0, deck.slice(0, path.length - 2).findIndex(k => k !== 'idolo'))] = 'puente';
     const kinds = path.map((_, i) => i === 0 ? 'entrada' : i === path.length - 1 ? sealKind(depth) : deck[(i - 1) % deck.length]);
     const rooms = path.map(([c, r], i) => {
       const [w, d] = SIZES[kinds[i]], p = at(c, r);
@@ -190,6 +192,7 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
     if (x1 - x0 > z1 - z0) item.z = item.z < (z0 + z1) / 2 ? z0 - .6 : z1 + .6; else item.x = item.x < (x0 + x1) / 2 ? x0 - .6 : x1 + .6;
   }
   if (library) libraryHaunts(run, seed, depth);
+  dealLair(run, seed, depth);
   cache.set(key, run);
   return run;
 }
@@ -241,6 +244,69 @@ function libraryHaunts(run, seed, depth) {
         used.push(room.id); break;
       }
     }
+  }
+}
+
+// Hiding nooks: two stone slabs against a room's wall leave a gap a pana slips
+// into and the Silbón (SILBON_BODY in silbon.js) never fits. `inner` is the gap,
+// `mouth` the middle of its opening, `front` where the boss stands to look in.
+// Edges sit on the 0.25 m collision grid, so the gap is exact.
+export const NOOK = { gap: 1.25, slab: .5, depth: 1.5, front: 2.4 };
+const nookWidth = NOOK.gap + NOOK.slab * 2;
+export const nookAt = (run, x, z) => run.nooks.find(n => n.floor === floorOf(x) && inRect(x, z, n.inner)) || null;
+// How far inside a pana stands, from the opening toward the back wall.
+export const nookDepth = (n, p) => (n.mouth.x - p.x) * n.nx + (n.mouth.z - p.z) * n.nz;
+const rectsGap = (a, b) => Math.hypot(Math.max(a[0] - b[2], 0, b[0] - a[2]), Math.max(a[1] - b[3], 0, b[1] - a[3]));
+// The Silbón's lair, dealt last from its own stream: nooks along the walls (three
+// in the pit room, sometimes one or two elsewhere; the same map on every
+// difficulty), bats roosting on the ceilings, the boss asleep on the pit's rim.
+function dealLair(run, seed, depth) {
+  const R = rng((seed * 3266489917 + depth * 668265263 + 131) >>> 0);
+  let sleeper = run.sleepers.reduce((n, s) => Math.max(n, s.id + 1), 0), nook = 0;
+  const freeNook = (room, rect, front) => {
+    const f = room.floor, near = (list, gap) => list.some(q => q.floor === f && rectGap(q.x, q.z, rect) < gap);
+    if (run.solids.some(s => s.floor === f && (rectsGap(s.rect, rect) < .6 || inRect(front.x, front.z, s.rect, .9)))) return false;
+    if (run.obstacles.some(o => o.floor === f && (rectGap(o.x, o.z, rect) < o.r + .5 || Math.hypot(o.x - front.x, o.z - front.z) < o.r + .95))) return false;
+    if (near(run.sleepers, .9) || near(run.loot, .7) || near(run.chests, 1) || near(run.spots, 1.1) || near(run.plates, 1.6) || near(run.carts, 2.2) || near(run.lifts, 3) || near(run.cargo, 3)) return false;
+    if (run.decor.some(d => d.floor === f && d.kind !== 'stalactites' && d.kind !== 'chandelier' && rectGap(d.x, d.z, rect) < 1.4)) return false;
+    if ([...run.corridors, ...run.stubs].some(c => c.floor === f && rectsGap(c.rect, rect) < 2.2) || run.hidden.some(h => h.floor === f && rectsGap(h.rect, rect) < 2.2)) return false;
+    if (run.seals.some(s => s.floor === f && (rectsGap(s.rect, rect) < 3.5 || (s.winches || []).some(w => rectGap(w.x, w.z, rect) < 2.2)))) return false;
+    if (run.plates.some(p => p.room === room.id && p.darts.some(d => Math.abs(d.z - (rect[1] + rect[3]) / 2) < (rect[3] - rect[1]) / 2 + 1))) return false;
+    if (run.pits.some(p => p.floor === f && (rectsGap(p.rect, rect) < .4 || rectGap(front.x, front.z, p.rect) < .75))) return false;
+    return !run.nooks.some(n => n.floor === f && rectsGap(n.rect, rect) < 2.5);
+  };
+  const dig = room => {
+    const [x0, z0, x1, z1] = room.rect;
+    for (let i = 0; i < 60; i++) {
+      const side = Math.floor(R() * 4), alongX = side < 2, n = [[0, 1], [0, -1], [1, 0], [-1, 0]][side], span = (alongX ? room.w : room.d) / 2 - nookWidth / 2 - .6;
+      if (span <= 0) return false;
+      // Offset an eighth so slab and gap edges both land on the grid.
+      const c = Math.round(((alongX ? room.x : room.z) + (R() * 2 - 1) * span) * 4) / 4 + .125, wall = alongX ? (side === 0 ? z0 : z1) : (side === 2 ? x0 : x1), far = wall + (alongX ? n[1] : n[0]) * NOOK.depth;
+      const lo = Math.min(wall, far), hi = Math.max(wall, far), a = c - nookWidth / 2, b = c + nookWidth / 2, g0 = c - NOOK.gap / 2, g1 = c + NOOK.gap / 2;
+      const box = (u0, u1) => alongX ? [u0, lo, u1, hi] : [lo, u0, hi, u1], rect = box(a, b);
+      const mouth = alongX ? { x: c, z: far } : { x: far, z: c }, front = { x: mouth.x + n[0] * (NOOK.front - NOOK.depth), z: mouth.z + n[1] * (NOOK.front - NOOK.depth) };
+      if (!freeNook(room, rect, front)) continue;
+      run.nooks.push({ id: `n${nook++}`, floor: room.floor, room: room.id, x: alongX ? c : (lo + hi) / 2, z: alongX ? (lo + hi) / 2 : c, h: Math.atan2(n[0], n[1]), nx: n[0], nz: n[1], rect, slabs: [box(a, g0), box(g1, b)], inner: box(g0, g1), mouth, front });
+      return true;
+    }
+    return false;
+  };
+  for (const room of run.rooms.filter(r => r.floor > 0 && r.kind !== 'oculta' && r.kind !== 'boveda' && r.kind !== 'entrada')) {
+    const pit = room.kind === 'puente', count = pit ? 3 : R() < .55 ? 1 + Math.floor(R() * 2) : 0, f = room.floor;
+    for (let i = 0; i < count; i++) dig(room);
+    // Bats roost clear of the walls; the pit room always keeps a colony.
+    const roost = pit ? 2 + Math.min(4, depth) : R() < .4 ? 1 + Math.min(2, depth) : 0;
+    for (let i = 0; i < roost; i++) for (let t = 0; t < 20; t++) {
+      const x = room.x + (R() - .5) * (room.w - 2.4), z = room.z + (R() - .5) * (room.d - 2.4);
+      if (run.pits.some(p => p.floor === f && inRect(x, z, p.rect, .6)) || run.solids.some(s => s.floor === f && inRect(x, z, s.rect, .6)) || run.nooks.some(n => n.floor === f && inRect(x, z, n.rect, .6)) || run.obstacles.some(o => o.floor === f && Math.hypot(o.x - x, o.z - z) < o.r + .6)) continue;
+      run.sleepers.push({ id: sleeper++, kind: 'bat', floor: f, room: room.id, x, z }); break;
+    }
+    if (!pit) continue;
+    // The boss: on the rim, across the pit from the rope bridge.
+    const bridge = run.bridges.find(b => b.room === room.id), pitRect = run.pits.find(p => p.room === room.id).rect;
+    const z = bridge && bridge.rect[1] < room.z ? pitRect[3] + 1.6 : pitRect[1] - 1.6;
+    const at = [0, -2, 2, -4, 4, -6, 6].map(dx => ({ x: room.x + dx, z })).find(p => !run.obstacles.some(o => o.floor === f && Math.hypot(o.x - p.x, o.z - p.z) < o.r + 1) && !run.solids.some(s => s.floor === f && inRect(p.x, p.z, s.rect, .8)) && !run.nooks.some(n => n.floor === f && inRect(p.x, p.z, n.rect, .8)));
+    if (at) run.sleepers.push({ id: sleeper++, kind: 'silbon', floor: f, room: room.id, x: at.x, z: at.z });
   }
 }
 
@@ -363,7 +429,7 @@ function furnish(run, room, f, depth, R, id) {
       run.pits.push({ floor: f, room: room.id, rect: pit, island });
       run.bridges.push({ floor: f, room: room.id, rect: bridge, axis: 'z' });
       run.loot.push({ id: id.loot++, kind: BIG_POOL[Math.min(2, d - 1)][Math.floor(R() * 3)], floor: f, room: room.id, x: cx, z: cz, h: 0 });
-      small(3);
+      small(3); if (library) { loot('pearl'); loot('emerald'); loot('mask'); }
       break;
     }
     case 'ruedas':
@@ -466,6 +532,7 @@ function furnish(run, room, f, depth, R, id) {
         const rect = alongX ? [wx - len / 2, Math.min(wz, wz + n[1] * dep), wx + len / 2, Math.max(wz, wz + n[1] * dep)] : [Math.min(wx, wx + n[0] * dep), wz - len / 2, Math.max(wx, wx + n[0] * dep), wz + len / 2];
         const mx = (rect[0] + rect[2]) / 2, mz = (rect[1] + rect[3]) / 2, front = { x: mx + n[0] * (dep / 2 + .8), z: mz + n[1] * (dep / 2 + .8) };
         if (!alongX && run.plates.some(p => p.room === room.id && Math.abs(p.z - mz) < len / 2 + 1)) continue;
+        if (run.sleepers.some(s => s.floor === f && inRect(s.x, s.z, rect, .4))) continue;
         if (!free(mx, mz, len / 2) || !free(front.x, front.z, .7) || !solid(rect, 'spot')) continue;
         taken.push({ x: mx, z: mz, r: len / 2 }, { ...front, r: .7 });
         return add(kind, { x: mx, z: mz, h: Math.atan2(n[0], n[1]) }, { wall: true, rect, len });

@@ -10,10 +10,11 @@
 // breath on your neck. No music, no files.
 import { sound } from '/engine/fx.js';
 import { floorOf } from './deck.js';
+import { peekCueDue } from './silbon.js';
 
 export function createAmbience() {
   let graph = null, near = 0, stepAt = 0, eventIn = 2, cricketIn = 1, clockIn = 6, ticks = 0;
-  const steps = new Map(), voices = new Map();
+  const steps = new Map(), voices = new Map(), peeks = new Map();
 
   // Lazily, once audio is unlocked: a split after the game's output into a
   // dry path and a wet cave (convolver + feedback delay).
@@ -79,6 +80,11 @@ export function createAmbience() {
     squeak: (ctx, out, t) => { const n = 1 + Math.floor(Math.random() * 3); for (let i = 0; i < n; i++) osc(ctx, out, t + i * .09, { from: 5200 + Math.random() * 1400, to: 3600 + Math.random() * 800, dur: .05 + Math.random() * .03, vol: .035 }); },
     flutter: (ctx, out, t) => { const n = 5 + Math.floor(Math.random() * 5); for (let i = 0; i < n; i++) noiseBurst(ctx, out, t + i * (.055 + Math.random() * .03), { dur: .05, freq: 620 + Math.random() * 260, type: 'bandpass', q: .8, vol: .1 }); },
     screech: (ctx, out, t) => { osc(ctx, out, t, { type: 'square', from: 6200, to: 3400, dur: .22, vol: .05 }); osc(ctx, out, t + .05, { type: 'sawtooth', from: 4800, to: 2600, dur: .28, vol: .03 }); for (let i = 0; i < 7; i++) noiseBurst(ctx, out, t + .1 + i * .06, { dur: .05, freq: 700, type: 'bandpass', q: .8, vol: .1 }); },
+    // El Silbón: its whistle falls slowly, the way the story tells it.
+    whistle: (ctx, out, t) => { osc(ctx, out, t, { from: 1180, to: 1320, dur: .5, vol: .05, vibrato: 5 }); osc(ctx, out, t + .46, { from: 1320, to: 720, dur: 1.1, vol: .055, vibrato: 7 }); },
+    // About to look into a nook: stone scraping, then two wet sniffs. Unlike anything else down here.
+    peek: (ctx, out, t) => { noiseBurst(ctx, out, t, { dur: .42, freq: 420, type: 'bandpass', q: 3.5, vol: .5, sweep: 1.6 }); osc(ctx, out, t, { type: 'sawtooth', from: 62, to: 92, dur: .42, vol: .1, vibrato: 26 }); for (const at of [.34, .52]) noiseBurst(ctx, out, t + at, { dur: .14, freq: 1500, type: 'bandpass', q: 1.4, vol: .4, sweep: 2.2 }); },
+    plummet: (ctx, out, t) => { osc(ctx, out, t, { from: 900, to: 90, dur: 1.3, vol: .09 }); osc(ctx, out, t, { type: 'sawtooth', from: 240, to: 45, dur: 1.3, vol: .06 }); noiseBurst(ctx, out, t + 1.3, { dur: .7, freq: 130, vol: .8 }); },
     growl: (ctx, out, t) => osc(ctx, out, t, { type: 'sawtooth', from: 70, to: 55, dur: 1.2, vol: .14, vibrato: 22 }),
     roar: (ctx, out, t) => { osc(ctx, out, t, { type: 'sawtooth', from: 160, to: 60, dur: 1, vol: .2, vibrato: 30 }); noiseBurst(ctx, out, t, { dur: .8, freq: 900, vol: .2, sweep: .3 }); },
     heartbeat: (ctx, out, t) => { osc(ctx, out, t, { from: 60, to: 40, dur: .16, vol: .25 }); osc(ctx, out, t + .22, { from: 55, to: 38, dur: .18, vol: .2 }); },
@@ -146,14 +152,19 @@ export function createAmbience() {
       const v = voices.get(e.id) || { next: 1 + Math.random() * 3, mode: e.mode }; voices.set(e.id, v);
       if ((e.kind === 'jaguar' || e.kind === 'stalker') && e.mode === 'leap' && v.mode !== 'leap') play('roar', at);
       v.mode = e.mode; v.next -= dt;
+      // The look into a nook is warned once per peek, from where the boss stands.
+      if (peekCueDue(e, peeks.get(e.id))) { peeks.set(e.id, e.peek.seq); play('peek', { pan: at.pan, gain: Math.max(.25, at.gain) * 1.2 }); }
       if (v.next > 0) continue;
-      const sounds = { mummy: ['groan', 4, 8], guardian: ['groan', 3, 5], phantom: ['whisper', 3, 6], spider: ['skitter', .8, 2], snake: ['hiss', 2.5, 5], bat: ['screech', .6, 1.6], jaguar: ['growl', 2.5, 4], stalker: ['growl', 2, 4] }[e.kind];
+      const sounds = { mummy: ['groan', 4, 8], guardian: ['groan', 3, 5], phantom: ['whisper', 3, 6], spider: ['skitter', .8, 2], snake: ['hiss', 2.5, 5], bat: ['squeak', .5, 1.5], silbon: ['whistle', 5, 10], jaguar: ['growl', 2.5, 4], stalker: ['growl', 2, 4] }[e.kind];
       if (!sounds || (e.kind === 'spider' && e.hanging) || (e.kind === 'mummy' && !e.awake)) { v.next = 1; continue; }
-      play(sounds[0], { ...at, gain: at.gain * (e.kind === 'guardian' ? 1.4 : 1) });
+      // A sleeping bat only ever shifts and chirps, quietly.
+      if (e.kind === 'bat' && e.hanging) { if (Math.random() < .3) play('squeak', { ...at, gain: at.gain * .35 }); v.next = 2 + Math.random() * 4; continue; }
+      if (e.kind === 'bat' && Math.random() < .5) play('flutter', { ...at, gain: at.gain * .9 });
+      play(sounds[0], { ...at, gain: at.gain * (e.kind === 'guardian' ? 1.4 : e.kind === 'silbon' ? 1.2 : 1) });
       v.next = sounds[1] + Math.random() * (sounds[2] - sounds[1]);
     }
-    for (const id of voices.keys()) if (!state.enemies.some(e => e.id === id)) voices.delete(id);
-    // Room tone: drips and creaks below, birds and cicadas at the camp.
+    for (const id of voices.keys()) if (!state.enemies.some(e => e.id === id)) { voices.delete(id); peeks.delete(id); }
+    // Room tone: drips and creaks below, a dry chirr and cicadas at the camp.
     eventIn -= dt;
     if (eventIn <= 0) {
       const a = Math.random() * Math.PI * 2, r = 4 + Math.random() * 12, at = place(me, heading, me.x + Math.cos(a) * r, me.z + Math.sin(a) * r, 20);
@@ -170,5 +181,7 @@ export function createAmbience() {
   }
   // The scare layers, placed like everything else (pan -1…1).
   function eerie(name, { pan = 0, gain = 1, strength = 1 } = {}) { if (SOUNDS[name]) voice((ctx, out, t) => SOUNDS[name](ctx, out, t, strength), { pan, gain }); }
-  return { update, eerie, set presence(v) { near = Math.max(0, Math.min(1, v || 0)); } };
+  // One world sound, panned and faded from where this pana stands.
+  function at(name, me, heading, x, z, range = 24) { if (graph && me) play(name, place(me, heading, x, z, range)); }
+  return { update, eerie, at, set presence(v) { near = Math.max(0, Math.min(1, v || 0)); } };
 }
