@@ -96,6 +96,7 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Touch controls, orientation | `engine/touch.js` | pana-kit.md, "Touch controls" |
 | The player's pana | `engine/avatar.js`, `engine/models/characters/pana/avatar-model.js` | `docs/knowledge/character-reference.md` |
 | Walk, sprint, jump, footsteps on foot | `engine/play/walker.js`, `jump.js`, `footsteps.js` | `docs/knowledge/shared-player.md`; Reliquia and Pepazo use it |
+| First-person hands and held items (sway, bob, sprint, swing) | `engine/play/viewmodel.js`, `viewmodel-rig.js` | `docs/SHARED-ENGINE.md`; Reliquia and Pepazo use it |
 | Sound effects, vehicle engines | `engine/sfx.js`, `engine/vehicle-audio.js` | `docs/knowledge/shared-sfx.md`; no audio files |
 | Who uses which piece, and what is still local | `docs/SHARED-ENGINE.md` | read it first; keep it current |
 | Browser suites | `tests/browser-kit.js` (`launch`, `openGame`, `waitPrepared`, `waitFor`) | |

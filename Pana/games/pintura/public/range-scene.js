@@ -15,6 +15,7 @@ import { pixelRatio } from '/engine/settings.js';
 import { FINISHES, WEAPONS, kitModel } from './armory-data.js';
 import { EYE } from './rules.js';
 import { createViewmodel, recoilOf } from './viewmodel.js';
+import { createMeleeHand, heldScale } from './melee-hand.js';
 import { FIRE, LANE, MARKS } from './range-sim.js';
 
 const LOOK_UP = .55, LOOK_DOWN = -.7, MAX_SPLATS = 160;
@@ -67,11 +68,11 @@ export function createRangeScene(canvas) {
   const ballMat = color => { if (!ballMats.has(color)) ballMats.set(color, new THREE.MeshBasicMaterial({ color })); return ballMats.get(color); };
   // First person: the marker in hand, its muzzle flash, the view's kick and the scope.
   let held = null, heldKey = '', yaw = -Math.PI / 2, pitch = 0, lastFired = 0, lastSmacks = 0, opticSens = 1, mobile = false;
-  const viewmodel = createViewmodel(), feel = createRecoil(), scope = createScope({ zoom: 1.2 });
+  const viewmodel = createViewmodel(), meleeHand = createMeleeHand(camera), feel = createRecoil(), scope = createScope({ zoom: 1.2 });
   function hold(kit, weapon) {
     const options = { ...kit, ...kitModel({ ...kit, weapon }), weapon, color: FINISHES.find(f => f.id === kit.finish)?.color || '#f28b42' }, k = JSON.stringify(options); if (k === heldKey) return;
     held?.removeFromParent(); held?.userData.dispose(); held?.userData.flash?.geometry.dispose(); held?.userData.flash?.material.dispose(); heldKey = k;
-    held = createPaintKit(options); held.scale.setScalar(isMelee(weapon) ? (weapon === 'sandal' ? .6 : .42) : .3); camera.add(held);
+    held = createPaintKit(options); held.scale.setScalar(heldScale(isMelee(weapon), weapon)); camera.add(held);
     const flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
     flash.position.set(0, held.userData.bore ?? PAINT_KIT_BORE[weapon] ?? .2, held.userData.tip + .12); flash.visible = false; held.add(flash); held.userData.flash = flash; viewmodel.reset();
   }
@@ -111,6 +112,7 @@ export function createRangeScene(canvas) {
       hold(me.kit, me.weapon); held.visible = !scope.scoped && !(stats.melee && me.melee?.phase === 'away');
       const shot = viewmodel.update(dt, { held, weapon: me.weapon, fired: me.fired || 0, reload: me.reload, reloadTime: stats.reload, sprint: false, bob: 0, sway: 0, down: false, air: 0, push: 0, aim: scope.amount,
         melee: stats.melee ? { swings: me.melee?.swings || 0, windup: stats.windup, recovery: stats.recovery } : null });
+      meleeHand.update(!!stats.melee && !scope.scoped, held, me.color || '#f28b42');
       const flash = held.userData.flash; flash.visible = held.visible && shot.flash > .05; flash.material.opacity = shot.flash; if (shot.shot) flash.rotation.z = Math.random() * Math.PI;
       flash.scale.setScalar(.9 * (1.15 - shot.flash * .3));
       // Balls: along their flat path, climbing or dropping with the pitch they left at.
@@ -137,7 +139,7 @@ export function createRangeScene(canvas) {
     // Where the crosshair points on the court (x, z) at distance d: for tests and aim.
     ahead(d) { camera.getWorldDirection(pos); return { x: camera.position.x + pos.x * d, z: camera.position.z + pos.z * d }; },
     dispose() {
-      held?.userData.dispose(); held?.userData.flash?.geometry.dispose(); held?.userData.flash?.material.dispose();
+      meleeHand.dispose(); held?.userData.dispose(); held?.userData.flash?.geometry.dispose(); held?.userData.flash?.material.dispose();
       owned.forEach(o => o.userData.dispose()); grenades.forEach(g => g.userData.dispose?.());
       [ballGeo, streakGeo, splatGeo, railGeo].forEach(g => g.dispose()); railMat.dispose(); ballMats.forEach(m => m.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose());
       blasts.dispose?.(); puffs.clear(); scene.clear(); renderer.dispose(); renderer.forceContextLoss?.();

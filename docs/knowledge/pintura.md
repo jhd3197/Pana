@@ -349,8 +349,9 @@ the pad sent), not a direction captured before the first frame set the yaw.
 - Under the pepas the hopper plate shows the marker's name and class kind
   (`La Metra · Subfusiles`) and one icon per fitted part (its `PARTS` row's
   `icon` from `engine/icons.js`; the title is the part's name).
-- `viewmodel.js` poses the first-person marker (sway, recoil, reload, sprint
-  lowering) from the player fields; the marker models are in
+- `viewmodel.js` poses the first-person marker (recoil, reload, aim; sway, sprint
+  lowering and melee swings come from `engine/play/viewmodel.js`) from the player
+  fields; `melee-hand.js` wraps the shared gloved hand round a melee weapon's grip; the marker models are in
   `engine/models/props/paintball-kit.js`, one silhouette per marker. Aiming
   slides a side-mounted Mira (`userData.sightX`: El Zamuro, La Bazuca, La
   Fumigadora) to the centre, and `userData.spin` (La Licuadora's barrels, the
@@ -495,7 +496,7 @@ weapon between 2 and 5).
 - Switching weapon mid-swing drops the blow but keeps 0.3 s of wait; while the
   chancla is away the server ignores a weapon change (the client keeps sending
   its pick, so it applies once the chancla is back).
-- Client: `viewmodel.js` `swingPose` blends rest → cocked over the windup,
+- Client: the engine's `swingPose` (`engine/play/viewmodel.js`) blends rest → cocked over the windup,
   snaps through in 0.09 s and eases back over the recovery, on its own clock
   from the `melee.swings` count (no allocation per frame). Third person reuses
   the grenade arm throw. Sounds: `sounds.js` `MELEE_SOUND` maps each weapon to an

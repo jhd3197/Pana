@@ -445,8 +445,12 @@ the light. There is no sun and no shadow pass anywhere: the camp is a look like
 any other (`caverna`), with dark fog (5–30 m), the headlamp spot on the camera, a hand light when you hold a farol or the
 crown, and a fixed pool of five point lights moved to the nearest braziers
 and other panas' faroles (at the camp, to its `LAMPS`) every 0.25 s. The light
-count never changes, so shaders never recompile on the way down. Your gloves (your seat colour) hold
-the hand items; the own avatar is hidden. Look input is
+count never changes, so shaders never recompile on the way down. Your hands are the engine's rig
+(`hand-view.js`): sleeves in your seat colour, holding the hand items, each with a
+row in `grips.js` (shape, rest, model turn and the blow it plays). The hand light sits
+ahead of the held farol, not on it: at about 10 cm it burns the glove white. Blades
+rest outside the headlamp's cone for the same reason. A blow lands the moment you
+press, so its windup is a flick; `p.swing` going up starts it. The own avatar is hidden. Look input is
 `engine/play/first-person.js`; the left/right arrows also turn.
 
 **Diving suits** (`suit-look.js` as data, `explorer-suit.js` as meshes) are looks
