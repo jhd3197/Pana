@@ -231,8 +231,8 @@ function frame(now) {
   // Keep the eyes on your pana after the run ends; never draw your own body.
   view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
   const theme = view.world.run.theme;
-  const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : theme === 'inundada' ? 'water' : theme === 'hongos' ? 'dirt' : 'stone' : 'dirt';
-  ambience.update(state, p, view.heading, dt, theme, !samples.ownSteps(surface));
+  const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : theme === 'inundada' ? 'water' : theme === 'hongos' ? 'dirt' : 'stone' : 'stone';
+  ambience.update(state, p, view.heading, dt, theme, !samples.ownSteps(surface), scares);
   heard.state = state; heard.me = p; heard.heading = view.heading; heard.paused = menu.isOpen; heard.theme = theme; heard.floor = p ? view.world.floors.get(floorOf(p.x)) : null; heard.run = view.world.run;
   samples.update(dt, heard);   // wind, drips, chandeliers, and hiding spots creaking as a search starts
   fx.update(dt, { state, me: p, heading: view.heading, paused: menu.isOpen, scares, run: view.world.run });
