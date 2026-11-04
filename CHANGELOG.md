@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia: ahora bajas con traje de explorador y casco de vidrio.**
+  Cada pana lleva el color de su puesto, con mochila, mangueras, botas y una
+  lamparita; la cara se ve por el vidrio. Solo cambia el look, no cómo se juega.
 - **Reliquia: El Silbón no muere. Piérdelo, escóndete o llévalo al abismo.**
   Ningún arma lo mata. Si te pierde de vista te busca y se va; caza por el oído, y
   al correr hacia ti por encima del foso se cae y abre el sello. La sala del foso

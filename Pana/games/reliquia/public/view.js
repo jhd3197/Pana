@@ -5,7 +5,6 @@
 // are all there is.
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
-import { normalizeAvatar } from '/engine/avatar.js';
 import { mummy } from '/engine/models/props/reliquia.js';
 import { blindLibrarian } from '/engine/models/props/blind-librarian.js';
 import { libraryStatue } from '/engine/models/props/library-statue.js';
@@ -26,8 +25,10 @@ import { formatNumber } from '/engine/i18n.js';
 import { holds, alive, cartValue, liftView } from './rules.js';
 import { HOPPER, packCart } from './carga.js';
 import { SILBON } from './silbon.js';
+import { SEAT_COLORS, SUIT_HEAD, seatColor, suitedAvatar } from './suit-look.js';
+import { dressExplorer, disposeSuits } from './explorer-suit.js';
 
-export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
+export const COLORS = SEAT_COLORS;
 const EYE = 1.45, POOL = 5, FAR = 220;
 const CAMP_LOOK = { background: 0xf6d6a4, fog: [45, 150], hemi: [0xfff1d6, 0x8a6a4a, 2.1], sun: 3, exposure: 1.05 };
 // Underground: the mine is a dark violet black; the buried library cold and
@@ -76,7 +77,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   let world = createExpeditionWorld({ seed, depth }); scene.add(world.group);
   const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign); // i18n-ignore: signage painted in the world
   const puffs = new Puffs(scene), waves = new Shockwaves(scene);
-  // Your paws: fur-coloured, holding the two hand items in view.
+  // Your gloves: the suit's colour, holding the two hand items in view.
   const hands = [new THREE.Group(), new THREE.Group()]; hands[0].position.set(.32, -.36, -.7); hands[1].position.set(-.32, -.36, -.7);
   const pawMaterial = new THREE.MeshStandardMaterial({ color: 0xb07a4a, roughness: .8 }), pawGeometry = new THREE.SphereGeometry(.042, 14, 10);
   for (const h of hands) { const paw = new THREE.Mesh(pawGeometry, pawMaterial); paw.scale.set(1, .8, 1.2); h.add(paw); h.userData.slot = new THREE.Group(); h.userData.slot.position.set(0, .04, -.06); h.add(h.userData.slot); camera.add(h); }
@@ -122,13 +123,13 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     const skin = JSON.stringify(p.avatar); let a = avatars.get(p.id);
     if (a && a.skin === skin) return a;
     if (a) removeAvatar(a, p.id);
-    const character = buildCharacter(p.avatar), root = new THREE.Group(), tag = label(p.name, COLORS[p.seat % 8]);
-    tag.position.y = 2.25; root.add(character.group, tag); scene.add(root);
+    const character = buildCharacter(suitedAvatar(p.avatar), { head: SUIT_HEAD }), suit = dressExplorer(character, seatColor(p.seat)), root = new THREE.Group(), tag = label(p.name, COLORS[p.seat % 8]);
+    tag.position.y = 2.5; root.add(character.group, tag); scene.add(root);
     const slots = [new THREE.Group(), new THREE.Group()]; slots[0].position.set(.42, .95, .36); slots[1].position.set(-.42, .95, .36); slots.forEach(s => character.group.add(s));
-    a = { root, character, tag, slots, keys: ['', ''], skin, bubble: null, bubbleT: 0 };
+    a = { root, character, suit, tag, slots, keys: ['', ''], skin, bubble: null, bubbleT: 0 };
     avatars.set(p.id, a); return a;
   }
-  function removeAvatar(a, id) { a.bubble && disposeSprite(a.bubble); disposeSprite(a.tag); a.character.dispose(); a.root.removeFromParent(); avatars.delete(id); }
+  function removeAvatar(a, id) { a.bubble && disposeSprite(a.bubble); disposeSprite(a.tag); a.suit.remove(); a.character.dispose(); a.root.removeFromParent(); avatars.delete(id); }
   function enemyModel(e) {
     if (e.kind === 'bat') { const b = caveBat({ seed: e.id }); b.scale.setScalar(1.3); return b; }
     if (e.kind === 'silbon') return silbon({ seed: e.id });
@@ -144,7 +145,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   }
   function bark(id, text) {
     const a = avatars.get(id); if (!a) return;
-    a.bubble && disposeSprite(a.bubble); a.bubble = label(text, '#fff', { bubble: true }); a.bubble.position.y = 2.75; a.bubble.scale.set(3.6, .68, 1); a.root.add(a.bubble); a.bubbleT = 3;
+    a.bubble && disposeSprite(a.bubble); a.bubble = label(text, '#fff', { bubble: true }); a.bubble.position.y = 3; a.bubble.scale.set(3.6, .68, 1); a.root.add(a.bubble); a.bubbleT = 3;
   }
 
   function draw(state, me, dt, { downedLook = false, self = me?.id } = {}) {
@@ -323,7 +324,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         hands[i].position.set((i ? -1 : 1) * (camera.aspect < 1 ? .16 : .32) + Math.sin(bob + i * Math.PI) * .012 * sway - s * (i ? -.12 : .12), -.36 + Math.abs(Math.cos(bob)) * .015 * sway + s * .1, -.7 - s * .18);
         hands[i].rotation.set(-s * 1.2, 0, s * (i ? -.4 : .4));
       }
-      pawMaterial.color.set(normalizeAvatar(me.avatar).fur);
+      pawMaterial.color.set(seatColor(me.seat));
       headlamp.intensity = lookName === 'camp' ? 0 : (look.lampPower || 58) * mood.farol;
       handLight.intensity = (holds(me, 'farol') ? 9 : holds(me, 'sunCrown') ? 12 : 0) * (.4 + .6 * mood.farol) * (look.handPower ?? 1);
       motes.visible = lookName !== 'camp'; motes.userData.tick(t); motes.userData.strength(look.dust * mood.farol); motes.userData.scale(canvas.clientHeight * renderer.getPixelRatio());
@@ -388,7 +389,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
       disposeSprite(shopSign);
       motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
-      [ballGeometry, dartGeometry, splatGeometry, ringGeometry, pawGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial, pawMaterial].forEach(m => m.dispose());
+      [ballGeometry, dartGeometry, splatGeometry, ringGeometry, pawGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial, pawMaterial].forEach(m => m.dispose()); disposeSuits();
       renderer.dispose();
     },
   };
