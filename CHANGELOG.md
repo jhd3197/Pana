@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Trifulca: ahora sí son guantes de boxeo.**
+  Puño acolchado y curvo, pulgar, muñequera con correa. Los nudillos llegan
+  primero en cada golpe y el guante ya no se tuerce con el brazo.
 - **Trifulca: el árbitro y el público ya no se meten en la pelea.**
   Rodean el ring por fuera y se apartan hacia afuera. Los bots del público no
   empujan, y volver al ring al salirte ya no te aturde.
