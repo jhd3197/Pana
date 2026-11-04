@@ -364,7 +364,7 @@
       "source": "Pana/engine/models/fauna/jaguar.js",
       "factory": "jaguar",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "previewOptions": {
         "seed": 13,
@@ -380,7 +380,7 @@
       "source": "Pana/engine/models/fauna/cave-creatures.js",
       "factory": "caveBat",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -392,7 +392,7 @@
       "source": "Pana/engine/models/fauna/cave-creatures.js",
       "factory": "caveSpider",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -404,7 +404,7 @@
       "source": "Pana/engine/models/fauna/cave-creatures.js",
       "factory": "cuaima",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -494,7 +494,7 @@
         "Carreritas",
         "Escondidas",
         "Cocina",
-        "Reliquia",
+        "Fosa",
         "Billar",
         "Póquer",
         "¡Pintura!",
@@ -663,7 +663,7 @@
       "factory": "fern",
       "usedBy": [
         "Carreritas",
-        "Reliquia",
+        "Fosa",
         "Escondidas",
         "¡Pintura!",
         "Billar",
@@ -2290,7 +2290,7 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "templeEntrance",
       "usedBy": [
-        "Reliquia",
+        "Fosa",
         "¡Embuste!",
         "Escondidas",
         "¡Pintura!",
@@ -2307,7 +2307,7 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "ropeBridge",
       "usedBy": [
-        "Reliquia",
+        "Fosa",
         "¡Embuste!"
       ],
       "previewOptions": null,
@@ -2363,7 +2363,7 @@
       "factory": "stoneTotem",
       "usedBy": [
         "Carreritas",
-        "Reliquia",
+        "Fosa",
         "¡Embuste!",
         "Escondidas",
         "¡Pintura!",
@@ -2603,7 +2603,7 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "mummy",
       "usedBy": [
-        "Reliquia",
+        "Fosa",
         "¡Embuste!"
       ],
       "status": "in-use"
@@ -2615,7 +2615,7 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "mummy",
       "usedBy": [
-        "Reliquia",
+        "Fosa",
         "¡Embuste!"
       ],
       "previewOptions": {
@@ -2630,7 +2630,7 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "sunRelic",
       "usedBy": [
-        "Reliquia",
+        "Fosa",
         "¡Embuste!"
       ],
       "status": "in-use"
@@ -2642,7 +2642,7 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "expeditionWinch",
       "usedBy": [
-        "Reliquia",
+        "Fosa",
         "¡Embuste!"
       ],
       "status": "in-use"
@@ -2654,7 +2654,7 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "expeditionLantern",
       "usedBy": [
-        "Reliquia",
+        "Fosa",
         "¡Embuste!"
       ],
       "status": "in-use"
@@ -2666,7 +2666,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "coinPile",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2677,7 +2677,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "emerald",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2688,7 +2688,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "pearl",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2699,7 +2699,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "goldCup",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2710,7 +2710,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "goldMask",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2721,7 +2721,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "carvedIdol",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2732,7 +2732,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "sunDisk",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2743,7 +2743,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "emeraldChest",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2754,7 +2754,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "ceremonialDrum",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2765,7 +2765,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "cursedMirror",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2776,7 +2776,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "cacaoAltar",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2787,7 +2787,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "echoMask",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2798,7 +2798,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "messengerSandals",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2809,7 +2809,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "sunCrown",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2820,7 +2820,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "laughingIdol",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2831,7 +2831,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "micheBottle",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2842,7 +2842,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "crookedCompass",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2853,7 +2853,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "luckyCoin",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2864,7 +2864,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "jaguarHeart",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2875,7 +2875,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "machete",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2886,7 +2886,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "botiquin",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2897,7 +2897,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "treasureChest",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "previewOptions": {
         "seed": 5
@@ -2911,7 +2911,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "trapPlate",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2922,7 +2922,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "dartHead",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2933,7 +2933,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "stairSeal",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2944,7 +2944,7 @@
       "source": "Pana/engine/models/props/reliquia-ruins.js",
       "factory": "ruinGallery",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2955,7 +2955,7 @@
       "source": "Pana/engine/models/props/jaguar-stone.js",
       "factory": "jaguarStatue",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "previewOptions": {
         "gold": true
@@ -2969,7 +2969,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "rappelRig",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2980,7 +2980,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "climbRope",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -2991,7 +2991,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "liftCage",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "previewOptions": {
         "headframe": true
@@ -3005,7 +3005,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "liftShaft",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "previewOptions": {
         "below": 8,
@@ -3020,7 +3020,7 @@
       "source": "Pana/engine/models/props/reliquia-treasure.js",
       "factory": "cargoLift",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -6945,12 +6945,12 @@
     },
     {
       "id": "reliquia",
-      "name": "Reliquia · La mina del sol",
+      "name": "Fosa · La mina del sol",
       "category": "Mapas",
       "source": "Pana/games/reliquia/public/scene.js",
       "factory": "createExpeditionWorld",
       "usedBy": [
-        "Reliquia"
+        "Fosa"
       ],
       "status": "in-use"
     },
@@ -8880,10 +8880,10 @@
   ],
   "assemblies": [
     {
-      "name": "Reliquia mine and temple",
+      "name": "Fosa mine and temple",
       "source": "Pana/games/reliquia/public/scene.js",
       "anchor": "function createExpeditionWorld",
-      "where": "Reliquia; Studio map",
+      "where": "Fosa; Studio map",
       "note": "Camp with the truck plus floors dealt from a seeded room deck; enclosed ruin galleries from the shared ruinShell, library props only. Treasure, artifact and tool models are cataloged in reliquia-treasure.js.",
       "line": 54
     },

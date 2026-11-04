@@ -15,6 +15,7 @@ import { coffin, graveCandles, skull } from '/engine/models/props/cemetery.js';
 import { jaguarStatue, jaguarRelief } from '/engine/models/props/jaguar-stone.js';
 import { ropeBridge } from '/engine/models/props/jungle.js';
 import { crystalCluster } from '/engine/models/props/crystals.js';
+import { glowMushrooms, mushroomHalos } from '/engine/models/props/glow-mushrooms.js';
 import { expeditionJeep, expeditionTent, expeditionCampfire, supplyPile, campBench, investigationTable } from '/engine/models/props/expedition-camp.js';
 import { lajaRock } from '/engine/models/props/amazonas.js';
 import { rockyCliff } from '/engine/models/props/mountain.js';
@@ -58,7 +59,7 @@ export const glowColor = kind => ITEMS[kind].artifact ? treasure.ARTIFACT_AURA[k
 
 export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true } = {}) {
   const L = layoutFor(seed, depth, theme), run = L.run, floors = run.floors;
-  const group = new THREE.Group(); group.name = 'Reliquia · La mina del sol'; // i18n-ignore: scene graph name
+  const group = new THREE.Group(); group.name = 'Fosa · La mina del sol'; // i18n-ignore: scene graph name
   const owned = new Set(), animated = [], floorsBuilt = new Map();
   const halo = glowTexture(), haloMaterials = new Map();
   const haloMaterial = color => { if (!haloMaterials.has(color)) haloMaterials.set(color, new THREE.SpriteMaterial({ map: halo, color, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending })); return haloMaterials.get(color); };
@@ -159,6 +160,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       if (k % 2 === 0) place(root, crystalCluster({ size: .9, color: (k >> 1) % 8, seed: k }), r.rect[2] - .8, 0, r.rect[1] + .8, k);
     }
     dress(f, statics, root);
+    sowMushrooms(f, statics, root, floor);
     for (const pit of run.pits.filter(p => p.floor === f)) {
       const [a, b, c, d] = pit.rect, hole = new THREE.Mesh(new THREE.BoxGeometry(c - a, .5, d - b), mat(0x07040c));
       hole.position.set((a + c) / 2, -7, (b + d) / 2); root.add(hole);
@@ -246,6 +248,51 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
         place(statics, ruinColumn({ seed: (a * 5 + b) | 0, radius: .32, height: HEIGHT }), a, 0, b);
       }
     }
+  }
+  // Glowing fungi on every floor of every jornada: shelves on the walls, clumps
+  // at their feet and down in the pits. Their own stream of numbers, so the
+  // deck never notices, and nothing here collides. Baked with the floor, all
+  // the halos in one draw; floor.glows lists them for the view's light pool.
+  function sowMushrooms(f, statics, root, floor) {
+    const library = run.theme === 'biblioteca', R = rng(run.seed * 13 + f * 101 + depth), glows = [];
+    const openings = [...run.corridors, ...run.stubs].filter(c => c.floor === f).map(c => c.rect);
+    const busy = (x, z) => openings.some(o => inRect(x, z, o, 1.2)) || run.seals.some(q => q.floor === f && Math.hypot(q.x - x, q.z - z) < 3.2)
+      || run.plates.some(q => q.floor === f && Math.hypot(q.x - x, q.z - z) < 2) || run.nooks.some(q => q.floor === f && Math.hypot(q.mouth.x - x, q.mouth.z - z) < 2.4)
+      || [...run.lifts, ...run.cargo].some(q => q.floor === f && Math.hypot(q.x - x, q.z - z) < 4.2) || run.solids.some(q => q.floor === f && inRect(x, z, q.rect, .5));
+    const sow = (x, y, z, h, wall) => {
+      const model = place(statics, glowMushrooms({ seed: Math.floor(R() * 1e6), wall }), x, y, z, h), { y: gy, z: gz, color } = model.userData.glow;
+      glows.push({ x: x + Math.sin(h) * gz, y: y + gy, z: z + Math.cos(h) * gz, color });
+    };
+    // Along a stretch of wall: h faces away from the rock.
+    const wall = (x, z, h) => {
+      const ix = Math.sin(h), iz = Math.cos(h);
+      if (L.overPit(x + ix * .5, z + iz * .5)) return;
+      if (library || R() < .45) { if (!busy(x + ix * .5, z + iz * .5)) sow(x + ix * .45, 0, z + iz * .45, h, false); }
+      else if (!busy(x + ix * .1, z + iz * .1)) sow(x + ix * .02, .7 + R() * 1.9, z + iz * .02, h, true);
+    };
+    // Not in hidden rooms: a light borrowed there would shine through the wall and give the secret away.
+    for (const room of run.rooms.filter(r => r.floor === f && !r.hidden)) {
+      const [x0, z0, x1, z1] = room.rect, chance = library ? .24 : .42;
+      for (const t of [-.38, -.13, .13, .38]) {
+        if (R() < chance) wall(room.x + t * room.w, z0 + .03, 0);
+        if (R() < chance) wall(room.x + t * room.w, z1 - .03, Math.PI);
+        if (R() < chance) wall(x0 + .03, room.z + t * room.d, Math.PI / 2);
+        if (R() < chance) wall(x1 - .03, room.z + t * room.d, -Math.PI / 2);
+      }
+    }
+    if (!library) for (const c of run.corridors.filter(c => c.floor === f && !c.hidden)) {
+      const [x0, z0, x1, z1] = c.rect, side = R() < .5, t = .3 + R() * .4;
+      if (c.horizontal) wall(x0 + (x1 - x0) * t, side ? z0 + .03 : z1 - .03, side ? 0 : Math.PI);
+      else wall(side ? x0 + .03 : x1 - .03, z0 + (z1 - z0) * t, side ? Math.PI / 2 : -Math.PI / 2);
+    }
+    // Pits glow from below: clumps on the bottom, shelves down the sheer sides.
+    for (const pit of run.pits.filter(p => p.floor === f)) {
+      const [a, b, c, d] = pit.rect, bottom = -6.75;
+      for (let i = 0; i < 4; i++) sow(a + .8 + R() * (c - a - 1.6), bottom, i % 2 ? b + .9 : d - .9, R() * 6, false);
+      for (let i = 0; i < 4; i++) { const y = -1.4 - R() * 3.8, u = a + .8 + R() * (c - a - 1.6); if (i % 2) sow(u, y, b + .02, 0, true); else sow(u, y, d - .02, Math.PI, true); }
+    }
+    if (!glows.length) return;
+    floor.glows = glows; floor.mushroomHalos = mushroomHalos(glows, halo); root.add(floor.mushroomHalos);
   }
   // La biblioteca sepultada: the dealt bookcases (each room its own mix of
   // shelf variants), tables and desks, then cases along every free stretch
@@ -518,6 +565,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       for (const [id, chest] of floor.chests) { const open = !!state.chests?.[id]; chest.open = THREE.MathUtils.damp(chest.open, open ? 1 : 0, 6, dt); chest.model.userData.lid.rotation.x = -chest.open * 1.9; }
       for (const d of floor.doors) { d.open = THREE.MathUtils.damp(d.open, revealedNow[d.id] ? 1 : 0, 1.6, dt); d.door.userData.hinge.rotation.y = d.open * 1.45; }
       if (floor.flames) floor.flames.userData.tick(t);
+      if (floor.mushroomHalos) floor.mushroomHalos.material.opacity = .6 + Math.sin(t * .9 + f) * .12;
       floor.webs?.userData.tick(t); floor.mist?.userData.tick(t);
       // Searched spots open (and stay open); far ones are not drawn.
       for (const [id, sp] of floor.spots) {

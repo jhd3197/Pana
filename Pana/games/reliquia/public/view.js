@@ -16,7 +16,7 @@ import { splatTexture } from '/engine/models/props/paintball.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
 import { Puffs, Shockwaves } from '/engine/fx.js';
-import { pixelRatio, bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, shadowSize, rendererOptions, getSettings } from '/engine/settings.js';
 import { dustMotes } from '/engine/models/props/reliquia-library.js';
 import { createExpeditionWorld, itemModel } from './scene.js';
 import { floorOf, HEIGHT } from './deck.js';
@@ -27,10 +27,15 @@ import { HOPPER, packCart } from './carga.js';
 import { SILBON } from './silbon.js';
 import { SEAT_COLORS, SUIT_HEAD, seatColor, suitedAvatar } from './suit-look.js';
 import { dressExplorer, disposeSuits } from './explorer-suit.js';
+import { createHeadlamps } from './headlamps.js';
 import { createSwarmView } from './swarm-view.js';
 
 export const COLORS = SEAT_COLORS;
 const EYE = 1.45, POOL = 5, FAR = 220;
+const TAG_Y = 2.85;   // clears the helmet's lamp
+const MUSHROOM_LIGHT = { power: 5, reach: 7, within: 13 };
+// Real lights for the nearest other divers: fixed, as every light costs every lit pixel.
+const DIVER_LAMPS = { baja: 1, media: 2, alta: 3 }, DIVER_LAMP_POWER = .55;
 const CAMP_LOOK = { background: 0xf6d6a4, fog: [45, 150], hemi: [0xfff1d6, 0x8a6a4a, 2.1], sun: 3, exposure: 1.05 };
 // Underground: the mine is a dark violet black; the buried library cold and
 // grey-blue, a thin haze (no thick fog: the mist is a few rooms' accent), a
@@ -69,6 +74,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const headlamp = new THREE.SpotLight(0xfff0d8, 0, 24, .44, .42, 1.35); headlamp.position.set(0, .05, 0); headlamp.target.position.set(0, -.25, -5); camera.add(headlamp, headlamp.target);
   const handLight = new THREE.PointLight(0xffa850, 0, 12, 1.6); handLight.position.set(.3, -.2, -.4); camera.add(handLight);
   const pool = Array.from({ length: POOL }, () => { const l = new THREE.PointLight(0xffa04a, 0, 11, 1.7); scene.add(l); return l; });
+  const diverLamps = createHeadlamps(scene, DIVER_LAMPS[getSettings().quality] ?? 2);
   // Dust drifting through the headlamp's beam.
   const motes = dustMotes(); motes.visible = false; camera.add(motes);
   // What a scare does to the light, set by eerie-fx.js every frame: the
@@ -125,7 +131,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (a && a.skin === skin) return a;
     if (a) removeAvatar(a, p.id);
     const character = buildCharacter(suitedAvatar(p.avatar), { head: SUIT_HEAD }), suit = dressExplorer(character, seatColor(p.seat)), root = new THREE.Group(), tag = label(p.name, COLORS[p.seat % 8]);
-    tag.position.y = 2.5; root.add(character.group, tag); scene.add(root);
+    tag.position.y = TAG_Y; root.add(character.group, tag); scene.add(root);
     const slots = [new THREE.Group(), new THREE.Group()]; slots[0].position.set(.42, .95, .36); slots[1].position.set(-.42, .95, .36); slots.forEach(s => character.group.add(s));
     a = { root, character, suit, tag, slots, keys: ['', ''], skin, bubble: null, bubbleT: 0 };
     avatars.set(p.id, a); return a;
@@ -146,7 +152,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   }
   function bark(id, text) {
     const a = avatars.get(id); if (!a) return;
-    a.bubble && disposeSprite(a.bubble); a.bubble = label(text, '#fff', { bubble: true }); a.bubble.position.y = 3; a.bubble.scale.set(3.6, .68, 1); a.root.add(a.bubble); a.bubbleT = 3;
+    a.bubble && disposeSprite(a.bubble); a.bubble = label(text, '#fff', { bubble: true }); a.bubble.position.y = TAG_Y + .5; a.bubble.scale.set(3.6, .68, 1); a.root.add(a.bubble); a.bubbleT = 3;
   }
 
   function draw(state, me, dt, { downedLook = false, self = me?.id } = {}) {
@@ -161,7 +167,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     world.update(t, state, dt, me);
     sky.update(t); shopSign.visible = vf === 0;
     // Other panas.
-    const seen = new Set();
+    const seen = new Set(), divers = [];
     for (const [i, p] of state.players.entries()) {
       seen.add(p.id);
       const a = avatarFor(p, i), body = me?.id === p.id ? me : p;
@@ -183,9 +189,12 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       });
       a.slots.forEach((s, k) => { s.rotation.x = p.swing > 0 && p.swingHand === k ? -1.6 * p.swing / .3 : 0; });
       a.tag.visible = state.phase === 'playing';
+      a.suit.lit(lookName !== 'camp');
+      if (me) divers.push({ suit: a.suit, heading: a.character.group.rotation.y, d: Math.hypot(a.root.position.x - me.x, a.root.position.z - me.z) });
       if (a.bubble) { a.bubbleT -= dt; if (a.bubbleT <= 0) { disposeSprite(a.bubble); a.bubble = null; } }
     }
     for (const [id, a] of avatars) if (!seen.has(id)) removeAvatar(a, id);
+    diverLamps.update(lookName === 'camp' ? [] : divers, (look.lampPower || 58) * DIVER_LAMP_POWER * mood.farol);
     // Enemies.
     const live = new Set();
     for (const e of state.enemies) {
@@ -343,6 +352,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z) });
       for (const p of state.players) if (p.id !== me.id && alive(p) && floorOf(p.x) === vf && (holds(p, 'farol') || holds(p, 'sunCrown'))) sources.push({ x: p.x, y: 1.4, z: p.z, color: holds(p, 'sunCrown') ? 0xffd36a : look.hand || 0xffa850, power: 8, reach: 11, d: Math.hypot(p.x - me.x, p.z - me.z) - 6 });
       sources.sort((a, b) => a.d - b.d);
+      // The last two slots go to the nearest glowing mushrooms: no extra lights,
+      // and the warm sources they displace are the farthest of the five.
+      const glows = (world.floors.get(vf)?.glows || []).map(g => ({ ...g, power: MUSHROOM_LIGHT.power, reach: MUSHROOM_LIGHT.reach, d: Math.hypot(g.x - me.x, g.z - me.z) })).filter(g => g.d < MUSHROOM_LIGHT.within).sort((a, b) => a.d - b.d).slice(0, 2);
+      sources.splice(POOL - glows.length, sources.length, ...glows);
       pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); light.distance = s.reach; } });
     }
     // La codicia shows in the world: torches gutter and dust sifts from the ceiling.
@@ -392,7 +405,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
       disposeSprite(shopSign);
       swarm.dispose(); motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
-      [ballGeometry, dartGeometry, splatGeometry, ringGeometry, pawGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial, pawMaterial].forEach(m => m.dispose()); disposeSuits();
+      [ballGeometry, dartGeometry, splatGeometry, ringGeometry, pawGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial, pawMaterial].forEach(m => m.dispose()); disposeSuits(); diverLamps.dispose();
       renderer.dispose();
     },
   };
