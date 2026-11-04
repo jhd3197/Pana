@@ -3,7 +3,7 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { loc, locn, formatNumber } from '/engine/i18n.js';
 import { setBar } from '/engine/kit.js';
 import { ARTIFACT_AURA } from '/engine/models/props/reliquia-treasure.js';
-import { interaction, compassTarget, spreadTags, titles, tier, holds, alive, cartValue } from './rules.js';
+import { interaction, compassTarget, spreadTags, titles, tier, holds, alive, cartValue, ENCARGO_TEXT, encargoPay } from './rules.js';
 import { layoutFor, distance } from './layout.js';
 import { jornadaName, themeOf, TRUCK, floorOf, inRect } from './deck.js';
 import { ITEMS, heldValue, itemName, say } from './items.js';
@@ -80,6 +80,9 @@ export function createHud() {
     const load = state.delivered || 0;
     $('quota-label').textContent = `${money(load)} / ${money(state.quota)}`; setBar($('quota-fill'), state.quota ? load / state.quota : 0);
     $('mangos').textContent = Math.floor(state.mangos);
+    const job = state.encargo, left = job?.kind === 'turno' && job.until ? Math.max(0, Math.ceil(job.until - state.time)) : 0;
+    $('encargo-text').textContent = job ? loc(ENCARGO_TEXT[job.kind]) : '';
+    $('encargo-state').textContent = !job ? '' : job.state === 'paid' ? loc('Cumplido') : job.state === 'lost' ? loc('Perdido') : left ? loc('{n} s · +{pay} mangos', { n: left, pay: encargoPay(state.level) }) : loc('+{pay} mangos', { pay: encargoPay(state.level) });
     const region = L.regionAt(p)?.name;
     $('room-name').textContent = f === 0 ? loc('El campamento') : region ? loc(region) : loc('Los pasillos');
     setBar($('greed-fill'), state.codicia / 100); $('greed-label').textContent = GREED[tier(state)];

@@ -13,13 +13,14 @@ const RIM_LEVEL = HOPPER.rim - HOPPER.floor;
 // Each piece's real footprint, width × length × height, from its model's bounds;
 // `lay` pieces rest on their backs. Heights are as they stack (they nest a little).
 export const BULK = {
+  encomienda: [.34, .28, .25],
   coins: [.5, .45, .2], emerald: [.4, .4, .3], pearl: [.4, .45, .25], cup: [.36, .36, .3], oldBook: [.3, .25, .08],
   mask: [.6, .6, .25, true], idol: [.36, .5, .3, true], echoMask: [.56, .5, .26, true], sandals: [.4, .34, .22], sunCrown: [.4, .4, .36], laughingIdol: [.4, .56, .34, true],
   miche: [.2, .48, .2, true], compass: [.32, .34, .2], luckyCoin: [.28, .34, .12, true], jaguarHeart: [.3, .34, .2, true],
 };
 const bulkOf = kind => BULK[kind] || [.5, .5, .3];
 // How heavy it feels, 0…1.
-export const HEFT = { coins: .2, emerald: .15, pearl: .15, cup: .25, oldBook: .1, mask: .55, idol: .6, echoMask: .5, sandals: .2, sunCrown: .45, laughingIdol: .6, miche: .35, compass: .3, luckyCoin: .1, jaguarHeart: .5 };
+export const HEFT = { encomienda: .4, coins: .2, emerald: .15, pearl: .15, cup: .25, oldBook: .1, mask: .55, idol: .6, echoMask: .5, sandals: .2, sunCrown: .45, laughingIdol: .6, miche: .35, compass: .3, luckyCoin: .1, jaguarHeart: .5 };
 export const heftOf = kind => ITEMS[kind]?.size === 'big' ? 1 : HEFT[kind] ?? .4;
 
 // Where every piece rests: each goes to the lowest place its footprint fits, far

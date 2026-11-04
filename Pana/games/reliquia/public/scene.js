@@ -33,14 +33,16 @@ import { heliconia } from '/engine/models/vegetation/heliconia.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { hideNook } from '/engine/models/props/reliquia-boss.js';
+import { giantMushroom, puffball, hangingRope, ropeAnchor, narrowBeam, coiledRope, flareStick, sealedParcel, ceilingCrackMark, floodSurface } from '/engine/models/props/fosa-biomes.js';
 import { layoutFor } from './layout.js';
 import { visibleItems, liftView, SHOP, SHOP_AT, shopSpot } from './rules.js';
 import { ITEMS, ARTIFACTS } from './items.js';
 import { TRUCK, TABLE, HEIGHT, CAGE, floorOf, inRect } from './deck.js';
+import { onPlate } from './sucesos.js';
 
 const PALETTES = ['sol', 'jade', 'maldita'];
-export const paletteFor = (floor, theme = 'mina') => theme === 'biblioteca' ? RUIN_PALETTES.biblioteca : RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
-const FACTORIES = { ...treasure, oldBook, mineCart: () => mineCart({ load: 'gold', hollow: true }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
+export const paletteFor = (floor, theme = 'mina') => theme !== 'mina' && RUIN_PALETTES[theme] ? RUIN_PALETTES[theme] : RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
+const FACTORIES = { ...treasure, oldBook, flareStick: () => flareStick({ lit: false }), coiledRope, sealedParcel, mineCart: () => mineCart({ load: 'gold', hollow: true }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
 const GLOW = { tool: 0xfff1d6, treasure: 0xffc23d, big: 0xffd36a, junk: 0x9aa4b0 };
 
 // One prototype per item kind; every copy on the map is a cheap clone.
@@ -130,6 +132,9 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       case 'lectern': return lectern({ seed: d.z | 0 });
       case 'bigLectern': return lectern({ big: true });
       case 'chandelier': return chandelier({ ceiling: HEIGHT, drop: 1.5, seed: d.x | 0, lit: true });
+      case 'giantMushroom': return giantMushroom({ seed: (d.x * 7 + d.z * 3) | 0 });
+      case 'puffball': return puffball({ seed: d.z | 0 });
+      case 'crack': return ceilingCrackMark({ seed: (d.x * 3 + d.z) | 0 });
       default: return null;
     }
   }
@@ -137,8 +142,8 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
     if (floorsBuilt.has(f) || f < 1 || f > floors) return floorsBuilt.get(f);
     const root = new THREE.Group(); root.name = `Piso ${f}`; group.add(root);
     const library = run.theme === 'biblioteca', statics = new THREE.Group(), palette = paletteFor(depth, run.theme), x0 = f * L.SPACING - 60;
-    const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
-    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [], spots: new Map(), webs: null, mist: null, chandeliers: [] };
+    const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z) && !run.bridges.some(b => b.beam && inRect(x, z, b.rect)), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
+    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [], spots: new Map(), webs: null, mist: null, chandeliers: [], water: null, waterLevel: .13, spans: new Map(), ropes: new Map(), twins: [], decorGlows: [] };
     root.add(floor.shell);
     // Candle flames of the whole floor go in one instanced shader.
     const flamePoints = [], flamesOf = (model, x, y, z, h = 0) => { for (const p of model.userData.flames || []) flamePoints.push(new THREE.Vector3(p.x * Math.cos(h) + p.z * Math.sin(h) + x, p.y + y, -p.x * Math.sin(h) + p.z * Math.cos(h) + z)); };
@@ -147,16 +152,18 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       const model = decorModel(d); if (!model) continue;
       if (d.kind === 'vein') { model.rotation.z = Math.PI / 2; model.position.y = 1.6; }
       if (d.kind === 'chandelier') floor.chandeliers.push({ x: d.x, z: d.z });
+      if (model.userData.glow) floor.decorGlows.push({ x: d.x, y: model.userData.glow.y, z: d.z, color: model.userData.glow.color });
       flamesOf(model, d.x, 0, d.z, d.h);
       place(statics, model, d.x, model.position.y, d.z, d.h);
     }
     if (library) furnishLibrary(f, statics, root, floor, flamesOf);
+    if (run.theme === 'inundada') flood(f, root, floor);
     // Skulls and crystals give the dark corners a little colour (crystals are
     // instanced with their own shader, so they stay out of the static batch).
     for (const r of run.rooms.filter(r => r.floor === f)) {
       const k = (r.x * 7 + r.z * 3) | 0;
       if (library) continue;
-      if (f > 1 && k % 3 === 0) place(statics, skull({ size: .35 }), r.rect[0] + 1, 0, r.rect[3] - 1.1, k);
+      if (depth > 1 && k % 3 === 0) place(statics, skull({ size: .35 }), r.rect[0] + 1, 0, r.rect[3] - 1.1, k);
       if (k % 2 === 0) place(root, crystalCluster({ size: .9, color: (k >> 1) % 8, seed: k }), r.rect[2] - .8, 0, r.rect[1] + .8, k);
     }
     dress(f, statics, root);
@@ -164,16 +171,32 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
     for (const pit of run.pits.filter(p => p.floor === f)) {
       const [a, b, c, d] = pit.rect, hole = new THREE.Mesh(new THREE.BoxGeometry(c - a, .5, d - b), mat(0x07040c));
       hole.position.set((a + c) / 2, -7, (b + d) / 2); root.add(hole);
-      for (let i = 0; i < 6; i++) place(root, crystalCluster({ size: 1.4, color: i % 8, seed: i + f }), a + (i % 3 + .5) * (c - a) / 3, -6.6, i < 3 ? b + 1.2 : d - 1.2, i);
-      const [ia, ib, ic, id] = pit.island, island = new THREE.Mesh(new THREE.BoxGeometry(ic - ia, 6.8, id - ib), mat(0x8a7356, { flatShading: true }));
-      island.position.set((ia + ic) / 2, -3.55, (ib + id) / 2); root.add(island);
+      if (!pit.water) for (let i = 0; i < 6; i++) place(root, crystalCluster({ size: 1.4, color: i % 8, seed: i + f }), a + (i % 3 + .5) * (c - a) / 3, -6.6, i < 3 ? b + 1.2 : d - 1.2, i);
+      else { const pool = floodSurface({ rects: [pit.rect], y: -.6, color: 0x06181c, opacity: .94 }); root.add(pool); floor.pools = [...(floor.pools || []), pool]; }
+      // A hanging platform stops well above the bottom; its slabs come with the shell.
+      const [ia, ib, ic, id] = pit.island, top = -(pit.low || 0) - .15, tall = top + 6.95, island = new THREE.Mesh(new THREE.BoxGeometry(ic - ia, tall, id - ib), mat(0x8a7356, { flatShading: true }));
+      island.position.set((ia + ic) / 2, top - tall / 2, (ib + id) / 2); root.add(island);
     }
     for (const pit of run.pits.filter(p => p.floor === f)) pitEdge(pit, root, run.bridges.filter(q => q.floor === f && q.room === pit.room).map(q => q.rect), run.theme === 'biblioteca');
     // Hiding nooks, baked with the floor: two slabs, a dark gap, a chalk hand.
     for (const n of run.nooks.filter(q => q.floor === f)) { const library = run.theme === 'biblioteca', model = hideNook(library ? { stone: 0x4c4a4c, dark: 0x302e32, chalk: 0xd6d8d0 } : {}); place(statics, model, n.mouth.x, 0, n.mouth.z, n.h); }
     for (const b of run.bridges.filter(b => b.floor === f)) {
-      const span = b.rect[3] - b.rect[1], bridge = ropeBridge({ span: Math.max(4, span), seed: f * 9 });
-      place(root, bridge, (b.rect[0] + b.rect[2]) / 2, -1.7, (b.rect[1] + b.rect[3]) / 2, Math.PI / 2);
+      const span = b.rect[3] - b.rect[1], x = (b.rect[0] + b.rect[2]) / 2, z = (b.rect[1] + b.rect[3]) / 2;
+      if (b.beam) { place(statics, narrowBeam({ span, width: b.rect[2] - b.rect[0], seed: (x + z) | 0 }), x, 0, z); continue; }
+      const bridge = place(root, ropeBridge({ span: Math.max(4, span), seed: f * 9 }), x, -1.7, z, Math.PI / 2);
+      if (b.needs) { bridge.visible = false; floor.spans.set(b.id, bridge); place(statics, ropeAnchor(), b.x + 1.5, 0, b.z); place(statics, ropeAnchor(), b.x - 1.5, 0, b.z); }
+    }
+    // Ropes hang off a stake at the rim, down past the platform's edge.
+    for (const r of run.ropes.filter(r => r.floor === f)) {
+      place(statics, ropeAnchor({ tied: !r.needs }), r.x + 1, 0, r.z);
+      const rope = place(root, hangingRope({ length: r.low + .9, seed: r.id.length }), r.x, .9, (r.z + r.bz) / 2);
+      rope.visible = !r.needs; floor.ropes.set(r.id, rope);
+    }
+    // The golden chamber's twin plates: they light while a weight is on them.
+    for (const t of run.twins.filter(t => t.floor === f)) for (const q of t.plates) {
+      const plate = place(root, treasure.trapPlate(), q.x, .01, q.z);
+      plate.userData.glyph.material = mat(0x8a6a2a, { emissive: 0xffc23d, emissiveIntensity: .25 });
+      floor.twins.push({ q, wall: t.wall, plate });
     }
     for (const seal of run.seals.filter(s => s.floor === f)) {
       const slab = place(root, treasure.stairSeal({ width: 4.6, height: HEIGHT }), seal.x, 0, seal.z + .2, 0); floor.seals.set(seal.id, { slab, height: 0 });
@@ -222,8 +245,32 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
     const stripe = new THREE.Mesh(merged(band), mat(library ? 0xc9ccc4 : 0xe0b860, { emissive: library ? 0x5a5c58 : 0x7a4f12, emissiveIntensity: 1 }));
     root.add(edge, walls, stripe);
   }
+  // The flooded tunnels: one sheet of shallow water over every room and corridor,
+  // cut around the pits (a dry island keeps its head above it).
+  function flood(f, root, floor) {
+    const cut = (rects, [a, b, c, d]) => rects.flatMap(r => {
+      if (r[0] >= c || r[2] <= a || r[1] >= d || r[3] <= b) return [r];
+      const out = [];
+      if (r[0] < a) out.push([r[0], r[1], a, r[3]]);
+      if (r[2] > c) out.push([c, r[1], r[2], r[3]]);
+      const x0 = Math.max(r[0], a), x1 = Math.min(r[2], c);
+      if (r[1] < b) out.push([x0, r[1], x1, b]);
+      if (r[3] > d) out.push([x0, d, x1, r[3]]);
+      return out;
+    });
+    const rooms = run.rooms.filter(r => r.floor === f && !r.hidden);
+    let rects = rooms.map(r => r.rect);
+    for (const pit of run.pits.filter(p => p.floor === f)) rects = cut(rects, pit.rect);
+    let halls = run.corridors.filter(c => c.floor === f && !c.hidden).map(c => c.rect);
+    for (const r of rooms) halls = cut(halls, r.rect);
+    floor.water = floodSurface({ rects: [...rects, ...halls] });
+    root.add(floor.water);
+  }
   function dress(f, statics, root) {
     if (run.theme === 'biblioteca') return;
+    // Timber and lamps in the mine's first levels and (rotten, unlit) in the flooded
+    // tunnels; carved reliefs in the temple and the deep mine; roots in the grove.
+    const theme = run.theme, timbered = theme === 'inundada' || (theme === 'mina' && depth <= 2), lamps = theme === 'mina' && depth <= 2;
     const openings = [...run.corridors, ...run.stubs].filter(c => c.floor === f).map(c => c.rect);
     for (const room of run.rooms.filter(r => r.floor === f)) {
       const [x0, z0, x1, z1] = room.rect, k = (room.x * 3 + room.z * 7) | 0, spots = [];
@@ -234,15 +281,16 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       const free = spots.filter(p => !openings.some(o => inRect(p.x, p.z, o, 1.6)) && !run.seals.some(q => Math.hypot(q.x - p.x, q.z - p.z) < 3) && !run.plates.some(q => q.room === room.id && Math.abs(q.z - p.z) < 1.2));
       free.forEach((p, i) => {
         if ((i + k) % 3 === 2) return;
-        if (f === 1) { const lamp = place(statics, mineLantern({}), p.x + Math.sin(p.h) * .1, 2.3, p.z + Math.cos(p.h) * .1, p.h); lamp.scale.setScalar(1.2); }
-        else if ((i + k) % 3 === 0) place(statics, jaguarRelief({ width: 2.2, height: 1, seed: k + i, moss: f === 2 }), p.x, 1.1, p.z, p.h);
+        if (lamps) { const lamp = place(statics, mineLantern({}), p.x + Math.sin(p.h) * .1, 2.3, p.z + Math.cos(p.h) * .1, p.h); lamp.scale.setScalar(1.2); }
+        else if ((i + k) % 3 === 0 && theme !== 'hongos' && theme !== 'inundada' || theme === 'templo') place(statics, jaguarRelief({ width: 2.2, height: 1, seed: k + i, moss: depth % 2 === 0 }), p.x, 1.1, p.z, p.h);
         else { const roots = rootCurtain({ seed: k + i, length: 2.6 + (i % 3) * .6, width: 2.4 }); roots.position.set(p.x + Math.sin(p.h) * .5, HEIGHT, p.z + Math.cos(p.h) * .5); statics.add(roots); }
       });
-      if (k % 2 === 0) place(statics, ruinRubble({ seed: k, count: 4, spread: .9 }), x0 + 1.2, 0, z1 - 1.2, k);
+      if (k % 2 === 0 || theme === 'templo') place(statics, ruinRubble({ seed: k, count: theme === 'templo' ? 7 : 4, spread: theme === 'templo' ? 1.4 : .9 }), x0 + 1.2, 0, z1 - 1.2, k);
     }
     for (const c of run.corridors.filter(c => c.floor === f)) {
       const [x0, z0, x1, z1] = c.rect, along = c.horizontal ? x1 - x0 : z1 - z0, mid = c.horizontal ? (z0 + z1) / 2 : (x0 + x1) / 2;
-      if (f === 1) for (let t = 2.5; t < along - 1.5; t += 4.5) place(statics, mineSupport({ width: 3.6, height: 3.8, lantern: t < 3 }), c.horizontal ? x0 + t : mid, 0, c.horizontal ? mid : z0 + t, c.horizontal ? Math.PI / 2 : 0);
+      if (theme === 'hongos') continue;
+      if (timbered) for (let t = 2.5; t < along - 1.5; t += 4.5) place(statics, mineSupport({ width: 3.6, height: 3.8, lantern: lamps && t < 3 }), c.horizontal ? x0 + t : mid, 0, c.horizontal ? mid : z0 + t, c.horizontal ? Math.PI / 2 : 0);
       else for (const end of [0, along]) for (const s of [-1, 1]) {
         const a = c.horizontal ? x0 + end : mid + s * 2.15, b = c.horizontal ? mid + s * 2.15 : z0 + end;
         place(statics, ruinColumn({ seed: (a * 5 + b) | 0, radius: .32, height: HEIGHT }), a, 0, b);
@@ -254,7 +302,8 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
   // deck never notices, and nothing here collides. Baked with the floor, all
   // the halos in one draw; floor.glows lists them for the view's light pool.
   function sowMushrooms(f, statics, root, floor) {
-    const library = run.theme === 'biblioteca', R = rng(run.seed * 13 + f * 101 + depth), glows = [];
+    // The grove is thick with them.
+    const library = run.theme === 'biblioteca', grove = run.theme === 'hongos', R = rng(run.seed * 13 + f * 101 + depth), glows = [...floor.decorGlows];
     const openings = [...run.corridors, ...run.stubs].filter(c => c.floor === f).map(c => c.rect);
     const busy = (x, z) => openings.some(o => inRect(x, z, o, 1.2)) || run.seals.some(q => q.floor === f && Math.hypot(q.x - x, q.z - z) < 3.2)
       || run.plates.some(q => q.floor === f && Math.hypot(q.x - x, q.z - z) < 2) || run.nooks.some(q => q.floor === f && Math.hypot(q.mouth.x - x, q.mouth.z - z) < 2.4)
@@ -272,7 +321,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
     };
     // Not in hidden rooms: a light borrowed there would shine through the wall and give the secret away.
     for (const room of run.rooms.filter(r => r.floor === f && !r.hidden)) {
-      const [x0, z0, x1, z1] = room.rect, chance = library ? .24 : .42;
+      const [x0, z0, x1, z1] = room.rect, chance = library ? .24 : grove ? .78 : .42;
       for (const t of [-.38, -.13, .13, .38]) {
         if (R() < chance) wall(room.x + t * room.w, z0 + .03, 0);
         if (R() < chance) wall(room.x + t * room.w, z1 - .03, Math.PI);
@@ -280,7 +329,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
         if (R() < chance) wall(x1 - .03, room.z + t * room.d, -Math.PI / 2);
       }
     }
-    if (!library) for (const c of run.corridors.filter(c => c.floor === f && !c.hidden)) {
+    if (!library) for (const c of run.corridors.filter(c => c.floor === f && !c.hidden)) for (let n = grove ? 3 : 1; n > 0; n--) {
       const [x0, z0, x1, z1] = c.rect, side = R() < .5, t = .3 + R() * .4;
       if (c.horizontal) wall(x0 + (x1 - x0) * t, side ? z0 + .03 : z1 - .03, side ? 0 : Math.PI);
       else wall(side ? x0 + .03 : x1 - .03, z0 + (z1 - z0) * t, side ? Math.PI / 2 : -Math.PI / 2);
@@ -567,6 +616,11 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       if (floor.flames) floor.flames.userData.tick(t);
       if (floor.mushroomHalos) floor.mushroomHalos.material.opacity = .6 + Math.sin(t * .9 + f) * .12;
       floor.webs?.userData.tick(t); floor.mist?.userData.tick(t);
+      if (floor.water) { floor.waterLevel = THREE.MathUtils.damp(floor.waterLevel, state.suceso?.kind === 'creciente' ? .68 : .13, .8, dt); floor.water.userData.level(floor.waterLevel); floor.water.userData.tick(t); }
+      for (const pool of floor.pools || []) pool.userData.tick(t);
+      for (const [id, bridge] of floor.spans) bridge.visible = !!state.strung?.[id];
+      for (const [id, rope] of floor.ropes) rope.visible = !run.ropes.find(r => r.id === id).needs || !!state.strung?.[id];
+      for (const { q, wall, plate } of floor.twins) plate.userData.glyph.material.emissiveIntensity = state.revealed?.[wall] || (state.players && onPlate(state, q)) ? 2 : .25 + Math.sin(t * 2) * .12;
       // Searched spots open (and stay open); far ones are not drawn.
       for (const [id, sp] of floor.spots) {
         const want = state.spots?.[id] ? 1 : 0;

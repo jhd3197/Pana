@@ -65,7 +65,7 @@ test('a pana fits in a nook and slips out; the boss never fits', () => {
 
 test('nothing kills it: a machete and paint only stagger it, and not twice in a row', () => {
   assert.equal(KINDS.silbon.unkillable, true);
-  const g = setup(), [a] = g.players, room = pitRoom(g), at = { x: room.x, z: room.rect[1] + 1.6 };
+  const g = setup(), [a] = g.players, room = pitRoom(g), at = [0, 2, -2, 4, -4, 6, -6].map(dx => ({ x: room.x + dx, z: room.rect[1] + 1.6 })).find(q => g.layout.walkable(q.x, q.z, g, .5) && g.layout.walkable(q.x + 1.5, q.z, g, .42));
   const e = boss(g, at.x, at.z);
   assert.equal(wound(e, 1e9), false); assert.equal(e.hp, e.maxHp);
   assert.equal(stagger(e, .9), true); assert.ok(e.stun > 0); assert.equal(stagger(e, .9), false, 'no stun lock');

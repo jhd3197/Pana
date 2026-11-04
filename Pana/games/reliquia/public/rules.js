@@ -17,6 +17,7 @@ import { resetJump } from '../../../engine/play/jump.js';
 import { stepWalker } from '../../../engine/play/walker.js';
 import { pickLine } from '../../../engine/play/frases.js';
 import { locKey } from '../../../engine/i18n.js';
+import { tickHazards, throwFlare, startClimb, endClimb, firstSucesoIn } from './sucesos.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 export const alive = p => !p.downed && !p.spectator;
@@ -47,7 +48,7 @@ export function stepExplorer(p, input, dt, world) {
   const L = layoutFor(world.seed, world.level, themeOf(world));
   if (Number.isFinite(input.h)) p.h = input.h;
   if (Number.isFinite(input.pitch)) p.pitch = clamp(input.pitch, -1.2, 1.2);
-  if (p.grip != null || p.push != null || p.draggedBy != null || p.riding || p.downed || p.spectator) { resetJump(p, input); if (!p.riding) p.y = L.groundAt(p.x,p.z); p.moving = false; return; }
+  if (p.grip != null || p.push != null || p.draggedBy != null || p.riding || p.rope || p.downed || p.spectator) { resetJump(p, input); if (!p.riding && !p.rope) p.y = L.groundAt(p.x,p.z); p.moving = false; return; }
   // Sandals speed you up but you slide; a rope drags, a slow curse and a stun hold you back.
   const sandals = holds(p, 'sandals'), pace = base => {
     let speed = base;
@@ -66,7 +67,7 @@ export function stepExplorer(p, input, dt, world) {
 // point with a size; the one closest to the line of sight wins. Something
 // right at your feet in front of you counts too, so the floor is easy.
 export function interaction(s, p) {
-  if (!p || !alive(p)) return null;
+  if (!p || !alive(p) || p.rope) return null;
   if (p.grip != null) { const big = s.items.find(i => i.id === p.grip); return { kind: 'release', text: locKey('Soltar el tesoro'), press: true, progress: big?.climb ? big.climb / climbTime(big.kind) : 0 }; }
   if (p.push != null) return { kind: 'release', text: locKey('Soltar el carrito'), press: true };
   const L = layoutFor(s.seed, s.level, themeOf(s)), f = floorOf(p.x), pitch = p.pitch || 0, cp = Math.cos(pitch);
@@ -74,7 +75,7 @@ export function interaction(s, p) {
   const options = [];
   const offer = (target, pt, r, reach = REACH) => {
     if (floorOf(pt.x) !== f) return;
-    const dx = pt.x - eye.x, dy = (pt.y ?? .4) - eye.y, dz = pt.z - eye.z, d = Math.hypot(dx, dy, dz), flat = Math.hypot(dx, dz);
+    const dx = pt.x - eye.x, dy = (pt.y ?? .4) - L.lowAt(pt.x, pt.z) - eye.y, dz = pt.z - eye.z, d = Math.hypot(dx, dy, dz), flat = Math.hypot(dx, dz);
     if (d > reach + r) return;
     const angle = Math.acos(clamp((dx * look.x + dy * look.y + dz * look.z) / (d || 1), -1, 1)), allow = Math.atan2(r, d) + .08;
     if (angle <= allow) options.push({ ...target, score: angle / allow + d * .04 });
@@ -118,6 +119,15 @@ export function interaction(s, p) {
       : !p.hands.some(Boolean) ? { kind: 'cart-push', id: cart.id, text: locKey('Empujar el carrito · Bs. {value}'), vars: { value: cartValue(cart) }, press: true } : { kind: 'info', text: locKey('El carrito lleva Bs. {value} · suelta lo que tienes para empujarlo'), vars: { value: cartValue(cart) } };
     offer(target, { x: cart.x, y: .7, z: cart.z }, .95, 3);
   }
+  // Rope work: a stake to tie, or a rope to go down or up. Each end answers on its own level.
+  const tying = p.hands.some(h => h?.kind === 'cuerda');
+  for (const r of L.run.ropes) {
+    if (r.floor !== f) continue;
+    if (r.needs && !s.strung?.[r.id]) { offer(tying ? { kind: 'tie', id: r.id, text: locKey('Amarrar la cuerda'), press: true } : { kind: 'info', text: locKey('Aquí se amarra una cuerda') }, { x: r.x, y: .6, z: r.z }, .7, 3); continue; }
+    offer({ kind: 'rope', id: r.id, down: true, text: locKey('Bajar por la cuerda'), press: true }, { x: r.x, y: 1, z: r.z }, .7, 3);
+    offer({ kind: 'rope', id: r.id, down: false, text: locKey('Subir por la cuerda'), press: true }, { x: r.bx, y: 1.4, z: r.bz }, .7, 3);
+  }
+  for (const b of L.run.bridges) if (b.needs && b.floor === f && !s.strung?.[b.id]) offer(tying ? { kind: 'tie', id: b.id, text: locKey('Amarrar el puente'), press: true } : { kind: 'info', text: locKey('Aquí se amarra un puente con una cuerda') }, { x: b.x, y: .6, z: b.z }, .7, 3);
   for (const c of L.run.chests) if (!s.chests[c.id]) offer({ kind: 'chest', id: c.id, text: locKey('Abrir el cofre'), press: true }, { x: c.x, y: .5, z: c.z }, .65);
   // Hiding spots: hold E a moment to search one.
   for (const sp of L.run.spots) if (!s.spots?.[sp.id] && sp.floor === f) offer({ kind: 'search', id: sp.id, text: SEARCH[sp.kind][0], progress: (s.searching?.[sp.id] || 0) / sp.need, hold: true }, { x: sp.x, y: SEARCH[sp.kind][1], z: sp.z }, spotSize(sp));
@@ -146,9 +156,9 @@ export function liftButton(s, stop) {
   return { to: 0 };
 }
 // What the camp's shop sells, in mangos, and where each piece sits on the counter.
-export const SHOP = [['farol', 10], ['botiquin', 15], ['machete', 20], ['honda', 25], ['marcadora', 45]];
+export const SHOP = [['farol', 10], ['bengala', 8], ['cuerda', 12], ['botiquin', 15], ['machete', 20], ['honda', 25], ['marcadora', 45]];
 export const SHOP_AT = { x: -12.5, z: 6, h: Math.PI / 2 };
-export const shopSpot = i => ({ x: SHOP_AT.x + .9, y: 1.05, z: SHOP_AT.z - 1.5 + i * .75 });
+export const shopSpot = i => ({ x: SHOP_AT.x + .9, y: 1.05, z: SHOP_AT.z - 1.8 + i * .6 });
 // Where the cage is drawn: during a trip it sinks out of one stop and rises into the next.
 export function liftView(lift) {
   if (!lift?.moving) return { floor: lift?.floor ?? 0, y: 0 };
@@ -200,6 +210,10 @@ export function titles(s) {
 export function quotaFor(level, roster) {
   return Math.round((400 + 300 * (level - 1)) * (.7 + .1 * Math.min(8, Math.max(1, roster))) / 50) * 50;
 }
+// One extra job a jornada, on top of the quota: what it asks, and what it pays in mangos.
+export const ENCARGO_TEXT = { pedido: locKey('Encargo: suban la cajita sellada.'), turno: locKey('Encargo: junten la cuota antes de que se acabe el turno.'), sinBajas: locKey('Encargo: que no caiga nadie.'), todos: locKey('Encargo: suban todos juntos en la jaula.') };
+export const encargoPay = level => 20 + 5 * level;
+export const turnoSeconds = level => 210 + 45 * level;
 const levelSeed = (seed, level) => level === 1 ? seed : ((seed ^ Math.imul(level, 2654435761)) >>> 0) || 1;
 export class Expedition {
   constructor(seed = 1, options = {}) {
@@ -208,7 +222,8 @@ export class Expedition {
       touched: {}, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, carts: [], haul: 0,
       lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       level: 1, mangos: 0, quota: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null }, origin: seed >>> 0 || 1,
-      swarm: null, swarmSim: null, swarmAt: SWARM.firstAt, swarmId: 0, director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0 });
+      swarm: null, swarmSim: null, swarmAt: SWARM.firstAt, swarmId: 0, director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0,
+      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null });
     this.paths = new Map();
   }
   get layout() { return layoutFor(this.seed, this.level, themeOf(this)); }
@@ -239,13 +254,22 @@ export class Expedition {
     Object.assign(this, new Expedition(seed, this.options)); this.ledger = ledger; this.eventId = eventId;
     roster.forEach(p => this.addPlayer(p.id, p.name, p.avatar)); this.phase = 'playing';
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));
-    this.quota = quotaFor(1, this.players.length); this.placeStatues();
+    this.quota = quotaFor(1, this.players.length); this.placeStatues(); this.dealEncargo(); this.sucesoIn = firstSucesoIn(this);
     // Where the jornada happens is part of the first word everyone reads.
     this.event('start', locKey('Jornada 1 · {place}: bajen, llenen el carrito y súbanlo por la carga hasta juntar Bs. {quota}.'), { vars: { quota: this.quota, place: jornadaName(1, themeOf(this)) } });
   }
   accept(id, seq, action, data = {}) {
     if (!Number.isSafeInteger(seq) || seq <= (this.ledger[id] || 0) || !this.players.some(p => p.id === id)) return false;
     this.ledger[id] = seq; return this.action(id, action, data);
+  }
+  // ---------- El encargo ----------
+  dealEncargo() { this.encargo = { kind: this.layout.run.encargo, state: 'open', until: 0 }; }
+  settleEncargo(won, text = '') {
+    const job = this.encargo; if (!job || job.state !== 'open') return;
+    job.state = won ? 'paid' : 'lost';
+    const pay = encargoPay(this.level); if (won) this.mangos += pay;
+    if (won) this.event('encargo-paid', locKey('¡Encargo cumplido! +{pay} mangos.'), { vars: { pay } });
+    else this.event('encargo-lost', text);
   }
   // ---------- Items ----------
   // Lift an item off the map: the deck's copy becomes a moving item once.
@@ -290,11 +314,11 @@ export class Expedition {
     if (held.pile) {
       const pieces = held.pile.map((kind, i) => {
         const a = p.h + (i - (held.pile.length - 1) / 2) * .18, speed = throwIt ? throwPower(kind, 9 + i * .4) : 1.2;
-        return this.spawnItem(kind, p.x + forward.x * .5, p.z + forward.z * .5, { state: 'air', y: 1.2, vx: Math.sin(a) * speed, vz: Math.cos(a) * speed, vy: throwIt ? 3 + Math.sin(p.pitch || 0) * 6 : 1.5, thrower: p.id, thrownAt: this.time });
+        return this.spawnItem(kind, p.x + forward.x * .5, p.z + forward.z * .5, { state: 'air', y: 1.2 + (p.y || 0), vx: Math.sin(a) * speed, vz: Math.cos(a) * speed, vy: throwIt ? 3 + Math.sin(p.pitch || 0) * 6 : 1.5, thrower: p.id, thrownAt: this.time });
       });
       return pieces[0];
     }
-    const item = { id: held.id, kind: held.kind, uses: held.uses, x: p.x + forward.x * .5, z: p.z + forward.z * .5, y: 1.2, h: p.h, vx: forward.x * power + p.vx * .5, vz: forward.z * power + p.vz * .5,
+    const item = { id: held.id, kind: held.kind, uses: held.uses, x: p.x + forward.x * .5, z: p.z + forward.z * .5, y: 1.2 + (p.y || 0), h: p.h, vx: forward.x * power + p.vx * .5, vz: forward.z * power + p.vz * .5,
       vy: throwIt ? 3 + Math.sin(p.pitch || 0) * 6 : 0, state: 'air', carriers: [], thrower: p.id, thrownAt: this.time, worth: held.worth ?? 1 };
     if (!this.layout.walkable(item.x, item.z, this, .1)) { item.x = p.x; item.z = p.z; }
     this.items.push(item);
@@ -371,6 +395,7 @@ export class Expedition {
   bank(kind, worth = 1, by = null, bonus = 1) {
     const value = Math.round(valueOf(kind) * worth * bonus); if (!value) return 0;
     this.haul += value; this.mangos += value / 10; this.truck.push(kind); this.truck = this.truck.slice(-40);
+    if (kind === 'encomienda' && this.encargo?.kind === 'pedido') this.settleEncargo(true);
     if (by) by.stats.banked += value;
     return value;
   }
@@ -404,17 +429,26 @@ export class Expedition {
       if (target.kind === 'buy') return this.buy(p, target.item);
       if (target.kind === 'cargo') return this.sendCargo(p);
       if (target.kind === 'chest') return this.openChest(p, target.id);
+      if (target.kind === 'rope') { const rope = this.layout.run.ropes.find(r => r.id === target.id); if (!rope) return false; startClimb(this, p, rope, target.down); return true; }
+      if (target.kind === 'tie') return this.tieRope(p, target.id);
       if (target.kind === 'pick') { const item = visibleItems(this).find(i => i.id === target.id); return !!item && this.pick(p, item); }
     }
     return false;
   }
+  // A cuerda is spent on a stake: a hanging rope or a rope bridge, for everyone from then on.
+  tieRope(p, id) {
+    const hand = p.hands.findIndex(h => h?.kind === 'cuerda'); if (hand < 0 || this.strung[id]) return false;
+    p.hands[hand] = null; this.strung[id] = 1; this.paths.clear();
+    this.event('tied', locKey('{name} amarró la cuerda.'), { player: p.id, id, vars: { name: p.name } });
+    return true;
+  }
   openChest(p, id) {
     const chest = this.layout.run.chests.find(c => c.id === id); if (!chest || this.chests[id]) return false;
     this.chests[id] = 1;
-    const lucky = holds(p, 'luckyCoin'), f = floorOf(chest.x), count = 2 + Math.floor(random(this) * 2) + (lucky ? 2 : 0);
+    const lucky = holds(p, 'luckyCoin'), f = this.level, count = 2 + Math.floor(random(this) * 2) + (lucky ? 2 : 0);
     for (let i = 0; i < count; i++) {
       const roll = random(this);
-      const kind = roll < (lucky ? .5 : .14) ? ARTIFACTS[Math.floor(random(this) * ARTIFACTS.length)] : roll < .38 ? ['machete', 'honda', 'botiquin', 'farol'][Math.floor(random(this) * 4)] : roll < .5 ? 'mask' : SMALL[Math.min(3, Math.floor(random(this) * (2 + f)))];
+      const kind = roll < (lucky ? .5 : .14) ? ARTIFACTS[Math.floor(random(this) * ARTIFACTS.length)] : roll < .38 ? ['machete', 'honda', 'botiquin', 'farol', 'bengala', 'cuerda'][Math.floor(random(this) * 6)] : roll < .5 ? 'mask' : SMALL[Math.min(3, Math.floor(random(this) * (2 + f)))];
       const a = chest.h + (i - count / 2) * .6;
       this.spawnItem(kind, chest.x, chest.z, { state: 'air', y: .9, vx: Math.sin(a) * 2.2, vz: Math.cos(a) * 2.2, vy: 4.5, cursed: !!ITEMS[kind].artifact });
     }
@@ -445,6 +479,7 @@ export class Expedition {
   use(p, hand) {
     if (p.cooldown > 0 || p.grip != null || p.stun > 0) return false;
     const held = p.hands[hand], kind = held?.kind;
+    if (kind === 'bengala') { throwFlare(this, p); p.hands[hand] = null; p.cooldown = .4; p.swing = .25; p.swingHand = hand; this.event('flare', locKey('¡{name} prendió una bengala!'), { player: p.id, vars: { name: p.name } }); return true; }
     if (kind === 'botiquin') {
       const fallen = this.players.find(q => q.id !== p.id && q.downed && !q.spectator && distance(p, q) < 2.4);
       if (fallen && this.options.revive !== false) { this.getUp(fallen, p, 70); }
@@ -527,7 +562,9 @@ export class Expedition {
     if (!p.hp) this.down(p);
   }
   down(p) {
+    if (p.rope) endClimb(this, p);
     p.downed = true; this.release(p); this.unpush(p); this.stopDrag(p);
+    if (this.encargo?.kind === 'sinBajas' && floorOf(p.x) > 0) this.settleEncargo(false, locKey('Encargo perdido: cayó un pana.'));
     p.hands.forEach((h, i) => { if (h) { p.stats.dropped += heldValue(h); this.drop(p, i); } });
     this.event('down', this.options.revive ? locKey('{name} cayó. Levántenlo (E) o arrástrenlo al camión (R).') : locKey('{name} cayó. Esta expedición no permite revivir.'), { player: p.id, vars: { name: p.name } });
   }
@@ -544,6 +581,8 @@ export class Expedition {
       if (!alive(p)) { p.moving = false; if (p.downed && !reviving.has(p.id)) p.revive = Math.max(0, p.revive - dt * .5); continue; }
       const input = inputs.get(p.id) || {}, stamina = p.stamina, airborne = (p.jumpHeight || 0) > 0;
       stepExplorer(p, input, dt, this);
+      // Rising water: wading through it, your breath does not come back. (Walking is the same as ever.)
+      if (this.suceso?.kind === 'creciente' && p.stamina > stamina && floorOf(p.x) > 0) p.stamina = stamina;
       // Running (stamina draining) and landing a jump are loud; walking is not.
       if (p.moving && p.stamina < stamina - 1e-6) this.noisy('run', p, p.id);
       if (airborne && !(p.jumpHeight > 0) && !p.riding) this.noisy('land', p, p.id);
@@ -593,7 +632,11 @@ export class Expedition {
       s.latched = Math.max(0, s.latched - dt); if (!used.has(w.id) && s.latched <= 0) s.progress = Math.max(0, s.progress - dt * .5);
       if (seal.winches.every(q => this.winches[q.id]?.latched > 0)) this.openSeal(seal);
     }
-    this.lifting(dt, used.has('lift')); this.cargoTick(dt); this.carry(dt); this.pushing(dt); this.dragging(dt); this.flying(dt); this.traps(dt); this.paint(dt); this.truckZone(dt); this.artifacts(dt); this.collapses(dt);
+    this.lifting(dt, used.has('lift')); this.cargoTick(dt); this.carry(dt); this.pushing(dt); this.dragging(dt); this.flying(dt); this.traps(dt); this.paint(dt); this.truckZone(dt); this.artifacts(dt); this.collapses(dt); tickHazards(this, dt);
+    if (this.encargo?.kind === 'turno' && this.encargo.state === 'open') {
+      if (this.delivered >= this.quota) this.settleEncargo(true);
+      else if (this.encargo.until && this.time > this.encargo.until) this.settleEncargo(false, locKey('Se acabó el turno. Sin encargo esta vez.'));
+    }
     // Inside a nook a pana is out of the Silbón's world, unless it just pulled them out.
     for (const p of this.players) { p.exposed = Math.max(0, (p.exposed || 0) - dt); const n = alive(p) && p.exposed <= 0 ? nookAt(run, p.x, p.z) : null; p.hidden = n ? n.id : null; }
     updateEnemies(this, dt); tickSwarm(this, dt); this.stalk(dt); pruneNoises(this.noise, this.time);
@@ -712,11 +755,16 @@ export class Expedition {
       if (lift.to > this.deepest) {
         this.deepest = lift.to; riders.forEach(p => { p.stats.unaMas++; });
         this.event('descend', locKey('¡Bajaron al piso {floor}: {place}!'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to, place: jornadaName(this.level, themeOf(this)) } });
+        if (this.encargo) { if (this.encargo.kind === 'turno') this.encargo.until = this.time + turnoSeconds(this.level); this.event('encargo', ENCARGO_TEXT[this.encargo.kind], { encargo: this.encargo.kind }); }
       }
       this.event('lift-arrive', riders.length ? '' : lift.to ? locKey('El montacargas llegó al piso {floor}.') : locKey('El montacargas llegó al campamento.'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to } });
       const done = lift.to === 0 && lift.from === 1 && riders.length && this.delivered >= this.quota;
       lift.riders = []; lift.carts = []; lift.items = [];
-      if (done) this.completeLevel();
+      if (done) {
+        if (this.encargo?.kind === 'sinBajas') this.settleEncargo(true);
+        if (this.encargo?.kind === 'todos') { const all = this.players.filter(q => !q.spectator && !q.downed).every(q => riders.includes(q)); this.settleEncargo(all, locKey('Encargo perdido: alguien se quedó abajo.')); }
+        this.completeLevel();
+      }
     }
   }
   // Up with the quota delivered: the jornada is done. Whoever stayed below
@@ -727,13 +775,15 @@ export class Expedition {
     const campLoot = Object.fromEntries(Object.entries(this.touched).filter(([id]) => this.layout.run.loot.find(l => l.id === +id)?.floor === 0));
     this.level++; this.seed = levelSeed(this.origin, this.level);
     Object.assign(this, { touched: campLoot, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, enemies: [], darts: [], shots: [], splats: [], swarm: null, swarmSim: null, swarmAt: this.time + SWARM.firstAt,
-      codicia: 0, deepest: 0, director: createDirector(), noise: createNoiseBoard(), collapseIn: 30, stalkerRest: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null } });
+      codicia: 0, deepest: 0, director: createDirector(), noise: createNoiseBoard(), collapseIn: 30, stalkerRest: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null },
+      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: firstSucesoIn(this), twinHint: 0 });
+    this.dealEncargo();
     this.items = this.items.filter(i => floorOf(i.x) === 0); this.paths.clear();
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));
     let left = 0;
     this.players.forEach((p, i) => {
       if (p.spectator || floorOf(p.x) === 0) return;
-      left++; this.release(p); this.unpush(p); this.stopDrag(p); p.riding = false;
+      left++; this.release(p); this.unpush(p); this.stopDrag(p); p.riding = false; p.rope = null;
       p.x = stop.x + (i % 3 - 1) * 1.2; p.z = 3 + Math.floor(i / 3) * 1.2; p.h = 0;
       p.downed = false; p.hp = 1; p.revive = 0; p.invulnerable = 2;
     });
@@ -825,7 +875,7 @@ export class Expedition {
         continue;
       }
       const ground = this.layout.groundAt(item.x, item.z);
-      if (this.layout.overPit(item.x, item.z) && item.y < -2.5) {
+      if (this.layout.overPit(item.x, item.z) && item.y < -2.5 - this.layout.pitDepth(item.x, item.z)) {
         item.lost = true; const thrower = this.players.find(p => p.id === item.thrower);
         if (thrower) thrower.stats.dropped += valueOf(item.kind);
         this.event('lost', locKey('¡{Item} se fue al abismo!'), { item: item.kind, vars: { item: item.kind } });
@@ -833,7 +883,8 @@ export class Expedition {
         // It hits the boards: the harder it lands the farther it carries; a book thuds loudest.
         const impact = Math.hypot(item.vx, item.vy, item.vz), book = item.kind === 'oldBook';
         this.noisy(book ? 'book' : 'drop', item, item.thrower, (NOISE.drop + impact * .55) * (book ? NOISE.book : 1));
-        item.y = ground; item.state = 'ground'; item.vx = item.vz = item.vy = 0; item.thrower = null; delete item.spilled;
+        // (A hanging platform's height is the deck's to add, as for loot that rests there.)
+        item.y = this.layout.lowAt(item.x, item.z) ? 0 : ground; item.state = 'ground'; item.vx = item.vz = item.vy = 0; item.thrower = null; delete item.spilled;
       }
     }
     this.items = this.items.filter(i => !i.lost);
@@ -938,6 +989,9 @@ export class Expedition {
     if (tier(this) < 3) return;
     this.collapseIn -= dt; if (this.collapseIn > 0) return;
     this.collapseIn = 26 + random(this) * 14;
+    this.caveIn();
+  }
+  caveIn() {
     const deepest = Math.max(0, ...this.players.filter(alive).map(p => floorOf(p.x)));
     const options = this.layout.run.corridors.filter(c => c.floor <= deepest && c.floor > 0 && !c.hidden && !this.rubble[c.id] && !Object.keys(this.rubble).some(id => this.layout.run.corridors.find(q => q.id === id)?.floor === c.floor)
       && !this.players.some(p => inRect(p.x, p.z, c.rect, 2)) && !this.items.some(i => inRect(i.x, i.z, c.rect, 1)));
@@ -976,7 +1030,14 @@ export class Expedition {
   wave(floor, count, near = null, kind = null) {
     if (floor <= 0) return false;
     // The Director's waves mix creatures by depth: bats come in flocks.
-    if (!kind) { const roll = random(this); kind = roll < .3 ? 'bat' : floor > 1 && roll < .3 + .1 * Math.min(3, floor) ? 'spider' : 'mummy'; if (kind === 'bat') count = Math.min(6, count * 2 + 1); }
+    // Deeper jornadas and each biome change who comes: spiders in the grove, cuaimas in the water, phantoms in the temple.
+    if (!kind) {
+      const roll = random(this), level = this.level || 1, theme = this.layout.run.theme, other = random(this);
+      kind = roll < .3 ? 'bat' : (level > 1 || theme === 'hongos') && roll < .3 + .1 * Math.min(3, level) + (theme === 'hongos' ? .15 : 0) ? 'spider' : 'mummy';
+      if (kind === 'mummy' && theme === 'inundada' && other < .3) { kind = 'snake'; count = Math.min(2, count); }
+      if (kind === 'mummy' && theme === 'templo' && other < .2) kind = 'phantom';
+      if (kind === 'bat') count = Math.min(6, count * 2 + 1);
+    }
     // In the library, now and then a Lector comes instead (never past its cap).
     if (kind === 'mummy' && this.layout.run.theme === 'biblioteca' && random(this) < .12 + .02 * tier(this)) { kind = 'lector'; count = 1; }
     const L = this.layout, live = this.players.filter(p => alive(p) && floorOf(p.x) === floor); if (!live.length) return false;
@@ -993,6 +1054,8 @@ export class Expedition {
     if (spawned && kind === 'mummy') this.event('wave', locKey('Se oyen pasos entre las piedras…'), { floor });
     if (spawned && kind === 'bat') this.event('wave', locKey('¡Murciélagos! Alumbren con el farol.'), { floor });
     if (spawned && kind === 'spider') this.event('wave', locKey('Algo corre por el techo…'), { floor });
+    if (spawned && kind === 'snake') this.event('wave', locKey('Algo se desliza por el agua…'), { floor });
+    if (spawned && kind === 'phantom') this.event('wave', locKey('Las piedras murmuran…'), { floor });
     if (spawned && kind === 'lector') this.event('wave', locKey('Alguien pasa las páginas en la oscuridad…'), { floor });
     return spawned > 0;
   }

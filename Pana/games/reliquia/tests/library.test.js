@@ -19,9 +19,9 @@ function reachable(L, state, from, step = .5, radius = .45, off = 0) {
   }
   return p => { const i = Math.round((p.x - off) / step), j = Math.round((p.z - off) / step); return [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([di, dj]) => seen.has(key(i + di, j + dj))); };
 }
-const opened = L => ({ open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])), lift: { floor: 1, moving: false } });
+const opened = L => ({ open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])), strung: Object.fromEntries(L.run.bridges.filter(b => b.needs).map(b => [b.id, 1])), lift: { floor: 1, moving: false } });
 
-test('Alternar opens in the library and swaps every jornada; Mina and Biblioteca stay put', () => {
+test('with no expedition yet Alternar swaps library and mine; each place stays put', () => {
   const depths = [1, 2, 3, 4, 5, 6];
   assert.deepEqual(depths.map(d => themeFor(d)), ['biblioteca', 'mina', 'biblioteca', 'mina', 'biblioteca', 'mina']);
   assert.deepEqual(depths.map(d => themeFor(d, 'alternar')), depths.map(d => themeFor(d)));
@@ -31,9 +31,6 @@ test('Alternar opens in the library and swaps every jornada; Mina and Biblioteca
   assert.equal(themeOf({ level: 2, options: {} }), 'mina');
   assert.equal(jornadaName(1), LIBRARY_NAME);
   assert.equal(jornadaName(1, 'mina'), 'Las afueras de la mina');
-  // A fresh expedition's first jornada is the library; the next one the mine.
-  const g = new Expedition(4); g.addPlayer(1, 'Ana'); g.start(4);
-  assert.equal(g.layout.run.theme, 'biblioteca'); g.completeLevel(); assert.equal(g.layout.run.theme, 'mina');
   const mine = new Expedition(4, { place: 'mina' }); mine.addPlayer(1, 'Ana'); mine.start(4);
   assert.equal(mine.layout.run.theme, 'mina');
   for (const seed of [1, 2, 3]) {

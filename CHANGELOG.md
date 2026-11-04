@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa ya no se repite: tres lugares nuevos, salas de cuerda y cosas que pasan solas.**
+  Túneles inundados, gruta de hongos y templo caído se suman a la biblioteca y la mina,
+  y cada expedición los recorre en otro orden. Hay cuerdas para bajar a plataformas,
+  cornisas, tablones y puentes que se amarran, y a veces una cámara dorada que se abre
+  con peso en dos losas. Apagones, tormentas de murciélagos, derrumbes, crecientes y
+  esporas llegan sin avisar. Cada jornada trae un encargo que paga mangos, y en la
+  tienda hay bengalas y cuerdas.
 - **Reliquia ahora se llama Fosa: bajen juntos, no se desarmen.**
   Mismo juego y mismos enlaces, en una fosa oscura de la selva. Hongos azules y
   morados brillan en paredes, suelos y abismos de todas las jornadas.

@@ -477,15 +477,96 @@ Now knee-high (.68 m, radius .33): dark wood, worn hide, a thin unlit brass band
 1.3 m halo (`halo` in `items.js`), and a .5 m collision radius. It still takes two
 panas and pays Bs. 420, and carrying is exactly as fast as before.
 
+## Biomes, sucesos and el encargo
+
+**Places.** `THEMES` in `deck.js`: `biblioteca`, `mina`, `inundada`, `hongos`,
+`templo`. With an `origin` (a dealt expedition), `themeFor(depth, 'alternar',
+origin)` walks a shuffle of all five keyed on that seed, so runs open anywhere and
+a place only repeats after the other four. `themeOf(state)` reads `state.origin`.
+Without an origin (the empty lobby state, old tests) it swaps library and mine. Every
+theme except the library plays as the mine (`library` is the only special-cased
+one); each has a deck in `BIOME_DECKS`, a palette in `RUIN_PALETTES`, a look in
+`view.js` and its wall dressing in `dress()`.
+
+**Fixed along the way: `f` is always 1.** Since jornadas became single floors,
+anything that said `f > 1` or `floor > 1` was dead: jaguar reliefs, roots, skulls,
+column doorways, spiders in waves and better chest rolls never appeared. They read
+`depth` / `this.level` now. When you add depth-driven content, never key it on the
+floor number.
+
+**The deck's streams.** Anything added must not shift the library's `R()`: the
+hiding-spot tests are tuned to those deals. `dealExtras` (twin plates, cuerda,
+flare, parcel) and the `golden` roll have their own streams.
+
+**Pit rooms and the slab trap.** `ruinShell` tilts a 1 m slab from `ground(x +- .5)`,
+so a pit or island edge exactly on a half or whole metre turns the slab next to it
+into a ramp. Keep edges at `.2`, `.4`, `.7` or `.9` as the existing rooms do (rim
+3.2 or 2.2, island half 2.4 or 3.4).
+Every new pit room is a ring, so doors on any wall connect: the main path and the
+carrito (radius .6) never depend on a plank or a rope. `test: every biome` walks it.
+
+- `sima`: a platform (`pit.low`, 4.2 m) off one wall with a .7 m gap. `groundAt`,
+  `lowAt` (crosshair height in `interaction`) and `pitDepth` (when a falling item is
+  lost) know it. An item at rest on it stores `y: 0`, like loot: the view adds the
+  ground. No enemy spawns there, walkers do not target a pana there or on a rope, big
+  treasure is never dealt there (hands and throws only). A throw that clears the gap
+  lands on the rim.
+- `cornisa`: a 2 m ledge round a pit, corner torches hard against the walls so a
+  carrito still rounds them, and a plank (`bridge.beam`, 1.1 m) to an island. A body
+  of radius .5 does not fit on a plank, so mummies cannot follow. Planks are flat and
+  draw no slabs.
+- `cuerdas`: two pits with a causeway. One island's bridge stands; the other's
+  (`bridge.needs`) stays open air in the bitmap until `state.strung[id]`; `walkable`
+  asks through `floorHere`, which only pays for the lookup over open air.
+- `cisterna`: the same ring as black water (`pit.water`). `bosque`: giant mushrooms
+  (obstacles) and `run.puffs`. `atrio`: `run.cracks`, solid fallen drums.
+- `dorada`: the hidden side room, about one in five (`golden`). `run.twins`: two
+  plates at least 5 m apart; a pana or an unsent carrito counts as weight, so it can be
+  solved alone. No room for plates: `wall.twin` goes false and it is a plain false wall.
+
+**Ropes.** `run.ropes`, some `needs` a cuerda. `p.rope = { id, down, t }` takes the
+pana out of walking (and out of a guest's prediction); `CLIMB`: 2.8 s alone, 1.6 s
+with a pana within 3.2 m of either end. Knocked out on one, you land at the nearer
+end (`endClimb`).
+
+**`sucesos.js`** ticks after everything else. One suceso at a time, first after 60 to
+90 s below, then every 55 to 105 s, never the same twice running, from
+`SUCESO_POOL[theme]`:
+
+| Suceso | Rule | Screen |
+|---|---|---|
+| `apagon` 14 s | `lightOn` ignores `run.lights`: mummies run 35 % faster near torches too | pool, candles, lamp and fog fall; flicker follows Sustos, the rule does not |
+| `murcielagos` 10 s | 4 + 2 per pana, up to 12, inside the 18-enemy cap | |
+| `derrumbe` 9 s | a corridor caves in (`caveIn`) and a rock every .7 s near a pana | ring, falling stone |
+| `creciente` 18 s | stamina does not refill below, 2 cuaimas | water rises to .68 m |
+| `esporada` 8 s | a spore cloud every 1.8 s near a pana | green puffs |
+
+Rocks: .9 s warning, 1.5 m, 18 damage, also 40 to enemies; cap 8, instanced in the
+view. A puffball reverses controls for 3.5 s within 2.6 m. **Nothing here touches
+walking speed**, and the test walks every biome and suceso to prove it.
+
+**Flares** (`bengala`): thrown, burn 28 s on the floor. `lightOn` answers `beam`
+within 4.5 m and `glow` within 9, so they freeze mummies and scatter bats even in a
+blackout. A flare takes the first of the five pool lights; no light is added.
+
+**`run.encargo`**, one per jornada (`encargoFor`, its own hash): `pedido` (bank the
+parcel), `turno` (quota within `turnoSeconds`), `sinBajas`, `todos` (every standing pana
+rides up in the cage). Pays `encargoPay(level)` mangos (25 at jornada 1). Shown in the
+Tab overlay, announced on the first descent.
+
+**Performance.** No new lights. A flooded floor's water is one mesh and one draw
+(`floodSurface`, one 128 px normal map per floor), giant mushrooms and puffballs bake
+with the floor, their halos join the floor's single `Points`. Paths that fail
+(a pana on a platform) are retried every 3 s rather than every 1.
+
 ## La biblioteca sepultada (the library theme)
 
 `themeFor(depth, place)` in `deck.js` deals each jornada a theme from the
 room's **Lugar** option (`options.place`, a primary lobby choice the host
-sets): `'biblioteca'` or `'mina'` every jornada, or `'alternar'` (the
-default) with the library on odd jornadas, so a fresh run opens in the
-library and swaps after each completed jornada. `themeOf(state)` reads it
-from `state.level` and `state.options`, which every snapshot already
-carries, so `run.theme` itself travels nowhere; `generateRun`, `layoutFor`
+sets): one place every jornada, or `'alternar'` (the default), which walks all
+five in an order of the expedition's own (see "Biomes, sucesos and el encargo").
+`themeOf(state)` reads it from `state.level`, `state.options` and `state.origin`,
+which every snapshot already carries, so `run.theme` itself travels nowhere; `generateRun`, `layoutFor`
 and `createExpeditionWorld` take the theme, and their caches key on it.
 Every seal kind works in both themes, the vault included (the reachability
 and quota tests walk both themes at depths 1–8). The start event and the
@@ -708,6 +789,10 @@ reach every client.
 node --test Pana/games/reliquia/tests/rules.test.js Pana/games/reliquia/tests/options.test.js Pana/games/reliquia/tests/library.test.js Pana/games/reliquia/tests/hiding.test.js Pana/games/reliquia/tests/silbon.test.js Pana/games/reliquia/tests/carga.test.js Pana/engine/tests/hiding-spots.test.js
 npm run test:browser -- reliquia
 ```
+
+`tests/variety.test.js` covers places, rope work, planks, the golden chamber, sucesos,
+flares and el encargo; `tests/variety.browser.mjs` proves ropes, a tied bridge, a
+blackout and a flare between two real clients.
 
 `tests/hiding.test.js` covers the spots: same seed same spots, every spot
 reachable with its front clear (library at depths 1, 2, 3, 5, 8), plain-sight relics, decoys

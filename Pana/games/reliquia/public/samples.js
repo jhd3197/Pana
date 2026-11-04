@@ -30,7 +30,7 @@ const OPEN = {
 };
 // A search done: a soft settle.
 const DONE = { wardrobe: 'thud', trunk: 'thud', drawer: 'thud', ladder: 'thud', shelf: 'page', sheet: 'page', debris: 'page', lantern: 'chain' };
-const WIND = { biblioteca: .045, mina: .028, camp: .03 };
+const WIND = { biblioteca: .045, mina: .028, camp: .03, templo: .05, hongos: .018, inundada: .022 };
 const between = (a, b) => a + Math.random() * (b - a);
 
 export function createSamples() {

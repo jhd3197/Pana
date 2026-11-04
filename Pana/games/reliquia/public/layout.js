@@ -26,7 +26,8 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (test(x0 + (i + .5) / RES, z0 + (j + .5) / RES)) bits[j * w + i] = value;
     };
     for (const r of rects) fill(r, 1);
-    for (const p of pits) fill(p.rect, 2, (x, z) => !inRect(x, z, p.island) && !bridges.some(b => inRect(x, z, b.rect)));
+    // A bridge still in a heap (`needs` a cuerda) leaves its span open air until it is tied.
+    for (const p of pits) fill(p.rect, 2, (x, z) => !inRect(x, z, p.island) && !bridges.some(b => !b.needs && inRect(x, z, b.rect)));
     // Bookcases and reading tables are walls as far as anyone can tell.
     for (const s of run.solids || []) if (s.floor === f) fill(s.rect, 0);
     // A nook's two slabs: stone like any wall.
@@ -38,6 +39,13 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
     const i = Math.floor((x - g.x0) * RES), j = Math.floor((z - g.z0) * RES);
     return i < 0 || j < 0 || i >= g.w || j >= g.h ? 0 : g.bits[j * g.w + i];
   };
+  // Spans a cuerda has tied: floor from then on. Only ever asked about open air.
+  const spans = run.bridges.filter(b => b.needs), lows = run.pits.filter(p => p.low);
+  const floorHere = (x, z, state) => { const c = cell(x, z); return c === 1 || (c === 2 && spans.length > 0 && spans.some(b => state?.strung?.[b.id] && inRect(x, z, b.rect))); };
+  // How far below the floor a hanging platform stands here (0: anywhere else).
+  const lowAt = (x, z) => { for (const p of lows) if (inRect(x, z, p.island)) return p.low; return 0; };
+  // How deep this stretch of open air goes before something is lost: a platform's pit is deeper.
+  const pitDepth = (x, z) => { for (const p of lows) if (inRect(x, z, p.rect)) return p.low; return 0; };
   // Blockers that open or close during the run.
   function blocked(x, z, state, radius) {
     // The empty shaft is a hole: a stop is solid only while the cage waits there.
@@ -47,8 +55,8 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
     return false;
   }
   function walkable(x, z, state = {}, radius = .45) {
-    if (!Number.isFinite(x) || !Number.isFinite(z) || cell(x, z) !== 1) return false;
-    for (let i = 0; i < 8; i++) if (cell(x + Math.cos(i * Math.PI / 4) * radius, z + Math.sin(i * Math.PI / 4) * radius) !== 1) return false;
+    if (!Number.isFinite(x) || !Number.isFinite(z) || !floorHere(x, z, state)) return false;
+    for (let i = 0; i < 8; i++) if (!floorHere(x + Math.cos(i * Math.PI / 4) * radius, z + Math.sin(i * Math.PI / 4) * radius, state)) return false;
     if (blocked(x, z, state, radius)) return false;
     const g = grids[floorOf(x)];
     return !g?.obstacles.some(o => (x - o.x) ** 2 + (z - o.z) ** 2 < (o.r + radius) ** 2);
@@ -119,7 +127,9 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
       return s.from + (s.to - s.from) * t;
     }
     // The rope bridge sags like the shared model (deck .75 m lower mid-span).
+    for (const p of lows) if (p.floor === floorOf(x) && inRect(x, z, p.island)) return -p.low;
     for (const b of run.bridges) if (b.floor === floorOf(x) && inRect(x, z, b.rect)) {
+      if (b.beam) return 0;
       const mid = (b.rect[1] + b.rect[3]) / 2, half = (b.rect[3] - b.rect[1]) / 2;
       return -.75 * (1 - ((z - mid) / half) ** 2);
     }
@@ -163,7 +173,7 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
   run.loot = run.loot.filter(l => ITEMS[l.kind]?.size === 'big' || l.y || walkable(l.x, l.z, { open: {}, revealed: Object.fromEntries(run.hidden.map(h => [h.id, true])) }, .3));
   // A floor's raw bitmap (1: floor, 2: pit, 0: rock), for whoever bakes something from it.
   const footprint = f => grids[f] || null;
-  const layout = { run, footprint, walkable, lineClear, sightClear, moveBody, moveAcross, crossable, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
+  const layout = { run, footprint, lowAt, pitDepth, walkable, lineClear, sightClear, moveBody, moveAcross, crossable, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
   layouts.set(key, layout);
   return layout;
 }

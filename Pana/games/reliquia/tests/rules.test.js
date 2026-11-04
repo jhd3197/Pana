@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Expedition, interaction, visibleItems, titles, compassTarget, spreadTags, stepExplorer, tier, liftPanel, cartValue } from '../public/rules.js';
+import { SHOP, shopSpot } from '../public/rules.js';
 import { layoutFor, distance } from '../public/layout.js';
 import { TRUCK, TABLE, floorOf } from '../public/deck.js';
 import { ITEMS, HANDFUL } from '../public/items.js';
@@ -148,7 +149,7 @@ test('whoever stays below when the cage goes up is hauled to the camp with 1 HP'
 
 test('mangos buy gear at the camp shop, straight into a hand', () => {
   const g = setup(1), [a] = g.players; g.mangos = 100;
-  const spot = { x: -12.5 + .9, z: 6 - 1.5 + 4 * .75 }; place(g, 1, spot.x + 1.4, spot.z);
+  const spot = shopSpot(SHOP.findIndex(([k]) => k === 'marcadora')); place(g, 1, spot.x + 1.4, spot.z);
   a.h = facing(a, spot); a.pitch = Math.atan2(1.05 - 1.45, 1.4);
   assert.equal(interaction(g, a).kind, 'buy'); g.action(1, 'interact');
   assert.equal(a.hands[0].kind, 'marcadora'); assert.equal(g.mangos, 55);
@@ -218,8 +219,8 @@ test('in the mine the echo mask reveals a hidden room; the compass points at tre
     const [a] = g.players; a.hands[0] = { id: 5, kind: 'echoMask' };
     place(g, 1, wall.x + (wall.horizontal ? 0 : 0), wall.z); a.x = wall.x; a.z = wall.z;
     // Stand on the path side of the wall.
-    const room = run(g).rooms.find(r => r.floor === 1 && !r.hidden && Math.hypot(r.x - wall.x, r.z - wall.z) < 14);
-    place(g, 1, room.x, room.z); step(g, .1);
+    const room = run(g).rooms.find(r => r.floor === 1 && !r.hidden && Math.hypot(r.x - wall.x, r.z - wall.z) < 14), back = Math.hypot(room.x - wall.x, room.z - wall.z) || 1;
+    place(g, 1, wall.x + (room.x - wall.x) / back * 6, wall.z + (room.z - wall.z) / back * 6); step(g, .1);
     assert.equal(g.revealed[wall.id], 1, `seed ${seed}`);
     const target = compassTarget(g, a); assert.ok(target && Number.isFinite(target.x));
     return;
