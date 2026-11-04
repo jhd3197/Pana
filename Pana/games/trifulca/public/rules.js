@@ -497,8 +497,9 @@ export class Trifulca {
     this.endFight(winners, losers, how, calmedBy);
   }
 
-  // The human ring: out of the circle, whoever is near shoves you back in.
-  // If no pana does it in half a second, a neighbour does.
+  // The human ring: out of the circle, a pana nearby can shove you back in. If
+  // none does in half a second the line itself sends you back. No NPC walks over
+  // and nothing stuns you: you keep your hands and your guard.
   ringEdge(arena, dt) {
     if (arena.shape === 'square') return;
     for (const b of this.bodies.filter(inRing)) {
@@ -508,7 +509,6 @@ export class Trifulca {
         b.outside += dt;
         if (b.outside > .55) {
           b.vx = e.nx * 5; b.vz = e.nz * 5; b.outside = 0;
-          if (b.act !== 'down') { setAct(b, 'stun'); b.stun = .3; }
           this.emit({ type: 'vecino', id: b.id, angle: Math.atan2(b.x, b.z) });
         }
       } else b.outside = 0;
@@ -573,7 +573,7 @@ export class Trifulca {
         p.dolitas += PAY.agua; p.stats.agua++;
         this.emit({ type: 'agua', id: nearest.b.id, by: p.id });
       }
-    } else if (press?.gp && this.phase === 'fight' && p.cd <= 0) {
+    } else if (press?.gp && this.phase === 'fight' && p.cd <= 0 && !p.bot) {
       p.cd = .8;
       const e = nearest && edge(arena, nearest.b.x, nearest.b.z);
       if (nearest && nearest.d < 2 && e.out > -1 && nearest.b.act !== 'down') {

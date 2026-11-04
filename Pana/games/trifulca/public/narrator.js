@@ -19,7 +19,7 @@ export const LINES = {
   dodged: ['¡Lo esquivó!', '¡Pasó rozando!', '¡Le dio al aire!'], // i18n-ignore
   shove: ['¡Pa\' fuera!', '¡Lo mandó pa\'l público!', '¡Empujón!'], // i18n-ignore
   guardbreak: ['¡Le rompió la guardia!', '¡Se le cayeron los brazos!'], // i18n-ignore
-  vecino: ['¡Un vecino lo devuelve!', '¡La señora lo empujó pa\' dentro!', '¡El barrio lo devuelve!'], // i18n-ignore
+  vecino: ['¡Pa\' dentro!', '¡Se salió del ring!', '¡Vuelve al ring!'], // i18n-ignore
   moto: ['¡Pasó una moto!', '¡Cuidado con la moto!', '¡Moto, moto, moto!'], // i18n-ignore
   clinch: ['Ya, vaya.', '¡Sepárense!', 'Ya, ya, suéltense.'], // i18n-ignore
   taunt: ['¡Dale, dale!', '¡Se está luciendo!'], // i18n-ignore
