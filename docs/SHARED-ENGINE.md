@@ -14,6 +14,27 @@ module, not games that merely look alike. All paths are relative to `Pana/`.
 - **Game-local** means it is good and generic but still lives in one game: a
   promotion candidate, listed under "Migration candidates".
 
+## Records
+
+`engine/records.js` (no DOM): `createRecordBoard({ game, metrics })` keeps each
+player's best per metric under `pana:records:<game>` and answers who holds each
+record (`holder`), the leaderboard (`table`) and, for a match, what fell since
+it started (`startRun`, then `report` and `summary`). Reporting is idempotent, so
+report every round. A tie keeps the older holder. The player's own bests also go
+through `engine/stats.js` to the gateway. `engine/record-widget.js` draws it:
+`renderRecord(node, board, { me, standings })` for the lobby or the end screen
+(`compact: true` and a `data-room-personal` node in a lobby), and `recordLine(board)` for tight
+spots.
+
+```js
+const board = createRecordBoard({ game: 'trompo', metrics: [{ id: 'wins', label: loc('Victorias') }] });
+const run = board.startRun();
+run.report([{ name: 'Ana', me: true, values: { wins: 3 } }]);
+renderRecord(node, board, { me: 'Ana', standings: run.summary('Ana') });
+```
+
+Used by: Fosa. Notes: `docs/knowledge/reliquia.md`, "The record".
+
 ## On foot
 
 ### Player controller (walk, sprint, stamina, collision)

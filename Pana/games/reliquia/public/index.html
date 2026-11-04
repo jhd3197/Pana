@@ -22,6 +22,7 @@
     <p class="pk-copy" data-room-description><b>¿Nos vamos ya con lo que tenemos, o bajamos un piso más?</b> Bajen en el montacargas, llenen el carrito con lo que pide la jornada y súbanlo. Lo que traen se vuelve mangos para la tienda del campamento, y la siguiente jornada es más honda. Cada tesoro despierta la codicia de la ruina.</p>
     <div class="pk-stats" data-room-description><div class="pk-stat"><b>1–8</b><span>panas, hecho para 5</span></div><div class="pk-stat"><b>1, 2, 3…</b><span>jornadas, cada una más honda</span></div><div class="pk-stat"><b>8</b><span>artefactos encantados</span></div></div>
     <div class="pk-field"><span class="pk-eyebrow">Panas en la expedición</span><div id="lobby-team" class="lobby-team" aria-label="Panas en la sala"></div></div>
+    <div id="lobby-record" class="lobby-record" data-room-personal aria-label="Récords"></div>
     <div id="room-options"></div><div class="pk-lobby-foot">
       <div class="pk-lobby-room"><i class="pk-dot" aria-hidden="true"></i><span id="connection" class="connection" role="status">Preparando la expedición…</span></div>
       <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
@@ -50,6 +51,7 @@
           <div class="encargo"><span class="pk-eyebrow">El encargo <em id="encargo-state"></em></span><p id="encargo-text"></p></div>
           <div class="lift-line"><span class="pk-eyebrow">Montacargas</span><em id="lift-status">en el campamento</em></div>
           <div class="bag"><span class="pk-eyebrow">En las manos</span><strong id="carry-value">Bs. 0</strong></div>
+          <div class="lift-line" id="record-row" hidden><span class="pk-eyebrow">Récord</span><em id="record-line" translate="no"></em></div>
           <p id="effects" class="effects"></p>
         </div>
         <div class="intel-team"><span class="pk-eyebrow">El equipo</span><ol id="team" class="pk-roster team" aria-label="El equipo"></ol></div>
@@ -64,6 +66,7 @@
   <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="pk-modal pk-results-card result-paper">
     <span id="result-eyebrow" class="pk-ribbon">Expedición completada</span><h2 id="result-title" class="pk-title">¡Nos vamos!</h2><p id="result-copy" class="pk-copy"></p>
     <div class="pk-stats"><div class="pk-stat"><b id="result-payout">0</b><span>bolívares se llevaron</span></div><div class="pk-stat"><b id="result-depth">0</b><span>jornadas completas</span></div><div class="pk-stat"><b id="result-time">0:00</b><span>de expedición</span></div></div>
+    <div id="result-record" aria-label="Récords"></div>
     <ol id="titles" class="pk-roster titles" aria-label="Títulos"></ol>
     <button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">¡Otra expedición!</button><a class="pk-btn pk-btn--ghost pk-btn--block" href="/">Volver a Pana</a></div></section>
   <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>

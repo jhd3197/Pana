@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: ahora hay récord, y se puede romper.**
+  Cuenta las jornadas que terminas de pie y las remontadas (caer, levantarte y
+  terminar de pie). La sala muestra quién lo tiene y la pantalla final avisa cuando
+  cae.
 - **Fosa: pacten reglas más duras antes de bajar y cobren más.**
   Seis pactos que se abren con el rango, en Más ajustes de la sala. Cada uno suma Calor,
   y cada punto de Calor da 10 % más de bolívares y de XP, aunque caigan todos.

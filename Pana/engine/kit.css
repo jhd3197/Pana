@@ -300,6 +300,27 @@
 .pk-results-card :is(.pk-roster, .pk-stats) { width: 100%; text-align: left; }
 @media (max-width: 520px) { .pk-results-card { padding: 22px; } .pk-results-card .pk-title { font-size: 34px; } }
 
+/* record readout (engine/record-widget.js), lobby and end screen */
+.pk-record { display: grid; gap: 8px; width: 100%; text-align: left; }
+.pk-record-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+.pk-record-tile { display: grid; align-content: start; justify-items: start; gap: 2px; min-width: 0; padding: 9px 12px; border: 1px solid var(--pk-line); border-radius: 0; background: var(--pk-purple); }
+.pk-record-tile .pk-eyebrow { font-size: 10px; }
+.pk-record-value { font: 400 28px/1.05 var(--pk-display); color: var(--pk-game); }
+.pk-record-who { max-width: 100%; font: 800 13px/1.2 var(--pk-sans); color: var(--pk-text); overflow-wrap: anywhere; }
+.pk-record-tile.is-mine .pk-record-who { color: var(--pk-yellow); }
+.pk-record-note { font: 700 11px/1.2 var(--pk-sans); color: var(--pk-muted); }
+.pk-record-flag { margin-top: 4px; padding: 3px 6px; border-radius: 0; background: var(--pk-yellow); color: var(--pk-yellow-ink); font: 900 11px/1.1 var(--pk-sans); letter-spacing: .4px; text-transform: uppercase; }
+.pk-record-tile.is-broken, .pk-record-tile.is-first { border-color: var(--pk-yellow); }
+.pk-record-open { justify-self: start; }
+.pk-record-table[hidden] { display: none; }
+/* one line per tile, for a lobby: <renderRecord … compact> */
+.pk-record--compact { grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
+.pk-record--compact .pk-record-tile { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; padding: 7px 12px; }
+.pk-record--compact .pk-record-value { font-size: 22px; }
+.pk-record--compact .pk-record-note { display: none; }
+.pk-record--compact .pk-record-open { align-self: stretch; }
+.pk-record--compact .pk-record-table { grid-column: 1 / -1; }
+
 /* inventory slots */
 .pk-slots { display: flex; gap: 8px; }
 .pk-slot {
