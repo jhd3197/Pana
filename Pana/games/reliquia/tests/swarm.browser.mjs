@@ -14,6 +14,11 @@ const calls = (page, on) => page.evaluate(visible => new Promise(done => {
   const r = reliquia.view.renderer.info.render;
   requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => { const n = r.calls; reliquia.view.swarm.group.visible = true; done(n); })));
 }), on);
+// Software WebGL is slow: keep the swarm on its crawl clock so a stage can't outlast it.
+const hold = async (page, watcher) => {
+  await page.evaluate(() => { reliquia.room.game.swarm.t = 0; reliquia.room.publish(); });
+  await waitFor(watcher, () => reliquia.state.swarm?.phase === 'crawl' && reliquia.state.swarm.t < 10);
+};
 const browser = await launch();
 try {
   const host = await openGame(browser, 'reliquia', { name: 'Ana', room, query: 'debug' });
@@ -66,6 +71,7 @@ try {
   check('three draw calls for the whole swarm, at 30 snakes and at 150');
   await host.screenshot({ path: path.join(output, 'swarm-hundred-fifty.png') });
 
+  await hold(host, guest);
   // A bite on the guest: small damage, the short slow, and it reaches the guest.
   await host.evaluate(() => {
     const g = reliquia.room.game, b = g.players.find(p => p.id !== reliquia.room.id), c = g.swarmSim.chains;
@@ -79,6 +85,7 @@ try {
   assert.ok(bitten.slow <= 1.4, `a short slow: ${bitten.slow}`);
   check('a bite hurts a little and slows, as the guest sees it');
 
+  await hold(host, guest);
   // The guest swings a machete: the host's chains and the guest's own both let go.
   await host.evaluate(() => {
     const g = reliquia.room.game, b = g.players.find(p => p.id !== reliquia.room.id), c = g.swarmSim.chains;
@@ -95,6 +102,7 @@ try {
   check('a machete swing scatters them on both screens');
   await guest.screenshot({ path: path.join(output, 'swarm-scatter.png') });
 
+  await hold(host, guest);
   // The host leaves: the guest rebuilds the swarm from the plain snapshot.
   const before = await guest.evaluate(() => ({ id: reliquia.state.swarm.id, out: reliquia.state.swarm.out }));
   await host.context().close();
