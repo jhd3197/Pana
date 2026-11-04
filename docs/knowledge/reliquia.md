@@ -344,24 +344,34 @@ shaders never recompile on the way down. Your gloves (your seat colour) hold
 the hand items; the own avatar is hidden. Look input is
 `engine/play/first-person.js`; the left/right arrows also turn.
 
-**Explorer suits** (`suit-look.js` as data, `explorer-suit.js` as meshes) are
-looks only: no rule, stat or module that decides play sees them. `view.js`
-builds each pana from `suitedAvatar()` (no hat, necklace, backpack or chosen
-garment; fur, face and glasses stay) with `head: SUIT_HEAD`, then hides every
-mesh on the body except the neck's subtree and hangs the suit on the same
-bones, so poses, squash and stagger still apply. A remote pana goes from 142
-draws bare to about 40. Parts merge per bone into shared per-colour geometry
-with one vertex-coloured material. The body is smooth turned surfaces, not
-stacked balls: balls meeting at seams read as a puffer jacket however small
-they get. The dome is one shared geometry with an unlit shader patch on
-`MeshBasicMaterial`: a clear middle, an edge from the view angle and a crescent
-drawn in view space, so the glass shows from behind and in an unlit room, and
-fog still takes it far away. Nothing transmissive or environment-mapped. The
-crescent's ends must be masked by angle, or its zero width still leaves a thin
-full circle. The rim sits well under the bowl's widest point (`DOME.openAt`).
-The dome clears the real sculpt's farthest vertex, the ear cup at 1.20 of its
-1.28 radius. Character disposal frees whatever is under the sculpt, so call
-`suit.remove()` first. The helmet lamp is an unlit lens: no suit adds a light.
+**Diving suits** (`suit-look.js` as data, `explorer-suit.js` as meshes) are looks
+only: no rule, stat or module that decides play sees them, and height and speed
+are untouched. `view.js` builds each pana from `suitedAvatar()` (no hat, necklace,
+backpack or chosen garment; fur, face and glasses stay) with `head: SUIT_HEAD`,
+then hides every mesh on the body except the neck's subtree and hangs the suit on
+the same bones, so poses, squash and stagger still apply. Parts merge per bone into
+shared per-colour geometry with two vertex-coloured materials (cloth, brass).
+
+The helmet is one closed brass ball minus a round hole in front, with a dark
+inward-facing liner merged into the same mesh and a glass cap over the hole; it
+clears the sculpt's farthest vertex, the ear cup. The glass is an unlit shader patch
+on `MeshBasicMaterial`: nothing transmissive or environment-mapped. Its crescents
+are drawn in view space at a smaller radius than the old dome's, because a cap's
+normals only reach `sin(port)` facing the viewer.
+
+Your own headlamp is strong enough to bleach a full-strength colour to white at a
+few metres, and just past its beam the cave is nearly black. So the cloth is painted
+at `CLOTH` and both materials add their own colour as emissive (`SELF_GLOW`). Patch
+the emissive with `diffuseColor`, not `vColor`, which does not compile here.
+
+**Headlamps:** a suit adds no light. Every diver has an unlit lens, a glow sprite
+and a beam cone (additive, fading along its length, edge-on and near the eye, or
+standing in one paints hard wedges on the screen). `headlamps.js` lends a fixed pool
+of real SpotLights to the nearest divers (1 / 2 / 3 by quality, chosen at start),
+idle ones at intensity 0, since a changed light count recompiles every shader. Your
+own lamp stays the camera's. Character disposal frees whatever is under the sculpt,
+so call `suit.remove()` first. Measured at quality `alta`, 1280 x 720, four other
+divers in view in the mine: about 145 draws and 120 k triangles.
 
 **Glowing mushrooms** (`sowMushrooms` in `scene.js`) grow on every floor of both
 themes: shelves on mine walls, clumps at wall feet (the library's walls are full

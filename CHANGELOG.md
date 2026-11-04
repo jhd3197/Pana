@@ -11,6 +11,10 @@ becomes the GitHub release's notes.
 - **Reliquia ahora se llama Fosa: bajen juntos, no se desarmen.**
   Mismo juego y mismos enlaces, en una fosa oscura de la selva. Hongos azules y
   morados brillan en paredes, suelos y abismos de todas las jornadas.
+- **Fosa: ahora bajan con casco de buzo de latón.**
+  Traje redondito del color de cada pana, ventanilla grande con la cara adentro,
+  botas marrones y tanquecito. Cada casco lleva su lámpara encendida arriba. Solo
+  cambia el look, no cómo se juega.
 - **Trifulca: el árbitro y el público ya no se meten en la pelea.**
   Rodean el ring por fuera y se apartan hacia afuera. Los bots del público no
   empujan, y volver al ring al salirte ya no te aturde.
