@@ -444,5 +444,21 @@
   "¡Tormenta de murciélagos!": "Bat storm!",
   "¡La ruina tiembla! Miren al suelo.": "The ruin is shaking! Watch the floor.",
   "¡Sube el agua! Las culebras nadan.": "The water's rising! Snakes can swim.",
-  "¡Esporas en el aire!": "Spores in the air!"
+  "¡Esporas en el aire!": "Spores in the air!",
+  "{name} · +{n}": "{name} · +{n}",
+  "+25 % de cuota": "+25% quota",
+  "+35 % de codicia": "+35% greed",
+  "+50 % de precios": "+50% prices",
+  "Al subir de rango se abren pactos, en Más ajustes de la sala: reglas más duras que suben el Calor. Cada punto de Calor da 10 % más de bolívares y de XP.": "Ranking up opens pacts, under More settings in the room: harder rules that raise the Heat. Each point of Heat gives 10% more bolívares and XP.",
+  "Calor {n}": "Heat {n}",
+  "Calor +{pct} %": "Heat +{pct}%",
+  "Codicia voraz": "Ravenous greed",
+  "Cuota apretada": "Tight quota",
+  "Encargo con reloj": "Job on a timer",
+  "Enjambre": "Swarm",
+  "Más culebras": "More snakes",
+  "Se para de una": "Up right away",
+  "Silbón madruga": "Silbón wakes early",
+  "Tienda cara": "Pricey shop",
+  "Turno corto": "Short shift"
 }

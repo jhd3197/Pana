@@ -9,6 +9,7 @@ export default {
     loc('Al final de cada piso se abre la bajada. ¿Se van con lo que tienen o bajan un piso más?'),
     loc('Hay cinco lugares: biblioteca, mina, túneles inundados, gruta de hongos y templo caído. Alternar los recorre todos en un orden distinto cada expedición; en la sala, Lugar elige uno.'),
     loc('Cada jornada trae un encargo aparte: mírenlo en el mapa. Cumplirlo paga mangos.'),
+    loc('Al subir de rango se abren pactos, en Más ajustes de la sala: reglas más duras que suben el Calor. Cada punto de Calor da 10 % más de bolívares y de XP.'),
   ],
   sections: [{ title: loc('Moverte'), rows: [
     { action: loc('Caminar hacia donde miras'), keyboard: 'W A S D', gamepad: 'Stick izq.', touch: loc('Cruceta') },

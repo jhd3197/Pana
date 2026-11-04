@@ -11,6 +11,7 @@ import { flowFromField } from '../../../engine/play/flow-field.js';
 import { CAGE, floorOf } from './deck.js';
 import { holds, scaleFor } from './enemies.js';
 import { random } from './director.js';
+import { pactoSwarmChance, pactoSwarmSize } from './pactos.js';
 
 export const SWARM = {
   segments: 12, link: .17, radius: .07, gap: .16, capacity: 160, most: 90,
@@ -208,7 +209,7 @@ const liveHeads = (sim, s) => { let n = 0; for (let c = 0; c < s.out; c++) if (s
 export function swarmSize(g) {
   const roster = g.players.filter(p => !p.spectator).length, greed = Math.min(4, Math.floor(g.codicia / 25));
   const base = (18 + 6 * (g.level || 1) + 3 * greed + 2 * roster) * ({ easy: .75, hard: 1.25 }[g.options?.difficulty] || 1);
-  return Math.min(SWARM.most, Math.round(base));
+  return Math.min(SWARM.most, Math.round(base * pactoSwarmSize(g.options)));   // pact 'enjambre': bigger, under the same cap
 }
 // Cracks at the foot of a wall, in rooms nobody is standing in, near enough to
 // arrive while the swarm lasts. Each pass asks for less: out of sight and well
@@ -258,7 +259,7 @@ export function startSwarm(g, floor, count = swarmSize(g)) {
 // The Director's turn: now and then a wave is the swarm instead.
 export function swarmDue(g) {
   if (g.swarm || g.time < (g.swarmAt || SWARM.firstAt)) return false;
-  return random(g) < .2 + .05 * Math.min(4, Math.floor(g.codicia / 25));
+  return random(g) < .2 + .05 * Math.min(4, Math.floor(g.codicia / 25)) + pactoSwarmChance(g.options);   // pact 'enjambre': more often
 }
 function endSwarm(g) { g.swarm = null; g.swarmSim = null; g.swarmAt = g.time + SWARM.rest; }
 

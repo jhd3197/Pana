@@ -1,5 +1,6 @@
 import { optionDefaults, applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { loc } from '../../../engine/i18n.js';
+import { PACTOS, pactoKey } from './pactos.js';
 // The same descriptors drive the menu and the authoritative allowlist.
 export const FIELDS = [
   // Where the jornadas happen: the buried library first, then the mine, and so on.
@@ -10,9 +11,15 @@ export const FIELDS = [
   { id: 'wipeShare', label: loc('Si caen todos'), default: 20, choices: [[20, loc('Se salva 20 %')], [0, loc('Se pierde todo')], [50, loc('Se salva la mitad')]], advanced: true },
   { id: 'map', label: loc('Mapa'), default: true, choices: [[true, loc('Visible')], [false, loc('Escondido')]], advanced: true },
   { id: 'crude', label: loc('Frases'), default: false, choices: [[false, loc('Sanas')], [true, loc('Más criollas')]], advanced: true },
+  // One switch per pact; the id is also its rank unlock (progress.js).
+  ...PACTOS.map(p => ({ id: pactoKey(p.id), pacto: p.id, label: loc('{name} · +{n}', { name: loc(p.name), n: p.calor }), default: false, choices: [[false, loc('No')], [true, loc(p.label)]], advanced: true })),
 ];
 export const DEFAULT_OPTIONS = optionDefaults(FIELDS);
 export const validOptions = patch => applyRoomOptions(FIELDS, DEFAULT_OPTIONS, patch) !== null;
+// This screen's menu: a pact your rank has not unlocked only shows once the host
+// has it on, so guests see what they are diving with. Rank is a menu matter: the
+// rules accept any real pact, and a new host can still turn one off.
+export const fieldsFor = isUnlocked => FIELDS.map(f => f.pacto && !isUnlocked(f.id) ? { ...f, visibleWhen: { [f.id]: [true] } } : f);
 
 // "Sustos" is each player's own setting (not the room's): how hard the
 // scares hit on this screen. Suaves: no blackouts, softer stingers, flicker

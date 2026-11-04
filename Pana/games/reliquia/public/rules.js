@@ -3,6 +3,7 @@
 // loot back to the truck to bank it, and la codicia rises with every
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
+import { PACTO, hasPacto, calorOfOptions, payoutMult, pactoQuota, pactoTurno, pactoPrice, pactoGreed } from './pactos.js';
 import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS, nookAt } from './deck.js';
 import { HOPPER, aimInto, overHopper, fitsIn, fillOf, overRim, bounceChance, placeTime, climbTime, throwPower, heftOf, stepWobble } from './carga.js';
 import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
@@ -108,7 +109,7 @@ export function interaction(s, p) {
   }
   if (f === 0) {
     offer({ kind: 'leave', text: s.extraction > 0 ? locKey('¡Nos vamos!') : locKey('Mantén E: terminar la expedición y repartir el botín'), progress: s.extraction / 3, hold: true }, { x: TRUCK.x, y: 1.2, z: TRUCK.z }, 2.6, 6);
-    for (const [i, [kind, price]] of SHOP.entries()) { const at = shopSpot(i); offer({ kind: 'buy', item: kind, text: s.mangos >= price ? locKey('Comprar {item} · {price} mangos') : locKey('{Item} · {price} mangos (tienen {mangos})'), vars: { item: kind, price, mangos: String(Math.floor(s.mangos)) }, press: true }, at, .35, 3); }
+    for (const [i, [kind, list]] of SHOP.entries()) { const at = shopSpot(i), price = pactoPrice(s.options, list); offer({ kind: 'buy', item: kind, text: s.mangos >= price ? locKey('Comprar {item} · {price} mangos') : locKey('{Item} · {price} mangos (tienen {mangos})'), vars: { item: kind, price, mangos: String(Math.floor(s.mangos)) }, press: true }, at, .35, 3); }
   }
   for (const cart of s.carts || []) {
     if (cart.pushers.length >= 2 || cart.away) continue;
@@ -210,6 +211,8 @@ export function titles(s) {
 export function quotaFor(level, roster) {
   return Math.round((400 + 300 * (level - 1)) * (.7 + .1 * Math.min(8, Math.max(1, roster))) / 50) * 50;
 }
+// What a jornada's floor holds: its loot in sight plus what its hiding spots keep.
+export const floorWorth = run => [...run.loot.filter(l => l.floor > 0).map(l => l.kind), ...run.spots.filter(s => !s.decoy).flatMap(s => s.content)].reduce((n, kind) => n + valueOf(kind), 0);
 // One extra job a jornada, on top of the quota: what it asks, and what it pays in mangos.
 export const ENCARGO_TEXT = { pedido: locKey('Encargo: suban la cajita sellada.'), turno: locKey('Encargo: junten la cuota antes de que se acabe el turno.'), sinBajas: locKey('Encargo: que no caiga nadie.'), todos: locKey('Encargo: suban todos juntos en la jaula.') };
 export const encargoPay = level => 20 + 5 * level;
@@ -223,7 +226,7 @@ export class Expedition {
       lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       level: 1, mangos: 0, quota: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null }, origin: seed >>> 0 || 1,
       swarm: null, swarmSim: null, swarmAt: SWARM.firstAt, swarmId: 0, director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0,
-      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null, encargosWon: 0 });
+      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null, encargosWon: 0, silbonAt: 0 });
     this.paths = new Map();
   }
   get layout() { return layoutFor(this.seed, this.level, themeOf(this)); }
@@ -254,7 +257,7 @@ export class Expedition {
     Object.assign(this, new Expedition(seed, this.options)); this.ledger = ledger; this.eventId = eventId;
     roster.forEach(p => this.addPlayer(p.id, p.name, p.avatar)); this.phase = 'playing';
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));
-    this.quota = quotaFor(1, this.players.length); this.placeStatues(); this.dealEncargo(); this.sucesoIn = firstSucesoIn(this);
+    this.quota = pactoQuota(this.options, quotaFor(1, this.players.length), floorWorth(this.layout.run)); this.placeStatues(); this.dealEncargo(); this.sucesoIn = firstSucesoIn(this);
     // Where the jornada happens is part of the first word everyone reads.
     this.event('start', locKey('Jornada 1 · {place}: bajen, llenen el carrito y súbanlo por la carga hasta juntar Bs. {quota}.'), { vars: { quota: this.quota, place: jornadaName(1, themeOf(this)) } });
   }
@@ -263,7 +266,8 @@ export class Expedition {
     this.ledger[id] = seq; return this.action(id, action, data);
   }
   // ---------- El encargo ----------
-  dealEncargo() { this.encargo = { kind: this.layout.run.encargo, state: 'open', until: 0 }; }
+  // Pact 'turno': every jornada's job is the timed one (the deck's parcel, if any, is just cheap loot).
+  dealEncargo() { this.encargo = { kind: hasPacto(this.options, 'turno') ? 'turno' : this.layout.run.encargo, state: 'open', until: 0 }; }
   settleEncargo(won, text = '') {
     const job = this.encargo; if (!job || job.state !== 'open') return;
     job.state = won ? 'paid' : 'lost';
@@ -289,7 +293,7 @@ export class Expedition {
   }
   greed(amount) {
     const before = tier(this);
-    this.codicia = clamp(this.codicia + amount * (GREED[this.options.greed] || 1), 0, 100);
+    this.codicia = clamp(this.codicia + amount * (GREED[this.options.greed] || 1) * pactoGreed(this.options), 0, 100);
     const after = tier(this);
     if (after > before) this.event('greed', ['', locKey('La ruina se queja: cae polvo del techo.'), locKey('Las estatuas voltean la cabeza…'), locKey('¡La ruina se está cerrando! Los túneles se derrumban.'), locKey('¡TORMENTA DE MALDICIÓN! Salgan ya.')][after], { tier: after });
   }
@@ -618,8 +622,10 @@ export class Expedition {
       if (room && room.floor > 0 && !this.woke[room.id] && inRect(p.x, p.z, room.rect, -1.5)) {
         this.woke[room.id] = 1;
         let woke = 0;
-        for (const s of run.sleepers) if (s.room === room.id && s.kind !== 'estatua' && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' || s.kind === 'bat', ...(s.kind === 'silbon' ? { mode: 'wander', stun: 1.2 } : {}) }) && s.kind === 'mummy') woke++;
-        if (run.sleepers.some(s => s.room === room.id && s.kind === 'silbon')) this.event('boss', locKey('El Silbón se levantó.'), { room: room.id, boss: 'silbon' });
+        // (Pact 'silbon': already up on its own, so it does not rise a second time here.)
+        const risen = this.silbonAt < 0;
+        for (const s of run.sleepers) if (s.room === room.id && s.kind !== 'estatua' && !(risen && s.kind === 'silbon') && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' || s.kind === 'bat', ...(s.kind === 'silbon' ? { mode: 'wander', stun: 1.2 } : {}) }) && s.kind === 'mummy') woke++;
+        if (!risen && run.sleepers.some(s => s.room === room.id && s.kind === 'silbon')) this.event('boss', locKey('El Silbón se levantó.'), { room: room.id, boss: 'silbon' });
         if (woke && room.kind !== 'guardian' && room.kind !== 'boveda') this.event('awaken', locKey('Las vendas se mueven. Prepárense.'), { room: room.id });
         if (room.kind === 'boveda') this.event('vault', locKey('La bóveda de oro. Algo grande respira en la oscuridad…'), { room: room.id });
       }
@@ -651,14 +657,27 @@ export class Expedition {
     this.wipe = this.players.some(p => !p.spectator) && !this.players.some(alive) ? this.wipe + dt : 0;
     if (this.wipe >= 3) return this.finish('wipe');
     if (standing.some(p => floorOf(p.x) > 0)) this.greed(dt * .04 * Math.max(...standing.map(p => floorOf(p.x))));
+    this.riseSilbon();
     updateDirector(this, dt, (floor, count) => (swarmDue(this) && startSwarm(this, floor)) || this.wave(floor, count));
+  }
+  // Pact 'silbon': it gets up by itself soon after the first pana lands, instead
+  // of waiting for someone to walk into the pit room. silbonAt: 0 nothing due,
+  // above 0 when it rises, below 0 it has risen.
+  riseSilbon() {
+    if (!(this.silbonAt > 0) || this.time < this.silbonAt) return;
+    const s = this.layout.run.sleepers.find(q => q.kind === 'silbon');
+    this.silbonAt = 0; if (!s || this.woke[s.room]) return;
+    if (!spawnEnemy(this, 'silbon', s.x, s.z, { room: s.room, born: this.time - 1, mode: 'wander', stun: 1.2 })) return;
+    this.silbonAt = -1; this.event('boss', locKey('El Silbón se levantó.'), { room: s.room, boss: 'silbon' });
   }
   finish(outcome) {
     this.phase = 'results'; this.outcome = outcome;
-    this.payout = outcome === 'extracted' ? this.haul : Math.round(this.haul * (this.options.wipeShare ?? 20) / 100);
+    // Calor pays on both outcomes: a failed dive still gets its share, with the bonus.
+    const bonus = payoutMult(calorOfOptions(this.options));
+    this.payout = outcome === 'extracted' ? this.haul * bonus : Math.round(this.haul * (this.options.wipeShare ?? 20) / 100 * bonus);
     const crude = this.options.crude;
     this.event(outcome, outcome === 'extracted' ? locKey('¡Nos vamos! Bs. {value} en el camión.') : crude ? locKey('Por pajúos. La ruina se quedó con todo.')
-      : pickLine([locKey('Por confiados. La ruina se quedó con todo.'), locKey('Por gafos. La ruina se quedó con todo.'), locKey('Te quedaste sin el chivo y sin el mecate. La ruina se quedó con todo.')], this.seed), { vars: { value: this.payout } });
+      : pickLine([locKey('Por confiados. La ruina se quedó con todo.'), locKey('Por gafos. La ruina se quedó con todo.'), locKey('Te quedaste sin el chivo y sin el mecate. La ruina se quedó con todo.')], this.seed), { vars: { value: this.haul } });
   }
   // Big treasures move with the average push of whoever carries them.
   carry(dt) {
@@ -755,7 +774,8 @@ export class Expedition {
       if (lift.to > this.deepest) {
         this.deepest = lift.to; riders.forEach(p => { p.stats.unaMas++; });
         this.event('descend', locKey('¡Bajaron al piso {floor}: {place}!'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to, place: jornadaName(this.level, themeOf(this)) } });
-        if (this.encargo) { if (this.encargo.kind === 'turno') this.encargo.until = this.time + turnoSeconds(this.level); this.event('encargo', ENCARGO_TEXT[this.encargo.kind], { encargo: this.encargo.kind }); }
+        if (this.encargo) { if (this.encargo.kind === 'turno') this.encargo.until = this.time + pactoTurno(this.options, turnoSeconds(this.level)); this.event('encargo', ENCARGO_TEXT[this.encargo.kind], { encargo: this.encargo.kind }); }
+        if (hasPacto(this.options, 'silbon')) this.silbonAt = this.time + PACTO.silbonAfter;
       }
       this.event('lift-arrive', riders.length ? '' : lift.to ? locKey('El montacargas llegó al piso {floor}.') : locKey('El montacargas llegó al campamento.'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to } });
       const done = lift.to === 0 && lift.from === 1 && riders.length && this.delivered >= this.quota;
@@ -775,7 +795,7 @@ export class Expedition {
     const campLoot = Object.fromEntries(Object.entries(this.touched).filter(([id]) => this.layout.run.loot.find(l => l.id === +id)?.floor === 0));
     this.level++; this.seed = levelSeed(this.origin, this.level);
     Object.assign(this, { touched: campLoot, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, enemies: [], darts: [], shots: [], splats: [], swarm: null, swarmSim: null, swarmAt: this.time + SWARM.firstAt,
-      codicia: 0, deepest: 0, director: createDirector(), noise: createNoiseBoard(), collapseIn: 30, stalkerRest: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null },
+      codicia: 0, deepest: 0, silbonAt: 0, director: createDirector(), noise: createNoiseBoard(), collapseIn: 30, stalkerRest: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null },
       strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: firstSucesoIn(this), twinHint: 0 });
     this.dealEncargo();
     this.items = this.items.filter(i => floorOf(i.x) === 0); this.paths.clear();
@@ -787,7 +807,7 @@ export class Expedition {
       p.x = stop.x + (i % 3 - 1) * 1.2; p.z = 3 + Math.floor(i / 3) * 1.2; p.h = 0;
       p.downed = false; p.hp = 1; p.revive = 0; p.invulnerable = 2;
     });
-    this.quota = quotaFor(this.level, this.players.filter(p => !p.spectator).length); this.placeStatues();
+    this.quota = pactoQuota(this.options, quotaFor(this.level, this.players.filter(p => !p.spectator).length), floorWorth(this.layout.run)); this.placeStatues();
     // The next jornada's place (Alternar swaps it) rides in the same line.
     this.event('level', left ? locKey('¡Jornada {level} lista! Subieron Bs. {value}. Los que se quedaron abajo llegaron con lo justo. Ahora toca {place}: Bs. {quota}.')
       : locKey('¡Jornada {level} lista! Subieron Bs. {value}. Ahora toca {place}: Bs. {quota}.'), { level: done, value: delivered, left, vars: { level: done, value: delivered, next: this.level, quota: this.quota, place: jornadaName(this.level, themeOf(this)) } });
@@ -818,11 +838,11 @@ export class Expedition {
     } else { if (cart) cart.away = false; this.cargo = { phase: 'idle', t: 0, cart: null }; }
   }
   buy(p, kind) {
-    const offer = SHOP.find(([k]) => k === kind); if (!offer || this.mangos < offer[1]) return false;
+    const offer = SHOP.find(([k]) => k === kind), price = offer && pactoPrice(this.options, offer[1]); if (!offer || this.mangos < price) return false;
     const weapon = WEAPONS.includes(kind) ? p.hands.findIndex(h => h && WEAPONS.includes(h.kind)) : -1;
     if (weapon >= 0) this.drop(p, weapon);
     const hand = weapon >= 0 ? weapon : p.hands.findIndex(h => !h); if (hand < 0) return false;
-    this.mangos -= offer[1]; p.hands[hand] = { id: this.itemId++, kind, worth: 1 };
+    this.mangos -= price; p.hands[hand] = { id: this.itemId++, kind, worth: 1 };
     this.event('buy', locKey('{name} compró {item}.'), { player: p.id, item: kind, vars: { name: p.name, item: kind } });
     return true;
   }
