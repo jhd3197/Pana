@@ -270,7 +270,8 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       if (library || R() < .45) { if (!busy(x + ix * .5, z + iz * .5)) sow(x + ix * .45, 0, z + iz * .45, h, false); }
       else if (!busy(x + ix * .1, z + iz * .1)) sow(x + ix * .02, .7 + R() * 1.9, z + iz * .02, h, true);
     };
-    for (const room of run.rooms.filter(r => r.floor === f)) {
+    // Not in hidden rooms: a light borrowed there would shine through the wall and give the secret away.
+    for (const room of run.rooms.filter(r => r.floor === f && !r.hidden)) {
       const [x0, z0, x1, z1] = room.rect, chance = library ? .24 : .42;
       for (const t of [-.38, -.13, .13, .38]) {
         if (R() < chance) wall(room.x + t * room.w, z0 + .03, 0);
@@ -279,7 +280,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
         if (R() < chance) wall(x1 - .03, room.z + t * room.d, -Math.PI / 2);
       }
     }
-    if (!library) for (const c of run.corridors.filter(c => c.floor === f)) {
+    if (!library) for (const c of run.corridors.filter(c => c.floor === f && !c.hidden)) {
       const [x0, z0, x1, z1] = c.rect, side = R() < .5, t = .3 + R() * .4;
       if (c.horizontal) wall(x0 + (x1 - x0) * t, side ? z0 + .03 : z1 - .03, side ? 0 : Math.PI);
       else wall(side ? x0 + .03 : x1 - .03, z0 + (z1 - z0) * t, side ? Math.PI / 2 : -Math.PI / 2);

@@ -380,7 +380,8 @@ and never touch the deck, `layout.js` or `run.lights`: mummies avoid `run.lights
 so adding them there would change play. No new lights: the last two of the five
 pool slots go to the nearest clumps within 13 m, displacing the farthest warm
 sources; halos are one `THREE.Points` draw per floor. Caps use deep colours because
-ACES tone mapping bleaches a bright emissive to white.
+ACES tone mapping bleaches a bright emissive to white. Hidden rooms and their
+corridors get none: a pool light shines through walls and would give them away.
 
 `scene.js` builds the camp at once and each floor when it becomes
 reachable (floor 1 at start, floor f+1 when seal f opens), only from
