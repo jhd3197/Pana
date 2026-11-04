@@ -753,6 +753,27 @@ The minimap paints its own backdrop with `fillRect`. A CSS background on that
 2D canvas inside the fixed, transformed panel drew a tall dark box below the
 panel under software WebGL.
 
+## Diver rank (`progress.js`)
+
+Each device keeps its own rank on `engine/progress.js` under
+`pana:progress:reliquia`. `xpFor(state, playerId)` is pure and reads the finished
+state: 10 for the dive plus up to 20 for its length (full at five minutes), 15 a
+jornada cleared, 1 per Bs. 100 in the truck (at most 60), 10 per encargo won
+(`encargosWon`, kept across jornadas because `encargo` only holds the current
+one), 5 per revive (at most 20), and 20 for extracting with something in the
+truck. The length part and the truck condition keep a run that leaves at once
+at 10 XP, not worth farming. A pana who joined during the results is a spectator
+and earns nothing.
+
+`lobby()` calls `settle` on every render of the results screen; the receipt
+`seed:level:outcome` makes it pay once, across reloads too. A mix of good runs,
+modest runs and wipes reaches Leyenda (4000 XP) in about 50 dives.
+
+The rank-up toast uses its own `.pk-toast` (`#rank-toast`): Fosa's `#toast` has
+z-index 5 and sits under the results layer. `#rank-toast` is raised to 8% so it
+clears the card's title. The `unlocks` ids in `RANKS` are stable names; nothing
+reads them yet.
+
 ## Networking
 
 Host simulation at 20 Hz on `LiveRoom` (`reliquia-v3`). Input:

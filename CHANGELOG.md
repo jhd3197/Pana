@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: ahora subes de rango con cada expedición.**
+  Cada bajada da XP, aunque caigan todos: jornadas, lo que llega al camión, encargos,
+  revividas y salir con vida. De Aprendiz a Leyenda, se guarda en tu dispositivo y se
+  ve al final de la expedición.
 - **Fosa ya no se repite: tres lugares nuevos, salas de cuerda y cosas que pasan solas.**
   Túneles inundados, gruta de hongos y templo caído se suman a la biblioteca y la mina,
   y cada expedición los recorre en otro orden. Hay cuerdas para bajar a plataformas,
