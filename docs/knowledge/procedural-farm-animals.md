@@ -9,10 +9,34 @@ including the separately authored fish and fish school; see `map-asset-rollout.m
 Horse coats: `bay`, `palomino`, `grey`; chicken coats: `red`, `cream`; cow coats: `pinto`, `brown`.
 The integer seed determines default coat, body width and animation phase.
 By default these are scenery animals with grazing/pecking, blinking and tail motion.
-Galope opts horses into `{locomotion:true}` to add eight leg bones and
-`userData.gallop(phase,speed,jump)` for riding. The game owns its mounted character,
+Galope and Coleo's riders opt horses into `{locomotion:true}`: three bones per leg
+(hoof included), three on the mane, three on the tail, and
+`userData.gallop(phase,speed,jump,climb)`, a pure function of its arguments. The cow's
+`locomotion` keeps its older two-bone sine legs. The game owns its mounted character,
 movement and bot pathfinding; scenery animals keep their original grazing rig.
 See [Galope](galope.md).
+
+### Horse gait
+
+`engine/models/animation/quadruped-gait.js` holds the math, without Three.js.
+`llanero-rider.js` advances the phase at `speed / stride` (radians, 2π a stride), so
+a stance toe is still relative to the ground; any other rate slides the feet. Gallop's
+touchdown offsets are `0, .12, .35, .47`: at duty .25 the commonly quoted `.40, .53`
+open a second airborne gap between the hinds and fronts.
+
+The sculpt's legs are nearly straight at rest, so a long stride cannot reach the
+ground from standing height. Each gait lowers the body (`crouch`), swings shoulder and
+pelvis with the leg (`slide`) and lifts the heel on a planted toe. Raising `reach` or
+the bob needs more of these; the "stance feet stay planted" unit test fails when a
+foot goes out of reach. It sweeps speeds in .25 m/s steps because the worst fit is
+mid-blend (around 5 m/s), not at a table speed.
+
+The riders' speed is rate-limited at 12 m/s², which lets the gait run down when the
+race zeroes `speed`. Past the finish `game.js` carries the difference as a run-out
+(`r.runOut`) so the feet do not slide during it.
+
+The mounted tail lives inside the skin, two draws fewer than the rigid tube and tuft.
+Leg weights stay off the belly (the ribcage used to follow whichever leg was nearest).
 
 Los Llanos places three horses, eight chickens and eight cows around its ranches
 and pastures. The cows replace the old game-local box-and-sphere model.

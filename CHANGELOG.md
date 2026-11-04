@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Galope: los caballos ahora corren como caballos.**
+  Caminan, trotan, van a medio galope y galopan según la velocidad, con cada pata a su
+  tiempo y los cascos fijos en el suelo. Cabeza, crin, cola y jinete siguen el ritmo.
+  También en el Coleo de Bululú.
+
 - **Fosa: sigan la expedición otro día con Continuar.**
   Se guarda sola en el campamento, en el navegador del anfitrión: jornada, lugares,
   mangos y las herramientas de cada pana. Quien vuelve con su nombre cae en su puesto,

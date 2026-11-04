@@ -28,11 +28,31 @@ try{
     document.querySelector('#tour-overview').click();check(!tour.active&&stage.camera.fov===34,'overview did not restore');
     const {llaneroHorse}=await import('/engine/models/fauna/farm/llanero-horse.js');
     const horse=llaneroHorse({locomotion:true}),skin=horse.getObjectByName('AnimalSkin'),idle=llaneroHorse();
-    check(skin.skeleton.bones.length===11,'mounted leg bones missing');check(idle.getObjectByName('AnimalSkin').skeleton.bones.length===3,'default grazing rig changed');
+    check(skin.skeleton.bones.length===21,'mounted leg, hoof, mane and tail bones missing');check(idle.getObjectByName('AnimalSkin').skeleton.bones.length===3,'default grazing rig changed');
     const feet=[];for(let i=0;i<skin.geometry.attributes.position.count;i++)if(skin.geometry.attributes.position.getY(i)<.05)feet.push(i);
     horse.userData.gallop(0,12);const first=feet.map(i=>skin.getVertexPosition(i,new THREE.Vector3()).toArray());
     horse.userData.gallop(1.7,12);check(feet.some((i,k)=>skin.getVertexPosition(i,new THREE.Vector3()).distanceTo(new THREE.Vector3(...first[k]))>.25),'gallop does not move skinned feet');
     horse.userData.gallop(0,12);check(feet.every((i,k)=>skin.getVertexPosition(i,new THREE.Vector3()).distanceTo(new THREE.Vector3(...first[k]))<1e-7),'gallop is not deterministic');
+    // Standing is the planted rest pose; hair and tail rest at zero when grazing.
+    const soles=()=>Math.max(...feet.map(i=>skin.getVertexPosition(i,new THREE.Vector3()).y));
+    horse.userData.gallop(1.7,0);check(soles()<.06,'a standing horse lifts a hoof');
+    horse.userData.gallop(1.7,12);check(soles()>.3,'a gallop never lifts a hoof');
+    horse.userData.tick(3);check(['AnimalMane0','AnimalMane2','AnimalTailMid'].every(n=>{const r=horse.getObjectByName(n).rotation;return !r.x&&!r.y&&!r.z;}),'hair is posed while grazing');
+    check(skin.geometry.attributes.skinWeight.count===skin.geometry.attributes.position.count,'tail is missing from the skin');
+    // A rider's stride follows the ground, holds in the air and stops at a stand.
+    const {createRider,riderSeed}=await import('/engine/models/fauna/farm/llanero-rider.js'),{loadAvatar}=await import('/engine/avatar.js');
+    const mounted=createRider(loadAvatar(),'bay',riderSeed('bot-1')),other=createRider(loadAvatar(),'bay',riderSeed('bot-2'));
+    check(mounted.stridePhase!==other.stridePhase,'two riders start in lockstep');
+    const start=mounted.stridePhase;mounted.update(.5,{speed:0,jumpY:0});check(mounted.stridePhase===start,'phase moves at a stand');
+    const run=(seconds,speed,jumpY=0)=>{for(let t=0;t<seconds;t+=1/60)mounted.update(1/60,{speed,jumpY});};
+    run(2,12);const before=mounted.stridePhase;run(1,12);
+    const stride=2*.6*(mounted.horse.userData.gait.variation.strideScale)/.25,hz=(mounted.stridePhase-before)/(Math.PI*2);
+    check(Math.abs(hz-12/stride)<.05,`stride rate ${hz} Hz does not match the ground`);
+    const held=mounted.stridePhase;run(.2,12,.5);check(mounted.stridePhase===held,'stride runs in the air');
+    run(3,0);const halted=mounted.stridePhase;run(.5,0);check(mounted.stridePhase===halted&&mounted.gaitSpeed===0,'stride never stops');
+    const mountedSkin=mounted.horse.getObjectByName('AnimalSkin'),seat=mounted.group.getObjectByName('Riding tack');
+    check(Math.max(...feet.map(i=>mountedSkin.getVertexPosition(i,new THREE.Vector3()).y))<.06&&Math.abs(seat.position.y)<1e-6,'stopped horse did not settle');
+    mounted.dispose();mounted.dispose();other.dispose();
     release({group:horse});release({group:idle});
     stage.renderer.render(stage.scene,stage.camera);window.qa={stage,model,release,tour};
     return {length:model.route.TOTAL,assets:model.group.userData.assetCounts};
