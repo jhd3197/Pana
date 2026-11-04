@@ -336,9 +336,22 @@ the light: camp = sky, sun and shadows; underground = dark fog (5–30 m),
 the headlamp spot on the camera, a hand light when you hold a farol or the
 crown, and a fixed pool of five point lights moved to the nearest braziers
 and other panas' faroles every 0.25 s. The light count never changes, so
-shaders never recompile on the way down. Your paws (fur colour) hold the
-hand items; the own avatar is hidden. Look input is
+shaders never recompile on the way down. Your gloves (your seat colour) hold
+the hand items; the own avatar is hidden. Look input is
 `engine/play/first-person.js`; the left/right arrows also turn.
+
+**Explorer suits** (`suit-look.js` as data, `explorer-suit.js` as meshes) are
+looks only: no rule, stat or module that decides play sees them. `view.js`
+builds each pana from `suitedAvatar()` (no hat, necklace, backpack or chosen
+garment; fur, face and glasses stay) with `head: SUIT_HEAD`, then hides every
+mesh on the body except the neck's subtree and hangs the suit on the same
+bones, so poses, squash and stagger still apply. A remote pana goes from 142
+draws bare to about 40. Parts merge per bone into shared per-colour geometry
+with one vertex-coloured material; the dome is one shared geometry whose alpha
+is in its vertex colours (RGBA, so a highlight and a rim survive a dark room).
+The dome clears the real sculpt's farthest vertex, the ear cup at 1.20 of its
+1.28 radius. Character disposal frees whatever is under the sculpt, so call
+`suit.remove()` first. The helmet lamp is an unlit lens: no suit adds a light.
 
 `scene.js` builds the camp at once and each floor when it becomes
 reachable (floor 1 at start, floor f+1 when seal f opens), only from
