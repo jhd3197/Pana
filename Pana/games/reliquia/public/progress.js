@@ -8,6 +8,8 @@ import { createFeats } from '../../../engine/feats.js';
 import { loc, locKey } from '../../../engine/i18n.js';
 import { calorOfOptions, xpMult, bonusPercent } from './pactos.js';
 
+const TOAST_MS = 2700;   // the feats toast's own 2600 ms, and a beat
+
 export const RANKS = [
   { id: 'aprendiz', title: locKey('Aprendiz'), xp: 0, unlocks: [] },
   { id: 'buzo', title: locKey('Buzo'), xp: 25, unlocks: ['pacto:cuota', 'traje:franja'] },
@@ -34,13 +36,15 @@ export function xpFor(state, playerId) {
     + (state.outcome === 'extracted' && haul > 0 ? 20 : 0);
   return Math.round(earned * xpMult(calorOfOptions(state.options)));
 }
-export const receiptFor = state => `${state.seed}:${state.level}:${state.outcome}`;
+// A daily's seed repeats, so another try at it needs the clock to be a new receipt.
+export const receiptFor = state => `${state.seed}:${state.level}:${state.outcome}${state.daily ? `:${Math.round(state.time * 10)}` : ''}`;
 
 export function createFosaProgress({ storage } = {}) {
   const progress = createProgress({ game: 'reliquia', ranks: RANKS, ...(storage !== undefined ? { storage } : {}) });
   let chip = null, feat = null, heat = null, settled = '';
   // Every render of the results screen lands here; only a new expedition pays.
-  function settle(state, playerId) {
+  // `onSettled` (daily.js) may pay a bonus on top, which joins the same line, and add a toast.
+  function settle(state, playerId, onSettled) {
     if (!chip) {
       chip = createRankChip(progress); document.getElementById('titles').before(chip.el);
       // Beside the "+N XP": what the dive's Calor added to it.
@@ -59,8 +63,11 @@ export function createFosaProgress({ storage } = {}) {
     heat.hidden = !percent; heat.textContent = percent ? loc('Calor +{pct} %', { pct: percent }) : '';
     if (p.spectator) { chip.gain(0); return; }
     const result = progress.award(xpFor(state, playerId), receipt);
-    chip.gain(result.gained);
-    rankUpToast(result, text => feat(`rank:${result.rank.id}`, text));
+    const extra = onSettled?.(state, result), bonus = extra?.bonus;
+    chip.gain(result.gained + (bonus?.gained || 0));
+    const rankedUp = [bonus, result].some(r => rankUpToast(r, text => feat(`rank:${r.rank.id}`, text)));
+    // A rank-up keeps the toast first; anything else about this dive waits its turn.
+    if (extra?.toast) { if (rankedUp) setTimeout(() => feat(...extra.toast), TOAST_MS); else feat(...extra.toast); }
   }
   // The lobby's one Calor number: a small chip that shows only when a pact is on.
   function calorChip(parent) {

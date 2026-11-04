@@ -1,4 +1,5 @@
 import { Expedition, stepExplorer, alive, validSave } from './rules.js';
+import { startDive } from './daily.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
 import { jumpCount } from '/engine/play/jump.js';
 import { loc, locn } from '/engine/i18n.js';
@@ -74,7 +75,7 @@ export class ExpeditionRoom extends LiveRoom {
       if (id !== this.hostId || this.game.phase === 'playing') return;
       this.game.ledger[id] = data.seq;
       if (this.game.resumed) this.game.resume();
-      else this.game.start((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0 || 1);
+      else startDive(this.game, data.daily, (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0 || 1);
     } else if (data.action === 'take') { if (!this.game.takeSlot(id, data.seat)) return; }
     else if (data.action === 'abandon') { if (id !== this.hostId || !this.game.resumed) return; this.freshLobby(); }
     else if (ACTIONS.has(data.action)) this.game.accept(id, data.seq, data.action, { hand: data.hand, line: data.line });

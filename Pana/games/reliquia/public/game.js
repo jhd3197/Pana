@@ -24,6 +24,7 @@ import { ExpeditionRoom } from './network.js';
 import { createView } from './view.js';
 import { createHud, money } from './hud.js';
 import { createFosaProgress } from './progress.js';
+import { createFosaDaily } from './daily.js';
 import { sfx } from './sounds.js';
 import { createAmbience } from './ambience.js';
 import { createSamples } from './samples.js';
@@ -78,6 +79,7 @@ const saves = createFosaSave({ room, list: $('lobby-save'), slots: $('lobby-slot
 { const tagline = document.createElement('p'); tagline.className = 'lobby-tagline'; tagline.textContent = loc('Bajen juntos. No se desarmen.'); document.querySelector('.pk-game-lobby-head > .pk-title')?.after(tagline); }
 const optionsUI = createRoomOptions($('room-options'), { title: 'Fosa', fields: fieldsFor(diver.progress.isUnlocked), change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
 const showCalor = diver.calorChip($('room-options').querySelector('.pk-room-primary'));
+const daily = createFosaDaily({ progress: diver.progress, shout, start: day => { sound.unlock(); room.action('start', { daily: day }); } });
 // A guest draws its own explorer where it predicts it, not a round trip behind.
 const me = () => { const p = state.players.find(p => p.id === room.id); const predicted = room.predicted; return predicted && p ? { ...p, x: predicted.x, z: predicted.z, y: predicted.y, vx: predicted.vx, vz: predicted.vz, moving: predicted.moving, stamina: predicted.stamina, jumpHeight: predicted.jumpHeight ?? p.jumpHeight } : p; };
 const looking = createLookControls(canvas, { enabled: () => playing(), look: (yaw, pitch) => view.look(yaw, pitch),
@@ -90,8 +92,8 @@ function lobby() {
   show('lobby', state.phase === 'lobby'); show('hud', state.phase === 'playing'); show('results', state.phase === 'results');
   $('start').disabled = !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? state.resumed ? loc('¡Seguir!') : loc('¡A la mina!') : loc('El anfitrión prepara la salida');
-  saves.render(state);
-  if (state.phase === 'results') { hud.results(state, room); diver.settle(state, room.id); saves.finished(state); }
+  daily.update(state, room); saves.render(state);
+  if (state.phase === 'results') { hud.results(state, room); diver.settle(state, room.id, daily.settled); saves.finished(state); }
 }
 
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.
@@ -188,7 +190,7 @@ function receive(next) {
   lobby();
 }
 function act(action, extra = {}) { if (playing()) room.action(action, extra); }
-$('start').onclick = () => { sound.unlock(); room.action('start'); }; $('again').onclick = () => room.action('start');
+$('start').onclick = () => { sound.unlock(); room.action('start', daily.startOptions()); }; $('again').onclick = () => room.action('start');
 $('practice').onclick = $('offline-inline').onclick = () => room.practice();
 // Touch: hold buttons for moving and grabbing, taps for the rest.
 drawIcons();

@@ -477,5 +477,16 @@
   "Veterano": "Veteran",
   "Visible": "Visible",
   "Vitalidad": "Health",
-  "Volver a la mina": "Back to the mine"
+  "Volver a la mina": "Back to the mine",
+  "Del día": "Daily",
+  "Del día · {pacts}": "Daily · {pacts}",
+  "Racha {n}": "Streak {n}",
+  "Comodín {n}": "Freeze {n}",
+  "¡{n} días seguidos!": "{n} days in a row!",
+  "Mejor del día: {n} jornada · {money}": {
+    "one": "Today's best: {n} shift · {money}",
+    "other": "Today's best: {n} shifts · {money}"
+  },
+  "Del día: la misma cueva y los mismos pactos para todos. Da XP extra una vez al día.": "Daily: the same cave and the same pacts for everyone. Pays extra XP once a day.",
+  "Completa una jornada o saca botín cada día y sube tu racha. Cada 7 días ganas un comodín, que salva un día perdido.": "Finish a shift or bring out loot every day to grow your streak. Every 7 days you earn a freeze, which saves one missed day."
 }
