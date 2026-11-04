@@ -7,7 +7,8 @@ export default {
     loc('Cada jornada pide una cuota: llenen el carrito, empújenlo a la plataforma de carga y apriétenle el botón amarillo. Cuando la carga subida alcance la cuota, el montacargas los sube y la jornada termina.'),
     loc('Apunta con el punto del centro a lo que quieres usar: palancas, carrito, tesoros, la tienda. Cada mano lleva un tesoro, una herramienta o un puñado de cuatro piezas.'),
     loc('Al final de cada piso se abre la bajada. ¿Se van con lo que tienen o bajan un piso más?'),
-    loc('Hay dos lugares: la biblioteca sepultada y la mina. En la sala, Lugar elige uno o los alterna, empezando por la biblioteca.'),
+    loc('Hay cinco lugares: biblioteca, mina, túneles inundados, gruta de hongos y templo caído. Alternar los recorre todos en un orden distinto cada expedición; en la sala, Lugar elige uno.'),
+    loc('Cada jornada trae un encargo aparte: mírenlo en el mapa. Cumplirlo paga mangos.'),
   ],
   sections: [{ title: loc('Moverte'), rows: [
     { action: loc('Caminar hacia donde miras'), keyboard: 'W A S D', gamepad: 'Stick izq.', touch: loc('Cruceta') },
@@ -42,5 +43,11 @@ export default {
     loc('Apunta adentro del carrito. Una carga montada se te cae si frenas, giras o chocas de golpe.'),
     loc('Cada tesoro que levantan sube la codicia: más trampas, momias bravas, túneles que se derrumban y un jaguar negro que los caza.'),
     loc('Si caen todos, del camión solo se salva una parte.'),
+    loc('La cuerda se amarra en las estacas (E): abre una bajada o un puente para todos. Abajo, lanza el botín (G) arriba a tus panas.'),
+    loc('Bajar y subir por la cuerda es más rápido si un pana te la aguanta desde una punta.'),
+    loc('La bengala se lanza (clic): donde arde, momias y murciélagos no se acercan, ni en un apagón.'),
+    loc('Por el tablón estrecho solo pasan los panas: las momias se quedan mirando.'),
+    loc('Si ves una losa de oro, busca la otra: con peso en las dos (un pana o el carrito) se abre la cámara dorada.'),
+    loc('Las grietas en el suelo avisan que el techo está flojo, y los hongos hinchados te voltean los controles: pásales lejos.'),
   ],
 };

@@ -29,6 +29,8 @@ import { SEAT_COLORS, SUIT_HEAD, seatColor, suitedAvatar } from './suit-look.js'
 import { dressExplorer, disposeSuits } from './explorer-suit.js';
 import { createHeadlamps } from './headlamps.js';
 import { createSwarmView } from './swarm-view.js';
+import { flareStick } from '/engine/models/props/fosa-biomes.js';
+import { glowTexture } from '/engine/models/props/glow-paintball.js';
 
 export const COLORS = SEAT_COLORS;
 const EYE = 1.45, POOL = 5, FAR = 220;
@@ -43,9 +45,14 @@ const CAMP_LOOK = { background: 0xf6d6a4, fog: [45, 150], hemi: [0xfff1d6, 0x8a6
 // library is whiter and dimmer; candles are small warm accents with a short
 // reach. Both stay readable within the farol's 8 m.
 const DEEP_LOOK = { background: 0x0a0710, fog: [3.5, 24], hemi: [0x5c5088, 0x2a1d12, .5], sun: 0, exposure: 1.15, dust: .45, lamp: 0xfff0d8, hand: 0xffa850, lampPower: 58, candle: [0xffa24a, 5.5, 11] };
+// The biomes: drowned teal, a violet glow that lets you see further, sun-baked dust.
+const FLOODED_LOOK = { background: 0x061418, fog: [3, 21], hemi: [0x5fa8b8, 0x123038, 1.5], sun: 0, exposure: 1.15, dust: .25, lamp: 0xe2f4f4, hand: 0xbfe6e0, lampPower: 50, candle: [0xffa24a, 5.5, 11] };
+const GROVE_LOOK = { background: 0x0c0a1e, fog: [4.5, 28], hemi: [0x7560e0, 0x123a30, 1.15], sun: 0, exposure: 1.2, dust: .7, lamp: 0xf0ecff, hand: 0xd8c8ff, lampPower: 44, candle: [0xffa24a, 5.5, 11] };
+const TEMPLE_LOOK = { background: 0x140c08, fog: [3.2, 22], hemi: [0xa8865a, 0x2c1a0a, .85], sun: 0, exposure: 1.15, dust: 1.1, lamp: 0xffeed0, hand: 0xffb468, lampPower: 56, candle: [0xffa24a, 5.5, 11] };
 const LIBRARY_LOOK = { background: 0x18202a, fog: [2.5, 21], hemi: [0x74849e, 0x0c0c10, 1.8], sun: 0, exposure: 1.1, dust: 1, lamp: 0xe4ebf4, hand: 0xd8dde6, lampPower: 25, lampDecay: 1.15, handPower: .35, candle: [0xff9e52, 1.6, 4.5] };
 // How much La Estatua's pale marble dims with the headlamp right on it (2 m).
 const STATUE_DIM = .72;
+const ROCK_POOL = 8;
 
 function label(text, color, { bubble = false } = {}) {
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 96;
@@ -92,7 +99,15 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   // Paint, darts and shots.
   const splatTextures = [1, 2, 3, 4].map(splatTexture), splatGeometry = new THREE.PlaneGeometry(.7, .7), splatMaterials = new Map();
   const splatMaterial = (seat, n) => { const key = `${seat}:${n}`; if (!splatMaterials.has(key)) splatMaterials.set(key, new THREE.MeshBasicMaterial({ color: COLORS[seat % 8], map: splatTextures[n % 4], transparent: true, alphaTest: .4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, side: THREE.DoubleSide })); return splatMaterials.get(key); };
-  const splats = new Map(), shots = new Map(), darts = new Map();
+  const splats = new Map(), shots = new Map(), darts = new Map(), flares = new Map();
+  // A flare on the floor: its stick and a sprite for the glare, one shared material.
+  const flareGlare = new THREE.SpriteMaterial({ map: glowTexture(), color: 0xff5a3a, transparent: true, opacity: .9, depthWrite: false, blending: THREE.AdditiveBlending });
+  // Falling rocks and the rings under them: one draw each, whatever the rain.
+  const rockMesh = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(.55, 0), new THREE.MeshStandardMaterial({ color: 0x8a7a64, roughness: 1, flatShading: true }), ROCK_POOL);
+  const rockRings = new THREE.InstancedMesh(new THREE.RingGeometry(.85, 1, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .75, depthWrite: false, side: THREE.DoubleSide }), ROCK_POOL);
+  rockMesh.frustumCulled = rockRings.frustumCulled = false; rockMesh.count = rockRings.count = 0; scene.add(rockMesh, rockRings);
+  const rockAt = new THREE.Object3D();
+  let rippleAt = 0;
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
   const avatars = new Map(), enemies = new Map(), carts = new Map(), tmp = new THREE.Vector3();
   let lastState = null, snapAt = 0;
@@ -101,7 +116,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
 
   function setLook(name) {
     if (name === lookName) return; lookName = name;
-    look = name === 'camp' ? CAMP_LOOK : name === 'biblioteca' ? LIBRARY_LOOK : DEEP_LOOK;
+    look = { camp: CAMP_LOOK, biblioteca: LIBRARY_LOOK, inundada: FLOODED_LOOK, hongos: GROVE_LOOK, templo: TEMPLE_LOOK }[name] || DEEP_LOOK;
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sun.intensity = look.sun; sky.mesh.visible = name === 'camp'; renderer.toneMappingExposure = look.exposure;
@@ -118,7 +133,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (!held) return;
     const model = itemModel(held.kind), info = ITEMS[held.kind];
     if (held.pile) { model.scale.multiplyScalar(.28 + held.pile.length * .05); slot.add(model); model.position.y = -.04; return; }
-    const scale = held.kind === 'farol' ? .24 : held.kind === 'machete' ? .5 : held.kind === 'honda' ? .42 : held.kind === 'marcadora' ? 1.1 : info.artifact ? .55 : .42;
+    const scale = held.kind === 'bengala' ? .9 : held.kind === 'cuerda' ? .6 : held.kind === 'farol' ? .24 : held.kind === 'machete' ? .5 : held.kind === 'honda' ? .42 : held.kind === 'marcadora' ? 1.1 : info.artifact ? .55 : .42;
     model.scale.multiplyScalar(scale);
     if (held.kind === 'machete') { model.rotation.set(0, Math.PI / 2, .6); model.position.set(0, .02, 0); }
     else if (held.kind === 'honda') model.rotation.set(-.3, Math.PI, 0);
@@ -160,10 +175,12 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (state !== lastState) { lastState = state; snapAt = t; }
     // Riders sink and rise with the cage through the shaft.
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
-    setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'camp' : world.run.theme === 'biblioteca' ? 'biblioteca' : 'mina');
+    setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'camp' : world.run.theme);
+    // El apagón: every torch stutters and sinks, your lamp with them. "Sustos" softens the show, never the rule.
+    const stutter = Math.sin(t * 31) * Math.sin(t * 17 + 1.1) > -.1 ? 1 : .35, out = vf === 0 || state.suceso?.kind !== 'apagon' ? 1 : scares === 'apagados' ? .7 : scares === 'suaves' ? .45 + .2 * stutter : .1 + .3 * stutter;
     // Scares squeeze the fog in; the candles fade with it.
-    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog; hemi.intensity = look.hemi[2] * (.2 + .8 * Math.min(1, Math.max(mood.light, mood.farol))); }
-    world.candles({ level: mood.light, out: mood.out, near: scene.fog.near, far: scene.fog.far });
+    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog * (.6 + .4 * out); hemi.intensity = look.hemi[2] * (.2 + .8 * Math.min(1, Math.max(mood.light, mood.farol))) * (.25 + .75 * out); }
+    world.candles({ level: mood.light * out, out: mood.out, near: scene.fog.near, far: scene.fog.far });
     world.update(t, state, dt, me);
     sky.update(t); shopSign.visible = vf === 0;
     // Other panas.
@@ -309,6 +326,20 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     // Honda shots, darts and paint.
     syncSimple(shots, state.shots, s => { const m = new THREE.Mesh(ballGeometry, new THREE.MeshBasicMaterial({ color: COLORS[s.seat % 8] })); return m; }, (m, s) => m.position.set(s.x, s.y, s.z), m => m.material.dispose());
     syncSimple(darts, state.darts, () => new THREE.Mesh(dartGeometry, dartMaterial), (m, d) => m.position.set(d.x, 1.1, d.z));
+    syncSimple(flares, state.flares || [], () => { const g = new THREE.Group(), glare = new THREE.Sprite(flareGlare); glare.scale.setScalar(1.6); glare.position.y = .3; g.add(flareStick(), glare); g.rotation.z = 1.2; return g; }, (m, s) => { m.position.set(s.x, s.y, s.z); m.children[1].scale.setScalar(1.3 + Math.sin(t * 27 + s.id) * .25); });
+    const rocks = state.rocks || []; rockMesh.count = rockRings.count = Math.min(ROCK_POOL, rocks.length);
+    rocks.slice(0, ROCK_POOL).forEach((r, i) => {
+      const k = Math.min(1, r.t / r.at);
+      rockAt.position.set(r.x, HEIGHT * (1 - k * k) + .3, r.z); rockAt.rotation.set(r.id, k * 3, r.id * 2); rockAt.scale.setScalar(1); rockAt.updateMatrix(); rockMesh.setMatrixAt(i, rockAt.matrix);
+      rockAt.position.set(r.x, .17, r.z); rockAt.rotation.set(0, 0, 0); rockAt.scale.setScalar(1.5 - k * .4); rockAt.updateMatrix(); rockRings.setMatrixAt(i, rockAt.matrix);
+    });
+    if (rockMesh.count) { rockMesh.instanceMatrix.needsUpdate = true; rockRings.instanceMatrix.needsUpdate = true; }
+    // Wading: rings spread from whoever moves through the flood.
+    rippleAt -= dt;
+    if (rippleAt <= 0 && me && vf > 0 && world.run.theme === 'inundada') {
+      rippleAt = .42;
+      for (const p of state.players) if (alive(p) && p.moving && floorOf(p.x) === vf && !(p.y < -1) && Math.hypot(p.x - me.x, p.z - me.z) < 16 && !world.layout.overPit(p.x, p.z)) waves.ring({ x: p.x, y: .15, z: p.z }, { color: 0xbfe8e8, startRadius: .15, maxRadius: 1.3, life: .6, yOffset: .02, opacity: .5 });
+    }
     for (const s of state.splats) if (!splats.has(s.id)) {
       const m = new THREE.Mesh(splatGeometry, splatMaterial(s.seat, s.id)), wall = s.nx || s.nz;
       m.position.set(s.x + (s.nx || 0) * .02, wall ? s.y : .03, s.z + (s.nz || 0) * .02);
@@ -337,7 +368,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         hands[i].rotation.set(-s * 1.2, 0, s * (i ? -.4 : .4));
       }
       pawMaterial.color.set(seatColor(me.seat));
-      headlamp.intensity = lookName === 'camp' ? 0 : (look.lampPower || 58) * mood.farol;
+      headlamp.intensity = lookName === 'camp' ? 0 : (look.lampPower || 58) * mood.farol * (.3 + .7 * out);
       handLight.intensity = (holds(me, 'farol') ? 9 : holds(me, 'sunCrown') ? 12 : 0) * (.4 + .6 * mood.farol) * (look.handPower ?? 1);
       motes.visible = lookName !== 'camp'; motes.userData.tick(t); motes.userData.strength(look.dust * mood.farol); motes.userData.scale(canvas.clientHeight * renderer.getPixelRatio());
       handLight.color.set(holds(me, 'sunCrown') ? 0xffd36a : look.hand || 0xffa850);
@@ -349,6 +380,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       poolAt = .25;
       const sources = [];
       const [candleColor, candlePower, candleReach] = look.candle || DEEP_LOOK.candle;
+      // A burning flare outranks every torch: it is why you threw it.
+      if (vf > 0) for (const s of state.flares || []) if (floorOf(s.x) === vf) sources.push({ x: s.x, y: s.y + .4, z: s.z, color: 0xff4a2a, power: 16, reach: 13, d: Math.hypot(s.x - me.x, s.z - me.z) - 14, flare: true });
       if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z) });
       for (const p of state.players) if (p.id !== me.id && alive(p) && floorOf(p.x) === vf && (holds(p, 'farol') || holds(p, 'sunCrown'))) sources.push({ x: p.x, y: 1.4, z: p.z, color: holds(p, 'sunCrown') ? 0xffd36a : look.hand || 0xffa850, power: 8, reach: 11, d: Math.hypot(p.x - me.x, p.z - me.z) - 6 });
       sources.sort((a, b) => a.d - b.d);
@@ -356,12 +389,12 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       // and the warm sources they displace are the farthest of the five.
       const glows = (world.floors.get(vf)?.glows || []).map(g => ({ ...g, power: MUSHROOM_LIGHT.power, reach: MUSHROOM_LIGHT.reach, d: Math.hypot(g.x - me.x, g.z - me.z) })).filter(g => g.d < MUSHROOM_LIGHT.within).sort((a, b) => a.d - b.d).slice(0, 2);
       sources.splice(POOL - glows.length, sources.length, ...glows);
-      pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); light.distance = s.reach; } });
+      pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; light.userData.flare = !!s?.flare; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); light.distance = s.reach; } });
     }
     // La codicia shows in the world: torches gutter and dust sifts from the ceiling.
     const greed = Math.min(4, Math.floor((state.codicia || 0) / 25));
     // A slow, uneven breathing on every flame, under the quick gutter.
-    pool.forEach((light, i) => { light.intensity = vf === 0 ? 0 : (light.userData.power || 0) * mood.light * (1 - greed * .1) * (.85 + Math.sin(t * (9 + greed * 4) + i * 2) * (.1 + greed * .06)) * (.9 + .1 * Math.sin(t * 1.3 + i * 1.7) * Math.sin(t * .37 + i)); });
+    pool.forEach((light, i) => { light.intensity = vf === 0 ? 0 : (light.userData.power || 0) * mood.light * (light.userData.flare ? 1 : out) * (1 - greed * .1) * (.85 + Math.sin(t * (9 + greed * 4) + i * 2) * (.1 + greed * .06)) * (.9 + .1 * Math.sin(t * 1.3 + i * 1.7) * Math.sin(t * .37 + i)); });
     dustAt -= dt;
     if (me && vf > 0 && greed > 0 && dustAt <= 0) {
       dustAt = 1.6 / greed;

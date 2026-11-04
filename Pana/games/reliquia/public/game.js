@@ -19,6 +19,7 @@ import { createEerieFx } from './eerie-fx.js';
 import { Expedition, BARKS, interaction } from './rules.js';
 import { spawnEnemy } from './enemies.js';
 import { startSwarm } from './swarm.js';
+import { startSuceso } from './sucesos.js';
 import { ExpeditionRoom } from './network.js';
 import { createView } from './view.js';
 import { createHud, money } from './hud.js';
@@ -88,8 +89,8 @@ function lobby() {
 
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.
 const SHOUTS = { seal: [loc('¡Se abrió la bajada!'), 'teal'], boss: [loc('¡Despertó algo grande!'), 'coral'], guardian: [loc('¡Guardián vencido!'), 'yellow'], 'silbon-down': [loc('¡Se fue al abismo!'), 'yellow'], jaguar: [loc('¡Jaguar vencido!'), 'yellow'],
-  curse: [loc('¡Maldición!'), 'coral'], collapse: [loc('¡Derrumbe!'), 'coral'], stalker: [loc('¡Los están cazando!'), 'coral'], down: [loc('¡Pana caído!'), 'coral'], reveal: [loc('¡Sala escondida!'), 'teal'] };
-const QUIET = new Set(['pick', 'hit', 'swing', 'shot', 'hurt', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch', 'search']);
+  curse: [loc('¡Maldición!'), 'coral'], collapse: [loc('¡Derrumbe!'), 'coral'], stalker: [loc('¡Los están cazando!'), 'coral'], down: [loc('¡Pana caído!'), 'coral'], reveal: [loc('¡Sala escondida!'), 'teal'], 'encargo-paid': [loc('¡Encargo cumplido!'), 'yellow'] };
+const QUIET = new Set(['suceso', 'encargo', 'pick', 'hit', 'swing', 'shot', 'hurt', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch', 'search']);
 function handle(e) {
   const mine = e.player === room.id, p = me(), seat = state.players.find(q => q.id === e.player)?.seat ?? 0;
   const near = p && e.player != null ? (() => { const q = state.players.find(q => q.id === e.player); return q && floorOf(q.x) === floorOf(p.x) ? Math.max(.25, 1 - Math.hypot(q.x - p.x, q.z - p.z) / 30) : 0; })() : 1;
@@ -123,6 +124,16 @@ function handle(e) {
     case 'pounce': { sfx.pounce(); if (p) view.shake(Math.max(0, 1 - Math.hypot(e.x - p.x, e.z - p.z) / 18)); view.waves.ring({ x: e.x, y: .1, z: e.z }, { color: 0xffc23d, maxRadius: 3 }); break; }
     case 'greed': sfx.greed(); view.shake(.4); shout(said, { tone: 'coral' }); break;
     case 'collapse': sfx.collapse(); view.shake(.9); break;
+    // What the jornada does on its own: the whole sentence is the shout.
+    case 'suceso': shout(said, { tone: 'coral' }); if (e.suceso === 'apagon') sfx.blackout(); else if (e.suceso === 'murcielagos') sfx.flap(); else sfx.shaking(); view.shake(.45); break;
+    case 'encargo': shout(said, { tone: 'teal' }); break;
+    case 'rock': { const d = p ? Math.hypot(e.x - p.x, e.z - p.z) : 99, close = p && floorOf(e.x) === floorOf(p.x) ? Math.max(0, 1 - d / 14) : 0; if (close) { sfx.rock(close); view.shake(close * .7); view.puffs.spawn({ x: e.x, y: .3, z: e.z }, { color: 0xb8a888, count: 8, spread: 1, size: .7, rise: 1, life: .9 }); } break; }
+    case 'crack': if (p && floorOf(e.x) === floorOf(p.x)) { sfx.trap(); view.puffs.spawn({ x: e.x, y: 4.2, z: e.z }, { color: 0xc9b48a, count: 6, spread: .5, size: .4, rise: -2.8, life: 1 }); } break;
+    case 'spores': if (p && floorOf(e.x) === floorOf(p.x)) { sfx.spores(); view.puffs.spawn({ x: e.x, y: .5, z: e.z }, { color: 0x9fe05a, count: 14, spread: 1.6, size: 1, rise: .7, life: 2 }); } break;
+    case 'flare': sfx.flare(); break;
+    case 'rope': case 'tied': if (near) sfx.rope(); break;
+    case 'twin': sound.clickDown(); break;
+    case 'encargo-paid': sfx.bank(true); popCounter($('mangos')); break;
     case 'laugh': sfx.laugh(); break;
     case 'level': sfx.win(); shout(loc('¡Jornada {n} lista!', { n: e.level }), { tone: 'yellow' }); break;
     case 'buy': sfx.bank(false); break;
@@ -212,7 +223,7 @@ function frame(now) {
   // Keep the eyes on your pana after the run ends; never draw your own body.
   view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
   const theme = view.world.run.theme;
-  const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : 'stone' : 'dirt';
+  const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : theme === 'inundada' ? 'water' : theme === 'hongos' ? 'dirt' : 'stone' : 'dirt';
   ambience.update(state, p, view.heading, dt, theme, !samples.ownSteps(surface));
   heard.state = state; heard.me = p; heard.heading = view.heading; heard.paused = menu.isOpen; heard.theme = theme; heard.floor = p ? view.world.floors.get(floorOf(p.x)) : null; heard.run = view.world.run;
   samples.update(dt, heard);   // wind, drips, chandeliers, and hiding spots creaking as a search starts
@@ -252,6 +263,8 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
     g.swarm = null; g.swarmSim = null;
     const started = startSwarm(g, floorOf(p.x), n); room.publish(); return started;
   },
+  // Force a suceso now (apagon, murcielagos, derrumbe, creciente, esporada): host only.
+  suceso(kind) { const g = room.game; if (!room.isHost || !g) return false; const ok = startSuceso(g, kind); room.publish(); return ok; },
   fx, samples,
   // The Tab / View layer: reliquia.info (open?) and reliquia.showInfo(true | false).
   get info() { return hud.infoOpen; }, showInfo(on) { intel.release(); if (on) intel.toggle('debug'); },

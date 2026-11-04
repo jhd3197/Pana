@@ -21,6 +21,10 @@ export const RUIN_PALETTES = {
   maldita: { floor: 0xc9a0b8, bricks: [0xa7769a, 0x936486, 0xb98bab], band: 0xffc23d, ceiling: 0x3c2840, glyph: 0xff7adf },
   // La biblioteca sepultada: cold, worn dark boards, grey-blue stone, a dark timber band.
   biblioteca: { floor: 0x5a5250, bricks: [0x4a5260, 0x434a56, 0x535b67], band: 0x2a2226, ceiling: 0x1c1f26, glyph: 0x8a96a8, planks: true, glyphs: false },
+  // Fosa's biomes: drowned teal stone, a violet fungal cave, a sun-bleached fallen temple.
+  inundada: { floor: 0x4c6a68, bricks: [0x3f6f70, 0x356062, 0x4c7f7c], band: 0x9a7a3a, ceiling: 0x14282c, glyph: 0x4fe0d0 },
+  hongos: { floor: 0x5a5478, bricks: [0x51467a, 0x463c6c, 0x62578c], band: 0x46c0a0, ceiling: 0x1c1834, glyph: 0x7affc0 },
+  templo: { floor: 0xc0a078, bricks: [0xb88f62, 0xa67e54, 0xc8a074], band: 0xb04a2a, ceiling: 0x4a3424, glyph: 0xffa24a },
 };
 
 // Stone surfaces, painted once and shared: light grey grain, chips, cracks

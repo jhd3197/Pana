@@ -30,6 +30,12 @@ export const ITEMS = {
   farol: { name: locKey('Farol'), size: 'hand', value: 0, tool: true, model: 'expeditionLantern' },
   botiquin: { name: locKey('Botiquín'), size: 'hand', value: 0, tool: true, model: 'botiquin' },
   marcadora: { name: locKey('Marcadora de pintura'), size: 'hand', value: 0, tool: true, model: 'createPaintMarker' },
+  // Thrown, burns on the floor: nothing that fears light comes near it.
+  bengala: { name: locKey('Bengala'), size: 'hand', value: 0, tool: true, model: 'flareStick' },
+  // Ties a hanging rope or a rope bridge at an iron stake, once.
+  cuerda: { name: locKey('Cuerda'), size: 'hand', value: 0, tool: true, model: 'coiledRope' },
+  // El encargo: what someone paid for. Worth a little; delivering it is what pays.
+  encomienda: { name: locKey('El encargo'), size: 'hand', value: 50, model: 'sealedParcel' },
   // Enchanted artifacts: a power with a catch, worth money if they reach the truck.
   echoMask: { name: locKey('Máscara de los ecos'), size: 'hand', value: 220, artifact: true, model: 'echoMask', good: locKey('Revela salas escondidas'), bad: locKey('Llama fantasmas') },
   sandals: { name: locKey('Alpargatas del mensajero'), size: 'hand', value: 200, artifact: true, model: 'messengerSandals', good: locKey('Corres mucho más'), bad: locKey('No frenas a tiempo') },

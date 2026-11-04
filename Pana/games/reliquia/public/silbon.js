@@ -44,7 +44,7 @@ const setMode = (g, e, mode) => { e.mode = mode; e.modeT = 0; g.paths.delete(e.i
 function preyInSight(g, e) {
   const f = floorOf(e.x); let best = null, near = Infinity;
   for (const p of g.players) {
-    if (!standing(p) || floorOf(p.x) !== f || p.hidden) continue;
+    if (!standing(p) || floorOf(p.x) !== f || p.hidden || p.rope || g.layout.lowAt(p.x, p.z)) continue;
     const d = distance(p, e); if (d >= near) continue;
     if (d < SILBON.feel || (d < SILBON.sight && g.layout.sightClear(e, p, g))) { near = d; best = p; }
   }

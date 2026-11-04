@@ -52,7 +52,14 @@ const standing = p => !p.downed && !p.spectator;
 // Is this enemy lit? 'beam' when a farol points at it, 'glow' near a crown or brazier.
 export function lightOn(g, e) {
   const f = floorOf(e.x);
-  let glow = g.layout.run.lights.some(l => l.floor === f && (l.x - e.x) ** 2 + (l.z - e.z) ** 2 < 25);
+  // A blackout puts out every torch; a flare burns through it.
+  let glow = g.suceso?.kind !== 'apagon' && g.layout.run.lights.some(l => l.floor === f && (l.x - e.x) ** 2 + (l.z - e.z) ** 2 < 25);
+  for (const s of g.flares || []) {
+    if (floorOf(s.x) !== f) continue;
+    const d = Math.hypot(s.x - e.x, s.z - e.z);
+    if (d < 4.5) return 'beam';
+    if (d < 9) glow = true;
+  }
   for (const p of g.players) {
     if (!standing(p) || floorOf(p.x) !== f) continue;
     const d = distance(p, e);
@@ -72,7 +79,8 @@ export function spawnEnemy(g, kind, x, z, extra = {}) {
   if (['mummy', 'phantom', 'bat', 'spider', 'lector'].includes(kind) && live.length >= 18) return null;
   const here = n => live.filter(e => e.kind === kind && floorOf(e.x) === floorOf(x)).length >= n;
   if ((kind === 'lector' && here(lectorCap(g.level))) || (kind === 'estatua' && here(ESTATUA_CAP)) || (kind === 'silbon' && here(1))) return null;
-  if (!g.layout.walkable(x, z, g, .5)) return null;
+  // Nothing walks on a hanging platform but the panas who climbed down to it.
+  if (!g.layout.walkable(x, z, g, .5) || g.layout.lowAt(x, z)) return null;
   const k = KINDS[kind], s = scaleFor(g), roster = g.players.filter(p => !p.spectator).length;
   const hp = (k.hp + (k.scale || 0) * Math.max(0, roster - 1)) * s.hp * (1 + .22 * Math.max(0, (g.level || 1) - 1));
   const e = { id: ++g.enemyId, kind, x, z, h: 0, hp, maxHp: hp, cooldown: .8, windup: 0, stun: 0, hit: 0, awake: !['guardian', 'jaguar'].includes(kind),
@@ -85,6 +93,8 @@ function targetFor(g, e) {
   let best = null, score = Infinity;
   for (const p of g.players) {
     if (!standing(p) || floorOf(p.x) !== f) continue;
+    // Out of a walker's reach down there or on a rope; wings do not care.
+    if (!KINDS[e.kind].flying && (p.rope || g.layout.lowAt(p.x, p.z))) continue;
     const d = distance(p, e); if (d > range) continue;
     const s = d - (holds(p, 'sunCrown') ? 8 : 0) - (e.called === p.id ? 6 : 0);
     if (s < score) { score = s; best = p; }
@@ -94,7 +104,7 @@ function targetFor(g, e) {
 
 export function walk(g, e, target, speed, dt) {
   let nav = g.paths.get(e.id);
-  if (!nav || nav.until < g.time || distance(nav.goal, target) > 3) { nav = { path: g.layout.findPath(e, target, g), goal: { x: target.x, z: target.z }, until: g.time + 1 + (e.id % 5) * .1 }; g.paths.set(e.id, nav); }
+  if (!nav || nav.until < g.time || distance(nav.goal, target) > 3) { const path = g.layout.findPath(e, target, g); nav = { path, goal: { x: target.x, z: target.z }, until: g.time + (path.length ? 1 : 3) + (e.id % 5) * .1 }; g.paths.set(e.id, nav); }
   while (nav.path.length && distance(e, nav.path[0]) < .6) nav.path.shift();
   const goal = nav.path[0]; if (!goal) return;
   const d = distance(e, goal);
