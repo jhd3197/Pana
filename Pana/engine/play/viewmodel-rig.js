@@ -48,7 +48,7 @@ const WRIST = { fist: [.016, -.004, .082], open: [0, -.002, .076] };
 // stays readable in a dark game.
 export function createHandKit({ sleeve = 0xb07a4a, glove = 0x3a2a20, cuff = 0xc9a35a, scale = 1, glow = 0 } = {}) {
   const sleeveMaterial = new THREE.MeshStandardMaterial({ color: sleeve, emissive: sleeve, emissiveIntensity: glow, roughness: .85, flatShading: true });
-  const gloveMaterial = new THREE.MeshStandardMaterial({ color: glove, emissive: glove, emissiveIntensity: glow, roughness: .9 });
+  const gloveMaterial = new THREE.MeshStandardMaterial({ color: glove, emissive: glove, emissiveIntensity: glow * 3.5, roughness: .9 })   // dark, so it needs more to read;
   const cuffMaterial = new THREE.MeshStandardMaterial({ color: cuff, emissive: cuff, emissiveIntensity: glow, roughness: .5, metalness: .25, flatShading: true });
   const fist = fistGeometry(), open = openGeometry();
   // Wrist at y 0, elbow at y 1: the sleeve's length is its y scale.
