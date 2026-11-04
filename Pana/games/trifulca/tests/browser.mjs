@@ -7,8 +7,9 @@ import { launch, openGame, waitFor } from '../../../tests/browser-kit.js';
 
 const browser = await launch(), room = `trifulca-${Date.now()}`;
 try {
-  const host = await openGame(browser, 'trifulca', { name: 'Ana', room, query: 'debug' });
-  const guest = await openGame(browser, 'trifulca', { name: 'Bruno', room, query: 'debug' });
+  // Both wear something on the head: a hat of the old look and a wardrobe one with goggles.
+  const host = await openGame(browser, 'trifulca', { name: 'Ana', room, query: 'debug', avatar: { hat: 'llanero', hatColor: '#7a5230' } });
+  const guest = await openGame(browser, 'trifulca', { name: 'Bruno', room, query: 'debug', avatar: { wardrobe: { top: 'franela', hat: 'copa', glasses: 'piloto', neck: 'none', back: 'none', extras: {} } } });
   await waitFor(host, () => trifulcaDebug.room.state.players.length === 2);
   assert.equal(await host.evaluate(() => trifulcaDebug.world.camera.isPerspectiveCamera), true, 'the barrio is a 3D scene');
   assert.equal(await host.evaluate(() => trifulcaDebug.room.state.options.arena), 'rotar', 'Varios is the default');
@@ -22,6 +23,11 @@ try {
   assert.deepEqual(await guest.evaluate(() => trifulcaDebug.room.state.bodies.map(b => b.id).sort()), await host.evaluate(() => trifulcaDebug.room.state.players.map(p => p.id).sort()));
   await host.evaluate(() => { trifulcaDebug.room.game.time = .05; });
   await waitFor(guest, () => trifulcaDebug.room.state.phase === 'fight');
+  // Each client sees its own pana and the remote one in the helmet, and nothing else.
+  for (const page of [host, guest]) await waitFor(page, () => {
+    const heads = [...trifulcaDebug.world.panas.values()].map(entry => entry.pana.character.head.children.filter(o => o.visible));
+    return heads.length === 2 && heads.every(parts => parts.some(o => o.name === 'hat:casco') && !parts.some(o => !o.name || (/^(hat|outfit|glasses|accessory):/.test(o.name) && o.name !== 'hat:casco')));
+  });
   // The side chooser keeps the default side while a 1v1 stays on its line.
   assert.equal(await guest.evaluate(() => trifulcaDebug.world.cameraSide), 0, 'a 1v1 keeps the default camera side');
   const body = () => trifulcaDebug.room.state.bodies.find(b => b.id === trifulcaDebug.room.id);

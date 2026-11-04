@@ -11,6 +11,9 @@ becomes the GitHub release's notes.
 - **Reliquia: ahora bajas con traje de explorador y casco de vidrio.**
   Cada pana lleva el color de su puesto, con mochila, mangueras, botas y una
   lamparita; la cara se ve por el vidrio. Solo cambia el look, no cómo se juega.
+- **Trifulca: los peleadores vuelven a verse como panas, y solo con el casco.**
+  Cabeza y brazos casi como antes, guantes más grandes para leer cada golpe. Ni
+  sombrero, ni lentes, ni nada asoma por el casco; al bajar del ring vuelve tu ropa.
 - **Reliquia: El Silbón no muere. Piérdelo, escóndete o llévalo al abismo.**
   Ningún arma lo mata. Si te pierde de vista te busca y se va; caza por el oído, y
   al correr hacia ti por encima del foso se cae y abre el sello. La sala del foso

@@ -223,13 +223,18 @@ duplicated. Reduced motion disables HUD transitions, not gameplay messages.
   at the victim's centre it sat inside the helmet, mostly hidden. It grows with
   the chain. Heavy blows add `hitStop` (fighters' poses freeze 50–80 ms, the host
   keeps simulating) and camera shake.
-- Fight proportions live in `fighter-look.js`: `HEAD_SIZE` .38 (the shared
-  character's is .58), arms ×`ARM_LENGTH` hanging and ×`ARM_GUARD` in guard, since
-  a straight arm that long pokes the rival at the body gap. A punch's arm stretches
-  to `punchLength(gap)`, so the glove stops at the rival at any distance.
-- Hats: `addLegacyHat` adds bare unnamed meshes to the head, not a `hat:` group,
-  so the old look's pesca, lana, corona and llanero stayed on under the helmet.
-  `createPana` hides them with the rest. The ref's llanero hat is on purpose.
+- Fight proportions live in `fighter-look.js`, close to the classic pana:
+  `HEAD_SIZE` .5 (the shared character's is .58; there two helmets intersect at the
+  1 m body gap, and at .38 the shell over a tiny head read as a football player),
+  arms ×`ARM_LENGTH` 1.05 hanging and ×`ARM_GUARD` 1.03 in guard, gloves
+  ×`GLOVE_SIZE` 1.2. A punch's arm stretches to `punchLength(gap)`, so the glove
+  stops at the rival at any distance.
+- Headwear: `helmetSwap` hides every child of the head except the head's own parts,
+  the `face:` extras and the helmet, and restores each one's visibility on `off()`.
+  It lists what stays rather than what goes because worn things come in many forms:
+  `hat:` groups, `outfit:` headwear, `glasses:`, `accessory:glasses` and
+  `addLegacyHat`'s unnamed meshes. A new part of the bare head has to join
+  `BARE_HEAD`. The ref's llanero hat is on purpose.
 - Props: there was no bat; `bate` is now a prop like the rest (`woodenBat`, shared
   with Chapita). Pick-up range is `PICKUP` 1.7 m. The old rule refused any pick-up
   with a foe within 1.3 m, which with bodies a metre apart meant nearly always.
