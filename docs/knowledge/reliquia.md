@@ -771,8 +771,46 @@ modest runs and wipes reaches Leyenda (4000 XP) in about 50 dives.
 
 The rank-up toast uses its own `.pk-toast` (`#rank-toast`): Fosa's `#toast` has
 z-index 5 and sits under the results layer. `#rank-toast` is raised to 8% so it
-clears the card's title. The `unlocks` ids in `RANKS` are stable names; nothing
-reads them yet.
+clears the card's title. The `unlocks` ids in `RANKS` are stable names; the
+`pacto:*` ones gate the lobby (below), the rest nothing reads yet.
+
+## Pactos and Calor (`pactos.js`)
+
+Optional rules a squad takes on before a dive. Each has a Calor value; the sum is
+the one number shown (a chip in the lobby, `Calor +N %` beside the XP on the
+results). Each Calor adds 10 % to `payout` (a wipe's share too) and to the XP.
+
+| Pact | Calor | Rank | Effect | Hook |
+|---|---|---|---|---|
+| `cuota` Cuota apretada | 1 | 2 | quota ×1.25, at most 80 % of the floor's worth | `pactoQuota` in `start`, `completeLevel` |
+| `turno` Turno corto | 1 | 3 | every jornada's encargo is `turno`, clock ×0.7 | `dealEncargo`, first descent |
+| `tienda` Tienda cara | 1 | 4 | shop prices ×1.5, rounded up | `interaction`, `buy` |
+| `codicia` Codicia voraz | 2 | 5 | codicia rises ×1.35 | `greed()` |
+| `enjambre` Enjambre | 2 | 6 | swarm size ×1.5 under `SWARM.most`, chance +20 points | `swarmSize`, `swarmDue` |
+| `silbon` Silbón madruga | 3 | 7 | it gets up 20 s after the first descent | `riseSilbon` |
+
+A pact is one boolean room option, `pacto:<id>`, the same string as its rank
+unlock. `options.js` `FIELDS` holds them, so the host's `configure` accepts any
+real pact whatever the rank: rank only decides what a menu offers. `fieldsFor`
+gives a locked pact `visibleWhen` on its own value, so it stays out of the menu
+until it is on. Guests therefore see what the host chose, and a new host of lower
+rank can turn it off. No engine change was needed.
+
+- **Why the 80 % limit.** The way up needs the quota met, so a raised quota past
+  what a floor holds would strand a squad. `floorWorth(run)` is its loot plus
+  what its hiding spots keep. The limit only bites deep with a big roster, and
+  never takes the quota below the plain one.
+- **`silbonAt`.** 0 nothing due, above 0 when it rises, below 0 it has risen. The
+  pit room's own wake-up skips the Silbón once it has risen: the cap alone would
+  raise a second after the first was dropped.
+- **Why these pacts.** Each changes one tunable the host already owns. None
+  should give free Calor: a revive-time pact would pay a solo diver for nothing,
+  and a shorter `turno` alone would only bite on jornadas that deal that job,
+  hence `turno` forces it.
+- Bolívar `payout` is what the bonus raises. The `extracted` line still says what
+  is in the truck (`haul`), and in-run mangos are not multiplied.
+- "¡Otra expedición!" starts straight from the results with the same options,
+  since the lobby only shows before a room's first dive.
 
 ## Networking
 
