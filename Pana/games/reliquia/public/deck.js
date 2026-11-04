@@ -109,7 +109,7 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
   const run = { seed, floors, depth, theme, solids: [], spots: [], nooks: [], rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
     sleepers: [], obstacles: [], lights: [], decor: [], pits: [], bridges: [], ropes: [], puffs: [], cracks: [], twins: [], encargo: encargoFor(seed, depth) };
   const id = { loot: 0, chest: 0, plate: 0, sleeper: 0, spot: 0 };
-  // ---- Camp: outdoors, the truck and the mine mouth at its north edge.
+  // ---- Camp: a cavern (camp-cave.js), the truck and the mine mouth at its north edge.
   run.rooms.push({ id: 'camp', floor: 0, kind: 'camp', x: 0, z: 14, w: 36, d: 32, name: FLOOR_NAMES[0], rect: CAMP_RECT });
   // The mine mouth is a short gallery with the montacargas at its end.
   const campStub = { id: 'stub-camp', kind: 'shaft', floor: 0, rect: [-2.2, -9.2, 2.2, -1.9], axis: 'z', a: -2, b: -9.2, from: 0, to: 0 };

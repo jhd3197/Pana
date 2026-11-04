@@ -30,7 +30,7 @@ const OPEN = {
 };
 // A search done: a soft settle.
 const DONE = { wardrobe: 'thud', trunk: 'thud', drawer: 'thud', ladder: 'thud', shelf: 'page', sheet: 'page', debris: 'page', lantern: 'chain' };
-const WIND = { biblioteca: .045, mina: .028, camp: .03, templo: .05, hongos: .018, inundada: .022 };
+const WIND = { biblioteca: .045, mina: .028, camp: .04, templo: .05, hongos: .018, inundada: .022 };
 const between = (a, b) => a + Math.random() * (b - a);
 
 export function createSamples() {
@@ -60,7 +60,6 @@ export function createSamples() {
     if (!playing) return;
     ear.x = body.x; ear.z = body.z; ear.yaw = heading;
     searchesStarted(state.searching, seen, opened);
-    if (!deep) return;
     // Water finds its way down: a drop somewhere near, quieter among the books.
     dripIn -= dt;
     if (dripIn <= 0) {

@@ -1,4 +1,4 @@
-// Reliquia's world from a generated run: the sunlit camp with the truck, and
+// Reliquia's world from a generated run: the camp's cavern with the truck, and
 // each floor's galleries built the first time anyone can reach them. Every
 // prop comes from the shared model library (Pana Studio). Collision never
 // reads this file: it all comes from layout.js, built from the same deck.
@@ -18,22 +18,17 @@ import { crystalCluster } from '/engine/models/props/crystals.js';
 import { glowMushrooms, mushroomHalos } from '/engine/models/props/glow-mushrooms.js';
 import { expeditionJeep, expeditionTent, expeditionCampfire, supplyPile, campBench, investigationTable } from '/engine/models/props/expedition-camp.js';
 import { lajaRock } from '/engine/models/props/amazonas.js';
-import { rockyCliff } from '/engine/models/props/mountain.js';
 import { china } from '/engine/models/props/china.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { bookcases, bookcaseDoor, libraryLadder, readingTable, scribeDesk, lectern, candelabra, candleStick, chandelier, hangingLantern, armchair, tallWindow, tornCurtain, cobwebs, candleFlames, rugs, groundMist, bookPiles } from '/engine/models/props/reliquia-library.js';
 import { writingDesk, travelTrunk, drapedFurniture, oldWardrobe, bookHeap, rollingShelf, rollingLadder, oldLantern, oldBook } from '/engine/models/props/reliquia-hideouts.js';
 import { createPaintMarker } from '/engine/models/props/paintball.js';
 import { marketStall } from '/engine/models/props/plaza.js';
-import { palm } from '/engine/models/vegetation/palm.js';
-import { fern } from '/engine/models/vegetation/fern.js';
-import { ceiba } from '/engine/models/vegetation/ceiba.js';
-import { monstera } from '/engine/models/vegetation/monstera.js';
-import { heliconia } from '/engine/models/vegetation/heliconia.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { hideNook } from '/engine/models/props/reliquia-boss.js';
 import { giantMushroom, puffball, hangingRope, ropeAnchor, narrowBeam, coiledRope, flareStick, sealedParcel, ceilingCrackMark, floodSurface } from '/engine/models/props/fosa-biomes.js';
+import { createCampCave } from './camp-cave.js';
 import { layoutFor } from './layout.js';
 import { visibleItems, liftView, SHOP, SHOP_AT, shopSpot } from './rules.js';
 import { ITEMS, ARTIFACTS } from './items.js';
@@ -41,6 +36,8 @@ import { TRUCK, TABLE, HEIGHT, CAGE, floorOf, inRect } from './deck.js';
 import { onPlate } from './sucesos.js';
 
 const PALETTES = ['sol', 'jade', 'maldita'];
+// The camp's gallery: damp dark stone, nothing sunny about it.
+const GALLERY_STONE = { floor: 0x5c5850, bricks: [0x4e4c48, 0x45433f, 0x575450], band: 0x3a3226, ceiling: 0x1c1a1c, glyph: 0x8a7a58 };
 export const paletteFor = (floor, theme = 'mina') => theme !== 'mina' && RUIN_PALETTES[theme] ? RUIN_PALETTES[theme] : RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
 const FACTORIES = { ...treasure, oldBook, flareStick: () => flareStick({ lit: false }), coiledRope, sealedParcel, mineCart: () => mineCart({ load: 'gold', hollow: true }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
 const GLOW = { tool: 0xfff1d6, treasure: 0xffc23d, big: 0xffd36a, junk: 0x9aa4b0 };
@@ -71,8 +68,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
   // ---------- Camp ----------
   const camp = new THREE.Group(); camp.name = 'Campamento'; group.add(camp);
   const campStatic = new THREE.Group();
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(70, 48), mat(0x7fb257, { roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -.04; ground.receiveShadow = true; camp.add(ground);
-  const clearing = new THREE.Mesh(new THREE.CircleGeometry(15, 40), mat(0xd9b77c, { roughness: 1 })); clearing.rotation.x = -Math.PI / 2; clearing.position.set(0, .02, 13); clearing.receiveShadow = true; camp.add(clearing);
+  const cave = createCampCave({ halo }); camp.add(cave); animated.push(cave);
   const truck = place(camp, expeditionJeep(), TRUCK.x, 0, TRUCK.z, TRUCK.h, 1.25);
   const truckRing = new THREE.Mesh(new THREE.RingGeometry(4.3, 4.6, 64), new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: .6, depthWrite: false })); owned.add(truckRing.material);
   truckRing.rotation.x = -Math.PI / 2; truckRing.position.set(TRUCK.x, .04, TRUCK.z); camp.add(truckRing);
@@ -80,30 +76,18 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
   place(campStatic, investigationTable(), TABLE.x, 0, TABLE.z, 0);
   place(campStatic, expeditionTent({ color: 'mustard' }), -9, 0, 22, .4);
   place(campStatic, expeditionTent({ color: 'olive', seed: 4 }), -14, 0, 14, 1.2);
-  const fire = place(camp, expeditionCampfire({ light: true }), 3, 0, 26); animated.push(fire);
+  const fire = place(camp, expeditionCampfire(), 3, 0, 26); animated.push(fire);
   place(campStatic, campBench({ length: 2 }), 0, 0, 25, .3); place(campStatic, campBench({ length: 2 }), 6, 0, 26.5, -.4);
   place(campStatic, supplyPile({ seed: 5 }), 14, 0, 11, -.6);
   place(campStatic, mineCrate({ seed: 3 }), -3, 0, 4, .4); place(campStatic, mineCrate({ seed: 5, tnt: true }), -4, 0, 2.6, -.2);
-  // The mine is a level gallery into the hill: an open mouth, timber sets
-  // inside and rock on both flanks, with the tepuy wall further back.
+  // The mine is a level gallery into the rock: an open mouth and timber sets inside.
   place(campStatic, minePortal({ name: 'LA MINA DEL SOL', niche: false }), 0, 0, -1.6, 0);
   place(campStatic, mineSupport({ width: 3.9, height: 3.8, lantern: true }), 0, 0, -3.8);
-  for (const s of [-1, 1]) place(campStatic, rockyCliff({ seed: 60 + s, width: 20, height: 10, depth: 8 }), s * 14.9, 0, -7.2, 0, 1.2);
   for (const [x, z, r] of [[-4, -2.2, 1.6], [4.2, -2.4, 1.4]]) place(campStatic, lajaRock({ seed: x * 13 + 5, radius: r, flat: .8 }), x, 0, z);
-  place(campStatic, lajaRock({ seed: 77, radius: 3.4, flat: .5 }), 0, 4.9, -8);
   place(camp, treasure.liftShaft({ below: 18, above: 5 }), run.lifts[0].x, 0, run.lifts[0].z, run.lifts[0].h);
   for (const pad of run.cargo.filter(c => c.floor === 0)) place(camp, treasure.cargoLift({ height: 6 }), pad.x, 0, pad.z, Math.PI / 2);
-  // The tepuy wall rises behind the mine; the selva closes the camp in.
-  for (let i = -3; i <= 3; i++) place(campStatic, rockyCliff({ seed: 54 + i, width: 20, height: 12, depth: 6 }), i * 17, 0, -24 - Math.abs(i) * 2, 0, 2.2);
-  for (let i = 0; i < 26; i++) {
-    const a = Math.PI * .1 + (i / 26) * Math.PI * 1.8, r = 24 + (i % 3) * 4, x = Math.sin(a) * r, z = 12 - Math.cos(a) * r;
-    if (z < -4) continue;
-    const plant = i % 4 === 0 ? ceiba({ seed: i + 3 }) : i % 4 === 1 ? palm({ seed: i, h: 8 + i % 3 }) : i % 4 === 2 ? monstera({ seed: i }) : heliconia({ seed: i });
-    place(campStatic, plant, x, 0, z, i, i % 4 === 0 ? 1.1 : 1.3);
-  }
-  for (let i = 0; i < 16; i++) { const a = i * 2.4, r = 16 + (i % 4); place(campStatic, fern({ seed: i + 9 }), Math.sin(a) * r, 0, 13 + Math.cos(a) * r, i, 1.4); }
-  for (const [x, z, r] of [[-17, -1, 2.4], [16, 4, 2], [18, 22, 2.8], [-18, 26, 2.2]]) place(campStatic, lajaRock({ seed: x * 7, radius: r }), x, 0, z);
-  const mouth = ruinShell({ inside: (x, z) => floorOf(x) === 0 && run.stubs.some(s => s.floor === 0 && inRect(x, z, s.rect)), ground: L.groundAt, open: (x, z) => z > -2, solid: (x, z) => !inShaft(0, x, z), sky: (x, z) => inShaft(0, x, z, .4), bounds: [-4, -16, 4, 0], palette: RUIN_PALETTES.sol, seed: 3, tile: 1 });
+  for (const [x, z, r] of [[-17, -1, 2.4], [18, 22, 2.8], [-18, 26, 2.2]]) place(campStatic, lajaRock({ seed: x * 7, radius: r }), x, 0, z);
+  const mouth = ruinShell({ inside: (x, z) => floorOf(x) === 0 && run.stubs.some(s => s.floor === 0 && inRect(x, z, s.rect)), ground: L.groundAt, open: (x, z) => z > -2, solid: (x, z) => !inShaft(0, x, z), sky: (x, z) => inShaft(0, x, z, .4), bounds: [-4, -16, 4, 0], palette: GALLERY_STONE, seed: 3, tile: 1 });
   camp.add(mouth); owned.add(mouth);
   const campBatch = bake(campStatic, { cellSize: 30 }); campStatic.traverse(o => o.geometry?.dispose()); camp.add(campBatch);
 
@@ -662,5 +646,5 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       if (out) u.blowOut(out.x, out.z, out.r, out.amount); else u.blowOut(0, 0, 1, 0);
     }
   }
-  return { group, update, dispose, buildFloor, candles, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
+  return { group, update, dispose, buildFloor, candles, campLamps: cave.userData.lamps, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
 }
