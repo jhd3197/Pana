@@ -1,4 +1,4 @@
-import { SDFModel, ell, cone } from '/engine/models/fauna/farm/sculpt-kit.js';
+import { SDFModel, ell, cone } from '/engine/models/fauna/farm/rig.js';
 import { makeAnimal } from '/engine/models/fauna/farm/rig.js';
 
 // Horse/chicken/cow sculpt recipes adapted from threejs-procedural-animals (MIT).
