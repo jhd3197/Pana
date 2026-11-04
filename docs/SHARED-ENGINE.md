@@ -388,6 +388,34 @@ power)` is how hard a blast that far away shakes you.
 
 Used by: Pepazo (the first-person camera and the viewmodel kick), Capis a Pintazos (the side camera's kick and blast shake).
 
+### What you hold in first person (hands, sway, bob, swing)
+
+`engine/play/viewmodel.js` (pure, nothing allocated per frame) is the motion:
+`createHeldMotion()` keeps one hand's clock (`equip` raises a new item from below,
+`step` eases the sprint, `swing` starts a blow when a count goes up, `carry` writes
+the bob, breathing, sprint carry, air dip and wall push), `swingPose` plays a pose
+table (`MELEE_SWING`, or `swingTable(rest, offsets)` for your own) and `applyHeld`
+puts it on an object (`side: -1` mirrors a left hand, `spread` brings it in on a
+portrait screen). A row like `MELEE_CARRY` tunes how much of each it uses.
+`engine/play/viewmodel-rig.js` (Three.js) is the hand: `createHandKit({ sleeve, glove,
+cuff, scale, glow })` shares its geometries and materials, `kit.hand({ parent, side })`
+makes a glove, cuff and sleeve (three draws, no shadows, no lights) with a `slot` for
+the item, `setGrip('fist' | 'open' | 'cup')`, `follow(object)` to wrap another
+object's pose, and a sleeve that always reaches a fixed elbow off screen, however
+the hand turns. Tests: `engine/tests/viewmodel.test.js`.
+
+```js
+const kit = createHandKit({ sleeve: color }), rig = kit.hand({ parent: camera }), motion = createHeldMotion(), pose = [], carry = {};
+rig.slot.add(model);   // +Y runs up through the fist
+motion.equip(item.id); motion.step(dt, { sprint, down });
+swingPose(motion.swing(dt, { swings, windup, recovery }), windup, recovery, pose);
+applyHeld(rig.hand, pose, motion.carry(carry, { bob, sway, air, push })); rig.update();
+```
+
+Used by: Reliquia (both hands, a grip per item in `games/reliquia/public/grips.js`),
+Pepazo (melee weapons in the shared hand, in the match and on the range; its markers
+use the motion with their own recoil, reload and aim, and keep their own hands).
+
 ### Explosions, smoke trails and tracers
 
 `engine/play/blast-fx.js` (Three.js). `createBlastFx(scene, puffs)`: `boom({ x, z,
