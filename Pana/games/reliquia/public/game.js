@@ -29,6 +29,7 @@ import { sfx } from './sounds.js';
 import { createAmbience } from './ambience.js';
 import { createSamples } from './samples.js';
 import { createPresence } from './presence.js';
+import { createFosaRecord } from './record.js';
 import { floorOf, jornadaName, themeOf } from './deck.js';
 import { ITEMS, say } from './items.js';
 import { loc } from '/engine/i18n.js';
@@ -41,6 +42,7 @@ const canvas = $('world'), view = createView(canvas), hud = createHud(), ambienc
 // Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
 let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares); view.scares = scares;
 const presence = createPresence({ view, ambience, samples });
+const record = createFosaRecord({ lobby: $('lobby-record'), end: $('result-record'), line: $('record-line') });
 view.swarm.onHiss = (x, z) => ambience.at('slither', me(), view.heading, x, z, 16);
 const fx = createEerieFx({ view, ambience, samples, dread: v => { const r = Math.round(v * 20) / 20; if (r !== dreadShown) { dreadShown = r; $('dread').style.opacity = r; } } });
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
@@ -140,7 +142,7 @@ function handle(e) {
     case 'twin': sound.clickDown(); break;
     case 'encargo-paid': sfx.bank(true); popCounter($('mangos')); break;
     case 'laugh': sfx.laugh(); break;
-    case 'level': sfx.win(); shout(loc('¡Jornada {n} lista!', { n: e.level }), { tone: 'yellow' }); break;
+    case 'level': sfx.win(); shout(record.report(state, room.id) ? loc('¡Récord roto!') : loc('¡Jornada {n} lista!', { n: e.level }), { tone: 'yellow' }); break;
     case 'buy': sfx.bank(false); break;
     case 'cargo': sfx.lift(); break;
     case 'delivered': sfx.bank(true); popCounter($('mangos')); if (e.met) shout(loc('¡Cuota lista! Al montacargas'), { tone: 'teal' }); break;
@@ -175,6 +177,7 @@ function receive(next) {
     phase = state.phase; menu.close(); clearInput(); document.body.classList.toggle('playing', phase === 'playing');
     if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; if (qs.has('debug') && Number(qs.get('jornada')) > 1) queueMicrotask(() => window.reliquia?.jornada(Number(qs.get('jornada')))); if (qs.has('debug') && Number(qs.get('snakes')) > 0) queueMicrotask(() => window.reliquia?.snakes(Number(qs.get('snakes')))); lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
     if (phase !== 'playing') looking.release(); intel.release();
+    if (phase === 'playing') record.begin(); else if (phase === 'results') record.finish(state, room.id); else record.showLobby(state.players.find(p => p.id === room.id)?.name ?? name);
   }
   // Local practice and a fresh host start a new count.
   const top = Math.max(0, ...state.events.map(e => e.id)); if (top < lastEvent) lastEvent = top;
@@ -240,9 +243,9 @@ function frame(now) {
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }
-show('loading', false); room.connect(); requestAnimationFrame(frame);
+record.showLobby(name); show('loading', false); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
-if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money,
+if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record,
   get state() { return state; }, get me() { return me(); },
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += .05) room.game.update(Math.min(.05, seconds - t), room.inputs); room.publish(); },
   place(id, x, z, h) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; if (h !== undefined) p.h = h; room.publish(); } },
