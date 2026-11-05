@@ -9,7 +9,7 @@ becomes the GitHub release's notes.
 ## Unreleased
 
 - **Sin conexión ya puedes cambiar el mapa antes de jugar.**
-  Si la sala no conecta, eliges el mapa tú y la práctica arranca ahí. La sala ahora dice cómo es cada mapa.
+  Si la sala no conecta, eliges el mapa tú y la práctica arranca ahí. La sala ahora dice cómo es cada mapa. Reliquia y Trifulca tienen nombres más claros.
 
 - **Capis a Pintazos: ya hay Todos contra todos.**
   Seis capis repartidos por el mapa grande, cada uno por su cuenta y con sus propios tiros: gana el último en pie. Con amigos, cada pana lleva su capi y la máquina juega los demás.
