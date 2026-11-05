@@ -163,7 +163,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
     }
     for (const pit of run.pits.filter(p => p.floor === f)) pitEdge(pit, root, run.bridges.filter(q => q.floor === f && q.room === pit.room).map(q => q.rect), run.theme === 'biblioteca');
     // Hiding nooks, baked with the floor: two slabs, a dark gap, a chalk hand.
-    for (const n of run.nooks.filter(q => q.floor === f)) { const library = run.theme === 'biblioteca', model = hideNook(library ? { stone: 0x4c4a4c, dark: 0x302e32, chalk: 0xd6d8d0 } : {}); place(statics, model, n.mouth.x, 0, n.mouth.z, n.h); }
+    for (const n of run.nooks.filter(q => q.floor === f)) { const library = run.theme === 'biblioteca', model = hideNook(library ? { stone: 0x4c4a4c, dark: 0x302e32, chalk: 0xd6d8d0, sill: 0x74767a } : {}); flamesOf(model, n.mouth.x, 0, n.mouth.z, n.h); place(statics, model, n.mouth.x, 0, n.mouth.z, n.h); }
     for (const b of run.bridges.filter(b => b.floor === f)) {
       const span = b.rect[3] - b.rect[1], x = (b.rect[0] + b.rect[2]) / 2, z = (b.rect[1] + b.rect[3]) / 2;
       if (b.beam) { place(statics, narrowBeam({ span, width: b.rect[2] - b.rect[0], seed: (x + z) | 0 }), x, 0, z); continue; }
@@ -262,7 +262,9 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
         spots.push({ x: room.x + t * room.w, z: z0 + .2, h: 0 }, { x: room.x + t * room.w, z: z1 - .2, h: Math.PI });
         spots.push({ x: x0 + .2, z: room.z + t * room.d, h: Math.PI / 2 }, { x: x1 - .2, z: room.z + t * room.d, h: -Math.PI / 2 });
       }
-      const free = spots.filter(p => !openings.some(o => inRect(p.x, p.z, o, 1.6)) && !run.seals.some(q => Math.hypot(q.x - p.x, q.z - p.z) < 3) && !run.plates.some(q => q.room === room.id && Math.abs(q.z - p.z) < 1.2));
+      const free = spots.filter(p => !openings.some(o => inRect(p.x, p.z, o, 1.6)) && !run.seals.some(q => Math.hypot(q.x - p.x, q.z - p.z) < 3) && !run.plates.some(q => q.room === room.id && Math.abs(q.z - p.z) < 1.2)
+        // Nothing hangs on the wall behind a nook: a carving floating in its opening reads as a wall.
+        && !run.nooks.some(n => n.room === room.id && inRect(p.x, p.z, n.rect, 1.2)));
       free.forEach((p, i) => {
         if ((i + k) % 3 === 2) return;
         if (lamps) { const lamp = place(statics, mineLantern({}), p.x + Math.sin(p.h) * .1, 2.3, p.z + Math.cos(p.h) * .1, p.h); lamp.scale.setScalar(1.2); }

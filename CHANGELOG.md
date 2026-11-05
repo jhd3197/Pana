@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: las puertas de piedra con la mano de tiza ahora se ven como lo que son: un escondite.**
+  Adentro hay una vela encendida y nada tapa la entrada. Si caminas hacia ella un poco de lado, te deslizas adentro.
 - **Fosa: el campamento ahora es una caverna enorme.**
   Un lago quieto, columnas de roca, cascadas a lo lejos, hongos que brillan y un rostro de piedra tallado bajo el reflector. Se baja por el montacargas y se vuelve subiendo hasta la misma caverna.
 - **Fosa: Sobretiempo, ¿se quedan un rato más?**

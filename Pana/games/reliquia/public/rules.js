@@ -4,7 +4,7 @@
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { PACTO, hasPacto, calorOfOptions, payoutMult, pactoQuota, pactoTurno, pactoPrice, pactoGreed } from './pactos.js';
-import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS, nookAt } from './deck.js';
+import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS, nookAt, nookFunnel } from './deck.js';
 import { HOPPER, aimInto, overHopper, fitsIn, fillOf, overRim, bounceChance, placeTime, climbTime, throwPower, heftOf, stepWobble } from './carga.js';
 import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
 import { layoutFor, distance } from './layout.js';
@@ -61,7 +61,13 @@ export function stepExplorer(p, input, dt, world) {
   };
   p.moving = stepWalker(p, input, dt, {
     walk: pace(4.6), run: pace(6.6), minStamina: .05, deadzone: .1, reversed: p.reversed > 0, inertia: sandals ? 2.2 : 0, velocity: p,
-    move: (q, dx, dz) => L.moveBody(q, dx, dz, world, .42), jump: { gravity: GRAVITY, blocked: !(p.stun <= 0) }, ground: q => L.groundAt(q.x, q.z),
+    move: (q, dx, dz) => {
+      const x = q.x, z = q.z, moved = L.moveBody(q, dx, dz, world, .42);
+      // Stopped by a nook's slab, right beside its opening: slide in.
+      if ((q.x - x) * dx + (q.z - z) * dz > (dx * dx + dz * dz) * .5) return moved;
+      const slide = nookFunnel(L.run, q.x, q.z, dx, dz);
+      return slide ? L.moveBody(q, slide.x, slide.z, world, .42) || moved : moved;
+    }, jump: { gravity: GRAVITY, blocked: !(p.stun <= 0) }, ground: q => L.groundAt(q.x, q.z),
   }).moving;
 }
 

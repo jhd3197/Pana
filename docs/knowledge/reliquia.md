@@ -320,7 +320,16 @@ panel, its name and a bar that is its attention (`e.alert`), not health.
 ### Hiding nooks (`run.nooks`, `dealLair` in `deck.js`)
 
 Two stone slabs against a wall leave a 1.25 m gap, 1.5 m deep, with a chalk hand on
-the lintel and no text (`hideNook`). The boss's body (`SILBON_BODY`, .72 m radius)
+the lintel and no text (`hideNook`). It has to read as a door you can walk through,
+because that is the only tutorial it gets: a pale sill crosses the threshold, flags
+run inside, and the back wall is warm unlit courses around a candle on a ledge (one
+`userData.flames` point, so the floor's `candleFlames` draws it; no light of its
+own). `dress` in `scene.js` hangs nothing within 1.2 m of a nook's rect: a relief
+on the wall behind one stands in the opening and reads as a blocked doorway. The lane
+a .42 m body fits through is only .41 m wide, so a pana stopped by a slab within
+.95 m of the middle slides along it into the opening (`nookFunnel` in `deck.js`,
+called from the walker's `move` in `rules.js`, so it is the same for host and guest
+and draws nothing random). The boss's body (`SILBON_BODY`, .72 m radius)
 does not fit; a pana's (.42) slips in and out. Edges sit on the .25 m collision
 grid (hence the odd eighth in `dig`). Three in the pit room, sometimes one or two
 in others, never in the entrance, the vault or a hidden room; dealt last from their
