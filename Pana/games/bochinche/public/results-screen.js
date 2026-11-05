@@ -24,8 +24,11 @@ function award(rows, key, title, text) {
 }
 
 export function createResultsScreen() {
-  const $ = id => document.getElementById(id), reduced = matchMedia('(prefers-reduced-motion: reduce)'), wallet = createMangoWallet();
-  let shownKey = '';
+  const $ = id => document.getElementById(id), reduced = matchMedia('(prefers-reduced-motion: reduce)'), wallet = createMangoWallet(undefined, { source: 'bochinche' });
+  let shownKey = '', showBalance = () => {};
+  // The account's balance can land or be corrected after the screen is up.
+  wallet.onChange(() => showBalance());
+  wallet.ready.then(() => showBalance());
   return {
     // receipt names this round in this room, so a reload never pays twice.
     update(state, me, ranked, receipt) {
@@ -81,7 +84,9 @@ export function createResultsScreen() {
         el('span', '', left).textContent = loc('Tus mangos por esta pelea');
         el('small', '', left).textContent = pay.lines.map(([key, vars, , plural]) => plural ? locn(vars.n, key, plural, vars) : loc(key, vars)).join(' + ');
         const total = el('b', '', box); total.innerHTML = ICONS.mango; total.append('+' + pay.total);
-        el('small', 'res-balance', box).textContent = locn(wallet.balance(), 'Ahora tienes {n} mango', 'Ahora tienes {n} mangos');
+        const balance = el('small', 'res-balance', box);
+        showBalance = () => { balance.textContent = locn(wallet.balance(), 'Ahora tienes {n} mango', 'Ahora tienes {n} mangos'); };
+        showBalance();
         panel.push(box);
       }
       $('result-stats').replaceChildren(...panel);

@@ -4,7 +4,7 @@
 // memory takes over when the browser blocks storage, and a broken save is cleaned
 // rather than trusted. No Three.js, no DOM.
 //
-//   const plot = createPlot({ game: 'conuco', crops, tiers, decor, shop, wallet: createMangoWallet(), progress });
+//   const plot = createPlot({ game: 'conuco', crops, tiers, decor, shop, wallet: createMangoWallet(undefined, { source: 'conuco' }), progress });
 //   plot.plant(0, 'maiz');  plot.harvest(0);  plot.upgrade();  plot.buy('cacao');  plot.setDecor('palma', true);
 //   plot.view();            // the beds with their growth, the seeds, the tier: what a page draws
 //
@@ -72,7 +72,8 @@ export function createPlot({ game, crops, tiers, decor = [], shop, wallet, progr
   function pay(bed, at) {
     const crop = cropOf.get(bed.crop), { share, wilt: faded } = stateOf(bed, at);
     const mangos = scaled(crop.mangos, share), xp = scaled(crop.xp, share), receipt = `${game}:${bed.id}`;
-    wallet?.credit(mangos, receipt);
+    // Bed ids restart on each device; the planting time keeps an account's server receipts apart.
+    wallet?.credit(mangos, `${receipt}:${bed.at}`);
     const earned = progress?.award(xp, receipt, { dive: false });
     return { mangos, xp, wilted: faded > 0, rank: earned?.rank, rankedUp: !!earned?.rankedUp, newUnlocks: earned?.newUnlocks ?? [] };
   }

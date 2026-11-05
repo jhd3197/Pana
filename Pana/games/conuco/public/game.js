@@ -19,7 +19,7 @@ const $ = id => document.getElementById(id), params = new URLSearchParams(locati
 let warp = 0;
 const now = () => Date.now() + warp;
 
-const wallet = createMangoWallet();
+const wallet = createMangoWallet(undefined, { source: 'conuco' });
 const progress = createProgress({ game: 'conuco', ranks: RANKS });
 const plot = createPlot({ game: 'conuco', crops: CROPS, tiers: TIERS, decor: DECOR, shop: SHOP, wallet, progress, now });
 
@@ -53,6 +53,7 @@ export const { sceneReady } = bootGame({
     ui.render();
     plot.onChange(() => ui.render());
     wallet.onChange(() => ui.render());
+    wallet.ready.then(() => ui.render());
     // Back from another tab: what grew meanwhile shows at once.
     document.addEventListener('visibilitychange', () => { if (!document.hidden) ui.tick(); });
   },
