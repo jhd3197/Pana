@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: la Mina ya no se parece a la Biblioteca.**
+  Túneles estrechos con rieles y entibado, cámaras de mineral, galerías de máquinas, ramales ciegos y pozos de agua negra que no deja ver el fondo. Tu lámpara ahora es un cono estrecho: lo que viene se ve cuando ya está cerca, y más abajo casi no queda luz.
+
 - **Sin conexión ya puedes cambiar el mapa antes de jugar.**
   Si la sala no conecta, eliges el mapa tú y la práctica arranca ahí. La sala ahora dice cómo es cada mapa. Reliquia y Trifulca tienen nombres más claros.
 

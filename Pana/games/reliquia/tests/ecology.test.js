@@ -84,6 +84,8 @@ test('killing a body kills the creature; killing the last one says so', () => {
 
 test('quiet in a thicket or the roots, a pana is hidden until something is on top of them', () => {
   const g = setup(), patch = firstSite(g, 'mushroom'), roots = firstSite(g, 'roots'), p = g.players[0];
+  // A patch the moths have not eaten down: how much of it is left is what hides you.
+  step(g, .05); g.eco.food[W(g).sites.indexOf(patch)] = 1;
   stand(g, patch); step(g, .1); assert.ok(p.covered, 'covered among the mushrooms');
   stand(g, roots); step(g, .1); assert.ok(p.covered, 'covered in the roots');
   const bat = { kind: 'bat', x: p.x + 8, z: p.z }, mummy = { kind: 'mummy', x: p.x + 8, z: p.z };

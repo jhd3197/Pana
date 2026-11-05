@@ -21,6 +21,11 @@ export const RUIN_PALETTES = {
   maldita: { floor: 0xc9a0b8, bricks: [0xa7769a, 0x936486, 0xb98bab], band: 0xffc23d, ceiling: 0x3c2840, glyph: 0xff7adf },
   // La biblioteca sepultada: cold, worn dark boards, grey-blue stone, a dark timber band.
   biblioteca: { floor: 0x5a5250, bricks: [0x4a5260, 0x434a56, 0x535b67], band: 0x2a2226, ceiling: 0x1c1f26, glyph: 0x8a96a8, planks: true, glyphs: false },
+  // Fosa's mine, by how deep: warm timbered rock, copper-stained rock, near-black rock.
+  // `rock` walls are rough blocks with no courses, no band and no carved glyphs.
+  mina: { floor: 0x6e5a44, bricks: [0x7d6450, 0x6c5642, 0x8c7058], band: 0x4a3524, ceiling: 0x241a12, glyph: 0xffc23d, rock: true, glyphs: false },
+  minaCobre: { floor: 0x5c4e3e, bricks: [0x6a5a4a, 0x5a5044, 0x6e6a54], band: 0x3c2e20, ceiling: 0x1c1610, glyph: 0xffc23d, rock: true, glyphs: false },
+  minaHonda: { floor: 0x3e3630, bricks: [0x483e36, 0x3c342e, 0x52463c], band: 0x2a2018, ceiling: 0x120e0a, glyph: 0xffc23d, rock: true, glyphs: false },
   // Fosa's biomes: drowned teal stone, a violet fungal cave, a sun-bleached fallen temple.
   inundada: { floor: 0x4c6a68, bricks: [0x3f6f70, 0x356062, 0x4c7f7c], band: 0x9a7a3a, ceiling: 0x14282c, glyph: 0x4fe0d0 },
   hongos: { floor: 0x5a5478, bricks: [0x51467a, 0x463c6c, 0x62578c], band: 0x46c0a0, ceiling: 0x1c1834, glyph: 0x7affc0 },
@@ -32,7 +37,7 @@ export const RUIN_PALETTES = {
 const textures = new Map();
 export function stoneTexture(kind = 'brick') {
   if (textures.has(kind)) return textures.get(kind);
-  const r = rng({ brick: 11, slab: 12, roof: 13, plank: 15 }[kind] || 14), w = 128, h = kind === 'brick' ? 64 : 128;
+  const r = rng({ brick: 11, slab: 12, roof: 13, plank: 15, rock: 16 }[kind] || 14), w = 128, h = kind === 'brick' ? 64 : 128;
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const g = canvas.getContext('2d');
   if (kind === 'plank') {
@@ -57,9 +62,9 @@ export function stoneTexture(kind = 'brick') {
   for (let i = 0; i < 900; i++) { const v = 170 + Math.floor(r() * 80); g.fillStyle = `rgba(${v},${v - 6},${v - 14},${.25 + r() * .35})`; g.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 3); }
   for (let i = 0; i < 6; i++) { g.fillStyle = `rgba(120,110,95,${.12 + r() * .12})`; g.beginPath(); g.ellipse(r() * w, r() * h, 4 + r() * 12, 3 + r() * 8, r() * 3, 0, Math.PI * 2); g.fill(); }
   g.strokeStyle = 'rgba(70,60,50,.55)'; g.lineWidth = 1.4;
-  for (let i = 0; i < (kind === 'roof' ? 5 : 2); i++) { let x = r() * w, y = r() * h; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (r() - .5) * 26; y += (r() - .3) * 18; g.lineTo(x, y); } g.stroke(); }
+  for (let i = 0; i < (kind === 'roof' ? 5 : kind === 'rock' ? 9 : 2); i++) { let x = r() * w, y = r() * h; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (r() - .5) * 26; y += (r() - .3) * 18; g.lineTo(x, y); } g.stroke(); }
   // Bevelled rim: light top-left, dark bottom-right, chipped corners.
-  const rim = kind === 'roof' ? 0 : 6;
+  const rim = kind === 'roof' || kind === 'rock' ? 0 : 6;
   if (rim) {
     g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(0, 0, w, rim * .6); g.fillRect(0, 0, rim * .6, h);
     g.fillStyle = 'rgba(60,50,40,.4)'; g.fillRect(0, h - rim, w, rim); g.fillRect(w - rim, 0, rim, h);
@@ -101,9 +106,9 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   // Floor: 1 m slabs, slightly bevelled, tilted along ramps.
   const slab = new THREE.BoxGeometry(tile, .3, tile), floorColor = new THREE.Color(palette.floor);
   // A planked palette lays boards: flush, all running the same way.
-  group.add(instanced(slab, mat({ roughness: .85, map: stoneTexture(palette.planks ? 'plank' : 'slab') }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
+  group.add(instanced(slab, mat({ roughness: .85, map: stoneTexture(palette.planks ? 'plank' : palette.rock ? 'rock' : 'slab') }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
     const x = i + .5, z = j + .5, y = ground(x, z), dx = ground(x + .5, z) - ground(x - .5, z), dz = ground(x, z + .5) - ground(x, z - .5);
-    m.position.set(x, y - .15 - r() * (palette.planks ? .008 : .03), z); m.rotation.set(Math.atan(dz), palette.planks ? (r() < .5 ? 0 : Math.PI) : 0, -Math.atan(dx)); m.scale.set(palette.planks ? 1.053 : 1, 1, palette.planks ? 1.053 : 1);
+    m.position.set(x, y - .15 - r() * (palette.planks ? .008 : .03), z); m.rotation.set(Math.atan(dz), palette.planks ? (r() < .5 ? 0 : Math.PI) : 0, -Math.atan(dx)); m.scale.set(palette.planks || palette.rock ? 1.053 : 1, 1, palette.planks || palette.rock ? 1.053 : 1);
     c.copy(floorColor).multiplyScalar(.82 + r() * .3);
   }, chunk));
   // Dark grout under the slabs, so a seam seen end-on is mortar, not a hole.
@@ -117,7 +122,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   for (const [i, j] of cells) for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!cell(i + di, j + dj) && !open(i + di + .5, j + dj + .5)) edges.push({ i, j, di, dj, y: ground(i + .5, j + .5) });
   const course = .58, rows = Math.ceil(height / course), bricks = [], glyphs = [];
   for (const e of edges) for (let k = 0; k < rows; k++) {
-    bricks.push({ e, k, band: k === rows - 2 });
+    bricks.push({ e, k, band: k === rows - 2 && !palette.rock });
     if (k === rows - 2 && r() < .28 && palette.glyphs !== false) glyphs.push(e);
   }
   const brick = new THREE.BoxGeometry(1.12, course * .9, .7), colors = palette.bricks.map(c => new THREE.Color(c)), band = new THREE.Color(palette.band);
@@ -128,12 +133,14 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   // Only a block's face (+-z) is mapped. Its top, bottom and ends only show in the joints, where a
   // whole map squeezed into a few pixels is noise; there they take a speck of the map's dark corner.
   for (let i = 0; i < 16; i++) brick.attributes.uv.setXY(i, .004 + brick.attributes.uv.getX(i) * .012, .004 + brick.attributes.uv.getY(i) * .012);
-  const brickMaterial = mat({ roughness: .92, map: stoneTexture('brick') });
-  brickMaterial.userData.relief = 'brick';   // a game may carve it (engine/fx/pom.js)
+  const brickMaterial = mat({ roughness: .92, map: stoneTexture(palette.rock ? 'rock' : 'brick') });
+  if (!palette.rock) brickMaterial.userData.relief = 'brick';   // a game may carve it (engine/fx/pom.js)
   group.add(instanced(brick, brickMaterial, bricks, (m, c, { e, k, band: isBand }) => {
     at(m, e, (k % 2 ? .25 : -.25) + (r() - .5) * .04, .35 + (r() - .5) * .06);
     m.position.y = e.y + course * (k + .5); m.scale.set(1, 1, 1 + (r() - .5) * .1);
     c.copy(isBand ? band : colors[Math.floor(r() * colors.length)]).multiplyScalar(isBand ? 1 : .85 + r() * .25);
+    // Raw rock: the same blocks, shoved out of line and tumbled so no course or joint survives.
+    if (palette.rock) { m.position.y += (r() - .5) * .3; m.rotation.x = (r() - .5) * .16; m.rotation.y += (r() - .5) * .16; m.rotation.z = (r() - .5) * .5; m.scale.set(1.1 + r() * .4, 1.2 + r() * .6, 1); const out = .06 + r() * .16; m.position.x += e.di * out; m.position.z += e.dj * out; }
   }, chunk));
   const glyph = new THREE.OctahedronGeometry(.16);
   group.add(instanced(glyph, mat({ color: 0xffffff, emissive: palette.glyph, emissiveIntensity: 1.2, roughness: .4 }), glyphs, (m, c, e) => {

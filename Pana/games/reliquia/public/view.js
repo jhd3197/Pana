@@ -52,6 +52,10 @@ const DEEP_LOOK = { background: 0x0a0710, fog: [3.5, 24], hemi: [0x5c5088, 0x2a1
 const FLOODED_LOOK = { background: 0x061418, fog: [3, 21], hemi: [0x5fa8b8, 0x123038, 1.5], exposure: 1.15, dust: .25, lamp: 0xe2f4f4, hand: 0xbfe6e0, lampPower: 50, candle: [0xffa24a, 5.5, 11] };
 const GROVE_LOOK = { background: 0x0c0a1e, fog: [4.5, 28], hemi: [0x7560e0, 0x123a30, 1.15], exposure: 1.2, dust: .7, lamp: 0xf0ecff, hand: 0xd8c8ff, lampPower: 44, candle: [0xffa24a, 5.5, 11] };
 const TEMPLE_LOOK = { background: 0x140c08, fog: [3.2, 22], hemi: [0xa8865a, 0x2c1a0a, .85], exposure: 1.15, dust: 1.1, lamp: 0xffeed0, hand: 0xffb468, lampPower: 56, candle: [0xffa24a, 5.5, 11] };
+// The mine: warm lamps on timber near the top, nearly nothing further down. Its lamp
+// is a narrow cone with a short throw: what comes at you shows up very close.
+const MINE_LOOK = { background: 0x0c0705, fog: [3, 20], hemi: [0xa8805a, 0x3a2414, 1.05], exposure: 1.15, dust: .8, lamp: 0xffe6c0, hand: 0xffa850, lampPower: 66, lampAngle: .34, lampPenumbra: .5, lampReach: 18, lampPost: 8, candle: [0xffa24a, 5.5, 11] };
+const MINE_DEEP_LOOK = { background: 0x040302, fog: [2, 13], hemi: [0x5c4634, 0x160c08, .36], exposure: 1.1, dust: .9, lamp: 0xffdcb0, hand: 0xff9c48, lampPower: 72, lampAngle: .27, lampPenumbra: .55, lampReach: 13, lampPost: 4.5, handPower: .7, candle: [0xffa24a, 5.5, 11] };
 const LIBRARY_LOOK = { background: 0x18202a, fog: [2.5, 21], hemi: [0x74849e, 0x0c0c10, 1.8], exposure: 1.1, dust: 1, lamp: 0xe4ebf4, hand: 0xd8dde6, lampPower: 25, lampDecay: 1.15, handPower: .35, candle: [0xff9e52, 1.6, 4.5] };
 // How much La Estatua's pale marble dims with the headlamp right on it (2 m).
 const STATUE_DIM = .72;
@@ -124,11 +128,12 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
 
   function setLook(name) {
     if (name === lookName) return; lookName = name;
-    look = { caverna: CAMP_LOOK, biblioteca: LIBRARY_LOOK, inundada: FLOODED_LOOK, hongos: GROVE_LOOK, templo: TEMPLE_LOOK }[name] || DEEP_LOOK;
+    look = { caverna: CAMP_LOOK, biblioteca: LIBRARY_LOOK, inundada: FLOODED_LOOK, hongos: GROVE_LOOK, templo: TEMPLE_LOOK, mina: MINE_LOOK, minaHonda: MINE_DEEP_LOOK }[name] || DEEP_LOOK;
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sky.mesh.visible = false; renderer.toneMappingExposure = look.exposure;
     headlamp.color.set(look.lamp || 0xfff0d8); headlamp.decay = look.lampDecay ?? 1.35;
+    headlamp.angle = look.lampAngle ?? .44; headlamp.penumbra = look.lampPenumbra ?? .42; headlamp.distance = look.lampReach ?? 24;
   }
   function avatarFor(p, i) {
     const skin = JSON.stringify(p.avatar); let a = avatars.get(p.id);
@@ -164,7 +169,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (state !== lastState) { lastState = state; snapAt = t; }
     // Riders sink and rise with the cage through the shaft.
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
-    setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'caverna' : world.run.theme);
+    setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'caverna' : world.run.theme === 'mina' && world.run.depth > 2 ? 'minaHonda' : world.run.theme);
     // Riding the lift at the camp: the dark of the shaft lifts as you come up (and
     // settles as you go down), so the cavern opens around you. Only ever this screen's picture.
     const inShaft = vf === 0 ? Math.max(0, Math.min(1, -rideY(me || {}) / 6)) : 0, comingUp = vf === 0 && state.lift?.moving && state.lift.to === 0 && state.lift.riders.includes(me?.id);
@@ -374,7 +379,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       // A burning flare outranks every torch: it is why you threw it.
       if (vf > 0) for (const s of state.flares || []) if (floorOf(s.x) === vf) sources.push({ x: s.x, y: s.y + .4, z: s.z, color: 0xff4a2a, power: 16, reach: 13, d: Math.hypot(s.x - me.x, s.z - me.z) - 14, flare: true });
       if (vf === 0) for (const l of world.campLamps) sources.push({ ...l, d: Math.hypot(l.x - me.x, l.z - me.z), fire: world.fireAt(0, l.x, l.z) });
-      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z), fire: l.kind === 'brazier' ? world.fireAt(vf, l.x, l.z) : null });
+      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : l.kind === 'mineLamp' ? look.lampPost ?? 7 : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z), fire: l.kind === 'brazier' ? world.fireAt(vf, l.x, l.z) : null });
       for (const p of state.players) if (p.id !== me.id && alive(p) && floorOf(p.x) === vf && (holds(p, 'farol') || holds(p, 'sunCrown'))) sources.push({ x: p.x, y: 1.4, z: p.z, color: holds(p, 'sunCrown') ? 0xffd36a : look.hand || 0xffa850, power: 8, reach: 11, d: Math.hypot(p.x - me.x, p.z - me.z) - 6 });
       sources.sort((a, b) => a.d - b.d);
       // The last two slots go to the nearest glowing mushrooms: no extra lights,

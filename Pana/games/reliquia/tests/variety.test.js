@@ -136,7 +136,7 @@ test('a cuerda ties a broken bridge for everyone, once; without one the stake on
   const snap = g.snapshot(); assert.equal(L.walkable(mid.x, mid.z, snap, .42), true);
   // A second pana walks across with no input from the first.
   put(g, 2, mid.x, span.z); b.h = mid.z > span.z ? 0 : Math.PI;
-  const z0 = b.z; for (let i = 0; i < 30; i++) stepExplorer(b, { x: 0, z: -1, h: b.h }, .05, snap);
+  const z0 = b.z; for (let i = 0; i < 30; i++) stepExplorer(b, { x: 0, z: Math.sign(mid.z - span.z), h: b.h }, .05, snap);
   assert.ok(Math.abs(b.z - z0) > 2, `walked ${Math.abs(b.z - z0)} m out along it`);
 });
 
