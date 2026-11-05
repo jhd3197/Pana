@@ -36,6 +36,8 @@ export const SWAP_TIME = .4;
 // whose top is at or under it (sandbags, ammo piles, barrels, the snake bunkers)
 // lets them pass over instead of standing as an invisible wall above it.
 export const SHOT_HEIGHT = 1.1;
+// A mark on a trunk is this share of a full splat: any wider and it hangs in the air beside it.
+const TRUNK_SPLAT = .45;
 // Cover that stops a level shot: the boxes taller than the ball's flight.
 export const shotCover = cover => cover.filter(o => o.shots !== false && (o.h ?? o.height ?? Infinity) > SHOT_HEIGHT);
 // Eight seats (game.json `players`): people plus bots never pass it. Bot ids
@@ -495,10 +497,10 @@ export class Arena {
     for (const ball of this.balls) {
       const owner = this.players.find(q => q.id === ball.owner);
       const targets = this.shotTargets(owner, ball.owner);
-      const { t, victim, dx, dz } = sweep(ball, dt, { boxes: this.cover, targets, padding: .12, y: SHOT_HEIGHT });
+      const { t, victim, box, dx, dz } = sweep(ball, dt, { boxes: this.cover, targets, padding: .12, y: SHOT_HEIGHT });
       ball.x += dx * Math.min(1, t); ball.z += dz * Math.min(1, t); ball.life -= dt;
       if (t <= 1 || outside(this.mapId, ball.x, ball.z)) {
-        ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern });
+        ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern, ...(box?.trunk ? { radius: TRUNK_SPLAT } : {}) });
         // La Bazuca's direct hit knocks out at once; its splash then catches only the panas beside.
         // La Lejana's head hit knocks out too; its body hits fade with the distance flown.
         if (victim && (ball.direct || !ball.rocket)) {

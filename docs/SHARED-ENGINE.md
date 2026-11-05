@@ -222,8 +222,9 @@ needs it (see candidates).
 flight: `launch(ax, az, speed, angle)`, `sweep(ball, dt, { boxes, targets, padding, y })`
 (the earliest cover box or round target along this step's segment, so a fast
 ball never tunnels; with `y`, the flight height, boxes no taller than it are
-flown over), `segmentBox`, `segmentCircle`, `traceRay` (where a tracer
-line ends, same `y`) and `flightTime`.
+flown over; a box with `trunk: r` is that exact circle for shots, unpadded, and
+the result's `box` says which cover stopped it), `segmentBox`, `segmentCircle`,
+`traceRay` (where a tracer line ends, same `y`) and `flightTime`.
 
 ```js
 import { launch, sweep } from '../../../engine/play/projectile.js'; // relative: rules.js also loads on the server

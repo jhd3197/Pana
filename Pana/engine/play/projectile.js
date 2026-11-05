@@ -13,7 +13,9 @@
 // whose top (`h` or `height`) is at or under it lets the shot pass over, so
 // waist-high cover never stops a ball that visibly clears it. Without `y`
 // every box is a wall of any height. A box with `shots: false` (a broken
-// piece panas still bump into) never stops a level shot.
+// piece panas still bump into) never stops a level shot. A box with `trunk: r`
+// is a thin round thing: shots test that exact circle around its centre, with no
+// padding, so a pellet that misses the trunk flies on to whatever is behind.
 
 // A box's top: `h` or `height`, else infinitely tall.
 const top = o => o.h ?? o.height ?? Infinity;
@@ -43,12 +45,17 @@ export function launch(ax, az, speed, angle = 0) {
 
 // One step of flight: the earliest cover or target along this step's segment.
 // `t` is that fraction (> 1 when nothing was touched) and `victim` the target hit
-// first, or null when cover came first. The ball itself is not moved.
+// first, or null when cover came first; `box` the cover it stopped on, if any. The
+// ball itself is not moved.
 export function sweep(ball, dt, { boxes = [], targets = [], padding = 0, radius = .7, y = null } = {}) {
-  const dx = ball.vx * dt, dz = ball.vz * dt; let t = Infinity, victim = null;
-  for (const o of boxes) { if (o.shots === false || (y !== null && top(o) <= y)) continue; const hit = segmentBox(ball.x, ball.z, dx, dz, o, padding); if (hit !== null && hit < t) t = hit; }
-  for (const p of targets) { const hit = segmentCircle(ball.x, ball.z, dx, dz, p, radius); if (hit !== null && hit < t) { t = hit; victim = p; } }
-  return { t, victim, dx, dz };
+  const dx = ball.vx * dt, dz = ball.vz * dt; let t = Infinity, victim = null, box = null;
+  for (const o of boxes) {
+    if (o.shots === false || (y !== null && top(o) <= y)) continue;
+    const hit = o.trunk ? segmentCircle(ball.x, ball.z, dx, dz, o, o.trunk) : segmentBox(ball.x, ball.z, dx, dz, o, padding);
+    if (hit !== null && hit < t) { t = hit; box = o; }
+  }
+  for (const p of targets) { const hit = segmentCircle(ball.x, ball.z, dx, dz, p, radius); if (hit !== null && hit < t) { t = hit; victim = p; box = null; } }
+  return { t, victim, box, dx, dz };
 }
 
 // How far a straight shot from (x, z) along the unit (dx, dz) travels before cover or

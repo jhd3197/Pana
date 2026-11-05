@@ -125,7 +125,9 @@ crosshair within 20° and 40 m. After a respawn and at round start the view
 turns to face the court centre. The menu's "Ver la cancha" overview keeps
 world-axis keys and plane-projected mouse aim at the same 1.1 m height as
 `screen()`; keep those equal. Splats from balls stopped by cover are placed
-vertically on that face. `minimap.js` draws the HUD map; it is a 2D overlay, not
+vertically on that face; a plaza tree's row has `trunk` (.25 m, the drawn trunk at
+shot height), so each pellet's ray tests that circle, unpadded, instead of the .6 m
+movement box, and its mark sits on the round face at .45 scale. `minimap.js` draws the HUD map; it is a 2D overlay, not
 scene drawing. It is square, north-up and centred on you, showing
 `MINIMAP_RADIUS` (18 m) each way, on an opaque background: 30 m was too far out
 to read in a yard. Three layers: the court's floor, the scenery (`bake` reads the
