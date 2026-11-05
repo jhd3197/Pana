@@ -10,6 +10,14 @@ becomes the GitHub release's notes.
 
 - **Carreritas: ahora la velocidad se siente.**
   La cámara se abre al acelerar y se queda atrás antes de alcanzarte, el viento sube con la velocidad, y pasan líneas y rachas por los bordes. La cámara suave queda igual.
+- **Fosa: romper un derrumbe ahora se siente.**
+  Mientras mantienes E, las piedras se rajan con grietas que brillan, saltan esquirlas, chispas y polvo, y al final se parten en pedazos. Todos los panas lo ven igual.
+- **Fosa: el fuego ahora parece fuego.**
+  Lenguas que lamen, blancas por dentro y naranjas por fuera, chispas que suben y parpadean, sombras que bailan en la pared, un rugido suave y crujidos. Si la ruina tiembla o vuelve la luz, se aviva.
+- **Fosa: el jaguar de piedra ahora da miedo.**
+  Agazapado sobre su plinto, con colmillos, cola enrollada, manchas talladas y musgo; el jaguar de oro estrena la misma forma.
+- **Fosa: las puertas de piedra con la mano de tiza ahora se ven como lo que son: un escondite.**
+  Adentro hay una vela encendida y nada tapa la entrada. Si caminas hacia ella un poco de lado, te deslizas adentro.
 - **Subir de rango ahora se celebra.**
   La barra de XP se arrastra hasta llenarse, un destello blanco y un pilar de luz, el título cae de golpe, el XP cuenta punto a punto y aparece lo que desbloqueaste.
 - **Conuco: tu propio pedazo de tierra.**

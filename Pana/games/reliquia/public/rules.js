@@ -4,7 +4,7 @@
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { PACTO, hasPacto, calorOfOptions, payoutMult, pactoQuota, pactoTurno, pactoPrice, pactoGreed } from './pactos.js';
-import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS, nookAt } from './deck.js';
+import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS, nookAt, nookFunnel } from './deck.js';
 import { HOPPER, aimInto, overHopper, fitsIn, fillOf, overRim, bounceChance, placeTime, climbTime, throwPower, heftOf, stepWobble } from './carga.js';
 import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
 import { layoutFor, distance } from './layout.js';
@@ -33,6 +33,8 @@ const GREED = { soft: .65, normal: 1, fierce: 1.5 };
 // standing still and riding make none; running, landing a jump, a book or a
 // treasure hitting the boards, searching and fighting do. `book` multiplies
 // a falling book's reach.
+// Seconds of holding E that clear a cave-in; state.rubble[id] counts up to it.
+export const RUBBLE_HOLD = 5;
 export const NOISE = { run: 10, land: 8, search: 7, open: 10, chest: 11, hit: 10, swing: 4, hurt: 8, shot: 6, splat: 6, cart: 8, dart: 9, laugh: 30, collapse: 30, drop: 5, book: 1.35, screech: 24 };
 // What E says at each hiding spot, and where on it the crosshair aims.
 export const SEARCH = {
@@ -61,7 +63,13 @@ export function stepExplorer(p, input, dt, world) {
   };
   p.moving = stepWalker(p, input, dt, {
     walk: pace(4.6), run: pace(6.6), minStamina: .05, deadzone: .1, reversed: p.reversed > 0, inertia: sandals ? 2.2 : 0, velocity: p,
-    move: (q, dx, dz) => L.moveBody(q, dx, dz, world, .42), jump: { gravity: GRAVITY, blocked: !(p.stun <= 0) }, ground: q => L.groundAt(q.x, q.z),
+    move: (q, dx, dz) => {
+      const x = q.x, z = q.z, moved = L.moveBody(q, dx, dz, world, .42);
+      // Stopped by a nook's slab, right beside its opening: slide in.
+      if ((q.x - x) * dx + (q.z - z) * dz > (dx * dx + dz * dz) * .5) return moved;
+      const slide = nookFunnel(L.run, q.x, q.z, dx, dz);
+      return slide ? L.moveBody(q, slide.x, slide.z, world, .42) || moved : moved;
+    }, jump: { gravity: GRAVITY, blocked: !(p.stun <= 0) }, ground: q => L.groundAt(q.x, q.z),
   }).moving;
 }
 
@@ -87,7 +95,7 @@ export function interaction(s, p) {
     offer({ kind: 'revive', id: q.id, text: locKey('Mantén E para levantar a {name}'), vars: { name: q.name }, progress: q.revive / reviveTime(p), hold: true }, { x: q.x, y: .35, z: q.z }, .7, 2.8);
   for (const seal of L.run.seals) for (const w of seal.winches || []) if (!s.open[seal.id])
     offer({ kind: 'winch', id: w.id, text: s.winches[w.id]?.latched > 0 ? locKey('Rueda activa · ¡la otra!') : locKey('Mantén E para girar la rueda'), progress: (s.winches[w.id]?.progress || 0) / 1.6, hold: true }, { x: w.x, y: 1.55, z: w.z }, .9);
-  for (const [id, progress] of Object.entries(s.rubble)) { const c = L.run.corridors.find(c => c.id === id); if (c) offer({ kind: 'rubble', id, text: locKey('Mantén E para quitar las piedras'), progress: progress / 5, hold: true }, { x: clamp(p.x, c.rect[0], c.rect[2]), y: 1, z: clamp(p.z, c.rect[1], c.rect[3]) }, 1.6, 3); }
+  for (const [id, progress] of Object.entries(s.rubble)) { const c = L.run.corridors.find(c => c.id === id); if (c) offer({ kind: 'rubble', id, text: locKey('Mantén E para quitar las piedras'), progress: progress / RUBBLE_HOLD, hold: true }, { x: clamp(p.x, c.rect[0], c.rect[2]), y: 1, z: clamp(p.z, c.rect[1], c.rect[3]) }, 1.6, 3); }
   // The montacargas: one button. Waiting here it rides; away, it is called.
   const stop = L.run.lifts.find(l => l.floor === f), lift = s.lift;
   if (stop && lift) {
@@ -678,7 +686,7 @@ export class Expedition {
           const q = this.players.find(q => q.id === target.id); reviving.add(q.id); q.revive += dt;
           if (q.revive >= reviveTime(p)) { this.getUp(q, p); this.event('bark', '', { player: p.id, text: locKey('¡Párate, que no es pa\' tanto!') }); }
         }
-        if (target?.kind === 'rubble') { this.rubble[target.id] += dt; if (this.rubble[target.id] >= 5) { delete this.rubble[target.id]; this.event('cleared', locKey('¡Despejaron el túnel!')); } }
+        if (target?.kind === 'rubble') { this.rubble[target.id] += dt; if (this.rubble[target.id] >= RUBBLE_HOLD) { delete this.rubble[target.id]; this.event('cleared', locKey('¡Despejaron el túnel!')); } }
         if (target?.kind === 'search') { const sp = run.spots.find(q => q.id === target.id); searched.add(sp.id); this.noisy('search', sp, p.id); if (searchStep(this.searching, sp.id, dt, sp.need)) this.openSpot(p, sp); }
         if (target?.kind === 'leave') leaving = true;
         if ((target?.kind === 'ride' || target?.kind === 'call') && !used.has('lift')) { used.add('lift'); const key = `${target.kind}:${target.to ?? floorOf(p.x)}`; if (this.lift.hold?.key !== key) this.lift.hold = { key, progress: 0 }; this.lift.hold.progress += dt; }
