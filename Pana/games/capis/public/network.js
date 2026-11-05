@@ -53,6 +53,7 @@ export class CapisRoom extends LiveRoom {
     if (data.action === 'start' && host) g.start();
     else if (data.action === 'options' && host) g.configure(data.options);
     else if (data.action === 'seed' && host) g.setSeed(data.seed);
+    else if (data.action === 'tomb') g.setTomb(id, data.shape);
     else if (data.action === 'team') g.setTeam(host && data.id != null ? data.id : id, data.team);
     else if (data.action === 'fire' || data.action === 'weapon') g.act(id, data.action, data);
     else if (data.action === 'resync') g.fullEdits = Math.max(g.fullEdits, 2);

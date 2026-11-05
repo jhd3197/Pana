@@ -205,7 +205,8 @@ a tombstone). `dropProp(fields)` makes one (`chute`: its steady speed down under
 a parachute), `stepProp(p, dt, mask, { water })` drops it, rests it, drops it
 again when the ground goes and sinks it (`landed`, `sunk`), `throwProp(p, x, y,
 speed)` is a blast throwing it, `propTouches(p, x, y, reach)` measures from its
-middle, so a pickup can be generous. Used by: Capis a Pintazos (crates).
+middle, so a pickup can be generous. Used by: Capis a Pintazos (crates and
+tombstones).
 
 `engine/play/terrain-gen.js` (pure): building and checking side-view ground
 from a seed. `seededStream(key)` (one stream per seed and attempt, so a re-roll

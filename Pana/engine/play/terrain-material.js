@@ -60,7 +60,7 @@ uniform vec4 uStrataP;      // period, fold, tilt, phase
 uniform vec2 uSize;
 uniform float uCell, uBack, uA2C, uTuft, uSandBelow, uWater, uTintMax, uZBack, uZFront;
 uniform vec3 uTopsoil, uGrass, uSand, uWet, uRock, uRoot;
-uniform vec3 uTints[4];
+uniform vec3 uTints[6];
 float tHash(vec2 p) {
   uvec2 q = uvec2(ivec2(floor(p)) + 65536);
   uint h = q.x * 1597334677u ^ q.y * 3812015801u;
@@ -82,7 +82,9 @@ vec3 tTint(float k) {
   k *= uTintMax;
   vec3 c = mix(uTints[0], uTints[1], clamp(k, 0.0, 1.0));
   c = mix(c, uTints[2], clamp(k - 1.0, 0.0, 1.0));
-  return mix(c, uTints[3], clamp(k - 2.0, 0.0, 1.0));
+  c = mix(c, uTints[3], clamp(k - 2.0, 0.0, 1.0));
+  c = mix(c, uTints[4], clamp(k - 3.0, 0.0, 1.0));
+  return mix(c, uTints[5], clamp(k - 4.0, 0.0, 1.0));
 }
 // Pebbles: at most one per cell of the grid, a lit ellipse with a dark rim.
 // x: how much stone, y: its light (lit from the top left), z: the soft shadow under it, w: its own shade.
@@ -397,8 +399,8 @@ function strataUniforms(strata = {}, uniforms = {}) {
 
 // The terrain material: Lambert with the ground's colour from the shader.
 export function terrainMaterial({ fieldTex, paintTex, startTex, topTex, mask, palette = {}, back = false, a2c = true, zBack = -2.6, zFront = .55, detail = getSettings().detail }) {
-  const p = palette, tints = (p.tints || [[255, 80, 160]]).slice(0, 4);
-  while (tints.length < 4) tints.push(tints[tints.length - 1]);
+  const p = palette, tints = (p.tints || [[255, 80, 160]]).slice(0, 6);
+  while (tints.length < 6) tints.push(tints[tints.length - 1]);
   const uniforms = {
     uField: { value: fieldTex }, uPaint: { value: paintTex }, uSize: { value: new THREE.Vector2(mask.width, mask.height) },
     uCell: { value: mask.cell }, uBack: { value: back ? 1 : 0 }, uA2C: { value: a2c ? 1 : 0 }, uTuft: { value: p.tuft ?? .3 },

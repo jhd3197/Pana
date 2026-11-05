@@ -1,7 +1,7 @@
 # Capis a Pintazos
 
-Turn-based paint artillery between capybaras: two teams of three capis on a
-stretch of the Llanos generated for each match (hills, a cave mountain,
+Turn-based paint artillery between capybaras: two teams of three capis (or six
+capis each on its own side, "Free-for-all") on a stretch of the Llanos generated for each match (hills, a cave mountain,
 islands and bridges, a valley, a tepuy), solo against the machine or with
 up to four panas in a room (`players: 4`, see "With friends"). Each turn a capi walks,
 jumps, picks one of five weapons from Pepazo's arsenal (see "Weapons"), aims
@@ -186,6 +186,72 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   ground textures when a map of another size arrives. It bounces on a good shot, wobbles when one of ours is hit and
   goes dizzy on a loss. Light: a warm hemisphere, a low warm sun from the
   front left and a warm rim light from behind.
+
+## Free-for-all (`mode: 'ffa'`)
+
+A room option next to Equipos. Six capis, each its own side: a `team` in the
+rules is a side, so its colour, its shots, its turn and its bot all still go by
+`team`; `match.teams` says how many (2 or 6). The map is always large (`roomOptions`
+forces it and `createMatch` too, so a guest's copy agrees).
+
+- **Spawns** are `spreadSpawns` in map-rules.js: one per sixth of the map, at least
+  0.55 of a sixth apart, shuffled by the seed. The map's own team spawns and its
+  fairness checks are untouched: no re-roll depends on the mode.
+- **Turns** go round the sides still standing (`nextTeam`); the limit is 90 turns
+  (`ffaTurnLimit`), then most capis standing, then least paint (`byCount`). A
+  winner is the last side standing; `-1` is a draw.
+- **Shots** are per side, as for a team, so each capi has the full arsenal.
+- **Online**: each pana takes the first free side (`seatFor`), the machine plays
+  the rest, changing mode reseats everyone (`reseat`) and the team cards hide.
+- **Colours**: six in `TEAM_COLORS`, six slots in `terrain-material.js`'s
+  `uTints`. A capi soaks up the colour of whoever hit it last (`c.by`). The
+  scene builds a side's cloth, launchers and shells when a match first needs it,
+  so a teams match never bakes the other four.
+
+## Crates and tombstones
+
+Both are `engine/play/loose-prop.js`: rules state, so they fall when the ground
+goes, fly when a blast throws them, sink in the water, and reach guests in the
+snapshot.
+
+- **Crates** come down under a parachute on turn 3, then every 3 turns while
+  fewer than 3 lie about (`RULES.crate`), from a stream of their own so they never
+  shift the winds. Taking one is `CRATE_REACH`: body radius + crate middle + 0.35,
+  measured between the two middles, on any phase of any turn, by any capi. The
+  margin is the fix for friends stopping one step short. Inside 0.75 of a crater a
+  blast smashes a crate, inside its reach throws it; La Licuadora's tunnel
+  smashes one in its way. A capi going for one has no protection: `hurt` paints
+  and knocks it like any other. `CRATE_LOOT` in weapons.js says what a crate holds.
+  The machine walks to one within 9 units on its level for up to 30 % of the turn.
+- **Tombstones** are `grave()` from `engine/models/props/cemetery.js` (`mound:
+  false`: its dirt would float in front of the slab) with a ribbon of the side's
+  colour. A capi painted out topples for a second, then its tomb comes up; one
+  lost in the river leaves it on the nearest dry ground.
+- **Paid shapes are a stub**: `tombs.js` keeps the chosen shape and an owned
+  list in localStorage; the plain one is free, the others have an `unlock` id and
+  show a padlock and "Muy pronto". A shop only has to call `grant(unlock)`. No
+  shop or payment exists yet. Online, each pana's choice goes in an action and
+  the first pana on a side sets that side's shape.
+
+## Hops
+
+`RULES.airControl` and `airSpeed` (a walker option, off by default) let the held
+key steer a hop. That doubled how far back a hop onto a ledge starts, and lets a
+hop that brushes a lip recover. `floorsOf` is the one floor graph the checks and
+tests use; its hop is what a capi does with the key held, so it has to stay under
+the real reach.
+
+The cave mountain's mouth had a real bug, worth keeping in mind for any overhang:
+`stepSideWalker` tests a body's whole height against the wall, so a walker
+stopped about 0.75 short of the lip, on the ramp, where a hop bonked off it. The
+gallery's floor now runs level for 0.8 past the tip (`MOUTH.flat`) before its 45°
+ramp, and lies 1.3 under the lowland (`MOUTH.drop`), so the ledge is 0.8 over it.
+
+Still dead ends: a bank under an island's bridge and a valley floor under its
+arch. A span across a side view closes the way past it, so no slope can reach the
+top without a hole in the span. Those are dug out of with La Licuadora or a blast.
+A valley's ledge does have a buttress up from the floor; a pond's bowl can eat it
+on a small map.
 
 ## With friends (`online.js`, `network.js`)
 

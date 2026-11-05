@@ -554,6 +554,26 @@ export function spawnsFor(p, mask) {
   return best ? [best.a.list.map(d => p.mid - d), best.b.list.map(d => p.mid + d)] : null;
 }
 
+// Six spots for a free-for-all, spread over the whole map: one in each sixth of
+// the land, as near its middle as there is good ground, all at least `gap`
+// apart. A seeded shuffle says who stands where, so nobody always gets the end.
+export function spreadSpawns(map, mask, count = 6) {
+  const r = seededStream(`capis-ffa:${map.seed}:${map.size}`), { width } = map, margin = 8, slice = (width - 2 * margin) / count, gap = slice * .55;
+  const spots = [];
+  for (let x = margin; x <= width - margin; x += .25) if (standable(mask, x) !== null) spots.push(x);
+  const xs = [];
+  for (let i = 0; i < count; i++) {
+    const aim = margin + slice * (i + .5);
+    let best = null;
+    for (const x of spots) if (xs.every(o => Math.abs(o - x) >= gap) && (best === null || Math.abs(x - aim) < Math.abs(best - aim))) best = x;
+    // Nothing left at that distance from the others: any ground, the farthest from them.
+    if (best === null) for (const x of [margin, ...spots]) if (best === null || Math.min(...xs.map(o => Math.abs(o - x))) > Math.min(...xs.map(o => Math.abs(o - best)))) best = x;
+    xs.push(best);
+  }
+  for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; }
+  return xs;
+}
+
 // The ground and spawns of a plan: buildGround, the spawns, then the caves
 // that fall towards the shores, dug only past each team's back capi (a cave
 // mouth in a slope blocks a walker climbing it, so none stands between capis).
