@@ -9,7 +9,7 @@ becomes the GitHub release's notes.
 ## Unreleased
 
 - **Fosa: el campamento ahora es una caverna enorme.**
-  Un lago quieto, columnas de roca, cascadas a lo lejos, hongos que brillan y una cabeza dorada bajo el reflector. Se baja por el montacargas y se vuelve subiendo hasta la misma caverna.
+  Un lago quieto, columnas de roca, cascadas a lo lejos, hongos que brillan y un rostro de piedra tallado bajo el reflector. Se baja por el montacargas y se vuelve subiendo hasta la misma caverna.
 - **Fosa: Sobretiempo, ¿se quedan un rato más?**
   Suban más de la cuota y cobran mangos extra, también en bolívares y XP. Si el encargo tiene reloj, el tiempo que sobre paga, pero si se acaba no cobran nada.
 - **Fosa y Pepazo: ahora ves tus manos con lo que cargas.**

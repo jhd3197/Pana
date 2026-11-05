@@ -549,8 +549,13 @@ where the road leaves is closed by a low timber barricade.
 - **The reflection is real geometry.** The lower parts of the soup are mirrored below the lake
   (`Reflejos`, about 9 k triangles) and `createLake` is a translucent sheet over them, clearer
   at a grazing look. No render target, no second pass.
-- **Keep the roof above what you carve.** The head's crown first went through the ceiling and
+- **Keep the roof above what you carve.** An earlier, taller head went through the ceiling and
   read as a face with no top; `ceilingAt` lifts the roof around it, and a test holds it there.
+- **The stone guardian's face is dark on purpose.** `buildHead` is navy slate (`SLATE`) that warms
+  (`WARM`) only near a spot off-centre toward the beam, so the far cheek stays navy. A gold or round
+  face read as a cheerful sun, so the outline is squared, the brow falls toward the nose and the
+  mouth's corners turn down. The beam is additive and draws over the face, lifting even its black
+  sockets, so judge the palette on screen, with the beam, and keep it darker than looks right in code.
 - **Additive tints are display values.** `ShaderMaterial` output has no colour-space step, so
   a beam tinted with a linear amber looks mauve over navy: `createBeams` converts to sRGB first.
   Anything additive near the lift also washes out the view through the gallery, so the warm
