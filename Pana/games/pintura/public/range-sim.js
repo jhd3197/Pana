@@ -26,11 +26,12 @@ export const TARGETS = [
 // A melee kit gets its first target within arm's reach.
 export const MELEE_REACH = 1.9;
 const BIG = 1e6;
-// The lane's colliders: both side walls, the berm behind the back target.
+// The lane's colliders: both side walls, the berm behind the back target. No height:
+// the lane has a roof, so a ball aimed up still ends on them.
 export const LANE_COVER = [
-  { x: FIRE.x + LANE.length / 2, z: -LANE.half - .5, w: LANE.length + 4, d: 1, h: LANE.height },
-  { x: FIRE.x + LANE.length / 2, z: LANE.half + .5, w: LANE.length + 4, d: 1, h: LANE.height },
-  { x: FIRE.x + LANE.length + 1, z: 0, w: 2, d: LANE.half * 2 + 2, h: LANE.height },
+  { x: FIRE.x + LANE.length / 2, z: -LANE.half - .5, w: LANE.length + 4, d: 1 },
+  { x: FIRE.x + LANE.length / 2, z: LANE.half + .5, w: LANE.length + 4, d: 1 },
+  { x: FIRE.x + LANE.length + 1, z: 0, w: 2, d: LANE.half * 2 + 2 },
 ];
 export const targetX = t => FIRE.x + t.d;
 

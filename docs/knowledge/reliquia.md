@@ -25,13 +25,23 @@ calls it; while it travels nobody else can have it. The team's one carrito
 lives in the jornada: push it onto the cargo pad by the entrance and press
 the yellow button (`sendCargo`); it rises through the ceiling (3 s), its
 load banks (`delivered`, haul, mangos) and it comes back down empty (3 s).
-Riding up with the quota met completes the jornada (`completeLevel`):
+Riding up with the quota met takes 2.4 s (`RIDE_HOME`; other rides 5.2 s) and completes the jornada (`completeLevel`):
 everyone still below is hauled to the camp with **1 HP**, and the next,
 deeper jornada is dealt. Banked bolívares also become mangos (one per
 Bs. 10), spent at the camp's shop (`SHOP`, a market stall west of the camp):
 farol, botiquín, machete, honda and the marcadora de pintura, each straight
 into a hand. Holding E at the truck ends the expedition; a wipe ends it with
 `wipeShare` %.
+
+**Sobretiempo** (`sobretiempoPay` in `rules.js`) pays bonus mangos when a jornada
+is completed: 1 per Bs. 50 above the quota, plus 1 per 30 s left on a `turno`
+encargo's clock, never more than `encargoPay(level)`. On a timed jornada a clock
+that ran out pays nothing, so hauling more risks the bonus. The Tab panel shows
+the running figure, and the clock stays visible once that encargo is paid.
+`state.sobretiempo` totals it across jornadas: the `level` event line and shout
+say each jornada's share, the results card shows the total. At the end it counts
+in the payout at Bs. 10 a mango (so Calor and `wipeShare` apply) and in `xpFor`.
+The mangos themselves are not multiplied: Calor only pays bolívares and XP.
 
 **Aiming.** E uses whatever the crosshair points at: every target in
 `interaction()` is a point and a radius, scored by its angle from the line
@@ -40,7 +50,7 @@ of your feet counts too. Levers, the carrito, the call at the empty shaft,
 the shop's goods, items, chests, winches, rubble and fallen panas all work
 this way.
 
-Camp (floor 0, a cavern on a ledge above the dark) → floor 1 … floor N (option `floors`, 2–4,
+Camp (floor 0, a terrace in a vast cavern above an underground lake) → floor 1 … floor N (option `floors`, 2–4,
 default 3) → the vault on the last floor. Seals:
 `ruedas` (two winches, hold E 1.6 s each, latch 12 s, one pana can do both),
 `guardian` (the sun guardian falls) and, on the last floor, the `boveda`
@@ -49,8 +59,8 @@ At the montacargas with the way down open the choice banner shows; barks 1
 and 2 are the votes ("¿Nos vamos ya?", "¡Una sala más!") and count for the
 titles.
 
-Extraction: hold E at the truck while every standing pana is within 9 m of
-it. A pana down elsewhere is left behind. A wipe (everyone down for 3 s)
+Extraction: hold E at the truck for 1.5 s while every standing pana is within 9 m of
+it. A pana down elsewhere is left behind. A wipe (everyone down for 2 s)
 pays `wipeShare` % of the truck (option: 20, 0 or 50). Downed panas inside
 the truck zone get up after 3 s (the truck's botiquín).
 
@@ -290,7 +300,7 @@ when a pana enters. Model: `props/reliquia-boss.js`, about 3.2 m, a wide hat, ar
 past the knees, a sack of bones; eight draws, no lights. HUD: the shared boss
 panel, its name and a bar that is its attention (`e.alert`), not health.
 
-- **You lose it.** It chases what it can see (`layout.sightClear`, 20 m) at 3.4 m/s
+- **You lose it.** It chases what it can see (`layout.sightClear`, 13 m; not a quiet pana in cover) at 3.4 m/s
   × difficulty, below a walking pana. Out of sight for .8 s it goes to the last
   spot it saw you (`search`, 14 s in all), tries up to three nooks within 13 m and
   then wanders off (`wander`) from room to room.
@@ -307,10 +317,65 @@ panel, its name and a bar that is its attention (`e.alert`), not health.
 - **The pit's edge** (`pitEdge` in `scene.js`): a stone lip with a pale band around
   the pit and the island, broken at the bridge, and sheer walls: three draws.
 
+### El Congo and El Mokele (`mokele.js`, `congo-view.js`, `congo-scene.js`)
+
+A place on the surface beside the dive, on `THEMES` like the others. `deck.js` deals it from
+`BIOME_DECKS.congo`: the maze rooms `canal` and `manglar` (`VINE_ROOMS`) plus the idol and the pit;
+side rooms are the ordinary ones, and the pit is a whirlpool (`pit.water`). `bossKind(theme)` is who
+sleeps at the pit. Adding the place changed no other place's deal: hash `layoutFor` for the other
+five before and after any change here.
+
+- **Vines are `run.solids` (`kind: 'vine'`).** So walking, sight and paths treat them as walls with no
+  new code. A `canal` row has exactly one gap, on a lane the Mokele fits, so every aisle connects and
+  whatever lies past the gaps is a dead end; `manglar` adds a 4 m nave and caps half the aisles off it.
+  Rows sit 3 m apart like the library's stacks, for the same reason: the 2.2 m aisle's centre lies on the
+  1 m path grid. Nooks stay out of maze rooms: their slabs would close an aisle.
+- **Corridors keep their 4 m `rect`.** Everything that reads a corridor (rubble, the mine's own width
+  test, swarm fields) still sees the shared width. The narrowing is solids (`dealVineKnees`): banks down to
+  a 3 m lane and knees from alternate sides. A knee stops .25 m past the middle so the far lane's grid line
+  stays clear for a .72 m body; less than that and the Mokele stops at the first bend without any error.
+- **Boats are looks only** (`congo-view.js`), like the suits: no rule sees them and speed is the walker's.
+  Afloat, the eye drops .52 m and the camera rolls a little. The hull is an open shell drawn double-sided:
+  a whole ellipsoid read as a brown hump in front of you.
+- **Opaque water hides loot.** So the pool has no `creciente`: it would drown every item from sight for 18 s.
+- **No roof.** `ruinShell` gets `roof: false`, or the neck goes through the ceiling. The fog is the sky.
+- **Budget.** The first load is at its cap, so `mokele.js`, `congo-view.js`, `congo-scene.js` and the models
+  all arrive by `import()`. Host rules can too: until `loadMokele` lands it just stands in the water (a tick
+  or two), and a test must `await loadMokele()` first.
+- **A save from before the Congo** has no `places`, and `loadSave` gives it `OLD_PLACES` (5): `themeOf` then
+  walks the old shuffle. With six its jornada would deal another place than its carts came from.
+
+**The Mokele** hunts with the Silbón's own code (`updateSilbon(..., MOKELE)`, the numbers in one table): nothing
+kills it, you lose it, its neck looks into a nook by the same `PEEK`, and running straight at you across the pit
+ends it (`mode: 'fall'`, the seal opens, loot on the rim). What it adds: it comes up 30 s after the landing
+(`MOKELE_RISE`; the Silbón's pact shortens it) in `mode: 'emerge'`; wandering, it turns back toward the nearest pana
+(`stalkEvery`: 18, 11 or 7 s by difficulty); chasing from over 6 m it surges ×1.32 for 3 s, then rests 3.5 s. Its
+3.9 m/s is below a walking pana's 4.6, and a surge above it, so a chase asks for a sprint now and then.
+
+**The order you meet it in** is per screen and never travels. `revealStage(d, mode)` is heard (under 58 m), a shape
+(under 27 m, just inside the 30 m fog), teeth (under 8.5 m and only while hunting, so a close-up always means
+trouble). Nothing names it before it can be seen: the rise says "Algo grande" and the boss bar waits for 27 m. Its
+footfalls and wake are synth voices in `ambience.js`, timed by `cueFor` and sent through `view.onFx`; the drone
+swells from `presence.js`. As a shape its colours are multiplied down (`shade`), since a lit hide vanishes into a pale
+fog. Teeth bring the neck to your eyes with the jaws open and the head scaled up (`headScale`, ×2.15). **Sustos:**
+suaves half the cues and a smaller head; apagados no cues and true size. The neck still comes down, and no rule changes.
+
+Try it: `?debug`, Lugar Congo, then `reliquia.spawn('mokele', 20)`. Suites: `tests/congo.test.js`,
+`tests/congo.browser.mjs` (two panas on a relay, screenshots in `qa/congo`).
+
 ### Hiding nooks (`run.nooks`, `dealLair` in `deck.js`)
 
 Two stone slabs against a wall leave a 1.25 m gap, 1.5 m deep, with a chalk hand on
-the lintel and no text (`hideNook`). The boss's body (`SILBON_BODY`, .72 m radius)
+the lintel and no text (`hideNook`). It has to read as a door you can walk through,
+because that is the only tutorial it gets: a pale sill crosses the threshold, flags
+run inside, and the back wall is warm unlit courses around a candle on a ledge (one
+`userData.flames` point, so the floor's `candleFlames` draws it; no light of its
+own). `dress` in `scene.js` hangs nothing within 1.2 m of a nook's rect: a relief
+on the wall behind one stands in the opening and reads as a blocked doorway. The lane
+a .42 m body fits through is only .41 m wide, so a pana stopped by a slab within
+.95 m of the middle slides along it into the opening (`nookFunnel` in `deck.js`,
+called from the walker's `move` in `rules.js`, so it is the same for host and guest
+and draws nothing random). The boss's body (`SILBON_BODY`, .72 m radius)
 does not fit; a pana's (.42) slips in and out. Edges sit on the .25 m collision
 grid (hence the odd eighth in `dig`). Three in the pit room, sometimes one or two
 in others, never in the entrance, the vault or a hidden room; dealt last from their
@@ -349,6 +414,51 @@ Cuaimas (`snake`) are dealt beside a room's loot; they strike within 2.4 m,
 poison (2 HP/s for 5 s) and slide home when the pana leaves their reach.
 Director waves on floor 1 are 30 % bats; deeper, spiders join.
 Models: `engine/models/fauna/cave-creatures.js`.
+
+**Fear wears off (`BRAVE`, `enemies.js`).** A beam held 4 s on a mummy or a phantom stops freezing it for 5 s. A bat that scatters flees 1.6 s, then ignores the beam for 5 s while it comes back, and an ecosystem body in that state keeps its target (`e.brave`) instead of drifting back to its site past `attention`'s reach. A flare within 4.5 m never wears off.
+
+**The white disc.** The headlamp is a SpotLight of 25-58 cd on the camera, so anything within arm's reach burned to white; in the camp the jeep did it from 0.27 m. `capSpotNearField` (`engine/fx.js`) stops spots gaining strength inside 2.5 m (`LAMP_NEAR`), and the jeep's collider keeps your eyes further off it. Moths and mushroom halos are additive Points that would fill the screen up close: `fadePointsNear`.
+
+### The food chain (`ecology.js`, `eco-view.js`, `engine/ai/ecosystem.js`)
+
+Moths graze glowing mushrooms, bats eat moths, cuaimas eat bats. `dealEcology`
+(`deck.js`, its own stream) deals `run.ecoSites`: mushroom thickets and root
+thickets (nothing collides), a roost per bat colony, a lair per cuaima. A jornada's
+chain is rebuilt from those at `start` and `completeLevel` and simulated 150 s
+before anyone arrives, so each floor starts somewhere different. Once someone is
+below it steps once a second. Caps: 10 bats, 7 cuaimas.
+
+- **Bodies.** Every creature is a row in `g.eco.pop`; only those within 26 m of a
+  pana, in a woken room, get a body in `g.enemies` (`e.eco` is its id; at most 3
+  bats, 5 cuaimas) and go back to being numbers past 34 m, wounds kept. A body's
+  death kills its creature, and starving or being eaten kills its body. Bodies sit
+  outside the Director's cap of 18. The rest of a roost is one instanced draw.
+- **Senses (`attention`).** A body only notices a pana within 2.6 m, noisy within its
+  `hearing`, or inside its `sight` with a clear ray; founders see less and hear more
+  with depth (`traitsFor`, blind at jornada 7). Otherwise it follows its creature to
+  feed or roost. El Silbón's sight fell from 20 m to 13 m for the same reason.
+- **Hiding (`p.covered`, `hiddenFrom`).** In a thicket or the roots, past 2.6 m and
+  quiet for .8 s, bats, cuaimas, spiders, the stalker and El Silbón do not see you.
+  Mummies, phantoms, the guardian and the jaguar are not fooled: otherwise a patch
+  beats the whole Director. A thicket hides only with cover at or above .3, which it
+  loses as moths strip it; roots never wilt. Unlike a nook, a blow still lands.
+- **Why a wipe matters.** No bats: moths reach most patches within a minute or two,
+  cover and light go (a healthy patch counts as light for `lightOn`, so mummies speed
+  up), and no screech is left to lure El Silbón; waves stop bringing bats too. No
+  cuaimas: more bats, and past 8 on a roost it is `touchy`, dropping at 6 m instead
+  of 3.8 m. Sucesos and the crack swarm stay outside the chain: they come from
+  elsewhere. A farol's beam or a flare cuts a patch's moths by 45 % a second.
+- **Net.** `g.eco` is plain JSON: under 8 KB whole, deltas once a second, and a new
+  host carries on exactly (`rng` included). Sites and links never travel. The Tab
+  layer shows the four numbers. Noises for the simulation wait on `g.noise`, which
+  no snapshot carries.
+- **Tuning.** Pest numbers round to .001, not .01: at .01 the seed rounds away and a
+  patch never comes back. Eating to `full`, not just past `hungry`, is what lets bats
+  reach the breeding energy. Hunters' `hungry` bounds their kill rate (about one bat
+  per 130 s), so `catch` can be high without wiping the colony. Over 120 seeded runs
+  of 600 s, cover took bat survival from about 62 % to about 87 %.
+
+Try it: `?debug`, then `reliquia.crowd(24)` or `reliquia.wipe('bat')` (host only).
 
 ### The swarm (`swarm.js`, `swarm-view.js`)
 
@@ -442,7 +552,7 @@ A run builds in about 5 ms. A test walks 25 seeds and reaches every room.
 
 `view.js` is the first-person camera (eye 1.45 m, pitch −1.2…1.1) and owns
 the light. There is no sun and no shadow pass anywhere: the camp is a look like
-any other (`caverna`), with dark fog (5–30 m), the headlamp spot on the camera, a hand light when you hold a farol or the
+any other (`caverna`), with dark fog (8–60 m, the far hall carries its own haze past it), the headlamp spot on the camera, a hand light when you hold a farol or the
 crown, and a fixed pool of five point lights moved to the nearest braziers
 and other panas' faroles (at the camp, to its `LAMPS`) every 0.25 s. The light
 count never changes, so shaders never recompile on the way down. Your hands are the engine's rig
@@ -511,36 +621,124 @@ calls. Software WebGL is
 pixel-bound, so compare calls and triangles, not milliseconds. The host's
 20 Hz timer shares the main thread with drawing: a host whose GPU lags
 also simulates and publishes less often, which guests feel as lag.
+**Fires** are the shared `engine/fx/fire.js` (`docs/SHARED-ENGINE.md`, "Fire"): every
+brazier and the camp's campfire, two draws each. A brazier's bowl now bakes with the
+floor (it was four animated cones on top of its own draws), and `brazier({ lit: false })`
+is the coal bed under the flame. The flame is premultiplied and partly opaque, because
+the headlamp lights the wall behind it to near-white and added light alone burns out to
+a white smear there. The view's pool lights keep their fixed number: a source with a
+`fire` takes its intensity, wander and colour from `fire.light` every frame, and
+lanterns keep the old breathing. Blackouts dim the flames through `world.candles`
+(`setLevel`). `world.feedFires` flares the ones nearby when a tunnel caves in and when
+la codicia rises, and all of a floor's when a blackout ends. The roar is one looping
+noise band in `ambience.js` following `world.fireNear`, and crackles arrive through
+`view.onFx` from the moment a spark pops. Candles keep their own instanced shader:
+they are tiny, and the library has hundreds of them.
+
+**Cave-ins** break with `engine/fx/rock-crack.js` (`docs/SHARED-ENGINE.md`, "Rock cracks"),
+which `syncRubble` in `scene.js` loads with the first cave-in, off the first-load budget.
+It reads only `state.rubble[id] / RUBBLE_HOLD`, so guests see it from the snapshot and it
+cannot change play: hold time, who can dig and the host's authority are the rules' as
+before, and its random numbers are its own. A heap's sides are inside the tunnel walls,
+so the cracks are aimed at the two ends (`faces`) and spread over the tunnel's width. The
+shared stone goes white under a headlamp, which swallows an emissive crack, so heaps use
+darker clones of its materials and each crack has a dark edge round its glow. A blow
+knocks your hand (`hands.knock`) and jolts the view a little only while you are the one
+holding E within 5 m, never on reduced motion, and the Sustos setting scales it as every shake.
+
+**Carved bricks and rock** are `engine/fx/pom.js` (`docs/SHARED-ENGINE.md`, "Carved surfaces"),
+which `scene.js` lazy-loads at every quality, off the first-load budget. A material asks for it with
+`userData.relief` (`'brick'` in `ruinShell`, `'rock'` in `camp-cave.js`) and `carve` picks it up. It
+touches no rule and no collision.
+
+- **A block has one map.** A ruin block is a box 1.12 × .52 m with UV 0..1 on each face, so the height
+  tile is two courses of two bricks. Only ±z is mapped: the top, bottom and ends only show in the
+  joints, where a whole map squeezed into a few pixels sparkled, so they take a speck of the map's
+  dark corner. That also changes the plain look a little at every quality.
+- **The rock has no UVs and one normal per facet.** It uses the world projection, one axis per facet,
+  so a facet's edge can show a seam in the pattern; the facet's shading already breaks there.
+- **The headlamp sits on the camera, so it casts no relief shadow.** What shows the depth is the shift
+  itself and the dark held in the grooves (`cavity`). Self-shadow stays off for this reason.
+- **Smooth height noise looks wrong under the lamp.** It read as veins, then as a contour map. The
+  rock is now flat tilted chips with sharp creases, and `MAX_SLOPE` stops their edges glinting white.
+- **What it costs** (SwiftShader, 1280 × 800 at resolution 1, seed 4242, three rounds interleaved in
+  one page, median of nine frames; software GL is pixel-bound, so read the ratios). Draws and
+  triangles are the same in all three versions.
+
+  | View | plain ms | normal map ms | POM ms | POM / normal | mean layers (max) | relief on screen |
+  |---|---|---|---|---|---|---|
+  | Brick, head-on, 1.5 m | 245 | 274 | 396 | ×1.44 | 9.1 (18) | 97 % |
+  | Brick, grazing | 272 | 327 | 407 | ×1.25 | 11.1 (18) | 66 % |
+  | Rock, head-on, about 2 m | 196 | 243 | 279 | ×1.15 | 9.7 (22) | 36 % |
+  | Rock, grazing | 255 | 288 | 312 | ×1.08 | 11.1 (22) | 8 % |
+
+  CPU submit does not move: about 2 to 2.6 ms in every version. No GPU was available, so this
+  has not been timed on real hardware. Nítida normally draws at resolution 2, four times the pixels.
+
+**The stone jaguar** (`jaguarStatue`, `engine/models/props/jaguar-stone.js`) is one
+mesh with one vertex-coloured, flat-shaded material, painted facet by facet: it bakes
+to a single draw, 2.1 k triangles where the old one was 37 meshes and 7.9 k. The headlamp bleaches a pale stone to cream at 3 m, so the stone is
+a dark sandstone; moss goes on steep-up facets of the cat and comes as clumps on the
+plinth, whose tops are one big facet each. The red ring players see around it in
+`derrumbe` is the falling rocks' warning (`rockRings` in `view.js`), not the
+statue's own: it has no behaviour of its own and no collision, as before.
 Static decor is baked per floor; braziers animate; crystal clusters are
 instanced with their own shader and must not go through `bake`. A revealed
 hidden room rebuilds that floor's shell once. Every item kind has one
 prototype that the map clones. Floors other than yours are hidden.
 
-## The camp's cavern (`camp-cave.js`)
+## The camp's cavern (`camp-cave.js`, `camp-vista.js`, `camp-falls.js`, `camp-gear.js`)
 
-The camp is a ledge above the dark, not a sunny clearing, and it is looks only:
-`layout.js` still decides where you can walk, from the same `CAMP_RECT` as before.
-The walls stand past the rect's edge, and whatever stands inside it hangs overhead
-or lies flat, so nothing looks solid and walks through. The chasm is the north-east
-corner the floor leaves out: its lip only breaks outward, past the rect, and a rail
-stands beyond anyone's reach, so no pana can seem to stand on air.
+The camp is a terrace in a vast dark hall above a still underground lake: the base camp
+of an old expedition, with the mine and the pit as the way down. It is looks only:
+`layout.js` still decides where you can walk, from the same `CAMP_RECT` as before, and
+`tests/cavern.test.js` checks nothing of the hall stands in that rect. The rock tower that
+holds the mine mouth and the low berm stand past the rect's edge, and whatever stands inside
+it hangs overhead or lies flat (the pale walkway is a decal), so nothing looks solid and
+walks through. Past the berm a pana is stopped by the same invisible rect edge, so the gap
+where the road leaves is closed by a low timber barricade.
 
-- **One rock mesh.** Walls, ceiling, cliff, teeth, stalactites and the spires in the
-  chasm are one vertex-coloured, flat-shaded geometry (about 10 k triangles), built
-  once per page and reused by every jornada's world. Leaving out the old jungle
-  took the camp from about 330 k triangles and 330 draws to about 40 k and 165
-  (1280 × 720, `media`, spawn looking at the shop).
+- **The far plane is the trap.** `setLook` names the camp's look `caverna`, and the far plane
+  used to test for `camp`, so it was clamped to the fog's far end (47 m): nothing past that
+  drew at all. The look now gets `CAVERN_FAR`; `view.lookName` reads it (`view.look` is the
+  turning method, which had silently overwritten a getter of the same name).
+- **One unlit draw for the far hall.** `camp-vista.js` is renderer-free and builds triangle
+  soup: `MeshBasicMaterial`, no fog, no tone mapping, about 29 k triangles, so a colour
+  written there is the colour on screen. Each object takes a stepped tone from its distance
+  (`TONES`, darkest nearest), which is what makes the layers read as miles of air; facets
+  and warm pools (`POOLS`) are baked per vertex, since no light could reach that far.
+- **The reflection is real geometry.** The lower parts of the soup are mirrored below the lake
+  (`Reflejos`, about 9 k triangles) and `createLake` is a translucent sheet over them, clearer
+  at a grazing look. No render target, no second pass.
+- **Keep the roof above what you carve.** An earlier, taller head went through the ceiling and
+  read as a face with no top; `ceilingAt` lifts the roof around it, and a test holds it there.
+- **The stone guardian's face is dark on purpose.** `buildHead` is navy slate (`SLATE`) that warms
+  (`WARM`) only near a spot off-centre toward the beam, so the far cheek stays navy. A gold or round
+  face read as a cheerful sun, so the outline is squared, the brow falls toward the nose and the
+  mouth's corners turn down. The beam is additive and draws over the face, lifting even its black
+  sockets, so judge the palette on screen, with the beam, and keep it darker than looks right in code.
+- **Additive tints are display values.** `ShaderMaterial` output has no colour-space step, so
+  a beam tinted with a linear amber looks mauve over navy: `createBeams` converts to sRGB first.
+  Anything additive near the lift also washes out the view through the gallery, so the warm
+  spill down the shaft ends at the floor.
 - **No new lights.** `LAMPS` borrows the view's five pool lights while you are at the
   camp, which is also why the campfire no longer brings its own. A lamp past the
-  nearest five keeps its emissive glass and halo, and goes dark on the rock.
+  nearest five keeps its emissive glass and halo, and goes dark on the rock. Far lanterns,
+  fungi and mist are one `Points` draw with a size per point (`createFarGlows`).
 - **No sun at all.** A `castShadow` light whose shadow map has never rendered makes
   every lit material fail to draw, with no error: only unlit materials appear. That
   is what happens once the camp has no sun, so the light was removed, not dimmed.
-- **The shaft.** The hole in the ceiling is over the chasm, so nobody walks through
-  the additive cone. The sky is one unlit disc above the chimney.
+- **What it costs.** About 91 k triangles and 200 draws at spawn (1280 × 800, `baja`), from 42 k
+  and 173; `cavern.browser.mjs` fails above 95 k or 260. Roughly a third is the soup and its image.
+- **Coming up.** A level is finished by riding the lift up with the quota; the truck ends the
+  run. While you ride at the camp's stop, `view.js` lifts a `veil` (fog, hemisphere, exposure)
+  as the cage rises and eases your heading toward the gallery's mouth, so the first thing you
+  see is the cavern through the mine's frame. It only touches this screen's picture; the
+  mouse still works and rules, timing and arrival are untouched.
 - **Rails.** `mineTrack` is sized for a roller coaster; at eye height its sleepers
   fill the screen, hence `RAIL`, a scale of .6 with the points divided to match.
-- **Sound.** `ambience.js` plays a low draft, far rock and pebbles, and each visible
+- **Sound.** `ambience.js` plays a low draft, far rock and pebbles, the steady far roar of
+  the falls (`roarFor` in `options.js`, quieter on softer Sustos), and each visible
   drop lands with its own sound (`DRIPS`, `dripLands`, on the view's clock). Metal,
   a scrape and the faint whistle go through `scareSound`: half and quieter on
   Suaves, none on Apagados. Eerie events and `presence.js` still never run here.
@@ -558,9 +756,9 @@ panas and pays Bs. 420, and carrying is exactly as fast as before.
 ## Biomes, sucesos and el encargo
 
 **Places.** `THEMES` in `deck.js`: `biblioteca`, `mina`, `inundada`, `hongos`,
-`templo`. With an `origin` (a dealt expedition), `themeFor(depth, 'alternar',
-origin)` walks a shuffle of all five keyed on that seed, so runs open anywhere and
-a place only repeats after the other four. `themeOf(state)` reads `state.origin`.
+`templo`, `congo`. With an `origin` (a dealt expedition), `themeFor(depth, 'alternar',
+origin)` walks a shuffle of all of them keyed on that seed, so runs open anywhere and
+a place only repeats after the others. `themeOf(state)` reads `state.origin`.
 Without an origin (the empty lobby state, old tests) it swaps library and mine. Every
 theme except the library plays as the mine (`library` is the only special-cased
 one); each has a deck in `BIOME_DECKS`, a palette in `RUIN_PALETTES`, a look in
@@ -571,6 +769,30 @@ anything that said `f > 1` or `floor > 1` was dead: jaguar reliefs, roots, skull
 column doorways, spiders in waves and better chest rolls never appeared. They read
 `depth` / `this.level` now. When you add depth-driven content, never key it on the
 floor number.
+
+**La mina is its own place.** It stopped reading as a reskin of the library once
+its layout and its surfaces both changed; dressing alone did not do it.
+- *Deal.* `MINE_DECK` (`socavon`, `galeria`, `pozo`, `ramal`, plus `sima`, `veta`,
+  `cuerdas`...; no `columnas` or `cripta`), `MINE_SIZES`, a path that favours going
+  sideways, an extra dead-end `ramal`, and 3 m drifts. `MINE_SPAN` is `[-1, 2]`, not
+  ±1.5: `ruinShell` builds walls from a 1 m grid, so an edge on a half metre draws a
+  wall a metre inside the collision and the camera clips it. Room sizes stay even for
+  the same reason. The Silbón (.72) still fits, in the one lane at `+.5`.
+- *Surfaces.* `palette.rock` in `ruinShell`: tumbled blocks, no courses, band, glyphs
+  or brick relief, floor without seams. `paletteFor` darkens with depth (`mina`,
+  `minaCobre`, `minaHonda`).
+- *Light.* `MINE_LOOK` and `MINE_DEEP_LOOK` (`minaHonda`, depth > 2) set `lampAngle`,
+  `lampPenumbra`, `lampReach` and `lampPost`. Every other look falls back to the old
+  .44 / .42 / 24 / 7, so only the mine's cone changes.
+- *Dressing.* `dressMine()` in `scene.js`; props are in `engine/models/props/mine.js`.
+  Every pit gets opaque black water (`BLACK_WATER`): near the rim in a `pozo`, a sump at
+  `SUMP_LEVEL` under the others. `floor.machines`, `floor.drips` and `floor.crawlers`
+  tick only while their floor is visible and not with reduced motion.
+- *Proof.* Hash `layoutFor(seed, depth, theme)` for the other four themes before and
+  after a mine change: `generateRun` must deal them byte for byte the same.
+- A test that walks from a seed's first deal is tuned to that deal. Changing the mine's
+  deck broke three that leaned on a lucky wander, a patch the moths had spared, and a
+  bridge that happened to run south; they now set up what they measure.
 
 **The deck's streams.** Anything added must not shift the library's `R()`: the
 hiding-spot tests are tuned to those deals. `dealExtras` (twin plates, cuerda,
@@ -642,7 +864,7 @@ with the floor, their halos join the floor's single `Points`. Paths that fail
 `themeFor(depth, place)` in `deck.js` deals each jornada a theme from the
 room's **Lugar** option (`options.place`, a primary lobby choice the host
 sets): one place every jornada, or `'alternar'` (the default), which walks all
-five in an order of the expedition's own (see "Biomes, sucesos and el encargo").
+of them in an order of the expedition's own (see "Biomes, sucesos and el encargo").
 `themeOf(state)` reads it from `state.level`, `state.options` and `state.origin`,
 which every snapshot already carries, so `run.theme` itself travels nowhere; `generateRun`, `layoutFor`
 and `createExpeditionWorld` take the theme, and their caches key on it.
@@ -838,7 +1060,7 @@ Each device keeps its own rank on `engine/progress.js` under
 state: 10 for the dive plus up to 20 for its length (full at five minutes), 15 a
 jornada cleared, 1 per Bs. 100 in the truck (at most 60), 10 per encargo won
 (`encargosWon`, kept across jornadas because `encargo` only holds the current
-one), 5 per revive (at most 20), and 20 for extracting with something in the
+one), 1 per 2 mangos of Sobretiempo (at most 20), 5 per revive (at most 20), and 20 for extracting with something in the
 truck. The length part and the truck condition keep a run that leaves at once
 at 10 XP, not worth farming. A pana who joined during the results is a spectator
 and earns nothing.
@@ -981,8 +1203,10 @@ extract and replay, plus solo pause, the offline fallback and the hub.
 `tests/silbon.browser.mjs` is two panas on a relay: the guest hides, the windup and the
 flush reach them, a new host keeps the boss, and it falls and opens the seal.
 `tests/silbon.test.js` and `carga.test.js` cover the logic, each difficulty included.
+`tests/ecology.test.js` covers the food chain on every place, `tests/ecology.browser.mjs` is two panas on a relay: the guest sees the host's numbers, hides, and a new host keeps it all.
 `tests/swarm.test.js` covers the swarm on every place and jornada, `swarm-perf.test.js` its budget; `tests/swarm.browser.mjs` is two panas on a relay: telegraph, guest-side bodies, draw calls, a bite, a machete, a new host.
 `tests/studio.browser.mjs` opens the new models and the map in Studio.
+`tests/relief.browser.mjs` covers which version each device gets, the live swap with the same draws, every shader variant compiling, `?pom=0` and a phone.
 With `?debug`, `window.reliquia` exposes `room`, `view`, `state`, `me`,
 `place(id, x, z, h)`, `face(h)`, `step(seconds)` and `interaction`.
 

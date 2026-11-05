@@ -1,0 +1,10 @@
+/* The rank-up ceremony. Everything sits on the click-through fx layer. */
+.pk-lu { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 16px; text-align: center; }
+.pk-lu-flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 55%, #fff 0 45%, #fff6c9 100%); opacity: 0; pointer-events: none; }
+.pk-lu-word { position: relative; font: 900 clamp(24px, 8vw, 92px)/1 var(--pk-display, sans-serif); color: var(--pk-yellow, #ffc629);
+  -webkit-text-stroke: clamp(6px, 1vw, 12px) #1c1033; paint-order: stroke fill; text-shadow: 6px 6px 0 #1c1033; white-space: nowrap; }
+.pk-lu-rank { position: relative; font-size: clamp(16px, 2.4vw, 24px); }
+.pk-lu-stats { position: relative; display: grid; gap: 4px; min-height: 40px; }
+.pk-lu-stat { display: flex; gap: 12px; align-items: baseline; justify-content: center; padding: 4px 16px; background: var(--pk-hud, #1c1033); color: #fff; font-weight: 800; box-shadow: var(--pk-drop, 4px 4px 0 #0008); }
+.pk-lu-stat b { display: inline-block; min-width: 3ch; font: 900 clamp(22px, 3vw, 32px)/1 var(--pk-display, sans-serif); color: var(--pk-yellow, #ffc629); font-variant-numeric: tabular-nums; }
+.pk-lu-prizes { position: relative; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: min(560px, 90vw); }

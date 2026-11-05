@@ -16,6 +16,8 @@ export const SUCESOS = { apagon: { dur: 14 }, murcielagos: { dur: 10 }, derrumbe
 export const SUCESO_POOL = {
   biblioteca: ['apagon', 'apagon', 'murcielagos'], mina: ['apagon', 'murcielagos', 'derrumbe'],
   inundada: ['creciente', 'creciente', 'apagon', 'murcielagos'], hongos: ['esporada', 'esporada', 'murcielagos', 'apagon'], templo: ['derrumbe', 'derrumbe', 'apagon', 'murcielagos'],
+  // No creciente: the river is opaque, it would drown the loot from sight.
+  congo: ['esporada', 'apagon', 'apagon', 'murcielagos'],
 };
 export const firstSucesoIn = g => 60 + random(g) * 30;
 const ROCK = { warning: .9, radius: 1.5, damage: 18, stun: .4, cap: 8 }, SPORES = { trigger: 1.1, reach: 2.6, reversed: 3.5, rearm: 18 }, CRACK = { trigger: 1.1, rearm: 14 };
@@ -113,7 +115,7 @@ export function startSuceso(g, kind) {
   const live = below(g); if (!live.length || !SUCESOS[kind]) return false;
   g.suceso = { kind, t: 0, dur: SUCESOS[kind].dur, next: 0 }; g.sucesoLast = kind;
   const near = (target, a, b) => { const angle = random(g) * Math.PI * 2, d = a + random(g) * (b - a); return { x: target.x + Math.cos(angle) * d, z: target.z + Math.sin(angle) * d }; };
-  if (kind === 'murcielagos') for (let i = 0, n = Math.min(12, 4 + 2 * live.length), tries = 0; i < n && tries < 40; tries++) { const q = near(live[Math.floor(random(g) * live.length)], 5, 12); if (spawnEnemy(g, 'bat', q.x, q.z, { born: g.time - 1, hanging: false, y: 2.6 })) i++; }
+  if (kind === 'murcielagos') for (let i = 0, n = Math.min(5, 2 + live.length), tries = 0; i < n && tries < 40; tries++) { const q = near(live[Math.floor(random(g) * live.length)], 5, 12); if (spawnEnemy(g, 'bat', q.x, q.z, { born: g.time - 1, hanging: false, y: 2.6 })) i++; }
   if (kind === 'creciente') for (let i = 0, tries = 0; i < 2 && tries < 30; tries++) { const q = near(live[Math.floor(random(g) * live.length)], 6, 11); if (spawnEnemy(g, 'snake', q.x, q.z, { born: g.time - 1 })) i++; }
   if (kind === 'derrumbe') g.caveIn();
   g.event('suceso', SAY[kind], { suceso: kind });

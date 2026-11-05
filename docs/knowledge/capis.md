@@ -1,7 +1,7 @@
 # Capis a Pintazos
 
-Turn-based paint artillery between capybaras: two teams of three capis on a
-stretch of the Llanos generated for each match (hills, a cave mountain,
+Turn-based paint artillery between capybaras: two teams of three capis (or six
+capis each on its own side, "Free-for-all") on a stretch of the Llanos generated for each match (hills, a cave mountain,
 islands and bridges, a valley, a tepuy), solo against the machine or with
 up to four panas in a room (`players: 4`, see "With friends"). Each turn a capi walks,
 jumps, picks one of five weapons from Pepazo's arsenal (see "Weapons"), aims
@@ -186,6 +186,75 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
   ground textures when a map of another size arrives. It bounces on a good shot, wobbles when one of ours is hit and
   goes dizzy on a loss. Light: a warm hemisphere, a low warm sun from the
   front left and a warm rim light from behind.
+
+## Free-for-all (`mode: 'ffa'`)
+
+A room option next to Equipos. Six capis, each its own side: a `team` in the
+rules is a side, so its colour, its shots, its turn and its bot all still go by
+`team`; `match.teams` says how many (2 or 6). The map is always large (`roomOptions`
+forces it and `createMatch` too, so a guest's copy agrees). Its kind comes from
+`FFA_KIND_ODDS`: cerros .45, terrazas .3, suave .15, valle .1, never cuevas or
+islas, whose tunnels and islands strand six capis.
+
+- **Spawns** are `spreadSpawns` in map-rules.js: one per sixth of the map, at least
+  0.55 of a sixth apart, shuffled by the seed. The map's own team spawns and its
+  fairness checks are untouched: no re-roll depends on the mode.
+- **Turns** go round the sides still standing (`nextTeam`); the limit is 90 turns
+  (`ffaTurnLimit`), then most capis standing, then least paint (`byCount`). A
+  winner is the last side standing; `-1` is a draw.
+- **Shots** are per side, as for a team, so each capi has the full arsenal.
+- **Online**: each pana takes the first free side (`seatFor`), the machine plays
+  the rest, changing mode reseats everyone (`reseat`) and the team cards hide.
+- **Colours**: six in `TEAM_COLORS`, six slots in `terrain-material.js`'s
+  `uTints`. A capi soaks up the colour of whoever hit it last (`c.by`). The
+  scene builds a side's cloth, launchers and shells when a match first needs it,
+  so a teams match never bakes the other four.
+
+## Crates and tombstones
+
+Both are `engine/play/loose-prop.js`: rules state, so they fall when the ground
+goes, fly when a blast throws them, sink in the water, and reach guests in the
+snapshot.
+
+- **Crates** come down under a parachute on turn 3, then every 3 turns while
+  fewer than 3 lie about (`RULES.crate`), from a stream of their own so they never
+  shift the winds. Taking one is `CRATE_REACH`: body radius + crate middle + 0.35,
+  measured between the two middles, on any phase of any turn, by any capi. The
+  margin is the fix for friends stopping one step short. Inside 0.75 of a crater a
+  blast smashes a crate, inside its reach throws it; La Licuadora's tunnel
+  smashes one in its way. A capi going for one has no protection: `hurt` paints
+  and knocks it like any other. `CRATE_LOOT` in weapons.js says what a crate holds.
+  The machine walks to one within 9 units on its level for up to 30 % of the turn.
+- **Tombstones** are `grave()` from `engine/models/props/cemetery.js` (`mound:
+  false`: its dirt would float in front of the slab) with a ribbon of the side's
+  colour. A capi painted out topples for a second, then its tomb comes up; one
+  lost in the river leaves it on the nearest dry ground.
+- **Paid shapes are a stub**: `tombs.js` keeps the chosen shape and an owned
+  list in localStorage; the plain one is free, the others have an `unlock` id and
+  show a padlock and "Muy pronto". A shop only has to call `grant(unlock)`. No
+  shop or payment exists yet. Online, each pana's choice goes in an action and
+  the first pana on a side sets that side's shape.
+
+## Hops
+
+`RULES.airControl` and `airSpeed` (a walker option, off by default) let the held
+key steer a hop. That doubled how far back a hop onto a ledge starts, and lets a
+hop that brushes a lip recover. `floorsOf` is the one floor graph the checks and
+tests use; its hop is what a capi does with the key held, so it has to stay under
+the real reach.
+
+The cave mountain's mouth had a real bug, worth keeping in mind for any overhang:
+`stepSideWalker` tests a body's whole height against the wall, so a walker
+stopped about 0.75 short of the lip, on the ramp, where a hop bonked off it. The
+gallery now has 2.4 of room under the ledge (`MOUTH.room`), its floor lies 1.9
+under the lowland (`MOUTH.drop`) and a ramp a little under 45° (`MOUTH.run`) climbs
+to the rim, so the ledge is 0.8 over the lowland.
+
+Still dead ends: a bank under an island's bridge and a valley floor under its
+arch. A span across a side view closes the way past it, so no slope can reach the
+top without a hole in the span. Those are dug out of with La Licuadora or a blast.
+A valley's ledge does have a buttress up from the floor; a pond's bowl can eat it
+on a small map.
 
 ## With friends (`online.js`, `network.js`)
 
@@ -421,6 +490,18 @@ throw that lands safely closest to the rival, either way, else the one that
 lands furthest from its team (`safeShot`: a capi boxed in a pit). It never
 spends a scarce shot on a hopeless one.
 
+**Looking for a shot.** Most matches at the limit were not walled off: both
+sides stood still, lobbing throws that landed close and painted nobody. A low
+wall or a two-unit ditch ended the walk, and a rival within `APPROACH` never
+started one. So when no paint has landed for two of a team's turns (`quiet`)
+and nothing is feasible from here, the plan has `seek`: it walks whatever the
+range, weighs the shots again every 3 units and stops at the first feasible
+one. Blocked, it hops if that lands dry (`seekOn`), else turns back once. It
+may go on towards water only while it could still walk back (`canReturn`): a
+bank can carry a capi on, and looking only ahead at the edge drowned capis
+mid-walk. If it finds nothing it digs (`digPlan`) even when a lob would land
+within `DIG_MISS`, since that lob opens nothing.
+
 **Aiming.** `aimErrorOf(difficulty, turn, behind)`: the shared difficulty's
 `aimError` (`engine/play/difficulty.js`), scaled ×3 for the angle and ×1.6
 for the power (half for a bounce: its power carries further along the
@@ -435,7 +516,9 @@ before: none of this touches the rules.
 
 **The cost.** About 12 to 18 ms a turn on average and 40 to 56 ms at most on
 an idle machine (the worst turns: a search, a walk and a second search from
-where it ended); a busy machine can multiply both.
+where it ended); a busy machine can multiply both. A turn spent looking for a
+shot searches every 3 units, spread over its frames: up to 130 ms over the
+turn for experto, 260 ms for fácil, whose scarce shots last longer.
 
 **The turn limit.** Two teams that cannot get at each other (three capis
 stuck in a crater, the last rival out of range) would play forever, so after
@@ -443,10 +526,11 @@ stuck in a crater, the last rival out of range) would play forever, so after
 wins, then the one with less paint, else a draw (`byCount`, `endedBy:
 'turns'`, a toast and its own line on the results card). Over 330
 bot-against-bot matches (120 fácil, 90 normal, 120 experto on every size and
-kind) 5.0 %, 3.3 % and 1.7 % end there (the weapon picker's first bot: 30,
-10 and 8 %); `map-matches.test.js` runs 40, 30 and 40 of them. What is left
-is geometry: a capi on a pillar in the sea or in a pit the jump cannot
-leave, 50 to 90 units from the last rival, with a hill between. A match can
+kind) 5.0 %, 3.3 % and 4.2 % end there (7.5, 5.6 and 6.7 % on the same maps
+before the bot looked for a shot; the weapon picker's first bot: 30, 10 and
+8 %); `map-matches.test.js` runs 40, 30 and 40 of them. What is left is
+mostly geometry: a capi on a pillar in the sea or in a pit the jump cannot
+leave, with a hill or a wide water between it and the last rival. A match can
 never stall on ammo: La Piñita never runs out.
 
 **The mix** over those 330 matches: La Piñita 45 to 56 % of the shots
@@ -475,14 +559,14 @@ Trueno 3.5 to 12 % (before: under 0.5 %), La Licuadora 9 to 13 %, La Lejana
     middle under a natural bridge.
   - `cuevas` (Montaña de cuevas): a broad massif over the middle (half-width
     0.27–0.31 of the map, 12–15 over the lowland, a broad peak and a craggy
-    crest) and a tunnel through its foot from lowland to lowland, rising
+    crest) and a tunnel (radius 2.2–2.4) through its foot from lowland to lowland, rising
     1.8–3.4 inside, with one or two rooms. One face (the seed picks which) is
     sheer rock overhung by the crest's lip; the other flank climbs: from the
     lowland a capi hops (1.1) onto a rock ledge over the tunnel's mouth, then
     walks up shelves and risers (about 45°) or, where the crest is too high
     for that, hops up steps under 1 high, reaching the crest's height
     0.35–0.45 of the half-width from the middle (the crest inside stays as it
-    was). Under the ledge a low gallery (1.8 high) runs from a dip in the
+    was). Under the ledge a gallery (2.4 high) runs from a dip in the
     lowland to the tunnel. The front capis start on the crest; every capi,
     the back ones in the lowlands too, can walk or hop up to the summit
     (through the tunnel from the sheer side). In 2D a tunnel's roof is a
@@ -536,7 +620,8 @@ Trueno 3.5 to 12 % (before: under 0.5 %), La Licuadora 9 to 13 %, La Lejana
   (`apart`), a cave is shut, a capi cannot walk or hop up to the mountain's
   summit (`summit-shut`, its highest floor), the teams differ by more than `FAIR` (mean
   height 2.6, front capis' height 3.2, sky 0.2, cover 0.3, distance to the
-  nearest rival 6, walk there over walk back 1.6, capis with a shot 1), a
+  nearest rival 6, walk there over walk back 1.6, capis with a shot 1), the
+  roomiest way between rivals squeezes under 2.2 of air (`choke`), a
   team has no shot, the front capis cannot hit each other with no wind, or a
   capi can neither walk to within 32 of a rival nor hit one (`walled-in`).
   The next attempt of the same seed (`capis-map:<seed>:<size>:<attempt>`) is

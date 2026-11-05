@@ -1,5 +1,6 @@
-// Capis a Pintazos: turn-based paint artillery between two teams of three
-// capybaras on destructible ground. Pure (no DOM, no Three.js): the game,
+// Capis a Pintazos: turn-based paint artillery on destructible ground, between
+// two teams of three capybaras or six capis each on their own side (`mode: 'ffa'`).
+// A side is a `team` everywhere below: its colour, its shots, its turn. Pure (no DOM, no Three.js): the game,
 // the bot and Node tests run the same match.
 //
 //   const match = createMatch({ seconds: 35 });
@@ -12,11 +13,12 @@
 // when a team has no capis left.
 import { carve, carveLine, splash, drips, solidAt, surfaceY, surfaceNormal } from '../../../engine/play/terrain-mask.js';
 import { stepSideWalker, knock, settled } from '../../../engine/play/side-walker.js';
+import { dropProp, stepProp, throwProp, propTouches, LOOSE_PROP } from '../../../engine/play/loose-prop.js';
 import { aimVelocity, stepFlight, stepBounce, FLIGHT } from '../../../engine/play/ballistic.js';
 import { falloff } from '../../../engine/play/lob.js';
-import { WEAPONS, FIRST_WEAPON, BASIC_WEAPON, weaponOf, reachOf, speedOf, anglesOf, startingAmmo } from './weapons.js';
-import { draw, clamp } from '../../../engine/random.js';
-import { generateMap, DEFAULT_SIZE } from './map-rules.js';
+import { WEAPONS, FIRST_WEAPON, BASIC_WEAPON, CRATE_LOOT, weaponOf, reachOf, speedOf, anglesOf, startingAmmo } from './weapons.js';
+import { draw, clamp, rng } from '../../../engine/random.js';
+import { generateMap, spreadSpawns, DEFAULT_SIZE } from './map-rules.js';
 
 export const RULES = Object.freeze({
   radius: .7,          // a capi's body disc
@@ -33,9 +35,20 @@ export const RULES = Object.freeze({
   aimMin: -1.2, aimMax: 1.45, aimRate: 1.3,
   flightMax: 12,       // a shell still flying after this is lost
   turnLimit: 60,       // after this many turns the match is decided by who is left (see `byCount`)
+  ffaTurnLimit: 90,    // a free-for-all takes five capis out, not three
+  airControl: 9, airSpeed: 4.4,   // how much the held key steers a hop
+  // Crates: the first on this turn, then one every `every` turns while fewer than `max` lie about, coming
+  // down under a parachute. `margin` past touching still collects one, so walking at it always does.
+  crate: Object.freeze({ first: 3, every: 3, max: 3, chute: 6, margin: .35 }),
 });
+// How near a capi's middle has to come to a crate's middle to take it: the two bodies touching, plus the margin.
+export const CRATE_REACH = RULES.radius + LOOSE_PROP.height + RULES.crate.margin;
+// The shapes a capi's tombstone may take (tombs.js says which a player has).
+export const TOMB_SHAPES = Object.freeze(['headstone', 'wooden', 'celtic', 'obelisk']), DEFAULT_TOMB = TOMB_SHAPES[0];
 export const TURN_SECONDS = [30, 35, 45];
-export const TEAM_COLORS = ['#e8569b', '#2ad1b2'];
+export const MODES = Object.freeze(['teams', 'ffa']), FFA_SIZE = 'large', FFA_CAPIS = 6;
+// The first two are the teams'; a free-for-all paints with all six.
+export const TEAM_COLORS = ['#e8569b', '#2ad1b2', '#f5b301', '#8e5cf0', '#3fa7ff', '#ff7a33'];
 // Capybara names are content, like a pana's name.
 const NAMES = [['Toño', 'Chela', 'Nené'], ['Pancho', 'Lula', 'Gordo']]; // i18n-ignore
 
@@ -43,6 +56,8 @@ export const alive = c => !c.out;
 export const center = c => ({ x: c.x, y: c.y + RULES.radius });
 export const activeCapy = m => m.capys.find(c => c.id === m.turn?.capy) || null;
 export const teamAlive = (m, team) => m.capys.filter(c => c.team === team && alive(c));
+// Is `team` this match's own side of one (a free-for-all)?
+export const isFfa = m => m.mode === 'ffa';
 
 // Where La Bazuca pivots on capi `c`'s shoulder; the scene holds the barrel there.
 export const shoulder = c => ({ x: c.x, y: c.y + RULES.shoulder });
@@ -72,18 +87,22 @@ export const canUse = (m, team, weapon) => WEAPONS.some(w => w.id === weapon) &&
 
 // A match on the map of `seed` and `size` (map-rules.js): the same seed
 // gives the same ground, spawns and winds, so a match can be replayed.
-export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null } = {}) {
-  const { map, mask } = generated || generateMap(seed, size);
-  const m = { map, mask, seed: map.seed >>> 0, phase: 'aim', winner: null, wind: 0, shot: null, events: [],
-    options: { seconds: TURN_SECONDS.includes(seconds) ? seconds : 35, difficulty, size: map.size }, humans,
-    last: [-1, -1], turn: null, clock: 0, shots: 0, shells: [], capys: [], ammo: [startingAmmo(), startingAmmo()], used: {},
+export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null, looks = {}, mode = 'teams' } = {}) {
+  mode = MODES.includes(mode) ? mode : 'teams';
+  // A free-for-all needs the room: six capis, spread out, always on the big map.
+  const { map, mask } = generated || generateMap(seed, mode === 'ffa' ? FFA_SIZE : size, { mode });
+  const sides = mode === 'ffa' ? FFA_CAPIS : 2;
+  const m = { map, mask, mode, teams: sides, seed: map.seed >>> 0, phase: 'aim', winner: null, wind: 0, shot: null, events: [],
+    options: { seconds: TURN_SECONDS.includes(seconds) ? seconds : 35, difficulty, size: map.size, mode }, humans,
+    last: Array(sides).fill(-1), turn: null, clock: 0, shots: 0, shells: [], capys: [], ammo: Array.from({ length: sides }, startingAmmo), used: {}, crates: [], crateN: 0, tombs: [], looks,
     // Every change to the ground, in order: replayed on the same seed's map it
     // rebuilds this ground exactly (applyEdit), so a room never sends the mask.
-    edits: [], teamTurns: [0, 0] };
-  map.spawns.forEach((xs, team) => xs.forEach((x, slot) => {
-    m.capys.push({ id: `${team}-${slot}`, team, slot, name: NAMES[team][slot], x, y: surfaceY(mask, x) ?? map.height - 2, vx: 0, vy: 0,
-      grounded: false, facing: team ? -1 : 1, aim: .55, paint: 0, out: null, jumpPress: 0, slide: 0, weapon: FIRST_WEAPON });
-  }));
+    edits: [], teamTurns: Array(sides).fill(0) };
+  const capi = (id, team, slot, name, x, facing) => m.capys.push({ id, team, slot, name, x, y: surfaceY(mask, x) ?? map.height - 2, vx: 0, vy: 0,
+    grounded: false, facing, aim: .55, paint: 0, out: null, jumpPress: 0, slide: 0, weapon: FIRST_WEAPON });
+  // In a free-for-all each capi is its own side, facing the middle of the map.
+  if (mode === 'ffa') spreadSpawns(map, mask, FFA_CAPIS).forEach((x, team) => capi(`f${team}`, team, 0, NAMES.flat()[team], x, x < map.width / 2 ? 1 : -1));
+  else map.spawns.forEach((xs, team) => xs.forEach((x, slot) => capi(`${team}-${slot}`, team, slot, NAMES[team][slot], x, team ? -1 : 1)));
   // Settle everyone onto the ground before the first turn.
   for (let i = 0; i < 60; i++) for (const c of m.capys) stepSideWalker(c, {}, 1 / 60, m.mask, walkerOptions(m, true));
   startTurn(m, 0);
@@ -91,7 +110,8 @@ export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, 
   return m;
 }
 
-const walkerOptions = (m, frozen) => ({ radius: RULES.radius, water: m.map.water, frozen });
+// The held key steers a capi in the air: a hop started a little short of a ledge still reaches it.
+export const walkerOptions = (m, frozen = false) => ({ radius: RULES.radius, water: m.map.water, frozen, airControl: RULES.airControl, airSpeed: RULES.airSpeed });
 
 export function takeEvents(m) { const out = m.events; m.events = []; return out; }
 
@@ -107,6 +127,59 @@ function startTurn(m, team) {
   m.turn = { n: (m.turn?.n || 0) + 1, k: ++m.teamTurns[team], team, capy: pick.id, time: m.options.seconds, retreat: 0, settle: 0 };
   m.phase = 'aim'; m.shot = null; m.shells = [];
   m.events.push({ type: 'turn', team, capy: pick.id });
+  dropCrate(m);
+}
+
+// A crate comes down on this turn's schedule, somewhere dry on top of the land
+// and not on anyone's head. Its own stream, so crates never change the winds.
+function dropCrate(m) {
+  const { first, every, max, chute } = RULES.crate, n = m.turn.n, { width, height, water } = m.map;
+  if (n < first || (n - first) % every || m.crates.length >= max) return;
+  const r = rng((m.map.seed * 31 + n * 7919) >>> 0), loot = CRATE_LOOT[Math.floor(r() * CRATE_LOOT.length)];
+  for (let i = 0; i < 16; i++) {
+    const x = 4 + r() * (width - 8), y = surfaceY(m.mask, x);
+    if (y === null || y < water + 1.2) continue;
+    if (m.capys.some(c => alive(c) && Math.abs(c.x - x) < 3) || m.crates.some(k => Math.abs(k.x - x) < 6)) continue;
+    const crate = dropProp({ id: ++m.crateN, x, y: height, chute, ...loot });
+    m.crates.push(crate);
+    m.events.push({ type: 'crate', id: crate.id, x, weapon: loot.weapon });
+    return;
+  }
+}
+
+// Whoever touches a crate takes it, on any phase of any turn: its team gets the shots.
+function collectCrates(m) {
+  for (const k of [...m.crates]) {
+    const c = m.capys.find(q => alive(q) && propTouches(k, center(q).x, center(q).y, CRATE_REACH));
+    if (!c) continue;
+    m.ammo[c.team][k.weapon] = (m.ammo[c.team][k.weapon] || 0) + k.shots;
+    m.crates.splice(m.crates.indexOf(k), 1);
+    m.events.push({ type: 'pickup', id: k.id, capy: c.id, team: c.team, weapon: k.weapon, shots: k.shots, x: k.x, y: k.y });
+  }
+}
+function stepCrates(m, dt) {
+  for (const k of [...m.crates]) {
+    const r = stepProp(k, dt, m.mask, { water: m.map.water });
+    if (r.sunk) gone(m, k, 'water');
+    else if (r.landed) m.events.push({ type: 'crate-land', id: k.id, x: k.x, y: k.y });
+  }
+}
+function gone(m, k, reason) {
+  m.crates.splice(m.crates.indexOf(k), 1);
+  m.events.push({ type: 'crate-gone', id: k.id, x: k.x, y: k.y, reason });
+}
+// A blast smashes a crate in its crater and throws the ones in its reach; a capi going for one gets the same blast.
+function blastCrates(m, x, y, w) {
+  const reach = reachOf(w, RULES.radius);
+  for (const k of [...m.crates]) {
+    const d = Math.hypot(k.x - x, k.y + LOOSE_PROP.height - y);
+    if (d < Math.max(w.crater * .75, .9)) gone(m, k, 'blast');
+    else if (d < reach) throwProp(k, x, y, w.knock * (.3 + .7 * (1 - d / reach)));
+  }
+  for (const t of m.tombs) {
+    const d = Math.hypot(t.x - x, t.y + LOOSE_PROP.height - y);
+    if (d < reach) throwProp(t, x, y, w.knock * (.3 + .7 * (1 - d / reach)));
+  }
 }
 
 // The capi whose turn it is takes `weapon` in its paws (only while aiming,
@@ -149,9 +222,25 @@ function hurt(m, x, y, w, team, victim = null) {
 }
 function hit(m, c, paint, team, vx, vy, weapon) {
   c.paint = Math.min(100, c.paint + paint);
+  c.by = team;   // whose colour soaks in
   knock(c, vx, vy);
   m.events.push({ type: 'hit', capy: c.id, team: c.team, paint, by: team, weapon });
-  if (c.paint >= 100) { c.out = 'paint'; m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'paint' }); }
+  if (c.paint >= 100) { c.out = 'paint'; layTomb(m, c, c.x, c.y); m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'paint' }); }
+}
+
+// A capi out leaves a tombstone where it fell: it falls with the ground like a
+// crate, a blast throws it, the water takes it. One lost in the river leaves it
+// on the nearest dry ground, so the spot still shows.
+function layTomb(m, c, x, y) {
+  const looks = m.looks?.[c.team], shape = TOMB_SHAPES.includes(looks) ? looks : DEFAULT_TOMB;
+  m.tombs.push(dropProp({ id: c.id, team: c.team, shape, x, y }));
+}
+function layTombAshore(m, c) {
+  const { width, water } = m.map, from = clamp(c.x, 1, width - 1), dry = at => { const y = at >= 0 && at <= width ? surfaceY(m.mask, at) : null; return y !== null && y > water + .3 ? y : null; };
+  for (let d = 0; d < width; d += .5) for (const at of [from - d, from + d]) { const y = dry(at); if (y !== null) { layTomb(m, c, at, y + .1); return; } }
+}
+function stepTombs(m, dt) {
+  for (const t of [...m.tombs]) if (stepProp(t, dt, m.mask, { water: m.map.water }).sunk) m.tombs.splice(m.tombs.indexOf(t), 1);
 }
 
 // A shell bursts: a round crater, paint on the ground (La Bazuca's also runs
@@ -162,6 +251,7 @@ export function explode(m, x, y, team, weapon = FIRST_WEAPON, victim = null) {
   edit(m, { op: 'blast', x, y, team, weapon: w.id, seed: m.shots * 7919 + Math.round(x * 10) * 31 + Math.round(y * 10) });
   m.events.push({ type: 'blast', x, y, team, weapon: w.id, size: w.crater });
   hurt(m, x, y, w, team, victim);
+  blastCrates(m, x, y, w);
 }
 
 // One change to the ground (a burst or a tunnel), applied to `mask`. The
@@ -196,21 +286,32 @@ export function drill(m, x, y, vx, vy, team) {
     if (Math.hypot(o.x - x0 - dx * t, o.y - y0 - dy * t) >= reach) continue;
     hit(m, c, w.paint, team, ux * w.knock, Math.max(uy, .2) * w.knock, w.id);
   }
+  // A crate in the tunnel's way is smashed.
+  for (const k of [...m.crates]) {
+    const t = clamp(((k.x - x0) * dx + (k.y + LOOSE_PROP.height - y0) * dy) / l2, 0, 1);
+    if (Math.hypot(k.x - x0 - dx * t, k.y + LOOSE_PROP.height - y0 - dy * t) < radius + LOOSE_PROP.height) gone(m, k, 'blast');
+  }
 }
 
+const sidesOf = m => Array.from({ length: m.teams }, (_, team) => team);
 function winnerOf(m) {
-  const standing = [0, 1].filter(team => teamAlive(m, team).length);
-  return standing.length === 2 ? null : standing.length ? standing[0] : -1;
+  const standing = sidesOf(m).filter(team => teamAlive(m, team).length);
+  return standing.length > 1 ? null : standing.length ? standing[0] : -1;
+}
+// The next side still standing after `team` (itself, when it is the last).
+function nextTeam(m, team) {
+  for (let k = 1; k <= m.teams; k++) { const next = (team + k) % m.teams; if (teamAlive(m, next).length) return next; }
+  return team;
 }
 
 // At the turn limit: the team with more capis standing wins, then the one
 // with less paint on them; else a draw. (Two teams that cannot reach each
 // other, a capi stuck in a pit, never stall a match.)
 export function byCount(m) {
-  const left = [0, 1].map(team => teamAlive(m, team)), paint = left.map(list => list.reduce((s, c) => s + c.paint, 0));
-  if (left[0].length !== left[1].length) return left[0].length > left[1].length ? 0 : 1;
-  if (Math.abs(paint[0] - paint[1]) >= 1) return paint[0] < paint[1] ? 0 : 1;
-  return -1;
+  const score = sidesOf(m).map(team => { const left = teamAlive(m, team); return { team, left: left.length, paint: left.reduce((s, c) => s + c.paint, 0) }; });
+  const most = Math.max(...score.map(s => s.left)), first = score.filter(s => s.left === most), least = Math.min(...first.map(s => s.paint));
+  const best = first.filter(s => s.paint - least < 1);
+  return best.length === 1 ? best[0].team : -1;
 }
 
 function finish(m, winner, by = 'out') {
@@ -236,8 +337,11 @@ export function tickMatch(m, dt, input = {}) {
     const r = stepSideWalker(c, mine ? { x: input.x || 0, jump: input.jump } : { jump: c.jumpPress }, dt, m.mask, walkerOptions(m, !mine));
     if (r.jumped) m.events.push({ type: 'jump', capy: c.id });
     if (r.landed) m.events.push({ type: 'land', capy: c.id });
-    if (r.drowned) { c.out = 'water'; m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'water', x: c.x }); }
+    if (r.drowned) { c.out = 'water'; layTombAshore(m, c); m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'water', x: c.x }); }
   }
+  stepCrates(m, dt);
+  stepTombs(m, dt);
+  collectCrates(m);
   if (m.phase === 'aim') {
     t.time = Math.max(0, t.time - dt);
     if (Number.isFinite(input.fire) && fire(m, input.fire)) return;
@@ -257,8 +361,8 @@ export function tickMatch(m, dt, input = {}) {
     if (m.capys.every(c => !alive(c) || settled(c)) || t.settle > RULES.settleMax) {
       const winner = winnerOf(m);
       if (winner !== null) finish(m, winner);
-      else if (t.n >= RULES.turnLimit) finish(m, byCount(m), 'turns');
-      else startTurn(m, teamAlive(m, 1 - t.team).length ? 1 - t.team : t.team);
+      else if (t.n >= (isFfa(m) ? RULES.ffaTurnLimit : RULES.turnLimit)) finish(m, byCount(m), 'turns');
+      else startTurn(m, nextTeam(m, t.team));
     }
   }
 }

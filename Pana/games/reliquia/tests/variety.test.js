@@ -26,12 +26,12 @@ function findRun(test, { place = 'mina', from = 1, level = 1, n = 2 } = {}) {
 }
 const opened = L => ({ open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])), strung: Object.fromEntries([...L.run.bridges, ...L.run.ropes].filter(b => b.needs).map(b => [b.id, 1])), lift: { floor: 1, moving: false } });
 
-test('Alternar walks all five places in an order of its own, and every expedition starts differently', () => {
+test('Alternar walks every place in an order of its own, and every expedition starts differently', () => {
   const firsts = new Set();
   for (let origin = 1; origin <= 60; origin++) {
-    const order = [1, 2, 3, 4, 5].map(d => themeFor(d, 'alternar', origin));
+    const order = THEMES.map((_, i) => themeFor(i + 1, 'alternar', origin));
     assert.deepEqual([...order].sort(), [...THEMES].sort(), 'each place once before any repeats');
-    assert.equal(themeFor(6, 'alternar', origin), order[0], 'then round again');
+    assert.equal(themeFor(THEMES.length + 1, 'alternar', origin), order[0], 'then round again');
     firsts.add(order[0]);
   }
   assert.equal(firsts.size, THEMES.length, 'any place can open an expedition');
@@ -136,7 +136,7 @@ test('a cuerda ties a broken bridge for everyone, once; without one the stake on
   const snap = g.snapshot(); assert.equal(L.walkable(mid.x, mid.z, snap, .42), true);
   // A second pana walks across with no input from the first.
   put(g, 2, mid.x, span.z); b.h = mid.z > span.z ? 0 : Math.PI;
-  const z0 = b.z; for (let i = 0; i < 30; i++) stepExplorer(b, { x: 0, z: -1, h: b.h }, .05, snap);
+  const z0 = b.z; for (let i = 0; i < 30; i++) stepExplorer(b, { x: 0, z: Math.sign(mid.z - span.z), h: b.h }, .05, snap);
   assert.ok(Math.abs(b.z - z0) > 2, `walked ${Math.abs(b.z - z0)} m out along it`);
 });
 

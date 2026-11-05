@@ -4,7 +4,7 @@ import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
 import { ICONS } from '/engine/icons.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { difficultyInfo } from '/engine/play/difficulty.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { optionDefaults } from '/engine/room-options-rules.js';
@@ -133,7 +133,7 @@ function render(g) {
   if (!lobby && roomOptions.isOpen) roomOptions.close();
   // The court's surroundings follow the state, not the frame loop (hidden tabs don't draw).
   if (g.mapId && world.venue !== g.mapId) world.setVenue(g.mapId);
-  mapPicker.update(g.mapId, lobby && (!room.connected || room.isHost));
+  mapPicker.update(g.mapId, canChangeMap(room, g.phase));
   $('guide-note').textContent = g.difficulty === 'normal' ? loc('El blanco indica dónde frena sin choques.') : difficultyInfo(g.difficulty).note;
   $('side-controls').hidden = lobby; $('power-bar').hidden = lobby || !charge.active;
   teamRoster.update({ teams: lobby, seats: g.players.map((player, key) => ({ key, team: key % 2, player: { ...player, bot: player.id === null } })), ownId: room.id, hostId: room.hostId, enabled: room.connected, canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { loc } from '/engine/i18n.js';
 import { burst, pitch } from '/engine/sfx.js';
-import { CTF_RULES } from './ctf.js';
+import { CTF_RULES, scoreBlocked } from './ctf.js';
 
 // Capture the flag on screen: two square chips under the race bar (each flag at
 // home, taken by whom, or on the ground with its return countdown), a banner while
@@ -17,6 +17,7 @@ export const flagSounds = {
   stolen() { for (let i = 0; i < 3; i++) pitch({ dur: .1, f0: 880, f1: 660, type: 'square', vol: .045, delay: i * .14, priority: 3 }); },
   drop() { pitch({ dur: .3, f0: 600, f1: 220, type: 'triangle', vol: .08, priority: 3 }); burst({ dur: .08, f0: 300, q: .8, vol: .08, delay: .02, priority: 2 }); },
   returned() { [659, 988].forEach((f, i) => pitch({ dur: .14, f0: f, type: 'sine', vol: .08, delay: i * .1, priority: 3 })); },
+  blocked() { [330, 247].forEach((f, i) => pitch({ dur: .13, f0: f, type: 'square', vol: .05, delay: i * .11, priority: 3 })); },
   capture(win = true) {
     burst({ dur: .25, f0: 900, q: .6, vol: .14, priority: 3 });
     (win ? [523, 659, 784, 1047] : [392, 349, 330, 262]).forEach((f, i) => pitch({ dur: .16, f0: f, type: 'triangle', vol: .09, delay: .05 + i * .09, priority: 3 }));
@@ -46,7 +47,7 @@ export function createCtfHud(doc = document) {
   // One marker per flag, plus your own stand while you carry.
   const markers = [0, 1, 2].map(i => { const m = make('span', 'ctf-mark', hud); m.hidden = true; m.style.setProperty('--c', TEAM[i % 2]); make('i', 'ctf-icon', m); m.append(make('b')); return m; });
   const point = new THREE.Vector3();
-  let lastEvent = null, round = 0, view = null;
+  let lastEvent = null, round = 0, view = null, blocked = false;
 
   function chipText(flag, players) {
     if (flag.state === 'carried') return loc('La lleva {name}', { name: players.find(p => p.id === flag.carrier)?.name || '' });
@@ -58,7 +59,7 @@ export function createCtfHud(doc = document) {
     render(state, me) {
       const on = state.options?.mode === 'ctf' && state.phase === 'playing' && (state.flags || []).length === 2;
       strip.hidden = !on; view = on ? state : null;
-      if (!on) { banner.hidden = true; markers.forEach(m => { m.hidden = true; }); lastEvent = null; return; }
+      if (!on) { banner.hidden = true; markers.forEach(m => { m.hidden = true; }); lastEvent = null; blocked = false; doc.body.classList.remove('ctf-carrier'); return; }
       state.flags.forEach((flag, team) => {
         const c = chips[team]; set(c.label, team ? loc('Turquesa') : loc('Naranja')); set(c.state, chipText(flag, state.players));
         c.chip.dataset.state = flag.state; c.chip.classList.toggle('mine', team === me?.team);
@@ -66,7 +67,11 @@ export function createCtfHud(doc = document) {
       const carrying = state.flags.find(f => f.state === 'carried' && f.carrier === me?.id), own = me && state.flags[me.team];
       banner.hidden = !carrying && !(own && own.state !== 'home');
       banner.dataset.kind = carrying ? (own.state === 'home' ? 'carry' : 'blocked') : 'alarm';
-      set(banner, carrying ? (own.state === 'home' ? loc('¡Llevas la bandera! Corre a tu base') : loc('¡Llevas la bandera! Recupera la tuya para anotar'))
+      // On your pad with your flag away nothing scores: once as you step on it, a buzz and the banner kicks.
+      const stuck = scoreBlocked(state.flags, me);
+      if (stuck && !blocked) { flagSounds.blocked(); banner.classList.remove('ctf-kick'); void banner.offsetWidth; banner.classList.add('ctf-kick'); }
+      blocked = stuck;
+      set(banner, stuck ? loc('¡Falta tu bandera!') : carrying ? (own.state === 'home' ? loc('¡Llevas la bandera! Corre a tu base') : loc('¡Llevas la bandera! Recupera la tuya para anotar'))
         : own?.state === 'carried' ? loc('¡Se llevan tu bandera!') : loc('Tu bandera está en el suelo: tócala para devolverla'));
       doc.body.classList.toggle('ctf-carrier', !!carrying);
       // Sounds for events newer than the last seen (none for the backlog on join or a new round).

@@ -27,6 +27,8 @@ export const SIDE_WALKER = Object.freeze({
   slick: .25,           // paint (0..1) under the feet that makes ground slippery
   slideGrip: .25,       // share of gravity along a painted slope that friction holds back
   water: -Infinity,     // feet below this are in the river
+  airControl: 0,        // units/s² the held key steers a body in the air (0: none, the arc is the arc)
+  airSpeed: 3.8,        // and the fastest it steers it up to (a blast can throw it faster)
 });
 
 const sign = v => v < 0 ? -1 : v > 0 ? 1 : 0;
@@ -76,6 +78,7 @@ export function stepSideWalker(p, input = {}, dt, mask, options = {}) {
   }
   if (!p.grounded) {
     p.vy -= o.gravity * dt; p.vx *= Math.exp(-dt * .4);
+    if (o.airControl && dir && p.vx * dir < o.airSpeed) p.vx = dir * Math.min(o.airSpeed, p.vx * dir + o.airControl * dt);
     const dx = p.vx * dt, dy = p.vy * dt, steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / (cell * .5)));
     for (let i = 0; i < steps; i++) {
       const nx = p.x + dx / steps, ny = p.y + dy / steps;

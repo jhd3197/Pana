@@ -1,0 +1,4 @@
+/* The overlay every game-feel effect draws on. */
+.pk-fx-layer { position: fixed; inset: 0; z-index: 85; overflow: hidden; pointer-events: none; contain: strict; }
+/* A pixelfx effect on the HUD layer: hard pixels, placed by transform. */
+.pk-pfx { position: absolute; left: 0; top: 0; image-rendering: pixelated; will-change: transform; }

@@ -55,4 +55,35 @@ try {
   assert.deepEqual(b, a, 'both screens show the same ground');
   assert.deepEqual([...host.errors, ...guest.errors], []);
   console.log('PASS capis online: room link, host settings, a turn each (guest by keys), the same craters on both screens.');
+  await host.context().close(); await guest.context().close();
+
+  // Todos contra todos in a room: each pana its own capi, the machine plays the rest, the same six at the same spots on
+  // both screens, a crate coming down reaches both, and a capi out leaves its tombstone on both.
+  const code = `capis-ffa-${Date.now()}`, ana = await openGame(browser, 'capis', { name: 'Ana', room: code, query: 'debug' });
+  await waitFor(ana, () => capisDebug.online && capisDebug.room.isHost && capisDebug.room.connected);
+  const beto = await openGame(browser, 'capis', { name: 'Beto', room: code, query: 'debug' });
+  await waitFor(beto, () => capisDebug.room.connected && capisDebug.room.state.players.length === 2);
+  await ana.evaluate(() => { document.querySelector('[data-room-option="mode"][data-value="ffa"]').click(); capisDebug.room.action('seed', { seed: 6 }); });
+  await waitFor(beto, () => capisDebug.room.state.options.mode === 'ffa' && capisDebug.match.mode === 'ffa' && capisDebug.match.map.seed === 6 && capisDebug.match.map.size === 'large');
+  assert.deepEqual(await beto.evaluate(() => capisDebug.room.state.players.map(p => [p.name, p.team])), [['Ana', 0], ['Beto', 1]], 'one capi each');
+  assert.equal(await ana.locator('#capis-roster').isHidden(), true, 'no team cards');
+  await ana.locator('#start').click();
+  await waitFor(beto, () => capisDebug.playing && capisDebug.match.phase === 'aim' && capisDebug.match.teams === 6);
+  const six = page => page.evaluate(() => capisDebug.match.capys.map(c => [c.id, c.team, +c.x.toFixed(1)]));
+  assert.deepEqual(await six(beto), await six(ana), 'the same six capis at the same spots');
+  // Ana, then Beto, then the machine: the turn goes round the sides.
+  await ana.evaluate(() => capisDebug.room.action('fire', { power: .7, aim: .9, face: 1 }));
+  await waitFor(beto, () => capisDebug.room.state.controller === capisDebug.room.id && capisDebug.match.turn.team === 1 && capisDebug.match.phase === 'aim', null, 120_000);
+  await beto.evaluate(() => capisDebug.room.action('fire', { power: .7, aim: .9, face: -1 }));
+  await waitFor(ana, () => capisDebug.match.turn.team === 2 && capisDebug.match.phase === 'aim' && capisDebug.room.state.controller == null, null, 120_000);
+  await waitFor(beto, () => capisDebug.match.turn.team === 2 && capisDebug.match.crates.length > 0, null, 60_000);
+  const crate = page => page.evaluate(() => capisDebug.match.crates.map(k => [k.id, +k.x.toFixed(1), k.weapon]));
+  assert.deepEqual(await crate(beto), await crate(ana), 'the crate on turn 3 reaches both');
+  await ana.evaluate(async () => {
+    const m = capisDebug.match, c = m.capys.find(k => k.team === 1), { explode } = await import('/g/capis/rules.js');
+    c.paint = 99; explode(m, c.x, c.y + .6, 2, 'grenade');
+  });
+  await waitFor(beto, () => capisDebug.match.tombs.length === 1 && capisDebug.match.capys.find(c => c.team === 1).out === 'paint');
+  assert.deepEqual([...ana.errors, ...beto.errors], []);
+  console.log('PASS capis online: todos contra todos, a capi per pana, the machine plays the rest, crates and tombstones on both screens.');
 } finally { await browser.close(); }

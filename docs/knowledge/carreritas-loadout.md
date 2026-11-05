@@ -66,5 +66,8 @@ the profile store sets it from the wallet on load and writes it back on
 save. A device with no shared wallet yet adopts the coins its profile
 held, once. A payout in another tab arrives as a storage event; the store
 updates `wallet.coins` before the taller re-reads it, so a stale page cannot
-save the old balance over it. The rescue vulture loads lazily to keep the
+save the old balance over it. With an account wallet (`window.PanaSh.wallet`)
+the server balance wins: old coins are not imported, and the mirror always
+follows the wallet because save() turns any gap into a real spend or credit.
+A refused purchase gives the mangos back but keeps the item. The rescue vulture loads lazily to keep the
 first load within its module budget.

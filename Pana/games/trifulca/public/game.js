@@ -65,7 +65,7 @@ function input() {
   return { x, z, g: c.g, b: c.b, gp: c.gp, e: c.e, a: c.a, t: c.t, k: c.k, s: c.s, v: c.v };
 }
 
-hud = createHud({ me: () => room.id, voice: () => voiceOn });
+hud = createHud({ me: () => room.id, voice: () => voiceOn, at: (id) => world?.screenAt(id) });
 
 function render(state) {
   const lobby = state.phase === 'lobby';
@@ -88,6 +88,7 @@ function render(state) {
     hud.react(e); sfx(e);
     if (e.type === 'tutorial-fin') markTutorial();
   }
+  hud.settle();
   world?.update(state);
   hud.update(state, { replaying: world?.replaying });
 }

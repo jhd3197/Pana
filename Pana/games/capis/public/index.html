@@ -20,7 +20,7 @@
   <section id="lobby" class="pk-lobby" aria-labelledby="lobby-title">
     <span class="pk-ribbon">SOLO O CON AMIGOS</span>
     <h1 id="lobby-title" class="pk-title" translate="no">Capis a Pintazos</h1>
-    <p class="pk-copy" data-room-description>Tres capis por equipo. Por turnos, apunta, mide el viento y tumba a los rivales al río.</p>
+    <p class="pk-copy" data-room-description>Equipos o todos contra todos. Por turnos, apunta, mide el viento y tumba a los rivales al río.</p>
     <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
     <p id="lobby-seed" class="pk-copy lobby-seed" translate="no"></p>
     <div id="room-options"></div>
@@ -29,6 +29,10 @@
       <label class="pk-eyebrow" for="seed-input">Número del mapa</label>
       <div class="seed-row"><input id="seed-input" type="number" min="1" max="99999" inputmode="numeric" aria-describedby="seed-note"><button id="seed-new" class="pk-btn pk-btn--ghost" type="button">Otro mapa</button></div>
       <small id="seed-note" class="pk-copy">Cada partida trae un mapa nuevo. Escribe un número para repetir uno.</small>
+    </div>
+    <div class="tomb-card" data-room-extra>
+      <span class="pk-eyebrow">Tu lápida</span>
+      <div id="tomb-list" class="tomb-list" role="radiogroup" aria-label="Tu lápida"></div>
     </div>
     <div class="pk-lobby-foot"><p id="connection" class="pk-copy" role="status" hidden></p><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando…</button><button id="online" class="pk-btn pk-btn--ghost pk-btn--lg" type="button">Con amigos</button></div>
   </section>

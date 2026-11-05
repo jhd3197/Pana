@@ -34,8 +34,14 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   so a backgrounded or disconnected browser does not keep running or firing.
 - Projectile travel uses segment/AABB and segment/circle intersections. At
   34 units/second, testing only projectile endpoints misses thin cover.
-- Level shots fly at `SHOT_HEIGHT` (1.1 m, where the scene draws the ball) and
-  pass over cover whose `h` is at or under it: El Puerto's sandbags, ammo piles
+- A first-person shot flies in 3D along the look, from the eye (`EYE` plus the
+  jump), so it lands under the crosshair: `launchAimed` gives it `vy`, `sweepShot`
+  (the same call for the room and the tracer) stops it on cover it does not clear,
+  a pana from their feet up to 1.9 m, or the ground. Over a box it flies on; down
+  on one it marks the top (`splat.hy` is the height it stopped at). A rocket under
+  1.8 m blows on the floor as it always did; higher it bursts in the air.
+- Shots with no look (Ver la cancha, bots without a headshot marker) fly level at
+  `SHOT_HEIGHT` (1.1 m) and pass over cover whose `h` is at or under it: El Puerto's sandbags, ammo piles
   and barrels, Noche's snakes. Sweeping every box as infinitely tall made those
   invisible walls: a rival seen over a sandbag could not be hit, and bots never
   fired at one. Bot line of sight and splat placement use `shotCover(cover)`.
@@ -102,7 +108,7 @@ inside is drawn by `plaza-props.js`, one prop per row fitted to its box, so
 artwork never changes movement or shots.
 The paint marker is a canonical Studio asset in `engine/models/props/paintball.js`.
 
-Look input is `engine/play/first-person.js` (`createLookControls`), shared with Escondidas: it owns pointer lock, drag-to-look and the saved sensitivity (`pana:look-sensitivity`); the scene keeps yaw/pitch. Shift sprints 45% faster while `stamina` lasts (3 s, refills in 5 s) and holds fire; Tab shows the round table.
+Look input is `engine/play/first-person.js` (`createLookControls`), shared with Escondidas: it owns pointer lock, drag-to-look and the saved sensitivity (`pana:look-sensitivity`); the scene keeps yaw/pitch. Shift sprints 45% faster while `stamina` lasts (the class says how long: "Clases") and holds fire; Tab shows the round table.
 
 The default camera is first person (`primera`): the camera sits at eye height
 (1.55 m) over the smoothed avatar, the own avatar is hidden, and the marker is a
@@ -114,8 +120,8 @@ suite asserts no own-body mesh renders in first person and the rival still
 sees it. A staged shot that puts the pana within about 1.5 m of a crate stack
 shows the crate's wood and coral band at the right screen edge: that is cover,
 not the own body (the plaza's back booth at x -11, z 21.5 sits next to x -14, z 22).
-Shots stay level: the server only receives `world.forward()` as the aim, so
-pitch is cosmetic and clamped. WASD is yaw-relative (`world.movement`); ← / → turn
+The server gets `world.forward()` as the heading and `world.pitch` (clamped to the
+camera's limits) as the look; a first-person shot follows both. WASD is yaw-relative (`world.movement`); ← / → turn
 (Q swaps guns, so the keyboard turn moved off Q/E; ↑ ↓ still walk).
 The mouse uses pointer lock. Esc releases the lock before the page sees the
 key, so a lock lost during play opens the shared menu; opening the menu or the
@@ -128,9 +134,9 @@ world-axis keys and plane-projected mouse aim at the same 1.1 m height as
 vertically on that face; a plaza tree's row has `trunk` (.25 m, the drawn trunk at
 shot height), so each pellet's ray tests that circle, unpadded, instead of the .6 m
 movement box, and its mark sits on the round face at .45 scale, the newest `TRUNK_MARKS` (6) only.
-Flight and hits stay level, but each ball carries its ray's height (`from`, `rise`: the
-eye along the look, plus a wander up and down from the spread) and a mark goes at
-`markHeight`, kept on the surface. Before that every mark sat at one fixed height
+Flight and hits follow the look alone, but each ball also carries its ray's height (`from`,
+`rise`: where it left along the look, plus a wander up and down from the spread) and a mark
+on a face goes at `markHeight`, kept on the surface; one on a box's top stays where it landed. Before that every mark sat at one fixed height
 and read as a neat row. `minimap.js` draws the HUD map; it is a 2D overlay, not
 scene drawing. It is square, north-up and centred on you, showing
 `MINIMAP_RADIUS` (18 m) each way, on an opaque background: 30 m was too far out
@@ -502,8 +508,10 @@ weapon between 2 and 5).
 - Parts, one per slot (`PARTS` rows for the `grip`, `head` and `pommel` slots;
   the models mount them on the grip, head and pommel): **Cinta de agarre** `tape` swings 20% faster and reaches 15%
   less; **Goteo de pintura** `drip` paints +1 pepazo and recovers 25% slower;
-  **Correa** `strap` brings a thrown chancla back 40% sooner (1.5 s), the others
-  recover 15% faster, −4% mobility. Melee weapons have only these three slots and
+  **Correa** `strap` costs 4% mobility everywhere: the others recover 35% faster, and
+  La Chancleta comes back in 1.3 s instead of 2.5 s and recovers 20% faster. The first
+  version (15%) showed as +0.1 swings a second next to the mobility loss: it read as
+  a penalty. `partDeltas` gives the armory's chips; swing and return say their word. Melee weapons have only these three slots and
   markers only theirs (`PAINT_MOUNTS` in `engine/models/props/paint-arsenal.js`).
 - Switching weapon mid-swing drops the blow but keeps 0.3 s of wait; while the
   chancla is away the server ignores a weapon change (the client keeps sending
@@ -536,7 +544,7 @@ Asked for by name: a close strike (the melee path above) plus a throw.
   strike's whole stack (3, so it knocks out at Aguante 3 from any range it
   reaches; Goteo raises both). It splats where it stops.
 - **Recall after cooldown, not pickup.** It is back in the hand 2.5 s after the
-  throw (1.5 s with the Correa) whether it hit or not: `phase 'away'` → `'return'`
+  throw (1.3 s with the Correa) whether it hit or not: `phase 'away'` → `'return'`
   in `stepMelee`, `p.recalls` counts it, the client pops and the HUD bar ("La
   chancla vuelve en … s") fills. No chase across the court, a fixed and fair
   cost for a miss, nothing on the floor to sync or to get lost behind the fence,
@@ -857,14 +865,19 @@ and how near a shot must be to show it: `30 m × scale`), `grenades` carried and
 grenades back, where before it was one per life), `icon` and `vest` (the padded
 vest).
 
-| Class | Walk | Aguante | Regen | Steps | Dot | Grenades | Back in |
-|---|---|---|---|---|---|---|---|
-| Balanceado | 100% | +0 | 1× | 100% | 100% | 1 | 30 s |
-| Rápido | 108% | −1 | 1× | 115% | 100% | 1 | 30 s |
-| Tanque | 90% | +1 | 1× | 125% | 120% | 1 | 30 s |
-| Regenera | 97% | +0 | 1.8× | 100% | 100% | 1 | 40 s |
-| Sigiloso | 96% | +0 | 0.75× | 40% | 55% | 1 | 30 s |
-| Granadero | 95% | +0 | 0.9× | 100% | 100% | 2 | 18 s |
+| Class | Perk on the card | Walk | Aguante | Regen | Steps | Dot | Grenades | Back in | Sprint / refill |
+|---|---|---|---|---|---|---|---|---|---|
+| Balanceado | Equilibrado | 100% | +0 | 1× | 100% | 100% | 1 | 30 s | 4 s / 5 s |
+| Rápido | Más velocidad | 108% | −1 | 1× | 115% | 100% | 1 | 30 s | 3 s / 3 s |
+| Tanque | Chaleco | 90% | +1 | 1× | 125% | 120% | 1 | 30 s | 3 s / 5 s |
+| Regenera | Cura rápido | 97% | +0 | 1.8× | 100% | 100% | 1 | 40 s | 3 s / 5 s |
+| Sigiloso | Pasos quietos | 96% | +0 | 0.75× | 40% | 55% | 1 | 30 s | 3 s / 5 s |
+| Granadero | 2 granadas | 95% | +0 | 0.9× | 100% | 100% | 2 | 18 s | 3 s / 5 s |
+
+Next to Tanque's vest the other classes read as empty, so each has something a
+player can feel: Balanceado sprints a second longer, Rápido refills its sprint in
+3 s, and a Regenera who knocks a rival out washes one pepazo off at once (`koWash`).
+None of them changes the paint a gun puts out or the kit's rating.
 
 Every effect is computed by `Arena` from the validated kit (`kitStats` adds the
 class to the gun's numbers; `wearClass` publishes `noise` and `mark` on the
@@ -1110,7 +1123,7 @@ Parrandera"; the client writes its own progress text from the marker names).
 - **Client.** `camo-store.js` wraps `window.PanaSh.camos()` / `buyCamo(id)`
   (cached 30 s, 5 s timeout, never rejects). Without the bridge (public Pana)
   only the start camos are owned and the rest say "Disponible en pana.sh"; a
-  bridge without a session says to sign in. `camos.js` and `camo-store.js` are
+  bridge without a session says to sign in. A hosted page (`window.PanaSh` from the gateway) whose camo bridge is missing says "Muy pronto" instead of "Disponible en pana.sh". `camos.js` and `camo-store.js` are
   dynamic imports (the camo tab, or at once when `window.PanaSh` exists), to
   keep them off the first load (see "First-load budget"). The rules only need the ids, which come
   from `paint-arsenal.js` (`CAMO_IDS`, `START_CAMOS` in `armory-data.js`).
@@ -1283,3 +1296,33 @@ The Cla-Go Verlet constraint approach is adapted under MIT (see
 `docs/licenses/cla-go.txt`). Its procedural humanoid is deliberately not used:
 the shared Studio sculpt preserves player appearance. Tests compare 30/60/120 Hz,
 cover collision, real sculpt hierarchy and restoration, and two-client impacts.
+
+## What a shooter sees land
+
+`Arena.hit` numbers an event for every ball that lands: `hit` and `out` carry `damage`
+(whole pepazos; null for a direct knockout), and `soak` is a ball under a whole pepazo
+(La China, La Fumigadora, La Licuadora) that has not added up to one yet. `soak` used to
+be silent, so those three felt like they hit nothing; the victim still sees nothing
+until a whole one lands. `game.js` `hitPulse` shows one marker at a time and takes its
+body class off after 560 ms. These classes used to stay on, and because a CSS animation
+restarts only when its name changes, after the first knockout (`body.scored`) no later
+hit marker played at all. Numbers by the crosshair are `createDamageNumbers`
+(`engine/fx/damage.js`), loaded with the first one.
+
+## Grenade colours
+
+`GRENADES[].color` paints the armory thumbnail, the thrown mesh and the HUD name:
+La Piñita red, La Pegajosa green, La Chispita blue, none near the team colours. The
+burst and the stains stay the thrower's colour, which says whose paint it is.
+
+## Capture the flag: what felt broken
+
+- `CTF_RULES.pickup` was 1.5 m and `capture` 2.2 m on a stand whose frame runs 1.8 m out
+  and 2.56 m to a corner, so standing on the pad could lift nothing or score nothing.
+  Now 2 m and 2.6 m.
+- The flag's light column is 14 m tall and stands on the pad: from there it filled the
+  view as a huge orange shard. It goes out within 6 m of the camera (`ctf-scene.js`).
+- A bot carrier whose own flag was away stood on its pad for good. It now goes for that
+  flag (`ctfGoal`), and touching a dropped one returns it even while carrying.
+- Your own flag away, nothing scores on your pad, as in the rules. `scoreBlocked` drives
+  a one-shot buzz and a kick of the banner as you step on it.

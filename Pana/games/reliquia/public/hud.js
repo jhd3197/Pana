@@ -3,7 +3,7 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { loc, locn, formatNumber } from '/engine/i18n.js';
 import { setBar } from '/engine/kit.js';
 import { ARTIFACT_AURA } from '/engine/models/props/reliquia-treasure.js';
-import { interaction, compassTarget, spreadTags, titles, tier, holds, alive, cartValue, ENCARGO_TEXT, encargoPay } from './rules.js';
+import { interaction, compassTarget, spreadTags, titles, tier, holds, alive, cartValue, ENCARGO_TEXT, encargoPay, sobretiempoOf } from './rules.js';
 import { layoutFor, distance } from './layout.js';
 import { jornadaName, themeOf, TRUCK, floorOf, inRect } from './deck.js';
 import { ITEMS, heldValue, itemName, say } from './items.js';
@@ -78,11 +78,12 @@ export function createHud() {
   function intel(state, p, L, f, heading) {
     $('floor-name').textContent = loc('Jornada {n} · {place}', { n: state.level, place: f === 0 ? loc('Superficie') : loc(jornadaName(state.level, themeOf(state))) });
     const load = state.delivered || 0;
-    $('quota-label').textContent = `${money(load)} / ${money(state.quota)}`; setBar($('quota-fill'), state.quota ? load / state.quota : 0);
+    const extra = sobretiempoOf(state), tally = `${money(load)} / ${money(state.quota)}`;
+    $('quota-label').textContent = extra ? `${tally} · ${loc('Sobretiempo +{n}', { n: extra })}` : tally; setBar($('quota-fill'), state.quota ? load / state.quota : 0);
     $('mangos').textContent = Math.floor(state.mangos);
     const job = state.encargo, left = job?.kind === 'turno' && job.until ? Math.max(0, Math.ceil(job.until - state.time)) : 0;
     $('encargo-text').textContent = job ? loc(ENCARGO_TEXT[job.kind]) : '';
-    $('encargo-state').textContent = !job ? '' : job.state === 'paid' ? loc('Cumplido') : job.state === 'lost' ? loc('Perdido') : left ? loc('{n} s · +{pay} mangos', { n: left, pay: encargoPay(state.level) }) : loc('+{pay} mangos', { pay: encargoPay(state.level) });
+    $('encargo-state').textContent = !job ? '' : job.state === 'paid' ? left ? loc('Cumplido · {n} s', { n: left }) : loc('Cumplido') : job.state === 'lost' ? loc('Perdido') : left ? loc('{n} s · +{pay} mangos', { n: left, pay: encargoPay(state.level) }) : loc('+{pay} mangos', { pay: encargoPay(state.level) });
     const region = L.regionAt(p)?.name;
     $('room-name').textContent = f === 0 ? loc('El campamento') : region ? loc(region) : loc('Los pasillos');
     setBar($('greed-fill'), state.codicia / 100); $('greed-label').textContent = GREED[tier(state)];
@@ -112,8 +113,8 @@ export function createHud() {
     $('stamina-fill').parentElement.style.setProperty('--left', String(p.stamina ?? 1));
     p.hands.forEach((held, i) => slot(i, held, p, state));
     document.body.classList.toggle('reversed', p.reversed > 0); document.body.classList.toggle('is-down', !!p.downed);
-    document.body.classList.toggle('hurt', p.hit > 0); document.body.classList.toggle('in-nook', !!p.hidden);
-    if (open) intel(state, p, L, f, heading);
+    document.body.classList.toggle('hurt', p.hit > 0); document.body.classList.toggle('in-nook', !!p.hidden); document.body.classList.toggle('in-cover', !!p.covered && !p.hidden);
+    if (open) { intel(state, p, L, f, heading); life(state, f); }
     // E prompt.
     const target = playing && !paused ? interaction(state, p) : null;
     $('prompt').classList.toggle('hidden', !target);
@@ -130,9 +131,9 @@ export function createHud() {
       $('choice-votes').textContent = loc('1 · ¿Nos vamos ya? ({leave})   2 · ¡Una sala más! ({more})', { leave, more });
     }
     // Boss bar: the nearest awake boss on this floor.
-    const boss = state.enemies.filter(e => ['guardian', 'jaguar', 'stalker', 'silbon'].includes(e.kind) && e.awake && floorOf(e.x) === f && distance(e, p) < 32).sort((a, b) => distance(a, p) - distance(b, p))[0];
+    const boss = state.enemies.filter(e => ['guardian', 'jaguar', 'stalker', 'silbon', 'mokele'].includes(e.kind) && e.awake && floorOf(e.x) === f && distance(e, p) < (e.kind === 'mokele' ? 27 : 32)).sort((a, b) => distance(a, p) - distance(b, p))[0];
     $('boss').classList.toggle('hidden', !boss);
-    if (boss) { $('boss-name').textContent = { guardian: loc('El guardián del sol'), jaguar: loc('El jaguar de oro'), stalker: loc('El jaguar negro'), silbon: loc('El Silbón') }[boss.kind]; setBar($('boss-fill'), boss.kind === 'silbon' ? boss.alert ?? .2 : boss.hp / boss.maxHp); }
+    if (boss) { $('boss-name').textContent = { guardian: loc('El guardián del sol'), jaguar: loc('El jaguar de oro'), stalker: loc('El jaguar negro'), silbon: loc('El Silbón'), mokele: loc('El Mokele') }[boss.kind]; setBar($('boss-fill'), boss.kind === 'silbon' || boss.kind === 'mokele' ? boss.alert ?? .2 : boss.hp / boss.maxHp); }
     // Team.
     const key = state.players.map(q => `${q.id}:${q.name}`).join('|');
     if (key !== rosterKey) {
@@ -159,6 +160,14 @@ export function createHud() {
     if (p.downed) $('downed-copy').textContent = state.options?.revive === false ? loc('Te quedas fuera. Tus panas todavía pueden llegar al camión.') : p.draggedBy != null ? loc('Te van arrastrando al camión…') : loc('Un pana puede levantarte (E) o arrastrarte al camión (R).');
   }
 
+  // What lives on this floor: four icons and their numbers, in the Tab layer.
+  function life(state, f) {
+    const row = $('life'), eco = state.eco; row.hidden = !eco || f === 0; if (row.hidden) return;
+    if (!row.dataset.drawn) { row.dataset.drawn = 1; for (const [id, name] of [['bat', 'creatureBat'], ['snake', 'creatureSnake'], ['moth', 'creatureMoth'], ['mushroom', 'creatureMushroom']]) $(`life-${id}`).previousElementSibling.innerHTML = SVG[name]; }
+    $('life-bat').textContent = eco.counts.bat || 0; $('life-snake').textContent = eco.counts.snake || 0;
+    $('life-moth').textContent = `${eco.moths || 0}%`; $('life-mushroom').textContent = `${eco.glow || 0}%`;
+  }
+
   // Hold Tab / View (or tap Mapa) to see it; the next update fills it.
   function info(on) {
     open = !!on; mapAt = 0; $('intel').hidden = !open; document.body.classList.toggle('intel-open', open);
@@ -170,9 +179,10 @@ export function createHud() {
     $('result-eyebrow').textContent = win ? loc('Expedición completada') : loc('La ruina se quedó con todo');
     $('result-title').textContent = win ? loc('¡Nos vamos!') : loc('Una vuelta más.');
     const value = money(state.haul), last = state.events.at(-1);
-    $('result-copy').textContent = !win ? loc('Cayeron todos. Del camión solo se salvó {share} %. {why}', { share: state.options?.wipeShare ?? 20, why: say(last?.text, last?.vars) })
+    const overtime = state.sobretiempo ? ` ${loc('Sobretiempo: +{n} mangos.', { n: formatNumber(state.sobretiempo) })}` : '';
+    $('result-copy').textContent = (!win ? loc('Cayeron todos. Del camión solo se salvó {share} %. {why}', { share: state.options?.wipeShare ?? 20, why: say(last?.text, last?.vars) })
       : state.level > 1 ? locn(state.level - 1, 'Subieron {value} al camión. Completaron {n} jornada.', 'Subieron {value} al camión. Completaron {n} jornadas.', { value })
-      : loc('Subieron {value} al camión. ¿Y si la próxima completan una jornada?', { value });
+      : loc('Subieron {value} al camión. ¿Y si la próxima completan una jornada?', { value })) + overtime;
     $('result-payout').textContent = formatNumber(Math.round(state.payout)); $('result-depth').textContent = state.level - 1; $('result-time').textContent = clock(state.time);
     const list = titles(state);
     $('titles').replaceChildren(...list.map(t => {

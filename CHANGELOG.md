@@ -14,6 +14,68 @@ becomes the GitHub release's notes.
   Cada mancha queda a la altura real del tiro, no en una fila. Las bolas que no le dan a un tronco siguen de largo, y un tronco guarda solo las últimas manchas.
 - **Pepazo: un mapa más cerrado y sin espacios vacíos, con rivales ocultos hasta que disparan.**
   Muestra el piso y todo lo que hay en la cancha. Un rival solo sale un momento cuando dispara; tu equipo se ve siempre.
+- **Capis a Pintazos: mapas más abiertos en Todos contra todos y túneles más anchos.**
+  Todos contra todos sale casi siempre en cerros y terrazas, sin cuevas ni islas, y los túneles ya no aprietan al capi.
+- **Capis a Pintazos: la máquina ya no se queda parada sin tiro.**
+  Si nadie pinta a nadie y no tiene tiro, su capi camina a buscarlo: salta zanjas, se devuelve del agua o abre paso. Menos partidas llegan al límite de turnos.
+- **Fosa: nuevo lugar, el Congo, y algo enorme vive en el agua.**
+  Vas en piragua por caños estrechos de agua turbia, entre paredes de lianas, neblina y callejones sin salida. Primero oyes al Mokele, luego ves una sombra altísima en la neblina, y de cerca es pura dentadura. No se mata: piérdelo, escóndete o hazlo cruzar el remolino. Elígelo en Lugar o espéralo en la rotación.
+
+- **Fosa: la Mina ya no se parece a la Biblioteca.**
+  Túneles estrechos con rieles y entibado, cámaras de mineral, galerías de máquinas, ramales ciegos y pozos de agua negra que no deja ver el fondo. Tu lámpara ahora es un cono estrecho: lo que viene se ve cuando ya está cerca, y más abajo casi no queda luz.
+
+- **Sin conexión ya puedes cambiar el mapa antes de jugar.**
+  Si la sala no conecta, eliges el mapa tú y la práctica arranca ahí. La sala ahora dice cómo es cada mapa. Reliquia y Trifulca tienen nombres más claros.
+
+- **Capis a Pintazos: ya hay Todos contra todos.**
+  Seis capis repartidos por el mapa grande, cada uno por su cuenta y con sus propios tiros: gana el último en pie. Con amigos, cada pana lleva su capi y la máquina juega los demás.
+- **Capis a Pintazos: un capi fuera deja su lápida donde cayó.**
+  Si se fue al río, la lápida queda en la orilla más cercana. Un pintazo también la mueve. Elige la tuya en Más ajustes; las otras formas salen muy pronto.
+- **Capis a Pintazos: caen cajas con más tiros.**
+  Baja una en paracaídas cada pocos turnos: tócala y tu equipo gana tiros. Basta con llegarle cerca, y un pintazo la rompe o la lanza lejos, y también te pinta a ti si vas por ella.
+- **Capis a Pintazos: ya puedes subirte a los bordes de la cueva y de la montaña.**
+  La entrada de la cueva deja caminar por debajo del borde y un salto desde el suelo te sube. Mantener la tecla guía tu salto, y las repisas del valle tienen una rampa para llegar a ellas.
+- **Pepazo: cada golpe que das se siente, y cada granada y clase se distingue.**
+  La marca de impacto ya no se apaga tras tu primer K.O., ahora trae el número de pepazos y también avisan las bolas que solo empapan. La Piñita es roja, La Pegajosa verde y La Chispita azul. Cada clase dice su ventaja: Balanceado corre más tiempo, Rápido recupera antes el aliento, Regenera se limpia al sacar a alguien. La Correa ahora sí compensa, y Uva es uva de verdad.
+- **Pepazo: la bandera deja de hacer cosas raras.**
+  Pisar la base ya basta para tomar la bandera o anotar, su columna de luz no te tapa la vista, y si llegas sin tu bandera te avisa en vez de quedarse callada. Los bots con la bandera ya no se quedan parados en su base.
+- **Fosa: menos murciélagos, y lo que espantas con el farol vuelve por ti.**
+  Hay muchos menos murciélagos, tu lámpara ya no se vuelve un disco blanco de cerca, el mensaje de manos llenas dice qué llevas y cómo soltarlo, y terminar la jornada o la expedición tarda la mitad.
+- **Pepazo: tus tiros van a donde miras, arriba, abajo o en diagonal.**
+  En primera persona el pepazo sale por la mira: pasa por encima de un pana si apuntas alto, pinta el suelo si apuntas abajo y la mancha queda a la altura real.
+- **Dominó y Caída: las fichas y las cartas ahora pesan.**
+  Se levantan y se inclinan hacia el puntero, crecen con su sombra al tomarlas, se mecen al moverse, caen de golpe con rebote y suenan al sacarlas y al pegarlas en la mesa.
+- **Fosa: la cueva está viva.**
+  Murciélagos y cuaimas comen, se reproducen y se mueren de hambre. Escóndete en silencio entre hongos que brillan o raíces tupidas. Si acabas con los murciélagos, las polillas apagan los hongos; sin cuaimas, los murciélagos llenan el techo.
+- **¿Quién quiere ser mi pana?: el animador ahora habla de verdad.**
+  Las frases se escriben letra por letra con pausas en comas y puntos, cada pana tiene su voz de blips, y quien habla se mueve y pone cara según lo que dice.
+- **Pepazo: la armería ya no te manda a pana.sh cuando ya estás en pana.sh.**
+  Si los camuflajes todavía no están activos en el sitio, dicen "Muy pronto".
+- **Carreritas: agarrar monedas ahora suena y brilla.**
+  Cada moneda estalla en un destello con estrellas doradas, y la cadena se anuncia sobre el contador al llegar a 3 y en cada fila completa.
+- **Con cuenta, tus mangos son los mismos en todos los juegos.**
+  Bochinche y Carreritas usan el saldo de tu cuenta; sin cuenta, todo sigue guardado en tu dispositivo.
+- **Fosa: los ladrillos y la roca ahora tienen relieve de verdad.**
+  De cerca y de lado se ven las juntas hondas y la piedra partida. En calidad Nítida y en computadora; en teléfonos y otras calidades, un relieve más sencillo.
+- **Carreritas: ahora la velocidad se siente.**
+  La cámara se abre al acelerar y se queda atrás antes de alcanzarte, el viento sube con la velocidad, y pasan líneas y rachas por los bordes. La cámara suave queda igual.
+- **Fosa: romper un derrumbe ahora se siente.**
+  Mientras mantienes E, las piedras se rajan con grietas que brillan, saltan esquirlas, chispas y polvo, y al final se parten en pedazos. Todos los panas lo ven igual.
+- **Fosa: el fuego ahora parece fuego.**
+  Lenguas que lamen, blancas por dentro y naranjas por fuera, chispas que suben y parpadean, sombras que bailan en la pared, un rugido suave y crujidos. Si la ruina tiembla o vuelve la luz, se aviva.
+- **Fosa: el jaguar de piedra ahora da miedo.**
+  Agazapado sobre su plinto, con colmillos, cola enrollada, manchas talladas y musgo; el jaguar de oro estrena la misma forma.
+- **Fosa: las puertas de piedra con la mano de tiza ahora se ven como lo que son: un escondite.**
+  Adentro hay una vela encendida y nada tapa la entrada. Si caminas hacia ella un poco de lado, te deslizas adentro.
+- **Subir de rango ahora se celebra.**
+  La barra de XP se arrastra hasta llenarse, un destello blanco y un pilar de luz, el título cae de golpe, el XP cuenta punto a punto y aparece lo que desbloqueaste.
+- **Trifulca: cada golpe se ve en la barra y en el aire.**
+  La barra se vacía de verde a rojo, el pedazo perdido destella antes de bajar, los números saltan del golpeado y los trompones estampan su número con chispas.
+
+- **Fosa: el campamento ahora es una caverna enorme.**
+  Un lago quieto, columnas de roca, cascadas a lo lejos, hongos que brillan y un rostro de piedra tallado bajo el reflector. Se baja por el montacargas y se vuelve subiendo hasta la misma caverna.
+- **Fosa: Sobretiempo, ¿se quedan un rato más?**
+  Suban más de la cuota y cobran mangos extra, también en bolívares y XP. Si el encargo tiene reloj, el tiempo que sobre paga, pero si se acaba no cobran nada.
 - **Fosa y Pepazo: ahora ves tus manos con lo que cargas.**
   Guantes y mangas de tu color: en Fosa sostienen el machete, el farol y el botín, y en Pepazo la chancla, con el mismo balanceo y el mismo golpe.
 - **Galope: los caballos ahora corren como caballos.**

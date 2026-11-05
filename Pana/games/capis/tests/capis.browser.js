@@ -26,6 +26,18 @@ try {
   await page.evaluate(() => document.querySelector('[data-room-option="size"][data-value="medium"]').click());
   await waitFor(page, () => capisDebug.match.map.width === 140 && capisDebug.match.map.seed === 6);
   await shot(page, 'lobby');
+  // Todos contra todos: six sides on the big map, spread out, and back. The tombstone picker: one free, the rest locked.
+  await page.locator('[data-room-option="mode"][data-value="ffa"]').click();
+  await waitFor(page, () => capisDebug.match.mode === 'ffa' && capisDebug.match.map.width === 180 && capisDebug.world.match === capisDebug.match);
+  assert.deepEqual(await page.evaluate(() => capisDebug.match.capys.map(c => c.team)), [0, 1, 2, 3, 4, 5]);
+  assert.ok(await page.evaluate(() => { const xs = capisDebug.match.capys.map(c => c.x); return Math.max(...xs) - Math.min(...xs) > 100; }), 'spread over the map');
+  assert.equal(await page.locator('[data-room-option="size"]').first().isVisible(), false, 'the big map is not a choice here');
+  await page.locator('[data-room-option="mode"][data-value="teams"]').click();
+  await waitFor(page, () => capisDebug.match.mode === 'teams' && capisDebug.match.map.seed === 6 && capisDebug.world.match === capisDebug.match);
+  await page.evaluate(() => document.querySelector('[data-room-option="size"][data-value="medium"]').click());
+  await waitFor(page, () => capisDebug.match.map.width === 140 && capisDebug.world.match === capisDebug.match);
+  assert.equal(await page.evaluate(() => document.querySelectorAll('.tomb-btn.is-locked').length), 3);
+  assert.equal(await page.evaluate(() => capisDebug.tombs.chosen()), 'headstone');
   await page.locator('#start').click();
   await waitFor(page, () => capisDebug.playing && capisDebug.match.phase === 'aim' && capisDebug.match.turn.team === 0);
   assert.equal(await page.evaluate(() => capisDebug.match.turn.time <= 30), true);

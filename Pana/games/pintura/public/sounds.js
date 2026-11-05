@@ -36,6 +36,8 @@ export const sfx = {
   clink(volume = 1) { pitch({ dur: .07, f0: 2600 + Math.random() * 500, f1: 2300, type: 'triangle', vol: .05 * volume, priority: 1 }); burst({ dur: .03, f0: 3400, q: 2.5, vol: .06 * volume, priority: 1 }); pitch({ dur: .05, f0: 180, f1: 110, vol: .05 * volume, priority: 1 }); },
   beep(volume = 1, urgent = false) { pitch({ dur: urgent ? .045 : .06, f0: urgent ? 1760 : 1320, type: 'square', vol: .035 * volume, priority: 2 }); },
   hitTick: lib.hitConfirm,
+  // A ball that only soaked in (under a whole pepazo): a small tick, not a confirmed hit.
+  hitSoft() { pitch({ dur: .03, f0: 1800, type: 'square', vol: .05, priority: 2 }); },
   count: n => lib.count(n),
   knockout(long = false, streak = 1) {
     burst({ dur: .2, f0: 650, q: .7, vol: .2, priority: 3 });

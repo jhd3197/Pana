@@ -2,10 +2,11 @@ import { createRoomOptions } from '/engine/room-options.js';
 import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createTableSeating } from '/engine/play/table-seating.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { lazySound } from '/engine/lazy-sound.js';
+import { bindHandFeel } from '/engine/fx/hand-feel.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { CaidaRoom } from './network.js';
@@ -21,6 +22,7 @@ const notify = createToast($('toast'), { ms: 3600 });
 const code = roomFromUrl() || newRoomCode();
 params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 let world = null, ready = false, stopped = false, selected = null, previousEvent = 0, barksPrimed = false, shownResult = '', resultTimer, announcementTimer;
+const handFeel = bindHandFeel(document.getElementById('hand'));
 const audio = lazySound();
 const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
@@ -28,7 +30,7 @@ const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onSta
 const optionsUI = createRoomOptions($('room-options'), { title: loc('Caída'), fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: { ...DEFAULT_OPTIONS, mapId: 'plaza' } }) });
 const seating = createTableSeating($('table-seating'), (from, to) => room.action('seat', { from, to }));
 $('organize-table').onclick = () => room.action('setup');
-const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true, landmarks: true });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true, landmarks: true, room });
 const dealerUI = createDealerUI(room, () => audio.unlock());
 const menu = createGameMenu({ pad: { buttons: true, keys: { rb: ['Enter', loc('Jugar la carta')], x: ['KeyC', loc('Cantar')], y: ['KeyH', loc('Pista')] } }, title: loc('Caída · Pana'), sound: audio,
   note: () => room.members.size > 1 ? loc('La mesa sigue jugando mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
@@ -61,7 +63,7 @@ function render(state) {
   seating.update(state.players, { teams: MODES[state.options.mode].teams, enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.hostId });
   $('organize-table').disabled = !room.connected || !room.isHost;
   $('organize-table').textContent = MODES[state.options.mode].teams ? loc('Cambiar equipos · empezar de cero') : loc('Organizar mesa · empezar de cero');
-  mapPicker.update(state.mapId, ready && room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, ready && canChangeMap(room, state.phase));
   document.body.classList.toggle('in-lobby', state.phase === 'lobby'); $('welcome').hidden = state.phase !== 'lobby';
   $('start').disabled = !ready || !room.connected || !room.isHost;
   $('start').textContent = !ready ? loc('Preparando la mesa…') : !room.connected ? loc('Conectando…') : room.isHost ? loc('Abrir la mesa') : loc('El anfitrión abre la mesa');
@@ -110,6 +112,7 @@ function renderHand(state) {
   const focus = document.activeElement?.dataset?.card; $('hand').replaceChildren();
   hand.forEach(card => { const button = cardButton(card); button.disabled = !turn; button.classList.toggle('selected', selected === card.id); button.setAttribute('aria-pressed', String(selected === card.id)); button.onclick = () => selectCard(card.id); $('hand').append(button); });
   if (focus) $('hand').querySelector(`[data-card="${focus}"]:not(:disabled)`)?.focus({ preventScroll: true });
+  handFeel.after();
   $('your-name').textContent = player ? locn(hand.length, '{name} · {n} cartas', '{name} · {n} cartas', { name: player.name }) : loc('Estás mirando');
   const captured = player?.captured.length || 0; $('capture-count').textContent = locn(captured, '{n} RECOGIDAS', '{n} RECOGIDAS');
   $('turn-status').textContent = !room.connected ? loc('Reconectando…') : ended ? loc('Reparto terminado') : state.phase === 'lobby' ? loc('La mesa te espera.') : state.phase === 'starter' ? loc('¿Quién reparte primero?') : state.phase === 'dealing' ? loc('{name} prepara el reparto', { name: state.players[state.dealer].name }) : turn ? selected ? loc('¡Tu turno! · juégala o cambia') : loc('¡Tu turno! · elige una carta') : loc('Juega {name}', { name: state.players[state.turn].name });

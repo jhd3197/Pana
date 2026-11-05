@@ -22,6 +22,8 @@ import { takeDirty, solidAt } from '/engine/play/terrain-mask.js';
 import { createTerrain } from '/engine/play/terrain-material.js';
 import { createSpray } from '/engine/play/spray.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
+import { supplyCrate } from '/engine/models/props/expedition-camp.js';
+import { grave } from '/engine/models/props/cemetery.js';
 import { simulateFlight, simulateBounce } from '/engine/play/ballistic.js';
 import { RULES, TEAM_COLORS, alive, muzzle, flightOptions, activeCapy, launch } from './rules.js';
 import { WEAPONS, weaponOf } from './weapons.js';
@@ -31,7 +33,11 @@ import { rockAt, grassAt, strataPalette } from './map-rules.js';
 
 const FRONT = 1;               // the depth where capis and shells move
 const SLAB = [-2.6, .55];      // the earth's back and front faces
-const DASHES = 24, HUMAN = 0;
+const DASHES = 24, HUMAN = 0, CRATE_SIZE = .9;
+// Each grave's height differs: these make them all about as tall as a capi's chest.
+const TOMB_SCALE = { headstone: .85, wooden: .95, celtic: .75, obelisk: .5 };
+// A capi painted out lies toppled this long, then it is its tombstone.
+const TOPPLED = 1;
 // A pana is 2.16 units tall: ×.8 a capi stands 1.7, its 1.4 body disc plus the head.
 const CAPY_SCALE = .8, HEAD = 2.05;
 // La Bazuca in the hands: its scale, and how far towards the camera it rides (the near shoulder).
@@ -125,12 +131,14 @@ export function createCapisScene(canvas, match) {
 
   // ---------- capis ----------
   // Shared by every capi: the team cloth, the bandana's shape and one batched
-  // La Bazuca per team that every capi's launcher clones.
-  const cloth = TEAM_COLORS.map(color => new THREE.MeshStandardMaterial({ color, roughness: .6 }));
+  // La Bazuca per team that every capi's launcher clones. Per side, made when a
+  // match first needs that side (setMatch), so two teams never build the other four.
+  const perSide = make => { const got = []; const of = team => got[team] ||= make(TEAM_COLORS[team]); of.made = () => got.filter(Boolean); return of; };
+  const cloth = perSide(color => new THREE.MeshStandardMaterial({ color, roughness: .6 }));
   const bandanaGeo = new THREE.TorusGeometry(.5, .1, 8, 24), knotGeo = new THREE.ConeGeometry(.16, .42, 4);
   // One batched model per weapon and team (La Piñita is small and stays as built); every capi clones them.
-  const launchers = TEAM_COLORS.map(color => Object.fromEntries(WEAPONS.map(w => [w.id, w.model === 'grenade' ? createPaintGrenade({ color }) : bakePaintKit({ weapon: w.model, color })])));
-  const stain = TEAM_COLORS.map(color => new THREE.Color(color));
+  const launchers = perSide(color => Object.fromEntries(WEAPONS.map(w => [w.id, w.model === 'grenade' ? createPaintGrenade({ color }) : bakePaintKit({ weapon: w.model, color })])));
+  const stain = perSide(color => new THREE.Color(color));
   function buildCapi(c) {
     const avatar = buildCharacter(lookFor(c)), root = new THREE.Group(), turn = new THREE.Group();
     avatar.group.scale.setScalar(CAPY_SCALE); turn.add(avatar.group); root.add(turn);
@@ -138,14 +146,14 @@ export function createCapisScene(canvas, match) {
     const coat = [];
     avatar.group.traverse(o => { for (const mt of [o.material].flat()) if (mt?.color && !coat.some(k => k.mt === mt)) coat.push({ mt, base: mt.color.clone() }); });
     // The team bandana round the neck, knotted at the back (sculpt units, inside the body).
-    const bandana = new THREE.Mesh(bandanaGeo, cloth[c.team]); bandana.name = 'Pañoleta'; bandana.position.set(0, 1.8, .02); bandana.rotation.x = Math.PI / 2 + .25; avatar.body.add(bandana);
-    const knot = new THREE.Mesh(knotGeo, cloth[c.team]); knot.position.set(0, 1.92, -.5); knot.rotation.x = -2.2; avatar.body.add(knot);
+    const bandana = new THREE.Mesh(bandanaGeo, cloth(c.team)); bandana.name = 'Pañoleta'; bandana.position.set(0, 1.8, .02); bandana.rotation.x = Math.PI / 2 + .25; avatar.body.add(bandana);
+    const knot = new THREE.Mesh(knotGeo, cloth(c.team)); knot.position.set(0, 1.92, -.5); knot.rotation.x = -2.2; avatar.body.add(knot);
     // The weapon pivots on the shoulder (rules.js `shoulder`); `kick` slides it back on a shot.
     // Every weapon's model is there, only the one in the paws shown; each sits with its tip at the muzzle.
     const gun = new THREE.Group(), kick = new THREE.Group(), held = {};
     gun.rotation.order = 'YXZ'; root.add(gun); gun.add(kick);
     for (const w of WEAPONS) {
-      const kit = launchers[c.team][w.id], model = kit.clone(), k = HELD[w.model];
+      const kit = launchers(c.team)[w.id], model = kit.clone(), k = HELD[w.model];
       model.scale.setScalar(k);
       if (w.model === 'grenade') model.position.set(0, GRENADE_HOLD.y, GRENADE_HOLD.z);
       else model.position.set(0, -kit.userData.bore * k, RULES.muzzle - kit.userData.tip * k);
@@ -161,15 +169,21 @@ export function createCapisScene(canvas, match) {
     for (const w of WEAPONS) held[w.id].visible = w.id === 'bazooka';
     return { avatar, root, turn, gun, kick, launcher, held, weapon: 'bazooka', tip, coat, ears, bandana, lod, seed: c.slot * 1.7 + c.team * 2.9 };
   }
+  // La Bazuca's rocket in flight and La Piñita thrown, one per side.
+  const rockets = perSide(color => { const r = createPaintRocket({ color }); r.scale.setScalar(ROCKET); r.visible = false; scene.add(r); return r; });
+  const grenades = perSide(color => { const g = createPaintGrenade({ color }); g.scale.setScalar(2.4); g.visible = false; scene.add(g); return g; });
   const capis = new Map();
   function setMatch(next) {
     const resized = next.mask.cols !== mask.cols || next.mask.rows !== mask.rows, remap = next.map !== shown;
     match = next; mask = next.mask; shown = next.map;
+    // Capis of the other mode stay built for when it comes back, out of sight.
+    capis.forEach(m => { m.root.visible = false; });
     for (const c of match.capys) {
+      rockets(c.team); grenades(c.team);
       let m = capis.get(c.id);
       if (!m) { m = buildCapi(c); capis.set(c.id, m); scene.add(m.root); }
       const yaw = c.facing > 0 ? Math.PI / 2 : -Math.PI / 2, pose = barrelPose(match, c);
-      Object.assign(m, { hit: 0, sink: 0, fall: 0, paint: -1, lastX: c.x, speed: 0, yaw, pitch: pose.pitch, drop: pose.drop });
+      Object.assign(m, { hit: 0, sink: 0, fall: 0, gone: 0, paint: -1, lastX: c.x, speed: 0, yaw, pitch: pose.pitch, drop: pose.drop });
       m.root.visible = true; m.root.rotation.set(0, 0, 0); m.gun.visible = true;
     }
     takeDirty(mask);
@@ -181,6 +195,60 @@ export function createCapisScene(canvas, match) {
     for (const spray of sprays) spray.clear();
   }
   setMatch(match);
+  // ---------- crates ----------
+  // One model, cloned for each crate (few lie about); a parachute over it while it comes down.
+  const crateModel = supplyCrate({ size: CRATE_SIZE });
+  const chuteMat = new THREE.MeshStandardMaterial({ color: '#ff8a3d', roughness: .8, side: THREE.DoubleSide });
+  const chuteGeo = new THREE.SphereGeometry(.95, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, .7, 1).translate(0, 1.9, 0);
+  const cordGeo = new THREE.CylinderGeometry(.015, .015, 1.5, 4).translate(0, .75, 0);
+  const crateMeshes = new Map(), cratePool = [];
+  function makeCrate() {
+    const g = new THREE.Group(), chute = new THREE.Group(), canopy = new THREE.Mesh(chuteGeo, chuteMat);
+    chute.add(canopy);
+    for (const s of [-1, 1]) { const cord = new THREE.Mesh(cordGeo, chuteMat); cord.position.set(s * .32, CRATE_SIZE * .9, 0); cord.rotation.z = -s * .32; chute.add(cord); }
+    g.add(crateModel.clone(), chute); g.userData.chute = chute;
+    return g;
+  }
+  function drawCrates() {
+    const seen = new Set();
+    for (const k of match.crates || []) {
+      seen.add(k.id);
+      let g = crateMeshes.get(k.id);
+      if (!g) { g = cratePool.pop() || makeCrate(); crateMeshes.set(k.id, g); scene.add(g); }
+      const under = !k.grounded && k.chute > 0;
+      g.userData.chute.visible = under;
+      g.position.set(k.x, k.y, FRONT - .1);
+      // Swinging under its parachute; tumbling if a blast threw it.
+      g.rotation.z = k.grounded ? 0 : under ? Math.sin(time * 2.2 + k.id) * .12 : g.rotation.z + (k.vx > 0 ? -.12 : .12);
+    }
+    for (const [id, g] of crateMeshes) if (!seen.has(id)) { g.removeFromParent(); crateMeshes.delete(id); cratePool.push(g); }
+  }
+  // ---------- tombstones ----------
+  // The cemetery's graves, one model a shape (built when first needed) with a ribbon of the
+  // capi's team across it. Each comes up once its capi is gone: toppled, or into the river.
+  const tombModels = {}, ribbonGeo = new THREE.BoxGeometry(.5, .1, .26), tombMeshes = new Map();
+  const tombModel = shape => tombModels[shape] ||= grave({ type: shape, seed: 3, extras: false, tilt: false, mound: false });
+  function makeTomb(t) {
+    const g = new THREE.Group(), stone = tombModel(t.shape).clone(), ribbon = new THREE.Mesh(ribbonGeo, cloth(t.team));
+    stone.scale.setScalar(TOMB_SCALE[t.shape] ?? 1); ribbon.position.y = .42;
+    g.add(stone, ribbon); g.userData.pop = 0; g.userData.shape = t.shape;
+    return g;
+  }
+  function drawTombs(dt) {
+    const seen = new Set();
+    for (const t of match.tombs || []) {
+      seen.add(t.id);
+      let g = tombMeshes.get(t.id);
+      if (g && g.userData.shape !== t.shape) { g.removeFromParent(); g = null; }
+      if (!g) { g = makeTomb(t); tombMeshes.set(t.id, g); scene.add(g); }
+      g.position.set(t.x, t.y, FRONT - .1);
+      g.rotation.z = t.grounded ? 0 : g.rotation.z + (t.vx > 0 ? -.1 : .1);
+      const capi = capis.get(t.id);
+      g.visible = !capi?.root.visible || match.capys.find(c => c.id === t.id)?.out === 'water';
+      if (g.visible) { g.userData.pop = Math.min(1, g.userData.pop + dt * 4); const p = g.userData.pop; g.scale.setScalar(p * (1 + Math.sin(p * Math.PI) * .25)); }
+    }
+    for (const [id, g] of tombMeshes) if (!seen.has(id)) { g.removeFromParent(); tombMeshes.delete(id); }
+  }
   const marker = createLocalMarker({ color: '#ffc629' }); marker.group.scale.setScalar(3); scene.add(marker.group);
   const aimArrow = guideRibbon('#fff6d8', .14, { segments: 1, opacity: .95 }); aimArrow.rotation.x = Math.PI / 2; scene.add(aimArrow);
   const dashes = Array.from({ length: DASHES }, () => { const d = guideRibbon('#ffffff', .12, { segments: 1, opacity: .85 }); d.rotation.x = Math.PI / 2; scene.add(d); return d; });
@@ -189,11 +257,8 @@ export function createCapisScene(canvas, match) {
 
   // ---------- the shot: flash, charge, rocket, effects ----------
   const puffs = new Puffs(scene), fx = createBlastFx(scene, puffs), feel = createRecoil(), gunFeel = createRecoil({ recover: 3 });
-  // La Bazuca's rocket in flight, one per team colour.
-  const rockets = TEAM_COLORS.map(color => { const r = createPaintRocket({ color }); r.scale.setScalar(ROCKET); r.visible = false; scene.add(r); return r; });
-  // The other shells, one each (El Trueno's five pellets are one instanced draw): La Piñita
-  // with its blinking fuse lamp, La Lejana's long glowing slug, La Licuadora's spinning bit.
-  const grenades = TEAM_COLORS.map(color => { const g = createPaintGrenade({ color }); g.scale.setScalar(2.4); g.visible = false; scene.add(g); return g; });
+  // The other shells, one each (El Trueno's five pellets are one instanced draw): La Lejana's
+  // long glowing slug, La Licuadora's spinning bit.
   const shellMat = new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: .6, roughness: .3 });
   const slug = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), shellMat); slug.scale.set(.13, .13, .55); slug.visible = false; scene.add(slug);
   const bitMat = new THREE.MeshStandardMaterial({ color: '#c9d0cf', metalness: .7, roughness: .3 });
@@ -279,6 +344,14 @@ export function createCapisScene(canvas, match) {
       }
     }
     if (e.type === 'out' && e.reason === 'paint' && c) c.avatar.bounce(1.6);
+    // A smashed crate is splinters and dust; a taken one a little burst of sparks.
+    if (e.type === 'crate-gone' && e.reason !== 'water') {
+      const on = { x: e.x, y: e.y + .4, z: FRONT };
+      clods.burst(on, { count: 18, color: '#b07f50', speed: 8, dir: UP, cone: 1.3, size: .13, life: 1.4, spread: .4 });
+      puffs.spawn(on, { color: '#cdb894', count: 6, spread: .7, size: .5, rise: 1.2, life: .9 });
+    }
+    if (e.type === 'crate-gone' && e.reason === 'water') waterSplash(e.x, .5);
+    if (e.type === 'pickup') sparks.burst({ x: e.x, y: e.y + .4, z: FRONT + .2 }, { count: 22, color: '#ffe08a', speed: 6, dir: UP, cone: 1.4, size: .07, life: .5 });
     if (e.type === 'turn') { hold = 0; holdAt = null; }
   }
 
@@ -324,8 +397,8 @@ export function createCapisScene(canvas, match) {
     turn.rotation.y = m.yaw * TURN_IN; turn.position.y = 0;
     avatar.update(dt, pose === 'walk' ? { walk: true, open: k > .2 } : { open: k > .2 || pose === 'cheer', dizzy: pose === 'splat' });
     // Paint shows on the coat as the rival's colour soaks in.
-    if (m.paint !== c.paint) { m.paint = c.paint; const p = c.paint / 100 * .75; for (const s of m.coat) s.mt.color.copy(s.base).lerp(stain[1 - c.team], p);
-      m.lod.material.color.setScalar(1 - p); m.lod.material.emissive.copy(stain[1 - c.team]).multiplyScalar(p * .55); }
+    if (m.paint !== c.paint) { m.paint = c.paint; const p = c.paint / 100 * .75; const soak = stain(c.by ?? (c.team ? 0 : 1)); for (const s of m.coat) s.mt.color.copy(s.base).lerp(soak, p);
+      m.lod.material.color.setScalar(1 - p); m.lod.material.emissive.copy(soak).multiplyScalar(p * .55); }
     // Breathing, and now and then an ear flick.
     body.position.y += Math.sin(time * 2.3 + m.seed) * .018;
     const flick = Math.max(0, Math.sin(time * .8 + m.seed * 3) - .97) * 33;
@@ -373,6 +446,7 @@ export function createCapisScene(canvas, match) {
       root.rotation.z = c.facing * Math.PI / 2 * (1 - (1 - m.fall) ** 3); root.position.y += .35 * m.fall;
       legs.forEach((leg, i) => { leg.rotation.x = -1.3 + Math.sin(time * 6 + i * 2) * .25; });
       avatar.arms.forEach((arm, i) => arm.rotation.set(-2.6 + Math.sin(time * 7 + i) * .3, 0, (i ? -1 : 1) * .4));
+      m.gone += dt; if (m.gone > TOPPLED) root.visible = false;
     } else if (pose === 'sink') {
       // Into the river: paws up, spinning as it goes down.
       m.sink = Math.min(3, m.sink + dt * 1.5); root.position.y = match.map.water - m.sink; root.visible = m.sink < 3;
@@ -386,7 +460,7 @@ export function createCapisScene(canvas, match) {
   // blinking faster as the fuse runs down, La Lejana's slug with a white streak,
   // La Licuadora's bit spinning, El Trueno's pellets.
   function drawShells(dt) {
-    rockets.forEach(r => { r.visible = false; }); grenades.forEach(g => { g.visible = false; });
+    rockets.made().forEach(r => { r.visible = false; }); grenades.made().forEach(g => { g.visible = false; });
     slug.visible = bit.visible = false; let pellet = 0;
     trailT -= dt; const drip = trailT <= 0; if (drip) trailT = .03;
     for (const s of match.shells || []) {
@@ -394,12 +468,12 @@ export function createCapisScene(canvas, match) {
       at.set(s.x, s.y, FRONT); if (moving) dir.set(s.vx, s.vy, 0).normalize();
       back.set(-s.vx, -s.vy);
       if (w.id === 'bazooka') {
-        const r = rockets[s.team]; r.visible = true; r.position.copy(at);
+        const r = rockets(s.team); r.visible = true; r.position.copy(at);
         if (moving) r.quaternion.setFromUnitVectors(NOSE, dir);
         tail.copy(at).addScaledVector(dir, -.55 * ROCKET / 2.2); fx.trail('shell', tail, dt);
         if (drip) drops.burst(tail, { count: 1, color: paint, speed: 2.5, dir: back, cone: .6, size: .075, life: 1.1, spread: .1 });
       } else if (w.id === 'grenade') {
-        const g = grenades[s.team]; g.visible = true; g.position.copy(at);
+        const g = grenades(s.team); g.visible = true; g.position.copy(at);
         if (!s.resting) g.rotation.z -= dt * Math.sign(s.vx || 1) * 9;
         g.userData.light.emissiveIntensity = Math.sin(time * (8 + s.t * 10)) > 0 ? 3 : 0;
         if (drip && !s.resting) drops.burst(at, { count: 1, color: paint, speed: 1.5, dir: back, cone: .8, size: .06, life: .8 });
@@ -455,6 +529,8 @@ export function createCapisScene(canvas, match) {
       streak.scale.set(2.6 * (1.3 - flashT * .3), .7 * flashT + .2, 1); streak.material.opacity = flashT;
     }
     drawShells(dt);
+    drawCrates();
+    drawTombs(dt);
     // Camera: the shell in flight, a fresh blast for a moment, else the capi whose turn it is.
     hold = Math.max(0, hold - dt);
     const target = match.shot ? { x: match.shot.x, y: match.shot.y + (match.shot.resting ? 1.5 : 0) } : hold && holdAt ? holdAt : active ? { x: active.x, y: active.y + 1.5 } : focus;
@@ -508,6 +584,8 @@ export function createCapisScene(canvas, match) {
       ray.setFromCamera(new THREE.Vector2(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1), camera);
       return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -FRONT), hit) ? { x: hit.x, y: hit.y } : null;
     },
+    // For tests: what lies on the ground, as drawn.
+    get props() { return { crates: [...crateMeshes.values()].map(g => ({ x: g.position.x, y: g.position.y, chute: g.userData.chute.visible })), tombs: [...tombMeshes.entries()].map(([id, g]) => ({ id, shape: g.userData.shape, x: g.position.x, y: g.position.y, visible: g.visible })) }; },
     get wide() { return wide; }, set wide(on) { wide = !!on; },
     set closeUp(width) { closeUp = Number(width) || 0; },
     get calls() { return renderer.info.render.calls; },
@@ -516,10 +594,11 @@ export function createCapisScene(canvas, match) {
     get effects() { return { drops: drops.active, clods: clods.active, sparks: sparks.active, rings: rings.active }; },
     dispose() {
       unbind(); capis.forEach(m => { m.lod.dispose(); m.root.removeFromParent(); m.avatar.dispose(); }); capis.clear();
-      launchers.forEach(set => Object.values(set).forEach(l => l.userData.dispose())); rockets.forEach(r => { r.removeFromParent(); r.userData.dispose(); });
-      grenades.forEach(g => { g.removeFromParent(); g.userData.dispose(); }); [slug, bit, pellets].forEach(o => { o.removeFromParent(); o.geometry.dispose(); }); shellMat.dispose(); bitMat.dispose(); pellets.dispose();
+      launchers.made().forEach(set => Object.values(set).forEach(l => l.userData.dispose())); rockets.made().forEach(r => { r.removeFromParent(); r.userData.dispose(); });
+      grenades.made().forEach(g => { g.removeFromParent(); g.userData.dispose(); }); [slug, bit, pellets].forEach(o => { o.removeFromParent(); o.geometry.dispose(); }); shellMat.dispose(); bitMat.dispose(); pellets.dispose();
       ring.userData.dispose();
-      bandanaGeo.dispose(); knotGeo.dispose(); cloth.forEach(mt => mt.dispose());
+      bandanaGeo.dispose(); knotGeo.dispose(); cloth.made().forEach(mt => mt.dispose());
+      chuteGeo.dispose(); cordGeo.dispose(); chuteMat.dispose(); ribbonGeo.dispose();
       flash.geometry.dispose(); flash.material.dispose(); streak.material.dispose(); glow.dispose(); drip.geometry.dispose(); drip.material.dispose();
       sprays.forEach(spray => spray.dispose());
       fx.dispose(); marker.dispose(); aimArrow.userData.dispose(); dashes.forEach(d => d.userData.dispose());

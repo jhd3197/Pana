@@ -6,7 +6,7 @@ import { ratingBadge } from '/engine/kit-rating.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { MENU_FIELDS, DEFAULT_OPTIONS, teamPlay, roundTime, menuValues, menuPatch, hardcorePlay } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { createDifficultyPicker, DEFAULT_DIFFICULTY } from '/engine/play/difficulty.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl } from '/engine/invite.js';
@@ -66,7 +66,7 @@ const teamRoster = createTeamLobby($('team-roster'), { onMove: (from, to) => roo
 const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: MENU_FIELDS, change: patch => room.configure(menuPatch(patch, room.state.options)), reset() {
   room.configure(DEFAULT_OPTIONS); room.selectMap('terminal'); room.selectDifficulty(DEFAULT_DIFFICULTY);
 } });
-const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true, room });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),
   notes: { facil: loc('Los bots fallan seguido y disparan menos.'), normal: loc('Bots con buena mano, pero se les va alguna.'), dificil: loc('Los bots apuntan fino y no sueltan el gatillo.'), experto: loc('Casi no fallan: muévete y cúbrete.') } });
 const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyQ', loc('Cambiar de arma')], b: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla y el mapa completo')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
@@ -181,6 +181,16 @@ function input() {
 }
 // A short CSS pulse: a hit marker on the crosshair or a paint flash when hit.
 function flash(name) { document.body.classList.remove(name); void document.body.offsetWidth; document.body.classList.add(name); }
+// The shooter's marker: one at a time, restarted by every landing and gone once played,
+// so a knockout does not leave the crosshair in that state for the rest of the round.
+const HIT_PULSES = ['hitmark', 'hitsoft', 'scored'];
+function hitPulse(name) {
+  document.body.classList.remove(...HIT_PULSES); void document.body.offsetWidth; document.body.classList.add(name);
+  clearTimeout(hitPulse.timer); hitPulse.timer = setTimeout(() => document.body.classList.remove(name), 560);
+}
+// A ball under a whole pepazo (La China, La Fumigadora, La Licuadora) soaks in: a soft
+// tick at most every 90 ms, so a stream does not buzz.
+function softHit() { hitPulse('hitsoft'); const now = performance.now(); if (now - (softHit.at || 0) > 90) { softHit.at = now; sfx.hitSoft(); } }
 // Knockout callouts: the distance always, plus the moments worth shouting about.
 function callout(e, state) {
   const victim = state.players.find(p => p.id === e.victim)?.name || loc('un pana');
@@ -203,11 +213,12 @@ function feedLine(e, state) {
 }
 function announce(e, state) {
   const mine = e.owner === room.id, me = e.victim === room.id;
+  if (e.type === 'soak') { if (mine && !me) softHit(); return; }
   if (e.type === 'out') feedLine(e, state);
   // Every rival you paint counts for that weapon's camo (pana.sh unlocks it), knockout blows too.
   if (mine && !me && !(teamsOn(state) && state.players.find(p => p.id === e.victim)?.team === myPana()?.team)) hitFeats.weaponHit(e.weapon);
-  if (mine && e.type === 'hit') { sfx.hitTick(); flash('hitmark'); navigator.vibrate?.(18); hitFeats.hit(state.players.find(p => p.id === e.victim)?.name || loc('un pana')); }
-  if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); flash('scored'); combat.streak(e.streak || 1); }
+  if (mine && e.type === 'hit') { sfx.hitTick(); hitPulse('hitmark'); combat.landed(e.damage); navigator.vibrate?.(18); hitFeats.hit(state.players.find(p => p.id === e.victim)?.name || loc('un pana')); }
+  if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); hitPulse('scored'); combat.landed(e.damage, 'crit'); combat.streak(e.streak || 1); }
   // A headshot is also called on the screen of the pana it took out and of whoever watches the shooter.
   if (seesCallout(e, room.id, spectate.spectator.active ? spectate.spectator.target : null)) callout(e, state);
   if (me) {
@@ -323,7 +334,7 @@ const teamScore = state => loc('Naranja {orange} — Turquesa {teal}', { orange:
 function render(state) {
   optionsUI.update(menuValues(state.options || DEFAULT_OPTIONS), room.connected && room.isHost && state.phase !== 'playing');
   if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
-  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, canChangeMap(room, state.phase));
   difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase !== 'playing');
   $('round-minutes').textContent = loc('{n} min', { n: roundTime(state.options) / 60 });
   const ctf = state.options?.mode === 'ctf', dom = state.options?.mode === 'dom'; $('win-target').textContent = ctf ? state.options.flagGoal || 3 : dom ? state.options.domGoal || 200 : TARGET;

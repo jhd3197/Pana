@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { createRangeLane, createRangeTarget, createRangeSign } from '/engine/models/props/shooting-range.js';
 import { createPaintKit, createPaintGrenade, PAINT_KIT_BORE } from '/engine/models/props/paintball-kit.js';
+import { grenadeDef } from './armory-data.js';
 import { splatTexture } from '/engine/models/props/paintball.js';
 import { createRecoil } from '/engine/play/recoil.js';
 import { createScope } from '/engine/play/scope.js';
@@ -129,7 +130,7 @@ export function createRangeScene(canvas) {
       const thrown = new Set();
       for (const g of sim.arena.grenades) {
         thrown.add(g.id); let mesh = grenades.get(g.id);
-        if (!mesh) { mesh = createPaintGrenade({ color: g.color }); mesh.scale.setScalar(1.2); scene.add(mesh); grenades.set(g.id, mesh); }
+        if (!mesh) { mesh = createPaintGrenade({ color: grenadeDef(g.kind).color }); mesh.scale.setScalar(1.2); scene.add(mesh); grenades.set(g.id, mesh); }
         mesh.position.set(g.x, Math.max(.1, g.y), g.z); mesh.rotation.x += dt * 8;
       }
       for (const [id, mesh] of grenades) if (!thrown.has(id)) { mesh.removeFromParent(); mesh.userData.dispose?.(); grenades.delete(id); }

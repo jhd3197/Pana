@@ -9,6 +9,34 @@ import { MUSHROOM_GLOW } from '/engine/models/props/glow-mushrooms.js';
 
 const ROPE = 0xb99a62, WOOD = 0x5e4630, IRON = 0x3c3a3a;
 
+// A thicket of roots from a ceiling `height` above, thick enough to stand behind:
+// gnarled strands that stop short of the floor and a tangle at the bottom. One
+// draw, nothing to collide with. Origin on the ground.
+export function rootThicket({ seed = 1, radius = 1.6, height = 4.6, strands } = {}) {
+  const r = rng(seed), n = strands ?? Math.round(16 + radius * 10), parts = [], up = new THREE.Vector3(0, 1, 0), a = new THREE.Vector3(), b = new THREE.Vector3(), dir = new THREE.Vector3();
+  const limb = (x0, y0, z0, x1, y1, z1, r0, r1) => {
+    a.set(x0, y0, z0); b.set(x1, y1, z1); dir.subVectors(b, a); const len = dir.length();
+    const piece = new THREE.CylinderGeometry(r0, r1, len, 5, 1, true);
+    piece.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, dir.normalize())); piece.translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+    parts.push(piece);
+  };
+  for (let i = 0; i < n; i++) {
+    const t = r() * Math.PI * 2, d = radius * Math.sqrt(r()); let x = Math.cos(t) * d, z = Math.sin(t) * d, y = height, w = .05 + r() * .08;
+    const end = r() < .55 ? .05 + r() * .25 : .7 + r() * 1.3, steps = 4;
+    for (let s = 1; s <= steps; s++) {
+      const nx = x + (r() - .5) * .34, nz = z + (r() - .5) * .34, ny = height + (end - height) * s / steps, tip = w * (1 - .16 * s);
+      limb(x, y, z, nx, ny, nz, w, tip); x = nx; z = nz; y = ny; w = tip;
+    }
+    // Where it reaches the floor it runs along it a little.
+    if (end < .35) { const h = r() * Math.PI * 2, far = .3 + r() * .5; limb(x, y, z, x + Math.cos(h) * far, .03, z + Math.sin(h) * far, w, w * .4); }
+  }
+  const flat = parts.map(p => p.toNonIndexed()), geometry = mergeGeometries(flat, false);
+  parts.forEach(p => p.dispose()); flat.forEach(p => p.dispose()); geometry.computeVertexNormals();
+  const g = new THREE.Group(); g.name = 'rootThicket';
+  g.add(new THREE.Mesh(geometry, M(0x7a5c3e, { roughness: .95 })));
+  return g;
+}
+
 // A mushroom as tall as a pana or more. userData.glow is where it shines from,
 // for a halo or a borrowed pool light; a light of its own is the consumer's call.
 export function giantMushroom({ seed = 1, height, color } = {}) {

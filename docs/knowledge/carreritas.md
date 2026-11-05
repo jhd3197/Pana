@@ -161,3 +161,12 @@ largest game and uses the shared lobby followed by Copa and the full-screen Tall
   receiving client; the room relays it in 6.5–7.3 → 9.6–10.4 µs.
 - Carreritas signals readiness with `window.PANA_PREPARED` once the garage car is
   built, like every other game (tests/browser-kit.js `waitPrepared`).
+
+## Speed feel
+
+`public/speed-feel.js` (loaded with the chase camera) reads `engine/fx/speed.js`:
+the view opens from 50 to 75 with speed against `tune.top * 1.25`, so cruising sits
+near 70 and a boost has room. The comfort camera and battle arenas keep the old 60
+and 74, because a narrower view in an arena would change what you can see to fight.
+Camera shake here must never call the seeded `random`: the speed-feel shake uses its
+own noise, and a race's trace (`npm run shots`) is identical with or without it.

@@ -6,8 +6,8 @@
 // The buried library has its own room tone: boards that creak under every
 // step, long timber groans, pages turning, a book falling somewhere, a
 // clock that ticks and stops, wind through broken windows and whispers.
-// The camp's cavern breathes on the chasm: a low draft, drops on its puddles and,
-// under the Sustos setting, far metal and a whistle from somewhere below.
+// The camp's cavern breathes on the lake: a low draft, drops on its puddles, the far
+// roar of its falls and, under the Sustos setting, far metal and a whistle from below.
 // eerie() plays the scare layers for eerie-fx.js: stingers, swells, slams,
 // breath on your neck. No music, no files.
 import { sound } from '/engine/fx.js';
@@ -15,9 +15,10 @@ import { scareSound } from '/engine/eerie.js';
 import { floorOf } from './deck.js';
 import { peekCueDue } from './silbon.js';
 import { DRIPS, dripLands } from './camp-cave.js';
+import { roarFor } from './options.js';
 
 export function createAmbience() {
-  let graph = null, near = 0, stepAt = 0, eventIn = 2, clockIn = 6, ticks = 0;
+  let graph = null, near = 0, fireLevel = 0, stepAt = 0, eventIn = 2, clockIn = 6, ticks = 0;
   const steps = new Map(), voices = new Map(), peeks = new Map();
 
   // Lazily, once audio is unlocked: a split after the game's output into a
@@ -44,7 +45,15 @@ export function createAmbience() {
     gust.buffer = noise; gust.loop = true; band.type = 'bandpass'; band.frequency.value = 520; band.Q.value = 1.6; wind.gain.value = 0; swell.gain.value = .5;
     lfo.frequency.value = .09; depth.gain.value = .45; lfo.connect(depth).connect(swell.gain);
     gust.connect(band).connect(swell).connect(wind).connect(input); gust.start(); lfo.start();
-    graph = { ctx, input, wet, bed, drone, noise, wind };
+    // The falls, far across the lake: the same noise, narrowed to a steady far-off roar.
+    const falls = ctx.createBufferSource(), high = ctx.createBiquadFilter(), body = ctx.createBiquadFilter(), roar = ctx.createGain();
+    falls.buffer = noise; falls.loop = true; falls.playbackRate.value = 1.6; high.type = 'highpass'; high.frequency.value = 170; body.type = 'lowpass'; body.frequency.value = 620; roar.gain.value = 0;
+    falls.connect(high).connect(body).connect(roar).connect(input); falls.start();
+    // A fire close by: a soft roar, warmer and lower than the falls, under its crackles.
+    const flames = ctx.createBufferSource(), flameBand = ctx.createBiquadFilter(), fireRoar = ctx.createGain();
+    flames.buffer = noise; flames.loop = true; flames.playbackRate.value = 2.2; flameBand.type = 'bandpass'; flameBand.frequency.value = 340; flameBand.Q.value = .5; fireRoar.gain.value = 0;
+    flames.connect(flameBand).connect(fireRoar).connect(input); flames.start();
+    graph = { ctx, input, wet, bed, drone, noise, wind, roar, fireRoar };
   }
 
   // A short sound placed in stereo, quieter with distance.
@@ -91,12 +100,24 @@ export function createAmbience() {
     screech: (ctx, out, t) => { osc(ctx, out, t, { type: 'square', from: 6200, to: 3400, dur: .22, vol: .05 }); osc(ctx, out, t + .05, { type: 'sawtooth', from: 4800, to: 2600, dur: .28, vol: .03 }); for (let i = 0; i < 7; i++) noiseBurst(ctx, out, t + .1 + i * .06, { dur: .05, freq: 700, type: 'bandpass', q: .8, vol: .1 }); },
     // El Silbón: its whistle falls slowly, the way the story tells it.
     whistle: (ctx, out, t) => { osc(ctx, out, t, { from: 1180, to: 1320, dur: .5, vol: .05, vibrato: 5 }); osc(ctx, out, t + .46, { from: 1320, to: 720, dur: 1.1, vol: .055, vibrato: 7 }); },
+    // El Mokele: a foot coming down under water, a wave of it being pushed aside, and its call.
+    footfall: (ctx, out, t) => { osc(ctx, out, t, { from: 74, to: 34, dur: .46, vol: .62 }); osc(ctx, out, t, { type: 'triangle', from: 120, to: 62, dur: .2, vol: .26 }); noiseBurst(ctx, out, t + .01, { dur: .42, freq: 300, vol: .42, sweep: .4 }); },
+    wake: (ctx, out, t) => { noiseBurst(ctx, out, t, { dur: 1.5, freq: 520, q: .7, vol: .34, sweep: 2.1 }); noiseBurst(ctx, out, t + .4, { dur: 1.1, freq: 1100, type: 'bandpass', q: 1, vol: .14, sweep: .5 }); },
+    bellow: (ctx, out, t) => { osc(ctx, out, t, { type: 'sawtooth', from: 62, to: 96, dur: 1.1, vol: .3, vibrato: 7 }); osc(ctx, out, t + .9, { type: 'sawtooth', from: 96, to: 44, dur: 2, vol: .3, vibrato: 11 }); osc(ctx, out, t, { from: 40, to: 34, dur: 3, vol: .45 }); },
+    frog: (ctx, out, t) => { for (let i = 0, n = 2 + Math.floor(Math.random() * 3); i < n; i++) osc(ctx, out, t + i * .22, { type: 'square', from: 210 + Math.random() * 60, to: 130, dur: .14, vol: .035 }); },
+    insects: (ctx, out, t) => { for (let i = 0; i < 9; i++) osc(ctx, out, t + i * .09, { from: 4200 + Math.random() * 300, dur: .05, vol: .012 }); },
     // About to look into a nook: stone scraping, then two wet sniffs. Unlike anything else down here.
     peek: (ctx, out, t) => { noiseBurst(ctx, out, t, { dur: .42, freq: 420, type: 'bandpass', q: 3.5, vol: .5, sweep: 1.6 }); osc(ctx, out, t, { type: 'sawtooth', from: 62, to: 92, dur: .42, vol: .1, vibrato: 26 }); for (const at of [.34, .52]) noiseBurst(ctx, out, t + at, { dur: .14, freq: 1500, type: 'bandpass', q: 1.4, vol: .4, sweep: 2.2 }); },
     plummet: (ctx, out, t) => { osc(ctx, out, t, { from: 900, to: 90, dur: 1.3, vol: .09 }); osc(ctx, out, t, { type: 'sawtooth', from: 240, to: 45, dur: 1.3, vol: .06 }); noiseBurst(ctx, out, t + 1.3, { dur: .7, freq: 130, vol: .8 }); },
     growl: (ctx, out, t) => osc(ctx, out, t, { type: 'sawtooth', from: 70, to: 55, dur: 1.2, vol: .14, vibrato: 22 }),
     roar: (ctx, out, t) => { osc(ctx, out, t, { type: 'sawtooth', from: 160, to: 60, dur: 1, vol: .2, vibrato: 30 }); noiseBurst(ctx, out, t, { dur: .8, freq: 900, vol: .2, sweep: .3 }); },
     heartbeat: (ctx, out, t) => { osc(ctx, out, t, { from: 60, to: 40, dur: .16, vol: .25 }); osc(ctx, out, t + .22, { from: 55, to: 38, dur: .18, vol: .2 }); },
+    // A log popping: a dry tick or two, high and short.
+    crackle: (ctx, out, t) => { for (let i = 0, n = 1 + Math.floor(Math.random() * 3); i < n; i++) noiseBurst(ctx, out, t + i * (.03 + Math.random() * .05), { dur: .02 + Math.random() * .025, freq: 2200 + Math.random() * 3200, type: 'bandpass', q: 2.5, vol: .22 }); },
+    // A cave-in giving way: a dry tok on each blow, a crunch when it splits, a fall of stone at the end.
+    tok: (ctx, out, t) => { noiseBurst(ctx, out, t, { dur: .05, freq: 1500 + Math.random() * 700, type: 'bandpass', q: 3, vol: .42 }); osc(ctx, out, t, { type: 'triangle', from: 300, to: 150, dur: .07, vol: .16 }); },
+    crunch: (ctx, out, t) => { for (let i = 0; i < 4; i++) noiseBurst(ctx, out, t + i * .035, { dur: .09, freq: 650 + Math.random() * 900, type: 'bandpass', q: 1.4, vol: .4 }); osc(ctx, out, t, { type: 'triangle', from: 130, to: 62, dur: .22, vol: .18 }); },
+    rockfall: (ctx, out, t) => { noiseBurst(ctx, out, t, { dur: .5, freq: 340, vol: .55, sweep: .5 }); osc(ctx, out, t, { from: 92, to: 42, dur: .4, vol: .26 }); for (let i = 0; i < 7; i++) noiseBurst(ctx, out, t + .12 + i * (.05 + Math.random() * .08), { dur: .05, freq: 900 + Math.random() * 1400, type: 'bandpass', q: 2.4, vol: .2 }); },
     // ---- The library ----
     // A board under a foot: a dull knock and, sometimes, a short squeal.
     board: (ctx, out, t, squeal) => { noiseBurst(ctx, out, t, { dur: .08, freq: 380, vol: .45 }); osc(ctx, out, t, { type: 'triangle', from: 150, to: 95, dur: .09, vol: .12 }); if (squeal) osc(ctx, out, t + .03, { type: 'sawtooth', from: 260 + Math.random() * 120, to: 180 + Math.random() * 80, dur: .35 + Math.random() * .3, vol: .035, vibrato: 30 }); },
@@ -137,11 +158,13 @@ export function createAmbience() {
     if (!graph) build();
     const playing = state.phase === 'playing' && me && !sound.muted, deep = playing && floorOf(me.x) > 0, cave = playing && !deep, tier = Math.min(4, Math.floor((state.codicia || 0) / 25)), now = graph.ctx.currentTime;
     const library = deep && theme === 'biblioteca';
-    graph.wet.gain.setTargetAtTime(deep ? library ? .42 : .55 : cave ? .4 : .06, now, .4);
+    graph.wet.gain.setTargetAtTime(deep ? library ? .42 : theme === 'congo' ? .24 : .55 : cave ? .4 : .06, now, .4);
     graph.wind.gain.setTargetAtTime(library ? .05 + tier * .015 : cave ? .03 : 0, now, 1.5);
+    graph.roar.gain.setTargetAtTime(cave ? roarFor(scares) : 0, now, 1.8);
     graph.bed.gain.setTargetAtTime(deep ? .05 + tier * .015 : cave ? .03 : 0, now, .8);
     // presence.js swells the drone while a mummy closes in (0…1).
     graph.drone.gain.setTargetAtTime(deep ? .012 + tier * .01 + near * .03 : cave ? .007 : 0, now, 1.2);
+    graph.fireRoar.gain.setTargetAtTime(fireLevel * fireLevel * .55, now, .35);
     if (!playing) return;
     // Footsteps: yours on your stride, others' from where they walk.
     for (const p of state.players) {
@@ -178,6 +201,7 @@ export function createAmbience() {
     if (eventIn <= 0) {
       const a = Math.random() * Math.PI * 2, r = 4 + Math.random() * 12, at = place(me, heading, me.x + Math.cos(a) * r, me.z + Math.sin(a) * r, 20);
       if (library) { const pick = Math.random(), name = pick < .3 ? 'timber' : pick < .5 ? 'pages' : pick < .64 ? 'book' : pick < .8 ? 'wind' : pick < .9 ? 'whisper' : 'moan'; play(name, { ...at, gain: at.gain * (name === 'book' ? .6 : .85) }); eventIn = (2.5 + Math.random() * 5) * (1 - tier * .13); }
+      else if (deep && theme === 'congo') { const pick = Math.random(); play(pick < .4 ? 'frog' : pick < .75 ? 'insects' : 'drip', at); eventIn = 1.5 + Math.random() * 4; }
       else if (deep) { const pick = Math.random(), name = pick < .4 ? 'drip' : pick < .6 ? 'pebbles' : pick < .78 ? 'creak' : pick < .92 ? 'moan' : 'whisper'; play(name, { ...at, gain: at.gain * (name === 'drip' ? 1 : .8) }); eventIn = (2 + Math.random() * 5) * (1 - tier * .12); }
       else {
         // Only what might not be the rock asks Sustos; the whistle stays faint and rare.
@@ -198,5 +222,5 @@ export function createAmbience() {
   function eerie(name, { pan = 0, gain = 1, strength = 1 } = {}) { if (SOUNDS[name]) voice((ctx, out, t) => SOUNDS[name](ctx, out, t, strength), { pan, gain }); }
   // One world sound, panned and faded from where this pana stands.
   function at(name, me, heading, x, z, range = 24) { if (graph && me) play(name, place(me, heading, x, z, range)); }
-  return { update, eerie, at, set presence(v) { near = Math.max(0, Math.min(1, v || 0)); } };
+  return { update, eerie, at, set presence(v) { near = Math.max(0, Math.min(1, v || 0)); }, set fire(v) { fireLevel = Math.max(0, Math.min(1, v || 0)); } };
 }

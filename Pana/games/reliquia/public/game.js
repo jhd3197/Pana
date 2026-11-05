@@ -20,6 +20,7 @@ import { Expedition, BARKS, interaction } from './rules.js';
 import { spawnEnemy } from './enemies.js';
 import { startSwarm } from './swarm.js';
 import { startSuceso } from './sucesos.js';
+import { wipeSpecies, crowdRoost } from './ecology.js';
 import { ExpeditionRoom } from './network.js';
 import { createView } from './view.js';
 import { createHud, money } from './hud.js';
@@ -97,7 +98,7 @@ function lobby() {
 }
 
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.
-const SHOUTS = { seal: [loc('¡Se abrió la bajada!'), 'teal'], boss: [loc('¡Despertó algo grande!'), 'coral'], guardian: [loc('¡Guardián vencido!'), 'yellow'], 'silbon-down': [loc('¡Se fue al abismo!'), 'yellow'], jaguar: [loc('¡Jaguar vencido!'), 'yellow'],
+const SHOUTS = { seal: [loc('¡Se abrió la bajada!'), 'teal'], boss: [loc('¡Despertó algo grande!'), 'coral'], guardian: [loc('¡Guardián vencido!'), 'yellow'], 'silbon-down': [loc('¡Se fue al abismo!'), 'yellow'], 'mokele-down': [loc('¡Se lo tragó el remolino!'), 'yellow'], jaguar: [loc('¡Jaguar vencido!'), 'yellow'],
   curse: [loc('¡Maldición!'), 'coral'], collapse: [loc('¡Derrumbe!'), 'coral'], stalker: [loc('¡Los están cazando!'), 'coral'], down: [loc('¡Pana caído!'), 'coral'], reveal: [loc('¡Sala escondida!'), 'teal'], 'encargo-paid': [loc('¡Encargo cumplido!'), 'yellow'] };
 const QUIET = new Set(['suceso', 'encargo', 'pick', 'hit', 'swing', 'shot', 'hurt', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch', 'search']);
 function handle(e) {
@@ -131,8 +132,11 @@ function handle(e) {
     case 'awaken': sfx.awaken(); break;
     case 'boss': sfx.boss(); view.shake(.4); break;
     case 'pounce': { sfx.pounce(); if (p) view.shake(Math.max(0, 1 - Math.hypot(e.x - p.x, e.z - p.z) / 18)); view.waves.ring({ x: e.x, y: .1, z: e.z }, { color: 0xffc23d, maxRadius: 3 }); break; }
-    case 'greed': sfx.greed(); view.shake(.4); shout(said, { tone: 'coral' }); break;
-    case 'collapse': sfx.collapse(); view.shake(.9); break;
+    case 'greed': sfx.greed(); view.shake(.4); shout(said, { tone: 'coral' }); if (p) view.world.feedFires(floorOf(p.x), .5, p); break;
+    // The lights come back after a blackout with a roar.
+    case 'suceso-end': if (e.suceso === 'apagon' && p) view.world.feedFires(floorOf(p.x), 1); break;
+    // The ruin shaking stirs the fires around it.
+    case 'collapse': sfx.collapse(); view.shake(.9); if (p) view.world.feedFires(floorOf(p.x), .8, p); break;
     // What the jornada does on its own: the whole sentence is the shout.
     case 'suceso': shout(said, { tone: 'coral' }); if (e.suceso === 'apagon') sfx.blackout(); else if (e.suceso === 'murcielagos') sfx.flap(); else sfx.shaking(); view.shake(.45); break;
     case 'encargo': shout(said, { tone: 'teal' }); break;
@@ -144,18 +148,24 @@ function handle(e) {
     case 'twin': sound.clickDown(); break;
     case 'encargo-paid': sfx.bank(true); popCounter($('mangos')); break;
     case 'laugh': sfx.laugh(); break;
-    case 'level': sfx.win(); shout(record.report(state, room.id) ? loc('¡Récord roto!') : loc('¡Jornada {n} lista!', { n: e.level }), { tone: 'yellow' }); break;
+    case 'level': sfx.win(); if (e.extra) popCounter($('mangos')); shout(record.report(state, room.id) ? loc('¡Récord roto!') : e.extra ? loc('¡Jornada {n} lista! Sobretiempo +{extra}', { n: e.level, extra: e.extra }) : loc('¡Jornada {n} lista!', { n: e.level }), { tone: 'yellow' }); break;
     case 'buy': sfx.bank(false); break;
     case 'cargo': sfx.lift(); break;
     case 'delivered': sfx.bank(true); popCounter($('mangos')); if (e.met) shout(loc('¡Cuota lista! Al montacargas'), { tone: 'teal' }); break;
     case 'spider': sfx.awaken(); view.shake(.2); break;
     case 'scatter': if (near) sfx.flap(); break;
+    // The food chain, at a glance and by ear: a word for the team, a puff where it happened.
+    case 'eco': sfx.flap(); if (e.eco === 'gone' || e.eco === 'boom') view.shake(.15); break;
+    case 'eco-eaten': if (p) ambience.at('hiss', p, view.heading, e.x, e.z, 22); view.puffs.spawn({ x: e.x, y: 1.2, z: e.z }, { color: 0x2b2029, count: 8, spread: .7, size: .4, rise: .5, life: .8 }); break;
+    case 'eco-starved': view.puffs.spawn({ x: e.x, y: .3, z: e.z }, { color: 0x8c8078, count: 5, spread: .4, size: .3, rise: .3, life: .9 }); break;
+    case 'eco-birth': if (p && e.sp === 'bat') ambience.at('squeak', p, view.heading, e.x, e.z, 14); break;
     // The swarm's telegraph: a hiss from each crack, heard across the floor.
     case 'swarm': if (p && floorOf(p.x) === e.floor) { for (const h of e.holes) ambience.at('swarmHiss', p, view.heading, h.x, h.z, 70); view.shake(.15); } break;
     case 'snake-scatter': view.swarm.scatter(e); break;
     case 'screech': if (p) ambience.at('screech', p, view.heading, e.x, e.z, 26); break;
     case 'silbon-falling': { const b = state.enemies.find(q => q.id === e.enemy); if (p && b) ambience.at('plummet', p, view.heading, b.x, b.z, 40); view.shake(.3); break; }
-    case 'silbon-down': sfx.seal(); view.shake(.6); break;
+    case 'mokele-falling': { const b = state.enemies.find(q => q.id === e.enemy); if (p && b) ambience.at('bellow', p, view.heading, b.x, b.z, 58); view.shake(.3); break; }
+    case 'silbon-down': case 'mokele-down': sfx.seal(); view.shake(.6); break;
     case 'flush': sfx.bonk(); if (mine) view.shake(.7); break;
     case 'cart-spill': case 'cart-bounce': sfx.tip(); break;
     case 'cart-load': case 'cart-catch': case 'cart-big': sfx.coin(); if (e.kind !== 'cart-load') sfx.bank(false); break;
@@ -233,7 +243,8 @@ function frame(now) {
   // Keep the eyes on your pana after the run ends; never draw your own body.
   view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
   const theme = view.world.run.theme;
-  const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : theme === 'inundada' ? 'water' : theme === 'hongos' ? 'dirt' : 'stone' : 'stone';
+  ambience.fire = p && !menu.isOpen ? view.world.fireNear(p.x, p.z, floorOf(p.x)) : 0;
+  const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : theme === 'inundada' || theme === 'congo' ? 'water' : theme === 'hongos' ? 'dirt' : 'stone' : 'stone';
   ambience.update(state, p, view.heading, dt, theme, !samples.ownSteps(surface), scares);
   heard.state = state; heard.me = p; heard.heading = view.heading; heard.paused = menu.isOpen; heard.theme = theme; heard.floor = p ? view.world.floors.get(floorOf(p.x)) : null; heard.run = view.world.run;
   samples.update(dt, heard);   // wind, drips, chandeliers, and hiding spots creaking as a search starts
@@ -245,6 +256,17 @@ function frame(now) {
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }
+// What the world's fires and breaking rocks sound like from here. A blow also knocks your
+// hand and, a very little, your view while you are the one holding E there (0 on reduced motion).
+const ROCK_SOUND = { hit: ['tok', 16], crunch: ['crunch', 22], break: ['rockfall', 30] }, stillness = matchMedia('(prefers-reduced-motion: reduce)');
+view.onFx = e => {
+  const p = me(); if (!p || floorOf(e.x) !== floorOf(p.x)) return;
+  if (e.type === 'crackle') { ambience.at('crackle', p, view.heading, e.x, e.z, 11); return; }
+  if (e.type === 'mokele') { ambience.at(e.sound, p, view.heading, e.x, e.z, e.range); if (e.shake) view.shake(e.shake); return; }
+  const sound = ROCK_SOUND[e.type]; if (!sound) return;
+  ambience.at(sound[0], p, view.heading, e.x, e.z, sound[1]);
+  if (e.type !== 'break' && (keys.has('e') || touch.has('e')) && Math.hypot(e.x - p.x, e.z - p.z) < 5) { view.hands.knock(); if (!stillness.matches) view.shake(e.type === 'hit' ? .13 : .22); }
+};
 record.showLobby(name); show('loading', false); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
 if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record, saves,
@@ -273,6 +295,9 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
     g.swarm = null; g.swarmSim = null;
     const started = startSwarm(g, floorOf(p.x), n); room.publish(); return started;
   },
+  // The food chain: wipe a species (bat, snake) or crowd a roost around you, host only.
+  wipe(sp) { const g = room.game; if (!room.isHost || !g) return false; wipeSpecies(g, sp); room.publish(); return true; },
+  crowd(n = 24) { const g = room.game, p = g?.players.find(q => q.id === room.id); if (!room.isHost || !p) return false; const ok = crowdRoost(g, p, n); room.publish(); return ok; },
   // Force a suceso now (apagon, murcielagos, derrumbe, creciente, esporada): host only.
   suceso(kind) { const g = room.game; if (!room.isHost || !g) return false; const ok = startSuceso(g, kind); room.publish(); return ok; },
   fx, samples,

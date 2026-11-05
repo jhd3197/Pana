@@ -2,10 +2,11 @@ import { createRoomOptions } from '/engine/room-options.js';
 import { FIELDS, cleanOptions, maxPip, groupOf, CHAT } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createTableSeating } from '/engine/play/table-seating.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { lazySound } from '/engine/lazy-sound.js';
+import { bindHandFeel } from '/engine/fx/hand-feel.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { DominoRoom } from './network.js';
@@ -28,6 +29,7 @@ let barkRound = -1, barkId = 0, barksPrimed = false, resultTimer;
 let world = null, worldReady = false, view = 'plaza', stopped = false;
 
 // Audio is optional; a delayed audio module never prevents the table from loading.
+const handFeel = bindHandFeel(document.getElementById('hand'));
 const audio = lazySound(1);
 
 
@@ -43,7 +45,7 @@ const roomOptions=createRoomOptions($('room-options'),{title:loc('Dominó'),fiel
 for(const [message,text]of CHAT.entries()){const button=document.createElement('button');button.type='button';button.className='pk-btn pk-btn--sm';button.textContent=text;button.onclick=()=>room.action('chat',{message});$('chat-buttons').append(button);}
 const seating = createTableSeating($('table-seating'), (from, to) => room.action('seat', { from, to }));
 $('organize-table').onclick = () => room.action('setup');
-const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true, landmarks: true });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true, landmarks: true, room });
 const menu = createGameMenu({
   pad: { buttons: true, keys: { lb: ['KeyA', loc('Jugar en la punta A')], rb: ['KeyB', loc('Jugar en la punta B')], x: ['KeyP', loc('Pasar')], y: ['KeyH', loc('Pista')] } },
   title: loc('Dominó · Pana'), sound: audio,
@@ -106,7 +108,7 @@ function render(state) {
   const chat=state.chat?.at(-1);if(chat&&chat.id!==chatSeen){chatSeen=chat.id;notify(`${chat.name}: ${CHAT[chat.message]}`);world?.say(chat.seat,CHAT[chat.message],2);}
   seating.update(state.players, { teams: state.options.mode==='teams', enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.hostId });
   $('organize-table').disabled = !room.connected || !room.isHost;
-  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, canChangeMap(room, state.phase));
   const seat = room.seat, base = seat < 0 ? 0 : seat, team = groupOf(state,base), rival=state.scores.map((score,i)=>({score,i})).filter(x=>x.i!==team).sort((a,b)=>b.score-a.score)[0]?.i??0;
   const last = state.history.at(-1), eventKey = `${state.round}:${state.history.length}:${state.chain.length}`;
   if (previousEvent && previousEvent !== eventKey && last?.kind === 'play') audio.tone(430, 0, .07, 'triangle', .09);
@@ -160,6 +162,7 @@ function renderHand(state) {
     button.onclick = () => selectTile(tile.id); $('hand').append(button);
   });
   if (activeTile) $('hand').querySelector(`[data-tile="${activeTile}"]:not(:disabled)`)?.focus({ preventScroll: true });
+  handFeel.after();
   $('hand-count').textContent = seat < 0 ? loc('Mesa llena · estás mirando') : state.phase === 'lobby' ? loc('Tu puesto está listo') : locn(hand.length, '{n} ficha · {pips} puntos', '{n} fichas · {pips} puntos', { pips: pips(hand) });
   const moves = myTurn ? legalMoves(state, seat) : [];
   const tips = state.chain.length ? [...new Set([state.chain[0].a, state.chain.at(-1).b])] : [];

@@ -11,10 +11,11 @@ import { floorOf, inRect, nookDepth } from './deck.js';
 import { distance } from './layout.js';
 import { random } from './director.js';
 import { locKey } from '../../../engine/i18n.js';
+import { hiddenFrom } from './ecology.js';
 
 // Its body: wider than a nook's gap (deck.js NOOK), so it never fits inside.
 export const SILBON_BODY = .72;
-export const SILBON = { sight: 20, feel: 1.3, lost: .8, searchFor: 14, nooks: 3, nookRange: 13, wander: .55, seek: .7, hunt: .9, sniff: 1.6, linger: .8, fall: 1.4, exposed: 5, giveUp: 15 };
+export const SILBON = { body: SILBON_BODY, flushText: locKey('¡El Silbón sacó a {name}!'), fallEvent: 'silbon-falling', sight: 13, feel: 1.3, lost: .8, searchFor: 14, nooks: 3, nookRange: 13, wander: .55, seek: .7, hunt: .9, sniff: 1.6, linger: .8, fall: 1.4, exposed: 5, giveUp: 15 };
 // The one table for how it treats a hiding nook. `chance` it really looks when
 // it reaches one; `windup` the seconds of warning before the look lands; `depth`
 // how far inside (m from the opening) the look still finds you; `stun` and
@@ -41,58 +42,59 @@ const standing = p => !p.downed && !p.spectator;
 const setMode = (g, e, mode) => { e.mode = mode; e.modeT = 0; g.paths.delete(e.id); };
 
 // The nearest pana it can actually see. A hidden one is not there at all.
-function preyInSight(g, e) {
+function preyInSight(g, e, rules) {
   const f = floorOf(e.x); let best = null, near = Infinity;
   for (const p of g.players) {
     if (!standing(p) || floorOf(p.x) !== f || p.hidden || p.rope || g.layout.lowAt(p.x, p.z)) continue;
-    const d = distance(p, e); if (d >= near) continue;
-    if (d < SILBON.feel || (d < SILBON.sight && g.layout.sightClear(e, p, g))) { near = d; best = p; }
+    const d = distance(p, e); if (d >= near || hiddenFrom(g, e, p, d)) continue;
+    if (d < rules.feel || (d < rules.sight && g.layout.sightClear(e, p, g))) { near = d; best = p; }
   }
   return best;
 }
-function stride(g, e, goal, pace, dt) {
+function stride(g, e, goal, pace, dt, rules) {
   const d = distance(e, goal); if (d < .01) return true;
   e.h = Math.atan2(goal.x - e.x, goal.z - e.z);
-  return g.layout.moveAcross(e, (goal.x - e.x) / d * pace * dt, (goal.z - e.z) / d * pace * dt, g, SILBON_BODY);
+  return g.layout.moveAcross(e, (goal.x - e.x) / d * pace * dt, (goal.z - e.z) / d * pace * dt, g, rules.body);
 }
 // Along a path around everything; false when there is no way.
-function follow(g, e, goal, pace, dt) {
+function follow(g, e, goal, pace, dt, rules) {
   let nav = g.paths.get(e.id);
-  if (!nav || nav.until < g.time || distance(nav.goal, goal) > 2) { nav = { path: g.layout.findPath(e, goal, g, SILBON_BODY), goal: { x: goal.x, z: goal.z }, until: g.time + 1.2 }; g.paths.set(e.id, nav); }
+  if (!nav || nav.until < g.time || distance(nav.goal, goal) > 2) { nav = { path: g.layout.findPath(e, goal, g, rules.body), goal: { x: goal.x, z: goal.z }, until: g.time + 1.2 }; g.paths.set(e.id, nav); }
   while (nav.path.length && distance(e, nav.path[0]) < .6) nav.path.shift();
   const next = nav.path[0]; if (!next) return false;
-  return stride(g, e, next, pace, dt);
+  return stride(g, e, next, pace, dt, rules);
 }
 // Hunting it takes the straight line whenever there is one, pit or no pit.
-function run(g, e, goal, pace, dt) {
-  if (g.layout.crossable(e, goal, g, SILBON_BODY)) return stride(g, e, goal, pace, dt);
-  return follow(g, e, goal, pace, dt);
+function run(g, e, goal, pace, dt, rules) {
+  if (g.layout.crossable(e, goal, g, rules.body)) return stride(g, e, goal, pace, dt, rules);
+  return follow(g, e, goal, pace, dt, rules);
 }
 function hear(g, e) {
   const heard = hearNoise(g.noise, e, { floor: floorOf(e.x), since: e.heardAt ?? -1, time: g.time, muffled: n => g.layout.lineClear(e, n, g, .05) ? 1 : .6 });
   if (!heard) return false;
   e.heardAt = heard.time; e.goalX = heard.x; e.goalZ = heard.z; return true;
 }
-function search(g, e, x, z) {
-  e.lastX = x; e.lastZ = z; e.searchLeft = SILBON.searchFor; e.checked = []; e.nook = null; setMode(g, e, 'search');
+function search(g, e, x, z, rules) {
+  e.lastX = x; e.lastZ = z; e.searchLeft = rules.searchFor; e.checked = []; e.nook = null; setMode(g, e, 'search');
 }
 // Forced out of a nook: a stun, a shove through the opening, and for a while
 // no nook hides whoever was just pulled out.
-function flush(g, p, n, rule, e) {
-  p.hidden = null; p.exposed = SILBON.exposed; p.stun = Math.max(p.stun, rule.stun);
+function flush(g, p, n, rule, e, rules) {
+  p.hidden = null; p.exposed = rules.exposed; p.stun = Math.max(p.stun, rule.stun);
   g.layout.moveBody(p, n.front.x - p.x, n.front.z - p.z, g, .42);
   if (rule.hurt) g.damage(p, rule.hurt, e);
-  g.event('flush', locKey('¡El Silbón sacó a {name}!'), { player: p.id, enemy: e.id, vars: { name: p.name } });
+  g.event('flush', rules.flushText, { player: p.id, enemy: e.id, vars: { name: p.name } });
 }
 
-export function updateSilbon(g, e, k, speed, damage, dt) {
+// `rules` is whose numbers these are: the Mokele hunts with this same body of code.
+export function updateSilbon(g, e, k, speed, damage, dt, rules = SILBON) {
   const L = g.layout, difficulty = g.options?.difficulty;
   if (e.mode === 'fall') {
-    if (e.modeT >= SILBON.fall) { e.hp = 0; g.defeated(e, g.players.find(p => p.id === e.prey) || null); }
+    if (e.modeT >= rules.fall) { e.hp = 0; g.defeated(e, g.players.find(p => p.id === e.prey) || null); }
     return;
   }
   // Its centre over the pit: there is nothing under it.
-  if (L.overPit(e.x, e.z)) { e.peek = null; e.windup = 0; e.alert = 0; setMode(g, e, 'fall'); g.event('silbon-falling', '', { enemy: e.id }); return; }
+  if (L.overPit(e.x, e.z)) { e.peek = null; e.windup = 0; e.alert = 0; setMode(g, e, 'fall'); g.event(rules.fallEvent, '', { enemy: e.id }); return; }
   if (e.stun > 0) return;
   if (e.windup > 0) {
     e.windup -= dt;
@@ -107,12 +109,12 @@ export function updateSilbon(g, e, k, speed, damage, dt) {
     e.alert = .9;
     if (stepPeek(e.peek, dt)) {
       const n = L.run.nooks.find(q => q.id === e.peek.spot), rule = peekRule(difficulty); e.peek = null;
-      if (n) for (const p of g.players) if (standing(p) && p.hidden === n.id && peekFinds(difficulty, nookDepth(n, p))) flush(g, p, n, rule, e);
+      if (n) for (const p of g.players) if (standing(p) && p.hidden === n.id && peekFinds(difficulty, nookDepth(n, p))) flush(g, p, n, rule, e, rules);
       setMode(g, e, 'linger');
     }
     return;
   }
-  const prey = preyInSight(g, e);
+  const prey = preyInSight(g, e, rules);
   if (prey) {
     if (e.mode !== 'chase') setMode(g, e, 'chase');
     e.prey = prey.id; e.lastX = prey.x; e.lastZ = prey.z; e.lostT = 0;
@@ -125,19 +127,19 @@ export function updateSilbon(g, e, k, speed, damage, dt) {
         const d = distance(e, prey);
         e.h = Math.atan2(prey.x - e.x, prey.z - e.z);
         if (d < k.reach && e.cooldown <= 0) { e.windup = k.windup; e.attackX = e.x + Math.sin(e.h) * .8; e.attackZ = e.z + Math.cos(e.h) * .8; return; }
-        if (d > 1.4) run(g, e, goal, speed, dt);
+        if (d > 1.4) run(g, e, goal, speed, dt, rules);
         return;
       }
       // Out of sight: it runs on to the spot a moment longer, then starts looking.
       e.lostT = (e.lostT || 0) + dt;
-      if (e.lostT > SILBON.lost || distance(e, goal) < .8) { search(g, e, goal.x, goal.z); return; }
-      run(g, e, goal, speed, dt);
+      if (e.lostT > rules.lost || distance(e, goal) < .8) { search(g, e, goal.x, goal.z, rules); return; }
+      run(g, e, goal, speed, dt, rules);
       return;
     }
     case 'hunt': {
       e.alert = .75;
       const goal = { x: e.goalX, z: e.goalZ };
-      if (distance(e, goal) < 1.4 || e.modeT > SILBON.giveUp || !run(g, e, goal, speed * SILBON.hunt, dt)) search(g, e, goal.x, goal.z);
+      if (distance(e, goal) < 1.4 || e.modeT > rules.giveUp || !run(g, e, goal, speed * rules.hunt, dt, rules)) search(g, e, goal.x, goal.z, rules);
       return;
     }
     case 'search': {
@@ -145,15 +147,15 @@ export function updateSilbon(g, e, k, speed, damage, dt) {
       if (e.searchLeft <= 0) { e.wx = null; setMode(g, e, 'wander'); return; }
       if (!e.nook) {
         const last = { x: e.lastX ?? e.x, z: e.lastZ ?? e.z };
-        if (e.modeT < 5 && distance(e, last) > 1.4 && follow(g, e, last, speed * SILBON.seek, dt)) return;
+        if (e.modeT < 5 && distance(e, last) > 1.4 && follow(g, e, last, speed * rules.seek, dt, rules)) return;
         // The nearest nook around there it has not tried yet.
-        const options = L.run.nooks.filter(n => n.floor === floorOf(e.x) && !(e.checked || []).includes(n.id) && distance(n.front, last) < SILBON.nookRange).sort((a, b) => distance(a.front, e) - distance(b.front, e));
-        if (!options.length || (e.checked || []).length >= SILBON.nooks) { e.searchLeft = 0; return; }
+        const options = L.run.nooks.filter(n => n.floor === floorOf(e.x) && !(e.checked || []).includes(n.id) && distance(n.front, last) < rules.nookRange).sort((a, b) => distance(a.front, e) - distance(b.front, e));
+        if (!options.length || (e.checked || []).length >= rules.nooks) { e.searchLeft = 0; return; }
         e.nook = options[0].id; e.modeT = 0;
       }
       const n = L.run.nooks.find(q => q.id === e.nook);
       if (!n || e.modeT > 8) { (e.checked ||= []).push(e.nook); e.nook = null; return; }
-      if (distance(e, n.front) > .7 && follow(g, e, n.front, speed * SILBON.seek, dt)) return;
+      if (distance(e, n.front) > .7 && follow(g, e, n.front, speed * rules.seek, dt, rules)) return;
       // At the opening: face it, and either really look in or only sniff around.
       e.h = n.h + Math.PI; (e.checked ||= []).push(n.id); e.nook = null;
       if (willPeek(difficulty, random(g))) { e.peeks = (e.peeks || 0) + 1; e.peek = startPeek(difficulty, n.id, e.peeks); setMode(g, e, 'peek'); }
@@ -162,13 +164,13 @@ export function updateSilbon(g, e, k, speed, damage, dt) {
     }
     case 'sniff': case 'linger':
       e.alert = .5; e.searchLeft = (e.searchLeft ?? 0) - dt;
-      if (e.modeT >= (e.mode === 'sniff' ? SILBON.sniff : SILBON.linger)) { e.mode = 'search'; e.modeT = 0; }
+      if (e.modeT >= (e.mode === 'sniff' ? rules.sniff : rules.linger)) { e.mode = 'search'; e.modeT = 0; }
       return;
-    default: wander(g, e, speed * SILBON.wander, dt);
+    default: wander(g, e, speed * rules.wander, dt, rules);
   }
 }
 // Lost interest: room to room with pauses, listening.
-function wander(g, e, pace, dt) {
+function wander(g, e, pace, dt, rules) {
   e.mode = 'wander'; e.alert = .2;
   if (e.pause > 0) { e.pause -= dt; return; }
   if (e.wx == null || Math.hypot(e.wx - e.x, e.wz - e.z) < 1.2 || g.time > (e.wUntil ?? 0)) {
@@ -176,9 +178,9 @@ function wander(g, e, pace, dt) {
     e.wx = null; e.pause = .8 + random(g) * 2;
     for (let i = 0; i < 6 && rooms.length; i++) {
       const r = rooms[Math.floor(random(g) * rooms.length)], x = r.x + (random(g) - .5) * (r.w - 4), z = r.z + (random(g) - .5) * (r.d - 4);
-      if (g.layout.walkable(x, z, g, SILBON_BODY) && !g.layout.run.nooks.some(n => inRect(x, z, n.rect, .5))) { e.wx = x; e.wz = z; e.wUntil = g.time + 20; g.paths.delete(e.id); break; }
+      if (g.layout.walkable(x, z, g, rules.body) && !g.layout.run.nooks.some(n => inRect(x, z, n.rect, .5))) { e.wx = x; e.wz = z; e.wUntil = g.time + 20; g.paths.delete(e.id); break; }
     }
     return;
   }
-  if (!follow(g, e, { x: e.wx, z: e.wz }, pace, dt)) { e.wx = null; e.pause = 1; }
+  if (!follow(g, e, { x: e.wx, z: e.wz }, pace, dt, rules)) { e.wx = null; e.pause = 1; }
 }

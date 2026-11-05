@@ -44,7 +44,7 @@ export default {
     loc('La Lejana pinta dos pepazos por tiro, pero sin la mira se desvía. El cohete de La Bazuca saca de una si pega directo: apunta adelante del rival.'),
     loc('En la armería cada arma tiene su puesto para la mira, el cañón, la tolva y la culata. La tolva chica recarga rápido; la grande lleva más bolas.'),
     loc('Llevas dos armas: el Arma 1 puede ser cualquiera y el Arma 2 una pistola o una de pescozón. Cada una guarda sus pepas; al cambiar, la nueva tarda un momento en disparar.'),
-    loc('Tu equipo es tu clase: Rápido corre más y aguanta menos, Tanque al revés, Regenera se limpia la pintura antes, Sigiloso casi no se oye ni se ve en el mapa, Granadero lleva dos granadas.'),
+    loc('Tu equipo es tu clase: Balanceado corre más tiempo, Rápido corre más y aguanta menos, Tanque al revés, Regenera se limpia antes y al pintar a alguien, Sigiloso casi no se oye ni se ve en el mapa, Granadero lleva dos granadas.'),
     loc('Probar, en la armería, abre el polígono de tiro con tu kit: blancos de 10 a 100 m, y cada impacto dice su distancia y sus pepazos.'),
     loc('Si estás solo, tres bots entran contigo; con amigos la cancha es de ustedes. En Más ajustes eliges cuántos bots juegan. Puedes invitar hasta ocho panas.'),
   ],

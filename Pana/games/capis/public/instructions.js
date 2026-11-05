@@ -2,7 +2,7 @@
 import { loc } from '/engine/i18n.js';
 
 export default {
-  goal: loc('Deja a los tres capis rivales fuera: píntalos enteros o túmbalos al río antes que ellos a los tuyos.'),
+  goal: loc('Deja a los capis rivales fuera: píntalos enteros o túmbalos al río. En Todos contra todos, gana el último capi en pie.'),
   howTo: [
     loc('Por turnos, mueve a tu capi, apunta y carga el tiro: mientras más lo mantienes, más lejos llega. Al soltar, sale la pintura.'),
     loc('Un capi con 100 % de pintura o que cae al río queda fuera. Después de disparar tienes 3 segundos para cubrirte.'),
@@ -21,6 +21,8 @@ export default {
   ] }],
   tips: [
     loc('El viento empuja la pintura: mira la flecha antes de disparar.'),
+    loc('Caen cajas con más tiros: tócalas para agarrarlas. Un pintazo las rompe o las lanza lejos.'),
+    loc('Un capi fuera deja su lápida donde cayó. Cambia la tuya en Más ajustes.'),
     loc('La tierra pintada resbala: los capis se deslizan cuesta abajo.'),
     loc('La Bazuca, La Lejana, La Licuadora y El Trueno tienen pocos tiros por equipo; La Piñita nunca se acaba.'),
     loc('Cada partida trae un mapa nuevo. En la sala, escribe su número para repetir uno.'),

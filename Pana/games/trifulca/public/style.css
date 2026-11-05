@@ -33,7 +33,7 @@ body {
 .meter { position: relative; height: 18px; border-radius: 0; background: var(--pk-hud); border: 2px solid rgba(255, 255, 255, .85); overflow: hidden; box-shadow: var(--pk-drop); }
 .meter i { position: absolute; inset: 0 auto 0 0; width: var(--fill, 0%); background: var(--mareo); transition: width .12s linear; }
 .side--right .meter i { inset: 0 0 0 auto; }
-.meter--mareo.is-danger i { background: var(--mareo-hot); animation: pulse .4s infinite alternate; }
+.meter--mareo.is-danger .pk-hp-fill { animation: pulse .4s infinite alternate; }
 .meter--aguante { height: 8px; border-width: 1px; flex: 1; }
 .meter--aguante i { background: var(--aguante); }
 .fighter-low { display: flex; gap: 8px; align-items: center; }

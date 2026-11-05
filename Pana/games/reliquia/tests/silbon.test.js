@@ -96,7 +96,8 @@ test('hiding keeps its blows off you', () => {
 test('the pit: chasing straight across it drops the boss, opens the seal, leaves loot', () => {
   const g = setup({ place: 'mina' }), room = pitRoom(g), pit = g.layout.run.pits.find(p => p.room === room.id), seal = g.layout.run.seals[0];
   // West rim to east rim, the pit between them.
-  const e = boss(g, pit.rect[0] - 1.6, room.z); stand(g, 1, { x: pit.rect[2] + 1.4, z: room.z });
+  // Both inside its sight, so it charges whichever way a wander would have taken it.
+  const e = boss(g, pit.rect[0] - .8, room.z); stand(g, 1, { x: pit.rect[2] + .5, z: room.z });
   const items = g.items.length; let fell = false;
   for (let t = 0; t < 12 && g.enemies.includes(e); t += .05) { g.update(.05); fell ||= e.mode === 'fall'; }
   assert.ok(fell, 'it fell'); assert.ok(!g.enemies.includes(e), 'and it is gone');

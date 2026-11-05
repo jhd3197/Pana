@@ -322,6 +322,7 @@ lazyRace('water', { update() {}, stop() {} }, import('./water-ambience.js'), m =
 lazyRace('skidMarks', { lay() {}, update() {}, clear() {} }, import('./skid-marks.js'), m => new m.SkidMarks(race.scene, { focus: () => race.player }));
 lazyRace('slowMo', { update() {}, trigger() {}, scale: 1, punch: 0 }, import('./slow-mo.js'), m => m.createSlowMo());
 lazyRace('glow', { boost() {}, impact() {}, coins() {} }, import('./race-fx.js'), m => m.createRaceFx(race.scene));   // turbo, hit and coin glow
+lazyRace('coinFeel', { pick() {}, tick() {} }, import('/engine/fx/pickup-feel.js'), m => m.createPickupFeel(THREE, race.scene));   // coin flash, stars, combo
 lazyRace('tags', { update() {}, clear() {} }, import('./name-tags.js'), m => m.createNameTags());   // names over nearby racers
 lazyRace('hud', { update() {}, reset() {} }, import('./race-hud.js'), m => m.createRaceHud());   // standings pop-in, speed gauge
 lazyRace('audio', { update() {} }, import('./drift-audio.js'), m => m.createDriftAudio(sound));   // drift screech, chimes, outboard
@@ -579,7 +580,7 @@ function finishTrack() {
     },
     coinPicked: (c, worldPos, streak) => {
       race.glow.coins(worldPos, 14);
-      if (c.isPlayer) flyToCounter(worldPos, race.camera, $('coin-count'), { streak });
+      if (c.isPlayer) { flyToCounter(worldPos, race.camera, $('coin-count'), { streak }); race.coinFeel.pick(worldPos, { streak, target: $('coin-count') }); }
     },
     say: (c, lines, time) => say(c, lines, time),
     standings: () => standings(),
@@ -1605,7 +1606,7 @@ function updateRace(dt, presentation = true) {
 function setText(id, text) { const el = $(id); if (el.textContent !== text) el.textContent = text; }
 function presentRace(dt) {
   for (const c of race.cars) { syncCar(c, dt); gatesApi?.sync(c, dt); race.props.sync(c); }
-  race.props.update(dt);
+  race.props.update(dt); race.coinFeel.tick(dt);
   if (race.ghost) { syncCar(race.ghost.car, dt); gatesApi?.sync(race.ghost.car, dt); }   // the replay turns lancha on river runs too
   race.sky.update(race.clock, T.def.palette?.daylight ?? 1);
   tickWind(race.clock, T?.def.rain ? 1.45 : 1);
@@ -1645,7 +1646,7 @@ function presentRace(dt) {
 
   // speedometer + boost bar
   race.hud.update(race, order, dt);
-  setSpeedLines(p.boost > 0 ? Math.min(0.85, p.boost) : 0);
+  setSpeedLines(Math.max(p.boost > 0 ? Math.min(0.85, p.boost) : 0, race.feelLines || 0));
   const boost = $('boost');
   const ratio = Math.min(1, Math.abs(p.vf) / (p.tune.top * 1.5));
   const lit = Math.round(ratio * 8);

@@ -15,7 +15,7 @@ import { silbon } from '/engine/models/props/reliquia-boss.js';
 import { splatTexture } from '/engine/models/props/paintball.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
-import { Puffs, Shockwaves } from '/engine/fx.js';
+import { Puffs, Shockwaves, capSpotNearField } from '/engine/fx.js';
 import { pixelRatio, bindRenderer, rendererOptions, getSettings } from '/engine/settings.js';
 import { dustMotes } from '/engine/models/props/reliquia-library.js';
 import { createExpeditionWorld, itemModel } from './scene.js';
@@ -34,13 +34,14 @@ import { flareStick } from '/engine/models/props/fosa-biomes.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 
 export const COLORS = SEAT_COLORS;
-const EYE = 1.45, POOL = 5, FAR = 220;
+const EYE = 1.45, POOL = 5, FAR = 220, CAVERN_FAR = 720;
 const TAG_Y = 2.85;   // clears the helmet's lamp
 const MUSHROOM_LIGHT = { power: 5, reach: 7, within: 13 };
 // Real lights for the nearest other divers: fixed, as every light costs every lit pixel.
 const DIVER_LAMPS = { baja: 1, media: 2, alta: 3 }, DIVER_LAMP_POWER = .55;
-// The camp's cavern: damp and cold, warm only around its few lamps, which borrow the pool.
-const CAMP_LOOK = { background: 0x05070b, fog: [6, 46], hemi: [0x6e86ae, 0x3e4858, 1.9], exposure: 1.12, dust: .7, lamp: 0xfff0d8, hand: 0xffa850, lampPower: 26, candle: [0xffa24a, 5.5, 11] };
+// The camp's cavern: dark navy, warm only around its few lamps, which borrow the pool. The
+// fog closes on what is lit; the far hall (camp-vista.js) carries its own haze past it.
+const CAMP_LOOK = { background: 0x040816, fog: [8, 60], hemi: [0x5a78a8, 0x2a3850, 1.55], exposure: 1.12, dust: .7, lamp: 0xfff0d8, hand: 0xffa850, lampPower: 26, candle: [0xffa24a, 5.5, 11] };
 // Underground: the mine is a dark violet black; the buried library cold and
 // grey-blue, a thin haze (no thick fog: the mist is a few rooms' accent), a
 // faint moonlight-cold hemisphere over near-black floors. The farol in the
@@ -51,9 +52,16 @@ const DEEP_LOOK = { background: 0x0a0710, fog: [3.5, 24], hemi: [0x5c5088, 0x2a1
 const FLOODED_LOOK = { background: 0x061418, fog: [3, 21], hemi: [0x5fa8b8, 0x123038, 1.5], exposure: 1.15, dust: .25, lamp: 0xe2f4f4, hand: 0xbfe6e0, lampPower: 50, candle: [0xffa24a, 5.5, 11] };
 const GROVE_LOOK = { background: 0x0c0a1e, fog: [4.5, 28], hemi: [0x7560e0, 0x123a30, 1.15], exposure: 1.2, dust: .7, lamp: 0xf0ecff, hand: 0xd8c8ff, lampPower: 44, candle: [0xffa24a, 5.5, 11] };
 const TEMPLE_LOOK = { background: 0x140c08, fog: [3.2, 22], hemi: [0xa8865a, 0x2c1a0a, .85], exposure: 1.15, dust: 1.1, lamp: 0xffeed0, hand: 0xffb468, lampPower: 56, candle: [0xffa24a, 5.5, 11] };
+// The mine: warm lamps on timber near the top, nearly nothing further down. Its lamp
+// is a narrow cone with a short throw: what comes at you shows up very close.
+const MINE_LOOK = { background: 0x0c0705, fog: [3, 20], hemi: [0xa8805a, 0x3a2414, 1.05], exposure: 1.15, dust: .8, lamp: 0xffe6c0, hand: 0xffa850, lampPower: 66, lampAngle: .34, lampPenumbra: .5, lampReach: 18, lampPost: 8, candle: [0xffa24a, 5.5, 11] };
+const MINE_DEEP_LOOK = { background: 0x040302, fog: [2, 13], hemi: [0x5c4634, 0x160c08, .36], exposure: 1.1, dust: .9, lamp: 0xffdcb0, hand: 0xff9c48, lampPower: 72, lampAngle: .27, lampPenumbra: .55, lampReach: 13, lampPost: 4.5, handPower: .7, candle: [0xffa24a, 5.5, 11] };
 const LIBRARY_LOOK = { background: 0x18202a, fog: [2.5, 21], hemi: [0x74849e, 0x0c0c10, 1.8], exposure: 1.1, dust: 1, lamp: 0xe4ebf4, hand: 0xd8dde6, lampPower: 25, lampDecay: 1.15, handPower: .35, candle: [0xff9e52, 1.6, 4.5] };
 // How much La Estatua's pale marble dims with the headlamp right on it (2 m).
 const STATUE_DIM = .72;
+// The Congo: dusk under the canopy, a pale green fog to stand a dark shape against, murky
+// water. Fog colour and hemisphere are what let the Mokele read past the lamp's reach.
+const CONGO_LOOK = { background: 0x35463a, fog: [2.4, 30], hemi: [0xb4d0b8, 0x2c3a24, 1.9], exposure: 1.1, dust: .5, lamp: 0xeef4dc, hand: 0xdcebb4, lampPower: 34, lampDecay: 1.2, lampReach: 22, candle: [0xffa24a, 5.5, 11] };
 const ROCK_POOL = 8;
 
 function label(text, color, { bubble = false } = {}) {
@@ -69,7 +77,11 @@ function label(text, color, { bubble = false } = {}) {
 }
 const disposeSprite = s => { s.material.map.dispose(); s.material.dispose(); s.removeFromParent(); };
 
+// The lamp on your head stops gaining strength this close: what comes within reach
+// (the truck, a wall, a bat) keeps its colour instead of burning to a white disc.
+const LAMP_NEAR = 2.5;
 export function createView(canvas, { seed = 1, depth = 1 } = {}) {
+  capSpotNearField(LAMP_NEAR);
   const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true }));
   renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -88,9 +100,14 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   // torches and candles (light), your own lamps (farol), the fog distance
   // (fog, a multiplier) and candles blown out around a point (out).
   const mood = { light: 1, farol: 1, fog: 1, out: null };
-  let world = createExpeditionWorld({ seed, depth }); scene.add(world.group);
+  // What the world sets off that only makes sound: game.js listens.
+  const onFx = e => { if (e.type === 'dust') puffs.spawn({ x: e.x, y: e.y, z: e.z }, { color: lookName === 'biblioteca' ? 0x8e949c : 0xb8a888, count: Math.round(2 + e.strength * 3), spread: .3 + e.strength * .7, size: .16 + e.strength * .14, rise: .55, life: .75 }); else view.onFx?.(e); };
+  let world = createExpeditionWorld({ seed, depth, onFx }); scene.add(world.group);
   const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign); // i18n-ignore: signage painted in the world
   const puffs = new Puffs(scene), waves = new Shockwaves(scene), swarm = createSwarmView({ scene, puffs });
+  // The food chain's scenery comes a moment later: nothing in it is needed to start.
+  let ecoView = null, ecoGone = false;
+  import('./eco-view.js').then(m => { if (!ecoGone) ecoView = m.createEcoView({ scene }); });
   // Your gloves and sleeves: the suit's colour, holding the two hand items in view.
   const hands = createHands({ camera, itemModel });
   // Paint, darts and shots.
@@ -105,19 +122,24 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   rockMesh.frustumCulled = rockRings.frustumCulled = false; rockMesh.count = rockRings.count = 0; scene.add(rockMesh, rockRings);
   const rockAt = new THREE.Object3D();
   let rippleAt = 0;
+  // The Congo's boats and monster, off the first load: a stub stands in until they land.
+  let congo = null, congoLoad = null, congoGone = false;
+  const wantCongo = () => { congoLoad ??= import('./congo-view.js').then(m => { if (!congoGone) congo = m.createCongoView({ scene, waves, puffs, emit: e => view.onFx?.(e) }); }).catch(() => { congoLoad = null; }); };
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
   const avatars = new Map(), enemies = new Map(), carts = new Map(), tmp = new THREE.Vector3();
   let lastState = null, snapAt = 0;
-  let scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = '', look = CAMP_LOOK, poolAt = 0, wallPush = 0, shakeScale = 1;
+  let veil = 0, scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = '', look = CAMP_LOOK, poolAt = 0, wallPush = 0, shakeScale = 1;
+  const baseColor = new THREE.Color();
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
   function setLook(name) {
     if (name === lookName) return; lookName = name;
-    look = { caverna: CAMP_LOOK, biblioteca: LIBRARY_LOOK, inundada: FLOODED_LOOK, hongos: GROVE_LOOK, templo: TEMPLE_LOOK }[name] || DEEP_LOOK;
+    look = { caverna: CAMP_LOOK, biblioteca: LIBRARY_LOOK, inundada: FLOODED_LOOK, hongos: GROVE_LOOK, templo: TEMPLE_LOOK, congo: CONGO_LOOK, mina: MINE_LOOK, minaHonda: MINE_DEEP_LOOK }[name] || DEEP_LOOK;
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sky.mesh.visible = false; renderer.toneMappingExposure = look.exposure;
     headlamp.color.set(look.lamp || 0xfff0d8); headlamp.decay = look.lampDecay ?? 1.35;
+    headlamp.angle = look.lampAngle ?? .44; headlamp.penumbra = look.lampPenumbra ?? .42; headlamp.distance = look.lampReach ?? 24;
   }
   function avatarFor(p, i) {
     const skin = JSON.stringify(p.avatar); let a = avatars.get(p.id);
@@ -133,6 +155,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   function enemyModel(e) {
     if (e.kind === 'bat') { const b = caveBat({ seed: e.id }); b.scale.setScalar(1.3); return b; }
     if (e.kind === 'silbon') return silbon({ seed: e.id });
+    if (e.kind === 'mokele') { wantCongo(); if (congo) return congo.bossModel(e.id); const stub = new THREE.Group(); stub.userData = { stub: true, dispose() {} }; return stub; }
     if (e.kind === 'spider') { const sp = caveSpider({ seed: e.id }); sp.scale.setScalar(1.15); return sp; }
     if (e.kind === 'snake') { const sn = cuaima({ seed: e.id }); sn.scale.setScalar(1.6); return sn; }
     if (e.kind === 'lector') return blindLibrarian({ seed: e.id });
@@ -153,11 +176,18 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     if (state !== lastState) { lastState = state; snapAt = t; }
     // Riders sink and rise with the cage through the shaft.
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
-    setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'caverna' : world.run.theme);
+    setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'caverna' : world.run.theme === 'mina' && world.run.depth > 2 ? 'minaHonda' : world.run.theme);
+    // Riding the lift at the camp: the dark of the shaft lifts as you come up (and
+    // settles as you go down), so the cavern opens around you. Only ever this screen's picture.
+    const inShaft = vf === 0 ? Math.max(0, Math.min(1, -rideY(me || {}) / 6)) : 0, comingUp = vf === 0 && state.lift?.moving && state.lift.to === 0 && state.lift.riders.includes(me?.id);
+    veil += (inShaft - veil) * (1 - Math.exp(-dt * (inShaft > veil ? 5 : 2.4)));
+    // You turn to face the way out and look up a little; the mouse still has the last word.
+    if (comingUp) { const ease = 1 - Math.exp(-dt * 3), turn = Math.atan2(Math.sin(-h), Math.cos(-h)); h += turn * ease; pitch += (.12 - pitch) * ease; }
     // El apagón: every torch stutters and sinks, your lamp with them. "Sustos" softens the show, never the rule.
     const stutter = Math.sin(t * 31) * Math.sin(t * 17 + 1.1) > -.1 ? 1 : .35, out = vf === 0 || state.suceso?.kind !== 'apagon' ? 1 : scares === 'apagados' ? .7 : scares === 'suaves' ? .45 + .2 * stutter : .1 + .3 * stutter;
     // Scares squeeze the fog in; the candles fade with it.
-    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog * (.6 + .4 * out); hemi.intensity = look.hemi[2] * (.2 + .8 * Math.min(1, Math.max(mood.light, mood.farol))) * (.25 + .75 * out); }
+    if (lookName !== 'camp') { scene.fog.near = look.fog[0] * Math.min(1, mood.fog); scene.fog.far = look.fog[1] * mood.fog * (.6 + .4 * out) * (1 - veil * .6); hemi.intensity = look.hemi[2] * (.2 + .8 * Math.min(1, Math.max(mood.light, mood.farol))) * (.25 + .75 * out) * (1 - veil * .7); }
+    renderer.toneMappingExposure = look.exposure * (1 - veil * .35);
     world.candles({ level: mood.light * out, out: mood.out, near: scene.fog.near, far: scene.fog.far });
     world.update(t, state, dt, me);
     sky.update(t); shopSign.visible = vf === 0;
@@ -176,7 +206,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       if (a.root.position.distanceTo(target) > 5) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       const turn = Math.atan2(Math.sin(body.h - a.character.group.rotation.y), Math.cos(body.h - a.character.group.rotation.y));
       a.character.group.rotation.y += turn * Math.min(1, dt * 12);
-      a.character.group.rotation.z = p.downed ? 1.35 : 0; a.character.group.position.y = p.downed ? .35 : 0;
+      a.character.group.rotation.z = p.downed ? 1.35 : 0; a.character.group.position.y = p.downed ? .35 : a.afloat ? -(congo?.SEAT ?? 0) : 0;
       a.character.update(dt, { walk: p.moving && !p.downed ? 1 : 0, run: p.moving && p.stamina < .98, carry: p.grip != null, dizzy: p.downed || p.stun > 0 });
       p.hands.forEach((held, k) => {
         const key = held ? held.kind : ''; if (a.keys[k] === key) return; a.keys[k] = key;
@@ -199,7 +229,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         const root = new THREE.Group(), model = enemyModel(e), ring = new THREE.Mesh(ringGeometry, dangerMaterial);
         ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; root.add(model); scene.add(root, ring);
         root.position.set(e.x, 0, e.z); root.rotation.y = e.h || 0;
-        a = { root, model, ring, boss: e.kind === 'silbon', fall: 0, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), stone: e.kind === 'estatua', pose: { frozen: false, look: 0, lit: 'dark', scares, mode: 'prowl', pose: 0 }, speed: 0, x: e.x, z: e.z, steps: e.steps || 0 }; enemies.set(e.id, a);
+        a = { root, model, ring, boss: e.kind === 'silbon', mokele: e.kind === 'mokele', fall: 0, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), stone: e.kind === 'estatua', pose: { frozen: false, look: 0, lit: 'dark', scares, mode: 'prowl', pose: 0 }, speed: 0, x: e.x, z: e.z, steps: e.steps || 0 }; enemies.set(e.id, a);
         // A statue was there all along: no puff when it first appears.
         if (!a.stone) puffs.spawn({ x: e.x, y: .6, z: e.z }, { color: e.kind === 'phantom' ? 0x9fd8ff : lookName === 'biblioteca' ? 0x8e949c : 0xd8c49a, count: 6, spread: .8, size: .7, rise: 1.2, life: .7 });
       }
@@ -224,7 +254,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       const target = tmp.set(e.x, 0, e.z);
       a.root.position.lerp(target, Math.min(1, dt * (e.mode === 'leap' ? 30 : 12)));
       const turn = Math.atan2(Math.sin(e.h - a.root.rotation.y), Math.cos(e.h - a.root.rotation.y)); a.root.rotation.y += turn * Math.min(1, dt * 10);
-      if (a.boss) {
+      if (a.mokele) {
+        if (a.model.userData.stub && congo) { a.root.remove(a.model); a.model = congo.bossModel(e.id); a.root.add(a.model); }
+        if (!a.model.userData.stub) congo.drawBoss(a, e, me, t, dt, scares);
+      } else if (a.boss) {
         // Drawn from the host's own numbers: its pose, and the drop into the pit.
         const step = dt > 0 ? Math.hypot(e.x - a.x, e.z - a.z) / dt : 0; a.x = e.x; a.z = e.z;
         a.speed += (Math.min(1, step / 2) - a.speed) * (1 - Math.exp(-dt * 6));
@@ -268,6 +301,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     }
     // The swarm: one instanced mesh, however many snakes.
     swarm.update(dt, state, me, vf, world.layout);
+    ecoView?.update(dt, state, me, vf, world.layout, t);
     // Carritos: their load sits in the hopper and the balance floats above.
     for (const c of state.carts || []) {
       let a = carts.get(c.id);
@@ -301,6 +335,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       }
     }
     for (const [id, a] of carts) if (!state.carts?.some(c => c.id === id)) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); carts.delete(id); }
+    if (world.run.theme === 'congo') { wantCongo(); congo?.update({ state, me, layout: world.layout, vf, heading: h, dt, t, avatars, carts }); } else congo?.hide(avatars);
     // Honda shots, darts and paint.
     syncSimple(shots, state.shots, s => { const m = new THREE.Mesh(ballGeometry, new THREE.MeshBasicMaterial({ color: COLORS[s.seat % 8] })); return m; }, (m, s) => m.position.set(s.x, s.y, s.z), m => m.material.dispose());
     syncSimple(darts, state.darts, () => new THREE.Mesh(dartGeometry, dartMaterial), (m, d) => m.position.set(d.x, 1.1, d.z));
@@ -334,8 +369,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       lift += ((me.downed || downedLook ? -1 : 0) - lift) * (1 - Math.exp(-dt * 5));
       fov += ((me.vx ** 2 + me.vz ** 2 > 40 ? 82 : innerWidth < innerHeight ? 80 : 74) - fov) * (1 - Math.exp(-dt * 5)); camera.fov = fov;
       shake = Math.max(0, shake - dt * 2.5); const jolt = shake * shake * .06 * shakeScale;
-      camera.position.set(me.x, (me.y || 0) + rideY(me) + EYE + lift * 1 + Math.abs(Math.sin(bob)) * .05 * sway, me.z);
-      camera.rotation.set(pitch + (Math.random() - .5) * jolt, h + Math.PI + (Math.random() - .5) * jolt, Math.sin(bob) * .01 * sway + lift * -.35 + (me.reversed > 0 ? Math.sin(t * 2) * .06 : 0));
+      camera.position.set(me.x, (me.y || 0) + rideY(me) + EYE - (congo?.eyeDrop ?? 0) + lift * 1 + Math.abs(Math.sin(bob)) * .05 * sway, me.z);
+      camera.rotation.set(pitch + (Math.random() - .5) * jolt, h + Math.PI + (Math.random() - .5) * jolt, Math.sin(bob) * .01 * sway + (congo?.roll ?? 0) + lift * -.35 + (me.reversed > 0 ? Math.sin(t * 2) * .06 : 0));
       // Hands: bob with the stride, swing on use, hide when both grip a treasure. A wall
       // just ahead pulls them in, so they never poke through it.
       const wall = world.layout.walkable(me.x + Math.sin(h) * .72, me.z + Math.cos(h) * .72, state, .02) ? 0 : .2;
@@ -354,20 +389,28 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       const [candleColor, candlePower, candleReach] = look.candle || DEEP_LOOK.candle;
       // A burning flare outranks every torch: it is why you threw it.
       if (vf > 0) for (const s of state.flares || []) if (floorOf(s.x) === vf) sources.push({ x: s.x, y: s.y + .4, z: s.z, color: 0xff4a2a, power: 16, reach: 13, d: Math.hypot(s.x - me.x, s.z - me.z) - 14, flare: true });
-      if (vf === 0) for (const l of world.campLamps) sources.push({ ...l, d: Math.hypot(l.x - me.x, l.z - me.z) });
-      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z) });
+      if (vf === 0) for (const l of world.campLamps) sources.push({ ...l, d: Math.hypot(l.x - me.x, l.z - me.z), fire: world.fireAt(0, l.x, l.z) });
+      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : l.kind === 'mineLamp' ? look.lampPost ?? 7 : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z), fire: l.kind === 'brazier' ? world.fireAt(vf, l.x, l.z) : null });
       for (const p of state.players) if (p.id !== me.id && alive(p) && floorOf(p.x) === vf && (holds(p, 'farol') || holds(p, 'sunCrown'))) sources.push({ x: p.x, y: 1.4, z: p.z, color: holds(p, 'sunCrown') ? 0xffd36a : look.hand || 0xffa850, power: 8, reach: 11, d: Math.hypot(p.x - me.x, p.z - me.z) - 6 });
       sources.sort((a, b) => a.d - b.d);
       // The last two slots go to the nearest glowing mushrooms: no extra lights,
       // and the warm sources they displace are the farthest of the five.
-      const glows = (world.floors.get(vf)?.glows || []).map(g => ({ ...g, power: MUSHROOM_LIGHT.power, reach: MUSHROOM_LIGHT.reach, d: Math.hypot(g.x - me.x, g.z - me.z) })).filter(g => g.d < MUSHROOM_LIGHT.within).sort((a, b) => a.d - b.d).slice(0, 2);
+      const glows = (world.floors.get(vf)?.glows || []).concat(ecoView?.glows || []).map(g => ({ ...g, power: MUSHROOM_LIGHT.power, reach: MUSHROOM_LIGHT.reach, d: Math.hypot(g.x - me.x, g.z - me.z) })).filter(g => g.d < MUSHROOM_LIGHT.within).sort((a, b) => a.d - b.d).slice(0, 2);
       sources.splice(POOL - glows.length, sources.length, ...glows);
-      pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; light.userData.flare = !!s?.flare; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); light.distance = s.reach; } });
+      pool.forEach((light, i) => {
+        const s = sources[i], u = light.userData; u.power = s && s.d < 30 ? s.power : 0; u.flare = !!s?.flare; u.fire = s?.fire || null;
+        if (s) { u.x = s.x; u.y = s.y; u.z = s.z; u.color = s.color; light.position.set(s.x, s.y, s.z); light.color.set(s.color); light.distance = s.reach; }
+      });
     }
     // La codicia shows in the world: torches gutter and dust sifts from the ceiling.
     const greed = Math.min(4, Math.floor((state.codicia || 0) / 25));
     // A slow, uneven breathing on every flame, under the quick gutter.
-    pool.forEach((light, i) => { light.intensity = (light.userData.power || 0) * mood.light * (light.userData.flare ? 1 : out) * (1 - greed * .1) * (.85 + Math.sin(t * (9 + greed * 4) + i * 2) * (.1 + greed * .06)) * (.9 + .1 * Math.sin(t * 1.3 + i * 1.7) * Math.sin(t * .37 + i)); });
+    // A real fire drives its own light: it wanders so the shadows dance, and spikes when fed.
+    pool.forEach((light, i) => {
+      const u = light.userData, fire = u.fire?.light, breath = fire ? fire.intensity : (.85 + Math.sin(t * (9 + greed * 4) + i * 2) * (.1 + greed * .06)) * (.9 + .1 * Math.sin(t * 1.3 + i * 1.7) * Math.sin(t * .37 + i));
+      light.intensity = (u.power || 0) * mood.light * (u.flare ? 1 : out) * (1 - greed * .1) * breath;
+      if (fire) { light.position.set(u.x + fire.x, u.y + fire.y, u.z + fire.z); baseColor.set(u.color); light.color.setRGB(baseColor.r, baseColor.g * (.9 + fire.warmth * .2), baseColor.b * (.75 + fire.warmth * .5)); }
+    });
     dustAt -= dt;
     if (me && vf > 0 && greed > 0 && dustAt <= 0) {
       dustAt = 1.6 / greed;
@@ -378,7 +421,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     // Past the fog's far end everything is the background colour already
     // (fog depth and the far plane are the same view depth), so the far plane
     // sits there: rooms and shelves beyond it are culled instead of drawn.
-    camera.far = lookName === 'camp' ? FAR : Math.min(FAR, scene.fog.far + 1);
+    camera.far = lookName === 'caverna' ? CAVERN_FAR : Math.min(FAR, scene.fog.far + 1);
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);
   }
@@ -389,9 +432,11 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   }
   function resize() { canvas.style.width = '100vw'; canvas.style.height = '100dvh'; renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); camera.aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight); camera.updateProjectionMatrix(); }
   addEventListener('resize', resize); resize();
-  return {
+  const view = {
+    onFx: null,
     renderer, scene, camera, puffs, waves, avatars, enemies, swarm, hands, draw, bark, mood,
-    get look() { return lookName; },
+    get congo() { return congo; },
+    get lookName() { return lookName; },
     // The Sustos setting scales every camera shake (0 turns it off).
     set shakeScale(v) { shakeScale = v; },
     // The Sustos setting, for how the mummies twitch and whether their eyes gutter.
@@ -404,15 +449,17 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     movement(x, z) { return { x: -x * Math.cos(h) - z * Math.sin(h), z: x * Math.sin(h) - z * Math.cos(h) }; },
     shake(amount) { shake = Math.min(1.3, shake + amount); },
     // A new run has a new deck: rebuild the world from its seed.
-    reseed(next, depth, theme) { if (world.run.seed === next && world.run.depth === depth && (!theme || world.run.theme === theme)) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, depth, theme }); scene.add(world.group); },
+    reseed(next, depth, theme) { if (world.run.seed === next && world.run.depth === depth && (!theme || world.run.theme === theme)) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, depth, theme, onFx }); scene.add(world.group); },
     dispose() {
       removeEventListener('resize', resize); unbind?.(); puffs.clear(); waves.clear();
       for (const [id, a] of avatars) removeAvatar(a, id);
       for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
       disposeSprite(shopSign);
-      swarm.dispose(); motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
+      congoGone = true; congo?.dispose();
+      swarm.dispose(); ecoGone = true; ecoView?.dispose(); motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
       [ballGeometry, dartGeometry, splatGeometry, ringGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial].forEach(m => m.dispose()); hands.dispose(); disposeSuits(); diverLamps.dispose();
       renderer.dispose();
     },
   };
+  return view;
 }

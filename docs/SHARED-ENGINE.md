@@ -55,6 +55,29 @@ renderContinue(node, store.list(), { describe: s => `${s.meta.round}`, onContinu
 
 Used by: Fosa. Notes: `docs/knowledge/reliquia.md`, "Saved expeditions".
 
+## Home plot
+
+`engine/plot/` (no DOM, no Three.js). `plot.js`: `createPlot({ game, crops, tiers,
+decor, shop, wallet, progress })` keeps a player's plot under `pana:plot:<game>`, in
+the same shape as `progress.js` (injectable storage and clock, memory when storage
+is blocked, a broken save is cleaned): `plant`, `harvest`, `harvestAll` (mangos and
+XP each with a receipt from the plant, so they pay once), `upgrade`, `buy`,
+`setDecor`, `isDecorUnlocked`, `stock`, `onChange`, and `view()` for what a page
+draws. `growth.js`: `cropState(planted, crop, now)` is the whole of real-time and
+offline growth, from a timestamp (`seed`, `sprout`, `young`, `ready`, `wilted`), and
+`WILT` is how gentle neglect is: a day fresh, a day wilting, then half pay forever,
+never dead. `rotation.js`: `rotatingStock(catalog, { salt, window, size, qty })` with
+`rotationWindow(now, period)` is a shelf the same for everyone at the same moment,
+from epoch time with no server. It walks a seeded shuffle, so an item returns only
+after the rest. The tables are the game's. Models: `engine/models/props/conuco.js`.
+
+```js
+const plot = createPlot({ game: 'conuco', crops: CROPS, tiers: TIERS, decor: DECOR, shop: SHOP, wallet: createMangoWallet(undefined, { source: 'conuco' }), progress });
+plot.plant(0, 'maiz'); plot.view().beds[0].stage; plot.harvest(0); plot.stock().items;
+```
+
+No public game uses it today: the Conuco game itself lives in the private pana.sh repo. Tests: `engine/tests/plot.test.js`.
+
 ## On foot
 
 ### Player controller (walk, sprint, stamina, collision)
@@ -183,6 +206,14 @@ water (`drowned`); `knock(p, vx, vy)` throws it, `settled(p)` says it stopped.
 It only lands with ground under the feet (brushing a rounded lip is a wall to
 slide off), and a body wedged in a narrow V rests on the floor under it.
 
+`engine/play/loose-prop.js` (pure): a thing lying loose on that ground (a crate,
+a tombstone). `dropProp(fields)` makes one (`chute`: its steady speed down under
+a parachute), `stepProp(p, dt, mask, { water })` drops it, rests it, drops it
+again when the ground goes and sinks it (`landed`, `sunk`), `throwProp(p, x, y,
+speed)` is a blast throwing it, `propTouches(p, x, y, reach)` measures from its
+middle, so a pickup can be generous. Used by: Capis a Pintazos (crates and
+tombstones).
+
 `engine/play/terrain-gen.js` (pure): building and checking side-view ground
 from a seed. `seededStream(key)` (one stream per seed and attempt, so a re-roll
 replays), `bumps(d, hills)` (gaussian hills and hollows), `dropFloating(mask,
@@ -225,6 +256,10 @@ ball never tunnels; with `y`, the flight height, boxes no taller than it are
 flown over; a box with `trunk: r` is that exact circle for shots, unpadded, and
 the result's `box` says which cover stopped it), `segmentBox`, `segmentCircle`,
 `traceRay` (where a tracer line ends, same `y`) and `flightTime`.
+`launchAimed(ax, az, pitch, speed, angle)` is the same launch tilted by a look's
+pitch, `{ vx, vy, vz }` at the full speed: sweep that with `sweepArc` and
+`gravity: 0` for a shot that goes where you look. `sweepArc` honours `trunk: r`
+and reports `box` the same way.
 
 ```js
 import { launch, sweep } from '../../../engine/play/projectile.js'; // relative: rules.js also loads on the server
@@ -237,7 +272,7 @@ boxes with a height (a low crate is flown over), upright round targets and the
 ground (`hit`: 'cover' | 'target' | 'ground'), and `stepArc(ball, dt, gravity)`
 moves it on. `engine/play/melee.js` throws with them.
 
-Used by: Pepazo (every ball and rocket, the sniper tracer, the thrown chancla).
+Used by: Pepazo (every ball and rocket along the look, the sniper tracer, the thrown chancla).
 
 ### Collision debug (colliders vs what you see)
 
@@ -615,7 +650,87 @@ const motor = createMotor(sound, { profile: 'muscle', topSpeed: 42 });
 motor.update(dt, { speed, boost });
 ```
 
-Used by: Carreritas (tyres, boost, crash, via `drift-audio.js`). Carreritas' car motor is the older `sound.startEngine` putt-putt in `engine/fx.js`, which sounded better to players than `createMotor`; `createMotor` has no user right now.
+Used by: Carreritas (tyres, boost, crash, via `drift-audio.js`; `createWind` and `vehicleSfx.whoosh` through `speed-feel.js`). Carreritas' car motor is the older `sound.startEngine` putt-putt in `engine/fx.js`, which sounded better to players than `createMotor`; `createMotor` has no user right now.
+
+### Fire
+
+`engine/fx/fire.js` (Three.js) and `engine/fx/fire-sim.js` (its numbers, no Three.js,
+tested in `engine/tests/fire-sim.test.js`). `createFire({ height, radius, seed, quality,
+calm, reach, emberSize, onCrackle })` returns `group`, `update(dt, time, { distance })`,
+`feed(strength)`, `setQuality(level)`, `setLevel(0..1)`, `dispose()`, and `light`
+(`intensity`, `x`, `y`, `z`, `warmth`): what the fire does to a warm light you lend it.
+It owns no light, so a game's fixed light pool stays fixed. Two draws per fire: one
+instanced shader for the tongues in layers and the halo, one Points for the embers,
+which are a capped pool. `quality` is `baja` | `media` | `alta` (`getSettings().detail`):
+`baja` is three cards, one noise octave, no halo and few embers. `calm` shrinks the
+wander for reduced motion. `onCrackle({ strength, x, y, z })` fires when a spark pops,
+so sound stays with the game. Retune everything in `FIRE_TUNING`, at the top of
+`fire-sim.js`. Scene fog applies on its own.
+
+Used by: Fosa (braziers and the campfire, `games/reliquia/public/scene.js`).
+
+### Rock cracks
+
+`engine/fx/rock-crack.js` (Three.js) and `engine/fx/rock-crack-sim.js` (its numbers, no
+Three.js, tested in `engine/tests/rock-crack-sim.test.js`). `createRockCrack({ rock, faces,
+faceWidth, seed, quality, motion, color, ground, chipColor, onEvent, dust })` takes any
+Object3D in the scene and returns `group`, `setProgress(p, { viewer, silent })`,
+`hit(point, normal)`, `break({ silent })`, `update(dt)`, `setQuality(level)`, `done` and
+`dispose()`. Give it a progress your game already shares: cracks grow and burn brighter
+with it and hits come from the thresholds it crosses, so every client sees the same
+breaking without a message of its own. Presentation only, with no rule or state in it.
+Cracks are laid on the rock's real surface by raycasts, once, the first time it starts
+to break. Three extra draws while it is working: cracks, chips and chunks in one instanced
+mesh, sparks; capped pools, so a burst cannot grow them. `onEvent` gets `hit`, `crunch` and
+`break` for your sounds and `dust` asks for a puff of your own, `motion: 0` stills the shake
+for reduced motion and `color` tints the cracks. Retune it in `CRACK_TUNING`. Not a mining
+system: it awards nothing.
+
+Used by: Fosa (cave-ins; `syncRubble` in `games/reliquia/public/scene.js`, lazy-loaded).
+
+### Lights that do not blind up close
+
+`engine/fx.js`: `capSpotNearField(metres)` stops every SpotLight gaining strength
+inside that distance, so a lamp on the camera does not burn what comes within reach to
+a white disc. Call it before anything compiles; it patches three's shared chunk, so it
+applies to the whole page. `fadePointsNear(material, { from, to })` fades a
+`PointsMaterial` as it reaches the camera, for additive glows that would otherwise fill
+the screen. Used by: Fosa (`view.js`, `eco-view.js`).
+
+### Carved surfaces
+
+`engine/fx/pom.js` (Three.js) and `engine/fx/pom-sim.js` (its numbers and height maps, no
+Three.js, tested in `engine/tests/pom-sim.test.js`). Parallax occlusion mapping on a
+`MeshStandardMaterial`: each fragment walks its view ray down a height map, so a wall looks
+carved with no added geometry. The outline stays the mesh's own (no discarded fragments, no
+depth writes). `createPomSet()` is the usual way in: `set.add(material, 'brick' | 'rock')`, and
+it swaps the material by itself when the picture setting changes.
+
+- **Who gets it.** `pomGate`: top detail (`getSettings().detail === 'alta'`) on a device that is
+  not touch-only. `?pom=0` and `?pom=1` in the address beat everything. Otherwise a material with
+  UVs is three's stock normal map, no patch; one without UVs gets one tap of the projected normal.
+- **By hand.** `applyPom(material, { heightMap, projection, tile, depth, steps: [min, max], refine,
+  fade: [near, far], cavity, normalScale, selfShadow, debug })`, `applyRelief` (the plain version)
+  and `clearRelief`. `reliefMap('brick' | 'rock')` is the shared texture: normal in RGB, height in A.
+- **`projection`.** `'uv'` uses the mesh's UVs. `'world'` needs only positions, for baked low-poly
+  meshes: the facet's dominant axis picks the projection and `tile` is metres per repeat. Both take
+  their frame from screen derivatives, so no tangent attribute, and both work on instanced meshes.
+- **`depth`** is real metres. Layers follow the view angle (`pomSteps`), a fragment past
+  `fade[1]` skips the walk, and an edge-on sliver stays flat.
+- **`selfShadow`** dims direct light by a four-tap walk toward the first directional, point or spot
+  light. Off by default; a lamp on the camera casts no visible shadow.
+- **`debug`** draws each fragment's layer count over the maximum, for QA.
+- Retune in `POM_SURFACES`, at the top of `pom-sim.js`. The maps are generated on first use, about
+  50 to 90 ms each on a desktop, and are the same bytes on every device.
+
+```js
+const { createPomSet } = await import('/engine/fx/pom.js');   // lazy: stays off the first load
+const relief = createPomSet();
+relief.add(wallMaterial, 'brick');
+```
+
+Used by: Fosa (ruin bricks and the camp's rock; `carve` in `games/reliquia/public/scene.js`). Notes:
+`docs/knowledge/reliquia.md`, "Carved bricks and rock".
 
 ### `fx.js` sound, particles and bubbles
 
@@ -702,6 +817,33 @@ them, `rules.js` searches them). Models: `props/reliquia-hideouts.js`
 (`userData.open(t)` poses each piece from shut to searched). Tests:
 `engine/tests/hiding-spots.test.js`, `games/reliquia/tests/hiding.test.js`.
 
+### Living food chains (ecosystem)
+
+`engine/ai/ecosystem.js` (pure, seeded, no Three.js, plain JSON state): creatures
+that eat, breed with slightly mutated traits (`sight`, `hear`, `pace`) and starve,
+on a plant and a pest that live on the map's sites. Sight costs energy
+quadratically and needs light, so dark places breed near-blind lineages that go by
+ear. Cover shields what is inside, which is what keeps the numbers in waves.
+`ecoWorld(sites, { species, clear })` is static and never travels;
+`createEcosystem(world, { seed, depth, founders })` is the state;
+`advanceEcosystem(eco, world, dt, { noises, on })` steps whole seconds, so a
+population of 40 costs far under a millisecond and changes the wire once a second.
+`coverAt`, `coverOf`, `lightOf`, `dimmed`, `traitsFor`, `meanTrait`,
+`removeCreature`, `addCreature` read and edit it. A game gives bodies only to the
+creatures near its players.
+
+```js
+const world = ecoWorld(sites, { species: { bat, snake }, clear: (a, b) => L.sightClear(a, b) });
+const eco = createEcosystem(world, { seed, depth, founders: [{ sp: 'bat', at: 3 }] });
+advanceEcosystem(eco, world, dt, { noises, on: (kind, c) => { if (kind === 'extinct') say(c.sp); } });
+```
+
+Used by: Fosa (`games/reliquia/public/ecology.js`, notes in
+`docs/knowledge/reliquia.md`, "The food chain"). Models: `mushroomThicket` in
+`props/glow-mushrooms.js`, `rootThicket` in `props/fosa-biomes.js`, `batColony` in
+`fauna/cave-creatures.js`. Tests: `engine/tests/ecosystem.test.js`,
+`games/reliquia/tests/ecology.test.js`.
+
 ### Crowds of crawling things: chains, distance fields, flow fields
 
 Four small renderer-free modules in `engine/play/`, usable together or alone. All are
@@ -768,7 +910,7 @@ See candidates.
 | Table seating UI (team lobby with team = seat % 2) | `engine/play/table-seating.js` | Billar, Caída, Dominó, Póquer |
 | Seat bubbles (frases) | `engine/play/seat-bubbles.js`, `play/frases.js` | Caída, Dominó, QQSMP, Stop (bubbles); Caída, Dominó, QQSMP, Reliquia (frases) |
 | ¿Quién empieza? (roll-off for the first turn) | `engine/play/quien-empieza.js` + `-rules.js`, `play/roll-off.js` | Billar, Bululú, Caída, Criollas, Dominó, Ludo, Póquer |
-| Map picker | `engine/play/map-picker.js` | Billar, Caída, Criollas, Dominó, Escondidas, Pepazo, Póquer |
+| Map picker, who may change it (`canChangeMap`) | `engine/play/map-picker.js` | Billar, Caída, Criollas, Dominó, Escondidas, Pepazo, Póquer |
 | Results → lobby (pick the next map) | `engine/play/round-lobby.js` (`returnToLobby`; LiveRoom's `lobby` action calls `game.toLobby()`) | Escondidas, Pepazo, Trifulca |
 | Difficulty picker | `engine/play/difficulty.js` | Billar, Criollas, Pepazo; Capis a Pintazos reads the levels for its bot and aim preview |
 | Room options (fields, rules, finalize; primary choices as a square button grid, label above; compact "Más ajustes" grid in the game skin; `defaultOf(values)` for mode-dependent defaults; in-dialog help layer via `help: { controls, tips }`) | `engine/room-options.js`, `room-options.css`, `room-options-rules.js`, `room-option-fields.js` | 23 games; fields in 13; help layer in Pepazo |
@@ -878,6 +1020,23 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Minimap | one per game | Bululú, Carreritas, Curiara, Embuste, Escondidas, Galope, Lancha, Pepazo, Reliquia each draw their own (Curiara and Lancha share `river/minimap`) |
 | Shot charge and aim guide (`guideRibbon` strips, `guideBeads` for an arc in the air, `guideRing` for a landing or blast ring) | `engine/play/shot-charge.js`, `aim-guide.js` | Billar, Bululú, Capis a Pintazos, Criollas, Pepazo (charge: the grenade throw); Billar, Capis a Pintazos (dashed arc), Criollas (guide), Pepazo (grenade arc, ground strip and blast ring) |
 
+### Game feel (damage, pixel effects)
+
+Everything here only draws: no rules, no physics. `engine/fx/feel.js` holds what
+they share: `calm()` (the browser's reduced-motion setting; the engine has none of
+its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
+
+| Piece | Module | Used by |
+|---|---|---|
+| Health bar: smooth drain, the lost chunk flashes white, orange, red, holds and drains; green, yellow, red by what is left; sparkles at the edge on a heal (`createDamageBar`, pure `createBarModel`) | `engine/fx/damage.js`, `damage.css` | Trifulca |
+| Damage numbers: pop, fan out on arcs, scale with the amount; white, orange with jitter on a crit, green on a heal (`createDamageNumbers`); drawn-only knockback spring (`createKnock`) | `engine/fx/damage.js` | Trifulca, Pepazo (the numbers, on the hits you land) |
+| Rank-up ceremony: riser, white flash, pillar and rings, the title slamming down, stats counting tick by tick, unlocks, confetti. `rankUpToast` plays it and `createRankChip`'s bar crawls through the last sliver, so any game on `engine/progress.js` gets both (`playLevelUp`, `riser`, `levelUp` and `countTick` in `sfx`) | `engine/fx/level-up.js`, `level-up.css`, `engine/progress-ui.js` | Reliquia, through `progress-ui` |
+| Speed from the driver's seat: field of view 50 to 75 with speed, camera lag under acceleration that catches up with a small shake on its own noise (seeded dice untouched), how strong edge lines and wind should be. Pure numbers (`createSpeedFeel`); apply them with `setSpeedLines` and `createWind` | `engine/fx/speed.js` | Carreritas (`speed-feel.js`: comfort camera and battle arenas opt out) |
+| A pickup you feel: flash and star burst where it was taken, the combo stamped over the counter at 3 and each full row (`createPickupFeel`); pairs with `flyToCounter` and `popCounter` from `fx.js` | `engine/fx/pickup-feel.js` | Carreritas coins |
+| Spoken lines: a typewriter with holds at commas and periods, a blip per letter pitched per speaker, `<wave>` and `<shake>` tags, mood from how a line is written, a speaker's bob and squash (`typewrite`, `parseRich`, `blipPitch`, `moodOf`, `autoRich`, `speakerPose`; `sfx.blip`). `createSeatBubbles(…, { typer })` writes through it | `engine/fx/dialogue.js`, `dialogue.css` | QQSMP (host and contestants) |
+| Cards and tiles with weight, as table meshes: hover lift and 3D tilt toward the pointer, pickup scale with a growing shadow, sway from speed, a spring home that overshoots (a hand closes its gap by itself), flick and slap (`createCardFeel`, pure `springStep`; `sfx.cardFlick`, `cardSlap`). A hand of HTML buttons gets the same through `bindHandFeel`: state keyed by card, so a rebuilt hand still closes its gap (`after()`) | `engine/fx/card-feel.js`, `hand-feel.js` | Dominó, Caída |
+| Pixel effects as camera-facing sprites (`createWorldFx(THREE, scene)`) or on the HUD layer (`createScreenFx`): pooled, capped, loaded on first use so first load doesn't grow | `engine/fx/pixelfx-bridge.js`, code in `engine/vendor/pixelfx/` (MIT; keep its `LICENSE` and `NOTICE.md`; add an effect through its `README.md`) | Trifulca (`hit-spark`, `crit-hit`, `crit-number`), the rank-up ceremony (`level-up` without its pixel hero, `confetti`), pickups (`collect-burst`, `combo-counter`) |
+
 ## Player, look and rewards
 
 | Piece | Module | Used by |
@@ -888,7 +1047,7 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Menu card pictures of any 3D object (built, framed by its bounds, drawn once on the shared offscreen renderer, cached by key; `keep(mesh)` draws one part alone) | `engine/object-thumb.js` (`objectThumb(key, build, { width, height, turn, tilt, keep, margin })`) on `engine/snapshot.js` | Pepazo (armory cards: every weapon, part, charm and grenade) |
 | Wardrobe | `engine/wardrobe.js`, `wardrobe-preview.js` | Bochinche, Carreritas, Pepazo, Trifulca (the page also loads `wardrobe-preview` through `pana.sh`) |
 | Friend-named bots (the top 2-3 bots wear the names of the player's friends; `applyFriendNames`, `friendNamesNow`, `loadFriendNames`, `cleanJoinNames`) | `engine/bot-names.js`; server rooms use `hostFriendNames()` in `server/src/room-kit.js`, `engine/net.js` sends the list on join | Bochinche, Billar, Bululú, Caída, Carreritas, Chapita, Criollas, Curiara, Dominó, Embuste, Escondidas, Galope, Lancha, Ludo, Parapente, Pepazo, Póquer, QQSMP, Stop, Tambor, Trifulca |
-| Mangos (shared currency) | `engine/mangos.js` | Bochinche, Carreritas |
+| Mangos (shared currency; `spend` takes them or changes nothing, `peek` reads without adopting Carreritas' old coins; with `window.PanaSh.wallet` the account's server balance replaces local storage, and `ready` says when it arrived) | `engine/mangos.js` | Bochinche, Carreritas |
 | Rank and XP per game, on this device (`createProgress({ game, ranks, storage })`: `award(amount, receipt, { dive })` pays once and counts a dive unless `dive: false`, `rank`, `xp`, `isUnlocked`, `onChange`; pure `rankAt`, `nextRank`, `progressInRank`, `unlocksAt`, safe in rules and tests). The look: `createRankChip(progress)` (`.pk-rank`: title, thin XP bar, `gain(n)` for "+N XP") and `rankUpToast(result, show)` for a `createFeats` or `createToast` | `engine/progress.js`, `engine/progress-ui.js`; tests `engine/tests/progress.test.js` | Reliquia (`games/reliquia/public/progress.js`: the ranks and `xpFor`) |
 | A game's day and streak (one seed and one rotating set per local date; pure `dayKey`, `dayNumber`, `isDayKey`, `dailySeed(game, day)`, `pickDaily(list, day)` walks the whole list before repeating. `createStreak({ game, storage, now })` under `pana:streak:<game>`: `record(day)` once a day gives `{ days, best, freezesLeft, usedFreeze, milestone }` (3, 7, 14, 30), a freeze every 7 days up to 2 covers one missed day; `peek(day)` reads without counting) | `engine/daily.js`; tests `engine/tests/daily.test.js` | Reliquia (`games/reliquia/public/daily.js`) |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
@@ -954,6 +1113,9 @@ Used by: Pepazo (team rounds, Bandera and Dominación too).
   `userData.animate`) and `hideNook`; `fauna/cave-creatures` has `caveBat` (replaces
   the guácharo) and `props/mine` has `mineCart({ hollow: true })`, an open cart to
   fill with real objects. Used by: Reliquia.
+- **The Congo set**: `props/congo` has `mokele` (posed by `userData.animate`, its neck one
+  instanced mesh), `piragua`, `balsa`, `vineWalls` (a floor's vine walls and curtains in three
+  draws), `jungleBackdrop` (two draws), `lilyPads` and `whirlpool`. Lazy-load it. Used by: Fosa.
 - **Dusty interiors**: `props/reliquia-library` builds a room's bookcases
   in a few instanced meshes per call (`bookcases`, with variants: plain,
   arched, between stone pillars, with a ladder, collapsed, low), every small

@@ -14,7 +14,7 @@ import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { createPlaza } from './plaza.js';
 import { createHuntEnvironment } from './scene.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { arenaInfo } from '/engine/worlds/arena-layouts.js';
 import { huntLayout } from './layout.js';
 import { RULES } from './rules.js';
@@ -83,7 +83,7 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Escondidas', fi
   room.action('configure', { options: DEFAULT_OPTIONS }); room.action('map', { mapId: 'plaza' }); $('role-hide').click();
 } });
 const isSeeker = id => state.seekers?.includes(id) ?? id === state.seeker;
-const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }));
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { room });
 const menu = createGameMenu({
   pad: { move: 'wasd', look: loc('Mirar'), keys: { a: ['KeyE', loc('Revisar o copiar un objeto')], rt: ['KeyE', loc('Revisar o copiar un objeto')], b: ['KeyQ', loc('Volver a pana')], y: ['KeyV', loc('Ver tu disfraz')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } },
   orientation: 'vertical',
@@ -141,7 +141,7 @@ function receive(next) {
 function updateHUD() {
   optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase === 'lobby');
   if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
-  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, canChangeMap(room, state.phase));
   $('hunt-seconds-stat').textContent = `${(state.options?.huntSeconds || RULES.huntSeconds) / 60}:00`;
   $('hide-seconds-stat').textContent = `${state.hideSeconds || RULES.hideSeconds}s`;
   $('world').setAttribute('aria-label', loc('{map}, escenario de Escondidas', { map: arenaInfo(state.mapId).name }));

@@ -18,7 +18,7 @@ export class DominoRoom {
   get members() { return new Map(this.offline ? [[1, { id: 1 }]] : (this.link?.state.players || []).filter(p => p.connected).map(p => [p.seat, p])); }
 
   async connect() {
-    this.onStatus(loc('Conectando con la mesa…'));
+    this.solo = false; this.onStatus(loc('Conectando con la mesa…'));
     try {
       const link = await joinRoom('domino', { code: this.code, name: this.name, avatar: this.avatar, lead: leadFromUrl() });
       if (this.offline || this.disposed) { link.leave(); return; }
@@ -26,9 +26,10 @@ export class DominoRoom {
       link.on('view', state => { if (!this.offline) { this.state = state; this.onState(state); } });
       link.on('state', () => { if (!this.offline) { this.status(); this.onState(this.state); } });
       link.on('status', (text, failed) => { if (this.offline) return; this.connected = !failed; failed ? this.onStatus(loc('Sin conexión. Reconectando…'), true) : this.status(); });
-      link.on('left', () => { if (this.offline) return; this.connected = false; this.onStatus(loc('No pudimos conectar. Puedes jugar en local.'), true); this.onState(this.state); });
+      link.on('left', () => { if (this.offline) return; this.connected = false; this.solo = true; this.onStatus(loc('No pudimos conectar. Puedes jugar en local.'), true); this.onState(this.state); });
       this.status();
     } catch (error) {
+      this.solo = true;
       if (!this.offline && !this.disposed) this.onStatus(error.full ? loc('Sala llena. Puedes jugar una partida local.') : loc('No pudimos conectar. Puedes jugar en local.'), true);
     }
   }

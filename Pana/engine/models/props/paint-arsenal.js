@@ -78,7 +78,7 @@ export const PAINT_CAMOS = Object.freeze({
 });
 // Solid camos: one colour on the painted body, no shader at all.
 export const PAINT_SOLIDS = Object.freeze({
-  'liso-mango': '#f28b42', 'liso-caribe': '#29c5cd', 'liso-uva': '#8d85df',
+  'liso-mango': '#f28b42', 'liso-caribe': '#29c5cd', 'liso-uva': '#6a2d9f',
   'liso-crema': '#f8e9c9', 'liso-carbon': '#2f3d3c', 'liso-coral': '#ff4b4b',
 });
 // Every camo id a kit may name: the solids first, then the patterns.

@@ -3,6 +3,8 @@
 // balance, equipped }) and window.PanaSh.buyCamo(id) buys one and resolves to the
 // fresh JSON. Public Pana has no bridge, and a bridge without a session rejects:
 // either way only the start camos count (`online: false`; `signedOut` when the bridge refused).
+// A hosted page whose gateway has no camo bridge yet is `hosted`: it must not send the player
+// to the site they are already on. Hosted pages always have window.PanaSh (gateway errors.js).
 // Answers are cached for `ttl` ms; a call slower than `timeout` ms falls back.
 // A camo got mid-session reaches the room through window.PanaSh.camosSigned(nonce)
 // (optional: see `signed`); without it the room learns it at the next join.
@@ -23,8 +25,9 @@ export function normalize(data) {
   return { online: true, owned: [...owned], progress, prices, balance: Math.max(0, Number(data.balance) || 0), equipped: camoById(data.equipped) ? data.equipped : null };
 }
 
-export function createCamoStore({ bridge = () => globalThis.PanaSh, timeout = 5000, ttl = 30000, now = () => Date.now() } = {}) {
+export function createCamoStore({ bridge = () => globalThis.PanaSh, hosted = () => !!globalThis.PanaSh, timeout = 5000, ttl = 30000, now = () => Date.now() } = {}) {
   let cached = null, at = -Infinity, pending = null;
+  const noBridge = () => ({ ...offline(false), hosted: hosted() });
   const within = promise => new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('timeout')), timeout);
     Promise.resolve(promise).then(value => { clearTimeout(timer); resolve(value); }, error => { clearTimeout(timer); reject(error); });
@@ -33,13 +36,13 @@ export function createCamoStore({ bridge = () => globalThis.PanaSh, timeout = 50
     // Whether pana.sh's bridge is on this page at all.
     get available() { return typeof bridge()?.camos === 'function'; },
     // The last answer (or the offline one before any).
-    get data() { return cached || offline(store.available); },
+    get data() { return cached || (store.available ? offline(true) : noBridge()); },
     // The player's camos; `fresh` skips the cache. Never rejects.
     load({ fresh = false } = {}) {
       if (!fresh && cached && now() - at < ttl) return Promise.resolve(cached);
       if (pending) return pending;
       const api = bridge();
-      if (typeof api?.camos !== 'function') return Promise.resolve(cached = offline(false));
+      if (typeof api?.camos !== 'function') return Promise.resolve(cached = noBridge());
       pending = within(Promise.resolve().then(() => api.camos())).then(data => { cached = normalize(data); at = now(); return cached; },
         // No session (or pana.sh did not answer): keep a good earlier answer, else start camos only.
         () => { if (!cached?.online) cached = { ...offline(false), signedOut: true }; at = -Infinity; return cached; })

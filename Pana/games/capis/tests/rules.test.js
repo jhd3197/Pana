@@ -50,7 +50,7 @@ test('Montaña de cuevas: a massif over the middle, a tunnel through its foot wi
   assert.ok(rockAt(map, f.at - c.side * (f.half - 2), map.plan.base + 5) > .5, 'its sheer face is rock');
   const ledge = f.at + c.side * (f.half + .5);
   assert.ok(solidAt(mask, ledge, c.lip - .1) && !solidAt(mask, ledge, c.floor + .9) && solidAt(mask, ledge, c.floor - .2), 'a ledge over the gallery');
-  assert.ok(Math.abs(ground(mask, f.at + c.side * (c.tip + 1.5)) - c.low) < .2 && c.lip - c.low <= 1.15, 'the lowland by the mouth a hop under the ledge');
+  assert.ok(Math.abs(ground(mask, f.at + c.side * (c.tip + 2.4)) - c.low) < .2 && c.lip - c.low <= 1.15, 'the lowland by the mouth a hop under the ledge');
   for (let d = f.half - 2; d > f.half * .6; d -= .5) assert.ok(surfaceY(mask, f.at + c.side * (d - .5)) - surfaceY(mask, f.at + c.side * d) < 1.25, `a step at ${d.toFixed(1)} is a hop at most`);
 });
 
@@ -281,3 +281,43 @@ test('the layers of the cut face belong to the map: same seed and kind, same loo
   assert.deepEqual(strataPalette(101, 'nada'), strataPalette(101, 'nada'), 'an unknown kind falls back');
 });
 
+
+// Quiet turns on one side: the bot has seen `turns` of them, none with paint landing, when this returns.
+function seekingBot(m, turns) {
+  const bot = createBot({ team: 0, difficulty: 'experto', seed: 3 });
+  for (let i = 0; i < turns; i++) { bot.input(m); m.turn.n += 2; }
+  return bot;
+}
+// A capi at x 26, a ditch of `gap` from x 30, and the only rival sealed in a rock under 30 units of roof: no shot from anywhere.
+function ditchMatch(gap) {
+  const m = flatMatch([[26, 2, 4], [45, 50, 55]]);
+  fillHeights(m.mask, x => x >= 30 && x < 30 + gap ? 2 : x >= 38 && x < 60 ? 40 : 10);
+  carve(m.mask, 45, 12.4, 2.4);
+  m.capys.forEach(c => { c.y = c.team ? groundBelow(m.mask, c.x, 13) : 10; });
+  m.capys.filter(c => c.team && c.slot).forEach(c => { c.out = 'water'; });
+  for (const id of Object.keys(m.ammo[0])) if (id !== 'grenade') m.ammo[0][id] = 0;
+  m.crates = []; m.turn.team = 0; m.turn.capy = '0-0';
+  return m;
+}
+function playWalk(m, bot, seconds = 12) {
+  const capy = m.capys.find(c => c.id === '0-0');
+  let far = capy.x;
+  for (let t = 0; t < seconds && m.phase === 'aim' && !capy.out; t += DT) { tickMatch(m, DT, bot.input(m)); far = Math.max(far, capy.x); }
+  return { capy, far };
+}
+
+test('no paint for a while and no shot: the bot hops a ditch to look for one, where before it stood still', () => {
+  const m = ditchMatch(2), { capy, far } = playWalk(m, seekingBot(m, 3));
+  assert.ok(!capy.out, `drowned: ${capy.out}`);
+  assert.ok(far > 32, `got to x ${far.toFixed(1)}`);
+  // Early on (paint still landing) it does not go looking yet.
+  const calm = ditchMatch(2), still = playWalk(calm, seekingBot(calm, 1));
+  assert.ok(still.far < 30, `walked to x ${still.far.toFixed(1)}`);
+});
+
+test('looking for a shot, the bot turns back from water it cannot hop and never drowns itself', () => {
+  const m = ditchMatch(7), { capy, far } = playWalk(m, seekingBot(m, 3));
+  assert.ok(!capy.out, `drowned: ${capy.out}`);
+  assert.ok(far < 31, `got to x ${far.toFixed(1)}`);
+  assert.ok(capy.x < 26, `it should have gone back the other way, at x ${capy.x.toFixed(1)}`);
+});

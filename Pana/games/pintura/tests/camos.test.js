@@ -9,7 +9,7 @@ import { PAINT_CAMOS, PAINT_SOLIDS } from '../../../engine/models/props/paint-ar
 
 // The gateway contract (pana.sh gateway/camos.json holds the same table).
 const CONTRACT = {
-  start: { 'liso-mango': '#f28b42', 'liso-caribe': '#29c5cd', 'liso-uva': '#8d85df', 'liso-crema': '#f8e9c9', 'liso-carbon': '#2f3d3c', 'liso-coral': '#ff4b4b' },
+  start: { 'liso-mango': '#f28b42', 'liso-caribe': '#29c5cd', 'liso-uva': '#6a2d9f', 'liso-crema': '#f8e9c9', 'liso-carbon': '#2f3d3c', 'liso-coral': '#ff4b4b' },
   kills: { selva: ['carbine', 15], medanos: ['marksman', 10], bolivar: ['sniper', 10], caracas: ['smg', 25], jaguar: ['blunderbuss', 15] },
   mangos: { caribe: 240, tricolor: 300, llanero: 360, rumba: 420, pepazo: 480 },
 };
@@ -66,6 +66,9 @@ test('camoState: owned, locked by kills with progress, buyable, short of mangos,
   assert.equal(camoState('liso-coral', { online: false }).state, 'owned');
   assert.deepEqual(camoState('caribe', { online: false }), { state: 'locked', text: 'Disponible en pana.sh' });
   assert.match(camoState('selva', { online: false, signedOut: true }).text, /cuenta de pana\.sh/);
+  // On pana.sh, before its gateway has the camos: never "available on" the site you are on.
+  assert.deepEqual(camoState('caribe', { online: false, hosted: true }), { state: 'locked', text: 'Muy pronto' });
+  assert.equal(camoState('liso-coral', { online: false, hosted: true }).state, 'owned');
   assert.equal(progressText('selva', { carbine: { hits: 99 } }), '15/15 pintadas con La Parrandera', 'progress text never passes the threshold');
 });
 
