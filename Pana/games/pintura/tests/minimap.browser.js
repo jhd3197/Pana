@@ -19,6 +19,16 @@ try {
   await waitFor(a, id => pinturaDebug.room.state.players.find(p => p.id === id).loud === 0, rival);
   assert.equal(await a.evaluate(shown, rival), 0, 'hidden while it has not fired');
 
+  // The map is alive: it follows you when you walk and when you turn.
+  const picture = () => { const c = document.getElementById('minimap'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let h = 0; for (let i = 0; i < d.length; i += 8) h = (h * 31 + d[i]) | 0; return h; };
+  const still = await a.evaluate(picture), at = await a.evaluate(() => { const p = pinturaDebug.room.state.players.find(q => q.id === pinturaDebug.room.id); return { x: p.x, z: p.z }; });
+  await a.mouse.click(640, 400); await a.keyboard.down('w');
+  await waitFor(a, at => { const p = pinturaDebug.room.state.players.find(q => q.id === pinturaDebug.room.id); return Math.hypot(p.x - at.x, p.z - at.z) > 1; }, at);
+  await a.keyboard.up('w');
+  const walked = await a.evaluate(picture); assert.notEqual(walked, still, 'walking moves the map');
+  await a.evaluate(() => pinturaDebug.world.look(1.2, 0));
+  await waitFor(a, ({ src, walked }) => eval(src)() !== walked, { src: picture.toString(), walked });
+
   await b.evaluate(() => { const p = pinturaDebug.room; p.input({ fire: true, ax: 0, az: -1 }); });
   await waitFor(a, id => { const p = pinturaDebug.room.state.players.find(p => p.id === id); return p.loud > 0 && p.fired > 0; }, rival);
   await waitFor(a, shown, rival);
