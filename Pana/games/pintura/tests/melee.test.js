@@ -113,7 +113,7 @@ test('all six melee weapons have armory numbers, three melee parts and their pla
     assert.deepEqual(cleanKit({ weapon: m.id, attachments: ['barrel', 'tape', 'drip'] }).slots, { grip: 'tape', head: 'drip', pommel: null });
   }
   assert.ok(throwRange(kitStats({ weapon: 'sandal' }).throwable) > 15, 'the chancla reaches past 15 m from a level look');
-  assert.equal(kitStats({ weapon: 'sandal', slots: { pommel: 'strap' } }).throwable.recall, 1.5);
+  assert.equal(kitStats({ weapon: 'sandal', slots: { pommel: 'strap' } }).throwable.recall, 1.3);
   assert.equal(kitStats({ weapon: 'sandal', slots: { head: 'drip' } }).throwable.damage, 4, 'a throw paints what a strike does');
   assert.equal(MELEE.filter(m => m.throwable).map(m => m.id).join(), 'sandal');
   assert.equal(cycleWeapon('sprayer', 1), 'bat'); assert.equal(cycleWeapon('maraca', 1), 'pistol');

@@ -129,10 +129,10 @@ test('each round plays the next of three fixed layouts', () => {
   assert.notDeepEqual(coverFor('plaza', 1), coverFor('plaza', 0)); assert.ok(coverFor('muelle', 2).length !== coverFor('muelle', 0).length);
 });
 
-test('Shift sprints faster for three seconds, holds fire, then recovers', () => {
+test('Shift sprints faster for four seconds on Balanceado, holds fire, then recovers', () => {
   const g = arena(), p = g.players[0]; Object.assign(p, { x: -20, z: 20 });
   for (let i = 0; i < 20; i++) g.step(.05, new Map([[1, { x: 1, sprint: true }]]));
-  assert.ok(p.x > -20 + 7 * 1.4 * .95, `sprinted to ${p.x}`); assert.ok(p.stamina < .7); assert.equal(p.sprint, true);
+  assert.ok(p.x > -20 + 7 * 1.4 * .95, `sprinted to ${p.x}`); assert.ok(p.stamina < .8); assert.equal(p.sprint, true);
   const ammo = p.ammo; g.step(.05, new Map([[1, { x: 1, sprint: true, fire: true }]])); assert.equal(p.ammo, ammo - 1, 'firing cancels the sprint');
   for (let i = 0; i < 80; i++) g.step(.05, new Map([[1, { x: -1, sprint: true }]])); assert.ok(p.stamina < .05); assert.equal(p.sprint, false);
   for (let i = 0; i < 40; i++) g.step(.05); assert.ok(p.stamina > .35);

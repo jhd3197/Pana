@@ -197,6 +197,8 @@ function distanceField(grid, target) {
 export const hitsToKill = (kit, options) => hardcorePlay(options) ? 1 : kitStats(kit, options).toughness;
 // Seconds out after a knockout: Hardcore keeps the round moving.
 export const respawnTime = options => hardcorePlay(options) ? 1.5 : 2.5;
+// Regenera's perk: a rival's knockout washes pepazos off the shooter at once.
+const washOnKnockout = (p, stats) => { if (stats.koWash && p.paint > 0) { p.paint = Math.max(0, p.paint - stats.koWash); p.stains = p.stains.slice(stats.koWash); } };
 export class Arena {
   constructor(mapId = 'terminal', difficulty = DEFAULT_DIFFICULTY, options = {}) { const { toughness, ...room } = options || {}; this.options = { ...DEFAULT_OPTIONS, ...(validOptions(withoutLegacy(room)) ? withoutLegacy(room) : {}), ...(toughness > 0 ? { toughness } : {}) }; this.flags = []; this.flagEvents = []; this.flagSerial = 0; this.zones = []; this.zoneEvents = []; this.zoneSerial = 0; this.domBank = [0, 0]; this.outcome = null; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.thrown = []; this.puddles = []; this.booms = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = locKey('La cancha está lista.'); this.messageVars = null; this.loading = 0; this.countdown = 0; this.ready = new Set(); this.random = Math.random; this.camoOwners = new Map(); }
   // A camo the seat does not own falls back to the first solid one (camoRefusal names it for the client).
@@ -484,7 +486,7 @@ export class Arena {
       p.aim = input.aim && stats.aims;
       // Shift sprints 45% faster for up to three seconds; sprinting holds fire. A flag carrier is slower (ctf.js).
       const walk = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (p.aim ? .5 : 1) * carrierSlow(this, p);
-      const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, regen: 5, move: axisMove((x, z) => blocked(x, z, RADIUS, this.mapId, this.variant)) }).sprinting; p.sprint = sprinting;
+      const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, drain: stats.sprintDrain, regen: stats.sprintRegen, move: axisMove((x, z) => blocked(x, z, RADIUS, this.mapId, this.variant)) }).sprinting; p.sprint = sprinting;
       p.walk = !!(input.x || input.z);
       if ((input.reload || p.ammo === 0) && !p.reload && !p.swap && p.ammo < stats.magazine && (stats.reserve == null || p.reserve > 0)) p.reload = stats.reload;
       // Melee: the trigger swings (no ammo); the blow lands when the windup ends.
@@ -626,7 +628,8 @@ export class Arena {
     // balls) the victim soaks it; once a whole one has soaked in, that is the pepazo.
     if (damage < 1) {
       victim.soak = (victim.soak || 0) + damage; victim.calm = 0;
-      if (victim.soak < 1 - 1e-9) return;
+      // Nothing to show on the victim yet, but the shooter still sees the ball land.
+      if (victim.soak < 1 - 1e-9) { this.event('soak', owner, victim, owner ? Math.round(Math.hypot(owner.x - victim.x, owner.z - victim.z)) : 0, { weapon: impact.weapon || null }); return; }
       victim.soak -= 1; if (victim.soak < 1e-9) victim.soak = 0; damage = 1;
     }
     const dx = impact.x ?? (victim.x - (owner?.x ?? victim.x)), dz = impact.z ?? (victim.z - (owner?.z ?? victim.z));
@@ -635,14 +638,15 @@ export class Arena {
     const distance = owner ? Math.round(Math.hypot(owner.x - victim.x, owner.z - victim.z)) : 0;
     const toughness = hitsToKill(victim.kit, this.options), weapon = impact.weapon || null, thrown = !!impact.thrown;
     victim.paint = Math.min(toughness, victim.paint + Math.max(1, damage)); victim.stains = [...victim.stains, color].slice(-5); victim.calm = 0;
-    if (victim.paint < toughness) { this.event('hit', owner, victim, distance, { weapon, thrown }); return; }
+    const landed = Number.isFinite(damage) ? Math.max(1, damage) : null;
+    if (victim.paint < toughness) { this.event('hit', owner, victim, distance, { weapon, thrown, damage: landed }); return; }
     victim.respawn = respawnTime(this.options); victim.hits++; victim.slow = this.options.paint === 'sticky' ? 7 : 0; victim.eliminated = livesOf(this.options) > 0 && victim.hits >= livesOf(this.options);
     const rival = !!owner && !this.sameTeam(owner, victim), revenge = rival && owner.nemesis === victim.id;
-    if (rival) { owner.score++; owner.streak++; if (revenge) owner.nemesis = null; victim.nemesis = owner.id; if (!objectivePlay(this.options)) this.teamScores[owner.team]++; }
+    if (rival) { owner.score++; owner.streak++; if (revenge) owner.nemesis = null; victim.nemesis = owner.id; if (!objectivePlay(this.options)) this.teamScores[owner.team]++; washOnKnockout(owner, kitStats(owner.kit, this.options, owner.hand)); }
     victim.streak = 0;
     if (isCtf(this.options)) ctfDrop(this, victim);
     if (owner) this.say(locKey('{owner} pintó a {victim} · {distance} m'), { owner: owner.name, victim: victim.name, distance }); else this.say(locKey('Un pana pintó a {victim} · {distance} m'), { victim: victim.name, distance });
-    this.event('out', owner, victim, distance, { streak: rival ? owner.streak : 0, revenge, weapon, thrown, direct: damage === Infinity && !impact.headshot, headshot: !!impact.headshot });
+    this.event('out', owner, victim, distance, { streak: rival ? owner.streak : 0, revenge, weapon, thrown, damage: landed, direct: damage === Infinity && !impact.headshot, headshot: !!impact.headshot });
   }
   // The feed line is synced: a Spanish key plus its variables, shown with loc() on each client.
   say(message, vars = null) { this.message = message; this.messageVars = vars; }
