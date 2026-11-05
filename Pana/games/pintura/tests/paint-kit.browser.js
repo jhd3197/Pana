@@ -60,7 +60,7 @@ try {
     for (const solid of [kit.createPaintKit({ weapon: 'smg', camo: 'liso-uva' }), kit.bakePaintKit({ weapon: 'smg', camo: 'liso-uva' })]) {
       if (solid.userData.camo?.pattern !== 'solid') problems.push('a solid camo lost its settings');
       if (meshes(solid).some(m => m.geometry.attributes.camoPos || m.material.userData.camo || m.material.onBeforeCompile?.name === 'camoCompile')) problems.push('a solid camo compiles the camo shader');
-      if (!meshes(solid).some(m => m.material.color?.getHexString() === '8d85df' || m.geometry.attributes.color)) problems.push('a solid camo did not recolour the body');
+      if (!meshes(solid).some(m => m.material.color?.getHexString() === '6a2d9f' || m.geometry.attributes.color)) problems.push('a solid camo did not recolour the body');
       solid.userData.dispose();
     }
     // El Acolchado: one vertex-coloured mesh, a few thousand triangles, inside the torso

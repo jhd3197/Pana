@@ -139,8 +139,8 @@ export const PARTS = [
  // Melee: on the grip, the head and the pommel of every melee model, one tradeoff each.
  { id:'tape', slot:'grip', name:locKey('Cinta de agarre'), icon:'kitGrip', part:'tape', mul:{ windup:.8, recovery:.8, reach:.85 } },
  { id:'drip', slot:'head', name:locKey('Goteo de pintura'), icon:'kitDrip', part:'drip', mul:{ recovery:1.25 }, add:{ damage:1 } },
- { id:'strap', slot:'pommel', name:locKey('Correa'), icon:'kitStrap', part:'strap', mul:{ recovery:.85 }, add:{ mobility:-.04 },
-  when:{ throwable:{ mul:{ 'throwable.recall':.6 }, add:{ mobility:-.04 } } } },
+ { id:'strap', slot:'pommel', name:locKey('Correa'), icon:'kitStrap', part:'strap', mul:{ recovery:.65 }, add:{ mobility:-.04 },
+  when:{ throwable:{ mul:{ 'throwable.recall':.52, recovery:.8 }, add:{ mobility:-.04 } } } },
 ];
 const PARTS_BY_ID = Object.fromEntries(PARTS.map(p => [p.id, p]));
 export const partOf = id => typeof id === 'string' && Object.hasOwn(PARTS_BY_ID, id) ? PARTS_BY_ID[id] : null;
@@ -172,14 +172,17 @@ const FITS = {
 // and how loud rivals hear the steps (sounds.js), `markerScale` the dot rivals see
 // on their minimap and how close they must be to see it, `grenades` the ones
 // carried, `grenadeRecharge` the seconds to get one back. `vest` draws the padded
-// vest. Each class pays for what it gets: docs/knowledge/pintura.md, "Clases".
+// vest. `perk` is its one-line label on the armory card. `sprintDrain` and
+// `sprintRegen` are the seconds to empty and refill the sprint, `koWash` the
+// pepazos a rival's knockout washes off the shooter.
+// Each class pays for what it gets: docs/knowledge/pintura.md, "Clases".
 export const ARMOR = [
- {id:'base',name:locKey('Balanceado'),icon:'kitVest',mobility:1,toughness:0,regen:1,stepNoise:1,markerScale:1,grenades:1,grenadeRecharge:30},
- {id:'rapido',name:locKey('Rápido'),icon:'kitBolt',mobility:1.08,toughness:-1,regen:1,stepNoise:1.15,markerScale:1,grenades:1,grenadeRecharge:30},
- {id:'tanque',name:locKey('Tanque'),icon:'kitShield',mobility:.9,toughness:1,regen:1,stepNoise:1.25,markerScale:1.2,grenades:1,grenadeRecharge:30,vest:true},
- {id:'regenera',name:locKey('Regenera'),icon:'kitRegen',mobility:.97,toughness:0,regen:1.8,stepNoise:1,markerScale:1,grenades:1,grenadeRecharge:40},
- {id:'sigiloso',name:locKey('Sigiloso'),icon:'kitStep',mobility:.96,toughness:0,regen:.75,stepNoise:.4,markerScale:.55,grenades:1,grenadeRecharge:30},
- {id:'granadero',name:locKey('Granadero'),icon:'kitGrenade',mobility:.95,toughness:0,regen:.9,stepNoise:1,markerScale:1,grenades:2,grenadeRecharge:18},
+ {id:'base',name:locKey('Balanceado'),perk:locKey('Equilibrado'),icon:'kitVest',mobility:1,toughness:0,regen:1,stepNoise:1,markerScale:1,grenades:1,grenadeRecharge:30,sprintDrain:4,sprintRegen:5,koWash:0},
+ {id:'rapido',name:locKey('Rápido'),perk:locKey('Más velocidad'),icon:'kitBolt',mobility:1.08,toughness:-1,regen:1,stepNoise:1.15,markerScale:1,grenades:1,grenadeRecharge:30,sprintDrain:3,sprintRegen:3,koWash:0},
+ {id:'tanque',name:locKey('Tanque'),perk:locKey('Chaleco'),icon:'kitShield',mobility:.9,toughness:1,regen:1,stepNoise:1.25,markerScale:1.2,grenades:1,grenadeRecharge:30,sprintDrain:3,sprintRegen:5,koWash:0,vest:true},
+ {id:'regenera',name:locKey('Regenera'),perk:locKey('Cura rápido'),icon:'kitRegen',mobility:.97,toughness:0,regen:1.8,stepNoise:1,markerScale:1,grenades:1,grenadeRecharge:40,sprintDrain:3,sprintRegen:5,koWash:1},
+ {id:'sigiloso',name:locKey('Sigiloso'),perk:locKey('Pasos quietos'),icon:'kitStep',mobility:.96,toughness:0,regen:.75,stepNoise:.4,markerScale:.55,grenades:1,grenadeRecharge:30,sprintDrain:3,sprintRegen:5,koWash:0},
+ {id:'granadero',name:locKey('Granadero'),perk:locKey('2 granadas'),icon:'kitGrenade',mobility:.95,toughness:0,regen:.9,stepNoise:1,markerScale:1,grenades:2,grenadeRecharge:18,sprintDrain:3,sprintRegen:5,koWash:0},
 ];
 // Kits saved before classes named a vest: each becomes the class nearest to it.
 export const LEGACY_ARMOR = { shirt:'base', padded:'tanque', wind:'rapido' };
@@ -189,13 +192,15 @@ export const armorOf = id => ARMOR.find(a => a.id === (typeof id === 'string' &&
 // 12 m and 28 m before the first bounce. The fuse starts on release. `damage` is
 // the pepazos inside 40% of `radius`; it falls to a third at the edge (never
 // under one). `restitution`/`friction`/`roll` shape the bounces; `sticky` stops dead.
+// `color` is the grenade's own, on its armory card, its mesh and the HUD, so the three
+// read apart at a glance; the paint it bursts into stays the thrower's.
 export const GRENADES = [
- {id:'pinita',name:'La Piñita',blurb:locKey('Explosión de pintura: dos pepazos en el centro, uno en el borde.'),radius:4.5,fuse:2.4,damage:2,speed:[11,18],restitution:.38,friction:.62,roll:3}, // i18n-ignore: proper name
- {id:'pegajosa',name:'La Pegajosa',blurb:locKey('Se pega donde cae, salpica menos y deja un charco que frena rivales.'),radius:2.8,fuse:2.2,damage:1,speed:[11,18],sticky:true,puddle:3.3}, // i18n-ignore: proper name
- {id:'chispita',name:'La Chispita',blurb:locKey('Rebota y rebota: llega más lejos y su mecha dura más.'),radius:3.6,fuse:2.8,damage:2,speed:[11,18],restitution:.6,friction:.72,roll:3.2}, // i18n-ignore: proper name
+ {id:'pinita',name:'La Piñita',color:'#e5342b',blurb:locKey('Explota fuerte'),radius:4.5,fuse:2.4,damage:2,speed:[11,18],restitution:.38,friction:.62,roll:3}, // i18n-ignore: proper name
+ {id:'pegajosa',name:'La Pegajosa',color:'#4fc23a',blurb:locKey('Deja charco'),radius:2.8,fuse:2.2,damage:1,speed:[11,18],sticky:true,puddle:3.3}, // i18n-ignore: proper name
+ {id:'chispita',name:'La Chispita',color:'#2e7dff',blurb:locKey('Rebota lejos'),radius:3.6,fuse:2.8,damage:2,speed:[11,18],restitution:.6,friction:.72,roll:3.2}, // i18n-ignore: proper name
 ];
 export const grenadeDef = id => GRENADES.find(g=>g.id===id) || GRENADES[0];
-export const FINISHES = [{id:'factory',name:locKey('De fábrica'),color:null},{id:'caribe',name:'Caribe',color:'#29c5cd'},{id:'mango',name:'Mango',color:'#f28b42'},{id:'uva',name:'Uva',color:'#8d85df'}];
+export const FINISHES = [{id:'factory',name:locKey('De fábrica'),color:null},{id:'caribe',name:'Caribe',color:'#29c5cd'},{id:'mango',name:'Mango',color:'#f28b42'},{id:'uva',name:'Uva',color:'#6a2d9f'}];
 export const CHARMS = [{id:'none',name:locKey('Sin llavero')},{id:'mango',name:'Manguito'},{id:'ball',name:locKey('Bola de pintura')}];
 export const PATTERNS = [{id:'splat',name:locKey('Salpicadura')},{id:'stripe',name:locKey('Rayas')},{id:'dots',name:locKey('Puntos')}];
 const pick = (list,id) => list.some(x=>x.id===id) ? id : list[0].id;
@@ -310,7 +315,7 @@ export function kitStats(value={}, options={}, hand=0) {
 // class's, never under one), paint wear, steps, minimap dot and grenades.
 function wear(s,c,options) {
  s.mobility*=c.mobility; s.toughness=Math.max(1,(options?.toughness||3)+c.toughness);
- Object.assign(s,{armor:c.id,regen:c.regen,stepNoise:c.stepNoise,markerScale:c.markerScale,grenades:c.grenades,grenadeRecharge:c.grenadeRecharge});
+ Object.assign(s,{armor:c.id,regen:c.regen,stepNoise:c.stepNoise,markerScale:c.markerScale,grenades:c.grenades,grenadeRecharge:c.grenadeRecharge,sprintDrain:c.sprintDrain,sprintRegen:c.sprintRegen,koWash:c.koWash});
 }
 // A melee weapon's numbers with its parts and armor: no ammo, no reload, never aims.
 // `cadence` is the swing interval, so whatever reads a marker's pace reads this too.
@@ -321,6 +326,17 @@ function meleeStats(s,parts,armor,options) {
  if(s.throwable) s.throwable.damage=s.damage;
  wear(s,armor,options);
  return Object.assign(s,{cadence:s.windup+s.recovery,magazine:0,reload:0,speed:0,life:0,spread:0,sprint:true,aims:false});
+}
+// What a part changes against an empty slot, for the armory's chips: up to three,
+// in this order. `less`: lower is better; `plain`: shows its value, not a change.
+// Swings in tenths, as the stats panel beside the chips rounds them.
+const PART_STATS=[{key:'zoom',get:s=>s.aims?s.zoom:0,plain:true},{key:'balls',get:s=>s.melee?0:s.magazine+(s.reserve||0)},
+ {key:'reach',get:s=>s.melee?s.reach:s.speed*s.life},{key:'recall',get:s=>s.throwable?.recall??0,less:true},{key:'paint',get:s=>s.melee?s.damage:0},
+ {key:'swing',get:s=>s.melee?Math.round(10/meleeInterval(s))/10:0},{key:'reload',get:s=>s.melee?0:s.reload,less:true},{key:'mobility',get:s=>s.mobility*100}];
+export function partDeltas(kit,slot,id,options={},hand=0){
+ const bare=kitStats(setPart(kit,slot,null,hand),options,hand),fitted=kitStats(setPart(kit,slot,id,hand),options,hand),out=[];
+ for(const c of PART_STATS){const delta=c.get(fitted)-c.get(bare);if(Math.abs(delta)<1e-6||out.length>=3)continue;out.push({key:c.key,delta,gain:(delta>0)!==!!c.less,plain:!!c.plain,value:c.plain?c.get(fitted):null});}
+ return out;
 }
 // The engine definition (engine/play/melee.js) behind a melee kit's stats.
 export const meleeOf = s => meleeDef(s);

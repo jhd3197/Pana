@@ -1,6 +1,6 @@
 import { loc, locn } from '/engine/i18n.js';
 import { icon } from '/engine/icons.js';
-import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, FINISHES, partOf, partsOf, gunOf } from './armory-data.js';
+import { kitStats, WEAPONS, MARKERS, ARMORY_CLASSES, FINISHES, grenadeDef, partOf, partsOf, gunOf } from './armory-data.js';
 import { TARGET } from './rules.js';
 import { livesOf } from './options.js';
 import { race, pepas, lowAmmo, hitAngle, clock, KILL_LINES } from './hud-model.js';
@@ -32,7 +32,7 @@ export function createCombatHud(doc = document) {
   const pulse = name => { body.classList.remove(name); void body.offsetWidth; body.classList.add(name); };
   const team = t => t ? loc('Turquesa') : loc('Naranja');
   const side = (kind, label, color, translate) => { set($(`${kind}-label`), label); $(`${kind}-label`).translate = translate; $(`${kind}-dot`).style.setProperty('--c', color || 'var(--pk-text)'); };
-  let balls = 0, parts = '', lastHand = null;
+  let balls = 0, parts = '', lastHand = null, damageFx = null;
 
   return {
     // Fed every render, in the lobby too (the HUD is hidden there).
@@ -78,10 +78,10 @@ export function createCombatHud(doc = document) {
       $('reload-prompt').hidden = !(reloading || empty || away); $('reload-prompt').classList.toggle('empty', empty);
       set($('reload-text'), away ? loc('La chancla vuelve en {n} s', { n: Math.max(0, me.melee.t).toFixed(1) }) : reloading ? loc('Recargando {n} s', { n: me.reload.toFixed(1) }) : empty ? emptyText() : '');
 
-      const gear = $('gear'), ready = !!me?.grenadeReady;
-      // Granadero carries two: the count shows once there is more than one.
-      const count = me?.grenades ?? 1, gearKey = `${ready}:${count}`;
-      if (gear.dataset.key !== gearKey) { gear.dataset.ready = String(ready); gear.dataset.key = gearKey; gear.replaceChildren(icon('kitGrenade'), doc.createTextNode(` ${ready ? loc('Granada') : loc('Sin granada')}${count > 1 ? ` ×${count}` : ''}`)); }
+      const gear = $('gear'), ready = !!me?.grenadeReady, grenade = grenadeDef(me?.kit?.grenade);
+      // Your grenade by name and in its colour. Granadero carries two: the count shows once there is more than one.
+      const count = me?.grenades ?? 1, gearKey = `${ready}:${count}:${grenade.id}`;
+      if (gear.dataset.key !== gearKey) { gear.dataset.ready = String(ready); gear.dataset.key = gearKey; gear.style.setProperty('--grenade', grenade.color); gear.replaceChildren(icon('kitGrenade'), doc.createTextNode(` ${ready ? grenade.name : loc('Sin granada')}${count > 1 ? ` ×${count}` : ''}`)); }
     },
     // The kill lines already sit in the killfeed; the bottom pill skips them.
     duplicate: message => KILL_LINES.has(message),
@@ -90,6 +90,12 @@ export function createCombatHud(doc = document) {
       $('streak').hidden = n < 2; if (n < 2) return;
       set($('streak-label'), loc('racha de {n}', { n }));
       $('streak-pips').replaceChildren(...Array.from({ length: Math.min(n, 5) }, () => doc.createElement('i')));
+    },
+    // A hit you landed: a small number by the crosshair, from the shared damage numbers
+    // (fetched with the first one). A knockout's reads bigger; a soaked ball has none.
+    landed(amount, kind = 'hit') {
+      if (!(amount >= 1) || !Number.isFinite(amount)) return;
+      (damageFx ??= import('/engine/fx/damage.js').then(m => m.createDamageNumbers({ max: 6 }))).then(n => n.pop(innerWidth / 2, innerHeight / 2 - 30, amount, { kind })).catch(() => {});
     },
     // Something hit you: point at where from.
     hit(e, state, id, forward) {

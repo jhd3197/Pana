@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { createPaintKit, wearPaintVest, PAINT_PART_LABELS } from '/engine/models/props/paintball-kit.js';
-import { WEAPONS, ARMORY_CLASSES, SLOT_RULES, slotsFor, slotOf, partOf, throwRange, meleeInterval, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, FALLBACK_CAMO, cleanKit, kitStats, kitRating, kitModel, setPart, changeWeapon, shotInterval, dpsOf, gunOf, armorOf, classesFor, allowedIn } from './armory-data.js';
+import { WEAPONS, ARMORY_CLASSES, SLOT_RULES, slotsFor, slotOf, partOf, partDeltas, throwRange, meleeInterval, ARMOR, GRENADES, grenadeDef, FINISHES, CHARMS, PATTERNS, FALLBACK_CAMO, cleanKit, kitStats, kitRating, kitModel, setPart, changeWeapon, shotInterval, dpsOf, gunOf, armorOf, classesFor, allowedIn } from './armory-data.js';
 import { ICONS } from '/engine/icons.js';
 import { pixelRatio } from '/engine/settings.js';
 import { loc, locn, locKey, formatList } from '/engine/i18n.js';
@@ -27,10 +27,12 @@ const pepazos=n=>locn(n,'{n} pepazo','{n} pepazos',{n:String(Math.round(n*100)/1
 const STYLE=[{id:'finish',name:locKey('Acabado')},{id:'camo',name:locKey('Camuflaje')},{id:'charm',name:locKey('Llavero')}];
 const LOOKS=[{id:'style',name:locKey('Estilo')},{id:'pattern',name:locKey('Salpicadura')}];
 // What a class changes against Balanceado, as icon + number chips (`less`: lower is better).
+// A `from` compares against that number instead: the perks every class but one goes without.
 const CLASS_CHIPS=[{key:'mobility',icon:'kitBolt',text:d=>`${Math.round(d*100)}%`},{key:'toughness',icon:'kitShield',text:d=>String(d)},{key:'regen',icon:'kitRegen',text:d=>`${Math.round(d*100)}%`},
- {key:'stepNoise',icon:'kitStep',text:d=>`${Math.round(d*100)}%`,less:true},{key:'markerScale',icon:'kitRadar',text:d=>`${Math.round(d*100)}%`,less:true},{key:'grenades',icon:'kitGrenade',text:d=>String(d)},{key:'grenadeRecharge',icon:'whirl',text:d=>`${Math.round(d)} s`,less:true}];
+ {key:'stepNoise',icon:'kitStep',text:d=>`${Math.round(d*100)}%`,less:true},{key:'markerScale',icon:'kitRadar',text:d=>`${Math.round(d*100)}%`,less:true},{key:'grenades',icon:'kitGrenade',text:d=>String(d)},{key:'grenadeRecharge',icon:'whirl',text:d=>`${Math.round(d)} s`,less:true},
+ {key:'sprintDrain',from:3,icon:'kitBolt',text:d=>`${Math.round(d)} s`},{key:'sprintRegen',from:5,icon:'kitBolt',text:d=>`${Math.round(d)} s`,less:true},{key:'koWash',from:0,icon:'kitRegen',text:()=>'K.O.'}];
 const chip=(d,less,icon,text)=>{const el=document.createElement('small');el.className=`armory-delta ${(d>0)!==!!less?'gain':'loss'}`;el.innerHTML=`${ICONS[icon]}${d>0?'+':'−'}${esc(text(Math.abs(d)))}`;return el;};
-export function classChips(c){const out=document.createElement('span');out.className='armory-chips';for(const k of CLASS_CHIPS){const d=c[k.key]-ARMOR[0][k.key];if(Math.abs(d)>1e-6)out.append(chip(d,k.less,k.icon,k.text));}return out;}
+export function classChips(c){const out=document.createElement('span');out.className='armory-chips';for(const k of CLASS_CHIPS){const d=c[k.key]-(k.from??ARMOR[0][k.key]);if(Math.abs(d)>1e-6)out.append(chip(d,k.less,k.icon,k.text));}return out;}
 // notify: a toast for news that arrives while the armory is closed (mid-round).
 // onPick(kit): the kit the next rounds and the number keys play with.
 export function createArmory({room,onPick,notify=()=>{}}) {
@@ -120,16 +122,15 @@ export function createArmory({room,onPick,notify=()=>{}}) {
    const delta=Number.isFinite(d)&&Math.abs(d)>1e-6?`<small class="armory-delta ${up?'gain':'loss'}">${d>0?'+':'−'}${fmtDelta(Math.abs(d))}</small>`:'';
    return `<div><dt>${name}${delta}</dt><dd><span class="armory-bars">${Array.from({length:10},(_,i)=>`<i class="${i<Math.min(a,b)?'on':i<Math.max(a,b)?gain?'gain':'loss':''}"></i>`).join('')}</span><b>${text(next)}</b></dd></div>`;}).join('');
  }
- // What a part changes against an empty slot, as up to three icon + number chips:
- // zoom, balls, reach, paint per blow, swings or reload, mobility. `less`: lower is better.
- const CHIPS=[{icon:'kitScope',get:s=>s.aims?s.zoom:0,text:(d,s)=>`${Math.round(s.zoom*100)/100}×`,plain:true},{icon:'kitHopper',get:s=>s.melee?0:s.magazine+(s.reserve||0),text:d=>String(Math.round(d))},
-  {icon:'kitBarrel',get:s=>s.melee?s.reach:s.speed*s.life,text:d=>`${fmtDelta(d)} m`},{icon:'kitPaint',get:s=>s.melee?s.damage:0,text:d=>fmtDelta(d)},
-  {icon:'whirl',get:s=>s.melee?1/meleeInterval(s):0,text:d=>`${fmtDelta(d)}/s`},{icon:'whirl',get:s=>s.melee?0:s.reload,text:d=>`${fmtDelta(d)} s`,less:true},{icon:'person',get:s=>s.mobility*100,text:d=>`${Math.round(d)}%`}];
+ // What a part changes against an empty slot (partDeltas), as up to three icon + number
+ // chips; a swing or a thrown weapon's return says its word, so a trade reads at a glance.
+ const CHIPS={zoom:{icon:'kitScope',text:n=>`${Math.round(n*100)/100}×`},balls:{icon:'kitHopper',text:d=>String(Math.round(d))},reach:{icon:'kitBarrel',text:d=>`${fmtDelta(d)} m`},recall:{icon:'whirl',text:d=>`${fmtDelta(d)} s`,word:locKey('Vuelve')},paint:{icon:'kitPaint',text:d=>fmtDelta(d)},
+  swing:{icon:'whirl',text:d=>`${fmtDelta(d)}/s`,word:locKey('Golpes')},reload:{icon:'whirl',text:d=>`${fmtDelta(d)} s`},mobility:{icon:'person',text:d=>`${Math.round(d)}%`}};
  function chips(id){
-  const opts=room.state.options,h=hand(),bare=kitStats(setPart(kit,slot,null,h),opts,h),fitted=kitStats(setPart(kit,slot,id,h),opts,h),out=document.createElement('span');out.className='armory-chips';
-  for(const c of CHIPS){
-   const d=c.get(fitted)-c.get(bare);if(Math.abs(d)<1e-6||out.childElementCount>=3)continue;
-   if(c.plain){const el=chip(d,c.less,c.icon,()=>c.text(0,fitted));el.innerHTML=`${ICONS[c.icon]}${esc(c.text(0,fitted))}`;out.append(el);}else out.append(chip(d,c.less,c.icon,c.text));
+  const out=document.createElement('span');out.className='armory-chips';
+  for(const d of partDeltas(kit,slot,id,room.state.options,hand())){
+   const c=CHIPS[d.key],el=document.createElement('small');el.className=`armory-delta ${d.gain?'gain':'loss'}`;
+   el.innerHTML=`${ICONS[c.icon]}${c.word?`${esc(loc(c.word))} `:''}${d.plain?'':d.delta>0?'+':'−'}${esc(c.text(d.plain?d.value:Math.abs(d.delta)))}`;out.append(el);
   }
   return out;
  }
@@ -148,7 +149,7 @@ export function createArmory({room,onPick,notify=()=>{}}) {
   const g=gunOf(kit,h),color=colorOf(kit),pic=b.querySelector('i');
   if(field==='gun'||field==='weapon')return setPic(pic,`w:${g.weapon}:${color}:${kit.camo}:${kit.pattern}`,'kitBarrel',m=>m.weaponThumb({weapon:g.weapon,color,camo:kit.camo,pattern:kit.pattern}));
   if(field==='armor')return setPic(pic,`a:${kit.armor}`,armorOf(kit.armor).icon);
-  if(field==='grenade')return setPic(pic,`g:${color}`,'kitGrenade',m=>m.grenadeThumb(color));
+  if(field==='grenade'){const own=grenadeDef(kit.grenade).color;return setPic(pic,`g:${own}`,'kitGrenade',m=>m.grenadeThumb(own));}
   if(field==='part'){const part=g.slots[b.dataset.part];b.classList.toggle('armory-empty',!part);b.dataset.id=part||'';b.title=loc(partOf(part)?.name||NONE.name);return setPic(pic,`p:${g.weapon}:${part}:${color}`,part?partOf(part).icon:slotOf(b.dataset.part).icon,part&&(m=>m.partThumb(g.weapon,part,color)));}
   // Estilo: the finish's colour under the camo worn, cut corner to corner.
   if(field==='style'){pic.dataset.key='';pic.className='armory-swatch armory-style';pic.innerHTML='';pic.style.background=`linear-gradient(135deg,${FINISHES.find(f=>f.id===kit.finish).color||'#f28b42'} 50%,transparent 50%),${kit.camo?swatch(kit.camo):'#2f3d3c'}`;return pic;}
@@ -190,12 +191,15 @@ export function createArmory({room,onPick,notify=()=>{}}) {
    if(category==='armor')return setPic(pic,k,item.icon);
    if(category==='pattern')return setPic(pic,k,'kitPaint',m=>m.weaponThumb({weapon:g.weapon,color,camo:kit.camo,pattern:item.id}));
    if(category==='charm')return setPic(pic,k,item.id==='none'?'close':'wardrobe-cuello',item.id!=='none'&&(m=>m.charmThumb(item.id)));
-   if(category==='grenade')return setPic(pic,k,'kitGrenade',m=>m.grenadeThumb(color));
+   if(category==='grenade')return setPic(pic,`g:${item.id}`,'kitGrenade',m=>m.grenadeThumb(item.color));
    pic.classList.add('armory-swatch');pic.style.background=item.color||swatch('');return pic;};
   choices.replaceChildren(...(arming?[tabs]:[]),...items.map(item=>{
    const b=document.createElement('button');b.type='button';b.className='armory-choice armory-card';b.dataset.id=item.id;
    b.setAttribute('aria-pressed',String(attaching?(g.slots[slot]??'')===item.id:arming?g.weapon===item.id:kit[category]===item.id));
    const label=document.createElement('b');label.textContent=loc(item.name);b.append(picture(item),label);
+   // A grenade's one line in its own colour; a class's perk, then what it changes in numbers.
+   const line=category==='grenade'?item.blurb:category==='armor'?item.perk:null;
+   if(line){const el=document.createElement('span');el.className='armory-perk';el.textContent=loc(line);if(item.color)el.style.setProperty('--line',item.color);b.append(el);}
    if(attaching&&item.id)b.append(chips(item.id));if(category==='armor')b.append(classChips(item));
    // Read the kit when the event fires, not when the button was drawn.
    const pick=()=>attaching?{kit:setPart(kit,slot,item.id||null,h),dropped:[]}:arming?changeWeapon(kit,item.id,h):{kit:cleanKit({...kit,[category]:item.id}),dropped:[]};

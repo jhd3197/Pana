@@ -22,12 +22,19 @@ export const FLAG_STANDS = {
   noche: [{ x: 0, z: -19 }, { x: 0, z: 19 }],
 };
 export const standsFor = id => FLAG_STANDS[id] || FLAG_STANDS.plaza;
-// Touch, capture and auto-return (s) for Pepazo's flags.
-export const CTF_RULES = Object.freeze({ pickup: 1.5, capture: 2.2, returnAfter: 30 });
+// Touch, capture and auto-return (s) for Pepazo's flags. The stand's pad runs 1.8 m
+// from its centre to the frame, 2.56 m to a corner (ctf-scene.js): standing on the
+// pad touches the flag, and anywhere inside the frame scores.
+export const CTF_RULES = Object.freeze({ pickup: 2, capture: 2.6, returnAfter: 30 });
 // A flag carrier walks and runs 15% slower, so defenders can catch a runner.
 // rules.js applies it to every pana's walk, bots included.
 export const FLAG_CARRIER_SLOW = .85;
 export const carrierSlow = (game, p) => (game.flags?.length && carriedBy(game.flags, p.id) ? FLAG_CARRIER_SLOW : 1);
+// The carrier stands on their own pad and cannot score, because their own flag is away.
+export function scoreBlocked(flags, p) {
+  const mine = p && flags?.length === 2 ? carriedBy(flags, p.id) : null, own = mine && flags[p.team];
+  return !!own && !flagHome(own) && Math.hypot(p.x - own.homeX, p.z - own.homeZ) <= CTF_RULES.capture;
+}
 
 // Fresh flags at both stands: every round start and every return to the lobby.
 export function ctfReset(game) {
@@ -77,7 +84,8 @@ const ROLES = ['attack', 'defend', 'attack', 'escort'];
 export function ctfGoal(game, p) {
   const flags = game.flags; if (flags.length < 2) return null;
   const own = flags[p.team], rival = flags[1 - p.team], mine = carriedBy(flags, p.id);
-  if (mine) return { x: own.homeX, z: own.homeZ, near: 0 };
+  // No score without your own flag: a carrier goes and gets it, not stand on the pad.
+  if (mine) return own.state === 'home' ? { x: own.homeX, z: own.homeZ, near: 0 } : { x: own.x, z: own.z, near: own.state === 'dropped' ? 0 : 4 };
   const team = game.players.filter(q => q.bot && q.team === p.team && q.connected).sort((a, b) => a.id - b.id);
   const role = ROLES[Math.max(0, team.indexOf(p)) % ROLES.length];
   const nearest = (x, z) => game.players.filter(q => q.team === p.team && q.connected && !q.respawn && !q.eliminated && !carriedBy(flags, q.id))

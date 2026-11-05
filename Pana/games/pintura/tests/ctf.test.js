@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Arena, blocked, spawnsFor, boundsFor, VARIANTS, RADIUS, cleanInput } from '../public/rules.js';
-import { FLAG_STANDS, standsFor, ctfStep, ctfOutcome, ctfGoal, CTF_RULES, FLAG_CARRIER_SLOW } from '../public/ctf.js';
+import { FLAG_STANDS, standsFor, ctfStep, ctfOutcome, ctfGoal, scoreBlocked, CTF_RULES, FLAG_CARRIER_SLOW } from '../public/ctf.js';
 import { createFlag, stepFlags, takeFlag } from '../../../engine/play/objectives.js';
 import { PAINT_ARENAS } from '../../../engine/worlds/arena-layouts.js';
 import { validOptions, DEFAULT_OPTIONS } from '../public/options.js';
@@ -77,6 +77,33 @@ test('a capture needs your own flag home, scores one and resets the flag', () =>
   at(c, 0, 10); ctfStep(g, .05);
   assert.deepEqual(g.teamScores, [1, 0]); assert.equal(g.flags[1].state, 'home'); assert.equal(a.captures, 1); assert.equal(c.returns, 1);
   assert.deepEqual(types(g), ['pickup', 'pickup', 'drop', 'return', 'capture']);
+});
+
+test('standing on the pad touches the flag, and anywhere inside its frame scores', () => {
+  // The pad runs 1.6 m from the centre, its frame 1.8 m and 2.56 m to a corner (ctf-scene.js).
+  const g = match(), [a] = g.players;
+  at(a, stand(g, 1).x + 1.8, stand(g, 1).z); ctfStep(g, .05); assert.equal(g.flags[1].carrier, a.id, 'lifted from the frame');
+  at(a, stand(g, 0).x + 1.8, stand(g, 0).z + 1.8); ctfStep(g, .05);
+  assert.deepEqual(g.teamScores, [1, 0], 'scored from the corner of the frame');
+});
+
+test('your own flag away: nothing scores on your pad, the HUD is told, and a bot goes for it', () => {
+  const g = match(), [a, b] = g.players;
+  at(a, stand(g, 1).x, stand(g, 1).z); ctfStep(g, .05);
+  assert.equal(scoreBlocked(g.flags, a), false, 'carrying, far from home');
+  at(b, stand(g, 0).x, stand(g, 0).z); ctfStep(g, .05); at(a, stand(g, 0).x + 8, stand(g, 0).z); at(b, 12, 2); ctfStep(g, .05);
+  assert.equal(scoreBlocked(g.flags, a), false, 'own flag away, not on the pad yet');
+  at(a, stand(g, 0).x + 1, stand(g, 0).z); ctfStep(g, .05);
+  assert.equal(scoreBlocked(g.flags, a), true); assert.deepEqual(g.teamScores, [0, 0]);
+  assert.equal(scoreBlocked(g.flags, b), false, 'the other carrier is far from their pad');
+  assert.equal(scoreBlocked(g.flags, g.players[2]), false, 'no flag, nothing to block');
+  // A carrying bot chases its own flag rather than stand on the pad for good.
+  a.bot = true;
+  assert.deepEqual(ctfGoal(g, a), { x: b.x, z: b.z, near: 4 });
+  g.hit(b, a, a.color, {}, Infinity);
+  assert.deepEqual(ctfGoal(g, a), { x: g.flags[0].x, z: g.flags[0].z, near: 0 });
+  at(a, g.flags[0].x, g.flags[0].z); ctfStep(g, .05); assert.equal(g.flags[0].state, 'home', 'a carrier returns its own flag by touching it');
+  assert.deepEqual(ctfGoal(g, a), { x: g.flags[0].homeX, z: g.flags[0].homeZ, near: 0 });
 });
 
 test('a rival touching a dropped flag lifts it again; a dropped flag goes home after 30 s', () => {

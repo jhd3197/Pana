@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo: cada golpe que das se siente, y cada granada y clase se distingue.**
+  La marca de impacto ya no se apaga tras tu primer K.O., ahora trae el número de pepazos y también avisan las bolas que solo empapan. La Piñita es roja, La Pegajosa verde y La Chispita azul. Cada clase dice su ventaja: Balanceado corre más tiempo, Rápido recupera antes el aliento, Regenera se limpia al sacar a alguien. La Correa ahora sí compensa, y Uva es uva de verdad.
+- **Pepazo: la bandera deja de hacer cosas raras.**
+  Pisar la base ya basta para tomar la bandera o anotar, su columna de luz no te tapa la vista, y si llegas sin tu bandera te avisa en vez de quedarse callada. Los bots con la bandera ya no se quedan parados en su base.
 - **Fosa: menos murciélagos, y lo que espantas con el farol vuelve por ti.**
   Hay muchos menos murciélagos, tu lámpara ya no se vuelve un disco blanco de cerca, el mensaje de manos llenas dice qué llevas y cómo soltarlo, y terminar la jornada o la expedición tarda la mitad.
 - **Pepazo: tus tiros van a donde miras, arriba, abajo o en diagonal.**

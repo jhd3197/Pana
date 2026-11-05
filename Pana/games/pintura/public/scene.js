@@ -275,7 +275,7 @@ export function createScene(canvas) {
     for (const g of live) {
       let o = grenadeMeshes.get(g.id);
       if (!o) {
-        o = createPaintGrenade({ color: g.color }); o.rotation.order = 'YXZ'; o.traverse(m => { m.castShadow = true; });
+        o = createPaintGrenade({ color: grenadeDef(g.kind).color }); o.rotation.order = 'YXZ'; o.traverse(m => { m.castShadow = true; });
         o.userData.seen = { x: g.x, y: g.y, z: g.z, t: 0 }; o.userData.spin = 0; scene.add(o); grenadeMeshes.set(g.id, o);
         const thrower = avatars.get(g.owner); if (thrower && (g.t || 0) < .2) thrower.throwing = THROW_ARM;
       }
@@ -306,7 +306,7 @@ export function createScene(canvas) {
     arcRing.userData.set(r.x, groundAt(r.x, r.z, cover) + .06, r.z, def.radius);
   }
   function draw(state, id, dt, aimPoint) {
-    ctfProps.draw(state, avatars, dt); domProps.draw(state, dt, camera);
+    ctfProps.draw(state, avatars, dt, camera); domProps.draw(state, dt, camera);
     setMap(state.mapId, state.variant || 0); environment?.update(elapsed, dt);
     canvas.style.width = '100vw'; canvas.style.height = '100dvh';
     resize(); const aspect = canvas.clientWidth / canvas.clientHeight, lobby = state.phase === 'lobby';

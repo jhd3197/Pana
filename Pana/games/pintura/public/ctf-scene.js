@@ -3,8 +3,9 @@ import * as THREE from 'three';
 // Capture the flag in the world (scene.js calls draw every frame): per team a
 // square stand pad with a frame at the stand, a flag (pole, square cloth, a faint
 // light column to find it from afar) where the flag is: upright at its stand,
-// leaning on the ground when dropped, on the carrier's back while carried.
-const TEAM = ['#f28b42', '#29c5cd'];
+// leaning on the ground when dropped, on the carrier's back while carried. Up
+// close the light column goes out: from the pad it was a huge shard across the view.
+const TEAM = ['#f28b42', '#29c5cd'], BEAM_FROM = 6;
 export function createCtfProps(scene) {
   const own = [], mat = (color, extra = {}) => { const m = new THREE.MeshStandardMaterial({ color, roughness: .8, ...extra }); own.push(m); return m; };
   const geo = g => { own.push(g); return g; };
@@ -25,13 +26,13 @@ export function createCtfProps(scene) {
   });
   let time = 0;
   return {
-    draw(state, avatars, dt) {
+    draw(state, avatars, dt, camera) {
       time += dt; const on = state.options?.mode === 'ctf' && state.phase === 'playing' && (state.flags || []).length === 2;
       teams.forEach((t, team) => {
         const f = on && state.flags[team]; t.flag.visible = t.stand.visible = !!f; if (!f) return;
         t.stand.position.set(f.homeX, 0, f.homeZ);
         t.banner.rotation.y = Math.sin(time * 3 + team) * .25;
-        t.beam.visible = f.state !== 'carried';
+        t.beam.visible = f.state !== 'carried' && (!camera || Math.hypot(camera.position.x - f.x, camera.position.z - f.z) > BEAM_FROM);
         if (f.state === 'carried') {
           // On the carrier's back: behind the avatar as drawn, facing where they look.
           const body = avatars.get(f.carrier)?.group, p = state.players.find(q => q.id === f.carrier);

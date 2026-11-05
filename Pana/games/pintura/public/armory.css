@@ -54,6 +54,7 @@
 #armory-choices{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));align-content:start}
 .armory-card{position:relative;display:grid;grid-template-rows:64px auto;gap:6px;align-items:center;justify-items:center;padding:8px 8px 10px;text-align:center;min-width:0}
 .armory-card b{font-size:15px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.armory-card .armory-perk{margin:0;max-width:100%;font:800 12px/1.1 var(--pk-sans);color:var(--line,var(--pk-yellow));text-transform:none}.armory-choice[aria-pressed=true] .armory-perk{color:#16161a}
 .armory-pic{display:grid;grid-template:100% / 100%;place-items:center;width:100%;height:64px;color:var(--pk-muted);overflow:hidden}
 .armory-pic img{width:100%;height:100%;object-fit:contain}.armory-pic svg{width:34px;height:34px;fill:currentColor}
 .armory-pic.armory-swatch{width:64px;height:40px;margin:0}

@@ -9,7 +9,7 @@ import { PAINT_CAMOS, PAINT_SOLIDS } from '../../../engine/models/props/paint-ar
 
 // The gateway contract (pana.sh gateway/camos.json holds the same table).
 const CONTRACT = {
-  start: { 'liso-mango': '#f28b42', 'liso-caribe': '#29c5cd', 'liso-uva': '#8d85df', 'liso-crema': '#f8e9c9', 'liso-carbon': '#2f3d3c', 'liso-coral': '#ff4b4b' },
+  start: { 'liso-mango': '#f28b42', 'liso-caribe': '#29c5cd', 'liso-uva': '#6a2d9f', 'liso-crema': '#f8e9c9', 'liso-carbon': '#2f3d3c', 'liso-coral': '#ff4b4b' },
   kills: { selva: ['carbine', 15], medanos: ['marksman', 10], bolivar: ['sniper', 10], caracas: ['smg', 25], jaguar: ['blunderbuss', 15] },
   mangos: { caribe: 240, tricolor: 300, llanero: 360, rumba: 420, pepazo: 480 },
 };
