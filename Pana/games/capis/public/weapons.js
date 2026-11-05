@@ -47,5 +47,10 @@ export const reachOf = (w, radius) => w.crater + radius;
 export const speedOf = (w, power) => w.speed * (w.floor + (1 - w.floor) * power);
 // The launch angles of `w` fired at `angle`: one, or a fan for El Trueno.
 export const anglesOf = (w, angle) => w.pellets ? Array.from({ length: w.pellets }, (_, i) => angle + (i - (w.pellets - 1) / 2) * w.spread) : [angle];
+// What a crate may hold: more shots of a limited weapon, never La Piñita (it never runs out).
+export const CRATE_LOOT = Object.freeze([
+  Object.freeze({ weapon: 'bazooka', shots: 1 }), Object.freeze({ weapon: 'sniper', shots: 1 }),
+  Object.freeze({ weapon: 'scatter', shots: 2 }), Object.freeze({ weapon: 'drill', shots: 2 }),
+]);
 // A team's starting ammo: every limited weapon's count.
 export const startingAmmo = () => Object.fromEntries(WEAPONS.filter(w => Number.isFinite(w.ammo)).map(w => [w.id, w.ammo]));

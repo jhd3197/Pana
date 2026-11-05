@@ -200,6 +200,13 @@ water (`drowned`); `knock(p, vx, vy)` throws it, `settled(p)` says it stopped.
 It only lands with ground under the feet (brushing a rounded lip is a wall to
 slide off), and a body wedged in a narrow V rests on the floor under it.
 
+`engine/play/loose-prop.js` (pure): a thing lying loose on that ground (a crate,
+a tombstone). `dropProp(fields)` makes one (`chute`: its steady speed down under
+a parachute), `stepProp(p, dt, mask, { water })` drops it, rests it, drops it
+again when the ground goes and sinks it (`landed`, `sunk`), `throwProp(p, x, y,
+speed)` is a blast throwing it, `propTouches(p, x, y, reach)` measures from its
+middle, so a pickup can be generous. Used by: Capis a Pintazos (crates).
+
 `engine/play/terrain-gen.js` (pure): building and checking side-view ground
 from a seed. `seededStream(key)` (one stream per seed and attempt, so a re-roll
 replays), `bumps(d, hills)` (gaussian hills and hollows), `dropFloating(mask,

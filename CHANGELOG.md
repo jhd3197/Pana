@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos: caen cajas con más tiros.**
+  Baja una en paracaídas cada pocos turnos: tócala y tu equipo gana tiros. Basta con llegarle cerca, y un pintazo la rompe o la lanza lejos, y también te pinta a ti si vas por ella.
 - **Capis a Pintazos: ya puedes subirte a los bordes de la cueva y de la montaña.**
   La entrada de la cueva deja caminar por debajo del borde y un salto desde el suelo te sube. Mantener la tecla guía tu salto, y las repisas del valle tienen una rampa para llegar a ellas.
 - **Pepazo: cada golpe que das se siente, y cada granada y clase se distingue.**

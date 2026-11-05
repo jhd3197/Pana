@@ -22,6 +22,7 @@ import { takeDirty, solidAt } from '/engine/play/terrain-mask.js';
 import { createTerrain } from '/engine/play/terrain-material.js';
 import { createSpray } from '/engine/play/spray.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
+import { supplyCrate } from '/engine/models/props/expedition-camp.js';
 import { simulateFlight, simulateBounce } from '/engine/play/ballistic.js';
 import { RULES, TEAM_COLORS, alive, muzzle, flightOptions, activeCapy, launch } from './rules.js';
 import { WEAPONS, weaponOf } from './weapons.js';
@@ -31,7 +32,7 @@ import { rockAt, grassAt, strataPalette } from './map-rules.js';
 
 const FRONT = 1;               // the depth where capis and shells move
 const SLAB = [-2.6, .55];      // the earth's back and front faces
-const DASHES = 24, HUMAN = 0;
+const DASHES = 24, HUMAN = 0, CRATE_SIZE = .9;
 // A pana is 2.16 units tall: ×.8 a capi stands 1.7, its 1.4 body disc plus the head.
 const CAPY_SCALE = .8, HEAD = 2.05;
 // La Bazuca in the hands: its scale, and how far towards the camera it rides (the near shoulder).
@@ -181,6 +182,34 @@ export function createCapisScene(canvas, match) {
     for (const spray of sprays) spray.clear();
   }
   setMatch(match);
+  // ---------- crates ----------
+  // One model, cloned for each crate (few lie about); a parachute over it while it comes down.
+  const crateModel = supplyCrate({ size: CRATE_SIZE });
+  const chuteMat = new THREE.MeshStandardMaterial({ color: '#ff8a3d', roughness: .8, side: THREE.DoubleSide });
+  const chuteGeo = new THREE.SphereGeometry(.95, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, .7, 1).translate(0, 1.9, 0);
+  const cordGeo = new THREE.CylinderGeometry(.015, .015, 1.5, 4).translate(0, .75, 0);
+  const crateMeshes = new Map(), cratePool = [];
+  function makeCrate() {
+    const g = new THREE.Group(), chute = new THREE.Group(), canopy = new THREE.Mesh(chuteGeo, chuteMat);
+    chute.add(canopy);
+    for (const s of [-1, 1]) { const cord = new THREE.Mesh(cordGeo, chuteMat); cord.position.set(s * .32, CRATE_SIZE * .9, 0); cord.rotation.z = -s * .32; chute.add(cord); }
+    g.add(crateModel.clone(), chute); g.userData.chute = chute;
+    return g;
+  }
+  function drawCrates() {
+    const seen = new Set();
+    for (const k of match.crates || []) {
+      seen.add(k.id);
+      let g = crateMeshes.get(k.id);
+      if (!g) { g = cratePool.pop() || makeCrate(); crateMeshes.set(k.id, g); scene.add(g); }
+      const under = !k.grounded && k.chute > 0;
+      g.userData.chute.visible = under;
+      g.position.set(k.x, k.y, FRONT - .1);
+      // Swinging under its parachute; tumbling if a blast threw it.
+      g.rotation.z = k.grounded ? 0 : under ? Math.sin(time * 2.2 + k.id) * .12 : g.rotation.z + (k.vx > 0 ? -.12 : .12);
+    }
+    for (const [id, g] of crateMeshes) if (!seen.has(id)) { g.removeFromParent(); crateMeshes.delete(id); cratePool.push(g); }
+  }
   const marker = createLocalMarker({ color: '#ffc629' }); marker.group.scale.setScalar(3); scene.add(marker.group);
   const aimArrow = guideRibbon('#fff6d8', .14, { segments: 1, opacity: .95 }); aimArrow.rotation.x = Math.PI / 2; scene.add(aimArrow);
   const dashes = Array.from({ length: DASHES }, () => { const d = guideRibbon('#ffffff', .12, { segments: 1, opacity: .85 }); d.rotation.x = Math.PI / 2; scene.add(d); return d; });
@@ -279,6 +308,14 @@ export function createCapisScene(canvas, match) {
       }
     }
     if (e.type === 'out' && e.reason === 'paint' && c) c.avatar.bounce(1.6);
+    // A smashed crate is splinters and dust; a taken one a little burst of sparks.
+    if (e.type === 'crate-gone' && e.reason !== 'water') {
+      const on = { x: e.x, y: e.y + .4, z: FRONT };
+      clods.burst(on, { count: 18, color: '#b07f50', speed: 8, dir: UP, cone: 1.3, size: .13, life: 1.4, spread: .4 });
+      puffs.spawn(on, { color: '#cdb894', count: 6, spread: .7, size: .5, rise: 1.2, life: .9 });
+    }
+    if (e.type === 'crate-gone' && e.reason === 'water') waterSplash(e.x, .5);
+    if (e.type === 'pickup') sparks.burst({ x: e.x, y: e.y + .4, z: FRONT + .2 }, { count: 22, color: '#ffe08a', speed: 6, dir: UP, cone: 1.4, size: .07, life: .5 });
     if (e.type === 'turn') { hold = 0; holdAt = null; }
   }
 
@@ -455,6 +492,7 @@ export function createCapisScene(canvas, match) {
       streak.scale.set(2.6 * (1.3 - flashT * .3), .7 * flashT + .2, 1); streak.material.opacity = flashT;
     }
     drawShells(dt);
+    drawCrates();
     // Camera: the shell in flight, a fresh blast for a moment, else the capi whose turn it is.
     hold = Math.max(0, hold - dt);
     const target = match.shot ? { x: match.shot.x, y: match.shot.y + (match.shot.resting ? 1.5 : 0) } : hold && holdAt ? holdAt : active ? { x: active.x, y: active.y + 1.5 } : focus;
@@ -520,6 +558,7 @@ export function createCapisScene(canvas, match) {
       grenades.forEach(g => { g.removeFromParent(); g.userData.dispose(); }); [slug, bit, pellets].forEach(o => { o.removeFromParent(); o.geometry.dispose(); }); shellMat.dispose(); bitMat.dispose(); pellets.dispose();
       ring.userData.dispose();
       bandanaGeo.dispose(); knotGeo.dispose(); cloth.forEach(mt => mt.dispose());
+      chuteGeo.dispose(); cordGeo.dispose(); chuteMat.dispose();
       flash.geometry.dispose(); flash.material.dispose(); streak.material.dispose(); glow.dispose(); drip.geometry.dispose(); drip.material.dispose();
       sprays.forEach(spray => spray.dispose());
       fx.dispose(); marker.dispose(); aimArrow.userData.dispose(); dashes.forEach(d => d.userData.dispose());
