@@ -34,8 +34,14 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   so a backgrounded or disconnected browser does not keep running or firing.
 - Projectile travel uses segment/AABB and segment/circle intersections. At
   34 units/second, testing only projectile endpoints misses thin cover.
-- Level shots fly at `SHOT_HEIGHT` (1.1 m, where the scene draws the ball) and
-  pass over cover whose `h` is at or under it: El Puerto's sandbags, ammo piles
+- A first-person shot flies in 3D along the look, from the eye (`EYE` plus the
+  jump), so it lands under the crosshair: `launchAimed` gives it `vy`, `sweepShot`
+  (the same call for the room and the tracer) stops it on cover it does not clear,
+  a pana from their feet up to 1.9 m, or the ground. Over a box it flies on; down
+  on one it marks the top (`splat.hy` is the height it stopped at). A rocket under
+  1.8 m blows on the floor as it always did; higher it bursts in the air.
+- Shots with no look (Ver la cancha, bots without a headshot marker) fly level at
+  `SHOT_HEIGHT` (1.1 m) and pass over cover whose `h` is at or under it: El Puerto's sandbags, ammo piles
   and barrels, Noche's snakes. Sweeping every box as infinitely tall made those
   invisible walls: a rival seen over a sandbag could not be hit, and bots never
   fired at one. Bot line of sight and splat placement use `shotCover(cover)`.
@@ -114,8 +120,8 @@ suite asserts no own-body mesh renders in first person and the rival still
 sees it. A staged shot that puts the pana within about 1.5 m of a crate stack
 shows the crate's wood and coral band at the right screen edge: that is cover,
 not the own body (the plaza's back booth at x -11, z 21.5 sits next to x -14, z 22).
-Shots stay level: the server only receives `world.forward()` as the aim, so
-pitch is cosmetic and clamped. WASD is yaw-relative (`world.movement`); ← / → turn
+The server gets `world.forward()` as the heading and `world.pitch` (clamped to the
+camera's limits) as the look; a first-person shot follows both. WASD is yaw-relative (`world.movement`); ← / → turn
 (Q swaps guns, so the keyboard turn moved off Q/E; ↑ ↓ still walk).
 The mouse uses pointer lock. Esc releases the lock before the page sees the
 key, so a lock lost during play opens the shared menu; opening the menu or the

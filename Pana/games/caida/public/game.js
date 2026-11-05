@@ -6,6 +6,7 @@ import { createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { lazySound } from '/engine/lazy-sound.js';
+import { bindHandFeel } from '/engine/fx/hand-feel.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { CaidaRoom } from './network.js';
@@ -21,6 +22,7 @@ const notify = createToast($('toast'), { ms: 3600 });
 const code = roomFromUrl() || newRoomCode();
 params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 let world = null, ready = false, stopped = false, selected = null, previousEvent = 0, barksPrimed = false, shownResult = '', resultTimer, announcementTimer;
+const handFeel = bindHandFeel(document.getElementById('hand'));
 const audio = lazySound();
 const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
@@ -110,6 +112,7 @@ function renderHand(state) {
   const focus = document.activeElement?.dataset?.card; $('hand').replaceChildren();
   hand.forEach(card => { const button = cardButton(card); button.disabled = !turn; button.classList.toggle('selected', selected === card.id); button.setAttribute('aria-pressed', String(selected === card.id)); button.onclick = () => selectCard(card.id); $('hand').append(button); });
   if (focus) $('hand').querySelector(`[data-card="${focus}"]:not(:disabled)`)?.focus({ preventScroll: true });
+  handFeel.after();
   $('your-name').textContent = player ? locn(hand.length, '{name} · {n} cartas', '{name} · {n} cartas', { name: player.name }) : loc('Estás mirando');
   const captured = player?.captured.length || 0; $('capture-count').textContent = locn(captured, '{n} RECOGIDAS', '{n} RECOGIDAS');
   $('turn-status').textContent = !room.connected ? loc('Reconectando…') : ended ? loc('Reparto terminado') : state.phase === 'lobby' ? loc('La mesa te espera.') : state.phase === 'starter' ? loc('¿Quién reparte primero?') : state.phase === 'dealing' ? loc('{name} prepara el reparto', { name: state.players[state.dealer].name }) : turn ? selected ? loc('¡Tu turno! · juégala o cambia') : loc('¡Tu turno! · elige una carta') : loc('Juega {name}', { name: state.players[state.turn].name });

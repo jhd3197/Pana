@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 - **Fosa: menos murciélagos, y lo que espantas con el farol vuelve por ti.**
   Hay muchos menos murciélagos, tu lámpara ya no se vuelve un disco blanco de cerca, el mensaje de manos llenas dice qué llevas y cómo soltarlo, y terminar la jornada o la expedición tarda la mitad.
+- **Pepazo: tus tiros van a donde miras, arriba, abajo o en diagonal.**
+  En primera persona el pepazo sale por la mira: pasa por encima de un pana si apuntas alto, pinta el suelo si apuntas abajo y la mancha queda a la altura real.
+- **Dominó y Caída: las fichas y las cartas ahora pesan.**
+  Se levantan y se inclinan hacia el puntero, crecen con su sombra al tomarlas, se mecen al moverse, caen de golpe con rebote y suenan al sacarlas y al pegarlas en la mesa.
 - **Fosa: la cueva está viva.**
   Murciélagos y cuaimas comen, se reproducen y se mueren de hambre. Escóndete en silencio entre hongos que brillan o raíces tupidas. Si acabas con los murciélagos, las polillas apagan los hongos; sin cuaimas, los murciélagos llenan el techo.
 - **¿Quién quiere ser mi pana?: el animador ahora habla de verdad.**

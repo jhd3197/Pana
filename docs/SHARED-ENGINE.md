@@ -240,7 +240,9 @@ flight: `launch(ax, az, speed, angle)`, `sweep(ball, dt, { boxes, targets, paddi
 (the earliest cover box or round target along this step's segment, so a fast
 ball never tunnels; with `y`, the flight height, boxes no taller than it are
 flown over), `segmentBox`, `segmentCircle`, `traceRay` (where a tracer
-line ends, same `y`) and `flightTime`.
+line ends, same `y`) and `flightTime`. `launchAimed(ax, az, pitch, speed, angle)`
+is the same launch tilted by a look's pitch, `{ vx, vy, vz }` at the full speed:
+sweep that with `sweepArc` and `gravity: 0` for a shot that goes where you look.
 
 ```js
 import { launch, sweep } from '../../../engine/play/projectile.js'; // relative: rules.js also loads on the server
@@ -253,7 +255,7 @@ boxes with a height (a low crate is flown over), upright round targets and the
 ground (`hit`: 'cover' | 'target' | 'ground'), and `stepArc(ball, dt, gravity)`
 moves it on. `engine/play/melee.js` throws with them.
 
-Used by: Pepazo (every ball and rocket, the sniper tracer, the thrown chancla).
+Used by: Pepazo (every ball and rocket along the look, the sniper tracer, the thrown chancla).
 
 ### Collision debug (colliders vs what you see)
 
@@ -1015,6 +1017,7 @@ its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
 | Speed from the driver's seat: field of view 50 to 75 with speed, camera lag under acceleration that catches up with a small shake on its own noise (seeded dice untouched), how strong edge lines and wind should be. Pure numbers (`createSpeedFeel`); apply them with `setSpeedLines` and `createWind` | `engine/fx/speed.js` | Carreritas (`speed-feel.js`: comfort camera and battle arenas opt out) |
 | A pickup you feel: flash and star burst where it was taken, the combo stamped over the counter at 3 and each full row (`createPickupFeel`); pairs with `flyToCounter` and `popCounter` from `fx.js` | `engine/fx/pickup-feel.js` | Carreritas coins |
 | Spoken lines: a typewriter with holds at commas and periods, a blip per letter pitched per speaker, `<wave>` and `<shake>` tags, mood from how a line is written, a speaker's bob and squash (`typewrite`, `parseRich`, `blipPitch`, `moodOf`, `autoRich`, `speakerPose`; `sfx.blip`). `createSeatBubbles(…, { typer })` writes through it | `engine/fx/dialogue.js`, `dialogue.css` | QQSMP (host and contestants) |
+| Cards and tiles with weight, as table meshes: hover lift and 3D tilt toward the pointer, pickup scale with a growing shadow, sway from speed, a spring home that overshoots (a hand closes its gap by itself), flick and slap (`createCardFeel`, pure `springStep`; `sfx.cardFlick`, `cardSlap`). A hand of HTML buttons gets the same through `bindHandFeel`: state keyed by card, so a rebuilt hand still closes its gap (`after()`) | `engine/fx/card-feel.js`, `hand-feel.js` | Dominó, Caída |
 | Pixel effects as camera-facing sprites (`createWorldFx(THREE, scene)`) or on the HUD layer (`createScreenFx`): pooled, capped, loaded on first use so first load doesn't grow | `engine/fx/pixelfx-bridge.js`, code in `engine/vendor/pixelfx/` (MIT; keep its `LICENSE` and `NOTICE.md`; add an effect through its `README.md`) | Trifulca (`hit-spark`, `crit-hit`, `crit-number`), the rank-up ceremony (`level-up` without its pixel hero, `confetti`), pickups (`collect-burst`, `combo-counter`) |
 
 ## Player, look and rewards
