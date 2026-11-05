@@ -196,6 +196,7 @@ export function matchView(m, full = true) {
   return { mapSeed: m.map.seed, size: m.map.size, seed: m.seed, phase: m.phase, winner: m.winner, endedBy: m.endedBy ?? null,
     wind: m.wind, turn: m.turn && { ...m.turn }, clock: m.clock, shots: m.shots, options: { ...m.options },
     last: [...m.last], teamTurns: [...m.teamTurns], ammo: m.ammo.map(a => ({ ...a })), used: { ...m.used },
+    crates: m.crates.map(k => ({ ...k })), crateN: m.crateN,
     capys: m.capys.map(c => ({ ...c })), shells: m.shells.map(s => ({ ...s })),
     editCount: m.edits.length, editBase: base, edits: m.edits.slice(base) };
 }
@@ -212,7 +213,7 @@ export function mirror(view, snap) {
   }
   if (view.edits.length < s.editBase) return { view, gap: true };
   for (const e of s.edits.slice(view.edits.length - s.editBase)) { view.edits.push(e); applyEdit(view.mask, e); }
-  for (const k of ['seed', 'phase', 'winner', 'endedBy', 'wind', 'turn', 'clock', 'shots', 'options', 'last', 'teamTurns', 'ammo', 'used', 'shells']) view[k] = s[k];
+  for (const k of ['seed', 'phase', 'winner', 'endedBy', 'wind', 'turn', 'clock', 'shots', 'options', 'last', 'teamTurns', 'ammo', 'used', 'shells', 'crates', 'crateN']) view[k] = s[k];
   view.shot = view.shells[0] || null;
   for (const c of s.capys) { const mine = view.capys.find(k => k.id === c.id); if (mine) Object.assign(mine, c); }
   return { view, gap: false };

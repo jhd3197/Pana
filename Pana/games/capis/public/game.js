@@ -280,6 +280,10 @@ function handle(e) {
       else notify(loc('¡{name} quedó pintado de pies a cabeza!', { name: nameOf(e.capy) }));
       break;
     case 'timeout': notify(loc('¡Se acabó el tiempo!')); break;
+    case 'crate': sfx.swish(.7); notify(loc('¡Cayó una caja!')); break;
+    case 'crate-land': sfx.land('dirt', { power: .5, volume: .6 * heard(e.x, e.y).volume }); break;
+    case 'crate-gone': if (e.reason === 'water') sfx.splash(.5, { volume: heard(e.x, e.y).volume }); else sfx.debris(.5, { volume: .8 * heard(e.x, e.y).volume, delay: 0 }); break;
+    case 'pickup': sfx.swap(); sfx.chime(); notify(loc('¡{name} agarró {weapon} +{n}!', { name: nameOf(e.capy), weapon: weaponOf(e.weapon).name, n: e.shots })); break;
     case 'finished': if (e.by === 'turns') notify(loc('¡Se acabaron los turnos!')); sfx.sting(e.winner === mine); world?.react(e.winner === mine ? 'win' : 'lose'); charge.cancel(); setTimeout(() => { if (playing && match.phase === 'finished') hud.results(match); }, 1400); break;
   }
 }

@@ -7,10 +7,14 @@
 // (generation time, re-rolls, kinds, fairness) are printed as diagnostics.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateMap, spawnStats, planMap, buildMap, inspectPlan, heightAt, MAP_SIZES, FAIR, ATTEMPTS, KINDS, WATER } from '../public/map-rules.js';
+import { generateMap, spawnStats, planMap, buildMap, inspectPlan, heightAt, floorsOf, MAP_SIZES, FAIR, ATTEMPTS, KINDS, WATER } from '../public/map-rules.js';
 import { surfaceY, solidAt } from '../../../engine/play/terrain-mask.js';
-import { dropFloating, headroom, floorGraph } from '../../../engine/play/terrain-gen.js';
+import { stepSideWalker } from '../../../engine/play/side-walker.js';
+import { RULES } from '../public/rules.js';
+import { dropFloating, headroom } from '../../../engine/play/terrain-gen.js';
 
+// The ground under a bridge or an arch at x: the lowest floor above the water.
+const groundUnderArch = (mask, x, map) => { for (let y = map.water + .1; y < map.height; y += .1) if (!solidAt(mask, x, y)) return y; return map.water; };
 const SWEEP = Number(process.env.CAPIS_SWEEP) || 300;
 const GAP = { small: 5, medium: 7, large: 8 };
 const seedOf = i => 1 + (i * 7919 + 13) % 99991;
@@ -124,12 +128,12 @@ test('the teams can walk (or hop) to each other both ways, and every cave and tu
   // The walk is measured again on its own: a few maps of every kind, from scratch.
   const sample = KINDS.flatMap(kind => all.filter(g => g.map.kind === kind).slice(0, 4));
   for (const g of sample) {
-    const graph = floorGraph(g.mask, { water: WATER }), ys = g.map.spawns.map(xs => xs.map(x => surfaceY(g.mask, x)));
+    const graph = floorsOf(g.mask), ys = g.map.spawns.map(xs => xs.map(x => surfaceY(g.mask, x)));
     const a = graph.near(g.map.spawns[0][0], ys[0][0], .6), b = graph.near(g.map.spawns[1][0], ys[1][0], .6);
     assert.ok(graph.reach(a)[b] && graph.reach(b)[a], `${label(g)}: the front capis reach each other`);
   }
   // A tunnel is walked through end to end.
-  const tunnel = all.find(g => g.map.kind === 'cuevas'), graph = floorGraph(tunnel.mask, { water: WATER }), tt = tunnel.map.plan.tunnels[0];
+  const tunnel = all.find(g => g.map.kind === 'cuevas'), graph = floorsOf(tunnel.mask), tt = tunnel.map.plan.tunnels[0];
   const inside = graph.near(tt.points[2].x, tt.points[2].y, 1), mouths = [tt.points[0], tt.points[4]].map(pt => graph.near(pt.x, surfaceY(tunnel.mask, pt.x) ?? pt.y, 3));
   assert.ok(inside >= 0 && mouths.every(m => m >= 0 && graph.reach(m)[inside] && graph.reach(inside)[m]), `${label(tunnel)}: the tunnel is walked through`);
 });
@@ -168,7 +172,7 @@ test('the summit of the cave mountain is reached on foot (or with hops) from eve
   }
   // Measured again from scratch on a few maps: from the back capi on each side, up the climbing flank.
   for (const g of all.filter(g => g.map.kind === 'cuevas').slice(0, 12)) {
-    const graph = floorGraph(g.mask, { water: WATER }), s = g.map.fair.summit, top = graph.near(s.x, s.y, .2);
+    const graph = floorsOf(g.mask), s = g.map.fair.summit, top = graph.near(s.x, s.y, .2);
     for (const team of [0, 1]) {
       const x = g.map.spawns[team][2], from = graph.near(x, surfaceY(g.mask, x), .6);
       assert.ok(top >= 0 && graph.reach(from)[top], `${label(g)}: team ${team}'s back capi reaches the summit`);
@@ -176,6 +180,46 @@ test('the summit of the cave mountain is reached on foot (or with hops) from eve
     }
   }
   t.diagnostic(`${n} cuevas maps, the summit reached from all 6 spawns on every one; back capis that get there without a hop: ${foot} of 24 (the way up starts with a hop onto the ledge)`);
+});
+
+test('the ledge over the mouth of the cave mountain is one hop from the lowland, and the mouth is walked through', () => {
+  const list = all.filter(g => g.map.kind === 'cuevas').slice(0, 24), fixed = generateMap(6, 'medium');
+  assert.equal(fixed.map.kind, 'cuevas', 'seed 6 is a cave mountain');
+  for (const g of [fixed, ...list]) {
+    const { mask } = g, f = g.map.plan.features.find(k => k.type === 'mountain'), c = f.climb, edge = f.at + c.side * c.tip, O = { water: WATER, airControl: RULES.airControl, airSpeed: RULES.airSpeed };
+    const body = d => ({ x: edge + c.side * d, y: surfaceY(mask, edge + c.side * d), vx: 0, vy: 0, grounded: true, facing: -c.side, jumpPress: 0, slide: 0 });
+    assert.ok(c.lip - c.low < 1.2, `${label(g)}: the ledge is under a hop over the lowland (${(c.lip - c.low).toFixed(2)})`);
+    // From anywhere on the rim, the key held towards the ledge.
+    for (const d of [2.1, 2.4, 2.7, 3]) {
+      const p = body(d);
+      for (let i = 0; i < 90; i++) stepSideWalker(p, { x: -c.side, jump: 1 }, 1 / 60, mask, O);
+      assert.ok(p.y > c.lip - .3, `${label(g)}: a hop ${d} from the ledge lands on it (feet at ${p.y.toFixed(2)}, ledge ${c.lip.toFixed(2)})`);
+    }
+    // Walking on instead, a capi goes down the ramp and in under the ledge without getting stuck.
+    const w = body(4);
+    for (let i = 0; i < 240; i++) stepSideWalker(w, { x: -c.side }, 1 / 60, mask, O);
+    assert.ok((w.x - edge) * c.side < -1, `${label(g)}: the walk stopped ${((w.x - edge) * c.side).toFixed(2)} from the ledge's tip`);
+    // And out again.
+    for (let i = 0; i < 300; i++) stepSideWalker(w, { x: c.side }, 1 / 60, mask, O);
+    assert.ok((w.x - edge) * c.side > 2, `${label(g)}: the walk back out stopped at ${((w.x - edge) * c.side).toFixed(2)}`);
+  }
+});
+
+test('the ledge in a valley is walked up to from the valley floor', () => {
+  const list = all.filter(g => g.map.kind === 'valle' && g.map.plan.ledges.length);
+  assert.ok(list.length);
+  for (const g of list) {
+    const graph = floorsOf(g.mask), f = g.map.plan.features.find(k => k.type === 'valley'), l = g.map.plan.ledges[0];
+    const near = (x, y) => graph.near(x, y, 1.5);
+    // Most of the way down its buttress, towards the middle of the valley.
+    const x = l.x - l.side * (l.out + (l.y - g.map.plan.base) * .3), y = groundUnderArch(g.mask, x, g.map);
+    const top = near(l.x - l.side * l.out * .5, groundUnderArch(g.mask, l.x - l.side * l.out * .5, g.map)), foot = near(x, y);
+    // A pond's bowl filling a small valley may eat the buttress (nothing to walk up from then).
+    const pond = g.map.plan.features.find(k => k.type === 'pond');
+    if (Math.abs(x - pond.at) < pond.half + 3.5) continue;
+    assert.ok(top >= 0 && foot >= 0, `${label(g)}: floors on the ledge and its buttress`);
+    assert.ok(graph.reach(foot)[top], `${label(g)}: the buttress at ${x.toFixed(1)} reaches the ledge at ${l.x.toFixed(1)}`);
+  }
 });
 
 test('every map is interesting: relief, landmarks, caves, ground on more than one level', t => {

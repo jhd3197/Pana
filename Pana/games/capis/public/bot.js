@@ -21,7 +21,7 @@ import { difficultyInfo } from '../../../engine/play/difficulty.js';
 import { rng, clamp } from '../../../engine/random.js';
 import { stepSideWalker } from '../../../engine/play/side-walker.js';
 import { solidAt } from '../../../engine/play/terrain-mask.js';
-import { RULES, activeCapy, alive, center, flightOptions, capiTargets, launch, canUse, teamAlive } from './rules.js';
+import { RULES, activeCapy, alive, center, flightOptions, capiTargets, launch, canUse, teamAlive, walkerOptions } from './rules.js';
 import { weaponOf, reachOf, BASIC_WEAPON } from './weapons.js';
 
 // The shared difficulty's aimError (radians, tuned for a cue) scaled to a lob.
@@ -66,6 +66,8 @@ export const FAR = 44;
 // The aim error shrinks as the match goes on (to AIM_FLOOR of it by turn
 // AIM_TURNS) and by AIM_BEHIND while its team is behind: a match always ends.
 const AIM_TURNS = 30, AIM_FLOOR = .2, AIM_BEHIND = .7;
+// A crate this near, on about the same level, is worth a detour of up to this share of the turn.
+const CRATE_NEAR = 9, CRATE_LEVEL = 2.5, CRATE_SHARE = .3;
 // Paint worth more than its amount: a rival painted out.
 const FINISH = 40;
 // How far a shot typically lands from where it was aimed, for valuing it (a bounced throw: further).
@@ -372,9 +374,20 @@ export function createBot({ team = 1, difficulty = 'normal', seed = 7 } = {}) {
         plan = { rival: rival?.id, weapon: pick?.weapon || BASIC_WEAPON, seed: pick?.shot?.top || null, feasible: !!pick?.feasible, walkUntil: m.clock + m.turn.time * WALK_SHARE,
           dir: rival ? Math.sign(rival.x - capy.x) : 0, walking: far || !pick?.feasible || !!pick?.weak || (rival && pick.weapon === BASIC_WEAPON && Math.abs(rival.x - capy.x) > APPROACH),
           approach: pick?.weapon === BASIC_WEAPON,
-          think: .9 + random() * 1.3, shot: null, startX: capy.x, fireAt: Infinity, last: capy.x, lastAt: m.clock, hopped: false, jumps: capy.jumpPress || 0 };
+          think: .9 + random() * 1.3, shot: null, startX: capy.x, fireAt: Infinity, last: capy.x, lastAt: m.clock, hopped: false, jumps: capy.jumpPress || 0,
+          crate: nearCrate(m, capy), crateUntil: m.clock + m.turn.time * CRATE_SHARE };
       }
       const hurry = m.turn.time < 2;
+      // A crate close by first: walk at it (it is taken on touching), and give up if the way is shut.
+      if (plan.crate != null) {
+        const k = m.crates.find(c => c.id === plan.crate), dir = k ? Math.sign(k.x - capy.x) : 0;
+        if (k && !hurry && m.clock < plan.crateUntil && (!capy.grounded || safeWalk(m, capy, dir, false))) {
+          if (m.clock - plan.lastAt > .8) { if (Math.abs(capy.x - plan.last) < .3) { if (plan.hopped) plan.crate = null; else { plan.hopped = true; plan.jumps++; } } plan.last = capy.x; plan.lastAt = m.clock; }
+          if (plan.crate != null) return { x: dir, jump: plan.jumps };
+        } else plan.crate = null;
+        // The walk may have reached its rival's range or moved it: look again from here.
+        plan.hopped = false; plan.last = capy.x; plan.lastAt = m.clock;
+      }
       if (plan.walking) plan.walking = !hurry && keepWalking(m, capy, plan);
       if (plan.walking) {
         // Stuck against a bump: hop once if the landing is dry far enough ahead, then give up walking.
@@ -411,6 +424,15 @@ export function createBot({ team = 1, difficulty = 'normal', seed = 7 } = {}) {
   };
 }
 
+// The crate worth walking to from here, if any: lying on about this level, close, and not over the water.
+function nearCrate(m, capy) {
+  let best = null;
+  for (const k of m.crates || []) {
+    const d = Math.abs(k.x - capy.x);
+    if (k.grounded && d < CRATE_NEAR && Math.abs(k.y - capy.y) < CRATE_LEVEL && (!best || d < best.d) && safeWalk(m, capy, Math.sign(k.x - capy.x), false)) best = { d, id: k.id };
+  }
+  return best ? best.id : null;
+}
 // Walk on while the rival is out of range, the turn's walking time lasts, and
 // the ground a step ahead (or below a ledge) is dry.
 function keepWalking(m, capy, plan) {
@@ -425,7 +447,7 @@ function keepWalking(m, capy, plan) {
 // Would walking (or hopping) `dir` for the next two seconds keep the capi out of the river?
 function safeWalk(m, capy, dir, hop) {
   const ghost = { x: capy.x, y: capy.y, vx: capy.vx, vy: capy.vy, grounded: capy.grounded, facing: capy.facing, jumpPress: capy.jumpPress || 0, slide: capy.slide || 0 };
-  const options = { radius: RULES.radius, water: m.map.water };
+  const options = walkerOptions(m);
   for (let i = 0; i < 120; i++) {
     const r = stepSideWalker(ghost, { x: dir, jump: (capy.jumpPress || 0) + (hop ? 1 : 0) }, 1 / 60, m.mask, options);
     if (r.drowned || ghost.y < m.map.water + 1) return false;
