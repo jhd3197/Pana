@@ -12,6 +12,7 @@ export default {
     loc('Sobretiempo: suban más de la cuota y cobran mangos extra. Si el encargo tiene reloj, el tiempo que sobre también paga, pero si se acaba no cobran nada.'),
     loc('Al subir de rango se abren pactos, en Más ajustes de la sala: reglas más duras que suben el Calor. Cada punto de Calor da 10 % más de bolívares y de XP.'),
     loc('Del día: la misma cueva y los mismos pactos para todos. Da XP extra una vez al día.'),
+    loc('Cuaderno: lo primero que ves, encuentras o aprendes se anota y da XP una sola vez. Su porcentaje sale en la sala y al terminar.'),
     loc('Completa una jornada o saca botín cada día y sube tu racha. Cada 7 días ganas un comodín, que salva un día perdido.'),
   ],
   sections: [{ title: loc('Moverte'), rows: [

@@ -42,7 +42,15 @@ export const receiptFor = state => `${state.seed}:${state.level}:${state.outcome
 
 export function createFosaProgress({ storage } = {}) {
   const progress = createProgress({ game: 'reliquia', ranks: RANKS, ...(storage !== undefined ? { storage } : {}) });
-  let chip = null, feat = null, heat = null, settled = '';
+  let chip = null, feat = null, heat = null, settled = '', earned = 0, waiting = null;
+  // XP from during a dive (the Cuaderno): saved now, while its line and any rank-up
+  // wait for the results, so the ceremony never lands in the middle of a chase.
+  function earn(amount, receipt) {
+    const result = progress.award(amount, receipt, { dive: false });
+    earned += result.gained;
+    if (result.rankedUp) waiting = { ...result, newUnlocks: [...(waiting?.newUnlocks || []), ...result.newUnlocks] };
+    return result;
+  }
   // Every render of the results screen lands here; only a new expedition pays.
   // `onSettled` (daily.js) may pay a bonus on top, which joins the same line, and add a toast.
   function settle(state, playerId, onSettled) {
@@ -65,8 +73,11 @@ export function createFosaProgress({ storage } = {}) {
     if (p.spectator) { chip.gain(0); return; }
     const result = progress.award(xpFor(state, playerId), receipt);
     const extra = onSettled?.(state, result), bonus = extra?.bonus;
-    chip.gain(result.gained + (bonus?.gained || 0));
-    const rankedUp = [bonus, result].some(r => rankUpToast(r, text => feat(`rank:${r.rank.id}`, text)));
+    const line = result.gained + (bonus?.gained || 0) + earned;
+    chip.gain(line);
+    const during = waiting && { ...waiting, gained: line, xp: progress.xp() };
+    earned = 0; waiting = null;
+    const rankedUp = [bonus, result, during].some(r => rankUpToast(r, text => feat(`rank:${r.rank.id}`, text)));
     // A rank-up keeps the toast first; anything else about this dive waits its turn.
     if (extra?.toast) { if (rankedUp) setTimeout(() => feat(...extra.toast), TOAST_MS); else feat(...extra.toast); }
   }
@@ -76,5 +87,5 @@ export function createFosaProgress({ storage } = {}) {
     el.style.display = 'none'; parent?.append(el);
     return options => { const calor = calorOfOptions(options); el.style.display = calor ? '' : 'none'; el.textContent = calor ? loc('Calor {n}', { n: calor }) : ''; };
   }
-  return { progress, settle, calorChip };
+  return { progress, settle, earn, calorChip };
 }

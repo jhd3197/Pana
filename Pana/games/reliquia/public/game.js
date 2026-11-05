@@ -80,6 +80,9 @@ const saves = createFosaSave({ room, list: $('lobby-save'), slots: $('lobby-slot
 { const tagline = document.createElement('p'); tagline.className = 'lobby-tagline'; tagline.textContent = loc('Bajen juntos. No se desarmen.'); document.querySelector('.pk-game-lobby-head > .pk-title')?.after(tagline); }
 const optionsUI = createRoomOptions($('room-options'), { title: 'Fosa', fields: fieldsFor(diver.progress.isUnlocked), change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
 const showCalor = diver.calorChip($('room-options').querySelector('.pk-room-primary'));
+// The first load is at its module cap, so the Cuaderno lands just after it.
+let cuaderno = null;
+import('./cuaderno.js').then(m => { cuaderno = m.createFosaCuaderno({ diver, notify, lobby: $('room-options').querySelector('.pk-room-primary'), end: $('result-cuaderno'), clear: (a, b, s) => view.world.layout.lineClear(a, b, s, .1) }); }).catch(console.warn);
 const daily = createFosaDaily({ progress: diver.progress, shout, start: day => { sound.unlock(); room.action('start', { daily: day }); } });
 // A guest draws its own explorer where it predicts it, not a round trip behind.
 const me = () => { const p = state.players.find(p => p.id === room.id); const predicted = room.predicted; return predicted && p ? { ...p, x: predicted.x, z: predicted.z, y: predicted.y, vx: predicted.vx, vz: predicted.vz, moving: predicted.moving, stamina: predicted.stamina, jumpHeight: predicted.jumpHeight ?? p.jumpHeight } : p; };
@@ -106,6 +109,7 @@ function handle(e) {
   const near = p && e.player != null ? (() => { const q = state.players.find(q => q.id === e.player); return q && floorOf(q.x) === floorOf(p.x) ? Math.max(.25, 1 - Math.hypot(q.x - p.x, q.z - p.z) / 30) : 0; })() : 1;
   // Events carry Spanish keys and vars from the host; this client's language here.
   const said = say(e.text, e.vars);
+  cuaderno?.heard(e, state, room.id);
   if (said && !QUIET.has(e.kind)) notify(said);
   const big = SHOUTS[e.kind]; if (big) shout(e.kind === 'greed' ? said : big[0], { tone: big[1] });
   switch (e.kind) {
@@ -197,6 +201,7 @@ function receive(next) {
   // Off the montacargas on a new floor, you face out of the cage.
   const p = state.players.find(p => p.id === room.id);
   if (p && floorOf(p.x) !== myFloor) { myFloor = floorOf(p.x); view.heading = p.h; }
+  cuaderno?.see(state, room.id);
   lobby();
 }
 function act(action, extra = {}) { if (playing()) room.action(action, extra); }
@@ -268,7 +273,7 @@ view.onFx = e => {
   if (e.type !== 'break' && (keys.has('e') || touch.has('e')) && Math.hypot(e.x - p.x, e.z - p.z) < 5) { view.hands.knock(); if (!stillness.matches) view.shake(e.type === 'hit' ? .13 : .22); }
 };
 record.showLobby(name); show('loading', false); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
+addEventListener('pagehide', () => { dead = true; clearInterval(ticker); cuaderno?.dispose(); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
 if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record, saves,
   get state() { return state; }, get me() { return me(); },
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += .05) room.game.update(Math.min(.05, seconds - t), room.inputs); room.publish(); },
