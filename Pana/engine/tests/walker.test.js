@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { walkVector, axisMove, stepWalker } from '../play/walker.js';
+import { walkVector, axisMove, slideMove, stepWalker } from '../play/walker.js';
 import { createFootsteps } from '../play/footsteps.js';
 
 const walker = (o = {}) => ({ walk: 4, run: 6, move: (p, dx, dz) => { p.x += dx; p.z += dz; }, ...o });
@@ -56,4 +56,42 @@ test('footsteps follow the distance walked, alternate feet and cadence rises wit
   const feet = log.filter(e => e[0] === 'step').map(e => e[2]); assert.ok(feet.length >= 3); assert.ok(feet.every((n, i) => i === 0 || n !== feet[i - 1]));
   log.length = 0; f.update(.05, { height: .3 }, sink); f.update(.05, { height: .8 }, sink); f.update(.05, { height: 0 }, sink);
   assert.deepEqual(log.map(e => e[0]), ['jump', 'land']); assert.ok(log[1][1] > .8);
+});
+
+// A round body (radius .4, tested at 8 points like Fosa's) and a wall at z < 0 with a 3 m opening at x 0..3.
+const R = .4, solid = (x, z) => z < 0 && (x < 0 || x > 3);
+const body = (x, z) => { for (let i = 0; i < 8; i++) if (solid(x + Math.cos(i * Math.PI / 4) * R, z + Math.sin(i * Math.PI / 4) * R)) return false; return !solid(x, z); };
+const walk = (p, dx, dz, o, steps = 90) => { for (let i = 0; i < steps; i++) slideMove(p, dx / 60, dz / 60, body, o); return p; };
+
+test('slideMove rounds a corner the body only grazes, at any overlap', () => {
+  for (let x = .02; x < R; x += .04) {
+    const p = walk({ x, z: 1.5 }, 0, -4.6, { slip: R });
+    assert.ok(p.z < -.5, `through the opening from x ${x.toFixed(2)}, stopped at z ${p.z.toFixed(2)}`);
+    assert.ok(body(p.x, p.z), 'never inside the wall');
+    assert.ok(p.x >= R - .01, 'pushed clear of the jamb');
+  }
+  assert.ok(walk({ x: .2, z: 1.5 }, 0, -4.6).z > 0, 'without slip it stops dead');
+});
+
+test('slideMove stops flush against a wall and still slides along it', () => {
+  const p = walk({ x: -4, z: 1.5 }, 0, -6.6, { slip: R });
+  assert.equal(p.x, -4, 'far from a corner a head-on step goes nowhere');
+  assert.ok(p.z < R + .02 && p.z >= R, `at contact, not a step short: ${p.z}`);
+  const q = walk({ x: -4, z: .6 }, 3, -3, { slip: R }, 30);
+  assert.ok(q.x > -3 && q.z < R + .02, 'a diagonal push keeps moving along the wall');
+});
+
+test('slideMove never travels further than asked', () => {
+  for (const [dx, dz] of [[0, -.2], [.05, -.2], [.14, -.14]]) {
+    const p = { x: .1, z: R + .001 }, x = p.x, z = p.z; slideMove(p, dx, dz, body, { slip: R });
+    assert.ok(Math.hypot(p.x - x, p.z - z) <= Math.hypot(dx, dz) + 1e-9, `${dx},${dz}`);
+  }
+});
+
+test('slideMove says whether the body moved, and does not lean back into a wall', () => {
+  assert.equal(slideMove({ x: -4, z: R }, 0, -.1, body, { slip: R }), false);
+  assert.equal(slideMove({ x: 0, z: 1 }, .1, 0, body, { slip: R }), true);
+  // A dead end narrower than the body has no way past.
+  const pocket = (x, z) => Math.abs(x) < 1 && z > 0, p = { x: 0, z: .5 };
+  slideMove(p, 0, -1, pocket, { slip: .4 }); assert.equal(p.x, 0); assert.ok(p.z > 0 && p.z < .1);
 });

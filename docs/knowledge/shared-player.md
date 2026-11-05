@@ -6,7 +6,7 @@ prediction; the sound half only calls the engine's `sfx`.
 
 | Module | What it does |
 |---|---|
-| `engine/play/walker.js` | `stepWalker(p, input, dt, opts)`: movement vector, sprint with stamina, speed, optional inertia, collision through the game's own `move`, the shared jump and the floor height. `walkVector` and `axisMove` are the small parts. |
+| `engine/play/walker.js` | `stepWalker(p, input, dt, opts)`: movement vector, sprint with stamina, speed, optional inertia, collision through the game's own `move`, the shared jump and the floor height. `walkVector`, `axisMove` and `slideMove` (a sized body: contact, and rounding corners) are the small parts. |
 | `engine/play/jump.js` | The press counter and the arc (`pressJump`, `stepJump`, `resetJump`). `stepWalker` calls it. |
 | `engine/play/footsteps.js` | `createFootsteps()`: a step every few metres walked (a longer stride sprinting, so speed sets the cadence), alternating feet, plus take-off and landing. |
 | `engine/sfx.js` | The sounds it plays: `step`, `jump`, `land` per surface. See `shared-sfx.md`. |

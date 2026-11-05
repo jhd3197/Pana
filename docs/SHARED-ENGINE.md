@@ -72,6 +72,12 @@ p.sprint = r.sprinting;
 
 Used by: Reliquia, Pepazo. Notes: `docs/knowledge/shared-player.md`.
 
+`slideMove(p, dx, dz, free, { slip })` is the `move` for a body with a size: it
+runs each axis up to contact and, with `slip` (the body's radius), rounds a corner
+the body only grazes instead of stopping dead on it. `free(x, z)` says the whole
+body fits there. Used by: Fosa (`layout.moveBody`, `moveAcross`). Pepazo still uses
+`axisMove`, which stops at corners.
+
 ### Jump
 
 `engine/play/jump.js`. `pressJump(count)` (an 8-bit press counter so a press
