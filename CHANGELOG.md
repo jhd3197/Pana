@@ -16,6 +16,8 @@ becomes the GitHub release's notes.
   Agazapado sobre su plinto, con colmillos, cola enrollada, manchas talladas y musgo; el jaguar de oro estrena la misma forma.
 - **Fosa: las puertas de piedra con la mano de tiza ahora se ven como lo que son: un escondite.**
   Adentro hay una vela encendida y nada tapa la entrada. Si caminas hacia ella un poco de lado, te deslizas adentro.
+- **Subir de rango ahora se celebra.**
+  La barra de XP se arrastra hasta llenarse, un destello blanco y un pilar de luz, el título cae de golpe, el XP cuenta punto a punto y aparece lo que desbloqueaste.
 - **Conuco: tu propio pedazo de tierra.**
   Arregla tu casa con mangos, siembra y cosecha aunque cierres el juego, compra en una tienda que cambia cada cuatro horas para todos y gana adornos al subir de rango.
 - **Trifulca: cada golpe se ve en la barra y en el aire.**

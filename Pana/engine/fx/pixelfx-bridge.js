@@ -14,6 +14,8 @@ export const EFFECTS = {
   'hit-spark': 'impacts/hit-spark',
   'crit-hit': 'impacts/crit-hit',
   'crit-number': 'ui/crit-number',
+  'level-up': 'ui/level-up',
+  confetti: 'ui/confetti',
 };
 const MAX_STEP = .1;
 const vendor = (path) => new URL(`../vendor/pixelfx/${path}`, import.meta.url).href;
@@ -39,7 +41,10 @@ let seed = 1;
 export function createRun(name, options = {}, api = core, mod = modules.get(name)) {
   const { size: [w, h], origin: [ox, oy], fps = 30 } = mod.meta;
   const frame = api.createFrame(w, h), pixels = new Uint8ClampedArray(w * h * 4);
-  const fx = api.createFx(mod, { seed: seed++, ...options, x: ox, y: oy });
+  // `actorless`: an effect staged round a pixel hero plays without him; Pana has its own panas.
+  const { actorless, ...rest } = options;
+  const source = actorless ? { ...mod, meta: { ...mod.meta, actor: undefined } } : mod;
+  const fx = api.createFx(source, { seed: seed++, ...rest, x: ox, y: oy });
   const period = 1 / fps;
   let owed = period;
   return {
