@@ -530,6 +530,13 @@ calls. Software WebGL is
 pixel-bound, so compare calls and triangles, not milliseconds. The host's
 20 Hz timer shares the main thread with drawing: a host whose GPU lags
 also simulates and publishes less often, which guests feel as lag.
+**The stone jaguar** (`jaguarStatue`, `engine/models/props/jaguar-stone.js`) is one
+mesh with one vertex-coloured, flat-shaded material, painted facet by facet: it bakes
+to a single draw. The headlamp bleaches a pale stone to cream at 3 m, so the stone is
+a dark sandstone; moss goes on steep-up facets of the cat and comes as clumps on the
+plinth, whose tops are one big facet each. The red ring players see around it in
+`derrumbe` is the falling rocks' warning (`rockRings` in `view.js`), not the
+statue's own: it has no behaviour of its own and no collision, as before.
 Static decor is baked per floor; braziers animate; crystal clusters are
 instanced with their own shader and must not go through `bake`. A revealed
 hidden room rebuilds that floor's shell once. Every item kind has one

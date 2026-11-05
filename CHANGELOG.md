@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: el jaguar de piedra ahora da miedo.**
+  Agazapado sobre su plinto, con colmillos, cola enrollada, manchas talladas y musgo; el jaguar de oro estrena la misma forma.
 - **Fosa: las puertas de piedra con la mano de tiza ahora se ven como lo que son: un escondite.**
   Adentro hay una vela encendida y nada tapa la entrada. Si caminas hacia ella un poco de lado, te deslizas adentro.
 - **Fosa: el campamento ahora es una caverna enorme.**
