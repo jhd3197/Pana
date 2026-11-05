@@ -240,7 +240,9 @@ flight: `launch(ax, az, speed, angle)`, `sweep(ball, dt, { boxes, targets, paddi
 (the earliest cover box or round target along this step's segment, so a fast
 ball never tunnels; with `y`, the flight height, boxes no taller than it are
 flown over), `segmentBox`, `segmentCircle`, `traceRay` (where a tracer
-line ends, same `y`) and `flightTime`.
+line ends, same `y`) and `flightTime`. `launchAimed(ax, az, pitch, speed, angle)`
+is the same launch tilted by a look's pitch, `{ vx, vy, vz }` at the full speed:
+sweep that with `sweepArc` and `gravity: 0` for a shot that goes where you look.
 
 ```js
 import { launch, sweep } from '../../../engine/play/projectile.js'; // relative: rules.js also loads on the server
@@ -253,7 +255,7 @@ boxes with a height (a low crate is flown over), upright round targets and the
 ground (`hit`: 'cover' | 'target' | 'ground'), and `stepArc(ball, dt, gravity)`
 moves it on. `engine/play/melee.js` throws with them.
 
-Used by: Pepazo (every ball and rocket, the sniper tracer, the thrown chancla).
+Used by: Pepazo (every ball and rocket along the look, the sniper tracer, the thrown chancla).
 
 ### Collision debug (colliders vs what you see)
 

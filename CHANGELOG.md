@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo: tus tiros van a donde miras, arriba, abajo o en diagonal.**
+  En primera persona el pepazo sale por la mira: pasa por encima de un pana si apuntas alto, pinta el suelo si apuntas abajo y la mancha queda a la altura real.
 - **Dominó y Caída: las fichas y las cartas ahora pesan.**
   Se levantan y se inclinan hacia el puntero, crecen con su sombra al tomarlas, se mecen al moverse, caen de golpe con rebote y suenan al sacarlas y al pegarlas en la mesa.
 - **Fosa: la cueva está viva.**
