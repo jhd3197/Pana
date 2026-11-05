@@ -125,7 +125,12 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
     const cx = e.i + .5 + e.di * (.5 + depth) + (e.dj ? along : 0), cz = e.j + .5 + e.dj * (.5 + depth) + (e.di ? along : 0);
     m.position.set(cx, 0, cz); m.rotation.set(0, e.di ? Math.PI / 2 : 0, 0);
   };
-  group.add(instanced(brick, mat({ roughness: .92, map: stoneTexture('brick') }), bricks, (m, c, { e, k, band: isBand }) => {
+  // Only a block's face (+-z) is mapped. Its top, bottom and ends only show in the joints, where a
+  // whole map squeezed into a few pixels is noise; there they take a speck of the map's dark corner.
+  for (let i = 0; i < 16; i++) brick.attributes.uv.setXY(i, .004 + brick.attributes.uv.getX(i) * .012, .004 + brick.attributes.uv.getY(i) * .012);
+  const brickMaterial = mat({ roughness: .92, map: stoneTexture('brick') });
+  brickMaterial.userData.relief = 'brick';   // a game may carve it (engine/fx/pom.js)
+  group.add(instanced(brick, brickMaterial, bricks, (m, c, { e, k, band: isBand }) => {
     at(m, e, (k % 2 ? .25 : -.25) + (r() - .5) * .04, .35 + (r() - .5) * .06);
     m.position.y = e.y + course * (k + .5); m.scale.set(1, 1, 1 + (r() - .5) * .1);
     c.copy(isBand ? band : colors[Math.floor(r() * colors.length)]).multiplyScalar(isBand ? 1 : .85 + r() * .25);

@@ -212,7 +212,9 @@ function plank(own, text, { width = 2.4, height = .62, arrow = false } = {}) {
 export function createCampCave({ halo = glowTexture() } = {}) {
   const cave = new THREE.Group(); cave.name = 'Caverna';
   const { rock, floor: floorMap, mist: mistMap, vista, mirror, glows: vistaGlows } = assets(), materials = [], own = m => { materials.push(m); return m; };
-  cave.add(new THREE.Mesh(rock, own(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .62, flatShading: true, side: THREE.DoubleSide }))));
+  const rockMaterial = own(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .62, flatShading: true, side: THREE.DoubleSide }));
+  rockMaterial.userData.relief = 'rock';   // carved by scene.js (engine/fx/pom.js)
+  cave.add(new THREE.Mesh(rock, rockMaterial));
   // The floor: everything inside the outline but the chasm.
   const shape = new THREE.Shape(FLOOR_EDGE.map(([x, z]) => new THREE.Vector2(x, -z)));
   const floor = new THREE.Mesh(new THREE.ShapeGeometry(shape).rotateX(-Math.PI / 2), own(new THREE.MeshStandardMaterial({ map: floorMap, roughness: .82 })));

@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: los ladrillos y la roca ahora tienen relieve de verdad.**
+  De cerca y de lado se ven las juntas hondas y la piedra partida. En calidad Nítida y en computadora; en teléfonos y otras calidades, un relieve más sencillo.
 - **Carreritas: ahora la velocidad se siente.**
   La cámara se abre al acelerar y se queda atrás antes de alcanzarte, el viento sube con la velocidad, y pasan líneas y rachas por los bordes. La cámara suave queda igual.
 - **Fosa: romper un derrumbe ahora se siente.**

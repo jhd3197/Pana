@@ -25,7 +25,7 @@ export const FPS_CAPS = [[0, loc('Sin límite')], [60, '60'], [30, '30']];
 
 // A phone (touch only) starts on Equilibrada: at Nítida it draws four pixels
 // per CSS pixel. Desktops start sharp. A saved choice always wins.
-const TOUCH_ONLY = typeof matchMedia === 'function'
+export const TOUCH_ONLY = typeof matchMedia === 'function'
   && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
 const START = TOUCH_ONLY ? 'media' : 'alta';
 
