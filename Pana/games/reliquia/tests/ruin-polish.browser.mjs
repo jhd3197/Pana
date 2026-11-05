@@ -95,10 +95,17 @@ try {
   await b.keyboard.down('e');
   // Half way: the shared progress has moved and both screens show the same cracks from it.
   await waitFor(a, id => reliquia.state.rubble[id] > 2.4, corridor.id);
-  const crackOn = page => page.evaluate(id => { const c = reliquia.view.world.heaps.get(id).crack; return { progress: c.progress, reveal: c.reveal, glow: c.glow, shared: reliquia.state.rubble[id] / 5 }; }, corridor.id);
+  // Stop digging so nothing moves, and wait for both screens to settle on the host's number.
+  await b.keyboard.up('e');
+  await waitFor(a, id => { const g = reliquia.room.game; return g.rubble[id] === window.lastDug || ((window.lastDug = g.rubble[id]), false); }, corridor.id);
+  const dug = await a.evaluate(id => reliquia.room.game.rubble[id] / 5, corridor.id);
+  const settled = ({ id, dug }) => Math.abs(reliquia.view.world.heaps.get(id).crack.progress - dug) < .01;
+  await waitFor(a, settled, { id: corridor.id, dug }); await waitFor(b, settled, { id: corridor.id, dug });
+  await a.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); await b.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const crackOn = page => page.evaluate(id => { const c = reliquia.view.world.heaps.get(id).crack; return { progress: c.progress, reveal: c.reveal, glow: c.glow }; }, corridor.id);
   const [host, guest] = [await crackOn(a), await crackOn(b)];
-  for (const v of [host, guest]) { assert.ok(v.reveal > .3, `cracks have run: ${v.reveal}`); assert.ok(v.glow > .2, `and glow: ${v.glow}`); assert.ok(Math.abs(v.progress - v.shared) < .15, 'driven by the shared progress'); }
-  assert.ok(Math.abs(host.progress - guest.progress) < .15, 'the same breaking on both screens');
+  for (const v of [host, guest]) { assert.ok(v.reveal > .3, `cracks have run: ${v.reveal}`); assert.ok(v.glow > .2, `and glow: ${v.glow}`); }
+  assert.ok(Math.abs(host.reveal - guest.reveal) < .01, `the same breaking on both screens: ${host.reveal}, ${guest.reveal}`);
   check('half dug: both screens show the same growing, glowing cracks');
   const fxHalf = [await a.evaluate(() => window.fxSeen), await b.evaluate(() => window.fxSeen)];
   for (const seen of fxHalf) { assert.ok(seen.includes('hit'), `hits: ${seen}`); assert.ok(seen.includes('dust'), `dust: ${seen}`); }
@@ -106,6 +113,7 @@ try {
   const chipsCap = await b.evaluate(id => reliquia.view.world.heaps.get(id).crack.flying, corridor.id);
   assert.ok(chipsCap <= 80, `flying: ${chipsCap}`);
   // The break comes from the rules clearing it, at the rules' own hold time.
+  await b.keyboard.down('e');
   await waitFor(a, id => !(id in reliquia.state.rubble), corridor.id);
   await b.keyboard.up('e');
   await waitFor(b, id => !(id in reliquia.state.rubble), corridor.id);
