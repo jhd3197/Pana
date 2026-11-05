@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: la cueva está viva.**
+  Murciélagos y cuaimas comen, se reproducen y se mueren de hambre. Escóndete en silencio entre hongos que brillan o raíces tupidas. Si acabas con los murciélagos, las polillas apagan los hongos; sin cuaimas, los murciélagos llenan el techo.
 - **¿Quién quiere ser mi pana?: el animador ahora habla de verdad.**
   Las frases se escriben letra por letra con pausas en comas y puntos, cada pana tiene su voz de blips, y quien habla se mueve y pone cara según lo que dice.
 - **Pepazo: la armería ya no te manda a pana.sh cuando ya estás en pana.sh.**

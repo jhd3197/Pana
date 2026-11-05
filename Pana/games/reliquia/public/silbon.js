@@ -11,10 +11,11 @@ import { floorOf, inRect, nookDepth } from './deck.js';
 import { distance } from './layout.js';
 import { random } from './director.js';
 import { locKey } from '../../../engine/i18n.js';
+import { hiddenFrom } from './ecology.js';
 
 // Its body: wider than a nook's gap (deck.js NOOK), so it never fits inside.
 export const SILBON_BODY = .72;
-export const SILBON = { sight: 20, feel: 1.3, lost: .8, searchFor: 14, nooks: 3, nookRange: 13, wander: .55, seek: .7, hunt: .9, sniff: 1.6, linger: .8, fall: 1.4, exposed: 5, giveUp: 15 };
+export const SILBON = { sight: 13, feel: 1.3, lost: .8, searchFor: 14, nooks: 3, nookRange: 13, wander: .55, seek: .7, hunt: .9, sniff: 1.6, linger: .8, fall: 1.4, exposed: 5, giveUp: 15 };
 // The one table for how it treats a hiding nook. `chance` it really looks when
 // it reaches one; `windup` the seconds of warning before the look lands; `depth`
 // how far inside (m from the opening) the look still finds you; `stun` and
@@ -45,7 +46,7 @@ function preyInSight(g, e) {
   const f = floorOf(e.x); let best = null, near = Infinity;
   for (const p of g.players) {
     if (!standing(p) || floorOf(p.x) !== f || p.hidden || p.rope || g.layout.lowAt(p.x, p.z)) continue;
-    const d = distance(p, e); if (d >= near) continue;
+    const d = distance(p, e); if (d >= near || hiddenFrom(g, e, p, d)) continue;
     if (d < SILBON.feel || (d < SILBON.sight && g.layout.sightClear(e, p, g))) { near = d; best = p; }
   }
   return best;

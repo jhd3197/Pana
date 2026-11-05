@@ -90,6 +90,10 @@ export const ICONS = {
   camera: svg('<circle cx="12" cy="11" r="5.5" fill="currentColor"/><circle cx="24" cy="11" r="5.5" fill="currentColor"/><rect x="5" y="17" width="23" height="15" rx="3.5" fill="currentColor"/><path d="M28 22l8-4.5v14L28 27z" fill="currentColor"/>'),
   thumbUp: svg('<path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/>', loc('A favor')),
   thumbDown: svg('<g transform="rotate(180 20 20)"><path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/></g>', loc('En contra')),
+  creatureBat: svg('<path d="M20 12l-3 4-3-3c-1 4-6 5-11 4 3 3 4 8 3 12 3-3 7-4 10-2l4 6 4-6c3-2 7-1 10 2-1-4 0-9 3-12-5 1-10 0-11-4l-3 3z" fill="currentColor"/>', loc('Murciélagos')),
+  creatureSnake: svg('<path d="M28 6c4 0 7 3 7 6s-3 5-6 5H14c-2 0-3 1-3 2s1 2 3 2h13c5 0 8 3 8 7s-4 7-9 7H7v-4h19c3 0 5-1 5-3s-2-3-4-3H14c-4 0-7-3-7-6s3-6 7-6h15c1 0 2-.5 2-1s-1-2-3-2h-3V6z" fill="currentColor"/>', loc('Cuaimas')),
+  creatureMoth: svg('<path d="M18 13h4v17h-4z M18 13l-3-6 2-1 3 6 3-6 2 1-3 6z M17 17C12 9 6 8 3 11c0 7 5 12 14 10z M23 17c5-8 11-9 14-6 0 7-5 12-14 10z M17 23c-4 0-9 1-10 6 3 3 8 2 10-2z M23 23c4 0 9 1 10 6-3 3-8 2-10-2z" fill="currentColor"/>', loc('Polillas')),
+  creatureMushroom: svg('<path d="M20 5C10 5 4 13 4 20h32c0-7-6-15-16-15z M15 22h10l1 12c0 2-12 2-12 0z" fill="currentColor"/>', loc('Hongos')),
   heartEmpty:svg(`<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 11-15 20-15 20z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" opacity=".5"/>`),
 };
 

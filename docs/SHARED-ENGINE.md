@@ -789,6 +789,33 @@ them, `rules.js` searches them). Models: `props/reliquia-hideouts.js`
 (`userData.open(t)` poses each piece from shut to searched). Tests:
 `engine/tests/hiding-spots.test.js`, `games/reliquia/tests/hiding.test.js`.
 
+### Living food chains (ecosystem)
+
+`engine/ai/ecosystem.js` (pure, seeded, no Three.js, plain JSON state): creatures
+that eat, breed with slightly mutated traits (`sight`, `hear`, `pace`) and starve,
+on a plant and a pest that live on the map's sites. Sight costs energy
+quadratically and needs light, so dark places breed near-blind lineages that go by
+ear. Cover shields what is inside, which is what keeps the numbers in waves.
+`ecoWorld(sites, { species, clear })` is static and never travels;
+`createEcosystem(world, { seed, depth, founders })` is the state;
+`advanceEcosystem(eco, world, dt, { noises, on })` steps whole seconds, so a
+population of 40 costs far under a millisecond and changes the wire once a second.
+`coverAt`, `coverOf`, `lightOf`, `dimmed`, `traitsFor`, `meanTrait`,
+`removeCreature`, `addCreature` read and edit it. A game gives bodies only to the
+creatures near its players.
+
+```js
+const world = ecoWorld(sites, { species: { bat, snake }, clear: (a, b) => L.sightClear(a, b) });
+const eco = createEcosystem(world, { seed, depth, founders: [{ sp: 'bat', at: 3 }] });
+advanceEcosystem(eco, world, dt, { noises, on: (kind, c) => { if (kind === 'extinct') say(c.sp); } });
+```
+
+Used by: Fosa (`games/reliquia/public/ecology.js`, notes in
+`docs/knowledge/reliquia.md`, "The food chain"). Models: `mushroomThicket` in
+`props/glow-mushrooms.js`, `rootThicket` in `props/fosa-biomes.js`, `batColony` in
+`fauna/cave-creatures.js`. Tests: `engine/tests/ecosystem.test.js`,
+`games/reliquia/tests/ecology.test.js`.
+
 ### Crowds of crawling things: chains, distance fields, flow fields
 
 Four small renderer-free modules in `engine/play/`, usable together or alone. All are
