@@ -158,6 +158,27 @@ try {
   assert.deepEqual(page.errors, []);
   console.log('PASS armory menu levels, controller, Arma 2 kept, swap in a round');
   await page.context().close();
+
+  // Why a locked camo is locked: public Pana points to pana.sh; a hosted page whose
+  // gateway has no camos() yet (its stats script still sets window.PanaSh) must not.
+  const lockedText = async hosted => {
+    const tab = await openGame(browser, 'pintura', { name: 'Prueba', query: 'debug', wait: false });
+    if (hosted) { await tab.context().addInitScript(() => { window.PanaSh = { stats() {} }; }); await tab.reload({ waitUntil: 'domcontentloaded' }); }
+    await waitFor(tab, () => window.pinturaDebug?.room.connected && window.PANA_PREPARED === true, null, 120_000);
+    await tab.locator('#open-armory').click();
+    await tab.locator('#armory-slots [data-hand="0"]').click();
+    await tab.locator('#armory-gun [data-slot=style]').click(); await waitFor(tab, () => pinturaDebug.armory.level === 'style');
+    await tab.locator('#armory-gun [data-slot=camo]').click();
+    await tab.locator('#armory-choices .armory-camo[data-id=caribe]').waitFor();
+    await waitFor(tab, () => pinturaDebug.armory.camos);
+    const texts = await tab.locator('#armory-choices').evaluate(list => ['caribe', 'selva'].map(id => list.querySelector(`.armory-camo[data-id=${id}] .armory-choice`).title));
+    assert.deepEqual(tab.errors, []);
+    await tab.context().close();
+    return texts;
+  };
+  assert.deepEqual(await lockedText(false), ['Disponible en pana.sh', 'Disponible en pana.sh']);
+  assert.deepEqual(await lockedText(true), ['Muy pronto', 'Muy pronto']);
+  console.log('PASS locked camos say where they are got, and never send pana.sh to itself');
 } finally {
   await browser.close();
 }
