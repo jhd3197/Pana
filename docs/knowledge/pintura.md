@@ -125,10 +125,16 @@ crosshair within 20° and 40 m. After a respawn and at round start the view
 turns to face the court centre. The menu's "Ver la cancha" overview keeps
 world-axis keys and plane-projected mouse aim at the same 1.1 m height as
 `screen()`; keep those equal. Splats from balls stopped by cover are placed
-vertically on that face. `minimap.js` draws the HUD map (cover, team, and
-rivals with a clear line of sight); it is a 2D overlay, not scene drawing. It
-is square, north-up and centred on you, showing `MINIMAP_RADIUS` (30 m) each
-way: a whole-court map was too far out to read on El Puerto. Teammates,
+vertically on that face. `minimap.js` draws the HUD map; it is a 2D overlay, not
+scene drawing. It is square, north-up and centred on you, showing
+`MINIMAP_RADIUS` (18 m) each way, on an opaque background: 30 m was too far out
+to read in a yard. Three layers: the court's floor, the scenery (`bake` reads the
+standing court's triangles once per round behind the loading card, leaving out
+the ground, what hangs over 2.4 m and hills) and the cover. Rivals are hidden
+until they fire: `p.loud` counts every shot but a silenced one (`shotIsLoud`) and
+`createShotReveal` shows the dot for `SHOT_REVEAL` (1.6 s), within
+`SHOT_REACH` (30 m) times the class's `mark`, walls or not. No part sets
+`silenced` yet: a part with `silenced: true` is all it takes. Teammates,
 domination zones and flags out of that window become arrows clamped to its
 edge (`clampToEdge`); rivals out of it are not drawn at all. Holding Tab (View
 on a controller, through the menu's pad map) draws the whole court, same rules,
@@ -840,7 +846,7 @@ has one row per class (adding one is one row): `mobility` (walk multiplier),
 option's interaction is unchanged), `regen` (how fast the four quiet seconds
 that wash a pepazo off run), `stepNoise` (rivals hear the steps up to
 `28 m × noise`, louder or fainter), `markerScale` (the dot on rivals' minimap,
-and how near they must be to see it: `30 m × scale`), `grenades` carried and
+and how near a shot must be to show it: `30 m × scale`), `grenades` carried and
 `grenadeRecharge` (seconds to get one back after a throw; every class now gets
 grenades back, where before it was one per life), `icon` and `vest` (the padded
 vest).
@@ -858,7 +864,7 @@ Every effect is computed by `Arena` from the validated kit (`kitStats` adds the
 class to the gun's numbers; `wearClass` publishes `noise` and `mark` on the
 player for the other clients' footsteps and minimap); nothing comes from the
 client's input. Pepazo had footsteps and a minimap but no radar, so Sigiloso's
-"harder to see" is the minimap dot (smaller, and only within 16 m). Bots take
+"harder to see" is the minimap dot (smaller, and a shot shows only within 16 m). Bots take
 their class's effects too. `tests/loadout.test.js` checks each class gains and
 pays something, every class × weapon × part set stays bounded with at most 40
 rating points between classes, and the sim's walk, aguante, wash, grenades,

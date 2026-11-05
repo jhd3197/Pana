@@ -158,6 +158,7 @@
   "Pana/games/pintura/tests/ctf.browser.js": 113,
   "Pana/games/pintura/tests/domination.browser.js": 180,
   "Pana/games/pintura/tests/knockout.browser.js": 38,
+  "Pana/games/pintura/tests/minimap.browser.js": 19,
   "Pana/games/pintura/tests/paint-kit.browser.js": 6,
   "Pana/games/pintura/tests/spectator.browser.js": 81,
   "Pana/games/poquer/tests/browser.mjs": 112,

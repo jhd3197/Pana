@@ -296,7 +296,7 @@ let preparedRound = 0, preparingRound = 0, lastCount = 0;
 async function prepareRound(state) {
   const round = preparingRound = state.round;
   if (!window.PANA_PREPARED) await new Promise(resolve => document.addEventListener('pana:game-prepared', resolve, { once: true }));
-  await world.setMap(state.mapId, state.variant || 0); await world.renderer.compileAsync(world.scene, world.camera).catch(() => {});
+  await world.setMap(state.mapId, state.variant || 0); await minimap.bake(world.mapGroup(), state.mapId, state.variant || 0); await world.renderer.compileAsync(world.scene, world.camera).catch(() => {});
   if (preparingRound !== round) return;
   preparedRound = round; room.ready(round); render(room.state);
 }
@@ -381,6 +381,6 @@ function frame(now) {
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); scopeView.dispose(); armory.dispose(); teamRoster.dispose(); looking.dispose(); spectate.dispose(); room.dispose(); world.dispose(); }, { once: true });
-if (params.has('debug')) window.pinturaDebug = { room, world, menu, input, armory, grenade: grenadeCharge, spectate };
+if (params.has('debug')) window.pinturaDebug = { room, world, menu, input, armory, minimap, grenade: grenadeCharge, spectate };
 
 await prepareScene(world);

@@ -118,6 +118,8 @@ export function grenadeFlight(kind, cover = [], mapId = null) {
 // Every map has three fixed layouts and the round number picks one, so a rematch
 // plays a different court. Not random: everyone learns them.
 export const VARIANTS = 3;
+// A shot rivals' minimaps can see (`p.loud` counts them): anything but a silenced one.
+export const shotIsLoud = stats => !stats.silenced;
 // Spanish keys: clients show them with loc().
 const VARIANT_NAMES = { muelle: [locKey('Patio'), locKey('Laberinto'), locKey('Torres')], terminal: [locKey('Pasillos'), locKey('Fortaleza'), locKey('Laberinto')], noche: [locKey('Torre'), locKey('Inflables'), locKey('Tubos')], plaza: [locKey('Clásica'), locKey('Mercado'), locKey('Fiesta')], default: [locKey('Clásica'), locKey('Girada'), locKey('Cerrada')] };
 export const variantName = (id, variant = 0) => (VARIANT_NAMES[id] || VARIANT_NAMES.default)[variant % VARIANTS];
@@ -224,7 +226,7 @@ export class Arena {
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.
     if (this.phase === 'playing' && !this.loading) this.ready.add(id);
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); this.parkLobby(); return p; }
-    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), hand: 0, swap: 0, spare: null, grenades: 1, grenadeIn: 0, noise: 1, mark: 1, grenadeReady: true, grenadeHeld: false, altHeld: false, melee: createMelee(), smacks: 0, recalls: 0, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
+    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), hand: 0, swap: 0, spare: null, grenades: 1, grenadeIn: 0, noise: 1, mark: 1, grenadeReady: true, grenadeHeld: false, altHeld: false, melee: createMelee(), smacks: 0, recalls: 0, shots: 0, fired: 0, loud: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p);
     // A late arrival mid-round lands like a respawn, away from the living rivals.
     if (this.phase === 'playing') Object.assign(p, this.spawnPoint(p, this.rivalsOf(p))); else this.parkLobby();
@@ -473,7 +475,7 @@ export class Arena {
       if (stats.melee) { if (input.fire && !sprinting && !p.swap && startSwing(p.melee, stats)) p.shield = 0; }
       else if (input.fire && !sprinting && !p.swap && !p.cooldown && !p.reload && p.ammo > 0) {
         const rivals=stats.headshot && !input.look ? this.shotTargets(p) : null;
-        p.ammo--; p.shots++; p.fired++; p.cooldown=stats.cadence; p.shield=0;
+        p.ammo--; p.shots++; p.fired++; if(shotIsLoud(stats)) p.loud=(p.loud||0)+1; p.cooldown=stats.cadence; p.shield=0;
         const spread=p.aim && stats.aimSpread!=null ? stats.aimSpread : stats.spread;
         const jitter=stats.pellets===1 ? Math.sin(p.shots*2.4)*spread : 0;
         // Several pellets fan evenly across the spread (three: left, centre, right).

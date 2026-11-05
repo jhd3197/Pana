@@ -10,6 +10,8 @@ becomes the GitHub release's notes.
 
 - **Fosa y Pepazo: ya no te trancas en las esquinas.**
   Pasas rozando marcos y contenedores sin frenar, y en Fosa las paredes chocan justo donde se ven.
+- **Pepazo: un mapa más cerrado y sin espacios vacíos, con rivales ocultos hasta que disparan.**
+  Muestra el piso y todo lo que hay en la cancha. Un rival solo sale un momento cuando dispara; tu equipo se ve siempre.
 - **Fosa y Pepazo: ahora ves tus manos con lo que cargas.**
   Guantes y mangas de tu color: en Fosa sostienen el machete, el farol y el botín, y en Pepazo la chancla, con el mismo balanceo y el mismo golpe.
 - **Galope: los caballos ahora corren como caballos.**
