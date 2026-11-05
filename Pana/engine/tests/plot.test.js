@@ -153,6 +153,20 @@ test('a harvest after a crash pays nothing twice: the receipt comes from the pla
   assert.equal(wallet.peek(), 2);
 });
 
+test('a second device reusing a bed id sends its own wallet receipt', () => {
+  const harvestAt = at => {
+    const receipts = [], clock = { at };
+    const plot = createPlot({ game: 'plot-test', crops: CROPS, tiers: TIERS, wallet: { credit: (n, receipt) => receipts.push(receipt) }, storage: memoryStorage(), now: () => clock.at });
+    plot.plant(0, 'free');
+    clock.at += 5 * MINUTE;
+    plot.harvest(0);
+    return receipts;
+  };
+  const [first] = harvestAt(START), [second] = harvestAt(START + MINUTE);
+  assert.ok(first && second);
+  assert.notEqual(first, second);
+});
+
 test('a wilted crop pays half and is still harvested', () => {
   const { plot, wallet, clock } = setup();
   plot.plant(0, 'free');

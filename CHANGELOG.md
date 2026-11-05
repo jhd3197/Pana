@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Con cuenta, tus mangos son los mismos en todos los juegos.**
+  Conuco, Bochinche y Carreritas usan el saldo de tu cuenta; sin cuenta, todo sigue guardado en tu dispositivo.
 - **Fosa: los ladrillos y la roca ahora tienen relieve de verdad.**
   De cerca y de lado se ven las juntas hondas y la piedra partida. En calidad Nítida y en computadora; en teléfonos y otras calidades, un relieve más sencillo.
 - **Carreritas: ahora la velocidad se siente.**
