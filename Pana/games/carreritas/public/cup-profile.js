@@ -190,12 +190,14 @@ function migrateStatIds(storage, get) {
 }
 
 // The balance is Pana's shared mango wallet; wallet.coins mirrors it so older
-// saves and the taller keep working. A device's first load adopts its coins.
+// saves and the taller keep working. A device's first load adopts its coins,
+// except on an account: its balance wins and old coins are not imported.
 export function createProfileStore(storage, { onMangos } = {}) {
   let memory = null;
-  const mangos = createMangoWallet(storage);
-  // Mangos paid by another game while this page is open.
-  if (onMangos) mangos.onChange(balance => { if (memory?.wallet) memory.wallet.coins = balance; onMangos(balance); });
+  const mangos = createMangoWallet(storage, { source: 'carreritas' });
+  // Mangos paid by another game while this page is open. An account's mirror must
+  // always follow: save() turns any stale gap into a real spend or credit.
+  if (onMangos || mangos.remote) mangos.onChange(balance => { if (memory?.wallet) memory.wallet.coins = balance; onMangos?.(balance); });
   const get = (key) => {
     try { return storage?.getItem(key) ?? null; } catch { return null; }
   };
@@ -222,6 +224,7 @@ export function createProfileStore(storage, { onMangos } = {}) {
     return memory;
   };
   return {
+    ready: mangos.ready,
     load,
     save,
     update(mutate) {

@@ -72,7 +72,7 @@ from epoch time with no server. It walks a seeded shuffle, so an item returns on
 after the rest. The tables are the game's. Models: `engine/models/props/conuco.js`.
 
 ```js
-const plot = createPlot({ game: 'conuco', crops: CROPS, tiers: TIERS, decor: DECOR, shop: SHOP, wallet: createMangoWallet(), progress });
+const plot = createPlot({ game: 'conuco', crops: CROPS, tiers: TIERS, decor: DECOR, shop: SHOP, wallet: createMangoWallet(undefined, { source: 'conuco' }), progress });
 plot.plant(0, 'maiz'); plot.view().beds[0].stage; plot.harvest(0); plot.stock().items;
 ```
 
@@ -989,7 +989,7 @@ its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
 | Menu card pictures of any 3D object (built, framed by its bounds, drawn once on the shared offscreen renderer, cached by key; `keep(mesh)` draws one part alone) | `engine/object-thumb.js` (`objectThumb(key, build, { width, height, turn, tilt, keep, margin })`) on `engine/snapshot.js` | Pepazo (armory cards: every weapon, part, charm and grenade) |
 | Wardrobe | `engine/wardrobe.js`, `wardrobe-preview.js` | Bochinche, Carreritas, Pepazo, Trifulca (the page also loads `wardrobe-preview` through `pana.sh`) |
 | Friend-named bots (the top 2-3 bots wear the names of the player's friends; `applyFriendNames`, `friendNamesNow`, `loadFriendNames`, `cleanJoinNames`) | `engine/bot-names.js`; server rooms use `hostFriendNames()` in `server/src/room-kit.js`, `engine/net.js` sends the list on join | Bochinche, Billar, Bululú, Caída, Carreritas, Chapita, Criollas, Curiara, Dominó, Embuste, Escondidas, Galope, Lancha, Ludo, Parapente, Pepazo, Póquer, QQSMP, Stop, Tambor, Trifulca |
-| Mangos (shared currency; `spend` takes them or changes nothing, `peek` reads without adopting Carreritas' old coins) | `engine/mangos.js` | Bochinche, Carreritas, Conuco |
+| Mangos (shared currency; `spend` takes them or changes nothing, `peek` reads without adopting Carreritas' old coins; with `window.PanaSh.wallet` the account's server balance replaces local storage, and `ready` says when it arrived) | `engine/mangos.js` | Bochinche, Carreritas, Conuco |
 | Rank and XP per game, on this device (`createProgress({ game, ranks, storage })`: `award(amount, receipt, { dive })` pays once and counts a dive unless `dive: false`, `rank`, `xp`, `isUnlocked`, `onChange`; pure `rankAt`, `nextRank`, `progressInRank`, `unlocksAt`, safe in rules and tests). The look: `createRankChip(progress)` (`.pk-rank`: title, thin XP bar, `gain(n)` for "+N XP") and `rankUpToast(result, show)` for a `createFeats` or `createToast` | `engine/progress.js`, `engine/progress-ui.js`; tests `engine/tests/progress.test.js` | Reliquia (`games/reliquia/public/progress.js`: the ranks and `xpFor`), Conuco (`games/conuco/public/rules.js`) |
 | A game's day and streak (one seed and one rotating set per local date; pure `dayKey`, `dayNumber`, `isDayKey`, `dailySeed(game, day)`, `pickDaily(list, day)` walks the whole list before repeating. `createStreak({ game, storage, now })` under `pana:streak:<game>`: `record(day)` once a day gives `{ days, best, freezesLeft, usedFreeze, milestone }` (3, 7, 14, 30), a freeze every 7 days up to 2 covers one missed day; `peek(day)` reads without counting) | `engine/daily.js`; tests `engine/tests/daily.test.js` | Reliquia (`games/reliquia/public/daily.js`) |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
