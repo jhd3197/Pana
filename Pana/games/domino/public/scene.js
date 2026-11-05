@@ -9,6 +9,7 @@ import { createDominoTable, createDominoChair, createDominoTile } from './table-
 import { chainLayout } from './tiles.js';
 import { deck, legalEnds } from './rules.js';
 import { loc } from '/engine/i18n.js';
+import { createCardFeel } from '/engine/fx/card-feel.js';
 
 const seatNote = (label, bot) => bot ? loc('{label} · bot', { label }) : label;
 
@@ -81,6 +82,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
     return { element, index, position: new THREE.Vector3() };
   });
   const cursor = new THREE.Vector2(), ray = new THREE.Raycaster(); let down, hover = null;
+  const feel = createCardFeel(THREE, scene, camera, { floor: Y, size: .75 });
   const pick = event => {
     cursor.set(event.clientX / innerWidth * 2 - 1, -event.clientY / innerHeight * 2 + 1); ray.setFromCamera(cursor, camera);
     for (const hit of ray.intersectObjects([...tiles.values()].filter(t => t.playable).map(t => t.model), true)) {
@@ -89,7 +91,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
     }
     return null;
   };
-  const move = event => { hover = pick(event); canvas.style.cursor = hover ? 'pointer' : 'default'; };
+  const move = event => { feel.pointer(event); hover = pick(event); canvas.style.cursor = hover ? 'pointer' : 'default'; };
   const pointerDown = event => { down = { x: event.clientX, y: event.clientY }; };
   const pointerUp = event => { if (down && Math.hypot(event.clientX - down.x, event.clientY - down.y) < 12) { const id = pick(event); if (id) onTile?.(id); } down = null; };
   canvas.addEventListener('pointermove', move); canvas.addEventListener('pointerdown', pointerDown); canvas.addEventListener('pointerup', pointerUp);
@@ -198,11 +200,12 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
     if (disposed) return;
     time += dt; actTime = Math.max(0, actTime - dt); bubbles.tick(dt);
     camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 4)); camera.lookAt(target);
+    feel.begin(dt);
     for (const [id, t] of tiles) {
       const lift = id === hover || id === selected ? .1 : 0;
       t.lift = Math.max(0, t.lift - dt * 1.8);
       const dest = t.target.clone(); dest.y += Math.sin(t.lift * Math.PI) * .5 + lift;
-      t.model.position.lerp(dest, 1 - Math.exp(-dt * 10)); t.model.quaternion.slerp(t.rotation, 1 - Math.exp(-dt * 9));
+      feel.step(t, dt, { dest, rotation: t.rotation, hovered: id === hover, held: id === selected, arc: t.lift });
     }
     characters.forEach((character, i) => {
       if (!character) return;
@@ -233,6 +236,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
     setView(value) { cameraMode = value; cameraTarget(); },
     say: bubbles.say,
     dispose() {
+      feel.dispose();
       disposed = true; removeEventListener('resize', resize);
       canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
       starter.dispose(); characters.forEach(c => c?.dispose()); labels.forEach(l => l.remove()); bubbles.dispose(); tips.forEach(t => t.element.remove()); tiles.forEach(t => t.model.userData.dispose()); chairs.forEach(c => c.userData.dispose()); table.userData.dispose(); stage.dispose();

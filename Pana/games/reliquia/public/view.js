@@ -94,6 +94,9 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   let world = createExpeditionWorld({ seed, depth, onFx }); scene.add(world.group);
   const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign); // i18n-ignore: signage painted in the world
   const puffs = new Puffs(scene), waves = new Shockwaves(scene), swarm = createSwarmView({ scene, puffs });
+  // The food chain's scenery comes a moment later: nothing in it is needed to start.
+  let ecoView = null, ecoGone = false;
+  import('./eco-view.js').then(m => { if (!ecoGone) ecoView = m.createEcoView({ scene }); });
   // Your gloves and sleeves: the suit's colour, holding the two hand items in view.
   const hands = createHands({ camera, itemModel });
   // Paint, darts and shots.
@@ -279,6 +282,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     }
     // The swarm: one instanced mesh, however many snakes.
     swarm.update(dt, state, me, vf, world.layout);
+    ecoView?.update(dt, state, me, vf, world.layout, t);
     // Carritos: their load sits in the hopper and the balance floats above.
     for (const c of state.carts || []) {
       let a = carts.get(c.id);
@@ -371,7 +375,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       sources.sort((a, b) => a.d - b.d);
       // The last two slots go to the nearest glowing mushrooms: no extra lights,
       // and the warm sources they displace are the farthest of the five.
-      const glows = (world.floors.get(vf)?.glows || []).map(g => ({ ...g, power: MUSHROOM_LIGHT.power, reach: MUSHROOM_LIGHT.reach, d: Math.hypot(g.x - me.x, g.z - me.z) })).filter(g => g.d < MUSHROOM_LIGHT.within).sort((a, b) => a.d - b.d).slice(0, 2);
+      const glows = (world.floors.get(vf)?.glows || []).concat(ecoView?.glows || []).map(g => ({ ...g, power: MUSHROOM_LIGHT.power, reach: MUSHROOM_LIGHT.reach, d: Math.hypot(g.x - me.x, g.z - me.z) })).filter(g => g.d < MUSHROOM_LIGHT.within).sort((a, b) => a.d - b.d).slice(0, 2);
       sources.splice(POOL - glows.length, sources.length, ...glows);
       pool.forEach((light, i) => {
         const s = sources[i], u = light.userData; u.power = s && s.d < 30 ? s.power : 0; u.flare = !!s?.flare; u.fire = s?.fire || null;
@@ -430,7 +434,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       for (const [id, a] of avatars) removeAvatar(a, id);
       for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
       disposeSprite(shopSign);
-      swarm.dispose(); motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
+      swarm.dispose(); ecoGone = true; ecoView?.dispose(); motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
       [ballGeometry, dartGeometry, splatGeometry, ringGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial].forEach(m => m.dispose()); hands.dispose(); disposeSuits(); diverLamps.dispose();
       renderer.dispose();
     },

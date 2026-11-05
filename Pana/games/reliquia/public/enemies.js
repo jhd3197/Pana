@@ -16,6 +16,7 @@ import { updateLector } from './lector.js';
 import { updateEstatua } from './estatua.js';
 import { updateSilbon } from './silbon.js';
 import { hearNoise } from '../../../engine/play/noise.js';
+import { attention, idleBody, hiddenFrom, glowNear, COVER } from './ecology.js';
 
 export const KINDS = {
   mummy: { hp: 60, speed: 2.6, reach: 1.7, windup: .65, radius: 2.1, damage: 12, cooldown: 1.15, light: 'freeze' },
@@ -70,13 +71,15 @@ export function lightOn(g, e) {
       if (d < 3) glow = true;
     }
   }
-  return glow ? 'glow' : 'dark';
+  // A healthy mushroom patch is light too (ecology.js).
+  return glow || glowNear(g, e) ? 'glow' : 'dark';
 }
 
 export function spawnEnemy(g, kind, x, z, extra = {}) {
   const live = g.enemies.filter(e => e.hp > 0);
   if (!KINDS[kind]) return null;
-  if (['mummy', 'phantom', 'bat', 'spider', 'lector'].includes(kind) && live.length >= 18) return null;
+  // A creature with a body (`eco`) has its own cap (ecology.js) and leaves the Director's alone.
+  if (extra.eco == null && ['mummy', 'phantom', 'bat', 'spider', 'lector'].includes(kind) && live.filter(e => e.eco == null).length >= 18) return null;
   const here = n => live.filter(e => e.kind === kind && floorOf(e.x) === floorOf(x)).length >= n;
   if ((kind === 'lector' && here(lectorCap(g.level))) || (kind === 'estatua' && here(ESTATUA_CAP)) || (kind === 'silbon' && here(1))) return null;
   // Nothing walks on a hanging platform but the panas who climbed down to it.
@@ -95,7 +98,7 @@ function targetFor(g, e) {
     if (!standing(p) || floorOf(p.x) !== f) continue;
     // Out of a walker's reach down there or on a rope; wings do not care.
     if (!KINDS[e.kind].flying && (p.rope || g.layout.lowAt(p.x, p.z))) continue;
-    const d = distance(p, e); if (d > range) continue;
+    const d = distance(p, e); if (d > range || hiddenFrom(g, e, p, d)) continue;
     const s = d - (holds(p, 'sunCrown') ? 8 : 0) - (e.called === p.id ? 6 : 0);
     if (s < score) { score = s; best = p; }
   }
@@ -123,7 +126,9 @@ export function updateEnemies(g, dt) {
     // close: it drops screeching, and that screech carries (the Silbón comes).
     if (e.hanging && k.flying) {
       const noise = hearNoise(g.noise, e, { floor: floorOf(e.x), since: e.born, time: g.time }), close = noise && (noise.kind !== 'screech' || Math.hypot(noise.x - e.x, noise.z - e.z) < 7);
-      if ((target && distance(target, e) < 3.8) || close) screech(g, e);
+      // Off to feed, its creature's choice (ecology.js): it just lets go.
+      if (e.eco != null && !e.perch) { e.hanging = false; e.y = 2.2; continue; }
+      if ((target && distance(target, e) < (e.touchy ? COVER.wake : 3.8)) || close) screech(g, e);
       continue;
     }
     // A spider waits on the ceiling until someone walks under it.
@@ -143,13 +148,15 @@ export function updateEnemies(g, dt) {
       else continue;
     }
     e.lit = lightOn(g, e);
+    // A creature of the ecosystem goes on with its life until it notices someone.
+    if (e.eco != null && e.stun <= 0 && !attention(g, e, target, dt)) { idleBody(g, e, k, k.speed * s.speed * (e.pace || 1), dt, walk); continue; }
     if (e.stun > 0 || !target) { if (e.mode === 'leap') e.mode = 'recover'; continue; }
     if (k.light === 'freeze' && e.lit === 'beam') { e.windup = 0; e.frozen = true; continue; }
     e.frozen = false;
     if (k.light === 'daze' && e.lit === 'beam' && e.immune <= 0 && e.mode !== 'leap') {
       e.stun = 1.6; e.immune = 6; e.mode = 'prowl'; g.event('daze', locKey('¡El farol encandiló al jaguar!'), { enemy: e.id }); continue;
     }
-    const speed = k.speed * s.speed * (1 + .08 * tier) * (e.lit === 'dark' && k.light === 'freeze' ? 1.35 : 1) * (k.light === 'slow' && e.lit === 'beam' ? .5 : 1);
+    const speed = k.speed * s.speed * (1 + .08 * tier) * (e.lit === 'dark' && k.light === 'freeze' ? 1.35 : 1) * (k.light === 'slow' && e.lit === 'beam' ? .5 : 1) * (e.pace || 1);
     const damage = k.damage * s.damage * (1 + .1 * tier) * (.75 + .15 * (g.level || 1));
     if (k.cat) { cat(g, e, target, speed, damage, dt); continue; }
     if (k.flying) { bat(g, e, target, speed, damage, dt); continue; }

@@ -791,6 +791,33 @@ them, `rules.js` searches them). Models: `props/reliquia-hideouts.js`
 (`userData.open(t)` poses each piece from shut to searched). Tests:
 `engine/tests/hiding-spots.test.js`, `games/reliquia/tests/hiding.test.js`.
 
+### Living food chains (ecosystem)
+
+`engine/ai/ecosystem.js` (pure, seeded, no Three.js, plain JSON state): creatures
+that eat, breed with slightly mutated traits (`sight`, `hear`, `pace`) and starve,
+on a plant and a pest that live on the map's sites. Sight costs energy
+quadratically and needs light, so dark places breed near-blind lineages that go by
+ear. Cover shields what is inside, which is what keeps the numbers in waves.
+`ecoWorld(sites, { species, clear })` is static and never travels;
+`createEcosystem(world, { seed, depth, founders })` is the state;
+`advanceEcosystem(eco, world, dt, { noises, on })` steps whole seconds, so a
+population of 40 costs far under a millisecond and changes the wire once a second.
+`coverAt`, `coverOf`, `lightOf`, `dimmed`, `traitsFor`, `meanTrait`,
+`removeCreature`, `addCreature` read and edit it. A game gives bodies only to the
+creatures near its players.
+
+```js
+const world = ecoWorld(sites, { species: { bat, snake }, clear: (a, b) => L.sightClear(a, b) });
+const eco = createEcosystem(world, { seed, depth, founders: [{ sp: 'bat', at: 3 }] });
+advanceEcosystem(eco, world, dt, { noises, on: (kind, c) => { if (kind === 'extinct') say(c.sp); } });
+```
+
+Used by: Fosa (`games/reliquia/public/ecology.js`, notes in
+`docs/knowledge/reliquia.md`, "The food chain"). Models: `mushroomThicket` in
+`props/glow-mushrooms.js`, `rootThicket` in `props/fosa-biomes.js`, `batColony` in
+`fauna/cave-creatures.js`. Tests: `engine/tests/ecosystem.test.js`,
+`games/reliquia/tests/ecology.test.js`.
+
 ### Crowds of crawling things: chains, distance fields, flow fields
 
 Four small renderer-free modules in `engine/play/`, usable together or alone. All are
@@ -981,6 +1008,7 @@ its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
 | Speed from the driver's seat: field of view 50 to 75 with speed, camera lag under acceleration that catches up with a small shake on its own noise (seeded dice untouched), how strong edge lines and wind should be. Pure numbers (`createSpeedFeel`); apply them with `setSpeedLines` and `createWind` | `engine/fx/speed.js` | Carreritas (`speed-feel.js`: comfort camera and battle arenas opt out) |
 | A pickup you feel: flash and star burst where it was taken, the combo stamped over the counter at 3 and each full row (`createPickupFeel`); pairs with `flyToCounter` and `popCounter` from `fx.js` | `engine/fx/pickup-feel.js` | Carreritas coins |
 | Spoken lines: a typewriter with holds at commas and periods, a blip per letter pitched per speaker, `<wave>` and `<shake>` tags, mood from how a line is written, a speaker's bob and squash (`typewrite`, `parseRich`, `blipPitch`, `moodOf`, `autoRich`, `speakerPose`; `sfx.blip`). `createSeatBubbles(…, { typer })` writes through it | `engine/fx/dialogue.js`, `dialogue.css` | QQSMP (host and contestants) |
+| Cards and tiles with weight, as table meshes: hover lift and 3D tilt toward the pointer, pickup scale with a growing shadow, sway from speed, a spring home that overshoots (a hand closes its gap by itself), flick and slap (`createCardFeel`, pure `springStep`; `sfx.cardFlick`, `cardSlap`). A hand of HTML buttons gets the same through `bindHandFeel`: state keyed by card, so a rebuilt hand still closes its gap (`after()`) | `engine/fx/card-feel.js`, `hand-feel.js` | Dominó, Caída |
 | Pixel effects as camera-facing sprites (`createWorldFx(THREE, scene)`) or on the HUD layer (`createScreenFx`): pooled, capped, loaded on first use so first load doesn't grow | `engine/fx/pixelfx-bridge.js`, code in `engine/vendor/pixelfx/` (MIT; keep its `LICENSE` and `NOTICE.md`; add an effect through its `README.md`) | Trifulca (`hit-spark`, `crit-hit`, `crit-number`), the rank-up ceremony (`level-up` without its pixel hero, `confetti`), pickups (`collect-burst`, `combo-counter`) |
 
 ## Player, look and rewards
