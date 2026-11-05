@@ -724,6 +724,30 @@ column doorways, spiders in waves and better chest rolls never appeared. They re
 `depth` / `this.level` now. When you add depth-driven content, never key it on the
 floor number.
 
+**La mina is its own place.** It stopped reading as a reskin of the library once
+its layout and its surfaces both changed; dressing alone did not do it.
+- *Deal.* `MINE_DECK` (`socavon`, `galeria`, `pozo`, `ramal`, plus `sima`, `veta`,
+  `cuerdas`...; no `columnas` or `cripta`), `MINE_SIZES`, a path that favours going
+  sideways, an extra dead-end `ramal`, and 3 m drifts. `MINE_SPAN` is `[-1, 2]`, not
+  ±1.5: `ruinShell` builds walls from a 1 m grid, so an edge on a half metre draws a
+  wall a metre inside the collision and the camera clips it. Room sizes stay even for
+  the same reason. The Silbón (.72) still fits, in the one lane at `+.5`.
+- *Surfaces.* `palette.rock` in `ruinShell`: tumbled blocks, no courses, band, glyphs
+  or brick relief, floor without seams. `paletteFor` darkens with depth (`mina`,
+  `minaCobre`, `minaHonda`).
+- *Light.* `MINE_LOOK` and `MINE_DEEP_LOOK` (`minaHonda`, depth > 2) set `lampAngle`,
+  `lampPenumbra`, `lampReach` and `lampPost`. Every other look falls back to the old
+  .44 / .42 / 24 / 7, so only the mine's cone changes.
+- *Dressing.* `dressMine()` in `scene.js`; props are in `engine/models/props/mine.js`.
+  Every pit gets opaque black water (`BLACK_WATER`): near the rim in a `pozo`, a sump at
+  `SUMP_LEVEL` under the others. `floor.machines`, `floor.drips` and `floor.crawlers`
+  tick only while their floor is visible and not with reduced motion.
+- *Proof.* Hash `layoutFor(seed, depth, theme)` for the other four themes before and
+  after a mine change: `generateRun` must deal them byte for byte the same.
+- A test that walks from a seed's first deal is tuned to that deal. Changing the mine's
+  deck broke three that leaned on a lucky wander, a patch the moths had spared, and a
+  bridge that happened to run south; they now set up what they measure.
+
 **The deck's streams.** Anything added must not shift the library's `R()`: the
 hiding-spot tests are tuned to those deals. `dealExtras` (twin plates, cuerda,
 flare, parcel) and the `golden` roll have their own streams.

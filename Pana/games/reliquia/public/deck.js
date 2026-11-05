@@ -27,6 +27,7 @@ export const ROOM_NAMES = {
   idolo: locKey('El altar del ídolo'), veta: locKey('La veta de oro'), cripta: locKey('La cripta'), santuario: locKey('El santuario'), puente: locKey('El abismo'),
   ruedas: locKey('Las dos ruedas'), guardian: locKey('El trono del guardián'), boveda: locKey('La bóveda de oro'), oculta: locKey('La sala escondida'),
   estanterias: locKey('Las estanterías'), lectura: locKey('La sala de lectura'), archivo: locKey('El archivo prohibido'), copistas: locKey('El taller de los copistas'),
+  socavon: locKey('El socavón'), galeria: locKey('La galería de máquinas'), pozo: locKey('El pozo inundado'), ramal: locKey('El ramal ciego'),
   sima: locKey('La sima'), cornisa: locKey('La cornisa'), cuerdas: locKey('Los puentes de cuerda'), cisterna: locKey('La cisterna'), bosque: locKey('El bosque de hongos'), atrio: locKey('El atrio caído'), dorada: locKey('La cámara dorada'),
 };
 // La biblioteca sepultada names the rooms it shares with the mine its own way.
@@ -34,15 +35,25 @@ const LIBRARY_NAMES = {
   entrada: locKey('El vestíbulo'), idolo: locKey('El atril maldito'), trampas: locKey('El pasillo de los dardos'), santuario: locKey('El rincón del bibliotecario'),
   puente: locKey('El sótano hundido'), ruedas: locKey('Las ruedas del archivo'), guardian: locKey('El guardián de los libros'), oculta: locKey('Detrás del estante'),
 };
+// The mine calls a few shared rooms by their mining names.
+const MINE_NAMES = { sima: locKey('El tiro'), tesoro: locKey('El polvorín'), santuario: locKey('El refugio de los mineros'), puente: locKey('El pozo viejo') };
 export const LIBRARY_NAME = locKey('La biblioteca sepultada');
 // The biomes' own names for a whole jornada.
 export const THEME_NAMES = { inundada: locKey('Los túneles inundados'), hongos: locKey('La gruta de los hongos'), templo: locKey('El templo caído') };
 export const FLOOR_NAMES = [locKey('El campamento'), locKey('Las afueras de la mina'), locKey('Las cámaras trampa'), locKey('Las ruinas malditas'), locKey('La bóveda del jaguar'), locKey('El oro profundo')];
+// The mine's rooms are cut small and long, so more of the walk is tunnel. It only
+// reshapes rooms whose furniture has room to spare; the pits keep their size.
+const MINE_SIZES = { tesoro: [14, 12], veta: [12, 20], idolo: [14, 12], santuario: [10, 10], trampas: [12, 18], socavon: [20, 16], galeria: [24, 12], pozo: [18, 18], ramal: [10, 16] };
 const SIZES = { entrada: [16, 14], tesoro: [16, 14], columnas: [18, 16], trampas: [16, 16], idolo: [14, 14], veta: [16, 14], cripta: [16, 16],
   santuario: [12, 12], puente: [18, 18], ruedas: [18, 16], guardian: [20, 18], boveda: [22, 22], oculta: [12, 12],
   estanterias: [22, 18], lectura: [20, 18], archivo: [16, 14], copistas: [18, 16],
   sima: [20, 20], cornisa: [20, 18], cuerdas: [24, 18], cisterna: [18, 18], bosque: [20, 18], atrio: [20, 18], dorada: [12, 12] };
-const DECK = ['tesoro', 'columnas', 'trampas', 'idolo', 'veta', 'cripta', 'santuario', 'puente', 'sima', 'cuerdas'];
+// The mine's deck: ore chambers, machinery galleries and shafts, no halls or crypts.
+const MINE_DECK = ['socavon', 'galeria', 'sima', 'veta', 'pozo', 'trampas', 'cuerdas', 'idolo', 'socavon', 'galeria', 'santuario', 'puente', 'tesoro', 'pozo'];
+// A mine's drifts are a metre narrower than anywhere else's corridors, and its way
+// through favours going sideways along a level over climbing to the next.
+// Edges stay on whole metres: the walls are built from a 1 m grid.
+const MINE_SPAN = [-1, 2], SPAN = [-2, 2];
 // Each biome leans on its own rooms; the idol and the Silbón's pit are always dealt (below).
 const BIOME_DECKS = {
   inundada: ['cisterna', 'cisterna', 'sima', 'tesoro', 'cripta', 'veta', 'cuerdas', 'idolo', 'puente'],
@@ -68,7 +79,7 @@ function rotation(origin) {
 export const themeFor = (depth, place = 'alternar', origin = 0) => THEMES.includes(place) ? place : origin ? rotation(origin)[(depth - 1) % THEMES.length] : depth % 2 ? 'biblioteca' : 'mina';
 // The theme of a state's (or an expedition's) current jornada.
 export const themeOf = s => themeFor(s?.level || 1, s?.options?.place, s?.origin || 0);
-export const roomName = (kind, theme = 'mina') => (theme === 'biblioteca' && LIBRARY_NAMES[kind]) || ROOM_NAMES[kind];
+export const roomName = (kind, theme = 'mina') => (theme === 'biblioteca' && LIBRARY_NAMES[kind]) || (theme === 'mina' && MINE_NAMES[kind]) || ROOM_NAMES[kind];
 // What the HUD calls a jornada.
 export const jornadaName = (level, theme = themeFor(level)) => theme === 'biblioteca' ? LIBRARY_NAME : THEME_NAMES[theme] || FLOOR_NAMES[Math.min(FLOOR_NAMES.length - 1, level)];
 // One extra job per jornada, from its own hash so the deck never notices (rules.js pays it).
@@ -104,7 +115,7 @@ export const sealKind = depth => depth % 3 === 0 ? 'boveda' : depth % 2 ? 'rueda
 
 const cache = new Map();
 export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {}) {
-  const floors = 1, key = `${seed}:${depth}:${theme}`, library = theme === 'biblioteca';
+  const floors = 1, key = `${seed}:${depth}:${theme}`, library = theme === 'biblioteca', mine = theme === 'mina';
   if (cache.has(key)) return cache.get(key);
   const run = { seed, floors, depth, theme, solids: [], spots: [], nooks: [], rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
     sleepers: [], obstacles: [], lights: [], decor: [], pits: [], bridges: [], ropes: [], puffs: [], cracks: [], twins: [], encargo: encargoFor(seed, depth) };
@@ -132,20 +143,21 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
     const path = [[pick(COLS), 0]], seen = new Set([path[0].join()]);
     while (path.at(-1)[1] < ROWS - 1 || path.length < 5) {
       const [c, r] = path.at(-1);
-      const options = [[c, r + 1, r < ROWS - 1 ? 2 : 0], [c - 1, r, 1], [c + 1, r, 1]].filter(([cc, rr, w]) => w && COLS.includes(cc) && !seen.has(`${cc},${rr}`));
+      const up = mine ? 1 : 2, along = mine ? 2 : 1;
+      const options = [[c, r + 1, r < ROWS - 1 ? up : 0], [c - 1, r, along], [c + 1, r, along]].filter(([cc, rr, w]) => w && COLS.includes(cc) && !seen.has(`${cc},${rr}`));
       if (!options.length) break;
       let roll = R() * options.reduce((n, o) => n + o[2], 0), next = options[0];
       for (const o of options) { roll -= o[2]; if (roll <= 0) { next = o; break; } }
       path.push([next[0], next[1]]); seen.add(`${next[0]},${next[1]}`);
       if (next[1] === ROWS - 1 && path.length >= 5) break;
     }
-    const deck = [...(library ? LIBRARY_DECK : BIOME_DECKS[theme] || DECK)]; for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+    const deck = [...(library ? LIBRARY_DECK : BIOME_DECKS[theme] || MINE_DECK)]; for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
     if (!deck.slice(0, path.length - 2).includes('idolo')) deck[Math.floor(R() * Math.max(1, path.length - 2))] = 'idolo';
     // Every jornada has its pit: it is the Silbón's arena (dealLair).
     if (!deck.slice(0, path.length - 2).includes('puente')) deck[Math.max(0, deck.slice(0, path.length - 2).findIndex(k => k !== 'idolo'))] = 'puente';
     const kinds = path.map((_, i) => i === 0 ? 'entrada' : i === path.length - 1 ? sealKind(depth) : deck[(i - 1) % deck.length]);
     const rooms = path.map(([c, r], i) => {
-      const [w, d] = SIZES[kinds[i]], p = at(c, r);
+      const [w, d] = (mine && MINE_SIZES[kinds[i]]) || SIZES[kinds[i]], p = at(c, r);
       return { id: `f${f}-r${i}`, floor: f, kind: kinds[i], cell: [c, r], x: p.x, z: p.z, w, d, name: roomName(kinds[i], theme), index: i };
     });
     // Side rooms: one hidden (needs the echo mask), one extra.
@@ -158,9 +170,9 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
     // The hidden one is now and then the rare golden chamber, behind twin plates
     // (its own roll: the rest of the deal does not notice).
     const golden = rng((seed * 1597334677 + depth * 3812015801 + 53) >>> 0)() < .22;
-    for (const kind of [R() < .8 ? (golden ? 'dorada' : 'oculta') : null, pick(library ? ['archivo', 'santuario', 'estanterias'] : ['tesoro', 'santuario', 'veta'])]) {
+    for (const kind of [R() < .8 ? (golden ? 'dorada' : 'oculta') : null, pick(library ? ['archivo', 'santuario', 'estanterias'] : mine ? ['ramal', 'veta', 'santuario'] : ['tesoro', 'santuario', 'veta']), ...(mine ? ['ramal'] : [])]) {
       if (!kind || !free.length) continue;
-      const spot = free.splice(Math.floor(R() * free.length), 1)[0], p = at(...spot.cell), [w, d] = SIZES[kind];
+      const spot = free.splice(Math.floor(R() * free.length), 1)[0], p = at(...spot.cell), [w, d] = (mine && MINE_SIZES[kind]) || SIZES[kind];
       seen.add(spot.cell.join());
       sides.push({ room: { id: `f${f}-s${sides.length}`, floor: f, kind, cell: spot.cell, x: p.x, z: p.z, w, d, name: roomName(kind, theme), side: true }, from: rooms[spot.from] });
     }
@@ -169,8 +181,9 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
     const corridor = (a, b, hidden = null) => {
       const horizontal = a.cell[1] === b.cell[1], [first, second] = horizontal ? (a.x < b.x ? [a, b] : [b, a]) : (a.z < b.z ? [a, b] : [b, a]);
       const room = Math.min(horizontal ? first.d : first.w, horizontal ? second.d : second.w) / 2 - 3, offset = Math.round((R() - .5) * 2 * Math.max(0, Math.min(2, room)));
-      const rect = horizontal ? [first.x + first.w / 2 - .5, first.z + offset - 2, second.x - second.w / 2 + .5, first.z + offset + 2]
-        : [first.x + offset - 2, first.z + first.d / 2 - .5, first.x + offset + 2, second.z - second.d / 2 + .5];
+      const [lo, hi] = mine ? MINE_SPAN : SPAN;
+      const rect = horizontal ? [first.x + first.w / 2 - .5, first.z + offset + lo, second.x - second.w / 2 + .5, first.z + offset + hi]
+        : [first.x + offset + lo, first.z + first.d / 2 - .5, first.x + offset + hi, second.z - second.d / 2 + .5];
       const c = { id: `c${run.corridors.length}`, floor: f, rect, a: a.id, b: b.id, horizontal, hidden };
       run.corridors.push(c); return c;
     };
@@ -454,7 +467,7 @@ function dealExtras(run, seed, depth) {
 // Contents of one room: obstacles, loot, chests, traps, sleepers and decor.
 function furnish(run, room, f, depth, R, id) {
   // `f` places things on the floor; `d` (the jornada's depth) decides how much.
-  const [x0, z0, x1, z1] = room.rect, cx = room.x, cz = room.z, d = depth, deep = Math.min(1, d / 4), library = run.theme === 'biblioteca';
+  const [x0, z0, x1, z1] = room.rect, cx = room.x, cz = room.z, d = depth, deep = Math.min(1, d / 4), library = run.theme === 'biblioteca', mine = run.theme === 'mina';
   const taken = [], desks = [], caps = [];
   // Keep every doorway and stair mouth clear for three metres into the room.
   const mouths = [...run.corridors.filter(c => c.a === room.id || c.b === room.id), ...run.stubs.filter(s => inRect(s.rect[0] + 2.2, s.a, room.rect, .2))]
@@ -479,7 +492,7 @@ function furnish(run, room, f, depth, R, id) {
   // A spot inside a sub-rectangle of the room (the stacks' nave).
   const spotIn = ([a, b, c, e], r = .8) => { for (let i = 0; i < 40; i++) { const x = a + R() * (c - a), z = b + R() * (e - b); if (free(x, z, r)) { taken.push({ x, z, r }); return { x, z }; } } return null; };
   const chest = (p = spot(.8)) => { if (p) run.chests.push({ id: id.chest++, floor: f, room: room.id, x: p.x, z: p.z, h: Math.round(R() * 4) * Math.PI / 2 }); if (p) run.obstacles.push({ x: p.x, z: p.z, r: .6, floor: f, chest: true }); };
-  const sleeper = (kind = 'mummy', p = spot(.6)) => { if (p && inRect(p.x, p.z, room.rect, -.5) && !run.solids.some(s => s.floor === f && inRect(p.x, p.z, s.rect, .5)) && !run.obstacles.some(o => o.floor === f && Math.hypot(o.x - p.x, o.z - p.z) < o.r + .4)) run.sleepers.push({ id: id.sleeper++, kind, floor: f, room: room.id, x: p.x, z: p.z }); };
+  const sleeper = (kind = 'mummy', p = spot(.6)) => { if (p && inRect(p.x, p.z, room.rect, -.5) && !(mine && run.pits.some(q => q.room === room.id && inRect(p.x, p.z, q.rect, .5))) && !run.solids.some(s => s.floor === f && inRect(p.x, p.z, s.rect, .5)) && !run.obstacles.some(o => o.floor === f && Math.hypot(o.x - p.x, o.z - p.z) < o.r + .4)) run.sleepers.push({ id: id.sleeper++, kind, floor: f, room: room.id, x: p.x, z: p.z }); };
   // A cuaima coils up beside a piece of this room's loot; spiders wait above.
   const guard = () => { const l = run.loot.filter(l => l.room === room.id && !l.y); const near = l[Math.floor(R() * l.length)]; if (near) sleeper('snake', { x: near.x + (R() < .5 ? -1 : 1), z: near.z + .4 }); };
   const ceiling = n => { for (let i = 0; i < n; i++) sleeper('spider'); };
@@ -505,7 +518,7 @@ function furnish(run, room, f, depth, R, id) {
   const corner = (sx, sz) => { const m = room.kind === 'cornisa' ? .6 : 1.2; return { x: cx + sx * (room.w / 2 - m), z: cz + sz * (room.d / 2 - m) }; };
   const lit = R() < .5 ? [[-1, -1], [1, 1]] : [[1, -1], [-1, 1]];
   // The library keeps a candelabrum in two corners; the other two stay dark.
-  for (const [sx, sz] of lit) { const p = corner(sx, sz); light(p.x, p.z, library ? 'candelabra' : d === 1 && run.theme === 'mina' ? 'mineLamp' : 'brazier'); }
+  for (const [sx, sz] of lit) { const p = corner(sx, sz); light(p.x, p.z, library ? 'candelabra' : mine ? 'mineLamp' : 'brazier'); }
   // What stays on an island: laid by hand, as spot() keeps clear of pits.
   const onIsle = (kind, [a, b, c, e]) => run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: a + .7 + R() * (c - a - 1.4), z: b + .7 + R() * (e - b - 1.4), h: R() * 6.28 });
   if (!library && (d > 1 || R() < .5)) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
@@ -524,7 +537,7 @@ function furnish(run, room, f, depth, R, id) {
     case 'tesoro':
       chest(); if (R() < .6) chest(); small(4 + d);
       if (R() < .55 + deep * .3) big(BIG_POOL[Math.min(2, d - 1)][Math.floor(R() * 3)]);
-      decor('statue', cx + (R() < .5 ? -1 : 1) * (room.w / 2 - 1.5), cz, 0);
+      decor(mine ? 'crates' : 'statue', cx + (R() < .5 ? -1 : 1) * (room.w / 2 - 1.5), cz, 0);
       if (R() < .6) guard();
       break;
     case 'columnas':
@@ -552,9 +565,10 @@ function furnish(run, room, f, depth, R, id) {
       for (let i = 0; i < 2; i++) sleeper(); small(2);
       break;
     case 'veta':
-      for (const s of [-1, 1]) decor('vein', cx + s * (room.w / 2 - .4), cz + (R() - .5) * 6, s < 0 ? Math.PI / 2 : -Math.PI / 2);
+      for (const s of [-1, 1]) { const x = cx + s * (room.w / 2 - .4), z = cz + (R() - .5) * 6; if (!mine || !mouths.some(m => inRect(x, z, m, 1.8))) decor('vein', x, z, s < 0 ? Math.PI / 2 : -Math.PI / 2); }
       decor('ore', cx - room.w * .25, cz + room.d * .25, 0); run.obstacles.push({ x: cx - room.w * .25, z: cz + room.d * .25, r: 1.4, floor: f }); taken.push({ x: cx - room.w * .25, z: cz + room.d * .25, r: 2 });
       if (R() < .7) big('cart'); small(5); loot('emerald');
+      if (mine) oreWalls(3);
       if (R() < .5) guard();
       break;
     case 'cripta':
@@ -564,7 +578,7 @@ function furnish(run, room, f, depth, R, id) {
       ceiling(d > 1 ? 2 : 1);
       break;
     case 'santuario':
-      light(cx, cz, library ? 'candelabra' : 'brazier'); loot('botiquin'); loot(R() < .5 ? 'machete' : 'honda'); if (d > 1) loot('farol'); small(1);
+      light(cx, cz, library ? 'candelabra' : mine ? 'mineLamp' : 'brazier'); loot('botiquin'); loot(R() < .5 ? 'machete' : 'honda'); if (d > 1) loot('farol'); small(1);
       break;
     case 'puente': {
       // A pit fills the middle; a rope bridge reaches the island with the treasure.
@@ -639,6 +653,46 @@ function furnish(run, room, f, depth, R, id) {
       small(4); loot('mask'); for (let i = 0; i < 1 + d; i++) sleeper();
       break;
     }
+    // ---- The mine ----
+    case 'socavon':
+      // An ore chamber: loose props hold the roof up, seams in every wall, spoil on the floor.
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1], [0, 1]]) pillar(cx + sx * room.w * .24 + (R() - .5), cz + sz * room.d * .24 + (R() - .5), .36, 'prop');
+      oreWalls(4);
+      { const x = cx + (R() < .5 ? -1 : 1) * room.w * .34, z = cz + (R() - .5) * 3; if (free(x, z, 1.6)) { decor('ore', x, z, 0); run.obstacles.push({ x, z, r: 1.3, floor: f }); taken.push({ x, z, r: 1.8 }); } }
+      for (let i = 0; i < 1 + d; i++) sleeper(); small(4 + d); loot(R() < .5 ? 'idol' : 'emerald'); chest();
+      if (R() < .5) guard();
+      if (d > 1) ceiling(1);
+      break;
+    case 'galeria': {
+      // A machinery gallery: a line of rails with a loaded cart, the hoist and a
+      // hopper along one long wall. The other long wall stays clear to walk.
+      const side = R() < .5 ? -1 : 1, wall = cz + side * (room.d / 2 - 1.7), rail = cz - side * 1.2;
+      decor('rails', cx, rail, Math.PI / 2, { length: room.w - 2 });
+      const machine = (kind, x, r) => { if (!free(x, wall, r)) return; decor(kind, x, wall, side < 0 ? 0 : Math.PI); run.obstacles.push({ x, z: wall, r, floor: f }); taken.push({ x, z: wall, r: r + .4 }); };
+      machine('hoist', cx - room.w * .26, 1.5); machine('hopper', cx + room.w * .14, 1.05); machine('crates', cx + room.w * .34, .85);
+      { const x = cx + (R() - .5) * room.w * .5; if (free(x, rail, 1)) { decor('oreCart', x, rail, Math.PI / 2); run.obstacles.push({ x, z: rail, r: .85, floor: f }); taken.push({ x, z: rail, r: 1.2 }); } }
+      for (let i = 0; i < 1 + d; i++) sleeper();
+      small(3 + d); loot('cup'); if (R() < .5) chest();
+      if (d > 1) ceiling(1);
+      break;
+    }
+    case 'pozo': {
+      // A flooded shaft: opaque black water a step below the rim, a plank to the
+      // staging in its middle, and whatever coils along the edge.
+      const pit = [x0 + 3.2, z0 + 3.2, x1 - 3.2, z1 - 3.2], island = [cx - 2.4, cz - 2.4, cx + 2.4, cz + 2.4], north = R() < .5;
+      run.pits.push({ floor: f, room: room.id, rect: pit, island, water: true });
+      run.bridges.push({ floor: f, room: room.id, rect: north ? [cx - .55, pit[1] - .2, cx + .55, island[1] + .2] : [cx - .55, island[3] - .2, cx + .55, pit[3] + .2], axis: 'z', beam: true });
+      small(3); guard(); if (d > 1) ceiling(1);
+      chest({ x: cx, z: cz }); for (const kind of ['pearl', 'emerald', 'cup']) onIsle(kind, island);
+      break;
+    }
+    case 'ramal':
+      // A dead-end drift: rails stop at a bumper and what was left there stayed.
+      decor('rails', cx, cz, 0, { length: room.d - 3, bumper: true });
+      small(2 + d); if (R() < .6) chest();
+      if (R() < .5) loot('mask');
+      if (R() < .5 + deep * .3) sleeper(); else guard();
+      break;
     case 'dorada':
       // The rare one: gold everywhere and nothing guarding it but the door.
       chest(); chest(); chest(); small(8 + d); loot('mask'); loot('emerald'); big(BIG_POOL[Math.min(2, d)][Math.floor(R() * 3)]);
@@ -717,6 +771,22 @@ function furnish(run, room, f, depth, R, id) {
       break;
   }
   if (library) hideSpots();
+  // A mine leaves its gear about: crates and barrels against the walls of the rooms with no drop.
+  if (mine && !run.pits.some(p => p.room === room.id)) for (let i = 0; i < 2 + Math.floor(R() * 2); i++) for (let t = 0; t < 8; t++) {
+    const side = Math.floor(R() * 4), alongX = side < 2, u = (R() - .5) * ((alongX ? room.w : room.d) - 3.4), x = alongX ? cx + u : side === 2 ? x0 + .9 : x1 - .9, z = alongX ? (side === 0 ? z0 + .9 : z1 - .9) : cz + u;
+    if (!free(x, z, .85) || run.sleepers.some(s => s.floor === f && Math.hypot(s.x - x, s.z - z) < 1.2)) continue;
+    decor(R() < .55 ? 'crate' : 'barrel', x, z, R() * 6.28); run.obstacles.push({ x, z, r: .6, floor: f }); taken.push({ x, z, r: .9 }); break;
+  }
+
+  // Ore showing through the walls, never across a doorway.
+  function oreWalls(count) {
+    for (let i = 0; i < count; i++) for (let t = 0; t < 6; t++) {
+      const side = Math.floor(R() * 4), alongX = side < 2, u = (R() - .5) * ((alongX ? room.w : room.d) - 4.4);
+      const x = alongX ? cx + u : side === 2 ? x0 + .02 : x1 - .02, z = alongX ? (side === 0 ? z0 + .02 : z1 - .02) : cz + u;
+      if (mouths.some(m => inRect(x, z, m, 1.8))) continue;
+      decor('seam', x, z, [0, Math.PI, Math.PI / 2, -Math.PI / 2][side]); break;
+    }
+  }
 
   // ---- Hiding spots: places to search, dealt with the room's relics ----
   function hideSpots() {
