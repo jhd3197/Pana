@@ -27,6 +27,8 @@ import { marketStall } from '/engine/models/props/plaza.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { hideNook } from '/engine/models/props/reliquia-boss.js';
+import { createFire } from '/engine/fx/fire.js';
+import { getSettings } from '/engine/settings.js';
 import { giantMushroom, puffball, hangingRope, ropeAnchor, narrowBeam, coiledRope, flareStick, sealedParcel, ceilingCrackMark, floodSurface } from '/engine/models/props/fosa-biomes.js';
 import { createCampCave } from './camp-cave.js';
 import { layoutFor } from './layout.js';
@@ -56,10 +58,21 @@ export function itemModel(kind) {
 }
 export const glowColor = kind => ITEMS[kind].artifact ? treasure.ARTIFACT_AURA[kind] : ITEMS[kind].junk ? GLOW.junk : ITEMS[kind].tool ? GLOW.tool : ITEMS[kind].size === 'big' ? GLOW.big : GLOW.treasure;
 
-export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true } = {}) {
+// How a fire sits on each thing that burns: where its base is, how big it is.
+const FIRES = { brazier: { y: 1.27, height: 1.45, radius: .34 }, campfire: { y: .22, height: 2.1, radius: .72, emberSize: .05 } };
+const FIRE_DRAW = 30;   // past this the fog has it: no flame cards at all
+const reducedMotion = () => !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true, onFx = null } = {}) {
   const L = layoutFor(seed, depth, theme), run = L.run, floors = run.floors;
   const group = new THREE.Group(); group.name = 'Fosa · La mina del sol'; // i18n-ignore: scene graph name
-  const owned = new Set(), animated = [], floorsBuilt = new Map();
+  const owned = new Set(), animated = [], floorsBuilt = new Map(), calm = reducedMotion();
+  let fireDetail = getSettings().detail;
+  // Every fire: the view lends each near one a light; its crackles go to whoever listens.
+  const fire = (kind, parent, x, z, seedOf) => {
+    const { y, ...size } = FIRES[kind], made = createFire({ ...size, seed: seedOf, calm, quality: fireDetail, onCrackle: e => onFx?.({ type: 'crackle', ...e }) });
+    made.group.position.set(x, y, z); parent.add(made.group); return { x, z, fire: made };
+  };
   const halo = glowTexture(), haloMaterials = new Map();
   const haloMaterial = color => { if (!haloMaterials.has(color)) haloMaterials.set(color, new THREE.SpriteMaterial({ map: halo, color, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending })); return haloMaterials.get(color); };
   const mat = (color, extra = {}) => { const m = new THREE.MeshStandardMaterial({ color, roughness: .9, ...extra }); owned.add(m); return m; };
@@ -76,7 +89,8 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
   place(campStatic, investigationTable(), TABLE.x, 0, TABLE.z, 0);
   place(campStatic, expeditionTent({ color: 'mustard' }), -9, 0, 22, .4);
   place(campStatic, expeditionTent({ color: 'olive', seed: 4 }), -14, 0, 14, 1.2);
-  const fire = place(camp, expeditionCampfire(), 3, 0, 26); animated.push(fire);
+  const campfireModel = place(camp, expeditionCampfire({ flame: false }), 3, 0, 26); animated.push(campfireModel);
+  const campFires = [fire('campfire', camp, 3, 26, 41)];
   place(campStatic, campBench({ length: 2 }), 0, 0, 25, .3); place(campStatic, campBench({ length: 2 }), 6, 0, 26.5, -.4);
   place(campStatic, supplyPile({ seed: 5 }), 14, 0, 11, -.6);
   place(campStatic, mineCrate({ seed: 3 }), -3, 0, 4, .4); place(campStatic, mineCrate({ seed: 5, tnt: true }), -4, 0, 2.6, -.2);
@@ -127,12 +141,13 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
     const root = new THREE.Group(); root.name = `Piso ${f}`; group.add(root);
     const library = run.theme === 'biblioteca', statics = new THREE.Group(), palette = paletteFor(depth, run.theme), x0 = f * L.SPACING - 60;
     const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z) && !run.bridges.some(b => b.beam && inRect(x, z, b.rect)), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
-    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [], spots: new Map(), webs: null, mist: null, chandeliers: [], water: null, waterLevel: .13, spans: new Map(), ropes: new Map(), twins: [], decorGlows: [] };
+    const floor = { root, shell: shell(), revealed: '', fires: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [], spots: new Map(), webs: null, mist: null, chandeliers: [], water: null, waterLevel: .13, spans: new Map(), ropes: new Map(), twins: [], decorGlows: [] };
     root.add(floor.shell);
     // Candle flames of the whole floor go in one instanced shader.
     const flamePoints = [], flamesOf = (model, x, y, z, h = 0) => { for (const p of model.userData.flames || []) flamePoints.push(new THREE.Vector3(p.x * Math.cos(h) + p.z * Math.sin(h) + x, p.y + y, -p.x * Math.sin(h) + p.z * Math.cos(h) + z)); };
     for (const d of run.decor.filter(d => d.floor === f)) {
-      if (d.kind === 'brazier') { const b = place(root, brazier({ seed: d.x | 0, lit: true }), d.x, 0, d.z); floor.braziers.push(b); animated.push(b); continue; }
+      // The bowl and its coals bake with the floor; only the flame is alive.
+      if (d.kind === 'brazier') { place(statics, brazier({ seed: d.x | 0, lit: false }), d.x, 0, d.z); floor.fires.push(fire('brazier', root, d.x, d.z, (d.x * 7 + d.z * 3) | 0)); continue; }
       const model = decorModel(d); if (!model) continue;
       if (d.kind === 'vein') { model.rotation.z = Math.PI / 2; model.position.y = 1.6; }
       if (d.kind === 'chandelier') floor.chandeliers.push({ x: d.x, z: d.z });
@@ -580,9 +595,19 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
   }
 
   let previous = {};
+  const tickFires = (fires, t, dt, viewer) => {
+    for (const f of fires) {
+      const distance = viewer ? Math.hypot(f.x - viewer.x, f.z - viewer.z) : 0;
+      f.fire.group.visible = distance < FIRE_DRAW;
+      if (f.fire.group.visible || f.fire.flare > 0) f.fire.update(dt, t, { distance });
+    }
+  };
+  const allFires = () => [...campFires, ...[...floorsBuilt.values()].flatMap(floor => floor.fires)];
   function update(t, state = {}, dt = .016, viewer = null) {
     tickWind(t, .8);
     for (const a of animated) a.userData.tick?.(t, dt);
+    if (getSettings().detail !== fireDetail) { fireDetail = getSettings().detail; for (const f of allFires()) f.fire.setQuality(fireDetail); }
+    if (!viewer || floorOf(viewer.x) === 0) tickFires(campFires, t, dt, viewer);
     revealedNow = state.revealed || {};
     // Floors: the camp always; floor 1 at once; the next when its seal opens.
     const want = new Set([1]);
@@ -600,6 +625,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
       for (const [id, chest] of floor.chests) { const open = !!state.chests?.[id]; chest.open = THREE.MathUtils.damp(chest.open, open ? 1 : 0, 6, dt); chest.model.userData.lid.rotation.x = -chest.open * 1.9; }
       for (const d of floor.doors) { d.open = THREE.MathUtils.damp(d.open, revealedNow[d.id] ? 1 : 0, 1.6, dt); d.door.userData.hinge.rotation.y = d.open * 1.45; }
       if (floor.flames) floor.flames.userData.tick(t);
+      if (floor.root.visible) tickFires(floor.fires, t, dt, viewer);
       if (floor.mushroomHalos) floor.mushroomHalos.material.opacity = .6 + Math.sin(t * .9 + f) * .12;
       floor.webs?.userData.tick(t); floor.mist?.userData.tick(t);
       if (floor.water) { floor.waterLevel = THREE.MathUtils.damp(floor.waterLevel, state.suceso?.kind === 'creciente' ? .68 : .13, .8, dt); floor.water.userData.level(floor.waterLevel); floor.water.userData.tick(t); }
@@ -633,6 +659,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
     truckRing.material.opacity = .45 + Math.sin(t * 3) * .15;
   }
   function dispose() {
+    for (const f of allFires()) f.fire.dispose();
     const geometries = new Set(), materials = new Set();
     group.traverse(o => { if (o.geometry) geometries.add(o.geometry); for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) materials.add(m); o.userData.dispose?.(); });
     geometries.forEach(g => g.dispose());
@@ -643,10 +670,17 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true 
   // dying in a scare) and a blow-out around a point.
   function candles({ level = 1, out = null, near = 4, far = 24 } = {}) {
     for (const floor of floorsBuilt.values()) {
+      for (const f of floor.fires) f.fire.setLevel(level);
       const u = floor.flames?.userData; if (!u) continue;
       u.level(level); u.fog(near, far);
       if (out) u.blowOut(out.x, out.z, out.r, out.amount); else u.blowOut(0, 0, 1, 0);
     }
   }
-  return { group, update, dispose, buildFloor, candles, campLamps: cave.userData.lamps, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
+  // The fire burning at a point, for the view's light pool.
+  const fireAt = (f, x, z) => (f === 0 ? campFires : floorsBuilt.get(f)?.fires || []).find(q => Math.abs(q.x - x) < 1 && Math.abs(q.z - z) < 1)?.fire || null;
+  // Something feeds the fires on a floor (the near ones, when `at` and `within` are given).
+  const feedFires = (f, strength = 1, at = null, within = 18) => { for (const q of f === 0 ? campFires : floorsBuilt.get(f)?.fires || []) if (!at || Math.hypot(q.x - at.x, q.z - at.z) < within) q.fire.feed(strength); };
+  // How close the nearest burning fire is, 0..1 inside `range` metres: for its roar.
+  const fireNear = (x, z, f, range = 9) => { let best = 0; for (const q of f === 0 ? campFires : floorsBuilt.get(f)?.fires || []) { const k = 1 - Math.hypot(q.x - x, q.z - z) / range; if (k > best) best = k * q.fire.level; } return best; };
+  return { group, update, dispose, buildFloor, candles, fireAt, feedFires, fireNear, campLamps: cave.userData.lamps, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
 }

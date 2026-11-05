@@ -18,7 +18,7 @@ import { DRIPS, dripLands } from './camp-cave.js';
 import { roarFor } from './options.js';
 
 export function createAmbience() {
-  let graph = null, near = 0, stepAt = 0, eventIn = 2, clockIn = 6, ticks = 0;
+  let graph = null, near = 0, fireLevel = 0, stepAt = 0, eventIn = 2, clockIn = 6, ticks = 0;
   const steps = new Map(), voices = new Map(), peeks = new Map();
 
   // Lazily, once audio is unlocked: a split after the game's output into a
@@ -49,7 +49,11 @@ export function createAmbience() {
     const falls = ctx.createBufferSource(), high = ctx.createBiquadFilter(), body = ctx.createBiquadFilter(), roar = ctx.createGain();
     falls.buffer = noise; falls.loop = true; falls.playbackRate.value = 1.6; high.type = 'highpass'; high.frequency.value = 170; body.type = 'lowpass'; body.frequency.value = 620; roar.gain.value = 0;
     falls.connect(high).connect(body).connect(roar).connect(input); falls.start();
-    graph = { ctx, input, wet, bed, drone, noise, wind, roar };
+    // A fire close by: a soft roar, warmer and lower than the falls, under its crackles.
+    const flames = ctx.createBufferSource(), flameBand = ctx.createBiquadFilter(), fireRoar = ctx.createGain();
+    flames.buffer = noise; flames.loop = true; flames.playbackRate.value = 2.2; flameBand.type = 'bandpass'; flameBand.frequency.value = 340; flameBand.Q.value = .5; fireRoar.gain.value = 0;
+    flames.connect(flameBand).connect(fireRoar).connect(input); flames.start();
+    graph = { ctx, input, wet, bed, drone, noise, wind, roar, fireRoar };
   }
 
   // A short sound placed in stereo, quieter with distance.
@@ -102,6 +106,8 @@ export function createAmbience() {
     growl: (ctx, out, t) => osc(ctx, out, t, { type: 'sawtooth', from: 70, to: 55, dur: 1.2, vol: .14, vibrato: 22 }),
     roar: (ctx, out, t) => { osc(ctx, out, t, { type: 'sawtooth', from: 160, to: 60, dur: 1, vol: .2, vibrato: 30 }); noiseBurst(ctx, out, t, { dur: .8, freq: 900, vol: .2, sweep: .3 }); },
     heartbeat: (ctx, out, t) => { osc(ctx, out, t, { from: 60, to: 40, dur: .16, vol: .25 }); osc(ctx, out, t + .22, { from: 55, to: 38, dur: .18, vol: .2 }); },
+    // A log popping: a dry tick or two, high and short.
+    crackle: (ctx, out, t) => { for (let i = 0, n = 1 + Math.floor(Math.random() * 3); i < n; i++) noiseBurst(ctx, out, t + i * (.03 + Math.random() * .05), { dur: .02 + Math.random() * .025, freq: 2200 + Math.random() * 3200, type: 'bandpass', q: 2.5, vol: .22 }); },
     // ---- The library ----
     // A board under a foot: a dull knock and, sometimes, a short squeal.
     board: (ctx, out, t, squeal) => { noiseBurst(ctx, out, t, { dur: .08, freq: 380, vol: .45 }); osc(ctx, out, t, { type: 'triangle', from: 150, to: 95, dur: .09, vol: .12 }); if (squeal) osc(ctx, out, t + .03, { type: 'sawtooth', from: 260 + Math.random() * 120, to: 180 + Math.random() * 80, dur: .35 + Math.random() * .3, vol: .035, vibrato: 30 }); },
@@ -148,6 +154,7 @@ export function createAmbience() {
     graph.bed.gain.setTargetAtTime(deep ? .05 + tier * .015 : cave ? .03 : 0, now, .8);
     // presence.js swells the drone while a mummy closes in (0…1).
     graph.drone.gain.setTargetAtTime(deep ? .012 + tier * .01 + near * .03 : cave ? .007 : 0, now, 1.2);
+    graph.fireRoar.gain.setTargetAtTime(fireLevel * fireLevel * .55, now, .35);
     if (!playing) return;
     // Footsteps: yours on your stride, others' from where they walk.
     for (const p of state.players) {
@@ -204,5 +211,5 @@ export function createAmbience() {
   function eerie(name, { pan = 0, gain = 1, strength = 1 } = {}) { if (SOUNDS[name]) voice((ctx, out, t) => SOUNDS[name](ctx, out, t, strength), { pan, gain }); }
   // One world sound, panned and faded from where this pana stands.
   function at(name, me, heading, x, z, range = 24) { if (graph && me) play(name, place(me, heading, x, z, range)); }
-  return { update, eerie, at, set presence(v) { near = Math.max(0, Math.min(1, v || 0)); } };
+  return { update, eerie, at, set presence(v) { near = Math.max(0, Math.min(1, v || 0)); }, set fire(v) { fireLevel = Math.max(0, Math.min(1, v || 0)); } };
 }

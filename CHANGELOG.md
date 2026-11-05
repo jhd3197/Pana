@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: el fuego ahora parece fuego.**
+  Lenguas que lamen, blancas por dentro y naranjas por fuera, chispas que suben y parpadean, sombras que bailan en la pared, un rugido suave y crujidos. Si la ruina tiembla o vuelve la luz, se aviva.
 - **Fosa: el jaguar de piedra ahora da miedo.**
   Agazapado sobre su plinto, con colmillos, cola enrollada, manchas talladas y musgo; el jaguar de oro estrena la misma forma.
 - **Fosa: las puertas de piedra con la mano de tiza ahora se ven como lo que son: un escondite.**

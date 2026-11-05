@@ -530,6 +530,20 @@ calls. Software WebGL is
 pixel-bound, so compare calls and triangles, not milliseconds. The host's
 20 Hz timer shares the main thread with drawing: a host whose GPU lags
 also simulates and publishes less often, which guests feel as lag.
+**Fires** are the shared `engine/fx/fire.js` (`docs/SHARED-ENGINE.md`, "Fire"): every
+brazier and the camp's campfire, two draws each. A brazier's bowl now bakes with the
+floor (it was four animated cones on top of its own draws), and `brazier({ lit: false })`
+is the coal bed under the flame. The flame is premultiplied and partly opaque, because
+the headlamp lights the wall behind it to near-white and added light alone burns out to
+a white smear there. The view's pool lights keep their fixed number: a source with a
+`fire` takes its intensity, wander and colour from `fire.light` every frame, and
+lanterns keep the old breathing. Blackouts dim the flames through `world.candles`
+(`setLevel`). `world.feedFires` flares the ones nearby when a tunnel caves in and when
+la codicia rises, and all of a floor's when a blackout ends. The roar is one looping
+noise band in `ambience.js` following `world.fireNear`, and crackles arrive through
+`view.onFx` from the moment a spark pops. Candles keep their own instanced shader:
+they are tiny, and the library has hundreds of them.
+
 **The stone jaguar** (`jaguarStatue`, `engine/models/props/jaguar-stone.js`) is one
 mesh with one vertex-coloured, flat-shaded material, painted facet by facet: it bakes
 to a single draw. The headlamp bleaches a pale stone to cream at 3 m, so the stone is
