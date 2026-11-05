@@ -88,12 +88,18 @@ inertia, collision through the game's own `move`, the jump and the floor height.
 The game keeps its rules and passes numbers (`walk`, `run`, `canSprint`).
 
 ```js
-import { stepWalker, axisMove } from '../../../engine/play/walker.js'; // relative: rules.js also loads on the server
-const r = stepWalker(p, input, dt, { walk: 7, run: 10, canSprint: !input.fire, move: axisMove((x, z) => blocked(x, z)) });
+import { stepWalker, slideMove } from '../../../engine/play/walker.js'; // relative: rules.js also loads on the server
+const r = stepWalker(p, input, dt, { walk: 7, run: 10, canSprint: !input.fire, move: (q, dx, dz) => slideMove(q, dx, dz, (x, z) => !blocked(x, z), { slip: .5 }) });
 p.sprint = r.sprinting;
 ```
 
 Used by: Reliquia, Pepazo. Notes: `docs/knowledge/shared-player.md`.
+
+`slideMove(p, dx, dz, free, { slip })` is the `move` for a body with a size: it
+runs each axis up to contact and, with `slip` (the body's radius), rounds a corner
+the body only grazes instead of stopping dead on it. `free(x, z)` says the whole
+body fits there. Used by: Fosa (`layout.moveBody`, `moveAcross`), Pepazo. `axisMove` stops dead at
+corners: a game with a body size wants `slideMove`.
 
 ### Jump
 
@@ -247,10 +253,13 @@ needs it (see candidates).
 flight: `launch(ax, az, speed, angle)`, `sweep(ball, dt, { boxes, targets, padding, y })`
 (the earliest cover box or round target along this step's segment, so a fast
 ball never tunnels; with `y`, the flight height, boxes no taller than it are
-flown over), `segmentBox`, `segmentCircle`, `traceRay` (where a tracer
-line ends, same `y`) and `flightTime`. `launchAimed(ax, az, pitch, speed, angle)`
-is the same launch tilted by a look's pitch, `{ vx, vy, vz }` at the full speed:
-sweep that with `sweepArc` and `gravity: 0` for a shot that goes where you look.
+flown over; a box with `trunk: r` is that exact circle for shots, unpadded, and
+the result's `box` says which cover stopped it), `segmentBox`, `segmentCircle`,
+`traceRay` (where a tracer line ends, same `y`) and `flightTime`.
+`launchAimed(ax, az, pitch, speed, angle)` is the same launch tilted by a look's
+pitch, `{ vx, vy, vz }` at the full speed: sweep that with `sweepArc` and
+`gravity: 0` for a shot that goes where you look. `sweepArc` honours `trunk: r`
+and reports `box` the same way.
 
 ```js
 import { launch, sweep } from '../../../engine/play/projectile.js'; // relative: rules.js also loads on the server

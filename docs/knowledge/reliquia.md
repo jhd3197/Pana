@@ -1223,3 +1223,18 @@ When a background host catches up a second, newly received jumps are delayed
 within that simulation interval to their receive time. Otherwise a full short
 jump could take off and land before a single snapshot reached the other panas.
 The host assigns this delay; clients cannot supply it.
+
+## Corners and walls
+
+The shell builds its walls on a 1 m grid (a cell is floor when its centre is in a
+rect); the collision bitmap is .25 m. `layoutFor` snaps rooms, corridors and stubs
+to that 1 m outline before rasterising, because rects are not all whole metres: the
+lift alcove (4.4 m on paper) ran .25 m into its brick, and the vault mouth (5.2 m)
+stopped a body .375 m short of it. Deal the rect you like; the walls decide.
+
+`moveBody` and `moveAcross` use `slideMove` with `slip` = the body's radius. A body
+is tested at 8 points on its circle, so without it any overlap with a jamb, even
+2 cm, stopped a straight walk dead. Bricks are 1.12 m long and overlap their
+neighbours: `ruinShell` trims them at a wall's end, where they used to stick .31 m
+out into the floor. The corridor columns sit half inside the room's wall and flush
+with the corridor's, where a body against either wall cannot reach them.

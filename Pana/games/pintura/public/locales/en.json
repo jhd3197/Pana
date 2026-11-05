@@ -144,7 +144,7 @@
   "El color de fábrica de la marcadora": "The marker's factory colour",
   "El equipo {team} neutralizó la zona {zone}.": "The {team} team neutralized zone {zone}.",
   "El equipo {team} tomó la zona {zone}.": "The {team} team took zone {zone}.",
-  "El mapa de la esquina muestra lo que tienes alrededor (unos 30 m): tu equipo y solo los rivales que tienes a la vista. Mantén Tab para ver la cancha completa.": "The corner map shows the area around you (about 30 m): your team and only the rivals you can see. Hold Tab to see the whole court.",
+  "El mapa de la esquina muestra lo que tienes cerca y a tu equipo. Un rival solo sale un momento cuando dispara. Mantén Tab para ver la cancha completa.": "The corner map shows what is close to you and your team. A rival only appears for a moment when they fire. Hold Tab to see the whole court.",
   "En bandera gana el equipo que llegue a {n} captura.": {
     "one": "In flag mode the first team to {n} capture wins.",
     "other": "In flag mode the first team to {n} captures wins."

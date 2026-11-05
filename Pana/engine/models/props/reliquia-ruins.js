@@ -121,7 +121,11 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   }, chunk));
   // Walls: brick courses on every edge between a walkable cell and the outside.
   const edges = [];
-  for (const [i, j] of cells) for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!cell(i + di, j + dj) && !open(i + di + .5, j + dj + .5)) edges.push({ i, j, di, dj, y: ground(i + .5, j + .5) });
+  for (const [i, j] of cells) for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!cell(i + di, j + dj) && !open(i + di + .5, j + dj + .5)) {
+    // A wall that ends at a corner has floor just past that end, beyond the wall line.
+    const past = s => cell(i + di + s * Math.abs(dj), j + dj + s * Math.abs(di)) || open(i + di + s * Math.abs(dj) + .5, j + dj + s * Math.abs(di) + .5);
+    edges.push({ i, j, di, dj, y: ground(i + .5, j + .5), ends: [past(-1), past(1)] });
+  }
   const course = .58, rows = Math.ceil(height / course), bricks = [], glyphs = [];
   for (const e of edges) for (let k = 0; k < rows; k++) {
     bricks.push({ e, k, band: k === rows - 2 && !palette.rock });
@@ -138,8 +142,11 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   const brickMaterial = mat({ roughness: .92, map: stoneTexture(palette.rock ? 'rock' : 'brick') });
   if (!palette.rock) brickMaterial.userData.relief = 'brick';   // a game may carve it (engine/fx/pom.js)
   group.add(instanced(brick, brickMaterial, bricks, (m, c, { e, k, band: isBand }) => {
-    at(m, e, (k % 2 ? .25 : -.25) + (r() - .5) * .04, .35 + (r() - .5) * .06);
-    m.position.y = e.y + course * (k + .5); m.scale.set(1, 1, 1 + (r() - .5) * .1);
+    // Bricks overlap their neighbours, but stop flush at a corner: past it they
+    // would stick out into the floor, where nothing collides.
+    const along = (k % 2 ? .25 : -.25) + (r() - .5) * .04, from = e.ends[0] ? Math.max(along - .56, -.5) : along - .56, to = e.ends[1] ? Math.min(along + .56, .5) : along + .56;
+    at(m, e, (from + to) / 2, .35 + (r() - .5) * .06);
+    m.position.y = e.y + course * (k + .5); m.scale.set((to - from) / 1.12, 1, 1 + (r() - .5) * .1);
     c.copy(isBand ? band : colors[Math.floor(r() * colors.length)]).multiplyScalar(isBand ? 1 : .85 + r() * .25);
     // Raw rock: the same blocks, shoved out of line and tumbled so no course or joint survives.
     if (palette.rock) { m.position.y += (r() - .5) * .3; m.rotation.x = (r() - .5) * .16; m.rotation.y += (r() - .5) * .16; m.rotation.z = (r() - .5) * .5; m.scale.set(1.1 + r() * .4, 1.2 + r() * .6, 1); const out = .06 + r() * .16; m.position.x += e.di * out; m.position.z += e.dj * out; }

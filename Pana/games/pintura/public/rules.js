@@ -16,7 +16,7 @@ import { clamp } from '../../../engine/random.js';
 import { pickSpawn, pickRespawn, spreadSpawns, MIN_SPAWN_GAP } from './spawn-picker.js';
 import { locKey } from '../../../engine/i18n.js';
 import { resetJump, jumpCount } from '../../../engine/play/jump.js';
-import { stepWalker, axisMove } from '../../../engine/play/walker.js';
+import { stepWalker, slideMove } from '../../../engine/play/walker.js';
 import { returnToLobby } from '../../../engine/play/round-lobby.js';
 import { segmentBox, launchAimed, sweepArc } from '../../../engine/play/projectile.js';
 import { shotHeight, headHit, aimedPitch } from '../../../engine/play/head-zone.js';
@@ -37,6 +37,14 @@ export const SWAP_TIME = .4;
 // lets it pass over instead of standing as an invisible wall above it. A first-person
 // shot leaves the eye along the look (sweepShot), so it lands under the crosshair.
 export const SHOT_HEIGHT = 1.1;
+// A mark on a trunk is this share of a full splat: any wider and it hangs in the air beside it.
+const TRUNK_SPLAT = .45;
+// A held burst would bury a thin trunk under marks: only the newest stay.
+export const TRUNK_MARKS = 6;
+// A shot's ray at `travel` metres: its look plus a wander from the spread. Flight follows
+// the look alone; this says where its mark goes on a face, so a burst does not paint a line.
+export const rayHeight = (ball, travel) => ball.from + ball.rise * travel;
+export const markHeight = (ball, travel, top) => Math.max(.35, Math.min(rayHeight(ball, travel), top - .35));
 // A pana is a shot's target from their feet (lifted by their jump) up to this.
 const PANA_TOP = 1.9;
 // A ball still over this when it leaves the court is in the sky: it marks nothing.
@@ -136,6 +144,8 @@ export function grenadeFlight(kind, cover = [], mapId = null) {
 // Every map has three fixed layouts and the round number picks one, so a rematch
 // plays a different court. Not random: everyone learns them.
 export const VARIANTS = 3;
+// A shot rivals' minimaps can see (`p.loud` counts them): anything but a silenced one.
+export const shotIsLoud = stats => !stats.silenced;
 // Spanish keys: clients show them with loc().
 const VARIANT_NAMES = { muelle: [locKey('Patio'), locKey('Laberinto'), locKey('Torres')], terminal: [locKey('Pasillos'), locKey('Fortaleza'), locKey('Laberinto')], noche: [locKey('Torre'), locKey('Inflables'), locKey('Tubos')], plaza: [locKey('Clásica'), locKey('Mercado'), locKey('Fiesta')], default: [locKey('Clásica'), locKey('Girada'), locKey('Cerrada')] };
 export const variantName = (id, variant = 0) => (VARIANT_NAMES[id] || VARIANT_NAMES.default)[variant % VARIANTS];
@@ -244,7 +254,7 @@ export class Arena {
     // Arriving after the wait (mid-countdown or mid-round) counts as ready.
     if (this.phase === 'playing' && !this.loading) this.ready.add(id);
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); this.parkLobby(); return p; }
-    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), hand: 0, swap: 0, spare: null, grenades: 1, grenadeIn: 0, noise: 1, mark: 1, grenadeReady: true, grenadeHeld: false, altHeld: false, melee: createMelee(), smacks: 0, recalls: 0, shots: 0, fired: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
+    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), hand: 0, swap: 0, spare: null, grenades: 1, grenadeIn: 0, noise: 1, mark: 1, grenadeReady: true, grenadeHeld: false, altHeld: false, melee: createMelee(), smacks: 0, recalls: 0, shots: 0, fired: 0, loud: 0, jumpPress: 0, jumpHeight: 0, jumpVelocity: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p);
     // A late arrival mid-round lands like a respawn, away from the living rivals.
     if (this.phase === 'playing') Object.assign(p, this.spawnPoint(p, this.rivalsOf(p))); else this.parkLobby();
@@ -486,7 +496,7 @@ export class Arena {
       p.aim = input.aim && stats.aims;
       // Shift sprints 45% faster for up to three seconds; sprinting holds fire. A flag carrier is slower (ctf.js).
       const walk = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (p.aim ? .5 : 1) * carrierSlow(this, p);
-      const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, drain: stats.sprintDrain, regen: stats.sprintRegen, move: axisMove((x, z) => blocked(x, z, RADIUS, this.mapId, this.variant)) }).sprinting; p.sprint = sprinting;
+      const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, drain: stats.sprintDrain, regen: stats.sprintRegen, move: (q, dx, dz) => slideMove(q, dx, dz, (x, z) => !blocked(x, z, RADIUS, this.mapId, this.variant), { slip: RADIUS }) }).sprinting; p.sprint = sprinting;
       p.walk = !!(input.x || input.z);
       if ((input.reload || p.ammo === 0) && !p.reload && !p.swap && p.ammo < stats.magazine && (stats.reserve == null || p.reserve > 0)) p.reload = stats.reload;
       // Melee: the trigger swings (no ammo); the blow lands when the windup ends.
@@ -495,30 +505,39 @@ export class Arena {
         const rivals=stats.headshot && !input.look ? this.shotTargets(p) : null;
         // Where this shot left and at what pitch: a tracer starts its line from them.
         const shotY=input.look ? EYE + (p.jumpHeight || 0) : SHOT_HEIGHT; p.shotY=shotY; p.shotPitch=input.look ? input.pitch : 0;
-        p.ammo--; p.shots++; p.fired++; p.cooldown=stats.cadence; p.shield=0;
+        p.ammo--; p.shots++; p.fired++; if(shotIsLoud(stats)) p.loud=(p.loud||0)+1; p.cooldown=stats.cadence; p.shield=0;
         const spread=p.aim && stats.aimSpread!=null ? stats.aimSpread : stats.spread;
         const jitter=stats.pellets===1 ? Math.sin(p.shots*2.4)*spread : 0;
         // Several pellets fan evenly across the spread (three: left, centre, right).
         const angles=stats.pellets>1 ? Array.from({length:stats.pellets},(_,i)=>spread*(2*i/(stats.pellets-1)-1)) : [jitter];
-        for(const angle of angles) {
+        for(const [i,angle] of angles.entries()) {
           const flight=launchAimed(p.ax, p.az, input.look ? input.pitch : 0, stats.speed, angle), y0=EYE + (p.jumpHeight || 0);
+          // The ray its mark follows: from where it left along the look, wandering up and
+          // down with the spread as it does sideways, so a burst does not paint one straight line.
+          const from=shotY, rise=(input.look ? Math.tan(input.pitch) : 0) + Math.cos((p.shots + i) * 1.7) * spread * (stats.pellets>1 ? .25 : .6);
           // A headshot marker fired without a look: the server's own pitch at the rival it is aimed at.
           const aimed=rivals && aimedPitch({ x:p.x, z:p.z, y0 }, { x:flight.vx, z:flight.vz }, rivals, { cone:HEAD_CONE, width:HEAD_WIDTH, head:HEAD_AIM, chest:CHEST_Y });
           this.balls.push({ id:++this.serial, owner:p.id, color:p.color, x:p.x, y:shotY, z:p.z, ...flight,
           life:stats.life, kind:stats.id, rocket:!!stats.splash, direct:!!stats.direct, damage:stats.damage, falloff:stats.falloff || null, splash:stats.splash || 0, pattern:p.kit.pattern, hand:p.weapon==='rapid'?p.shots%2:0,
           // Where it left (damage fades with the distance flown) and, for a headshot marker,
           // the eye height and pitch its ray climbs or drops at (`aimed`: the pana a derived pitch is for).
-          x0:p.x, z0:p.z, y0, pitch:stats.headshot && input.look ? input.pitch : aimed ? aimed.pitch : null, aimed:aimed ? aimed.target : null });
+          x0:p.x, z0:p.z, y0, from, rise, pitch:stats.headshot && input.look ? input.pitch : aimed ? aimed.pitch : null, aimed:aimed ? aimed.target : null });
         }
       }
     }
     for (const ball of this.balls) {
       const owner = this.players.find(q => q.id === ball.owner);
       const targets = this.shotTargets(owner, ball.owner);
-      const { t, victim, dx, dy, dz } = sweepShot(ball, dt, this.cover, targets);
+      const { t, victim, box, dx, dy, dz } = sweepShot(ball, dt, this.cover, targets);
       ball.x += dx * Math.min(1, t); ball.y += dy * Math.min(1, t); ball.z += dz * Math.min(1, t); ball.life -= dt;
       if (t <= 1 || outside(this.mapId, ball.x, ball.z)) {
-        ball.life = 0; if (t <= 1 || ball.y < OVER_FENCE) this.splats.push({ id: ball.id, x: ball.x, hy: ball.y, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern });
+        ball.life = 0;
+        if (t <= 1 || ball.y < OVER_FENCE) {
+          // On a face, its ray's height kept on the surface; on a box's top or anywhere else, where it really stopped.
+          const top = box && (box.h ?? box.height ?? 3), hy = box && ball.y < top - .01 ? markHeight(ball, Math.hypot(ball.x - ball.x0, ball.z - ball.z0), top) : ball.y;
+          this.splats.push({ id: ball.id, x: ball.x, hy, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern, ...(box?.trunk ? { radius: TRUNK_SPLAT, on: box.ref } : {}) });
+          if (box?.trunk) { const marks = this.splats.filter(s => s.on === box.ref); if (marks.length > TRUNK_MARKS) this.splats.splice(this.splats.indexOf(marks[0]), 1); }
+        }
         // La Bazuca's direct hit knocks out at once; its splash then catches only the panas beside.
         // La Lejana's head hit knocks out too; its body hits fade with the distance flown.
         if (victim && (ball.direct || !ball.rocket)) {

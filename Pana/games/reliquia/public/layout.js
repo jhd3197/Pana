@@ -4,8 +4,13 @@
 // walls, collapsed tunnels) comes from the state at query time.
 import { generateRun, themeFor, floorOf, inRect, SPACING, CAGE } from './deck.js';
 import { ITEMS } from './items.js';
+import { slideMove } from '../../../engine/play/walker.js';
 
 const RES = 4, layouts = new Map();
+// The shell's walls stand on a 1 m grid: a cell is floor when its centre is in a
+// rect (ruinShell). Rooms, corridors and stubs collide on that same outline, so
+// a mouth 4.4 m wide on paper stops the body where the 4 m of brick stands.
+const onWallGrid = ([a, b, c, d]) => [Math.floor(a - .5) + 1, Math.floor(b - .5) + 1, Math.ceil(c - .5), Math.ceil(d - .5)];
 export const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
@@ -25,7 +30,7 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
       const j0 = Math.max(0, Math.ceil((r[1] - z0) * RES - .5)), j1 = Math.min(h - 1, Math.floor((r[3] - z0) * RES - .5));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (test(x0 + (i + .5) / RES, z0 + (j + .5) / RES)) bits[j * w + i] = value;
     };
-    for (const r of rects) fill(r, 1);
+    for (const r of rects) fill(onWallGrid(r), 1);
     // A bridge still in a heap (`needs` a cuerda) leaves its span open air until it is tied.
     for (const p of pits) fill(p.rect, 2, (x, z) => !inRect(x, z, p.island) && !bridges.some(b => !b.needs && inRect(x, z, b.rect)));
     // Bookcases and reading tables are walls as far as anyone can tell.
@@ -86,15 +91,7 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
     }
     return true;
   }
-  function moveBody(body, dx, dz, state, radius = .45) {
-    const n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / .2));
-    let moved = false;
-    for (let i = 0; i < n; i++) {
-      if (walkable(body.x + dx / n, body.z, state, radius)) { body.x += dx / n; moved = true; }
-      if (walkable(body.x, body.z + dz / n, state, radius)) { body.z += dz / n; moved = true; }
-    }
-    return moved;
-  }
+  const moveBody = (body, dx, dz, state, radius = .45) => slideMove(body, dx, dz, (x, z) => walkable(x, z, state, radius), { slip: radius });
   // Floor or open pit: what a body that never looks down can step on. Walls,
   // solids and obstacles still stop it.
   function passable(x, z, state, radius) {
@@ -105,15 +102,7 @@ export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
     return !g?.obstacles.some(o => (x - o.x) ** 2 + (z - o.z) ** 2 < (o.r + radius) ** 2);
   }
   // moveBody for that body: a pit is floor until its centre is over it.
-  function moveAcross(body, dx, dz, state, radius = .7) {
-    const n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / .2));
-    let moved = false;
-    for (let i = 0; i < n; i++) {
-      if (passable(body.x + dx / n, body.z, state, radius)) { body.x += dx / n; moved = true; }
-      if (passable(body.x, body.z + dz / n, state, radius)) { body.z += dz / n; moved = true; }
-    }
-    return moved;
-  }
+  const moveAcross = (body, dx, dz, state, radius = .7) => slideMove(body, dx, dz, (x, z) => passable(x, z, state, radius), { slip: radius });
   // A straight run from a to b for that body, pits included.
   function crossable(a, b, state, radius = .7) {
     if (floorOf(a.x) !== floorOf(b.x)) return false;

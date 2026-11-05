@@ -285,6 +285,7 @@ export function kitModel(kit, hand = 0) {
 const pathOf = (s, key) => { const at = key.split('.'), last = at.pop(); return [at.reduce((o, k) => o?.[k], s), last]; };
 function applyPart(s, part) {
  const variant = Object.keys(part.when || {}).find(k => WHEN[k](s)), e = variant ? part.when[variant] : part;
+ if (part.silenced) s.silenced = true;
  for (const [key, n] of Object.entries(e.mul || {})) { const [o, k] = pathOf(s, key); if (o && o[k] != null) o[k] *= n; }
  for (const [key, n] of Object.entries(e.add || {})) { const [o, k] = pathOf(s, key); if (o && o[k] != null) o[k] += n; }
  // Whole balls and rounds, rounded up (float noise trimmed first).

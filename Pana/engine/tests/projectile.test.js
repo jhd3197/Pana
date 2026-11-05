@@ -57,3 +57,12 @@ test('a level shot flying at y passes over cover no taller than y', () => {
   assert.ok(sweep(ball, .05, { boxes: [low] }).t <= 1, 'without y every box is a wall');
   assert.equal(traceRay(0, 0, 1, 0, 60, { boxes: [low], y: 1.1 }), 60);
 });
+
+test('a box with a trunk stops a shot only on that circle, and says what stopped it', () => {
+  const tree = { x: 5, z: 0, w: .6, d: .6, trunk: .25 }, flies = z => sweep({ x: 0, z, vx: 10, vz: 0 }, 1, { boxes: [tree], padding: .12 });
+  const dead = flies(0); assert.ok(Math.abs(dead.t - .475) < 1e-9, 'on the round face, not the padded box'); assert.equal(dead.box, tree);
+  assert.ok(flies(.24).t <= 1, 'a graze still hits'); assert.equal(flies(.26).t, Infinity, 'just outside it flies on, though the box is wider');
+  assert.equal(flies(.26).box, null);
+  const wall = { x: 8, z: 0, w: 1, d: 6 }, past = sweep({ x: 0, z: .3, vx: 10, vz: 0 }, 1, { boxes: [tree, wall], padding: .12 });
+  assert.equal(past.box, wall, 'a miss goes on to what is behind');
+});

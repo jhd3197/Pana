@@ -23,7 +23,8 @@ export const PLAZA_KINDS = {
   fountain: { w: 4.2, d: 4.2, h: .8 },
   bench: { w: 2.4, d: .7, h: .85 },
   planter: { w: 1.6, d: 1.6, h: .7 },
-  tree: { w: .6, d: .6, h: 3.2 },
+  // `trunk`: the radius of the drawn trunk at shot height, what shots really hit.
+  tree: { w: .6, d: .6, h: 3.2, trunk: .25 },
   stall: { w: 3.2, d: 1.8, h: 2.3 },
   car: { w: 2, d: 4.4, h: 1.5 },
   cart: { w: 1.6, d: 1.1, h: 1 },
@@ -36,7 +37,7 @@ export const PLAZA_KINDS = {
 // One row of `kind` at (x, z); `turn` swaps its footprint (a booth along z).
 const row = (kind, x, z, { turn = false, ...extra } = {}) => {
   const k = PLAZA_KINDS[kind], w = extra.w ?? (turn ? k.d : k.w), d = extra.d ?? (turn ? k.w : k.d), h = extra.h ?? k.h;
-  return { kind, x, z, w, d, h, height: h, ...(turn ? { turn: true } : {}) };
+  return { kind, x, z, w, d, h, height: h, ...(turn ? { turn: true } : {}), ...(k.trunk ? { trunk: k.trunk } : {}) };
 };
 // Every row in all four quadrants: (±x, ±z), once on an axis.
 function mirror(rows) {

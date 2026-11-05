@@ -232,6 +232,13 @@ export function createScene(canvas) {
   // Paint that stopped against cover splats on that face, not on the paving.
   function stick(mesh, s, cover) {
     for (const o of s.hy == null || s.hy > .05 ? cover : []) {
+      // A trunk: on its round face, where the ball's ray met it.
+      if (o.trunk) {
+        const dx = s.x - o.x, dz = s.z - o.z, far = Math.hypot(dx, dz) || 1;
+        if (far - o.trunk > .1 || s.hy > o.h + .01) continue;
+        mesh.position.set(o.x + dx / far * (o.trunk + .02), s.hy ?? Math.min(1.1, o.h - .35), o.z + dz / far * (o.trunk + .02)); mesh.rotation.set(0, Math.atan2(dx, dz), s.id * 1.7);
+        return;
+      }
       const gx = Math.abs(s.x - o.x) - o.w / 2, gz = Math.abs(s.z - o.z) - o.d / 2;
       if (gx > .35 || gz > .35 || o.shots === false) continue;
       // A ball that flew over this box did not stop on it; one that came down on it lies on its top.

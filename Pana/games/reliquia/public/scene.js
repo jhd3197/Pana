@@ -318,8 +318,10 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
       const [x0, z0, x1, z1] = c.rect, along = c.horizontal ? x1 - x0 : z1 - z0, mid = c.horizontal ? (z0 + z1) / 2 : (x0 + x1) / 2;
       if (theme === 'hongos') continue;
       if (timbered) for (let t = 2.5; t < along - 1.5; t += 4.5) place(statics, mineSupport({ width: 3.6, height: 3.8, lantern: false }), c.horizontal ? x0 + t : mid, 0, c.horizontal ? mid : z0 + t, c.horizontal ? Math.PI / 2 : 0);
-      else for (const end of [0, along]) for (const s of [-1, 1]) {
-        const a = c.horizontal ? x0 + end : mid + s * 2.15, b = c.horizontal ? mid + s * 2.15 : z0 + end;
+      // Half sunk in the room's wall, flush with the corridor's: a pana against
+      // either wall never reaches them, so they need no collider.
+      else for (const end of [.5, along - .5]) for (const s of [-1, 1]) {
+        const a = c.horizontal ? x0 + end : mid + s * 2.32, b = c.horizontal ? mid + s * 2.32 : z0 + end;
         place(statics, ruinColumn({ seed: (a * 5 + b) | 0, radius: .32, height: HEIGHT }), a, 0, b);
       }
     }

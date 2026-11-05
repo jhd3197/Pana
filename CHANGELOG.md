@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa y Pepazo: ya no te trancas en las esquinas.**
+  Pasas rozando marcos y contenedores sin frenar, y en Fosa las paredes chocan justo donde se ven.
+- **Pepazo: la pintura cae donde apuntas.**
+  Cada mancha queda a la altura real del tiro, no en una fila. Las bolas que no le dan a un tronco siguen de largo, y un tronco guarda solo las últimas manchas.
+- **Pepazo: un mapa más cerrado y sin espacios vacíos, con rivales ocultos hasta que disparan.**
+  Muestra el piso y todo lo que hay en la cancha. Un rival solo sale un momento cuando dispara; tu equipo se ve siempre.
 - **Capis a Pintazos: mapas más abiertos en Todos contra todos y túneles más anchos.**
   Todos contra todos sale casi siempre en cerros y terrazas, sin cuevas ni islas, y los túneles ya no aprietan al capi.
 - **Capis a Pintazos: la máquina ya no se queda parada sin tiro.**
