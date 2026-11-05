@@ -72,11 +72,11 @@ from epoch time with no server. It walks a seeded shuffle, so an item returns on
 after the rest. The tables are the game's. Models: `engine/models/props/conuco.js`.
 
 ```js
-const plot = createPlot({ game: 'conuco', crops: CROPS, tiers: TIERS, decor: DECOR, shop: SHOP, wallet: createMangoWallet(), progress });
+const plot = createPlot({ game: 'conuco', crops: CROPS, tiers: TIERS, decor: DECOR, shop: SHOP, wallet: createMangoWallet(undefined, { source: 'conuco' }), progress });
 plot.plant(0, 'maiz'); plot.view().beds[0].stage; plot.harvest(0); plot.stock().items;
 ```
 
-Used by: Conuco. Tests: `engine/tests/plot.test.js`. Notes: `docs/knowledge/conuco.md`.
+No public game uses it today: the Conuco game itself lives in the private pana.sh repo. Tests: `engine/tests/plot.test.js`.
 
 ## On foot
 
@@ -669,6 +669,41 @@ system: it awards nothing.
 
 Used by: Fosa (cave-ins; `syncRubble` in `games/reliquia/public/scene.js`, lazy-loaded).
 
+### Carved surfaces
+
+`engine/fx/pom.js` (Three.js) and `engine/fx/pom-sim.js` (its numbers and height maps, no
+Three.js, tested in `engine/tests/pom-sim.test.js`). Parallax occlusion mapping on a
+`MeshStandardMaterial`: each fragment walks its view ray down a height map, so a wall looks
+carved with no added geometry. The outline stays the mesh's own (no discarded fragments, no
+depth writes). `createPomSet()` is the usual way in: `set.add(material, 'brick' | 'rock')`, and
+it swaps the material by itself when the picture setting changes.
+
+- **Who gets it.** `pomGate`: top detail (`getSettings().detail === 'alta'`) on a device that is
+  not touch-only. `?pom=0` and `?pom=1` in the address beat everything. Otherwise a material with
+  UVs is three's stock normal map, no patch; one without UVs gets one tap of the projected normal.
+- **By hand.** `applyPom(material, { heightMap, projection, tile, depth, steps: [min, max], refine,
+  fade: [near, far], cavity, normalScale, selfShadow, debug })`, `applyRelief` (the plain version)
+  and `clearRelief`. `reliefMap('brick' | 'rock')` is the shared texture: normal in RGB, height in A.
+- **`projection`.** `'uv'` uses the mesh's UVs. `'world'` needs only positions, for baked low-poly
+  meshes: the facet's dominant axis picks the projection and `tile` is metres per repeat. Both take
+  their frame from screen derivatives, so no tangent attribute, and both work on instanced meshes.
+- **`depth`** is real metres. Layers follow the view angle (`pomSteps`), a fragment past
+  `fade[1]` skips the walk, and an edge-on sliver stays flat.
+- **`selfShadow`** dims direct light by a four-tap walk toward the first directional, point or spot
+  light. Off by default; a lamp on the camera casts no visible shadow.
+- **`debug`** draws each fragment's layer count over the maximum, for QA.
+- Retune in `POM_SURFACES`, at the top of `pom-sim.js`. The maps are generated on first use, about
+  50 to 90 ms each on a desktop, and are the same bytes on every device.
+
+```js
+const { createPomSet } = await import('/engine/fx/pom.js');   // lazy: stays off the first load
+const relief = createPomSet();
+relief.add(wallMaterial, 'brick');
+```
+
+Used by: Fosa (ruin bricks and the camp's rock; `carve` in `games/reliquia/public/scene.js`). Notes:
+`docs/knowledge/reliquia.md`, "Carved bricks and rock".
+
 ### `fx.js` sound, particles and bubbles
 
 `engine/fx.js`. `sound` (the older shared effects and the one audio context),
@@ -967,9 +1002,11 @@ its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
 |---|---|---|
 | Health bar: smooth drain, the lost chunk flashes white, orange, red, holds and drains; green, yellow, red by what is left; sparkles at the edge on a heal (`createDamageBar`, pure `createBarModel`) | `engine/fx/damage.js`, `damage.css` | Trifulca |
 | Damage numbers: pop, fan out on arcs, scale with the amount; white, orange with jitter on a crit, green on a heal (`createDamageNumbers`); drawn-only knockback spring (`createKnock`) | `engine/fx/damage.js` | Trifulca |
-| Rank-up ceremony: riser, white flash, pillar and rings, the title slamming down, stats counting tick by tick, unlocks, confetti. `rankUpToast` plays it and `createRankChip`'s bar crawls through the last sliver, so any game on `engine/progress.js` gets both (`playLevelUp`, `riser`, `levelUp` and `countTick` in `sfx`) | `engine/fx/level-up.js`, `level-up.css`, `engine/progress-ui.js` | Reliquia and Conuco, through `progress-ui` |
+| Rank-up ceremony: riser, white flash, pillar and rings, the title slamming down, stats counting tick by tick, unlocks, confetti. `rankUpToast` plays it and `createRankChip`'s bar crawls through the last sliver, so any game on `engine/progress.js` gets both (`playLevelUp`, `riser`, `levelUp` and `countTick` in `sfx`) | `engine/fx/level-up.js`, `level-up.css`, `engine/progress-ui.js` | Reliquia, through `progress-ui` |
 | Speed from the driver's seat: field of view 50 to 75 with speed, camera lag under acceleration that catches up with a small shake on its own noise (seeded dice untouched), how strong edge lines and wind should be. Pure numbers (`createSpeedFeel`); apply them with `setSpeedLines` and `createWind` | `engine/fx/speed.js` | Carreritas (`speed-feel.js`: comfort camera and battle arenas opt out) |
-| Pixel effects as camera-facing sprites (`createWorldFx(THREE, scene)`) or on the HUD layer (`createScreenFx`): pooled, capped, loaded on first use so first load doesn't grow | `engine/fx/pixelfx-bridge.js`, code in `engine/vendor/pixelfx/` (MIT; keep its `LICENSE` and `NOTICE.md`; add an effect through its `README.md`) | Trifulca (`hit-spark`, `crit-hit`, `crit-number`), the rank-up ceremony (`level-up` without its pixel hero, `confetti`) |
+| A pickup you feel: flash and star burst where it was taken, the combo stamped over the counter at 3 and each full row (`createPickupFeel`); pairs with `flyToCounter` and `popCounter` from `fx.js` | `engine/fx/pickup-feel.js` | Carreritas coins |
+| Spoken lines: a typewriter with holds at commas and periods, a blip per letter pitched per speaker, `<wave>` and `<shake>` tags, mood from how a line is written, a speaker's bob and squash (`typewrite`, `parseRich`, `blipPitch`, `moodOf`, `autoRich`, `speakerPose`; `sfx.blip`). `createSeatBubbles(…, { typer })` writes through it | `engine/fx/dialogue.js`, `dialogue.css` | QQSMP (host and contestants) |
+| Pixel effects as camera-facing sprites (`createWorldFx(THREE, scene)`) or on the HUD layer (`createScreenFx`): pooled, capped, loaded on first use so first load doesn't grow | `engine/fx/pixelfx-bridge.js`, code in `engine/vendor/pixelfx/` (MIT; keep its `LICENSE` and `NOTICE.md`; add an effect through its `README.md`) | Trifulca (`hit-spark`, `crit-hit`, `crit-number`), the rank-up ceremony (`level-up` without its pixel hero, `confetti`), pickups (`collect-burst`, `combo-counter`) |
 
 ## Player, look and rewards
 
@@ -981,8 +1018,8 @@ its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
 | Menu card pictures of any 3D object (built, framed by its bounds, drawn once on the shared offscreen renderer, cached by key; `keep(mesh)` draws one part alone) | `engine/object-thumb.js` (`objectThumb(key, build, { width, height, turn, tilt, keep, margin })`) on `engine/snapshot.js` | Pepazo (armory cards: every weapon, part, charm and grenade) |
 | Wardrobe | `engine/wardrobe.js`, `wardrobe-preview.js` | Bochinche, Carreritas, Pepazo, Trifulca (the page also loads `wardrobe-preview` through `pana.sh`) |
 | Friend-named bots (the top 2-3 bots wear the names of the player's friends; `applyFriendNames`, `friendNamesNow`, `loadFriendNames`, `cleanJoinNames`) | `engine/bot-names.js`; server rooms use `hostFriendNames()` in `server/src/room-kit.js`, `engine/net.js` sends the list on join | Bochinche, Billar, Bululú, Caída, Carreritas, Chapita, Criollas, Curiara, Dominó, Embuste, Escondidas, Galope, Lancha, Ludo, Parapente, Pepazo, Póquer, QQSMP, Stop, Tambor, Trifulca |
-| Mangos (shared currency; `spend` takes them or changes nothing, `peek` reads without adopting Carreritas' old coins) | `engine/mangos.js` | Bochinche, Carreritas, Conuco |
-| Rank and XP per game, on this device (`createProgress({ game, ranks, storage })`: `award(amount, receipt, { dive })` pays once and counts a dive unless `dive: false`, `rank`, `xp`, `isUnlocked`, `onChange`; pure `rankAt`, `nextRank`, `progressInRank`, `unlocksAt`, safe in rules and tests). The look: `createRankChip(progress)` (`.pk-rank`: title, thin XP bar, `gain(n)` for "+N XP") and `rankUpToast(result, show)` for a `createFeats` or `createToast` | `engine/progress.js`, `engine/progress-ui.js`; tests `engine/tests/progress.test.js` | Reliquia (`games/reliquia/public/progress.js`: the ranks and `xpFor`), Conuco (`games/conuco/public/rules.js`) |
+| Mangos (shared currency; `spend` takes them or changes nothing, `peek` reads without adopting Carreritas' old coins; with `window.PanaSh.wallet` the account's server balance replaces local storage, and `ready` says when it arrived) | `engine/mangos.js` | Bochinche, Carreritas |
+| Rank and XP per game, on this device (`createProgress({ game, ranks, storage })`: `award(amount, receipt, { dive })` pays once and counts a dive unless `dive: false`, `rank`, `xp`, `isUnlocked`, `onChange`; pure `rankAt`, `nextRank`, `progressInRank`, `unlocksAt`, safe in rules and tests). The look: `createRankChip(progress)` (`.pk-rank`: title, thin XP bar, `gain(n)` for "+N XP") and `rankUpToast(result, show)` for a `createFeats` or `createToast` | `engine/progress.js`, `engine/progress-ui.js`; tests `engine/tests/progress.test.js` | Reliquia (`games/reliquia/public/progress.js`: the ranks and `xpFor`) |
 | A game's day and streak (one seed and one rotating set per local date; pure `dayKey`, `dayNumber`, `isDayKey`, `dailySeed(game, day)`, `pickDaily(list, day)` walks the whole list before repeating. `createStreak({ game, storage, now })` under `pana:streak:<game>`: `record(day)` once a day gives `{ days, best, freezesLeft, usedFreeze, milestone }` (3, 7, 14, 30), a freeze every 7 days up to 2 covers one missed day; `peek(day)` reads without counting) | `engine/daily.js`; tests `engine/tests/daily.test.js` | Reliquia (`games/reliquia/public/daily.js`) |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
 | Text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`) | all 24 |

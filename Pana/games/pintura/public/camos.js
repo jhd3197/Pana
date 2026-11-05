@@ -39,12 +39,12 @@ export function progressText(id, progress = {}) {
 }
 // What the armory shows for one camo: `state` is 'owned' (wear it), 'locked' (kills
 // to go, or no pana.sh session), 'buyable' or 'cantAfford' (mangos), and `text` says why.
-// `online` is false without pana.sh (`signedOut`: without a session there): then only the
-// start camos are anyone's.
-export function camoState(id, { owned = [], progress = {}, prices = {}, balance = 0, online = true, signedOut = false } = {}) {
+// `online` is false without pana.sh (`signedOut`: without a session there; `hosted`: on
+// pana.sh, before its gateway has the camos): then only the start camos are anyone's.
+export function camoState(id, { owned = [], progress = {}, prices = {}, balance = 0, online = true, signedOut = false, hosted = false } = {}) {
   const c = camoById(id); if (!c) return { state: 'locked', text: '' };
   if (unlockedSet({ owned }).has(id)) return { state: 'owned', text: isStart(id) ? loc('Tuyo desde el principio') : loc('Tuyo') };
-  if (!online) return { state: 'locked', text: signedOut ? loc('Entra en tu cuenta de pana.sh para conseguirlo') : loc('Disponible en pana.sh') };
+  if (!online) return { state: 'locked', text: signedOut ? loc('Entra en tu cuenta de pana.sh para conseguirlo') : hosted ? loc('Muy pronto') : loc('Disponible en pana.sh') };
   if (c.unlock.type === 'kills') return { state: 'locked', text: progressText(id, progress) };
   const price = Number(prices?.[id]) > 0 ? Number(prices[id]) : c.unlock.price;
   if ((Number(balance) || 0) >= price) return { state: 'buyable', price, text: loc('{n} mangos', { n: price }) };

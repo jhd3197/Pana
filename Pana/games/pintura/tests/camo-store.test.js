@@ -20,6 +20,17 @@ test('without pana.sh only the start camos are owned', async () => {
   assert.deepEqual(await store.buy('caribe'), { ok: false, error: '' });
 });
 
+test('a hosted page with no camo bridge is marked hosted, before and after loading', async () => {
+  // The gateway's other scripts can set window.PanaSh without camos().
+  const store = createCamoStore({ bridge: () => ({ stats() {} }), hosted: () => true });
+  assert.equal(store.available, false); assert.equal(store.data.hosted, true);
+  const data = await store.load();
+  assert.equal(data.online, false); assert.equal(data.hosted, true); assert.deepEqual(data.owned, START_CAMOS);
+  assert.equal((await createCamoStore({ bridge: () => undefined, hosted: () => false }).load()).hosted, false);
+  // With the bridge the store answers from it, whatever the marker says.
+  assert.equal((await createCamoStore({ bridge: () => fake(), hosted: () => true }).load()).online, true);
+});
+
 test('the bridge answer is checked and cached', async () => {
   let t = 0; const bridge = fake(), store = createCamoStore({ bridge: () => bridge, ttl: 1000, now: () => t });
   const data = await store.load();

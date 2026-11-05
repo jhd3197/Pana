@@ -134,6 +134,72 @@ test('selected car survives profile reload and invalid IDs fall back safely', ()
   assert.equal(createProfileStore(storage).load().wallet.car, 'chamo');
 });
 
+// The account's wallet: replies on demand, like a slow server.
+function accountStore(start, storage, onMangos) {
+  const listeners = new Set(), calls = [];
+  let balance = start, open;
+  const ready = new Promise(resolve => { open = resolve; });
+  const call = kind => (amount, source, receipt) => new Promise(resolve => calls.push({ kind, amount, source, receipt,
+    reply(result) { balance = result.balance; resolve(result); return new Promise(done => setImmediate(done)); } }));
+  globalThis.PanaSh = { wallet: { ready, balance: () => balance, credit: call('credit'), spend: call('spend'), onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); } } };
+  try {
+    return { store: createProfileStore(storage, { onMangos }), calls,
+      load(value) { balance = value; open(); return new Promise(done => setImmediate(done)); } };
+  } finally { delete globalThis.PanaSh; }
+}
+const mapStorage = (values = new Map()) => ({ values, getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) });
+
+test('on an account old local coins are not imported and the balance wins', async () => {
+  const { MANGO_KEY } = await import('../../../engine/mangos.js');
+  const storage = mapStorage();
+  storage.values.set(PROFILE_KEY, JSON.stringify({ ...createProfileStore(null).load(), wallet: { coins: 5000 } }));
+  const { store, calls, load } = accountStore(800, storage);
+  assert.equal(store.load().wallet.coins, 800);
+  await load(800);
+  assert.equal(calls.length, 0, 'nothing is sent to the server');
+  assert.equal(storage.values.has(MANGO_KEY), false);
+});
+
+test('saving before the first balance arrives never spends the account', async () => {
+  const seen = [], { store, calls, load } = accountStore(0, mapStorage(), balance => seen.push(balance));
+  const profile = store.load();
+  assert.equal(profile.wallet.coins, 0);
+  store.save(profile);
+  await load(1826);
+  assert.equal(profile.wallet.coins, 1826, 'the mirror follows the first balance');
+  assert.deepEqual(seen, [1826]);
+  profile.setup.laps = 2; store.save(profile);
+  assert.equal(calls.length, 0, 'a save with no change in coins moves no mangos');
+});
+
+test('a store without onMangos still keeps its mirror on an account', async () => {
+  const { store, calls, load } = accountStore(0, mapStorage());
+  const profile = store.load();
+  await load(500);
+  store.save(profile);
+  assert.equal(profile.wallet.coins, 500);
+  assert.equal(calls.length, 0);
+});
+
+test('the taller spends and races earn through the account', async () => {
+  const seen = [], { store, calls } = accountStore(100, mapStorage(), balance => seen.push(balance));
+  const profile = store.load();
+  profile.wallet.coins -= 30; store.save(profile);             // a taller purchase
+  assert.equal(calls[0].kind, 'spend'); assert.equal(calls[0].amount, 30); assert.equal(calls[0].source, 'carreritas');
+  await calls[0].reply({ ok: true, balance: 70 });
+  assert.equal(profile.wallet.coins, 70);
+  profile.wallet.coins += 12; store.save(profile);             // a race settles
+  assert.equal(calls[1].kind, 'credit'); assert.equal(calls[1].amount, 12); assert.equal(calls[1].source, 'carreritas');
+  await calls[1].reply({ ok: true, balance: 77, credited: 7 }); // capped by the server
+  assert.equal(profile.wallet.coins, 77, 'the mirror takes what was really credited');
+  profile.wallet.coins -= 10; store.save(profile);
+  await calls[2].reply({ ok: false, balance: 77, error: 'funds' });
+  assert.equal(profile.wallet.coins, 77, 'a refused purchase gives the mangos back');
+  assert.deepEqual(seen, [77, 77], 'only corrections reach the page');
+  store.save(profile);
+  assert.equal(calls.length, 3, 'a corrected mirror does not move mangos again');
+});
+
 test('the balance moves to the shared mango wallet and other games pay into it', async () => {
   const { createMangoWallet, MANGO_KEY } = await import('../../../engine/mangos.js');
   const values = new Map(), storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };

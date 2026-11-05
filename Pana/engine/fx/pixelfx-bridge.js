@@ -16,6 +16,8 @@ export const EFFECTS = {
   'crit-number': 'ui/crit-number',
   'level-up': 'ui/level-up',
   confetti: 'ui/confetti',
+  'collect-burst': 'pickups/collect-burst',
+  'combo-counter': 'ui/combo-counter',
 };
 const MAX_STEP = .1;
 const vendor = (path) => new URL(`../vendor/pixelfx/${path}`, import.meta.url).href;

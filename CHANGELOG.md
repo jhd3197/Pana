@@ -10,6 +10,16 @@ becomes the GitHub release's notes.
 
 - **Fosa: la cueva está viva.**
   Murciélagos y cuaimas comen, se reproducen y se mueren de hambre. Escóndete en silencio entre hongos que brillan o raíces tupidas. Si acabas con los murciélagos, las polillas apagan los hongos; sin cuaimas, los murciélagos llenan el techo.
+- **¿Quién quiere ser mi pana?: el animador ahora habla de verdad.**
+  Las frases se escriben letra por letra con pausas en comas y puntos, cada pana tiene su voz de blips, y quien habla se mueve y pone cara según lo que dice.
+- **Pepazo: la armería ya no te manda a pana.sh cuando ya estás en pana.sh.**
+  Si los camuflajes todavía no están activos en el sitio, dicen "Muy pronto".
+- **Carreritas: agarrar monedas ahora suena y brilla.**
+  Cada moneda estalla en un destello con estrellas doradas, y la cadena se anuncia sobre el contador al llegar a 3 y en cada fila completa.
+- **Con cuenta, tus mangos son los mismos en todos los juegos.**
+  Bochinche y Carreritas usan el saldo de tu cuenta; sin cuenta, todo sigue guardado en tu dispositivo.
+- **Fosa: los ladrillos y la roca ahora tienen relieve de verdad.**
+  De cerca y de lado se ven las juntas hondas y la piedra partida. En calidad Nítida y en computadora; en teléfonos y otras calidades, un relieve más sencillo.
 - **Carreritas: ahora la velocidad se siente.**
   La cámara se abre al acelerar y se queda atrás antes de alcanzarte, el viento sube con la velocidad, y pasan líneas y rachas por los bordes. La cámara suave queda igual.
 - **Fosa: romper un derrumbe ahora se siente.**
@@ -22,8 +32,6 @@ becomes the GitHub release's notes.
   Adentro hay una vela encendida y nada tapa la entrada. Si caminas hacia ella un poco de lado, te deslizas adentro.
 - **Subir de rango ahora se celebra.**
   La barra de XP se arrastra hasta llenarse, un destello blanco y un pilar de luz, el título cae de golpe, el XP cuenta punto a punto y aparece lo que desbloqueaste.
-- **Conuco: tu propio pedazo de tierra.**
-  Arregla tu casa con mangos, siembra y cosecha aunque cierres el juego, compra en una tienda que cambia cada cuatro horas para todos y gana adornos al subir de rango.
 - **Trifulca: cada golpe se ve en la barra y en el aire.**
   La barra se vacía de verde a rojo, el pedazo perdido destella antes de bajar, los números saltan del golpeado y los trompones estampan su número con chispas.
 
