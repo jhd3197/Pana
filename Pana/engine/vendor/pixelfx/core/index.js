@@ -10,3 +10,4 @@ export { Painter } from "./painter.js";
 export { FONTS, textWidth } from "./font.js";
 export { createFrame, clearFrame, createFx, composite, painterFor, resolveOptions } from "./fx.js";
 export { stockActor, drawActor, actorAlphaOf, HERO, HERO2, HERO_PAL, DUMMY_PAL } from "./actor.js";
+export { READY } from "./poses.js";
