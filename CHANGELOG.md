@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Conuco: tu propio pedazo de tierra.**
+  Arregla tu casa con mangos, siembra y cosecha aunque cierres el juego, compra en una tienda que cambia cada cuatro horas para todos y gana adornos al subir de rango.
 - **Trifulca: cada golpe se ve en la barra y en el aire.**
   La barra se vacía de verde a rojo, el pedazo perdido destella antes de bajar, los números saltan del golpeado y los trompones estampan su número con chispas.
 

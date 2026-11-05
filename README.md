@@ -31,6 +31,7 @@ same room.
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
 | **Pana Cocina** | Cooperative cooking shifts with configurable orders and kitchen rules | 1–8, bot helpers |
 | **Galope** | Horse racing around a Llanos ranch, through esteros and over logs | 1–8, bots fill in |
+| **Conuco** | Your own plot in 3D: fix up your house, grow crops in real time (also while you're away), buy from a shelf that rotates for everyone, and earn decorations by rank | 1 |
 | **Fosa** | First-person co-op cave extraction in brass diving helmets: carry cursed loot to the truck, then decide whether to go one floor deeper | 1–8 |
 | **Trifulca** | Cartoon barrio boxing: winner stays, everyone else is the ring, bets dolitas and shoves fighters back in | 1–8 |
 | **¡Embuste!** | Social deduction at the night camp: who is the mummy? | 4–8 online, bots for practice |
