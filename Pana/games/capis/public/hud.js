@@ -17,6 +17,31 @@ const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls)
 export const soloSide = (human = 0) => ({ team: () => human, player: m => activeCapy(m)?.team === human ? 'me' : null,
   teamName: team => team === human ? loc('Tus capis') : loc('La máquina') });
 
+// The lobby's row of tombstones: square buttons, the chosen one lit, the ones
+// still to unlock with a padlock; `tombs` is tombs.js's store, `locked` says why.
+export function createTombPicker(list, { tombs, shapes, change = () => {}, locked = () => {} }) {
+  const buttons = shapes.map(t => {
+    const button = el('button', 'tomb-btn'), art = el('span', 'tomb-icon'), name = el('span', 'tomb-name', t.name);
+    art.innerHTML = ICONS[t.icon];
+    button.type = 'button'; button.dataset.tomb = t.id; button.setAttribute('role', 'radio'); button.title = t.name;
+    button.append(art, name);
+    button.onclick = () => { if (tombs.choose(t.id)) { show(); change(t.id); } else locked(t); };
+    list.append(button);
+    return { t, button, art, name };
+  });
+  function show() {
+    for (const { t, button, name } of buttons) {
+      const on = tombs.chosen() === t.id, have = tombs.owns(t.id);
+      button.classList.toggle('is-on', on); button.classList.toggle('is-locked', !have); button.setAttribute('aria-checked', String(on));
+      button.querySelector('.tomb-lock')?.remove();
+      if (!have) { const lock = el('span', 'tomb-lock'); lock.innerHTML = ICONS.lock; button.append(lock); }
+      name.textContent = have ? t.name : loc('Muy pronto');
+    }
+  }
+  show();
+  return { show };
+}
+
 export function createHud($, { side = soloSide(), pick = () => {} } = {}) {
   const teamNames = [0, 1].map(team => side.teamName(team));
   // 'me', another pana's name, or null (the machine), for the capi on its turn.

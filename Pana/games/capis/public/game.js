@@ -21,7 +21,8 @@ import { ROOM_OPTIONS, defaultOptions, roomOptions } from './options.js';
 import { createMatch, tickMatch, takeEvents, activeCapy, fire, canUse, TEAM_COLORS } from './rules.js';
 import { WEAPON_IDS, weaponOf } from './weapons.js';
 import { createBot } from './bot.js';
-import { createHud } from './hud.js';
+import { createHud, createTombPicker } from './hud.js';
+import { TOMBS, createTombStore } from './tombs.js';
 import { mapSeed, mapSize, SEED_LIMIT } from './map-rules.js';
 import { CapisRoom } from './network.js';
 import { teamOf, botTeams, freshEvents, TEAM_MAX } from './online.js';
@@ -57,6 +58,11 @@ const side = {
   teamName: team => team === myTeam() ? loc('Tus capis') : !online || botTeams(room.state.players).includes(team) ? loc('La máquina') : loc('Rivales'),
 };
 const hud = createHud($, { side, pick: id => choose(id) });
+// The tombstone this player's capis leave. Shapes still locked wait for the shop (tombs.js).
+const tombs = createTombStore(), looks = () => ({ [HUMAN]: tombs.chosen() });
+let tombAsked = null;
+const tellTomb = () => { if (online && room.connected && tombAsked !== tombs.chosen()) { tombAsked = tombs.chosen(); room.action('tomb', { shape: tombAsked }); } };
+createTombPicker($('tomb-list'), { tombs, shapes: TOMBS, change: tellTomb, locked: () => notify(loc('Muy pronto')) });
 const TEAM_TITLES = [loc('Rosados'), loc('Verdes')];
 const roster = createTeamLobby($('capis-roster'), { titles: TEAM_TITLES, colors: TEAM_COLORS, onMove: (from, to) => {
   const p = seatList()[from]?.player;
@@ -92,6 +98,7 @@ $('online').onclick = goOnline;
 function roomState(state) {
   if (!online) return;
   if (state.phase === 'lobby') {
+    if (state.players.some(p => p.id === room.id)) tellTomb();
     const played = playing || match === room.view;
     if (playing) toLobby();
     options = { ...state.options };
@@ -157,7 +164,7 @@ $('rules').onclick = () => menu.open('controls');
 function start() {
   sound.unlock();
   if (online) { room.action('start'); return; }
-  match = createMatch({ seconds: options.seconds, difficulty: options.difficulty, seed, size: options.size });
+  match = createMatch({ seconds: options.seconds, difficulty: options.difficulty, seed, size: options.size, looks: looks() });
   // The address replays this map: share it, or reload it, for the same ground.
   const url = new URL(location.href); url.searchParams.set('seed', String(seed)); url.searchParams.set('size', options.size); history.replaceState(null, '', url);
   bot = createBot({ team: 1 - HUMAN, difficulty: options.difficulty, seed: match.seed + 1 });
@@ -329,4 +336,4 @@ export const { sceneReady } = bootGame({
 });
 // A party or invite link (?room=) joins that room at once.
 if (roomFromUrl()) goOnline(); else lobbyView();
-if (params.has('debug')) window.capisDebug = { get match() { return match; }, get world() { return world; }, start, fire: (p) => fire(match, p), choose, options: () => options, get playing() { return playing; }, room, get online() { return online; } };
+if (params.has('debug')) window.capisDebug = { get match() { return match; }, get world() { return world; }, start, fire: (p) => fire(match, p), choose, options: () => options, get playing() { return playing; }, room, get online() { return online; }, tombs };

@@ -31,6 +31,11 @@ export const ICONS = {
   // a long scoped rifle, a drill bit and a pump scatter with its fan of pellets.
   weaponBazooka: svg('<path d="M3 15h27v10H3z M30 13h7v14h-7z M10 25h5v7h-5z" fill="currentColor"/>'),
   weaponSniper: svg('<path d="M2 21h10l3-3h23v4H16l-3 5H5l-3-2z M16 11h12v5H16z" fill="currentColor"/>'),
+  // Tombstones: a plain one, a cross of two sticks, a Celtic cross and an obelisk.
+  tombHeadstone: svg('<path d="M10 35V16a10 10 0 0 1 20 0v19z" fill="currentColor"/>'),
+  tombWooden: svg('<path d="M17 5h6v30h-6z M8 13h24v6H8z" fill="currentColor"/>'),
+  tombCeltic: svg('<path d="M18 4h4v31h-4z M7 14h26v4H7z" fill="currentColor"/><circle cx="20" cy="16" r="7" fill="none" stroke="currentColor" stroke-width="3"/>'),
+  tombObelisk: svg('<path d="M20 3l5 7 2 21h-14l2-21z M9 31h22v4H9z" fill="currentColor"/>'),
   weaponDrill: svg('<path d="M3 13h14v14H3z M17 15h5v10h-5z M22 16l15 4-15 4z" fill="currentColor"/>'),
   weaponScatter: svg('<path d="M3 19h18v6H3z M10 25h5v6h-5z" fill="currentColor"/><circle cx="27" cy="14" r="2.5" fill="currentColor"/><circle cx="31" cy="22" r="2.5" fill="currentColor"/><circle cx="27" cy="30" r="2.5" fill="currentColor"/>'),
   kitGrenade: svg('<circle cx="20" cy="23" r="12" fill="currentColor"/><path d="M16 8h8v5h-8z" fill="currentColor"/>'),

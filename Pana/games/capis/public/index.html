@@ -30,6 +30,10 @@
       <div class="seed-row"><input id="seed-input" type="number" min="1" max="99999" inputmode="numeric" aria-describedby="seed-note"><button id="seed-new" class="pk-btn pk-btn--ghost" type="button">Otro mapa</button></div>
       <small id="seed-note" class="pk-copy">Cada partida trae un mapa nuevo. Escribe un número para repetir uno.</small>
     </div>
+    <div class="tomb-card" data-room-extra>
+      <span class="pk-eyebrow">Tu lápida</span>
+      <div id="tomb-list" class="tomb-list" role="radiogroup" aria-label="Tu lápida"></div>
+    </div>
     <div class="pk-lobby-foot"><p id="connection" class="pk-copy" role="status" hidden></p><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando…</button><button id="online" class="pk-btn pk-btn--ghost pk-btn--lg" type="button">Con amigos</button></div>
   </section>
   <main id="hud" hidden>

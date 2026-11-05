@@ -41,6 +41,8 @@ export const RULES = Object.freeze({
 });
 // How near a capi's middle has to come to a crate's middle to take it: the two bodies touching, plus the margin.
 export const CRATE_REACH = RULES.radius + LOOSE_PROP.height + RULES.crate.margin;
+// The shapes a capi's tombstone may take (tombs.js says which a player has).
+export const TOMB_SHAPES = Object.freeze(['headstone', 'wooden', 'celtic', 'obelisk']), DEFAULT_TOMB = TOMB_SHAPES[0];
 export const TURN_SECONDS = [30, 35, 45];
 export const TEAM_COLORS = ['#e8569b', '#2ad1b2'];
 // Capybara names are content, like a pana's name.
@@ -79,11 +81,11 @@ export const canUse = (m, team, weapon) => WEAPONS.some(w => w.id === weapon) &&
 
 // A match on the map of `seed` and `size` (map-rules.js): the same seed
 // gives the same ground, spawns and winds, so a match can be replayed.
-export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null } = {}) {
+export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null, looks = {} } = {}) {
   const { map, mask } = generated || generateMap(seed, size);
   const m = { map, mask, seed: map.seed >>> 0, phase: 'aim', winner: null, wind: 0, shot: null, events: [],
     options: { seconds: TURN_SECONDS.includes(seconds) ? seconds : 35, difficulty, size: map.size }, humans,
-    last: [-1, -1], turn: null, clock: 0, shots: 0, shells: [], capys: [], ammo: [startingAmmo(), startingAmmo()], used: {}, crates: [], crateN: 0,
+    last: [-1, -1], turn: null, clock: 0, shots: 0, shells: [], capys: [], ammo: [startingAmmo(), startingAmmo()], used: {}, crates: [], crateN: 0, tombs: [], looks,
     // Every change to the ground, in order: replayed on the same seed's map it
     // rebuilds this ground exactly (applyEdit), so a room never sends the mask.
     edits: [], teamTurns: [0, 0] };
@@ -164,6 +166,10 @@ function blastCrates(m, x, y, w) {
     if (d < Math.max(w.crater * .75, .9)) gone(m, k, 'blast');
     else if (d < reach) throwProp(k, x, y, w.knock * (.3 + .7 * (1 - d / reach)));
   }
+  for (const t of m.tombs) {
+    const d = Math.hypot(t.x - x, t.y + LOOSE_PROP.height - y);
+    if (d < reach) throwProp(t, x, y, w.knock * (.3 + .7 * (1 - d / reach)));
+  }
 }
 
 // The capi whose turn it is takes `weapon` in its paws (only while aiming,
@@ -208,7 +214,22 @@ function hit(m, c, paint, team, vx, vy, weapon) {
   c.paint = Math.min(100, c.paint + paint);
   knock(c, vx, vy);
   m.events.push({ type: 'hit', capy: c.id, team: c.team, paint, by: team, weapon });
-  if (c.paint >= 100) { c.out = 'paint'; m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'paint' }); }
+  if (c.paint >= 100) { c.out = 'paint'; layTomb(m, c, c.x, c.y); m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'paint' }); }
+}
+
+// A capi out leaves a tombstone where it fell: it falls with the ground like a
+// crate, a blast throws it, the water takes it. One lost in the river leaves it
+// on the nearest dry ground, so the spot still shows.
+function layTomb(m, c, x, y) {
+  const looks = m.looks?.[c.team], shape = TOMB_SHAPES.includes(looks) ? looks : DEFAULT_TOMB;
+  m.tombs.push(dropProp({ id: c.id, team: c.team, shape, x, y }));
+}
+function layTombAshore(m, c) {
+  const { width, water } = m.map, from = clamp(c.x, 1, width - 1), dry = at => { const y = at >= 0 && at <= width ? surfaceY(m.mask, at) : null; return y !== null && y > water + .3 ? y : null; };
+  for (let d = 0; d < width; d += .5) for (const at of [from - d, from + d]) { const y = dry(at); if (y !== null) { layTomb(m, c, at, y + .1); return; } }
+}
+function stepTombs(m, dt) {
+  for (const t of [...m.tombs]) if (stepProp(t, dt, m.mask, { water: m.map.water }).sunk) m.tombs.splice(m.tombs.indexOf(t), 1);
 }
 
 // A shell bursts: a round crater, paint on the ground (La Bazuca's also runs
@@ -299,9 +320,10 @@ export function tickMatch(m, dt, input = {}) {
     const r = stepSideWalker(c, mine ? { x: input.x || 0, jump: input.jump } : { jump: c.jumpPress }, dt, m.mask, walkerOptions(m, !mine));
     if (r.jumped) m.events.push({ type: 'jump', capy: c.id });
     if (r.landed) m.events.push({ type: 'land', capy: c.id });
-    if (r.drowned) { c.out = 'water'; m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'water', x: c.x }); }
+    if (r.drowned) { c.out = 'water'; layTombAshore(m, c); m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'water', x: c.x }); }
   }
   stepCrates(m, dt);
+  stepTombs(m, dt);
   collectCrates(m);
   if (m.phase === 'aim') {
     t.time = Math.max(0, t.time - dt);

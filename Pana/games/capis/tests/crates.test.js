@@ -132,3 +132,58 @@ test('the machine walks to a crate close by, then still fires', () => {
   assert.ok(took, 'it took the crate');
   assert.ok(fired, 'and fired before the clock ran out');
 });
+
+test('a capi painted out leaves a tombstone where it fell, in its team\'s chosen shape', () => {
+  const m = createMatch({ seed: 5, looks: { 1: 'celtic', 0: 'not-a-shape' } });
+  fillHeights(m.mask, () => 10);
+  m.capys.forEach((c, i) => { c.x = 10 + i * 12; c.y = 10; c.grounded = true; });
+  const rival = m.capys.find(c => c.team === 1), mine = m.capys.find(c => c.team === 0);
+  rival.paint = 90; mine.paint = 90;
+  explode(m, rival.x, 10.5, 0); explode(m, mine.x, 10.5, 1);
+  assert.deepEqual(m.tombs.map(t => [t.id, t.shape]), [[rival.id, 'celtic'], [mine.id, 'headstone']], 'chosen shape, a bad one falls back to the plain one');
+  for (let i = 0; i < 300; i++) tickMatch(m, DT, {});
+  const tomb = m.tombs[0];
+  assert.ok(tomb.grounded, 'it rests on the ground');
+  assert.ok(Math.abs(tomb.x - rival.x) < 3, `near where it fell (${tomb.x} and ${rival.x})`);
+});
+
+test('a capi lost in the river leaves its tombstone on the nearest dry ground, the water takes one that falls in', () => {
+  const m = createMatch({ seed: 5 });
+  fillHeights(m.mask, x => x < 30 ? 2 : 12);
+  const c = m.capys[3]; c.x = 25; c.y = 6; c.grounded = false; c.vx = c.vy = 0;
+  for (const o of m.capys) if (o !== c) { o.x = 60; o.y = 12; o.grounded = true; }
+  for (let i = 0; i < 120 && !c.out; i++) tickMatch(m, DT, {});
+  assert.equal(c.out, 'water');
+  assert.equal(m.tombs.length, 1);
+  assert.ok(Math.abs(m.tombs[0].x - 30) < 1.5 && m.tombs[0].y > m.map.water, `on the bank at ${m.tombs[0].x}, ${m.tombs[0].y}`);
+  // The bank goes: the tombstone goes with it.
+  fillHeights(m.mask, () => 2);
+  for (let i = 0; i < 180; i++) tickMatch(m, DT, {});
+  assert.equal(m.tombs.length, 0, 'sunk');
+});
+
+test('a blast throws a tombstone, and a room\'s copy shows them', () => {
+  const m = flat(), c = m.capys[1]; c.paint = 95;
+  explode(m, c.x, 10.5, 1);
+  for (let i = 0; i < 240; i++) tickMatch(m, DT, {});
+  const t = m.tombs[0], from = t.x;
+  assert.ok(t.grounded);
+  explode(m, from - 3, t.y + .5, 1);
+  assert.ok(!t.grounded && t.vx > 0, 'thrown');
+  const { view } = mirror(null, wire({ match: { ...matchView(m), mapSeed: m.map.seed, size: m.map.size } }));
+  assert.deepEqual(view.tombs.map(k => k.id), [c.id]);
+});
+
+test('the plain tombstone is free; the others wait for a purchase; a choice is remembered', async () => {
+  const { createTombStore, TOMBS } = await import('../public/tombs.js');
+  const data = new Map(), storage = { getItem: k => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) };
+  const store = createTombStore({ storage });
+  assert.equal(store.chosen(), 'headstone');
+  assert.deepEqual(TOMBS.filter(t => !t.unlock).map(t => t.id), ['headstone'], 'only one is free');
+  assert.equal(store.owns('celtic'), false);
+  assert.equal(store.choose('celtic'), false, 'locked');
+  assert.equal(store.chosen(), 'headstone');
+  store.grant('tomb-celtic');
+  assert.equal(store.choose('celtic'), true);
+  assert.equal(createTombStore({ storage }).chosen(), 'celtic', 'remembered');
+});

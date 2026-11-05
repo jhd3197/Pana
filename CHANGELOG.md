@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos: un capi fuera deja su lápida donde cayó.**
+  Si se fue al río, la lápida queda en la orilla más cercana. Un pintazo también la mueve. Elige la tuya en Más ajustes; las otras formas salen muy pronto.
 - **Capis a Pintazos: caen cajas con más tiros.**
   Baja una en paracaídas cada pocos turnos: tócala y tu equipo gana tiros. Basta con llegarle cerca, y un pintazo la rompe o la lanza lejos, y también te pinta a ti si vas por ella.
 - **Capis a Pintazos: ya puedes subirte a los bordes de la cueva y de la montaña.**

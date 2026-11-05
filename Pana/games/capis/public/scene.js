@@ -23,6 +23,7 @@ import { createTerrain } from '/engine/play/terrain-material.js';
 import { createSpray } from '/engine/play/spray.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { supplyCrate } from '/engine/models/props/expedition-camp.js';
+import { grave } from '/engine/models/props/cemetery.js';
 import { simulateFlight, simulateBounce } from '/engine/play/ballistic.js';
 import { RULES, TEAM_COLORS, alive, muzzle, flightOptions, activeCapy, launch } from './rules.js';
 import { WEAPONS, weaponOf } from './weapons.js';
@@ -33,6 +34,10 @@ import { rockAt, grassAt, strataPalette } from './map-rules.js';
 const FRONT = 1;               // the depth where capis and shells move
 const SLAB = [-2.6, .55];      // the earth's back and front faces
 const DASHES = 24, HUMAN = 0, CRATE_SIZE = .9;
+// Each grave's height differs: these make them all about as tall as a capi's chest.
+const TOMB_SCALE = { headstone: .85, wooden: .95, celtic: .75, obelisk: .5 };
+// A capi painted out lies toppled this long, then it is its tombstone.
+const TOPPLED = 1;
 // A pana is 2.16 units tall: ×.8 a capi stands 1.7, its 1.4 body disc plus the head.
 const CAPY_SCALE = .8, HEAD = 2.05;
 // La Bazuca in the hands: its scale, and how far towards the camera it rides (the near shoulder).
@@ -170,7 +175,7 @@ export function createCapisScene(canvas, match) {
       let m = capis.get(c.id);
       if (!m) { m = buildCapi(c); capis.set(c.id, m); scene.add(m.root); }
       const yaw = c.facing > 0 ? Math.PI / 2 : -Math.PI / 2, pose = barrelPose(match, c);
-      Object.assign(m, { hit: 0, sink: 0, fall: 0, paint: -1, lastX: c.x, speed: 0, yaw, pitch: pose.pitch, drop: pose.drop });
+      Object.assign(m, { hit: 0, sink: 0, fall: 0, gone: 0, paint: -1, lastX: c.x, speed: 0, yaw, pitch: pose.pitch, drop: pose.drop });
       m.root.visible = true; m.root.rotation.set(0, 0, 0); m.gun.visible = true;
     }
     takeDirty(mask);
@@ -209,6 +214,32 @@ export function createCapisScene(canvas, match) {
       g.rotation.z = k.grounded ? 0 : under ? Math.sin(time * 2.2 + k.id) * .12 : g.rotation.z + (k.vx > 0 ? -.12 : .12);
     }
     for (const [id, g] of crateMeshes) if (!seen.has(id)) { g.removeFromParent(); crateMeshes.delete(id); cratePool.push(g); }
+  }
+  // ---------- tombstones ----------
+  // The cemetery's graves, one model a shape (built when first needed) with a ribbon of the
+  // capi's team across it. Each comes up once its capi is gone: toppled, or into the river.
+  const tombModels = {}, ribbonGeo = new THREE.BoxGeometry(.5, .1, .26), tombMeshes = new Map();
+  const tombModel = shape => tombModels[shape] ||= grave({ type: shape, seed: 3, extras: false, tilt: false, mound: false });
+  function makeTomb(t) {
+    const g = new THREE.Group(), stone = tombModel(t.shape).clone(), ribbon = new THREE.Mesh(ribbonGeo, cloth[t.team]);
+    stone.scale.setScalar(TOMB_SCALE[t.shape] ?? 1); ribbon.position.y = .42;
+    g.add(stone, ribbon); g.userData.pop = 0; g.userData.shape = t.shape;
+    return g;
+  }
+  function drawTombs(dt) {
+    const seen = new Set();
+    for (const t of match.tombs || []) {
+      seen.add(t.id);
+      let g = tombMeshes.get(t.id);
+      if (g && g.userData.shape !== t.shape) { g.removeFromParent(); g = null; }
+      if (!g) { g = makeTomb(t); tombMeshes.set(t.id, g); scene.add(g); }
+      g.position.set(t.x, t.y, FRONT - .1);
+      g.rotation.z = t.grounded ? 0 : g.rotation.z + (t.vx > 0 ? -.1 : .1);
+      const capi = capis.get(t.id);
+      g.visible = !capi?.root.visible || match.capys.find(c => c.id === t.id)?.out === 'water';
+      if (g.visible) { g.userData.pop = Math.min(1, g.userData.pop + dt * 4); const p = g.userData.pop; g.scale.setScalar(p * (1 + Math.sin(p * Math.PI) * .25)); }
+    }
+    for (const [id, g] of tombMeshes) if (!seen.has(id)) { g.removeFromParent(); tombMeshes.delete(id); }
   }
   const marker = createLocalMarker({ color: '#ffc629' }); marker.group.scale.setScalar(3); scene.add(marker.group);
   const aimArrow = guideRibbon('#fff6d8', .14, { segments: 1, opacity: .95 }); aimArrow.rotation.x = Math.PI / 2; scene.add(aimArrow);
@@ -410,6 +441,7 @@ export function createCapisScene(canvas, match) {
       root.rotation.z = c.facing * Math.PI / 2 * (1 - (1 - m.fall) ** 3); root.position.y += .35 * m.fall;
       legs.forEach((leg, i) => { leg.rotation.x = -1.3 + Math.sin(time * 6 + i * 2) * .25; });
       avatar.arms.forEach((arm, i) => arm.rotation.set(-2.6 + Math.sin(time * 7 + i) * .3, 0, (i ? -1 : 1) * .4));
+      m.gone += dt; if (m.gone > TOPPLED) root.visible = false;
     } else if (pose === 'sink') {
       // Into the river: paws up, spinning as it goes down.
       m.sink = Math.min(3, m.sink + dt * 1.5); root.position.y = match.map.water - m.sink; root.visible = m.sink < 3;
@@ -493,6 +525,7 @@ export function createCapisScene(canvas, match) {
     }
     drawShells(dt);
     drawCrates();
+    drawTombs(dt);
     // Camera: the shell in flight, a fresh blast for a moment, else the capi whose turn it is.
     hold = Math.max(0, hold - dt);
     const target = match.shot ? { x: match.shot.x, y: match.shot.y + (match.shot.resting ? 1.5 : 0) } : hold && holdAt ? holdAt : active ? { x: active.x, y: active.y + 1.5 } : focus;
@@ -546,6 +579,8 @@ export function createCapisScene(canvas, match) {
       ray.setFromCamera(new THREE.Vector2(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1), camera);
       return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -FRONT), hit) ? { x: hit.x, y: hit.y } : null;
     },
+    // For tests: what lies on the ground, as drawn.
+    get props() { return { crates: [...crateMeshes.values()].map(g => ({ x: g.position.x, y: g.position.y, chute: g.userData.chute.visible })), tombs: [...tombMeshes.entries()].map(([id, g]) => ({ id, shape: g.userData.shape, x: g.position.x, y: g.position.y, visible: g.visible })) }; },
     get wide() { return wide; }, set wide(on) { wide = !!on; },
     set closeUp(width) { closeUp = Number(width) || 0; },
     get calls() { return renderer.info.render.calls; },
@@ -558,7 +593,7 @@ export function createCapisScene(canvas, match) {
       grenades.forEach(g => { g.removeFromParent(); g.userData.dispose(); }); [slug, bit, pellets].forEach(o => { o.removeFromParent(); o.geometry.dispose(); }); shellMat.dispose(); bitMat.dispose(); pellets.dispose();
       ring.userData.dispose();
       bandanaGeo.dispose(); knotGeo.dispose(); cloth.forEach(mt => mt.dispose());
-      chuteGeo.dispose(); cordGeo.dispose(); chuteMat.dispose();
+      chuteGeo.dispose(); cordGeo.dispose(); chuteMat.dispose(); ribbonGeo.dispose();
       flash.geometry.dispose(); flash.material.dispose(); streak.material.dispose(); glow.dispose(); drip.geometry.dispose(); drip.material.dispose();
       sprays.forEach(spray => spray.dispose());
       fx.dispose(); marker.dispose(); aimArrow.userData.dispose(); dashes.forEach(d => d.userData.dispose());

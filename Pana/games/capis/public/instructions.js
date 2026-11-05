@@ -22,6 +22,7 @@ export default {
   tips: [
     loc('El viento empuja la pintura: mira la flecha antes de disparar.'),
     loc('Caen cajas con más tiros: tócalas para agarrarlas. Un pintazo las rompe o las lanza lejos.'),
+    loc('Un capi fuera deja su lápida donde cayó. Cambia la tuya en Más ajustes.'),
     loc('La tierra pintada resbala: los capis se deslizan cuesta abajo.'),
     loc('La Bazuca, La Lejana, La Licuadora y El Trueno tienen pocos tiros por equipo; La Piñita nunca se acaba.'),
     loc('Cada partida trae un mapa nuevo. En la sala, escribe su número para repetir uno.'),

@@ -13,7 +13,7 @@
 // the machine (bot.js), and so is a pana who drops in the middle of a turn.
 // The ground never travels: snapshots carry the list of edits since the
 // map was made from its seed (rules.js applyEdit), and a guest replays them.
-import { createMatch, tickMatch, takeEvents, activeCapy, alive, applyEdit, fire, selectWeapon, canUse } from './rules.js';
+import { createMatch, tickMatch, takeEvents, activeCapy, alive, applyEdit, fire, selectWeapon, canUse, TOMB_SHAPES } from './rules.js';
 import { createBot } from './bot.js';
 import { smallestTeam } from '../../../engine/play/team-balance.js';
 import { defaultOptions, roomOptions } from './options.js';
@@ -95,6 +95,17 @@ export class CapisTable {
     if (this.players.filter(q => q.team === team).length >= TEAM_MAX) return false;
     p.team = team; this.revision++; return true;
   }
+  // The tombstone a pana chose (tombs.js): shown on its team's capis, first pana's choice first.
+  setTomb(id, shape) {
+    const p = this.players.find(q => q.id === id);
+    if (!p || !TOMB_SHAPES.includes(shape) || p.tomb === shape) return false;
+    p.tomb = shape; this.revision++; return true;
+  }
+  looks() {
+    const out = {};
+    for (const p of this.players) if (p.tomb && out[p.team] == null) out[p.team] = p.tomb;
+    return out;
+  }
   configure(patch) {
     if (this.phase !== 'lobby') return false;
     const next = roomOptions(this.options, patch || {});
@@ -110,7 +121,7 @@ export class CapisTable {
   start() {
     if (this.phase === 'play' && this.match?.phase !== 'finished') return false;
     const { seconds, difficulty, size } = this.options;
-    this.match = createMatch({ seconds, difficulty, seed: this.seed, size });
+    this.match = createMatch({ seconds, difficulty, seed: this.seed, size, looks: this.looks() });
     this.bots = [0, 1].map(team => createBot({ team, difficulty, seed: this.match.seed + 1 + team }));
     this.phase = 'play'; this.acc = 0; this.pending = null; this.jumps.clear(); this.fullEdits = 40;
     this.record(takeEvents(this.match)); this.revision++;
@@ -196,7 +207,7 @@ export function matchView(m, full = true) {
   return { mapSeed: m.map.seed, size: m.map.size, seed: m.seed, phase: m.phase, winner: m.winner, endedBy: m.endedBy ?? null,
     wind: m.wind, turn: m.turn && { ...m.turn }, clock: m.clock, shots: m.shots, options: { ...m.options },
     last: [...m.last], teamTurns: [...m.teamTurns], ammo: m.ammo.map(a => ({ ...a })), used: { ...m.used },
-    crates: m.crates.map(k => ({ ...k })), crateN: m.crateN,
+    crates: m.crates.map(k => ({ ...k })), crateN: m.crateN, tombs: m.tombs.map(t => ({ ...t })),
     capys: m.capys.map(c => ({ ...c })), shells: m.shells.map(s => ({ ...s })),
     editCount: m.edits.length, editBase: base, edits: m.edits.slice(base) };
 }
@@ -213,7 +224,7 @@ export function mirror(view, snap) {
   }
   if (view.edits.length < s.editBase) return { view, gap: true };
   for (const e of s.edits.slice(view.edits.length - s.editBase)) { view.edits.push(e); applyEdit(view.mask, e); }
-  for (const k of ['seed', 'phase', 'winner', 'endedBy', 'wind', 'turn', 'clock', 'shots', 'options', 'last', 'teamTurns', 'ammo', 'used', 'shells', 'crates', 'crateN']) view[k] = s[k];
+  for (const k of ['seed', 'phase', 'winner', 'endedBy', 'wind', 'turn', 'clock', 'shots', 'options', 'last', 'teamTurns', 'ammo', 'used', 'shells', 'crates', 'crateN', 'tombs']) view[k] = s[k];
   view.shot = view.shells[0] || null;
   for (const c of s.capys) { const mine = view.capys.find(k => k.id === c.id); if (mine) Object.assign(mine, c); }
   return { view, gap: false };
