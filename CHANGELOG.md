@@ -13,7 +13,7 @@ becomes the GitHub release's notes.
 - **Carreritas: agarrar monedas ahora suena y brilla.**
   Cada moneda estalla en un destello con estrellas doradas, y la cadena se anuncia sobre el contador al llegar a 3 y en cada fila completa.
 - **Con cuenta, tus mangos son los mismos en todos los juegos.**
-  Conuco, Bochinche y Carreritas usan el saldo de tu cuenta; sin cuenta, todo sigue guardado en tu dispositivo.
+  Bochinche y Carreritas usan el saldo de tu cuenta; sin cuenta, todo sigue guardado en tu dispositivo.
 - **Fosa: los ladrillos y la roca ahora tienen relieve de verdad.**
   De cerca y de lado se ven las juntas hondas y la piedra partida. En calidad Nítida y en computadora; en teléfonos y otras calidades, un relieve más sencillo.
 - **Carreritas: ahora la velocidad se siente.**
@@ -28,8 +28,6 @@ becomes the GitHub release's notes.
   Adentro hay una vela encendida y nada tapa la entrada. Si caminas hacia ella un poco de lado, te deslizas adentro.
 - **Subir de rango ahora se celebra.**
   La barra de XP se arrastra hasta llenarse, un destello blanco y un pilar de luz, el título cae de golpe, el XP cuenta punto a punto y aparece lo que desbloqueaste.
-- **Conuco: tu propio pedazo de tierra.**
-  Arregla tu casa con mangos, siembra y cosecha aunque cierres el juego, compra en una tienda que cambia cada cuatro horas para todos y gana adornos al subir de rango.
 - **Trifulca: cada golpe se ve en la barra y en el aire.**
   La barra se vacía de verde a rojo, el pedazo perdido destella antes de bajar, los números saltan del golpeado y los trompones estampan su número con chispas.
 
