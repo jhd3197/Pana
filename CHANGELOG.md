@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Conuco: tu propio pedazo de tierra.**
+  Arregla tu casa con mangos, siembra y cosecha aunque cierres el juego, compra en una tienda que cambia cada cuatro horas para todos y gana adornos al subir de rango.
 - **Fosa: el campamento ahora es una caverna enorme.**
   Un lago quieto, columnas de roca, cascadas a lo lejos, hongos que brillan y un rostro de piedra tallado bajo el reflector. Se baja por el montacargas y se vuelve subiendo hasta la misma caverna.
 - **Fosa: Sobretiempo, ¿se quedan un rato más?**
