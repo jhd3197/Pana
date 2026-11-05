@@ -45,6 +45,8 @@ export function createHands({ camera, itemModel }) {
         h.rig.update();
       });
     },
+    // A small blow with the right hand, as if at the rock in front of you: no rule sees it.
+    knock() { hands[0].swings++; },
     dispose() { kit.dispose(); },
   };
 }

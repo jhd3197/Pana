@@ -544,9 +544,20 @@ noise band in `ambience.js` following `world.fireNear`, and crackles arrive thro
 `view.onFx` from the moment a spark pops. Candles keep their own instanced shader:
 they are tiny, and the library has hundreds of them.
 
+**Cave-ins** break with `engine/fx/rock-crack.js` (`docs/SHARED-ENGINE.md`, "Rock cracks"),
+which `syncRubble` in `scene.js` loads with the first cave-in, off the first-load budget.
+It reads only `state.rubble[id] / RUBBLE_HOLD`, so guests see it from the snapshot and it
+cannot change play: hold time, who can dig and the host's authority are the rules' as
+before, and its random numbers are its own. A heap's sides are inside the tunnel walls,
+so the cracks are aimed at the two ends (`faces`) and spread over the tunnel's width. The
+shared stone goes white under a headlamp, which swallows an emissive crack, so heaps use
+darker clones of its materials and each crack has a dark edge round its glow. A blow
+knocks your hand (`hands.knock`) and jolts the view a little only while you are the one
+holding E within 5 m, never on reduced motion, and the Sustos setting scales it as every shake.
+
 **The stone jaguar** (`jaguarStatue`, `engine/models/props/jaguar-stone.js`) is one
 mesh with one vertex-coloured, flat-shaded material, painted facet by facet: it bakes
-to a single draw. The headlamp bleaches a pale stone to cream at 3 m, so the stone is
+to a single draw, 2.1 k triangles where the old one was 37 meshes and 7.9 k. The headlamp bleaches a pale stone to cream at 3 m, so the stone is
 a dark sandstone; moss goes on steep-up facets of the cat and comes as clumps on the
 plinth, whose tops are one big facet each. The red ring players see around it in
 `derrumbe` is the falling rocks' warning (`rockRings` in `view.js`), not the

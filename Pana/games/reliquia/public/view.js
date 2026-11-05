@@ -90,7 +90,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   // (fog, a multiplier) and candles blown out around a point (out).
   const mood = { light: 1, farol: 1, fog: 1, out: null };
   // What the world sets off that only makes sound: game.js listens.
-  const onFx = e => view.onFx?.(e);
+  const onFx = e => { if (e.type === 'dust') puffs.spawn({ x: e.x, y: e.y, z: e.z }, { color: lookName === 'biblioteca' ? 0x8e949c : 0xb8a888, count: Math.round(2 + e.strength * 3), spread: .3 + e.strength * .7, size: .16 + e.strength * .14, rise: .55, life: .75 }); else view.onFx?.(e); };
   let world = createExpeditionWorld({ seed, depth, onFx }); scene.add(world.group);
   const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign); // i18n-ignore: signage painted in the world
   const puffs = new Puffs(scene), waves = new Shockwaves(scene), swarm = createSwarmView({ scene, puffs });

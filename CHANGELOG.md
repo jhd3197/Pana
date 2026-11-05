@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: romper un derrumbe ahora se siente.**
+  Mientras mantienes E, las piedras se rajan con grietas que brillan, saltan esquirlas, chispas y polvo, y al final se parten en pedazos. Todos los panas lo ven igual.
 - **Fosa: el fuego ahora parece fuego.**
   Lenguas que lamen, blancas por dentro y naranjas por fuera, chispas que suben y parpadean, sombras que bailan en la pared, un rugido suave y crujidos. Si la ruina tiembla o vuelve la luz, se aviva.
 - **Fosa: el jaguar de piedra ahora da miedo.**

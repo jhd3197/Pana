@@ -249,8 +249,16 @@ function frame(now) {
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }
-// A fire's crackles, from where it burns.
-view.onFx = e => { const p = me(); if (p && e.type === 'crackle' && floorOf(e.x) === floorOf(p.x)) ambience.at('crackle', p, view.heading, e.x, e.z, 11); };
+// What the world's fires and breaking rocks sound like from here. A blow also knocks your
+// hand and, a very little, your view while you are the one holding E there (0 on reduced motion).
+const ROCK_SOUND = { hit: ['tok', 16], crunch: ['crunch', 22], break: ['rockfall', 30] }, stillness = matchMedia('(prefers-reduced-motion: reduce)');
+view.onFx = e => {
+  const p = me(); if (!p || floorOf(e.x) !== floorOf(p.x)) return;
+  if (e.type === 'crackle') { ambience.at('crackle', p, view.heading, e.x, e.z, 11); return; }
+  const sound = ROCK_SOUND[e.type]; if (!sound) return;
+  ambience.at(sound[0], p, view.heading, e.x, e.z, sound[1]);
+  if (e.type !== 'break' && (keys.has('e') || touch.has('e')) && Math.hypot(e.x - p.x, e.z - p.z) < 5) { view.hands.knock(); if (!stillness.matches) view.shake(e.type === 'hit' ? .13 : .22); }
+};
 record.showLobby(name); show('loading', false); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
 if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record, saves,

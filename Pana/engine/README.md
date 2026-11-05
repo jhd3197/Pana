@@ -44,6 +44,8 @@ resources, map consumers, missing previews and older code, see the
 | `worlds/island-environment.js`, `worlds/island-terrain.js` | Board island terrain and scenery composition |
 | `worlds/island-scenery.js`, `worlds/island-landscape.js`, `worlds/terrain-material.js` | Offshore worlds, terrain shading and older scene assemblies |
 | `fx.js` | Audio, particle bursts, debris and speech bubbles |
+| `fx/fire.js`, `fx/fire-sim.js` | A burning fire: licking tongues, embers, crackles, a light to lend |
+| `fx/rock-crack.js`, `fx/rock-crack-sim.js` | A rock that cracks and breaks as a hold fills |
 | `ui.js`, `settings.js` | Shared game menu, settings persistence and hints |
 | `play/saber.js`, `play/saber-match.js` | El Saber: shared Venezuelan words (categories, variants, explanations, crude flag) and the pure normalize/fuzzy lookup that ¡Stop! uses; see `docs/knowledge/stop.md` |
 

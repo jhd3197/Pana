@@ -32,7 +32,7 @@ import { getSettings } from '/engine/settings.js';
 import { giantMushroom, puffball, hangingRope, ropeAnchor, narrowBeam, coiledRope, flareStick, sealedParcel, ceilingCrackMark, floodSurface } from '/engine/models/props/fosa-biomes.js';
 import { createCampCave } from './camp-cave.js';
 import { layoutFor } from './layout.js';
-import { visibleItems, liftView, SHOP, SHOP_AT, shopSpot } from './rules.js';
+import { visibleItems, liftView, SHOP, SHOP_AT, shopSpot, RUBBLE_HOLD } from './rules.js';
 import { ITEMS, ARTIFACTS } from './items.js';
 import { TRUCK, TABLE, HEIGHT, CAGE, floorOf, inRect } from './deck.js';
 import { onPlate } from './sucesos.js';
@@ -61,6 +61,7 @@ export const glowColor = kind => ITEMS[kind].artifact ? treasure.ARTIFACT_AURA[k
 // How a fire sits on each thing that burns: where its base is, how big it is.
 const FIRES = { brazier: { y: 1.27, height: 1.45, radius: .34 }, campfire: { y: .22, height: 2.1, radius: .72, emberSize: .05 } };
 const FIRE_DRAW = 30;   // past this the fog has it: no flame cards at all
+const RUBBLE_TINT = .36, RUBBLE_CHIP = 0x5a5044, ROCK_FX = 30;
 const reducedMotion = () => !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true, onFx = null } = {}) {
@@ -594,7 +595,46 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
     });
   }
 
-  let previous = {};
+  // Cave-ins: a heap per fallen tunnel, breaking as the shared hold fills. Everyone
+  // sees the same breaking because it only ever reads state.rubble; the code for it
+  // loads with the first cave-in, and until then the heap just stands there.
+  const rubbleRoot = new THREE.Group(); rubbleRoot.name = 'Derrumbes'; group.add(rubbleRoot);
+  const heaps = new Map(), rubbleMaterials = new Map();
+  let rockCracks = null, rockLoad = null;
+  // The shared stone bleaches to white under a headlamp; a fallen heap is dark and dusty.
+  const dusty = source => { if (!rubbleMaterials.has(source)) { const m = source.clone(); m.color.multiplyScalar(RUBBLE_TINT); rubbleMaterials.set(source, m); owned.add(m); } return rubbleMaterials.get(source); };
+  function addHeap(id) {
+    const c = run.corridors.find(c => c.id === id); if (!c) return null;
+    const pile = ruinRubble({ seed: c.rect[0] | 0, count: 14, spread: 2.2 });
+    pile.traverse(o => { if (o.material) o.material = dusty(o.material); });
+    const x = (c.rect[0] + c.rect[2]) / 2, z = (c.rect[1] + c.rect[3]) / 2;
+    pile.position.set(x, 0, z); pile.scale.set(1.4, 2.2, 1.4); rubbleRoot.add(pile);
+    // Seen from the two ends of its tunnel: the sides of the heap are in the rock.
+    return { pile, crack: null, x, z, faces: c.horizontal ? [0, Math.PI] : [Math.PI / 2, -Math.PI / 2], faceWidth: (c.horizontal ? c.rect[3] - c.rect[1] : c.rect[2] - c.rect[0]) / 2, floor: c.floor, seed: (c.rect[0] * 7 + c.rect[1] * 3) | 0 };
+  }
+  const rockEvent = e => onFx?.(e), rockDust = (x, y, z, strength) => onFx?.({ type: 'dust', x, y, z, strength });
+  function dropHeap(heap) { if (heap.crack) heap.crack.dispose(); else heap.pile.removeFromParent(); heap.pile.traverse(o => o.geometry?.dispose()); }
+  function syncRubble(state, dt, viewer) {
+    const live = state.rubble || {}, ids = Object.keys(live), vf = viewer ? floorOf(viewer.x) : -1;
+    if (ids.length && !rockLoad) rockLoad = import('/engine/fx/rock-crack.js').then(m => { rockCracks = m; }).catch(() => {});
+    for (const id of ids) {
+      let heap = heaps.get(id);
+      if (!heap) { heap = addHeap(id); if (!heap) continue; heaps.set(id, heap); }
+      if (rockCracks && !heap.crack) heap.crack = rockCracks.createRockCrack({ rock: heap.pile, seed: heap.seed, faces: heap.faces, faceWidth: heap.faceWidth, quality: getSettings().detail, motion: calm ? 0 : 1, chipColor: RUBBLE_CHIP, onEvent: rockEvent, dust: rockDust });
+      // Only what you can see throws chips and makes a noise; the cracks grow anyway.
+      const seen = !viewer || (heap.floor === vf && Math.hypot(heap.x - viewer.x, heap.z - viewer.z) < ROCK_FX);
+      heap.crack?.setProgress(live[id] / RUBBLE_HOLD, { viewer, silent: !seen });
+      heap.seen = seen;
+    }
+    for (const [id, heap] of heaps) {
+      const gone = !(id in live);
+      if (gone && !heap.crack) { dropHeap(heap); heaps.delete(id); continue; }
+      if (gone && !heap.crack.broken) heap.crack.break({ silent: !heap.seen });
+      heap.crack?.update(dt);
+      if (gone && heap.crack.done) { dropHeap(heap); heaps.delete(id); }
+    }
+  }
+
   const tickFires = (fires, t, dt, viewer) => {
     for (const f of fires) {
       const distance = viewer ? Math.hypot(f.x - viewer.x, f.z - viewer.z) : 0;
@@ -644,15 +684,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
     const ride = liftView(state.lift), at = run.lifts.find(l => l.floor === ride.floor);
     if (at) { cage.position.set(at.x, ride.y, at.z); cage.rotation.y = at.h; }
     cage.visible = !viewer || floorOf(viewer.x) === ride.floor;
-    // Rubble from collapses.
-    const rubbleRoot = group.getObjectByName('Derrumbes') || Object.assign(new THREE.Group(), { name: 'Derrumbes' });
-    if (!rubbleRoot.parent) group.add(rubbleRoot);
-    const rubbleKey = Object.keys(state.rubble || {}).join();
-    if (rubbleKey !== previous.rubble) {
-      previous.rubble = rubbleKey;
-      rubbleRoot.children.forEach(o => o.userData.dispose?.()); rubbleRoot.clear();
-      for (const id of Object.keys(state.rubble || {})) { const c = run.corridors.find(c => c.id === id); if (c) { const pile = ruinRubble({ seed: c.rect[0] | 0, count: 14, spread: 2.2 }); pile.position.set((c.rect[0] + c.rect[2]) / 2, 0, (c.rect[1] + c.rect[3]) / 2); pile.scale.set(1.4, 2.2, 1.4); rubbleRoot.add(pile); } }
-    }
+    syncRubble(state, dt, viewer);
     syncItems(state, viewer);
     for (const shown of items.values()) if (shown.root.visible && shown.state === 'ground' && ITEMS[shown.kind].size !== 'big') { shown.spin += dt; shown.aura.material.opacity = .4 + Math.sin(shown.spin * 3) * .15; }
     syncTruck(state);
@@ -660,6 +692,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
   }
   function dispose() {
     for (const f of allFires()) f.fire.dispose();
+    for (const heap of heaps.values()) dropHeap(heap);
     const geometries = new Set(), materials = new Set();
     group.traverse(o => { if (o.geometry) geometries.add(o.geometry); for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) materials.add(m); o.userData.dispose?.(); });
     geometries.forEach(g => g.dispose());
@@ -682,5 +715,5 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
   const feedFires = (f, strength = 1, at = null, within = 18) => { for (const q of f === 0 ? campFires : floorsBuilt.get(f)?.fires || []) if (!at || Math.hypot(q.x - at.x, q.z - at.z) < within) q.fire.feed(strength); };
   // How close the nearest burning fire is, 0..1 inside `range` metres: for its roar.
   const fireNear = (x, z, f, range = 9) => { let best = 0; for (const q of f === 0 ? campFires : floorsBuilt.get(f)?.fires || []) { const k = 1 - Math.hypot(q.x - x, q.z - z) / range; if (k > best) best = k * q.fire.level; } return best; };
-  return { group, update, dispose, buildFloor, candles, fireAt, feedFires, fireNear, campLamps: cave.userData.lamps, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
+  return { group, update, dispose, buildFloor, candles, fireAt, feedFires, fireNear, heaps, campLamps: cave.userData.lamps, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
 }

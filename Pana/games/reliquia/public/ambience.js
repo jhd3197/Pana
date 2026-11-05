@@ -108,6 +108,10 @@ export function createAmbience() {
     heartbeat: (ctx, out, t) => { osc(ctx, out, t, { from: 60, to: 40, dur: .16, vol: .25 }); osc(ctx, out, t + .22, { from: 55, to: 38, dur: .18, vol: .2 }); },
     // A log popping: a dry tick or two, high and short.
     crackle: (ctx, out, t) => { for (let i = 0, n = 1 + Math.floor(Math.random() * 3); i < n; i++) noiseBurst(ctx, out, t + i * (.03 + Math.random() * .05), { dur: .02 + Math.random() * .025, freq: 2200 + Math.random() * 3200, type: 'bandpass', q: 2.5, vol: .22 }); },
+    // A cave-in giving way: a dry tok on each blow, a crunch when it splits, a fall of stone at the end.
+    tok: (ctx, out, t) => { noiseBurst(ctx, out, t, { dur: .05, freq: 1500 + Math.random() * 700, type: 'bandpass', q: 3, vol: .42 }); osc(ctx, out, t, { type: 'triangle', from: 300, to: 150, dur: .07, vol: .16 }); },
+    crunch: (ctx, out, t) => { for (let i = 0; i < 4; i++) noiseBurst(ctx, out, t + i * .035, { dur: .09, freq: 650 + Math.random() * 900, type: 'bandpass', q: 1.4, vol: .4 }); osc(ctx, out, t, { type: 'triangle', from: 130, to: 62, dur: .22, vol: .18 }); },
+    rockfall: (ctx, out, t) => { noiseBurst(ctx, out, t, { dur: .5, freq: 340, vol: .55, sweep: .5 }); osc(ctx, out, t, { from: 92, to: 42, dur: .4, vol: .26 }); for (let i = 0; i < 7; i++) noiseBurst(ctx, out, t + .12 + i * (.05 + Math.random() * .08), { dur: .05, freq: 900 + Math.random() * 1400, type: 'bandpass', q: 2.4, vol: .2 }); },
     // ---- The library ----
     // A board under a foot: a dull knock and, sometimes, a short squeal.
     board: (ctx, out, t, squeal) => { noiseBurst(ctx, out, t, { dur: .08, freq: 380, vol: .45 }); osc(ctx, out, t, { type: 'triangle', from: 150, to: 95, dur: .09, vol: .12 }); if (squeal) osc(ctx, out, t + .03, { type: 'sawtooth', from: 260 + Math.random() * 120, to: 180 + Math.random() * 80, dur: .35 + Math.random() * .3, vol: .035, vibrato: 30 }); },
