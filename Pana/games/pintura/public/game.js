@@ -6,7 +6,7 @@ import { ratingBadge } from '/engine/kit-rating.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { MENU_FIELDS, DEFAULT_OPTIONS, teamPlay, roundTime, menuValues, menuPatch, hardcorePlay } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { createDifficultyPicker, DEFAULT_DIFFICULTY } from '/engine/play/difficulty.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl } from '/engine/invite.js';
@@ -66,7 +66,7 @@ const teamRoster = createTeamLobby($('team-roster'), { onMove: (from, to) => roo
 const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: MENU_FIELDS, change: patch => room.configure(menuPatch(patch, room.state.options)), reset() {
   room.configure(DEFAULT_OPTIONS); room.selectMap('terminal'); room.selectDifficulty(DEFAULT_DIFFICULTY);
 } });
-const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true, room });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: loc('Puntería de los bots'),
   notes: { facil: loc('Los bots fallan seguido y disparan menos.'), normal: loc('Bots con buena mano, pero se les va alguna.'), dificil: loc('Los bots apuntan fino y no sueltan el gatillo.'), experto: loc('Casi no fallan: muévete y cúbrete.') } });
 const menu = createGameMenu({ pad: { move: 'wasd', look: loc('Mirar y apuntar'), keys: { rt: ['Enter', loc('Disparar')], lt: ['KeyF', loc('Apuntar')], a: ['Space', loc('Saltar')], x: ['KeyR', loc('Recargar')], rb: ['KeyG', loc('Lanzar granada')], y: ['KeyQ', loc('Cambiar de arma')], b: ['KeyX', loc('Siguiente marcadora')], rs: ['KeyV', loc('Lanzar la chancleta')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla y el mapa completo')] } }, title: 'Pepazo · Pana', orientation: 'libre', sound, // i18n-ignore: game name
@@ -334,7 +334,7 @@ const teamScore = state => loc('Naranja {orange} — Turquesa {teal}', { orange:
 function render(state) {
   optionsUI.update(menuValues(state.options || DEFAULT_OPTIONS), room.connected && room.isHost && state.phase !== 'playing');
   if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
-  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, canChangeMap(room, state.phase));
   difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase !== 'playing');
   $('round-minutes').textContent = loc('{n} min', { n: roundTime(state.options) / 60 });
   const ctf = state.options?.mode === 'ctf', dom = state.options?.mode === 'dom'; $('win-target').textContent = ctf ? state.options.flagGoal || 3 : dom ? state.options.domGoal || 200 : TARGET;

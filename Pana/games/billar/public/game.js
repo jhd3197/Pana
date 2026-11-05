@@ -1,5 +1,5 @@
 import { prepareScene } from '/engine/game-load.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { createDifficultyPicker } from '/engine/play/difficulty.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
@@ -41,7 +41,7 @@ const room = new PoolRoom({ code, name: loadName(), avatar: loadAvatar(), onStat
     $('recovery').hidden = !failed || room.state.phase === 'lobby'; render(room.state);
   },
 });
-const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true, room });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.action('difficulty', { difficulty }));
 const roomOptions = createRoomOptions($('room-options'), { title: 'Billar', fields: POOL_OPTIONS,
   change: options => { if(options.format === 'duel' && room.state.players.filter(p=>p.id!==null).length>2){notify(loc('Individual es para dos panas. Con más jugadores, elige Por equipos.'));return;} room.action('options', { options }); }, reset: () => room.action('reset-options') });
@@ -178,7 +178,7 @@ function render(state) {
   seating.update(state.options.format === 'duel' ? state.players.slice(0,2) : state.players, { teams: state.options.format !== 'duel', enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.hostId, emptyLabel: loc('libre') });
   roomOptions.update(state.options, room.connected && room.isHost && ['lobby', 'finished'].includes(state.phase));
   if (state.phase !== 'lobby' && roomOptions.isOpen) roomOptions.close();
-  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, canChangeMap(room, state.phase));
   difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase === 'lobby');
   const lobby = state.phase === 'lobby', ended = state.phase === 'finished';
   document.body.classList.toggle('in-lobby', lobby); $('welcome').hidden = !lobby; $('play-controls').hidden = lobby || ended;

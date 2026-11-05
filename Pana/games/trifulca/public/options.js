@@ -2,7 +2,7 @@ import { botLevel } from '../../../engine/room-option-fields.js';
 import { optionDefaults, applyRoomOptions } from '/engine/room-options-rules.js';
 import { loc } from '../../../engine/i18n.js';
 // Arena names are place names and stay Spanish.
-export const ARENA_CHOICES = [['calle', 'La calle'], ['toldo', 'El toldo'], ['mercado', 'El mercado'], ['motos', 'Las motos'], ['manga', 'La manga'], ['cebra', 'El paso de cebra'], ['colonial', 'La colonial']]; // i18n-ignore
+export const ARENA_CHOICES = [['calle', 'La calle del barrio'], ['toldo', 'El toldo'], ['mercado', 'El mercado mayorista'], ['motos', 'La plaza de las motos'], ['manga', 'La manga de coleo'], ['cebra', 'El paso de cebra'], ['colonial', 'La calle colonial']]; // i18n-ignore
 // Varios: every fight on the next map of a shuffled cycle.
 export const ROTATE = 'rotar';
 export const MODE_CHOICES = [['queda', loc('Ganador se queda')], ['libre', loc('Trifulca libre')], ['parejas', loc('Parejas')], ['torneo', loc('Torneo')]];

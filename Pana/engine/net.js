@@ -211,6 +211,7 @@ export class HostRoom {
     this.hostId = null;
     this.connected = false;
     this.offline = false;
+    this.solo = true; // no room to answer to: not dialed yet, or gave up
     this.attempts = 0;
   }
 
@@ -218,6 +219,7 @@ export class HostRoom {
 
   async connect() {
     this.stopped = false;
+    this.solo = false;
     this.onStatus(this.texts.connecting);
     let link;
     try {
@@ -265,6 +267,7 @@ export class HostRoom {
       return;
     }
     this.stopped = true;
+    this.solo = true;
     this.onStatus(this.texts.full, true);
   }
 
@@ -273,7 +276,7 @@ export class HostRoom {
     if (++this.attempts <= 3) {
       this.onStatus(this.texts.lost, true);
       this.retry = setTimeout(() => this.connect(), 1500);
-    } else this.onStatus(this.texts.offline, true);
+    } else { this.solo = true; this.onStatus(this.texts.offline, true); }
   }
 
   // Room state → members and host. A dropped pana counts as gone until it
