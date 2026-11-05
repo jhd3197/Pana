@@ -8,8 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
-- **Fosa: ya no te trancas en las esquinas.**
-  Pasas las puertas rozando el marco sin frenar, y las paredes chocan justo donde se ven.
+- **Fosa y Pepazo: ya no te trancas en las esquinas.**
+  Pasas rozando marcos y contenedores sin frenar, y en Fosa las paredes chocan justo donde se ven.
 - **Fosa y Pepazo: ahora ves tus manos con lo que cargas.**
   Guantes y mangas de tu color: en Fosa sostienen el machete, el farol y el botín, y en Pepazo la chancla, con el mismo balanceo y el mismo golpe.
 - **Galope: los caballos ahora corren como caballos.**

@@ -16,7 +16,7 @@ import { clamp } from '../../../engine/random.js';
 import { pickSpawn, pickRespawn, spreadSpawns, MIN_SPAWN_GAP } from './spawn-picker.js';
 import { locKey } from '../../../engine/i18n.js';
 import { resetJump, jumpCount } from '../../../engine/play/jump.js';
-import { stepWalker, axisMove } from '../../../engine/play/walker.js';
+import { stepWalker, slideMove } from '../../../engine/play/walker.js';
 import { returnToLobby } from '../../../engine/play/round-lobby.js';
 import { segmentBox, launch, sweep } from '../../../engine/play/projectile.js';
 import { shotHeight, headHit, aimedPitch } from '../../../engine/play/head-zone.js';
@@ -466,7 +466,7 @@ export class Arena {
       p.aim = input.aim && stats.aims;
       // Shift sprints 45% faster for up to three seconds; sprinting holds fire. A flag carrier is slower (ctf.js).
       const walk = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (p.aim ? .5 : 1) * carrierSlow(this, p);
-      const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, regen: 5, move: axisMove((x, z) => blocked(x, z, RADIUS, this.mapId, this.variant)) }).sprinting; p.sprint = sprinting;
+      const sprinting = stepWalker(p, input, dt, { walk, run: walk * 1.45, canSprint: !!stats.sprint && !input.fire && !p.aim, regen: 5, move: (q, dx, dz) => slideMove(q, dx, dz, (x, z) => !blocked(x, z, RADIUS, this.mapId, this.variant), { slip: RADIUS }) }).sprinting; p.sprint = sprinting;
       p.walk = !!(input.x || input.z);
       if ((input.reload || p.ammo === 0) && !p.reload && !p.swap && p.ammo < stats.magazine && (stats.reserve == null || p.reserve > 0)) p.reload = stats.reload;
       // Melee: the trigger swings (no ammo); the blow lands when the windup ends.

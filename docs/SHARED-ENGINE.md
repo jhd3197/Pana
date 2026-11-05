@@ -65,8 +65,8 @@ inertia, collision through the game's own `move`, the jump and the floor height.
 The game keeps its rules and passes numbers (`walk`, `run`, `canSprint`).
 
 ```js
-import { stepWalker, axisMove } from '../../../engine/play/walker.js'; // relative: rules.js also loads on the server
-const r = stepWalker(p, input, dt, { walk: 7, run: 10, canSprint: !input.fire, move: axisMove((x, z) => blocked(x, z)) });
+import { stepWalker, slideMove } from '../../../engine/play/walker.js'; // relative: rules.js also loads on the server
+const r = stepWalker(p, input, dt, { walk: 7, run: 10, canSprint: !input.fire, move: (q, dx, dz) => slideMove(q, dx, dz, (x, z) => !blocked(x, z), { slip: .5 }) });
 p.sprint = r.sprinting;
 ```
 
@@ -75,8 +75,8 @@ Used by: Reliquia, Pepazo. Notes: `docs/knowledge/shared-player.md`.
 `slideMove(p, dx, dz, free, { slip })` is the `move` for a body with a size: it
 runs each axis up to contact and, with `slip` (the body's radius), rounds a corner
 the body only grazes instead of stopping dead on it. `free(x, z)` says the whole
-body fits there. Used by: Fosa (`layout.moveBody`, `moveAcross`). Pepazo still uses
-`axisMove`, which stops at corners.
+body fits there. Used by: Fosa (`layout.moveBody`, `moveAcross`), Pepazo. `axisMove` stops dead at
+corners: a game with a body size wants `slideMove`.
 
 ### Jump
 
