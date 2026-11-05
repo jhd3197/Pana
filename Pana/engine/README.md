@@ -112,4 +112,3 @@ Pass those values as `layoutScale` and `heightScale` to the island environment
 before applying the same transform to its group; placed trees and houses keep
 their original dimensions. Convert road queries and clearance into local units.
 The board uses the defaults of 1. `bake(root,{cellSize})` optionally separates
-material batches into spatial cells so distant parts can be culled.
