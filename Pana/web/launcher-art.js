@@ -12,7 +12,7 @@ export const artwork = {
   tambor: ['Fiesta', 'tambor.jpg', 'tambor-card.jpg'], stop: ['Fiesta', 'stop.jpg', 'stop-card.jpg'],
   chapita: ['Fiesta', 'chapita.jpg', 'chapita-card.jpg'], trifulca: ['Fiesta', 'trifulca.jpg', 'trifulca-card.jpg'],
   bochinche: ['Fiesta', 'bochinche.jpg', 'bochinche-card.jpg'], capis: ['Fiesta', 'capis.jpg', 'capis-card.jpg'],
-  embuste: ['Aventura', 'embuste.jpg'], reliquia: ['Aventura', 'reliquia.jpg'], conuco: ['Aventura', 'conuco.jpg', 'conuco-card.jpg'],
+  embuste: ['Aventura', 'embuste.jpg'], reliquia: ['Aventura', 'reliquia.jpg'],
 };
 export const category = game => artwork[game.id]?.[0] || 'Fiesta';
 export const artUrl = (game, card = false) => {
