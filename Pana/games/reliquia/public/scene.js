@@ -79,10 +79,15 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
   const mat = (color, extra = {}) => { const m = new THREE.MeshStandardMaterial({ color, roughness: .9, ...extra }); owned.add(m); return m; };
   const place = (parent, model, x, y, z, h = 0, s = 1) => { model.position.set(x, y, z); model.rotation.y = h; if (s !== 1) model.scale.multiplyScalar(s); parent.add(model); return model; };
 
+  // Relief on the bricks and the cave's rock. Off the first-load budget: until the module
+  // lands the materials are plain, and it follows the picture setting from then on.
+  const carving = new Set(); let relief = null, gone = false;
+  const carve = root => root.traverse(o => { const m = o.material; if (m?.userData?.relief) { if (relief) relief.add(m, m.userData.relief); else carving.add(m); } });
+  import('/engine/fx/pom.js').then(({ createPomSet }) => { if (gone) return; relief = createPomSet(); for (const m of carving) relief.add(m, m.userData.relief); carving.clear(); }).catch(() => {});
   // ---------- Camp ----------
   const camp = new THREE.Group(); camp.name = 'Campamento'; group.add(camp);
   const campStatic = new THREE.Group();
-  const cave = createCampCave({ halo }); camp.add(cave); animated.push(cave);
+  const cave = createCampCave({ halo }); camp.add(cave); animated.push(cave); carve(cave);
   const truck = place(camp, expeditionJeep(), TRUCK.x, 0, TRUCK.z, TRUCK.h, 1.25);
   const truckRing = new THREE.Mesh(new THREE.RingGeometry(4.3, 4.6, 64), new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: .6, depthWrite: false })); owned.add(truckRing.material);
   truckRing.rotation.x = -Math.PI / 2; truckRing.position.set(TRUCK.x, .04, TRUCK.z); camp.add(truckRing);
@@ -103,7 +108,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
   for (const pad of run.cargo.filter(c => c.floor === 0)) place(camp, treasure.cargoLift({ height: 6 }), pad.x, 0, pad.z, Math.PI / 2);
   for (const [x, z, r] of [[-17, -1, 2.4], [18, 22, 2.8], [-18, 26, 2.2]]) place(campStatic, lajaRock({ seed: x * 7, radius: r }), x, 0, z);
   const mouth = ruinShell({ inside: (x, z) => floorOf(x) === 0 && run.stubs.some(s => s.floor === 0 && inRect(x, z, s.rect)), ground: L.groundAt, open: (x, z) => z > -2, solid: (x, z) => !inShaft(0, x, z), sky: (x, z) => inShaft(0, x, z, .4), bounds: [-4, -16, 4, 0], palette: GALLERY_STONE, seed: 3, tile: 1 });
-  camp.add(mouth); owned.add(mouth);
+  camp.add(mouth); owned.add(mouth); carve(mouth);
   const campBatch = bake(campStatic, { cellSize: 30 }); campStatic.traverse(o => o.geometry?.dispose()); camp.add(campBatch);
 
   // The shop: a market stall with what mangos can buy laid on its counter.
@@ -143,7 +148,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
     const library = run.theme === 'biblioteca', statics = new THREE.Group(), palette = paletteFor(depth, run.theme), x0 = f * L.SPACING - 60;
     const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z) && !run.bridges.some(b => b.beam && inRect(x, z, b.rect)), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
     const floor = { root, shell: shell(), revealed: '', fires: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [], spots: new Map(), webs: null, mist: null, chandeliers: [], water: null, waterLevel: .13, spans: new Map(), ropes: new Map(), twins: [], decorGlows: [] };
-    root.add(floor.shell);
+    root.add(floor.shell); carve(floor.shell);
     // Candle flames of the whole floor go in one instanced shader.
     const flamePoints = [], flamesOf = (model, x, y, z, h = 0) => { for (const p of model.userData.flames || []) flamePoints.push(new THREE.Vector3(p.x * Math.cos(h) + p.z * Math.sin(h) + x, p.y + y, -p.x * Math.sin(h) + p.z * Math.cos(h) + z)); };
     for (const d of run.decor.filter(d => d.floor === f)) {
@@ -659,7 +664,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
     for (const [f, floor] of floorsBuilt) {
       floor.root.visible = !viewer || f === vf;
       const key = run.hidden.filter(h => h.floor === f && revealedNow[h.id]).map(h => h.id).join();
-      if (key !== floor.revealed) { floor.revealed = key; floor.shell.removeFromParent(); floor.shell.userData.dispose(); floor.shell = floor.rebuild(); floor.root.add(floor.shell); }
+      if (key !== floor.revealed) { floor.revealed = key; floor.shell.removeFromParent(); floor.shell.userData.dispose(); floor.shell = floor.rebuild(); floor.root.add(floor.shell); carve(floor.shell); }
       for (const [id, seal] of floor.seals) { seal.height = THREE.MathUtils.damp(seal.height, state.open?.[id] ? -HEIGHT - .4 : 0, 2.2, dt); seal.slab.position.y = seal.height; }
       for (const [id, model] of floor.winches) { const w = state.winches?.[id]; model.userData.wheel.rotation.z = -(w?.progress || 0) * Math.PI * 2 - (w?.latched > 0 ? t * 2 : 0); }
       for (const [id, chest] of floor.chests) { const open = !!state.chests?.[id]; chest.open = THREE.MathUtils.damp(chest.open, open ? 1 : 0, 6, dt); chest.model.userData.lid.rotation.x = -chest.open * 1.9; }
@@ -691,6 +696,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
     truckRing.material.opacity = .45 + Math.sin(t * 3) * .15;
   }
   function dispose() {
+    gone = true; relief?.dispose();
     for (const f of allFires()) f.fire.dispose();
     for (const heap of heaps.values()) dropHeap(heap);
     const geometries = new Set(), materials = new Set();
@@ -715,5 +721,5 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
   const feedFires = (f, strength = 1, at = null, within = 18) => { for (const q of f === 0 ? campFires : floorsBuilt.get(f)?.fires || []) if (!at || Math.hypot(q.x - at.x, q.z - at.z) < within) q.fire.feed(strength); };
   // How close the nearest burning fire is, 0..1 inside `range` metres: for its roar.
   const fireNear = (x, z, f, range = 9) => { let best = 0; for (const q of f === 0 ? campFires : floorsBuilt.get(f)?.fires || []) { const k = 1 - Math.hypot(q.x - x, q.z - z) / range; if (k > best) best = k * q.fire.level; } return best; };
-  return { group, update, dispose, buildFloor, candles, fireAt, feedFires, fireNear, heaps, campLamps: cave.userData.lamps, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
+  return { get relief() { return relief; }, group, update, dispose, buildFloor, candles, fireAt, feedFires, fireNear, heaps, campLamps: cave.userData.lamps, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
 }

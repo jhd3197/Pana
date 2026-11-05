@@ -100,6 +100,7 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Sound effects, vehicle engines | `engine/sfx.js`, `engine/vehicle-audio.js` | `docs/knowledge/shared-sfx.md`; no audio files |
 | A burning fire (tongues, embers, crackles, a light to lend) | `engine/fx/fire.js` (`createFire`) | `docs/SHARED-ENGINE.md`, "Fire"; Fosa uses it |
 | A rock that cracks and breaks as a hold fills | `engine/fx/rock-crack.js` (`createRockCrack`) | `docs/SHARED-ENGINE.md`, "Rock cracks"; Fosa uses it; lazy-load it |
+| A surface that looks carved (parallax occlusion, generated brick and rock relief) | `engine/fx/pom.js` (`createPomSet`, `applyPom`) | `docs/SHARED-ENGINE.md`, "Carved surfaces"; Fosa uses it; lazy-load it |
 | Who uses which piece, and what is still local | `docs/SHARED-ENGINE.md` | read it first; keep it current |
 | Browser suites | `tests/browser-kit.js` (`launch`, `openGame`, `waitPrepared`, `waitFor`) | |
 

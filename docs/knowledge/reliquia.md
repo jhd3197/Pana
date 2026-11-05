@@ -555,6 +555,35 @@ darker clones of its materials and each crack has a dark edge round its glow. A 
 knocks your hand (`hands.knock`) and jolts the view a little only while you are the one
 holding E within 5 m, never on reduced motion, and the Sustos setting scales it as every shake.
 
+**Carved bricks and rock** are `engine/fx/pom.js` (`docs/SHARED-ENGINE.md`, "Carved surfaces"),
+which `scene.js` lazy-loads at every quality, off the first-load budget. A material asks for it with
+`userData.relief` (`'brick'` in `ruinShell`, `'rock'` in `camp-cave.js`) and `carve` picks it up. It
+touches no rule and no collision.
+
+- **A block has one map.** A ruin block is a box 1.12 × .52 m with UV 0..1 on each face, so the height
+  tile is two courses of two bricks. Only ±z is mapped: the top, bottom and ends only show in the
+  joints, where a whole map squeezed into a few pixels sparkled, so they take a speck of the map's
+  dark corner. That also changes the plain look a little at every quality.
+- **The rock has no UVs and one normal per facet.** It uses the world projection, one axis per facet,
+  so a facet's edge can show a seam in the pattern; the facet's shading already breaks there.
+- **The headlamp sits on the camera, so it casts no relief shadow.** What shows the depth is the shift
+  itself and the dark held in the grooves (`cavity`). Self-shadow stays off for this reason.
+- **Smooth height noise looks wrong under the lamp.** It read as veins, then as a contour map. The
+  rock is now flat tilted chips with sharp creases, and `MAX_SLOPE` stops their edges glinting white.
+- **What it costs** (SwiftShader, 1280 × 800 at resolution 1, seed 4242, three rounds interleaved in
+  one page, median of nine frames; software GL is pixel-bound, so read the ratios). Draws and
+  triangles are the same in all three versions.
+
+  | View | plain ms | normal map ms | POM ms | POM / normal | mean layers (max) | relief on screen |
+  |---|---|---|---|---|---|---|
+  | Brick, head-on, 1.5 m | 245 | 274 | 396 | ×1.44 | 9.1 (18) | 97 % |
+  | Brick, grazing | 272 | 327 | 407 | ×1.25 | 11.1 (18) | 66 % |
+  | Rock, head-on, about 2 m | 196 | 243 | 279 | ×1.15 | 9.7 (22) | 36 % |
+  | Rock, grazing | 255 | 288 | 312 | ×1.08 | 11.1 (22) | 8 % |
+
+  CPU submit does not move: about 2 to 2.6 ms in every version. No GPU was available, so this
+  has not been timed on real hardware. Nítida normally draws at resolution 2, four times the pixels.
+
 **The stone jaguar** (`jaguarStatue`, `engine/models/props/jaguar-stone.js`) is one
 mesh with one vertex-coloured, flat-shaded material, painted facet by facet: it bakes
 to a single draw, 2.1 k triangles where the old one was 37 meshes and 7.9 k. The headlamp bleaches a pale stone to cream at 3 m, so the stone is
@@ -1061,6 +1090,7 @@ flush reach them, a new host keeps the boss, and it falls and opens the seal.
 `tests/silbon.test.js` and `carga.test.js` cover the logic, each difficulty included.
 `tests/swarm.test.js` covers the swarm on every place and jornada, `swarm-perf.test.js` its budget; `tests/swarm.browser.mjs` is two panas on a relay: telegraph, guest-side bodies, draw calls, a bite, a machete, a new host.
 `tests/studio.browser.mjs` opens the new models and the map in Studio.
+`tests/relief.browser.mjs` covers which version each device gets, the live swap with the same draws, every shader variant compiling, `?pom=0` and a phone.
 With `?debug`, `window.reliquia` exposes `room`, `view`, `state`, `me`,
 `place(id, x, z, h)`, `face(h)`, `step(seconds)` and `interaction`.
 

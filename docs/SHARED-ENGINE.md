@@ -669,6 +669,41 @@ system: it awards nothing.
 
 Used by: Fosa (cave-ins; `syncRubble` in `games/reliquia/public/scene.js`, lazy-loaded).
 
+### Carved surfaces
+
+`engine/fx/pom.js` (Three.js) and `engine/fx/pom-sim.js` (its numbers and height maps, no
+Three.js, tested in `engine/tests/pom-sim.test.js`). Parallax occlusion mapping on a
+`MeshStandardMaterial`: each fragment walks its view ray down a height map, so a wall looks
+carved with no added geometry. The outline stays the mesh's own (no discarded fragments, no
+depth writes). `createPomSet()` is the usual way in: `set.add(material, 'brick' | 'rock')`, and
+it swaps the material by itself when the picture setting changes.
+
+- **Who gets it.** `pomGate`: top detail (`getSettings().detail === 'alta'`) on a device that is
+  not touch-only. `?pom=0` and `?pom=1` in the address beat everything. Otherwise a material with
+  UVs is three's stock normal map, no patch; one without UVs gets one tap of the projected normal.
+- **By hand.** `applyPom(material, { heightMap, projection, tile, depth, steps: [min, max], refine,
+  fade: [near, far], cavity, normalScale, selfShadow, debug })`, `applyRelief` (the plain version)
+  and `clearRelief`. `reliefMap('brick' | 'rock')` is the shared texture: normal in RGB, height in A.
+- **`projection`.** `'uv'` uses the mesh's UVs. `'world'` needs only positions, for baked low-poly
+  meshes: the facet's dominant axis picks the projection and `tile` is metres per repeat. Both take
+  their frame from screen derivatives, so no tangent attribute, and both work on instanced meshes.
+- **`depth`** is real metres. Layers follow the view angle (`pomSteps`), a fragment past
+  `fade[1]` skips the walk, and an edge-on sliver stays flat.
+- **`selfShadow`** dims direct light by a four-tap walk toward the first directional, point or spot
+  light. Off by default; a lamp on the camera casts no visible shadow.
+- **`debug`** draws each fragment's layer count over the maximum, for QA.
+- Retune in `POM_SURFACES`, at the top of `pom-sim.js`. The maps are generated on first use, about
+  50 to 90 ms each on a desktop, and are the same bytes on every device.
+
+```js
+const { createPomSet } = await import('/engine/fx/pom.js');   // lazy: stays off the first load
+const relief = createPomSet();
+relief.add(wallMaterial, 'brick');
+```
+
+Used by: Fosa (ruin bricks and the camp's rock; `carve` in `games/reliquia/public/scene.js`). Notes:
+`docs/knowledge/reliquia.md`, "Carved bricks and rock".
+
 ### `fx.js` sound, particles and bubbles
 
 `engine/fx.js`. `sound` (the older shared effects and the one audio context),
