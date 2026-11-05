@@ -324,6 +324,19 @@ export const sfx = {
   },
   // Your turn: two bright notes.
   chime() { pitch({ dur: .14, f0: 784, type: 'triangle', vol: .07, priority: 3 }); pitch({ dur: .3, f0: 1175, type: 'triangle', vol: .07, delay: .11, priority: 3 }); },
+  // A rising whoosh into a big moment: wind climbing with a note under it.
+  riser(dur = 1.2, { volume = 1 } = {}) {
+    burst({ dur, f0: 350, f1: 5200, q: 1.1, vol: .1 * volume, attack: dur * .7, priority: 3 });
+    pitch({ dur, f0: 180, f1: 880, type: 'triangle', vol: .035 * volume, attack: dur * .6, priority: 2 });
+  },
+  // A rank or level gained: the chime the riser lands on.
+  levelUp({ volume = 1 } = {}) {
+    pitch({ dur: .3, f0: 110, f1: 70, vol: .14 * volume, priority: 3 });
+    [784, 988, 1175, 1568].forEach((f, i) => pitch({ dur: i === 3 ? .7 : .2, f0: f, type: 'triangle', vol: .08 * volume, delay: i * .085, priority: 3 }));
+    pitch({ dur: .9, f0: 3136, type: 'sine', vol: .018 * volume, delay: .26, priority: 1 });
+  },
+  // One step of a number counting up; `rise` (0..1) lifts the pitch as it climbs.
+  countTick(rise = 0, { volume = 1 } = {}) { pitch({ dur: .04, f0: 700 + 900 * clamp(rise), type: 'square', vol: .022 * volume, priority: 1 }); },
   // The end of a match: a rising run for a win, a falling one for a loss.
   sting(win = true) {
     const notes = win ? [523, 659, 784, 1047] : [440, 370, 311, 262];

@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Subir de rango ahora se celebra.**
+  La barra de XP se arrastra hasta llenarse, un destello blanco y un pilar de luz, el título cae de golpe, el XP cuenta punto a punto y aparece lo que desbloqueaste.
 - **Trifulca: cada golpe se ve en la barra y en el aire.**
   La barra se vacía de verde a rojo, el pedazo perdido destella antes de bajar, los números saltan del golpeado y los trompones estampan su número con chispas.
 
