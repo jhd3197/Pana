@@ -1645,7 +1645,7 @@ function presentRace(dt) {
 
   // speedometer + boost bar
   race.hud.update(race, order, dt);
-  setSpeedLines(p.boost > 0 ? Math.min(0.85, p.boost) : 0);
+  setSpeedLines(Math.max(p.boost > 0 ? Math.min(0.85, p.boost) : 0, race.feelLines || 0));
   const boost = $('boost');
   const ratio = Math.min(1, Math.abs(p.vf) / (p.tune.top * 1.5));
   const lit = Math.round(ratio * 8);
