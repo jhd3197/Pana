@@ -324,6 +324,8 @@ export const sfx = {
   },
   // Your turn: two bright notes.
   chime() { pitch({ dur: .14, f0: 784, type: 'triangle', vol: .07, priority: 3 }); pitch({ dur: .3, f0: 1175, type: 'triangle', vol: .07, delay: .11, priority: 3 }); },
+  // One letter of a spoken line, at this speaker's pitch (engine/fx/dialogue.js).
+  blip(freq = 320, { volume = 1 } = {}) { pitch({ dur: .035, f0: freq, type: 'square', vol: .018 * volume, priority: 0 }); },
   // A rising whoosh into a big moment: wind climbing with a note under it.
   riser(dur = 1.2, { volume = 1 } = {}) {
     burst({ dur, f0: 350, f1: 5200, q: 1.1, vol: .1 * volume, attack: dur * .7, priority: 3 });

@@ -18,7 +18,8 @@ const $ = (id) => document.getElementById(id), params = new URLSearchParams(loca
 const code = roomCode();
 const showSounds = createQuizSounds(sound, { audible: () => !document.hidden });
 const animationSounds = createQuizSounds(sound, { audible: () => !document.hidden });
-const narration = createNarration($('read-question'), { onSpeaking: value => { showSounds.speaking(value); animationSounds.speaking(value); } });
+let narrating = false;
+const narration = createNarration($('read-question'), { onSpeaking: value => { narrating = value; showSounds.speaking(value); animationSounds.speaking(value); } });
 const stopSounds = () => { showSounds.stop(); animationSounds.stop(); };
 const unsubscribeSound = onSettings(settings => { if (!settings.sound || settings.volume === 0) stopSounds(); });
 const hideSounds = () => { if (document.hidden) stopSounds(); };
@@ -186,7 +187,7 @@ addEventListener('keydown', (event) => {
 
 render(room.state); room.connect();
 export const { sceneReady } = bootGame({
-  load: async () => (await import('./scene.js')).createQqsmpScene($('world'), { onAnimationCue: cue => {
+  load: async () => (await import('./scene.js')).createQqsmpScene($('world'), { voiceBusy: () => narrating, onAnimationCue: cue => {
     if (['pop', 'boing', 'bonk', 'land', 'poof', 'ring', 'hangup', 'fall'].includes(cue)) animationSounds.play(cue);
   } }),
   ready: (created) => { world = created; render(room.state); },

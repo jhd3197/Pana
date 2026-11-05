@@ -156,3 +156,11 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
 - Narration signals active playback to duck the effects bus. Mute, zero volume,
   hidden tabs, solo pause and teardown stop scheduled sources; resuming never
   replays old cues. All source nodes disconnect when they end.
+
+## How lines are spoken
+
+`scene.js` writes every bubble through `engine/fx/dialogue.js`. The typewriter paces by
+the clock, not by timers landing on time, so a slow machine reads at the same speed.
+Blips hush while a recorded voice reads (`voiceBusy`). Speaker motion goes on
+`rig.body`, because `group.scale` holds the rig's size (`SC`) and a choreography may own
+it; a rig not talking is left to the animations.
