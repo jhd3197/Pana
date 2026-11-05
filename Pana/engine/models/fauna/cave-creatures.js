@@ -18,6 +18,30 @@ function kit() {
   return { mat, part, dispose: () => { owned.forEach(m => m.dispose()); geometries.forEach(g => g.dispose()); } };
 }
 
+// A roost's worth of bats folded on the ceiling, far cheaper than caveBat: one
+// instanced draw at any count, nothing that flaps. userData.place(list) hangs
+// them at { x, y, z, h, s }; y is the ceiling they hang from.
+export function batColony({ count = 24, spread = 1.4, seed = 1 } = {}) {
+  const k = kit(), g = new THREE.Group(); g.name = 'Colonia de murciélagos';
+  const parts = [new THREE.SphereGeometry(.13, 7, 5).scale(1, 1.55, .8).translate(0, -.2, 0), new THREE.ConeGeometry(.15, .34, 6).scale(1, 1, .45).translate(0, -.26, -.04)];
+  for (const s of [-1, 1]) parts.push(new THREE.ConeGeometry(.04, .12, 4).translate(s * .06, -.42, .02).rotateZ(s * .2));
+  const flat = parts.map(p => p.index ? p.toNonIndexed() : p), geometry = mergeGeometries(flat, false), bats = new THREE.InstancedMesh(geometry, k.mat(0x2b2029, { roughness: .95, flatShading: true }), count);
+  parts.forEach(p => p.dispose()); flat.forEach(p => p.dispose()); bats.frustumCulled = false; bats.count = 0; g.add(bats);
+  const o = new THREE.Object3D();
+  g.userData = {
+    place(list) {
+      bats.count = Math.min(count, list.length);
+      for (let i = 0; i < bats.count; i++) { const b = list[i]; o.position.set(b.x, b.y, b.z); o.rotation.set(0, b.h || 0, 0); o.scale.setScalar(b.s || 1); o.updateMatrix(); bats.setMatrixAt(i, o.matrix); }
+      bats.instanceMatrix.needsUpdate = true;
+    },
+    dispose: () => { k.dispose(); geometry.dispose(); bats.dispose(); },
+  };
+  // On its own (Studio) it shows a little colony hanging from nothing.
+  const list = []; let n = seed; for (let i = 0; i < Math.min(count, 24); i++) { const a = (n += 2.4), r = Math.sqrt(i) * spread * .25; list.push({ x: Math.cos(a) * r, y: 1.2, z: Math.sin(a) * r, h: a * 3, s: .9 + (i % 4) * .1 }); }
+  g.userData.place(list);
+  return g;
+}
+
 // The body is one merged, vertex-coloured mesh and each wing two panels: six
 // draws, so a flock stays cheap. Set userData.hang to fold it up on the ceiling.
 export function caveBat({ seed = 1 } = {}) {

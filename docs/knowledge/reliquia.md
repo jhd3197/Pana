@@ -300,7 +300,7 @@ when a pana enters. Model: `props/reliquia-boss.js`, about 3.2 m, a wide hat, ar
 past the knees, a sack of bones; eight draws, no lights. HUD: the shared boss
 panel, its name and a bar that is its attention (`e.alert`), not health.
 
-- **You lose it.** It chases what it can see (`layout.sightClear`, 20 m) at 3.4 m/s
+- **You lose it.** It chases what it can see (`layout.sightClear`, 13 m; not a quiet pana in cover) at 3.4 m/s
   × difficulty, below a walking pana. Out of sight for .8 s it goes to the last
   spot it saw you (`search`, 14 s in all), tries up to three nooks within 13 m and
   then wanders off (`wander`) from room to room.
@@ -368,6 +368,47 @@ Cuaimas (`snake`) are dealt beside a room's loot; they strike within 2.4 m,
 poison (2 HP/s for 5 s) and slide home when the pana leaves their reach.
 Director waves on floor 1 are 30 % bats; deeper, spiders join.
 Models: `engine/models/fauna/cave-creatures.js`.
+
+### The food chain (`ecology.js`, `eco-view.js`, `engine/ai/ecosystem.js`)
+
+Moths graze glowing mushrooms, bats eat moths, cuaimas eat bats. `dealEcology`
+(`deck.js`, its own stream) deals `run.ecoSites`: mushroom thickets and root
+thickets (nothing collides), a roost per bat colony, a lair per cuaima. A jornada's
+chain is rebuilt from those at `start` and `completeLevel` and simulated 150 s
+before anyone arrives, so each floor starts somewhere different. Once someone is
+below it steps once a second. Caps: 30 bats, 7 cuaimas.
+
+- **Bodies.** Every creature is a row in `g.eco.pop`; only those within 26 m of a
+  pana, in a woken room, get a body in `g.enemies` (`e.eco` is its id; at most 12
+  bats, 5 cuaimas) and go back to being numbers past 34 m, wounds kept. A body's
+  death kills its creature, and starving or being eaten kills its body. Bodies sit
+  outside the Director's cap of 18. The rest of a roost is one instanced draw.
+- **Senses (`attention`).** A body only notices a pana within 2.6 m, noisy within its
+  `hearing`, or inside its `sight` with a clear ray; founders see less and hear more
+  with depth (`traitsFor`, blind at jornada 7). Otherwise it follows its creature to
+  feed or roost. El Silbón's sight fell from 20 m to 13 m for the same reason.
+- **Hiding (`p.covered`, `hiddenFrom`).** In a thicket or the roots, past 2.6 m and
+  quiet for .8 s, bats, cuaimas, spiders, the stalker and El Silbón do not see you.
+  Mummies, phantoms, the guardian and the jaguar are not fooled: otherwise a patch
+  beats the whole Director. A thicket hides only with cover at or above .3, which it
+  loses as moths strip it; roots never wilt. Unlike a nook, a blow still lands.
+- **Why a wipe matters.** No bats: moths reach most patches within a minute or two,
+  cover and light go (a healthy patch counts as light for `lightOn`, so mummies speed
+  up), and no screech is left to lure El Silbón; waves stop bringing bats too. No
+  cuaimas: more bats, and past 8 on a roost it is `touchy`, dropping at 6 m instead
+  of 3.8 m. Sucesos and the crack swarm stay outside the chain: they come from
+  elsewhere. A farol's beam or a flare cuts a patch's moths by 45 % a second.
+- **Net.** `g.eco` is plain JSON: under 8 KB whole, deltas once a second, and a new
+  host carries on exactly (`rng` included). Sites and links never travel. The Tab
+  layer shows the four numbers. Noises for the simulation wait on `g.noise`, which
+  no snapshot carries.
+- **Tuning.** Pest numbers round to .001, not .01: at .01 the seed rounds away and a
+  patch never comes back. Eating to `full`, not just past `hungry`, is what lets bats
+  reach the breeding energy. Hunters' `hungry` bounds their kill rate (about one bat
+  per 130 s), so `catch` can be high without wiping the colony. Over 120 seeded runs
+  of 600 s, cover took bat survival from about 62 % to about 87 %.
+
+Try it: `?debug`, then `reliquia.crowd(24)` or `reliquia.wipe('bat')` (host only).
 
 ### The swarm (`swarm.js`, `swarm-view.js`)
 
@@ -1088,6 +1129,7 @@ extract and replay, plus solo pause, the offline fallback and the hub.
 `tests/silbon.browser.mjs` is two panas on a relay: the guest hides, the windup and the
 flush reach them, a new host keeps the boss, and it falls and opens the seal.
 `tests/silbon.test.js` and `carga.test.js` cover the logic, each difficulty included.
+`tests/ecology.test.js` covers the food chain on every place, `tests/ecology.browser.mjs` is two panas on a relay: the guest sees the host's numbers, hides, and a new host keeps it all.
 `tests/swarm.test.js` covers the swarm on every place and jornada, `swarm-perf.test.js` its budget; `tests/swarm.browser.mjs` is two panas on a relay: telegraph, guest-side bodies, draw calls, a bite, a machete, a new host.
 `tests/studio.browser.mjs` opens the new models and the map in Studio.
 `tests/relief.browser.mjs` covers which version each device gets, the live swap with the same draws, every shader variant compiling, `?pom=0` and a phone.

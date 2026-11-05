@@ -2,7 +2,7 @@
 // every game. Every pana uses the shared studio sculpt. Plain data only (no
 // Three.js) so any page can import it.
 
-import { normalizeWardrobe, wardrobeColor } from './wardrobe.js';
+import { normalizeWardrobe, wardrobeColor } from './models/characters/pana/wardrobe-data.js';
 import { loc } from './i18n.js';
 const KEY = 'pana:avatar';
 const NAME_KEY = 'pana:name';

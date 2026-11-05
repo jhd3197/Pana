@@ -113,8 +113,8 @@ export function createHud() {
     $('stamina-fill').parentElement.style.setProperty('--left', String(p.stamina ?? 1));
     p.hands.forEach((held, i) => slot(i, held, p, state));
     document.body.classList.toggle('reversed', p.reversed > 0); document.body.classList.toggle('is-down', !!p.downed);
-    document.body.classList.toggle('hurt', p.hit > 0); document.body.classList.toggle('in-nook', !!p.hidden);
-    if (open) intel(state, p, L, f, heading);
+    document.body.classList.toggle('hurt', p.hit > 0); document.body.classList.toggle('in-nook', !!p.hidden); document.body.classList.toggle('in-cover', !!p.covered && !p.hidden);
+    if (open) { intel(state, p, L, f, heading); life(state, f); }
     // E prompt.
     const target = playing && !paused ? interaction(state, p) : null;
     $('prompt').classList.toggle('hidden', !target);
@@ -158,6 +158,14 @@ export function createHud() {
     }
     $('downed').classList.toggle('hidden', !(playing && p.downed));
     if (p.downed) $('downed-copy').textContent = state.options?.revive === false ? loc('Te quedas fuera. Tus panas todavía pueden llegar al camión.') : p.draggedBy != null ? loc('Te van arrastrando al camión…') : loc('Un pana puede levantarte (E) o arrastrarte al camión (R).');
+  }
+
+  // What lives on this floor: four icons and their numbers, in the Tab layer.
+  function life(state, f) {
+    const row = $('life'), eco = state.eco; row.hidden = !eco || f === 0; if (row.hidden) return;
+    if (!row.dataset.drawn) { row.dataset.drawn = 1; for (const [id, name] of [['bat', 'creatureBat'], ['snake', 'creatureSnake'], ['moth', 'creatureMoth'], ['mushroom', 'creatureMushroom']]) $(`life-${id}`).previousElementSibling.innerHTML = SVG[name]; }
+    $('life-bat').textContent = eco.counts.bat || 0; $('life-snake').textContent = eco.counts.snake || 0;
+    $('life-moth').textContent = `${eco.moths || 0}%`; $('life-mushroom').textContent = `${eco.glow || 0}%`;
   }
 
   // Hold Tab / View (or tap Mapa) to see it; the next update fills it.
