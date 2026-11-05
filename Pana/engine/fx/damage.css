@@ -1,0 +1,26 @@
+/* Health bar: three stacked layers scaled from the bar's anchored side. */
+.pk-hp > span { position: absolute; inset: 0; transform-origin: left center; will-change: transform; }
+.pk-hp[data-side='right'] > span { transform-origin: right center; }
+.pk-hp-fill { background: var(--pk-hp-ok, #3ddc6b); transition: background-color .18s linear; }
+.pk-hp[data-tone='warn'] .pk-hp-fill { background: var(--pk-hp-warn, #ffc629); }
+.pk-hp[data-tone='low'] .pk-hp-fill { background: var(--pk-hp-low, #ff4b4b); }
+.pk-hp-gain { background: var(--pk-hp-gain, #b7ffcb); }
+.pk-hp-chunk { background: #e8352f; }
+.pk-hp-chunk[data-tone='white'] { background: #fff; }
+.pk-hp-chunk[data-tone='orange'] { background: #ff9326; }
+.pk-hp-spark { position: absolute; width: 8px; height: 8px; background: #d7ffe2; box-shadow: 0 0 0 1px #3ddc6b; }
+
+/* Damage numbers. */
+.pk-dn { position: absolute; visibility: hidden; font: 900 34px/1 var(--pk-display, sans-serif); color: #fff; white-space: nowrap;
+  -webkit-text-stroke: 5px #1c1033; paint-order: stroke fill; will-change: transform, opacity; }
+.pk-dn b { display: inline-block; font-weight: inherit; }
+.pk-dn[data-kind='crit'] { color: #ff9326; letter-spacing: .02em; }
+.pk-dn[data-kind='crit'] b { animation: pk-dn-jitter .07s steps(2) 12; }
+.pk-dn[data-kind='heal'] { color: #5dee8a; }
+@keyframes pk-dn-jitter {
+  0% { transform: translate(-2px, 1px) rotate(-3deg); }
+  50% { transform: translate(2px, -1px) rotate(3deg); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+@media (max-width: 600px) { .pk-dn { font-size: 26px; -webkit-text-stroke-width: 4px; } }
+@media (prefers-reduced-motion: reduce) { .pk-dn[data-kind='crit'] b { animation: none; } .pk-hp-fill { transition: none; } }
