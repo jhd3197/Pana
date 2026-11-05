@@ -59,6 +59,9 @@ const MINE_DEEP_LOOK = { background: 0x040302, fog: [2, 13], hemi: [0x5c4634, 0x
 const LIBRARY_LOOK = { background: 0x18202a, fog: [2.5, 21], hemi: [0x74849e, 0x0c0c10, 1.8], exposure: 1.1, dust: 1, lamp: 0xe4ebf4, hand: 0xd8dde6, lampPower: 25, lampDecay: 1.15, handPower: .35, candle: [0xff9e52, 1.6, 4.5] };
 // How much La Estatua's pale marble dims with the headlamp right on it (2 m).
 const STATUE_DIM = .72;
+// The Congo: dusk under the canopy, a pale green fog to stand a dark shape against, murky
+// water. Fog colour and hemisphere are what let the Mokele read past the lamp's reach.
+const CONGO_LOOK = { background: 0x35463a, fog: [2.4, 30], hemi: [0xb4d0b8, 0x2c3a24, 1.9], exposure: 1.1, dust: .5, lamp: 0xeef4dc, hand: 0xdcebb4, lampPower: 34, lampDecay: 1.2, lampReach: 22, candle: [0xffa24a, 5.5, 11] };
 const ROCK_POOL = 8;
 
 function label(text, color, { bubble = false } = {}) {
@@ -119,6 +122,9 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   rockMesh.frustumCulled = rockRings.frustumCulled = false; rockMesh.count = rockRings.count = 0; scene.add(rockMesh, rockRings);
   const rockAt = new THREE.Object3D();
   let rippleAt = 0;
+  // The Congo's boats and monster, off the first load: a stub stands in until they land.
+  let congo = null, congoLoad = null, congoGone = false;
+  const wantCongo = () => { congoLoad ??= import('./congo-view.js').then(m => { if (!congoGone) congo = m.createCongoView({ scene, waves, puffs, emit: e => view.onFx?.(e) }); }).catch(() => { congoLoad = null; }); };
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
   const avatars = new Map(), enemies = new Map(), carts = new Map(), tmp = new THREE.Vector3();
   let lastState = null, snapAt = 0;
@@ -128,7 +134,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
 
   function setLook(name) {
     if (name === lookName) return; lookName = name;
-    look = { caverna: CAMP_LOOK, biblioteca: LIBRARY_LOOK, inundada: FLOODED_LOOK, hongos: GROVE_LOOK, templo: TEMPLE_LOOK, mina: MINE_LOOK, minaHonda: MINE_DEEP_LOOK }[name] || DEEP_LOOK;
+    look = { caverna: CAMP_LOOK, biblioteca: LIBRARY_LOOK, inundada: FLOODED_LOOK, hongos: GROVE_LOOK, templo: TEMPLE_LOOK, congo: CONGO_LOOK, mina: MINE_LOOK, minaHonda: MINE_DEEP_LOOK }[name] || DEEP_LOOK;
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sky.mesh.visible = false; renderer.toneMappingExposure = look.exposure;
@@ -149,6 +155,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   function enemyModel(e) {
     if (e.kind === 'bat') { const b = caveBat({ seed: e.id }); b.scale.setScalar(1.3); return b; }
     if (e.kind === 'silbon') return silbon({ seed: e.id });
+    if (e.kind === 'mokele') { wantCongo(); if (congo) return congo.bossModel(e.id); const stub = new THREE.Group(); stub.userData = { stub: true, dispose() {} }; return stub; }
     if (e.kind === 'spider') { const sp = caveSpider({ seed: e.id }); sp.scale.setScalar(1.15); return sp; }
     if (e.kind === 'snake') { const sn = cuaima({ seed: e.id }); sn.scale.setScalar(1.6); return sn; }
     if (e.kind === 'lector') return blindLibrarian({ seed: e.id });
@@ -199,7 +206,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       if (a.root.position.distanceTo(target) > 5) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       const turn = Math.atan2(Math.sin(body.h - a.character.group.rotation.y), Math.cos(body.h - a.character.group.rotation.y));
       a.character.group.rotation.y += turn * Math.min(1, dt * 12);
-      a.character.group.rotation.z = p.downed ? 1.35 : 0; a.character.group.position.y = p.downed ? .35 : 0;
+      a.character.group.rotation.z = p.downed ? 1.35 : 0; a.character.group.position.y = p.downed ? .35 : a.afloat ? -(congo?.SEAT ?? 0) : 0;
       a.character.update(dt, { walk: p.moving && !p.downed ? 1 : 0, run: p.moving && p.stamina < .98, carry: p.grip != null, dizzy: p.downed || p.stun > 0 });
       p.hands.forEach((held, k) => {
         const key = held ? held.kind : ''; if (a.keys[k] === key) return; a.keys[k] = key;
@@ -222,7 +229,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
         const root = new THREE.Group(), model = enemyModel(e), ring = new THREE.Mesh(ringGeometry, dangerMaterial);
         ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; root.add(model); scene.add(root, ring);
         root.position.set(e.x, 0, e.z); root.rotation.y = e.h || 0;
-        a = { root, model, ring, boss: e.kind === 'silbon', fall: 0, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), stone: e.kind === 'estatua', pose: { frozen: false, look: 0, lit: 'dark', scares, mode: 'prowl', pose: 0 }, speed: 0, x: e.x, z: e.z, steps: e.steps || 0 }; enemies.set(e.id, a);
+        a = { root, model, ring, boss: e.kind === 'silbon', mokele: e.kind === 'mokele', fall: 0, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind), stone: e.kind === 'estatua', pose: { frozen: false, look: 0, lit: 'dark', scares, mode: 'prowl', pose: 0 }, speed: 0, x: e.x, z: e.z, steps: e.steps || 0 }; enemies.set(e.id, a);
         // A statue was there all along: no puff when it first appears.
         if (!a.stone) puffs.spawn({ x: e.x, y: .6, z: e.z }, { color: e.kind === 'phantom' ? 0x9fd8ff : lookName === 'biblioteca' ? 0x8e949c : 0xd8c49a, count: 6, spread: .8, size: .7, rise: 1.2, life: .7 });
       }
@@ -247,7 +254,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       const target = tmp.set(e.x, 0, e.z);
       a.root.position.lerp(target, Math.min(1, dt * (e.mode === 'leap' ? 30 : 12)));
       const turn = Math.atan2(Math.sin(e.h - a.root.rotation.y), Math.cos(e.h - a.root.rotation.y)); a.root.rotation.y += turn * Math.min(1, dt * 10);
-      if (a.boss) {
+      if (a.mokele) {
+        if (a.model.userData.stub && congo) { a.root.remove(a.model); a.model = congo.bossModel(e.id); a.root.add(a.model); }
+        if (!a.model.userData.stub) congo.drawBoss(a, e, me, t, dt, scares);
+      } else if (a.boss) {
         // Drawn from the host's own numbers: its pose, and the drop into the pit.
         const step = dt > 0 ? Math.hypot(e.x - a.x, e.z - a.z) / dt : 0; a.x = e.x; a.z = e.z;
         a.speed += (Math.min(1, step / 2) - a.speed) * (1 - Math.exp(-dt * 6));
@@ -325,6 +335,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       }
     }
     for (const [id, a] of carts) if (!state.carts?.some(c => c.id === id)) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); carts.delete(id); }
+    if (world.run.theme === 'congo') { wantCongo(); congo?.update({ state, me, layout: world.layout, vf, heading: h, dt, t, avatars, carts }); } else congo?.hide(avatars);
     // Honda shots, darts and paint.
     syncSimple(shots, state.shots, s => { const m = new THREE.Mesh(ballGeometry, new THREE.MeshBasicMaterial({ color: COLORS[s.seat % 8] })); return m; }, (m, s) => m.position.set(s.x, s.y, s.z), m => m.material.dispose());
     syncSimple(darts, state.darts, () => new THREE.Mesh(dartGeometry, dartMaterial), (m, d) => m.position.set(d.x, 1.1, d.z));
@@ -358,8 +369,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       lift += ((me.downed || downedLook ? -1 : 0) - lift) * (1 - Math.exp(-dt * 5));
       fov += ((me.vx ** 2 + me.vz ** 2 > 40 ? 82 : innerWidth < innerHeight ? 80 : 74) - fov) * (1 - Math.exp(-dt * 5)); camera.fov = fov;
       shake = Math.max(0, shake - dt * 2.5); const jolt = shake * shake * .06 * shakeScale;
-      camera.position.set(me.x, (me.y || 0) + rideY(me) + EYE + lift * 1 + Math.abs(Math.sin(bob)) * .05 * sway, me.z);
-      camera.rotation.set(pitch + (Math.random() - .5) * jolt, h + Math.PI + (Math.random() - .5) * jolt, Math.sin(bob) * .01 * sway + lift * -.35 + (me.reversed > 0 ? Math.sin(t * 2) * .06 : 0));
+      camera.position.set(me.x, (me.y || 0) + rideY(me) + EYE - (congo?.eyeDrop ?? 0) + lift * 1 + Math.abs(Math.sin(bob)) * .05 * sway, me.z);
+      camera.rotation.set(pitch + (Math.random() - .5) * jolt, h + Math.PI + (Math.random() - .5) * jolt, Math.sin(bob) * .01 * sway + (congo?.roll ?? 0) + lift * -.35 + (me.reversed > 0 ? Math.sin(t * 2) * .06 : 0));
       // Hands: bob with the stride, swing on use, hide when both grip a treasure. A wall
       // just ahead pulls them in, so they never poke through it.
       const wall = world.layout.walkable(me.x + Math.sin(h) * .72, me.z + Math.cos(h) * .72, state, .02) ? 0 : .2;
@@ -424,6 +435,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const view = {
     onFx: null,
     renderer, scene, camera, puffs, waves, avatars, enemies, swarm, hands, draw, bark, mood,
+    get congo() { return congo; },
     get lookName() { return lookName; },
     // The Sustos setting scales every camera shake (0 turns it off).
     set shakeScale(v) { shakeScale = v; },
@@ -443,6 +455,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       for (const [id, a] of avatars) removeAvatar(a, id);
       for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
       disposeSprite(shopSign);
+      congoGone = true; congo?.dispose();
       swarm.dispose(); ecoGone = true; ecoView?.dispose(); motes.userData.dispose(); world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
       [ballGeometry, dartGeometry, splatGeometry, ringGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial].forEach(m => m.dispose()); hands.dispose(); disposeSuits(); diverLamps.dispose();
       renderer.dispose();

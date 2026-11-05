@@ -40,6 +40,7 @@ import { onPlate } from './sucesos.js';
 // The mine's rock darkens the deeper the jornada.
 const MINE_PALETTES = ['mina', 'minaCobre', 'minaHonda'];
 // A flooded shaft is black: nothing shows through it, only the lamps on its skin.
+const CONGO_WATER = 0x262a14;
 const BLACK_WATER = 0x020304, SUMP_LEVEL = -5.2, SHAFT_DOWN = 5.2;
 // The camp's gallery: damp dark stone, nothing sunny about it.
 const GALLERY_STONE = { floor: 0x5c5850, bricks: [0x4e4c48, 0x45433f, 0x575450], band: 0x3a3226, ceiling: 0x1c1a1c, glyph: 0x8a7a58 };
@@ -157,7 +158,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
     if (floorsBuilt.has(f) || f < 1 || f > floors) return floorsBuilt.get(f);
     const root = new THREE.Group(); root.name = `Piso ${f}`; group.add(root);
     const library = run.theme === 'biblioteca', statics = new THREE.Group(), palette = paletteFor(depth, run.theme), x0 = f * L.SPACING - 60;
-    const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z) && !run.bridges.some(b => b.beam && inRect(x, z, b.rect)), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
+    const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z) && !run.bridges.some(b => b.beam && inRect(x, z, b.rect)), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof: roof && run.theme !== 'congo' });
     const floor = { root, shell: shell(), revealed: '', fires: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell, flames: null, doors: [], spots: new Map(), webs: null, mist: null, chandeliers: [], water: null, waterLevel: .13, spans: new Map(), ropes: new Map(), twins: [], decorGlows: [], machines: [] };
     root.add(floor.shell); carve(floor.shell);
     // Candle flames of the whole floor go in one instanced shader.
@@ -176,6 +177,11 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
     }
     if (library) furnishLibrary(f, statics, root, floor, flamesOf);
     if (run.theme === 'inundada') flood(f, root, floor);
+    // The Congo's river hides everything under it; its jungle arrives a moment later.
+    if (run.theme === 'congo') {
+      flood(f, root, floor, { color: CONGO_WATER, opacity: 1 });
+      import('./congo-scene.js').then(m => { if (!gone) floor.dressed = m.dressCongo({ run, L, f, root, floor, seed: run.seed }); }).catch(() => {});
+    }
     // Skulls and crystals give the dark corners a little colour (crystals are
     // instanced with their own shader, so they stay out of the static batch).
     for (const r of run.rooms.filter(r => r.floor === f)) {
@@ -189,7 +195,8 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
     for (const pit of run.pits.filter(p => p.floor === f)) {
       const [a, b, c, d] = pit.rect, hole = new THREE.Mesh(new THREE.BoxGeometry(c - a, .5, d - b), mat(0x07040c));
       hole.position.set((a + c) / 2, -7, (b + d) / 2); root.add(hole);
-      if (!pit.water && run.theme !== 'mina') for (let i = 0; i < 6; i++) place(root, crystalCluster({ size: 1.4, color: i % 8, seed: i + f }), a + (i % 3 + .5) * (c - a) / 3, -6.6, i < 3 ? b + 1.2 : d - 1.2, i);
+      if (run.theme === 'congo') { const pool = floodSurface({ rects: [pit.rect], y: -.6, color: BLACK_WATER, opacity: 1 }); root.add(pool); floor.pools = [...(floor.pools || []), pool]; }
+      else if (!pit.water && run.theme !== 'mina') for (let i = 0; i < 6; i++) place(root, crystalCluster({ size: 1.4, color: i % 8, seed: i + f }), a + (i % 3 + .5) * (c - a) / 3, -6.6, i < 3 ? b + 1.2 : d - 1.2, i);
       else { const pool = floodSurface(run.theme === 'mina' ? { rects: [pit.rect], y: pit.water ? -.6 : SUMP_LEVEL, color: BLACK_WATER, opacity: 1 } : { rects: [pit.rect], y: -.6, color: 0x06181c, opacity: .94 }); root.add(pool); floor.pools = [...(floor.pools || []), pool]; }
       // A hanging platform stops well above the bottom; its slabs come with the shell.
       const [ia, ib, ic, id] = pit.island, top = -(pit.low || 0) - .15, tall = top + 6.95, island = new THREE.Mesh(new THREE.BoxGeometry(ic - ia, tall, id - ib), mat(0x8a7356, { flatShading: true }));
@@ -265,7 +272,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
   }
   // The flooded tunnels: one sheet of shallow water over every room and corridor,
   // cut around the pits (a dry island keeps its head above it).
-  function flood(f, root, floor) {
+  function flood(f, root, floor, look = {}) {
     const cut = (rects, [a, b, c, d]) => rects.flatMap(r => {
       if (r[0] >= c || r[2] <= a || r[1] >= d || r[3] <= b) return [r];
       const out = [];
@@ -281,12 +288,13 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
     for (const pit of run.pits.filter(p => p.floor === f)) rects = cut(rects, pit.rect);
     let halls = run.corridors.filter(c => c.floor === f && !c.hidden).map(c => c.rect);
     for (const r of rooms) halls = cut(halls, r.rect);
-    floor.water = floodSurface({ rects: [...rects, ...halls] });
+    floor.water = floodSurface({ rects: [...rects, ...halls], ...look });
     root.add(floor.water);
   }
   function dress(f, statics, root, floor) {
     if (run.theme === 'biblioteca') return;
     if (run.theme === 'mina') return dressMine(f, statics, root, floor);
+    if (run.theme === 'congo') return;   // congo-scene.js
     // Rotten, unlit timber in the flooded tunnels; carved reliefs in the temple; roots in the grove.
     const theme = run.theme, timbered = theme === 'inundada';
     const openings = [...run.corridors, ...run.stubs].filter(c => c.floor === f).map(c => c.rect);
@@ -733,7 +741,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
       if (floor.root.visible && !calm) { for (const machine of floor.machines) machine.userData.tick(t, dt); floor.drips?.userData.tick(t); floor.crawlers?.userData.tick(t, dt, viewer, viewer && holds(viewer, 'farol') ? 5 : 2.4); }
       if (floor.root.visible) tickFires(floor.fires, t, dt, viewer);
       if (floor.mushroomHalos) floor.mushroomHalos.material.opacity = .6 + Math.sin(t * .9 + f) * .12;
-      floor.webs?.userData.tick(t); floor.mist?.userData.tick(t);
+      floor.webs?.userData.tick(t); floor.mist?.userData.tick(t); floor.congo?.tick(t);
       if (floor.water) { floor.waterLevel = THREE.MathUtils.damp(floor.waterLevel, state.suceso?.kind === 'creciente' ? .68 : .13, .8, dt); floor.water.userData.level(floor.waterLevel); floor.water.userData.tick(t); }
       for (const pool of floor.pools || []) pool.userData.tick(t);
       for (const [id, bridge] of floor.spans) bridge.visible = !!state.strung?.[id];

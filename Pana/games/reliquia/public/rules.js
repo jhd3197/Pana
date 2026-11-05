@@ -4,12 +4,12 @@
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { PACTO, hasPacto, calorOfOptions, payoutMult, pactoQuota, pactoTurno, pactoPrice, pactoGreed } from './pactos.js';
-import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS, nookAt, nookFunnel } from './deck.js';
+import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, jornadaName, themeOf, CAGE, SPOTS, nookAt, nookFunnel, bossKind, OLD_PLACES, THEMES } from './deck.js';
 import { HOPPER, aimInto, overHopper, fitsIn, fillOf, overRim, bounceChance, placeTime, climbTime, throwPower, heftOf, stepWobble } from './carga.js';
 import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
 import { layoutFor, distance } from './layout.js';
 import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from './items.js';
-import { spawnEnemy, updateEnemies, holds, wound, stagger, lightOn } from './enemies.js';
+import { spawnEnemy, updateEnemies, holds, wound, stagger, lightOn, MOKELE_RISE } from './enemies.js';
 import { startEcology, tickEcology, wakeBodies } from './ecology.js';
 import { createNoiseBoard, emitNoise, pruneNoises } from '../../../engine/play/noise.js';
 import { createDirector, updateDirector, random } from './director.js';
@@ -256,7 +256,7 @@ export class Expedition {
       lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       level: 1, mangos: 0, quota: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null }, origin: seed >>> 0 || 1,
       eco: null, swarm: null, swarmSim: null, swarmAt: SWARM.firstAt, swarmId: 0, director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0,
-      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null, encargosWon: 0, sobretiempo: 0, silbonAt: 0, daily: '', plainOptions: null });
+      strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null, encargosWon: 0, sobretiempo: 0, silbonAt: 0, daily: '', plainOptions: null, places: THEMES.length });
     this.paths = new Map();
   }
   get layout() { return layoutFor(this.seed, this.level, themeOf(this)); }
@@ -319,7 +319,7 @@ export class Expedition {
   // A saved session back in the lobby: everyone starts missing, and whoever is
   // here finds their slot by name. resume() goes back to the jornada.
   loadSave(data, members) {
-    Object.assign(this, clone(data), { phase: 'lobby', resumed: true, events: [], ledger: {}, extraction: 0, wipe: 0 });
+    Object.assign(this, clone(data), { phase: 'lobby', resumed: true, events: [], ledger: {}, extraction: 0, wipe: 0, places: data.places ?? OLD_PLACES });
     this.paths = new Map(); this.noise = createNoiseBoard(); this.swarmSim = null;
     this.players = this.players.filter(p => !p.spectator || p.held);
     for (const p of this.players) { p.saved = true; this.holdSlot(p, false); }
@@ -594,7 +594,7 @@ export class Expedition {
     let hits = 0;
     for (const e of this.enemies) {
       if (e.hp <= 0 || floorOf(e.x) !== floorOf(p.x)) continue;
-      const d = distance(p, e), reach = range + (e.kind === 'guardian' || e.kind === 'silbon' ? .9 : e.kind === 'jaguar' || e.kind === 'stalker' ? .7 : 0);
+      const d = distance(p, e), reach = range + (e.kind === 'guardian' || e.kind === 'silbon' || e.kind === 'mokele' ? .9 : e.kind === 'jaguar' || e.kind === 'stalker' ? .7 : 0);
       if (d > reach) continue;
       const ahead = ((e.x - p.x) * Math.sin(p.h) + (e.z - p.z) * Math.cos(p.h)) / (d || 1);
       if (ahead < .35 || !this.layout.lineClear(p, e, this, .1)) continue;
@@ -619,13 +619,14 @@ export class Expedition {
       this.event('guardian', locKey('¡El guardián cayó! El sello se abre.'), { enemy: e.id });
     }
     if (e.kind === 'jaguar') { this.spawnItem('jaguarHeart', e.x, e.z, { state: 'air', vy: 5 }); this.event('jaguar', locKey('¡Vencieron al jaguar de oro! Dejó su corazón.'), { enemy: e.id }); }
-    if (e.kind === 'silbon') {
+    if (e.kind === 'silbon' || e.kind === 'mokele') {
       // Into the pit: the way down opens and what it carried lands on the rim.
       const f = floorOf(e.x), seal = this.layout.run.seals.find(s => s.floor === f), pit = this.layout.run.pits.find(q => q.floor === f);
       if (seal) this.openSeal(seal);
       const at = pit ? { x: (pit.rect[0] + pit.rect[2]) / 2, z: pit.rect[1] - 1.4 } : e;
       for (const [i, kind] of ['mask', 'cup', 'coins'].entries()) this.spawnItem(kind, at.x + (i - 1) * .9, at.z, { state: 'air', y: 1, vy: 4 });
-      this.event('silbon-down', locKey('¡El Silbón se fue al abismo!'), { enemy: e.id });
+      if (e.kind === 'mokele') this.event('mokele-down', locKey('¡El remolino se tragó al Mokele!'), { enemy: e.id });
+      else this.event('silbon-down', locKey('¡El Silbón se fue al abismo!'), { enemy: e.id });
     }
     if (e.kind === 'stalker') { this.stalkerRest = 60; this.event('stalker-down', locKey('El jaguar negro huyó a la oscuridad… por ahora.'), { enemy: e.id }); }
   }
@@ -706,11 +707,11 @@ export class Expedition {
         this.woke[room.id] = 1;
         let woke = 0;
         // (Pact 'silbon': already up on its own, so it does not rise a second time here.)
-        const risen = this.silbonAt < 0;
+        const risen = this.silbonAt < 0, boss = bossKind(run.theme);
         // Bats and cuaimas live in the ecosystem: they get their bodies from it.
-        for (const s of run.sleepers) if (s.room === room.id && s.kind !== 'estatua' && !(this.eco && (s.kind === 'bat' || s.kind === 'snake')) && !(risen && s.kind === 'silbon') && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' || s.kind === 'bat', ...(s.kind === 'silbon' ? { mode: 'wander', stun: 1.2 } : {}) }) && s.kind === 'mummy') woke++;
+        for (const s of run.sleepers) if (s.room === room.id && s.kind !== 'estatua' && !(this.eco && (s.kind === 'bat' || s.kind === 'snake')) && !(risen && s.kind === boss) && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' || s.kind === 'bat', ...(s.kind === 'silbon' ? { mode: 'wander', stun: 1.2 } : s.kind === 'mokele' ? { mode: 'emerge' } : {}) }) && s.kind === 'mummy') woke++;
         wakeBodies(this, spawnEnemy);
-        if (!risen && run.sleepers.some(s => s.room === room.id && s.kind === 'silbon')) this.event('boss', locKey('El Silbón se levantó.'), { room: room.id, boss: 'silbon' });
+        if (!risen && run.sleepers.some(s => s.room === room.id && s.kind === boss)) this.bossUp(boss, room.id);
         if (woke && room.kind !== 'guardian' && room.kind !== 'boveda') this.event('awaken', locKey('Las vendas se mueven. Prepárense.'), { room: room.id });
         if (room.kind === 'boveda') this.event('vault', locKey('La bóveda de oro. Algo grande respira en la oscuridad…'), { room: room.id });
       }
@@ -748,12 +749,14 @@ export class Expedition {
   // Pact 'silbon': it gets up by itself soon after the first pana lands, instead
   // of waiting for someone to walk into the pit room. silbonAt: 0 nothing due,
   // above 0 when it rises, below 0 it has risen.
+  // The Mokele is not named yet: whoever hears it has not seen it.
+  bossUp(boss, room) { this.event('boss', boss === 'mokele' ? locKey('Algo grande se mueve en el agua.') : locKey('El Silbón se levantó.'), { room, boss }); }
   riseSilbon() {
     if (!(this.silbonAt > 0) || this.time < this.silbonAt) return;
-    const s = this.layout.run.sleepers.find(q => q.kind === 'silbon');
+    const boss = bossKind(this.layout.run.theme), s = this.layout.run.sleepers.find(q => q.kind === boss);
     this.silbonAt = 0; if (!s || this.woke[s.room]) return;
-    if (!spawnEnemy(this, 'silbon', s.x, s.z, { room: s.room, born: this.time - 1, mode: 'wander', stun: 1.2 })) return;
-    this.silbonAt = -1; this.event('boss', locKey('El Silbón se levantó.'), { room: s.room, boss: 'silbon' });
+    if (!spawnEnemy(this, boss, s.x, s.z, { room: s.room, born: this.time - 1, ...(boss === 'mokele' ? { mode: 'emerge' } : { mode: 'wander', stun: 1.2 }) })) return;
+    this.silbonAt = -1; this.bossUp(boss, s.room);
   }
   finish(outcome) {
     this.phase = 'results'; this.outcome = outcome;
@@ -860,7 +863,9 @@ export class Expedition {
         this.deepest = lift.to; riders.forEach(p => { p.stats.unaMas++; });
         this.event('descend', locKey('¡Bajaron al piso {floor}: {place}!'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to, place: jornadaName(this.level, themeOf(this)) } });
         if (this.encargo) { if (this.encargo.kind === 'turno') this.encargo.until = this.time + pactoTurno(this.options, turnoSeconds(this.level)); this.event('encargo', ENCARGO_TEXT[this.encargo.kind], { encargo: this.encargo.kind }); }
+        // In the Congo it gets up by itself even without the pact, and sooner with it.
         if (hasPacto(this.options, 'silbon')) this.silbonAt = this.time + PACTO.silbonAfter;
+        else if (themeOf(this) === 'congo') this.silbonAt = this.time + MOKELE_RISE;
       }
       this.event('lift-arrive', riders.length ? '' : lift.to ? locKey('El montacargas llegó al piso {floor}.') : locKey('El montacargas llegó al campamento.'), { floor: lift.to, players: lift.riders, vars: { floor: lift.to } });
       const done = lift.to === 0 && lift.from === 1 && riders.length && this.delivered >= this.quota;
@@ -1153,7 +1158,7 @@ export class Expedition {
     if (!kind) {
       const roll = random(this), level = this.level || 1, theme = this.layout.run.theme, other = random(this);
       kind = roll < .1 ? 'bat' : roll < .3 ? 'mummy' : (level > 1 || theme === 'hongos') && roll < .3 + .1 * Math.min(3, level) + (theme === 'hongos' ? .15 : 0) ? 'spider' : 'mummy';
-      if (kind === 'mummy' && theme === 'inundada' && other < .3) { kind = 'snake'; count = Math.min(2, count); }
+      if (kind === 'mummy' && (theme === 'inundada' || theme === 'congo') && other < .3) { kind = 'snake'; count = Math.min(2, count); }
       if (kind === 'mummy' && theme === 'templo' && other < .2) kind = 'phantom';
       // Wiped out on this floor: none come in waves either.
       if (kind === 'bat' && this.eco?.counts.bat === 0) kind = 'mummy';

@@ -131,9 +131,9 @@ export function createHud() {
       $('choice-votes').textContent = loc('1 · ¿Nos vamos ya? ({leave})   2 · ¡Una sala más! ({more})', { leave, more });
     }
     // Boss bar: the nearest awake boss on this floor.
-    const boss = state.enemies.filter(e => ['guardian', 'jaguar', 'stalker', 'silbon'].includes(e.kind) && e.awake && floorOf(e.x) === f && distance(e, p) < 32).sort((a, b) => distance(a, p) - distance(b, p))[0];
+    const boss = state.enemies.filter(e => ['guardian', 'jaguar', 'stalker', 'silbon', 'mokele'].includes(e.kind) && e.awake && floorOf(e.x) === f && distance(e, p) < (e.kind === 'mokele' ? 27 : 32)).sort((a, b) => distance(a, p) - distance(b, p))[0];
     $('boss').classList.toggle('hidden', !boss);
-    if (boss) { $('boss-name').textContent = { guardian: loc('El guardián del sol'), jaguar: loc('El jaguar de oro'), stalker: loc('El jaguar negro'), silbon: loc('El Silbón') }[boss.kind]; setBar($('boss-fill'), boss.kind === 'silbon' ? boss.alert ?? .2 : boss.hp / boss.maxHp); }
+    if (boss) { $('boss-name').textContent = { guardian: loc('El guardián del sol'), jaguar: loc('El jaguar de oro'), stalker: loc('El jaguar negro'), silbon: loc('El Silbón'), mokele: loc('El Mokele') }[boss.kind]; setBar($('boss-fill'), boss.kind === 'silbon' || boss.kind === 'mokele' ? boss.alert ?? .2 : boss.hp / boss.maxHp); }
     // Team.
     const key = state.players.map(q => `${q.id}:${q.name}`).join('|');
     if (key !== rosterKey) {

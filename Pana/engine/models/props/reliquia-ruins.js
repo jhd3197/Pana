@@ -27,6 +27,8 @@ export const RUIN_PALETTES = {
   minaCobre: { floor: 0x5c4e3e, bricks: [0x6a5a4a, 0x5a5044, 0x6e6a54], band: 0x3c2e20, ceiling: 0x1c1610, glyph: 0xffc23d, rock: true, glyphs: false },
   minaHonda: { floor: 0x3e3630, bricks: [0x483e36, 0x3c342e, 0x52463c], band: 0x2a2018, ceiling: 0x120e0a, glyph: 0xffc23d, rock: true, glyphs: false },
   // Fosa's biomes: drowned teal stone, a violet fungal cave, a sun-bleached fallen temple.
+  // The Congo: the walls are the jungle itself, dark mud and leaf mass behind the vines.
+  congo: { floor: 0x2c2a1c, bricks: [0x2c4028, 0x243622, 0x34482c], band: 0x28381f, ceiling: 0x10160e, glyph: 0x4a5a2a, rock: true, glyphs: false },
   inundada: { floor: 0x4c6a68, bricks: [0x3f6f70, 0x356062, 0x4c7f7c], band: 0x9a7a3a, ceiling: 0x14282c, glyph: 0x4fe0d0 },
   hongos: { floor: 0x5a5478, bricks: [0x51467a, 0x463c6c, 0x62578c], band: 0x46c0a0, ceiling: 0x1c1834, glyph: 0x7affc0 },
   templo: { floor: 0xc0a078, bricks: [0xb88f62, 0xa67e54, 0xc8a074], band: 0xb04a2a, ceiling: 0x4a3424, glyph: 0xffa24a },

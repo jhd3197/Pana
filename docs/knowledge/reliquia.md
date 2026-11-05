@@ -317,6 +317,52 @@ panel, its name and a bar that is its attention (`e.alert`), not health.
 - **The pit's edge** (`pitEdge` in `scene.js`): a stone lip with a pale band around
   the pit and the island, broken at the bridge, and sheer walls: three draws.
 
+### El Congo and El Mokele (`mokele.js`, `congo-view.js`, `congo-scene.js`)
+
+A place on the surface beside the dive, on `THEMES` like the others. `deck.js` deals it from
+`BIOME_DECKS.congo`: the maze rooms `canal` and `manglar` (`VINE_ROOMS`) plus the idol and the pit;
+side rooms are the ordinary ones, and the pit is a whirlpool (`pit.water`). `bossKind(theme)` is who
+sleeps at the pit. Adding the place changed no other place's deal: hash `layoutFor` for the other
+five before and after any change here.
+
+- **Vines are `run.solids` (`kind: 'vine'`).** So walking, sight and paths treat them as walls with no
+  new code. A `canal` row has exactly one gap, on a lane the Mokele fits, so every aisle connects and
+  whatever lies past the gaps is a dead end; `manglar` adds a 4 m nave and caps half the aisles off it.
+  Rows sit 3 m apart like the library's stacks, for the same reason: the 2.2 m aisle's centre lies on the
+  1 m path grid. Nooks stay out of maze rooms: their slabs would close an aisle.
+- **Corridors keep their 4 m `rect`.** Everything that reads a corridor (rubble, the mine's own width
+  test, swarm fields) still sees the shared width. The narrowing is solids (`dealVineKnees`): banks down to
+  a 3 m lane and knees from alternate sides. A knee stops .25 m past the middle so the far lane's grid line
+  stays clear for a .72 m body; less than that and the Mokele stops at the first bend without any error.
+- **Boats are looks only** (`congo-view.js`), like the suits: no rule sees them and speed is the walker's.
+  Afloat, the eye drops .52 m and the camera rolls a little. The hull is an open shell drawn double-sided:
+  a whole ellipsoid read as a brown hump in front of you.
+- **Opaque water hides loot.** So the pool has no `creciente`: it would drown every item from sight for 18 s.
+- **No roof.** `ruinShell` gets `roof: false`, or the neck goes through the ceiling. The fog is the sky.
+- **Budget.** The first load is at its cap, so `mokele.js`, `congo-view.js`, `congo-scene.js` and the models
+  all arrive by `import()`. Host rules can too: until `loadMokele` lands it just stands in the water (a tick
+  or two), and a test must `await loadMokele()` first.
+- **A save from before the Congo** has no `places`, and `loadSave` gives it `OLD_PLACES` (5): `themeOf` then
+  walks the old shuffle. With six its jornada would deal another place than its carts came from.
+
+**The Mokele** hunts with the Silbón's own code (`updateSilbon(..., MOKELE)`, the numbers in one table): nothing
+kills it, you lose it, its neck looks into a nook by the same `PEEK`, and running straight at you across the pit
+ends it (`mode: 'fall'`, the seal opens, loot on the rim). What it adds: it comes up 30 s after the landing
+(`MOKELE_RISE`; the Silbón's pact shortens it) in `mode: 'emerge'`; wandering, it turns back toward the nearest pana
+(`stalkEvery`: 18, 11 or 7 s by difficulty); chasing from over 6 m it surges ×1.32 for 3 s, then rests 3.5 s. Its
+3.9 m/s is below a walking pana's 4.6, and a surge above it, so a chase asks for a sprint now and then.
+
+**The order you meet it in** is per screen and never travels. `revealStage(d, mode)` is heard (under 58 m), a shape
+(under 27 m, just inside the 30 m fog), teeth (under 8.5 m and only while hunting, so a close-up always means
+trouble). Nothing names it before it can be seen: the rise says "Algo grande" and the boss bar waits for 27 m. Its
+footfalls and wake are synth voices in `ambience.js`, timed by `cueFor` and sent through `view.onFx`; the drone
+swells from `presence.js`. As a shape its colours are multiplied down (`shade`), since a lit hide vanishes into a pale
+fog. Teeth bring the neck to your eyes with the jaws open and the head scaled up (`headScale`, ×2.15). **Sustos:**
+suaves half the cues and a smaller head; apagados no cues and true size. The neck still comes down, and no rule changes.
+
+Try it: `?debug`, Lugar Congo, then `reliquia.spawn('mokele', 20)`. Suites: `tests/congo.test.js`,
+`tests/congo.browser.mjs` (two panas on a relay, screenshots in `qa/congo`).
+
 ### Hiding nooks (`run.nooks`, `dealLair` in `deck.js`)
 
 Two stone slabs against a wall leave a 1.25 m gap, 1.5 m deep, with a chalk hand on
@@ -710,9 +756,9 @@ panas and pays Bs. 420, and carrying is exactly as fast as before.
 ## Biomes, sucesos and el encargo
 
 **Places.** `THEMES` in `deck.js`: `biblioteca`, `mina`, `inundada`, `hongos`,
-`templo`. With an `origin` (a dealt expedition), `themeFor(depth, 'alternar',
-origin)` walks a shuffle of all five keyed on that seed, so runs open anywhere and
-a place only repeats after the other four. `themeOf(state)` reads `state.origin`.
+`templo`, `congo`. With an `origin` (a dealt expedition), `themeFor(depth, 'alternar',
+origin)` walks a shuffle of all of them keyed on that seed, so runs open anywhere and
+a place only repeats after the others. `themeOf(state)` reads `state.origin`.
 Without an origin (the empty lobby state, old tests) it swaps library and mine. Every
 theme except the library plays as the mine (`library` is the only special-cased
 one); each has a deck in `BIOME_DECKS`, a palette in `RUIN_PALETTES`, a look in
@@ -818,7 +864,7 @@ with the floor, their halos join the floor's single `Points`. Paths that fail
 `themeFor(depth, place)` in `deck.js` deals each jornada a theme from the
 room's **Lugar** option (`options.place`, a primary lobby choice the host
 sets): one place every jornada, or `'alternar'` (the default), which walks all
-five in an order of the expedition's own (see "Biomes, sucesos and el encargo").
+of them in an order of the expedition's own (see "Biomes, sucesos and el encargo").
 `themeOf(state)` reads it from `state.level`, `state.options` and `state.origin`,
 which every snapshot already carries, so `run.theme` itself travels nowhere; `generateRun`, `layoutFor`
 and `createExpeditionWorld` take the theme, and their caches key on it.

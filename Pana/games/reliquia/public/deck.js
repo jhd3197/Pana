@@ -29,6 +29,7 @@ export const ROOM_NAMES = {
   estanterias: locKey('Las estanterías'), lectura: locKey('La sala de lectura'), archivo: locKey('El archivo prohibido'), copistas: locKey('El taller de los copistas'),
   socavon: locKey('El socavón'), galeria: locKey('La galería de máquinas'), pozo: locKey('El pozo inundado'), ramal: locKey('El ramal ciego'),
   sima: locKey('La sima'), cornisa: locKey('La cornisa'), cuerdas: locKey('Los puentes de cuerda'), cisterna: locKey('La cisterna'), bosque: locKey('El bosque de hongos'), atrio: locKey('El atrio caído'), dorada: locKey('La cámara dorada'),
+  canal: locKey('El caño ciego'), manglar: locKey('El manglar'),
 };
 // La biblioteca sepultada names the rooms it shares with the mine its own way.
 const LIBRARY_NAMES = {
@@ -37,9 +38,11 @@ const LIBRARY_NAMES = {
 };
 // The mine calls a few shared rooms by their mining names.
 const MINE_NAMES = { sima: locKey('El tiro'), tesoro: locKey('El polvorín'), santuario: locKey('El refugio de los mineros'), puente: locKey('El pozo viejo') };
+// The Congo is a river: its shared rooms are landings and wrecks.
+const CONGO_NAMES = { entrada: locKey('El embarcadero'), puente: locKey('El remolino'), tesoro: locKey('La barca hundida'), santuario: locKey('El altar del río'), idolo: locKey('La isla del ídolo'), ruedas: locKey('Las dos poleas'), oculta: locKey('Detrás de las lianas'), veta: locKey('La orilla de oro') };
 export const LIBRARY_NAME = locKey('La biblioteca sepultada');
 // The biomes' own names for a whole jornada.
-export const THEME_NAMES = { inundada: locKey('Los túneles inundados'), hongos: locKey('La gruta de los hongos'), templo: locKey('El templo caído') };
+export const THEME_NAMES = { inundada: locKey('Los túneles inundados'), hongos: locKey('La gruta de los hongos'), templo: locKey('El templo caído'), congo: locKey('El Congo') };
 export const FLOOR_NAMES = [locKey('El campamento'), locKey('Las afueras de la mina'), locKey('Las cámaras trampa'), locKey('Las ruinas malditas'), locKey('La bóveda del jaguar'), locKey('El oro profundo')];
 // The mine's rooms are cut small and long, so more of the walk is tunnel. It only
 // reshapes rooms whose furniture has room to spare; the pits keep their size.
@@ -47,7 +50,7 @@ const MINE_SIZES = { tesoro: [14, 12], veta: [12, 20], idolo: [14, 12], santuari
 const SIZES = { entrada: [16, 14], tesoro: [16, 14], columnas: [18, 16], trampas: [16, 16], idolo: [14, 14], veta: [16, 14], cripta: [16, 16],
   santuario: [12, 12], puente: [18, 18], ruedas: [18, 16], guardian: [20, 18], boveda: [22, 22], oculta: [12, 12],
   estanterias: [22, 18], lectura: [20, 18], archivo: [16, 14], copistas: [18, 16],
-  sima: [20, 20], cornisa: [20, 18], cuerdas: [24, 18], cisterna: [18, 18], bosque: [20, 18], atrio: [20, 18], dorada: [12, 12] };
+  sima: [20, 20], cornisa: [20, 18], cuerdas: [24, 18], cisterna: [18, 18], bosque: [20, 18], atrio: [20, 18], dorada: [12, 12], canal: [22, 18], manglar: [22, 18] };
 // The mine's deck: ore chambers, machinery galleries and shafts, no halls or crypts.
 const MINE_DECK = ['socavon', 'galeria', 'sima', 'veta', 'pozo', 'trampas', 'cuerdas', 'idolo', 'socavon', 'galeria', 'santuario', 'puente', 'tesoro', 'pozo'];
 // A mine's drifts are a metre narrower than anywhere else's corridors, and its way
@@ -59,27 +62,34 @@ const BIOME_DECKS = {
   inundada: ['cisterna', 'cisterna', 'sima', 'tesoro', 'cripta', 'veta', 'cuerdas', 'idolo', 'puente'],
   hongos: ['bosque', 'bosque', 'bosque', 'cornisa', 'sima', 'tesoro', 'santuario', 'idolo', 'puente'],
   templo: ['atrio', 'atrio', 'cornisa', 'columnas', 'trampas', 'cripta', 'cuerdas', 'idolo', 'puente'],
+  congo: ['canal', 'manglar', 'canal', 'manglar', 'canal', 'manglar', 'idolo', 'puente'],
 };
 const LIBRARY_DECK = ['estanterias', 'lectura', 'archivo', 'estanterias', 'copistas', 'idolo', 'trampas', 'santuario', 'puente'];
 // Each jornada has a theme: the mine or the buried library. The room's
 // "Lugar" option (`place`) picks it: always one, or alternating with the
 // library first (jornada 1, 3, 5…). Pure, so every client deals the same one.
-export const THEMES = ['biblioteca', 'mina', 'inundada', 'hongos', 'templo'];
+export const THEMES = ['biblioteca', 'mina', 'inundada', 'hongos', 'templo', 'congo'];
+// Saved before the Congo existed: these expeditions keep their five-place order, or a
+// resumed jornada would be dealt from another place than its carts and items came from.
+export const OLD_PLACES = 5;
 export const PLACES = ['alternar', ...THEMES];
-// With an expedition's `origin` seed, Alternar walks all five in an order of its
-// own, so no two expeditions start alike and a biome only repeats after the other
-// four. Without one (nothing dealt yet) it swaps library and mine.
+// With an expedition's `origin` seed, Alternar walks every place in an order of its
+// own, so no two expeditions start alike and a place only repeats after all the
+// others. Without one (nothing dealt yet) it swaps library and mine.
 const rotations = new Map();
-function rotation(origin) {
-  if (rotations.has(origin)) return rotations.get(origin);
-  const R = rng((Math.imul(origin, 2246822519) ^ 0x5bd1e995) >>> 0), order = [...THEMES];
+function rotation(origin, places = THEMES.length) {
+  const key = `${origin}:${places}`;
+  if (rotations.has(key)) return rotations.get(key);
+  const R = rng((Math.imul(origin, 2246822519) ^ 0x5bd1e995) >>> 0), order = THEMES.slice(0, places);
   for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-  rotations.set(origin, order); return order;
+  rotations.set(key, order); return order;
 }
-export const themeFor = (depth, place = 'alternar', origin = 0) => THEMES.includes(place) ? place : origin ? rotation(origin)[(depth - 1) % THEMES.length] : depth % 2 ? 'biblioteca' : 'mina';
+export const themeFor = (depth, place = 'alternar', origin = 0, places = THEMES.length) => { if (THEMES.includes(place)) return place; if (!origin) return depth % 2 ? 'biblioteca' : 'mina'; const order = rotation(origin, places); return order[(depth - 1) % order.length]; };
 // The theme of a state's (or an expedition's) current jornada.
-export const themeOf = s => themeFor(s?.level || 1, s?.options?.place, s?.origin || 0);
-export const roomName = (kind, theme = 'mina') => (theme === 'biblioteca' && LIBRARY_NAMES[kind]) || (theme === 'mina' && MINE_NAMES[kind]) || ROOM_NAMES[kind];
+export const themeOf = s => themeFor(s?.level || 1, s?.options?.place, s?.origin || 0, s?.places || THEMES.length);
+// What hunts a place's pit room: everywhere the Silbón, in the Congo the Mokele.
+export const bossKind = theme => theme === 'congo' ? 'mokele' : 'silbon';
+export const roomName = (kind, theme = 'mina') => (theme === 'biblioteca' && LIBRARY_NAMES[kind]) || (theme === 'mina' && MINE_NAMES[kind]) || (theme === 'congo' && CONGO_NAMES[kind]) || ROOM_NAMES[kind];
 // What the HUD calls a jornada.
 export const jornadaName = (level, theme = themeFor(level)) => theme === 'biblioteca' ? LIBRARY_NAME : THEME_NAMES[theme] || FLOOR_NAMES[Math.min(FLOOR_NAMES.length - 1, level)];
 // One extra job per jornada, from its own hash so the deck never notices (rules.js pays it).
@@ -233,11 +243,31 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
     if (x1 - x0 > z1 - z0) item.z = item.z < (z0 + z1) / 2 ? z0 - .6 : z1 + .6; else item.x = item.x < (x0 + x1) / 2 ? x0 - .6 : x1 + .6;
   }
   if (library) libraryHaunts(run, seed, depth);
+  if (theme === 'congo') dealVineKnees(run);
   dealExtras(run, seed, depth);
   dealLair(run, seed, depth);
   dealEcology(run, seed, depth);
   cache.set(key, run);
   return run;
+}
+
+// The Congo's channels: every corridor keeps its 4 m rect, but vine banks close it to
+// a 3 m lane and knees of vines stick out from alternate sides, so nothing past the
+// next bend can be seen. A lane always keeps a grid line clear for the Mokele's body:
+// a knee stops a quarter metre past the middle, the far bank 1.5 m from it.
+const VINE_KIND = 'vine', BANK = .5, KNEE = 1;
+function dealVineKnees(run) {
+  for (const c of run.corridors) {
+    if (c.hidden) continue;
+    const [x0, z0, x1, z1] = c.rect, along = c.horizontal ? [x0 + 1, x1 - 1] : [z0 + 1, z1 - 1], lo = c.horizontal ? z0 : x0, hi = c.horizontal ? z1 : x1, mid = (lo + hi) / 2;
+    const bar = (a0, a1, b0, b1) => run.solids.push({ floor: c.floor, room: null, corridor: c.id, kind: VINE_KIND, axis: c.horizontal ? 'x' : 'z', rect: c.horizontal ? [a0, b0, a1, b1] : [b0, a0, b1, a1] });
+    if (along[1] - along[0] < 1) continue;
+    bar(along[0], along[1], lo, lo + BANK); bar(along[0], along[1], hi - BANK, hi);
+    let side = (Math.abs(Math.round(mid)) + run.corridors.indexOf(c)) % 2;
+    for (let t = along[0] + 1.5; t + KNEE < along[1] - .5; t += 4, side ^= 1) {
+      if (side) bar(t, t + KNEE, lo + BANK, mid - .25); else bar(t, t + KNEE, mid + .25, hi - BANK);
+    }
+  }
 }
 
 // The library's own two: El Lector (a blind librarian, a sleeper in a stacks,
@@ -248,6 +278,7 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
 // never in the entrance, a sealed room or a corridor's mouth.
 export const LECTOR_ROOMS = ['estanterias', 'archivo', 'copistas'];
 export const ESTATUA_ROOMS = ['lectura', 'estanterias', 'archivo', 'copistas'];
+export const VINE_ROOMS = ['canal', 'manglar'];
 const rectGap = (x, z, [x0, z0, x1, z1]) => Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1));
 function libraryHaunts(run, seed, depth) {
   const R = rng((seed * 2246822519 + depth * 3266489917 + 77) >>> 0);
@@ -354,7 +385,8 @@ function dealLair(run, seed, depth) {
     return false;
   };
   for (const room of run.rooms.filter(r => r.floor > 0 && r.kind !== 'oculta' && r.kind !== 'dorada' && r.kind !== 'boveda' && r.kind !== 'entrada')) {
-    const pit = room.kind === 'puente', count = pit ? 3 : R() < .55 ? 1 + Math.floor(R() * 2) : 0, f = room.floor;
+    // A nook's slabs would stop a channel between vine walls: the mazes have none.
+    const pit = room.kind === 'puente', maze = VINE_ROOMS.includes(room.kind), count = pit ? 3 : R() < .55 && !maze ? 1 + Math.floor(R() * 2) : 0, f = room.floor;
     for (let i = 0; i < count; i++) dig(room);
     // Bats roost clear of the walls; the pit room always keeps a colony.
     const roost = pit ? 2 + Math.min(4, depth) : R() < .4 ? 1 + Math.min(2, depth) : 0;
@@ -368,7 +400,7 @@ function dealLair(run, seed, depth) {
     const bridge = run.bridges.find(b => b.room === room.id), pitRect = run.pits.find(p => p.room === room.id).rect;
     const z = bridge && bridge.rect[1] < room.z ? pitRect[3] + 1.6 : pitRect[1] - 1.6;
     const at = [0, -2, 2, -4, 4, -6, 6].map(dx => ({ x: room.x + dx, z })).find(p => !run.obstacles.some(o => o.floor === f && Math.hypot(o.x - p.x, o.z - p.z) < o.r + 1) && !run.solids.some(s => s.floor === f && inRect(p.x, p.z, s.rect, .8)) && !run.nooks.some(n => n.floor === f && inRect(p.x, p.z, n.rect, .8)));
-    if (at) run.sleepers.push({ id: sleeper++, kind: 'silbon', floor: f, room: room.id, x: at.x, z: at.z });
+    if (at) run.sleepers.push({ id: sleeper++, kind: bossKind(run.theme), floor: f, room: room.id, x: at.x, z: at.z });
   }
 }
 
@@ -376,7 +408,7 @@ function dealLair(run, seed, depth) {
 // rest of the deck never notices: mushroom patches and root thickets a pana can
 // walk into and hide in, a roost per colony of bats, a lair per cuaima. Nothing
 // here collides. `hides` is what a pana can use; every site is for the creatures.
-const ECO_CHANCE = { hongos: [.95, .25], inundada: [.5, .65], biblioteca: [.35, .2], templo: [.5, .45], mina: [.55, .35] };
+const ECO_CHANCE = { hongos: [.95, .25], inundada: [.5, .65], biblioteca: [.35, .2], templo: [.5, .45], mina: [.55, .35], congo: [.3, .85] };
 function dealEcology(run, seed, depth) {
   const R = rng((seed * 2654435761 + depth * 40503 + 977) >>> 0), sites = [], [mush, roots] = ECO_CHANCE[run.theme] || ECO_CHANCE.mina;
   const rooms = run.rooms.filter(r => r.floor > 0 && !r.hidden && !['oculta', 'dorada', 'boveda', 'entrada'].includes(r.kind));
@@ -467,7 +499,7 @@ function dealExtras(run, seed, depth) {
 // Contents of one room: obstacles, loot, chests, traps, sleepers and decor.
 function furnish(run, room, f, depth, R, id) {
   // `f` places things on the floor; `d` (the jornada's depth) decides how much.
-  const [x0, z0, x1, z1] = room.rect, cx = room.x, cz = room.z, d = depth, deep = Math.min(1, d / 4), library = run.theme === 'biblioteca', mine = run.theme === 'mina';
+  const [x0, z0, x1, z1] = room.rect, cx = room.x, cz = room.z, d = depth, deep = Math.min(1, d / 4), library = run.theme === 'biblioteca', mine = run.theme === 'mina', congo = run.theme === 'congo', maze = VINE_ROOMS.includes(room.kind);
   const taken = [], desks = [], caps = [];
   // Keep every doorway and stair mouth clear for three metres into the room.
   const mouths = [...run.corridors.filter(c => c.a === room.id || c.b === room.id), ...run.stubs.filter(s => inRect(s.rect[0] + 2.2, s.a, room.rect, .2))]
@@ -495,7 +527,7 @@ function furnish(run, room, f, depth, R, id) {
   const sleeper = (kind = 'mummy', p = spot(.6)) => { if (p && inRect(p.x, p.z, room.rect, -.5) && !(mine && run.pits.some(q => q.room === room.id && inRect(p.x, p.z, q.rect, .5))) && !run.solids.some(s => s.floor === f && inRect(p.x, p.z, s.rect, .5)) && !run.obstacles.some(o => o.floor === f && Math.hypot(o.x - p.x, o.z - p.z) < o.r + .4)) run.sleepers.push({ id: id.sleeper++, kind, floor: f, room: room.id, x: p.x, z: p.z }); };
   // A cuaima coils up beside a piece of this room's loot; spiders wait above.
   const guard = () => { const l = run.loot.filter(l => l.room === room.id && !l.y); const near = l[Math.floor(R() * l.length)]; if (near) sleeper('snake', { x: near.x + (R() < .5 ? -1 : 1), z: near.z + .4 }); };
-  const ceiling = n => { for (let i = 0; i < n; i++) sleeper('spider'); };
+  const ceiling = n => { if (congo) return; for (let i = 0; i < n; i++) sleeper('spider'); };
   const decor = (kind, x, z, h = 0, extra = {}) => run.decor.push({ kind, floor: f, room: room.id, x, z, h, ...extra });
   const pillar = (x, z, r = .75, kind = 'column') => { if (mouths.some(m => inRect(x, z, m, r))) return; run.obstacles.push({ x, z, r, floor: f }); decor(kind, x, z, R() * 6.28); taken.push({ x, z, r }); };
   const big = kind => { const p = { x: cx + (R() - .5) * 2, z: cz + (R() - .5) * 2 }; if (free(p.x, p.z, 1.3)) { taken.push({ ...p, r: 1.6 }); run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: p.x, z: p.z, h: Math.round(R() * 4) * Math.PI / 2 }); } };
@@ -512,16 +544,23 @@ function furnish(run, room, f, depth, R, id) {
     for (const m of mouths) if (z + SHELF / 2 > m[1] - .2 && z - SHELF / 2 < m[3] + .2) pieces = pieces.flatMap(([a, b]) => [[a, Math.min(b, m[0] - .2)], [Math.max(a, m[2] + .2), b]]).filter(([a, b]) => b - a >= 1.2);
     for (const [a, b] of pieces) solid([a, z - SHELF / 2, b, z + SHELF / 2], 'shelf', extra);
   };
+  // A row of vines along x with one gap on the path grid, cut back at any doorway.
+  const vineRow = (xa, xb, z) => {
+    const lanes = Math.max(1, Math.floor((xb - xa - 3) / 3) + 1), gap = xa + 1.5 + Math.floor(R() * lanes) * 3;
+    let pieces = [[xa, gap - 1.2], [gap + 1.2, xb]];
+    for (const m of mouths) if (z + SHELF / 2 > m[1] - .2 && z - SHELF / 2 < m[3] + .2) pieces = pieces.flatMap(([a, b]) => [[a, Math.min(b, m[0] - .2)], [Math.max(a, m[2] + .2), b]]);
+    for (const [a, b] of pieces) if (b - a >= 1) solid([a, z - SHELF / 2, b, z + SHELF / 2], VINE_KIND);
+  };
   const light = (x, z, kind = 'brazier') => { if (mouths.some(m => inRect(x, z, m, .5))) return; run.lights.push({ floor: f, x, z, kind }); decor(kind, x, z); run.obstacles.push({ x, z, r: .45, floor: f }); taken.push({ x, z, r: .6 }); };
   // Torches in two opposite corners light every room a little.
   // (Hard against the walls on a narrow ledge, so a carrito still rounds the corner.)
   const corner = (sx, sz) => { const m = room.kind === 'cornisa' ? .6 : 1.2; return { x: cx + sx * (room.w / 2 - m), z: cz + sz * (room.d / 2 - m) }; };
   const lit = R() < .5 ? [[-1, -1], [1, 1]] : [[1, -1], [-1, 1]];
   // The library keeps a candelabrum in two corners; the other two stay dark.
-  for (const [sx, sz] of lit) { const p = corner(sx, sz); light(p.x, p.z, library ? 'candelabra' : mine ? 'mineLamp' : 'brazier'); }
+  if (!maze) for (const [sx, sz] of lit) { const p = corner(sx, sz); light(p.x, p.z, library ? 'candelabra' : mine ? 'mineLamp' : 'brazier'); }
   // What stays on an island: laid by hand, as spot() keeps clear of pits.
   const onIsle = (kind, [a, b, c, e]) => run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: a + .7 + R() * (c - a - 1.4), z: b + .7 + R() * (e - b - 1.4), h: R() * 6.28 });
-  if (!library && (d > 1 || R() < .5)) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
+  if (!library && !congo && (d > 1 || R() < .5)) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
   switch (room.kind) {
     case 'entrada':
       // The cargo lift's pad and the jornada's carrito, beside the montacargas.
@@ -584,7 +623,7 @@ function furnish(run, room, f, depth, R, id) {
       // A pit fills the middle; a rope bridge reaches the island with the treasure.
       const pit = [x0 + 3.2, z0 + 3.2, x1 - 3.2, z1 - 3.2], island = [cx - 2.4, cz - 2.4, cx + 2.4, cz + 2.4];
       const north = R() < .5, bridge = north ? [cx - 1.2, pit[1] - .2, cx + 1.2, island[1] + .2] : [cx - 1.2, island[3] - .2, cx + 1.2, pit[3] + .2];
-      run.pits.push({ floor: f, room: room.id, rect: pit, island });
+      run.pits.push({ floor: f, room: room.id, rect: pit, island, ...(congo ? { water: true } : {}) });
       run.bridges.push({ floor: f, room: room.id, rect: bridge, axis: 'z' });
       run.loot.push({ id: id.loot++, kind: BIG_POOL[Math.min(2, d - 1)][Math.floor(R() * 3)], floor: f, room: room.id, x: cx, z: cz, h: 0 });
       small(3); if (library) { loot('pearl'); loot('emerald'); loot('mask'); }
@@ -653,6 +692,24 @@ function furnish(run, room, f, depth, R, id) {
       small(4); loot('mask'); for (let i = 0; i < 1 + d; i++) sleeper();
       break;
     }
+    // ---- The Congo ----
+    // Vine walls in rows along x, 3 m apart, each aisle's centre on the 1 m path grid.
+    // Every row has one gap at a lane the Mokele fits: the channels always connect, and
+    // whatever lies past a channel's gaps is a dead end.
+    case 'canal':
+      for (const row of [-6, -3, 0, 3, 6]) vineRow(x0, x1, cz + row);
+      for (let i = 0; i < 1 + d; i++) sleeper();
+      small(4 + d); loot(R() < .5 ? 'cup' : 'mask');
+      break;
+    case 'manglar':
+      // A 4 m channel up the middle; side channels branch off it, half of them walled off
+      // from it, so you only reach those through a row's gap.
+      for (const row of [-6, -3, 0, 3, 6]) { vineRow(x0, cx - 2, cz + row); vineRow(cx + 2, x1, cz + row); }
+      for (const aisle of [-4.5, -1.5, 1.5, 4.5]) for (const s of [-1, 1]) if (R() < .5) solid([cx + s * 2.4 - SHELF / 2, cz + aisle - 1.1, cx + s * 2.4 + SHELF / 2, cz + aisle + 1.1], VINE_KIND);
+      for (let i = 0; i < 1 + d; i++) sleeper();
+      small(3 + d); loot(R() < .5 ? 'idol' : 'emerald');
+      if (R() < .4 + deep * .3) chest(spotIn([cx - .3, cz + 3 - .1, cx + .3, cz + 3 + .1]));
+      break;
     // ---- The mine ----
     case 'socavon':
       // An ore chamber: loose props hold the roof up, seams in every wall, spoil on the floor.

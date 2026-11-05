@@ -16,6 +16,7 @@
 // none. What they do never changes with the setting.
 import { floorOf } from './deck.js';
 
+const MOKELE_DRONE = 58;
 const NOTICE = 11, LURCH = 9, CLOSE = 3.6, DRONE = 14, LISTEN = 8, PROWL = 10, GRIND = 24;
 
 export function createPresence({ view, ambience, samples }) {
@@ -31,6 +32,8 @@ export function createPresence({ view, ambience, samples }) {
       if (e.hp <= 0 || floorOf(e.x) !== floorOf(me.x)) continue;
       if (e.kind === 'lector') { closest = Math.max(closest, lector(e, me, dt, soft)); continue; }
       if (e.kind === 'estatua') { statue(e, me, soft); continue; }
+      // The Mokele's own footfalls come from congo-view.js; the drone rises under them from far off.
+      if (e.kind === 'mokele') { const near = 1 - Math.min(1, Math.hypot(e.x - me.x, e.z - me.z) / MOKELE_DRONE); closest = Math.max(closest, near * near * (soft ? .5 : 1)); continue; }
       if (e.kind !== 'mummy') continue;
       const dx = e.x - me.x, dz = e.z - me.z, d = Math.hypot(dx, dz);
       let w = watched.get(e.id);

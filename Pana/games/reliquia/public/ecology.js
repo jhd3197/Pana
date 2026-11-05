@@ -52,7 +52,7 @@ export function startEcology(g) {
 
 // Is this pana hidden from this hunter? Cover hides whoever is quiet and not
 // right next to it. Only the things that really hunt by senses fall for it.
-const FOOLED = new Set(['bat', 'snake', 'spider', 'stalker', 'silbon']);
+const FOOLED = new Set(['bat', 'snake', 'spider', 'stalker', 'silbon', 'mokele']);
 export function hiddenFrom(g, e, p, d = distance(p, e)) {
   return !!p.covered && FOOLED.has(e.kind) && d >= COVER.feel && !noisySince(g.noise, p.id, g.time - COVER.fresh);
 }
