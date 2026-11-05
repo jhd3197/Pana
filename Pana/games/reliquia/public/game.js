@@ -132,8 +132,11 @@ function handle(e) {
     case 'awaken': sfx.awaken(); break;
     case 'boss': sfx.boss(); view.shake(.4); break;
     case 'pounce': { sfx.pounce(); if (p) view.shake(Math.max(0, 1 - Math.hypot(e.x - p.x, e.z - p.z) / 18)); view.waves.ring({ x: e.x, y: .1, z: e.z }, { color: 0xffc23d, maxRadius: 3 }); break; }
-    case 'greed': sfx.greed(); view.shake(.4); shout(said, { tone: 'coral' }); break;
-    case 'collapse': sfx.collapse(); view.shake(.9); break;
+    case 'greed': sfx.greed(); view.shake(.4); shout(said, { tone: 'coral' }); if (p) view.world.feedFires(floorOf(p.x), .5, p); break;
+    // The lights come back after a blackout with a roar.
+    case 'suceso-end': if (e.suceso === 'apagon' && p) view.world.feedFires(floorOf(p.x), 1); break;
+    // The ruin shaking stirs the fires around it.
+    case 'collapse': sfx.collapse(); view.shake(.9); if (p) view.world.feedFires(floorOf(p.x), .8, p); break;
     // What the jornada does on its own: the whole sentence is the shout.
     case 'suceso': shout(said, { tone: 'coral' }); if (e.suceso === 'apagon') sfx.blackout(); else if (e.suceso === 'murcielagos') sfx.flap(); else sfx.shaking(); view.shake(.45); break;
     case 'encargo': shout(said, { tone: 'teal' }); break;
@@ -239,6 +242,7 @@ function frame(now) {
   // Keep the eyes on your pana after the run ends; never draw your own body.
   view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
   const theme = view.world.run.theme;
+  ambience.fire = p && !menu.isOpen ? view.world.fireNear(p.x, p.z, floorOf(p.x)) : 0;
   const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : theme === 'inundada' ? 'water' : theme === 'hongos' ? 'dirt' : 'stone' : 'stone';
   ambience.update(state, p, view.heading, dt, theme, !samples.ownSteps(surface), scares);
   heard.state = state; heard.me = p; heard.heading = view.heading; heard.paused = menu.isOpen; heard.theme = theme; heard.floor = p ? view.world.floors.get(floorOf(p.x)) : null; heard.run = view.world.run;
@@ -251,6 +255,16 @@ function frame(now) {
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }
+// What the world's fires and breaking rocks sound like from here. A blow also knocks your
+// hand and, a very little, your view while you are the one holding E there (0 on reduced motion).
+const ROCK_SOUND = { hit: ['tok', 16], crunch: ['crunch', 22], break: ['rockfall', 30] }, stillness = matchMedia('(prefers-reduced-motion: reduce)');
+view.onFx = e => {
+  const p = me(); if (!p || floorOf(e.x) !== floorOf(p.x)) return;
+  if (e.type === 'crackle') { ambience.at('crackle', p, view.heading, e.x, e.z, 11); return; }
+  const sound = ROCK_SOUND[e.type]; if (!sound) return;
+  ambience.at(sound[0], p, view.heading, e.x, e.z, sound[1]);
+  if (e.type !== 'break' && (keys.has('e') || touch.has('e')) && Math.hypot(e.x - p.x, e.z - p.z) < 5) { view.hands.knock(); if (!stillness.matches) view.shake(e.type === 'hit' ? .13 : .22); }
+};
 record.showLobby(name); show('loading', false); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
 if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record, saves,

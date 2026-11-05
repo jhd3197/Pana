@@ -285,6 +285,25 @@ const nookWidth = NOOK.gap + NOOK.slab * 2;
 export const nookAt = (run, x, z) => run.nooks.find(n => n.floor === floorOf(x) && inRect(x, z, n.inner)) || null;
 // How far inside a pana stands, from the opening toward the back wall.
 export const nookDepth = (n, p) => (n.mouth.x - p.x) * n.nx + (n.mouth.z - p.z) * n.nz;
+// A pana who walks at a nook but aims at a slab slides to the opening instead of
+// stopping dead: the lane a .42 m body fits through is only .41 m wide, the door it
+// sees is three times that. Where to slide, for a step (dx, dz) against the slab, or
+// null: inside `reach` of the opening, within `width` of its middle, walking in.
+export const NOOK_FUNNEL = { reach: .7, width: .95, lane: .18 };
+export function nookFunnel(run, x, z, dx, dz) {
+  const f = floorOf(x);
+  for (const n of run.nooks) {
+    if (n.floor !== f) continue;
+    const inward = -(dx * n.nx + dz * n.nz), ox = x - n.mouth.x, oz = z - n.mouth.z, out = ox * n.nx + oz * n.nz;
+    if (inward <= 0 || out < -.05 || out > NOOK_FUNNEL.reach) continue;
+    // Across the opening: the wall's own direction.
+    const side = ox * n.nz - oz * n.nx, off = Math.abs(side);
+    if (off <= NOOK_FUNNEL.lane || off > NOOK_FUNNEL.width) continue;
+    const slide = -Math.sign(side) * Math.min(off - NOOK_FUNNEL.lane, inward);
+    return { x: n.nz * slide, z: -n.nx * slide };
+  }
+  return null;
+}
 const rectsGap = (a, b) => Math.hypot(Math.max(a[0] - b[2], 0, b[0] - a[2]), Math.max(a[1] - b[3], 0, b[1] - a[3]));
 // The Silbón's lair, dealt last from its own stream: nooks along the walls (three
 // in the pit room, sometimes one or two elsewhere; the same map on every

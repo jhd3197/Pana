@@ -631,7 +631,43 @@ const motor = createMotor(sound, { profile: 'muscle', topSpeed: 42 });
 motor.update(dt, { speed, boost });
 ```
 
-Used by: Carreritas (tyres, boost, crash, via `drift-audio.js`). Carreritas' car motor is the older `sound.startEngine` putt-putt in `engine/fx.js`, which sounded better to players than `createMotor`; `createMotor` has no user right now.
+Used by: Carreritas (tyres, boost, crash, via `drift-audio.js`; `createWind` and `vehicleSfx.whoosh` through `speed-feel.js`). Carreritas' car motor is the older `sound.startEngine` putt-putt in `engine/fx.js`, which sounded better to players than `createMotor`; `createMotor` has no user right now.
+
+### Fire
+
+`engine/fx/fire.js` (Three.js) and `engine/fx/fire-sim.js` (its numbers, no Three.js,
+tested in `engine/tests/fire-sim.test.js`). `createFire({ height, radius, seed, quality,
+calm, reach, emberSize, onCrackle })` returns `group`, `update(dt, time, { distance })`,
+`feed(strength)`, `setQuality(level)`, `setLevel(0..1)`, `dispose()`, and `light`
+(`intensity`, `x`, `y`, `z`, `warmth`): what the fire does to a warm light you lend it.
+It owns no light, so a game's fixed light pool stays fixed. Two draws per fire: one
+instanced shader for the tongues in layers and the halo, one Points for the embers,
+which are a capped pool. `quality` is `baja` | `media` | `alta` (`getSettings().detail`):
+`baja` is three cards, one noise octave, no halo and few embers. `calm` shrinks the
+wander for reduced motion. `onCrackle({ strength, x, y, z })` fires when a spark pops,
+so sound stays with the game. Retune everything in `FIRE_TUNING`, at the top of
+`fire-sim.js`. Scene fog applies on its own.
+
+Used by: Fosa (braziers and the campfire, `games/reliquia/public/scene.js`).
+
+### Rock cracks
+
+`engine/fx/rock-crack.js` (Three.js) and `engine/fx/rock-crack-sim.js` (its numbers, no
+Three.js, tested in `engine/tests/rock-crack-sim.test.js`). `createRockCrack({ rock, faces,
+faceWidth, seed, quality, motion, color, ground, chipColor, onEvent, dust })` takes any
+Object3D in the scene and returns `group`, `setProgress(p, { viewer, silent })`,
+`hit(point, normal)`, `break({ silent })`, `update(dt)`, `setQuality(level)`, `done` and
+`dispose()`. Give it a progress your game already shares: cracks grow and burn brighter
+with it and hits come from the thresholds it crosses, so every client sees the same
+breaking without a message of its own. Presentation only, with no rule or state in it.
+Cracks are laid on the rock's real surface by raycasts, once, the first time it starts
+to break. Three extra draws while it is working: cracks, chips and chunks in one instanced
+mesh, sparks; capped pools, so a burst cannot grow them. `onEvent` gets `hit`, `crunch` and
+`break` for your sounds and `dust` asks for a puff of your own, `motion: 0` stills the shake
+for reduced motion and `color` tints the cracks. Retune it in `CRACK_TUNING`. Not a mining
+system: it awards nothing.
+
+Used by: Fosa (cave-ins; `syncRubble` in `games/reliquia/public/scene.js`, lazy-loaded).
 
 ### `fx.js` sound, particles and bubbles
 
@@ -932,6 +968,7 @@ its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
 | Health bar: smooth drain, the lost chunk flashes white, orange, red, holds and drains; green, yellow, red by what is left; sparkles at the edge on a heal (`createDamageBar`, pure `createBarModel`) | `engine/fx/damage.js`, `damage.css` | Trifulca |
 | Damage numbers: pop, fan out on arcs, scale with the amount; white, orange with jitter on a crit, green on a heal (`createDamageNumbers`); drawn-only knockback spring (`createKnock`) | `engine/fx/damage.js` | Trifulca |
 | Rank-up ceremony: riser, white flash, pillar and rings, the title slamming down, stats counting tick by tick, unlocks, confetti. `rankUpToast` plays it and `createRankChip`'s bar crawls through the last sliver, so any game on `engine/progress.js` gets both (`playLevelUp`, `riser`, `levelUp` and `countTick` in `sfx`) | `engine/fx/level-up.js`, `level-up.css`, `engine/progress-ui.js` | Reliquia and Conuco, through `progress-ui` |
+| Speed from the driver's seat: field of view 50 to 75 with speed, camera lag under acceleration that catches up with a small shake on its own noise (seeded dice untouched), how strong edge lines and wind should be. Pure numbers (`createSpeedFeel`); apply them with `setSpeedLines` and `createWind` | `engine/fx/speed.js` | Carreritas (`speed-feel.js`: comfort camera and battle arenas opt out) |
 | Pixel effects as camera-facing sprites (`createWorldFx(THREE, scene)`) or on the HUD layer (`createScreenFx`): pooled, capped, loaded on first use so first load doesn't grow | `engine/fx/pixelfx-bridge.js`, code in `engine/vendor/pixelfx/` (MIT; keep its `LICENSE` and `NOTICE.md`; add an effect through its `README.md`) | Trifulca (`hit-spark`, `crit-hit`, `crit-number`), the rank-up ceremony (`level-up` without its pixel hero, `confetti`) |
 
 ## Player, look and rewards
