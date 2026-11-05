@@ -18,7 +18,7 @@ const CX = 10, CZ = 5;
 export const HOLE = { x: 40, z: -22, r: 8 };
 // The way down: the pit under the gantry, a timber-lined well in the lake's rock.
 export const PIT = { x: 12, z: -11, r: 8, top: -6.5, bottom: -46 };
-// The golden head in the far wall, and the searchlight on the camp's rim that finds it.
+// The stone guardian's face in the far wall, and the searchlight on the camp's rim that finds it.
 export const HEAD = { x: 138, y: 50, z: -176, size: 42 };
 export const SEARCHLIGHT = { x: 19.7, y: 2.3, z: 1.2 };
 export const DOME = { x: -214, z: 46, r: 74 };
@@ -53,7 +53,7 @@ const mix = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b
 const scale = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
 // The steps of distance: darkest nearest, a little lighter and bluer each one back.
 const TONES = [0x040816, 0x050b1a, 0x071226, 0x0a1b30, 0x0c2539, 0x102e43].map(lin);
-const RUST = lin(0x552419), AMBER = lin(0xffa24a), GOLD = lin(0xd8a040), PALE = lin(0x536f88), HAZE = lin(0x0e3044), BLACK = lin(0x010205), LANTERN = 0xffb35c;
+const RUST = lin(0x552419), AMBER = lin(0xffa24a), SLATE = lin(0x121e32), WARM = lin(0x7d4c1c), EYE = lin(0x0e1620), PALE = lin(0x536f88), HAZE = lin(0x0e3044), BLACK = lin(0x010205), LANTERN = 0xffb35c;
 const BLUE = lin(0x2f8dff), PURPLE = lin(0xa04dff);
 const GLOW_COLOR = { blue: 0x1f7dff, purple: 0x9a35ff };
 const toneAt = d => TONES[Math.min(TONES.length - 1, Math.floor(d / 52))];
@@ -62,8 +62,8 @@ const fromCamp = (x, z) => Math.hypot(x - CX, z - CZ);
 // How high the roof is: a huge dome with slow swells, and a chimney up to the hole.
 export function ceilingAt(x, z) {
   const hole = 1 - smooth((Math.hypot(x - HOLE.x, z - HOLE.z) - HOLE.r * .5) / (HOLE.r * .7));
-  const crown = 1 - smooth(Math.hypot(x - HEAD.x, z - HEAD.z) / 110);
-  return 96 + 46 * (1 - smooth(fromCamp(x, z) / 340)) + (fbm2(x * .012 + 7, z * .012) - .5) * 30 + (fbm2(x * .05, z * .05 + 3) - .5) * 7 + hole * 26 + crown * 26;
+  const head = 1 - smooth(Math.hypot(x - HEAD.x, z - HEAD.z) / 110);
+  return 96 + 46 * (1 - smooth(fromCamp(x, z) / 340)) + (fbm2(x * .012 + 7, z * .012) - .5) * 30 + (fbm2(x * .05, z * .05 + 3) - .5) * 7 + hole * 26 + head * 26;
 }
 // How far the far wall stands at a compass angle (0 is north, -z), pulled in behind the head.
 export function wallRadius(az) {
@@ -240,36 +240,66 @@ function buildArches(S) {
     }, rock(tone, { rust: .25 }), { mirror: false });
   }
 }
-// The hero: a head as tall as a tower, its crown a ring of sun rays, lit by the beam.
+// The hero: a guardian's face as tall as a tower, cut from the wall's own dark stone.
+// A frowning mask, not a disc: squared outline, a brow that scowls down to the nose, sockets
+// you could park the crawlers in. Only the beam warms it, and the far cheek stays navy.
 function buildHead(S) {
-  const { x, y, z, size: s } = HEAD, F = wallFrame(x, y, z), dx = SEARCHLIGHT.x - x, dy = SEARCHLIGHT.y - y, dz = SEARCHLIGHT.z - z, dl = Math.hypot(dx, dy, dz), L = [dx / dl, dy / dl + .55, dz / dl];
-  const gold = (x2, y2, z2) => { const d = Math.hypot(x2 - x, y2 - y, z2 - z), k = .16 + 1.02 * Math.exp(-(d * d) / (s * s * 2.1)); return scale(GOLD, k); };
-  const shade = (nx, ny, nz) => .36 + .82 * Math.max(0, (nx * L[0] + ny * L[1] + nz * L[2]) / 1.14);
-  const dark = () => scale(BLACK, 1), rim = (x2, y2, z2) => scale(gold(x2, y2, z2), .62), opts = { mirror: true, shade };
+  const { x, y, z, size: s } = HEAD, F = wallFrame(x, y, z), o = F(0, 0, 0), e = F(1, 0, 0), dx = SEARCHLIGHT.x - x, dy = SEARCHLIGHT.y - y, dz = SEARCHLIGHT.z - z, dl = Math.hypot(dx, dy, dz);
+  // The beam's light: from the searchlight, raised so undersides fall dark, and from the screen's right so forms turn.
+  const lx = dx / dl + (e[0] - o[0]) * .42, ly = dy / dl + .62, lz = dz / dl + (e[2] - o[2]) * .42, ll = Math.hypot(lx, ly, lz), shade = (nx, ny, nz) => .3 + .92 * Math.max(0, (nx * lx + ny * ly + nz * lz) / ll);
+  const spot = F(s * .3, s * .22, s * .7), lit = (a, b, c) => { const d = Math.hypot(a - spot[0], b - spot[1], c - spot[2]); return Math.exp(-(d * d) / (s * s * .5)); };
+  const stone = (a, b, c) => { const n = fbm2(a * .08 + b * .06, c * .08 - b * .05), base = mix(scale(SLATE, .72 + n * .56), RUST, smooth((n - .6) * 8) * .1); return mix(base, WARM, smooth((lit(a, b, c) - .24) / .7) * .88); };
+  const raised = (a, b, c) => scale(stone(a, b, c), 1.28), cut = (a, b, c) => scale(stone(a, b, c), .42), hollow = () => scale(BLACK, 1), iris = (a, b, c) => mix(EYE, WARM, lit(a, b, c) * .1), opts = { mirror: true, shade };
+  // A squared outline, a little wider at the brow than at the jaw.
+  const mask = (rings, sides, paint) => S.grid(sides, rings.length - 1, (u, v) => {
+    const a = u / sides * Math.PI * 2, [w, r] = rings[v], cu = Math.cos(a), su = Math.sin(a), pu = Math.sign(cu) * Math.abs(cu) ** .6, pv = Math.sign(su) * Math.abs(su) ** .6;
+    return F(pu * r * s * (1 + pv * .1), pv * r * s * 1.04, w * s);
+  }, paint, { closeU: true, flip: true, ...opts });
+  // A carved block: four front corners [u, v, w] counter-clockwise, its sides running back to w0. In units of the head.
+  const slab = (q, w0, paint = stone) => {
+    const f = q.map(([u, v, w]) => F(u * s, v * s, w * s)), b = q.map(([u, v]) => F(u * s, v * s, w0 * s)), fc = f.map(p => paint(p[0], p[1], p[2])), bc = b.map(p => paint(p[0], p[1], p[2]));
+    const quad = (A, B, C, D, cA, cB, cC, cD) => { S.tri(A, B, C, cA, cB, cC, opts); S.tri(A, C, D, cA, cC, cD, opts); };
+    quad(f[0], f[1], f[2], f[3], fc[0], fc[1], fc[2], fc[3]); quad(f[3], f[2], b[2], b[3], fc[3], fc[2], bc[2], bc[3]); quad(b[0], b[1], f[1], f[0], bc[0], bc[1], fc[1], fc[0]);
+    quad(f[1], b[1], b[2], f[2], fc[1], bc[1], bc[2], fc[2]); quad(b[0], f[0], f[3], b[3], bc[0], fc[0], fc[3], bc[3]);
+  };
+  // The same block on both sides of the nose (drawn for the right, mirrored for the left).
+  const both = (q, w0, paint) => { slab(q, w0, paint); slab([q[1], q[0], q[3], q[2]].map(([u, v, w]) => [-u, v, w]), w0, paint); };
   // The shoulders of rock it is carved from.
   { const off = Math.hypot(x - CX, z - CZ), ax = (x - CX) / off, az = (z - CZ) / off, back = s * 2.25;
     lathe(S, { x: x + ax * back, z: z + az * back, rings: [[LAKE_Y - 3, s * 2.3], [y - s, s * 2.05], [y + s * .4, s * 1.85], [y + s * 1.2, s * 1.4], [y + s * 2.2, s * .5]], sides: 12, wobble: .16, seed: 31, mirror: true, paint: rock(TONES[4], { rust: .3 }) }); }
-  // Crown first, so it reads behind the face: a ring of rays and a band.
-  for (let i = 0; i <= 12; i++) {
-    const a = Math.PI * (-.08 + i / 12 * 1.16), ca = Math.cos(a), sa = Math.sin(a), r0 = s * 1.02, r1 = s * (i % 2 ? 1.5 : 1.82), wd = s * .17, w = s * .02;
-    const p = [F(ca * r0 - sa * wd, sa * r0 * 1.04 + ca * wd + s * .05, w), F(ca * r0 + sa * wd, sa * r0 * 1.04 - ca * wd + s * .05, w), F(ca * r1, sa * r1 * 1.04 + s * .05, w - s * .1), F(ca * r0 - sa * wd, sa * r0 * 1.04 + ca * wd + s * .05, w + s * .16), F(ca * r0 + sa * wd, sa * r0 * 1.04 - ca * wd + s * .05, w + s * .16)];
-    const c = p.map(q => gold(q[0], q[1], q[2]));
-    S.tri(p[3], p[4], p[2], c[3], c[4], c[2], opts); S.tri(p[0], p[3], p[2], c[0], c[3], c[2], opts); S.tri(p[4], p[1], p[2], c[4], c[1], c[2], opts);
-  }
-  disc(S, F, 0, s * .05, ball(s * .5, s * 1.06, 3).map(([w, r]) => [w - s * .15, r]), 18, rim, { ry: 1.03, shade });
-  // The face: a broad mass, a jaw, then the features on top of it.
-  disc(S, F, 0, 0, ball(s * .62, s * .9, 6), 16, gold, { ry: 1.12, shade });
-  disc(S, F, 0, -s * .7, ball(s * .34, s * .56, 4), 12, gold, { rx: 1.1, ry: .66, shade });
-  fbox(S, F, -s * .36, s * .42, s * .5, s * .56, s * .16, s * .3, gold, opts); fbox(S, F, s * .36, s * .42, s * .5, s * .56, s * .16, s * .3, gold, opts);
+  // The frame: stepped bands around the face, with square studs set into the raised one.
+  mask([[-.25, 1.16], [.05, 1.16], [.08, 1.06], [.03, 1], [.16, .95], [.1, .9]], 18, stone);
+  for (let i = 0; i < 10; i++) { const a = Math.PI * (-.1 + i / 9 * 1.2), cu = Math.cos(a), su = Math.sin(a), pv = Math.sign(su) * Math.abs(su) ** .6, u = Math.sign(cu) * Math.abs(cu) ** .6 * 1.03 * (1 + pv * .1), v = pv * 1.07, h = .05; slab([[u - h, v - h, .12], [u + h, v - h, .12], [u + h, v + h, .12], [u - h, v + h, .12]], .02, raised); }
+  // The mass of the face, then the features on top of it.
+  mask([[.08, .92], [.46, .88], [.6, .68], [.62, .01]], 18, stone);
+  // Stripes across the forehead and a boss above the scowl.
+  slab([[-.72, .78, .68], [.72, .78, .68], [.68, .86, .68], [-.68, .86, .68]], .56, raised);
+  slab([[-.6, .66, .66], [.6, .66, .66], [.56, .72, .66], [-.56, .72, .66]], .56, cut);
+  slab([[0, .42, .9], [.14, .6, .8], [0, .8, .8], [-.14, .6, .8]], .56, raised);
+  // The brow: one heavy bar falling to the nose, overhanging the sockets.
+  both([[.04, .3, .98], [.94, .5, .78], [.92, .74, .74], [.04, .54, .88]], .55, raised);
   for (const side of [-1, 1]) {
-    disc(S, F, side * s * .36, s * .17, [[s * .42, s * .22], [s * .62, s * .22], [s * .66, s * .15], [s * .6, s * .12], [s * .66, s * .065], [s * .68, .01]], 10, (a, b, c) => { const k = Math.hypot(...[a - F(side * s * .36, s * .17, 0)[0], b - F(side * s * .36, s * .17, 0)[1], c - F(side * s * .36, s * .17, 0)[2]]); return k < s * .63 ? scale(gold(a, b, c), .4) : gold(a, b, c); }, { shade });
-    disc(S, F, side * s * .95, s * .02, [[-s * .1, s * .26], [s * .22, s * .26], [s * .24, s * .13], [s * .12, .01]], 8, rim, { ry: 1.2, shade });
-    disc(S, F, side * s * .58, -s * .24, [[s * .4, s * .13], [s * .55, s * .11], [s * .56, s * .05], [s * .52, .01]], 7, rim, { shade });
+    const eu = side * s * .42, ev = s * .2;
+    disc(S, F, eu, ev, [[s * .56, s * .31], [s * .72, s * .29], [s * .76, s * .22], [s * .7, s * .19]], 10, stone, { shade });
+    disc(S, F, eu, ev, [[s * .7, s * .19], [s * .64, s * .15], [s * .63, s * .001]], 10, hollow, { shade });
+    disc(S, F, eu, ev, [[s * .64, s * .07], [s * .65, s * .06], [s * .645, s * .045]], 8, iris, { shade: () => 1 });
   }
-  fbox(S, F, 0, -s * .02, s * .68, s * .24, s * .44, s * .3, gold, opts);
-  // The mouth: a dark cave you could drive the crawlers into, teeth of cut stone.
-  disc(S, F, 0, -s * .56, [[s * .58, s * .42], [s * .72, s * .4], [s * .68, s * .3], [s * .56, .02]], 12, (a, b, c) => { const q = F(0, -s * .56, s * .65), k = Math.hypot(a - q[0], b - q[1], c - q[2]); return k < s * .33 ? dark() : rim(a, b, c); }, { rx: 1.05, ry: .5, shade });
-  for (let i = -3; i <= 3; i++) { fbox(S, F, i * s * .115, -s * .42, s * .68, s * .09, s * .1, s * .08, gold, opts); if (Math.abs(i) < 3) fbox(S, F, i * s * .12, -s * .71, s * .66, s * .09, s * .08, s * .08, rim, opts); }
+  // A broad flat nose, its wings and nostrils.
+  slab([[-.27, -.24, 1], [.27, -.24, 1], [.11, .3, .86], [-.11, .3, .86]], .55, raised);
+  both([[.2, -.3, .86], [.38, -.26, .76], [.32, -.06, .76], [.18, -.04, .88]], .55);
+  both([[.07, -.27, 1.03], [.21, -.27, 1.03], [.19, -.18, 1.015], [.07, -.18, 1.015]], .95, hollow);
+  // Cheekbones, and the hollow under each.
+  both([[.36, -.32, .76], [.94, -.14, .66], [.96, .02, .68], [.4, -.14, .8]], .5, raised);
+  both([[.56, -.74, .69], [.86, -.56, .64], [.92, -.2, .64], [.42, -.36, .71]], .5, cut);
+  // The jaw: a heavy muzzle and chin, the shut grimace cut into them.
+  slab([[-.68, -.98, .72], [.68, -.98, .72], [.72, -.3, .72], [-.72, -.3, .72]], .5);
+  slab([[-.44, -1.16, .78], [.44, -1.16, .78], [.52, -.86, .86], [-.52, -.86, .86]], .4);
+  both([[0, -.8, .75], [.56, -.76, .75], [.56, -.64, .75], [0, -.42, .75]], .7, hollow);
+  both([[0, -.44, .92], [.62, -.66, .78], [.62, -.52, .8], [0, -.3, .94]], .6, raised);
+  both([[0, -.94, .88], [.6, -.86, .8], [.58, -.76, .8], [0, -.8, .84]], .6);
+  // Teeth of cut stone: long fangs at the corners of the snarl.
+  for (const [u, h] of [[0, .13], [.13, .13], [-.13, .13], [.28, .26], [-.28, .26], [.43, .12], [-.43, .12]]) { const t = -.42 - .22 * Math.abs(u) / .56; slab([[u - .025, t - h, .8], [u + .025, t - h, .8], [u + .055, t + .03, .83], [u - .055, t + .03, .83]], .74, raised); }
+  for (const [u, h] of [[.07, .1], [-.07, .1], [.2, .1], [-.2, .1], [.36, .2], [-.36, .2]]) { const t = -.8 + .04 * Math.abs(u) / .56; slab([[u - .05, t - .03, .82], [u + .05, t - .03, .82], [u + .022, t + h, .79], [u - .022, t + h, .79]], .74); }
 }
 // A dome half sunk in the far shore: ribs, bands and rows of studs.
 function buildDome(S) {

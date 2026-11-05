@@ -51,7 +51,7 @@ test('the camp\'s props and ledges stand past the rect', () => {
 test('the roof is far overhead, and holds the head and the falls under it', () => {
   for (let x = X0; x <= X1; x += 4) for (let z = Z0; z <= Z1; z += 4) assert.ok(ceilingAt(x, z) > 90, `ceiling over the camp at ${x}, ${z}`);
   assert.ok(ceilingAt(HOLE.x, HOLE.z) > 100);
-  assert.ok(ceilingAt(HEAD.x, HEAD.z) > HEAD.y + HEAD.size * 1.85, 'the crown clears the roof');
+  assert.ok(ceilingAt(HEAD.x, HEAD.z) > HEAD.y + HEAD.size * 1.85, 'the head clears the roof');
   for (const f of FALLS) { assert.ok(ceilingAt(f.x, f.z) > f.top + 10, 'a fall starts under the roof'); assert.ok(f.top > LAKE_Y + 60, 'and is tall'); }
   for (let a = 0; a < 6.28; a += .2) assert.ok(wallRadius(a) > 170, `the far wall is far at ${a}`);
 });
