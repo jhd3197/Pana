@@ -7,7 +7,8 @@
 // by the loot, strike and poison, but never leave home for long. In the
 // library El Lector hunts by ear (lector.js) and La Estatua only moves unseen
 // (estatua.js); neither cares about light. On every floor El Silbón cannot be
-// killed at all, only lost or lured into the pit (silbon.js).
+// killed at all, only lost or lured into the pit (silbon.js); in the Congo that
+// is the Mokele (mokele.js), which loads when it is first needed.
 import { clamp } from '../../../engine/random.js';
 import { locKey } from '../../../engine/i18n.js';
 import { floorOf } from './deck.js';
@@ -32,7 +33,15 @@ export const KINDS = {
   estatua: { hp: 400, speed: 0, reach: 1.5, windup: .5, radius: 1.6, damage: 24, cooldown: 2.6, light: 'none', stone: true },
   // Nothing wounds it (`wound`); speed is its chase, slower than a walking pana.
   silbon: { hp: 9999, speed: 3.4, reach: 2.2, windup: .8, radius: 2.2, damage: 34, cooldown: 1.6, light: 'none', boss: true, unkillable: true },
+  // The neck reaches further than the Silbón's arm; its chase is below a walking pana until it surges.
+  mokele: { hp: 9999, speed: 3.9, reach: 3.4, windup: .7, radius: 2.6, damage: 38, cooldown: 1.8, light: 'none', boss: true, unkillable: true },
 };
+// The Mokele's rules stay off the first load: only a Congo jornada needs them, and it
+// simply stands still in the water for the moment they take to arrive.
+let mokele = null, mokeleLoad = null;
+export const loadMokele = () => mokeleLoad ??= import('./mokele.js').then(m => { mokele = m; return m; });
+// It gets up on its own this long after the first pana lands, heard well before it is seen.
+export const MOKELE_RISE = 30;
 // How many Lectores may walk one floor at once (later jornadas allow two),
 // and Estatuas: never more than two.
 export const lectorCap = level => (level || 1) >= 5 ? 2 : 1;
@@ -86,7 +95,7 @@ export function spawnEnemy(g, kind, x, z, extra = {}) {
   // A creature with a body (`eco`) has its own cap (ecology.js) and leaves the Director's alone.
   if (extra.eco == null && ['mummy', 'phantom', 'bat', 'spider', 'lector'].includes(kind) && live.filter(e => e.eco == null).length >= 18) return null;
   const here = n => live.filter(e => e.kind === kind && floorOf(e.x) === floorOf(x)).length >= n;
-  if ((kind === 'lector' && here(lectorCap(g.level))) || (kind === 'estatua' && here(ESTATUA_CAP)) || (kind === 'silbon' && here(1))) return null;
+  if ((kind === 'lector' && here(lectorCap(g.level))) || (kind === 'estatua' && here(ESTATUA_CAP)) || ((kind === 'silbon' || kind === 'mokele') && here(1))) return null;
   // Nothing walks on a hanging platform but the panas who climbed down to it.
   if (!g.layout.walkable(x, z, g, .5) || g.layout.lowAt(x, z)) return null;
   const k = KINDS[kind], s = scaleFor(g), roster = g.players.filter(p => !p.spectator).length;
@@ -147,7 +156,13 @@ export function updateEnemies(g, dt) {
       else updateEstatua(g, e, k, damage, dt, { stunned });
       continue;
     }
-    if (k.boss) { e.lit = 'dark'; updateSilbon(g, e, k, k.speed * s.speed, k.damage * s.damage * (.75 + .15 * (g.level || 1)), dt); continue; }
+    if (k.boss) {
+      e.lit = 'dark';
+      const damage = k.damage * s.damage * (.75 + .15 * (g.level || 1));
+      if (e.kind === 'mokele') { if (mokele) mokele.updateMokele(g, e, k, k.speed * s.speed, damage, dt); else loadMokele(); }
+      else updateSilbon(g, e, k, k.speed * s.speed, damage, dt);
+      continue;
+    }
     if (!e.awake) {
       if (target && distance(target, e) < (e.kind === 'jaguar' ? 7 : 10)) { e.awake = true; g.event('boss', e.kind === 'jaguar' ? locKey('¡El jaguar de oro despertó!') : locKey('El guardián del sol se levanta.'), { enemy: e.id, boss: e.kind }); }
       else continue;

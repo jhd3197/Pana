@@ -16,6 +16,8 @@ export const SUCESOS = { apagon: { dur: 14 }, murcielagos: { dur: 10 }, derrumbe
 export const SUCESO_POOL = {
   biblioteca: ['apagon', 'apagon', 'murcielagos'], mina: ['apagon', 'murcielagos', 'derrumbe'],
   inundada: ['creciente', 'creciente', 'apagon', 'murcielagos'], hongos: ['esporada', 'esporada', 'murcielagos', 'apagon'], templo: ['derrumbe', 'derrumbe', 'apagon', 'murcielagos'],
+  // No creciente: the river is opaque, it would drown the loot from sight.
+  congo: ['esporada', 'apagon', 'apagon', 'murcielagos'],
 };
 export const firstSucesoIn = g => 60 + random(g) * 30;
 const ROCK = { warning: .9, radius: 1.5, damage: 18, stun: .4, cap: 8 }, SPORES = { trigger: 1.1, reach: 2.6, reversed: 3.5, rearm: 18 }, CRACK = { trigger: 1.1, rearm: 14 };

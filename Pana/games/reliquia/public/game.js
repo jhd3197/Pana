@@ -98,7 +98,7 @@ function lobby() {
 }
 
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.
-const SHOUTS = { seal: [loc('¡Se abrió la bajada!'), 'teal'], boss: [loc('¡Despertó algo grande!'), 'coral'], guardian: [loc('¡Guardián vencido!'), 'yellow'], 'silbon-down': [loc('¡Se fue al abismo!'), 'yellow'], jaguar: [loc('¡Jaguar vencido!'), 'yellow'],
+const SHOUTS = { seal: [loc('¡Se abrió la bajada!'), 'teal'], boss: [loc('¡Despertó algo grande!'), 'coral'], guardian: [loc('¡Guardián vencido!'), 'yellow'], 'silbon-down': [loc('¡Se fue al abismo!'), 'yellow'], 'mokele-down': [loc('¡Se lo tragó el remolino!'), 'yellow'], jaguar: [loc('¡Jaguar vencido!'), 'yellow'],
   curse: [loc('¡Maldición!'), 'coral'], collapse: [loc('¡Derrumbe!'), 'coral'], stalker: [loc('¡Los están cazando!'), 'coral'], down: [loc('¡Pana caído!'), 'coral'], reveal: [loc('¡Sala escondida!'), 'teal'], 'encargo-paid': [loc('¡Encargo cumplido!'), 'yellow'] };
 const QUIET = new Set(['suceso', 'encargo', 'pick', 'hit', 'swing', 'shot', 'hurt', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch', 'search']);
 function handle(e) {
@@ -164,7 +164,8 @@ function handle(e) {
     case 'snake-scatter': view.swarm.scatter(e); break;
     case 'screech': if (p) ambience.at('screech', p, view.heading, e.x, e.z, 26); break;
     case 'silbon-falling': { const b = state.enemies.find(q => q.id === e.enemy); if (p && b) ambience.at('plummet', p, view.heading, b.x, b.z, 40); view.shake(.3); break; }
-    case 'silbon-down': sfx.seal(); view.shake(.6); break;
+    case 'mokele-falling': { const b = state.enemies.find(q => q.id === e.enemy); if (p && b) ambience.at('bellow', p, view.heading, b.x, b.z, 58); view.shake(.3); break; }
+    case 'silbon-down': case 'mokele-down': sfx.seal(); view.shake(.6); break;
     case 'flush': sfx.bonk(); if (mine) view.shake(.7); break;
     case 'cart-spill': case 'cart-bounce': sfx.tip(); break;
     case 'cart-load': case 'cart-catch': case 'cart-big': sfx.coin(); if (e.kind !== 'cart-load') sfx.bank(false); break;
@@ -243,7 +244,7 @@ function frame(now) {
   view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
   const theme = view.world.run.theme;
   ambience.fire = p && !menu.isOpen ? view.world.fireNear(p.x, p.z, floorOf(p.x)) : 0;
-  const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : theme === 'inundada' ? 'water' : theme === 'hongos' ? 'dirt' : 'stone' : 'stone';
+  const surface = p && floorOf(p.x) ? theme === 'biblioteca' ? 'wood' : theme === 'inundada' || theme === 'congo' ? 'water' : theme === 'hongos' ? 'dirt' : 'stone' : 'stone';
   ambience.update(state, p, view.heading, dt, theme, !samples.ownSteps(surface), scares);
   heard.state = state; heard.me = p; heard.heading = view.heading; heard.paused = menu.isOpen; heard.theme = theme; heard.floor = p ? view.world.floors.get(floorOf(p.x)) : null; heard.run = view.world.run;
   samples.update(dt, heard);   // wind, drips, chandeliers, and hiding spots creaking as a search starts
@@ -261,6 +262,7 @@ const ROCK_SOUND = { hit: ['tok', 16], crunch: ['crunch', 22], break: ['rockfall
 view.onFx = e => {
   const p = me(); if (!p || floorOf(e.x) !== floorOf(p.x)) return;
   if (e.type === 'crackle') { ambience.at('crackle', p, view.heading, e.x, e.z, 11); return; }
+  if (e.type === 'mokele') { ambience.at(e.sound, p, view.heading, e.x, e.z, e.range); if (e.shake) view.shake(e.shake); return; }
   const sound = ROCK_SOUND[e.type]; if (!sound) return;
   ambience.at(sound[0], p, view.heading, e.x, e.z, sound[1]);
   if (e.type !== 'break' && (keys.has('e') || touch.has('e')) && Math.hypot(e.x - p.x, e.z - p.z) < 5) { view.hands.knock(); if (!stillness.matches) view.shake(e.type === 'hit' ? .13 : .22); }

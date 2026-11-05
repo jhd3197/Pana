@@ -26,12 +26,12 @@ function findRun(test, { place = 'mina', from = 1, level = 1, n = 2 } = {}) {
 }
 const opened = L => ({ open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])), strung: Object.fromEntries([...L.run.bridges, ...L.run.ropes].filter(b => b.needs).map(b => [b.id, 1])), lift: { floor: 1, moving: false } });
 
-test('Alternar walks all five places in an order of its own, and every expedition starts differently', () => {
+test('Alternar walks every place in an order of its own, and every expedition starts differently', () => {
   const firsts = new Set();
   for (let origin = 1; origin <= 60; origin++) {
-    const order = [1, 2, 3, 4, 5].map(d => themeFor(d, 'alternar', origin));
+    const order = THEMES.map((_, i) => themeFor(i + 1, 'alternar', origin));
     assert.deepEqual([...order].sort(), [...THEMES].sort(), 'each place once before any repeats');
-    assert.equal(themeFor(6, 'alternar', origin), order[0], 'then round again');
+    assert.equal(themeFor(THEMES.length + 1, 'alternar', origin), order[0], 'then round again');
     firsts.add(order[0]);
   }
   assert.equal(firsts.size, THEMES.length, 'any place can open an expedition');

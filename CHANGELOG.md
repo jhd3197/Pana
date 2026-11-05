@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: nuevo lugar, el Congo, y algo enorme vive en el agua.**
+  Vas en piragua por caños estrechos de agua turbia, entre paredes de lianas, neblina y callejones sin salida. Primero oyes al Mokele, luego ves una sombra altísima en la neblina, y de cerca es pura dentadura. No se mata: piérdelo, escóndete o hazlo cruzar el remolino. Elígelo en Lugar o espéralo en la rotación.
+
 - **Fosa: la Mina ya no se parece a la Biblioteca.**
   Túneles estrechos con rieles y entibado, cámaras de mineral, galerías de máquinas, ramales ciegos y pozos de agua negra que no deja ver el fondo. Tu lámpara ahora es un cono estrecho: lo que viene se ve cuando ya está cerca, y más abajo casi no queda luz.
 

@@ -14,7 +14,7 @@ function paint(geometry, color) {
 }
 const scratch = new THREE.Object3D();
 // Collects shapes in one part's space, then merges them.
-function parts() {
+export function parts() {
   const list = [];
   const add = (geometry, color, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => {
     scratch.position.set(x, y, z); scratch.rotation.set(rx, ry, rz); scratch.scale.set(sx, sy, sz); scratch.updateMatrix();
@@ -22,9 +22,9 @@ function parts() {
   };
   return { add, build: () => { const merged = mergeGeometries(list, false); list.forEach(g => g.dispose()); return merged; } };
 }
-const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
-const cyl = (top, bottom, h, s = 8) => new THREE.CylinderGeometry(top, bottom, h, s);
-const ball = (r, w = 9, h = 7) => new THREE.SphereGeometry(r, w, h);
+export const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+export const cyl = (top, bottom, h, s = 8) => new THREE.CylinderGeometry(top, bottom, h, s);
+export const ball = (r, w = 9, h = 7) => new THREE.SphereGeometry(r, w, h);
 
 const COAT = 0x262028, COAT_D = 0x17131b, SKIN = 0x8d8676, HAT = 0x1d1812, SACK = 0x5a4632, BONE = 0xcabfa4;
 

@@ -1104,6 +1104,9 @@ Used by: Pepazo (team rounds, Bandera and Dominación too).
   `userData.animate`) and `hideNook`; `fauna/cave-creatures` has `caveBat` (replaces
   the guácharo) and `props/mine` has `mineCart({ hollow: true })`, an open cart to
   fill with real objects. Used by: Reliquia.
+- **The Congo set**: `props/congo` has `mokele` (posed by `userData.animate`, its neck one
+  instanced mesh), `piragua`, `balsa`, `vineWalls` (a floor's vine walls and curtains in three
+  draws), `jungleBackdrop` (two draws), `lilyPads` and `whirlpool`. Lazy-load it. Used by: Fosa.
 - **Dusty interiors**: `props/reliquia-library` builds a room's bookcases
   in a few instanced meshes per call (`bookcases`, with variants: plain,
   arched, between stone pillars, with a ladder, collapsed, low), every small

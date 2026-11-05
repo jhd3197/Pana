@@ -4,7 +4,7 @@ import { PACTOS, pactoKey } from './pactos.js';
 // The same descriptors drive the menu and the authoritative allowlist.
 export const FIELDS = [
   // Where the jornadas happen: the buried library first, then the mine, and so on.
-  { id: 'place', label: loc('Lugar'), default: 'alternar', choices: [['alternar', loc('Van rotando')], ['biblioteca', loc('Biblioteca')], ['mina', loc('Mina')], ['inundada', loc('Túneles inundados')], ['hongos', loc('Cueva de hongos')], ['templo', loc('Templo caído')]], advanced: false },
+  { id: 'place', label: loc('Lugar'), default: 'alternar', choices: [['alternar', loc('Van rotando')], ['biblioteca', loc('Biblioteca')], ['mina', loc('Mina')], ['inundada', loc('Túneles inundados')], ['hongos', loc('Cueva de hongos')], ['templo', loc('Templo caído')], ['congo', loc('Congo')]], advanced: false },
   { id: 'difficulty', label: loc('Dificultad'), default: 'normal', choices: [['easy', loc('Tranquila')], ['normal', loc('Normal')], ['hard', loc('Momia brava')]], advanced: false },
   { id: 'greed', label: loc('La codicia'), default: 'normal', choices: [['soft', loc('Paciente')], ['normal', loc('Normal')], ['fierce', loc('Celosa')]], advanced: false },
   { id: 'revive', label: loc('Revivir pana'), default: true, choices: [[true, loc('Sí')], [false, loc('No')]], advanced: true },
