@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: los ladrillos y la roca ahora tienen relieve de verdad.**
+  De cerca y de lado se ven las juntas hondas y la piedra partida. En calidad Nítida y en computadora; en teléfonos y otras calidades, un relieve más sencillo.
 - **Fosa: romper un derrumbe ahora se siente.**
   Mientras mantienes E, las piedras se rajan con grietas que brillan, saltan esquirlas, chispas y polvo, y al final se parten en pedazos. Todos los panas lo ven igual.
 - **Fosa: el fuego ahora parece fuego.**
