@@ -625,6 +625,31 @@ export class Shockwaves {
 }
 
 // ---------- 3D hold-to-charge radial floor ring ----------
+// Spotlights stop getting brighter inside `metres`. A strong lamp on the camera
+// follows 1 / d^decay, so whatever comes within arm's reach (a wall, a truck, a
+// bat) burns to a flat white disc in the player's face. Call before anything
+// compiles; true when three's shader has the cap.
+export function capSpotNearField(metres) {
+  const chunk = THREE.ShaderChunk, from = 'getDistanceAttenuation( lightDistance, spotLight.distance, spotLight.decay )';
+  if (!chunk.lights_pars_begin.includes(from)) return chunk.lights_pars_begin.includes('SPOT_NEAR_CAP');
+  chunk.lights_pars_begin = chunk.lights_pars_begin.replace(from, `getDistanceAttenuation( max( lightDistance, ${metres.toFixed(2)} /* SPOT_NEAR_CAP */ ), spotLight.distance, spotLight.decay )`);
+  return true;
+}
+// Glowing Points fade out as they reach the camera: with size attenuation an
+// additive one at arm's length would otherwise cover the whole screen.
+export function fadePointsNear(material, { from = .5, to = 1.6 } = {}) {
+  material.onBeforeCompile = shader => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying float vNearFade;')
+      .replace('#include <project_vertex>', `#include <project_vertex>\nvNearFade = smoothstep( ${from.toFixed(2)}, ${to.toFixed(2)}, -mvPosition.z );`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vNearFade;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.a *= vNearFade;');
+  };
+  material.customProgramCacheKey = () => `points-near-${from}-${to}`;
+  return material;
+}
+
 export function createChargeRing({ radius = 1.35, color = 0xffc629 } = {}) {
   const geo = new THREE.RingGeometry(radius * 0.78, radius, 48);
   geo.rotateX(-Math.PI / 2);

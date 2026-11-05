@@ -28,7 +28,7 @@ export { holds };
 // Text in state and events is a Spanish key (locKey) plus `vars`; each client
 // shows it in its own language with say() from items.js.
 export const BARKS = [locKey('¿Nos vamos ya?'), locKey('¡Una sala más!'), locKey('¡Agárrala por el otro lado!'), locKey('¡No toques eso!'), locKey('¡Suelta, suelta, suelta!'), locKey('¡Pásame el farol!'), locKey('Ábrela.')];
-const REACH = 2.5, GRAVITY = 14, REVIVE = 2.4, BOARD = 1.5, SHAFT = 14, CARGO = 3;
+const REACH = 2.5, GRAVITY = 14, REVIVE = 2.4, BOARD = 1, SHAFT = 14, CARGO = 3, RIDE_HOME = 2.4, LEAVE = 1.5, WIPE = 2;
 const GREED = { soft: .65, normal: 1, fierce: 1.5 };
 // How far each noise carries (m), for what hunts by ear (El Lector). Walking,
 // standing still and riding make none; running, landing a jump, a book or a
@@ -118,7 +118,7 @@ export function interaction(s, p) {
     offer(target, { x: pad.bx, y: 1.1, z: pad.bz }, .5, 3);
   }
   if (f === 0) {
-    offer({ kind: 'leave', text: s.extraction > 0 ? locKey('¡Nos vamos!') : locKey('Mantén E: terminar la expedición y repartir el botín'), progress: s.extraction / 3, hold: true }, { x: TRUCK.x, y: 1.2, z: TRUCK.z }, 2.6, 6);
+    offer({ kind: 'leave', text: s.extraction > 0 ? locKey('¡Nos vamos!') : locKey('Mantén E: terminar la expedición y repartir el botín'), progress: s.extraction / LEAVE, hold: true }, { x: TRUCK.x, y: 1.2, z: TRUCK.z }, 2.6, 6);
     for (const [i, [kind, list]] of SHOP.entries()) { const at = shopSpot(i), price = pactoPrice(s.options, list); offer({ kind: 'buy', item: kind, text: s.mangos >= price ? locKey('Comprar {item} · {price} mangos') : locKey('{Item} · {price} mangos (tienen {mangos})'), vars: { item: kind, price, mangos: String(Math.floor(s.mangos)) }, press: true }, at, .35, 3); }
   }
   for (const cart of s.carts || []) {
@@ -149,9 +149,9 @@ export function interaction(s, p) {
     let text = locKey('Agarrar {item}'), vars = { item: item.kind };
     const weapon = WEAPONS.includes(item.kind) && p.hands.find(h => h && WEAPONS.includes(h.kind));
     if (weapon) { text = locKey('Cambiar {item} por {other}'); vars = { item: weapon.kind, other: item.kind }; }
-    else if (info.size === 'small' && !p.hands.some(h => !h || (h.pile && h.pile.length < HANDFUL))) text = locKey('Manos llenas · échalo al carrito');
-    else if (info.size === 'hand' && p.hands.every(Boolean)) text = locKey('Manos llenas · suelta algo con Q');
-    if (info.size === 'big' && p.hands.some(Boolean)) text = locKey('Necesitas las dos manos libres');
+    else if (info.size === 'small' && !p.hands.some(h => !h || (h.pile && h.pile.length < HANDFUL))) { text = locKey('Manos llenas: {item} y {other} · Q suelta {item}'); vars = { item: p.hands[0].kind, other: p.hands[1].kind }; }
+    else if (info.size === 'hand' && p.hands.every(Boolean)) { text = locKey('Manos llenas: {item} y {other} · Q suelta {item}'); vars = { item: p.hands[0].kind, other: p.hands[1].kind }; }
+    if (info.size === 'big' && p.hands.some(Boolean)) { text = locKey('Necesitas las dos manos · Q suelta {item}'); vars = { item: p.hands.find(Boolean).kind }; }
     offer({ kind: 'pick', id: item.id, text, vars, press: true }, { x: item.x, y: (item.y || 0) + (info.size === 'big' ? info.halo ? .45 : .8 : .2), z: item.z }, info.size === 'big' ? Math.max(.8, info.radius || 1) : .38);
   }
   options.sort((a, b) => a.score - b.score);
@@ -738,9 +738,9 @@ export class Expedition {
       standing.reduce((a, b) => progress(a) <= progress(b) ? a : b).stats.last += dt;
     }
     this.extraction = leaving && this.players.filter(alive).every(p => floorOf(p.x) === 0 && distance(p, TRUCK) < 9) ? this.extraction + dt : Math.max(0, this.extraction - dt * 2);
-    if (this.extraction >= 3) return this.finish('extracted');
+    if (this.extraction >= LEAVE) return this.finish('extracted');
     this.wipe = this.players.some(p => !p.spectator) && !this.players.some(alive) ? this.wipe + dt : 0;
-    if (this.wipe >= 3) return this.finish('wipe');
+    if (this.wipe >= WIPE) return this.finish('wipe');
     if (standing.some(p => floorOf(p.x) > 0)) this.greed(dt * .04 * Math.max(...standing.map(p => floorOf(p.x))));
     this.riseSilbon();
     updateDirector(this, dt, (floor, count) => (swarmDue(this) && startSwarm(this, floor)) || this.wave(floor, count));
@@ -950,7 +950,7 @@ export class Expedition {
     const on = b => floorOf(b.x) === lift.floor && Math.abs(b.x - stop.x) < CAGE + .3 && Math.abs(b.z - stop.z) < CAGE + .3;
     const riders = load ? this.players.filter(p => !p.spectator && on(p)) : [];
     for (const p of riders) { p.riding = true; p.vx = p.vz = 0; p.moving = false; }
-    Object.assign(lift, { from: lift.floor, to, t: 0, duration: 3 + 2.2 * Math.abs(to - lift.floor), moving: true, switched: false,
+    Object.assign(lift, { from: lift.floor, to, t: 0, duration: riders.length && to === 0 && lift.floor === 1 && this.delivered >= this.quota ? RIDE_HOME : 3 + 2.2 * Math.abs(to - lift.floor), moving: true, switched: false,
       riders: riders.map(p => p.id), carts: [], items: load ? this.items.filter(on).map(i => i.id) : [] });
     this.event('lift', riders.length ? to ? locKey('El montacargas baja a la jornada…') : locKey('El montacargas sube al campamento…')
       : to ? locKey('El montacargas va abajo…') : locKey('El montacargas va al campamento…'), { from: lift.from, to, players: lift.riders });
@@ -1152,12 +1152,12 @@ export class Expedition {
     // Deeper jornadas and each biome change who comes: spiders in the grove, cuaimas in the water, phantoms in the temple.
     if (!kind) {
       const roll = random(this), level = this.level || 1, theme = this.layout.run.theme, other = random(this);
-      kind = roll < .3 ? 'bat' : (level > 1 || theme === 'hongos') && roll < .3 + .1 * Math.min(3, level) + (theme === 'hongos' ? .15 : 0) ? 'spider' : 'mummy';
+      kind = roll < .1 ? 'bat' : roll < .3 ? 'mummy' : (level > 1 || theme === 'hongos') && roll < .3 + .1 * Math.min(3, level) + (theme === 'hongos' ? .15 : 0) ? 'spider' : 'mummy';
       if (kind === 'mummy' && theme === 'inundada' && other < .3) { kind = 'snake'; count = Math.min(2, count); }
       if (kind === 'mummy' && theme === 'templo' && other < .2) kind = 'phantom';
       // Wiped out on this floor: none come in waves either.
       if (kind === 'bat' && this.eco?.counts.bat === 0) kind = 'mummy';
-      if (kind === 'bat') count = Math.min(6, count * 2 + 1);
+      if (kind === 'bat') count = Math.min(2, count);
     }
     // In the library, now and then a Lector comes instead (never past its cap).
     if (kind === 'mummy' && this.layout.run.theme === 'biblioteca' && random(this) < .12 + .02 * tier(this)) { kind = 'lector'; count = 1; }

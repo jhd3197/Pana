@@ -120,8 +120,9 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
   run.obstacles.push({ x: -12.5, z: 5, r: 1.3, floor: 0 }, { x: -12.5, z: 7, r: 1.3, floor: 0 });
   run.stubs.push(campStub);
   run.decor.push({ kind: 'table', floor: 0, x: TABLE.x, z: TABLE.z, h: 0 });
-  // The truck is long: three circles along it (it faces -x).
-  run.obstacles.push({ x: TABLE.x, z: TABLE.z, r: 1.2, floor: 0 }, ...[-1.8, 0, 1.8].map(dx => ({ x: TRUCK.x + dx, z: TRUCK.z, r: 1.6, floor: 0 })), { x: -9, z: 22, r: 2.2, floor: 0 }, { x: 3, z: 26, r: 1.2, floor: 0 });
+  // The truck is long: three circles along it (it faces -x), wide enough that
+  // your eyes stop short of the panels instead of filling the screen with one.
+  run.obstacles.push({ x: TABLE.x, z: TABLE.z, r: 1.2, floor: 0 }, ...[-1.8, 0, 1.8].map(dx => ({ x: TRUCK.x + dx, z: TRUCK.z, r: 2, floor: 0 })), { x: -9, z: 22, r: 2.2, floor: 0 }, { x: 3, z: 26, r: 1.2, floor: 0 });
   // The starting kit waits on the expedition table.
   for (const [kind, x] of [['farol', -.8], ['farol', 0], ['honda', .8]]) run.loot.push({ id: id.loot++, kind, floor: 0, room: 'camp', x: TABLE.x + x, z: TABLE.z, y: 1.02, h: 0 });
   for (let f = 1; f <= floors; f++) {

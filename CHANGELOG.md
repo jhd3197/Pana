@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: menos murciélagos, y lo que espantas con el farol vuelve por ti.**
+  Hay muchos menos murciélagos, tu lámpara ya no se vuelve un disco blanco de cerca, el mensaje de manos llenas dice qué llevas y cómo soltarlo, y terminar la jornada o la expedición tarda la mitad.
 - **Pepazo: tus tiros van a donde miras, arriba, abajo o en diagonal.**
   En primera persona el pepazo sale por la mira: pasa por encima de un pana si apuntas alto, pinta el suelo si apuntas abajo y la mancha queda a la altura real.
 - **Dominó y Caída: las fichas y las cartas ahora pesan.**

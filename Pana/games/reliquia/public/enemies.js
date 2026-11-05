@@ -49,6 +49,11 @@ const DIFFICULTY = { easy: { hp: .75, damage: .65, speed: .85 }, normal: { hp: 1
 export const scaleFor = g => DIFFICULTY[g.options.difficulty] || DIFFICULTY.normal;
 export const holds = (p, kind) => !!p?.hands?.some(h => h?.kind === kind);
 const standing = p => !p.downed && !p.spectator;
+// Fear wears off. A beam held on a mummy for `after` seconds stops working for
+// `lasts` seconds; a bat that scattered ignores the beam for `lasts` while it comes back.
+export const BRAVE = { after: 4, lasts: 5, flee: 1.6 };
+// A burning flare is the one light nothing gets used to: it is why you threw it.
+const nearFlare = (g, e) => (g.flares || []).some(s => floorOf(s.x) === floorOf(e.x) && Math.hypot(s.x - e.x, s.z - e.z) < 4.5);
 
 // Is this enemy lit? 'beam' when a farol points at it, 'glow' near a crown or brazier.
 export function lightOn(g, e) {
@@ -119,7 +124,7 @@ export function updateEnemies(g, dt) {
   for (const e of g.enemies) {
     if (e.hp <= 0) continue;
     const k = KINDS[e.kind];
-    e.hit = Math.max(0, e.hit - dt); e.stun = Math.max(0, e.stun - dt); e.immune = Math.max(0, e.immune - dt); e.cooldown -= dt; e.modeT += dt;
+    e.hit = Math.max(0, e.hit - dt); e.stun = Math.max(0, e.stun - dt); e.immune = Math.max(0, e.immune - dt); e.cooldown -= dt; e.modeT += dt; e.brave = Math.max(0, (e.brave || 0) - dt);
     if (g.time - e.born < 1) continue;
     const target = targetFor(g, e);
     // A bat sleeps on the ceiling until someone passes under it or a noise lands
@@ -149,10 +154,15 @@ export function updateEnemies(g, dt) {
     }
     e.lit = lightOn(g, e);
     // A creature of the ecosystem goes on with its life until it notices someone.
-    if (e.eco != null && e.stun <= 0 && !attention(g, e, target, dt)) { idleBody(g, e, k, k.speed * s.speed * (e.pace || 1), dt, walk); continue; }
+    // Scared off and coming back, it does not forget who it was after.
+    if (e.eco != null && e.stun <= 0 && !(e.brave > 0 && target) && !attention(g, e, target, dt)) { idleBody(g, e, k, k.speed * s.speed * (e.pace || 1), dt, walk); continue; }
     if (e.stun > 0 || !target) { if (e.mode === 'leap') e.mode = 'recover'; continue; }
-    if (k.light === 'freeze' && e.lit === 'beam') { e.windup = 0; e.frozen = true; continue; }
-    e.frozen = false;
+    if (k.light === 'freeze' && e.lit === 'beam' && (!(e.brave > 0) || nearFlare(g, e))) {
+      e.windup = 0; e.frozen = true;
+      if (!nearFlare(g, e)) { e.dazzled = (e.dazzled || 0) + dt; if (e.dazzled >= BRAVE.after) { e.dazzled = 0; e.brave = BRAVE.lasts; } }
+      continue;
+    }
+    e.frozen = false; if (e.lit !== 'beam') e.dazzled = 0;
     if (k.light === 'daze' && e.lit === 'beam' && e.immune <= 0 && e.mode !== 'leap') {
       e.stun = 1.6; e.immune = 6; e.mode = 'prowl'; g.event('daze', locKey('¡El farol encandiló al jaguar!'), { enemy: e.id }); continue;
     }
@@ -193,16 +203,17 @@ export function screech(g, e) {
 function bat(g, e, target, speed, damage, dt) {
   const t = g.time + e.id * 1.7;
   e.y = 2 + Math.sin(t * 3) * .3 + Math.sin(t * 11) * .16;
-  if (e.lit === 'beam' && (e.fleeT || 0) <= 0) { e.fleeT = 1.6; g.noisy('screech', e); g.event('scatter', '', { enemy: e.id }); }
+  if (e.lit === 'beam' && (e.fleeT || 0) <= 0 && !(e.brave > 0)) { e.fleeT = BRAVE.flee; e.brave = BRAVE.flee + BRAVE.lasts; g.noisy('screech', e); g.event('scatter', '', { enemy: e.id }); }
   e.fleeT = Math.max(0, (e.fleeT || 0) - dt);
   const d = distance(e, target) || 1, ax = (target.x - e.x) / d, az = (target.z - e.z) / d;
   let vx, vz;
-  if (e.fleeT > 0) { vx = -ax; vz = -az; }
+  if (e.fleeT > 0) { e.windup = 0; vx = -ax; vz = -az; }
   else if (e.windup > 0) {
-    e.windup -= dt; vx = ax * 1.6; vz = az * 1.6; e.y = 1.4;
+    e.windup -= dt; vx = ax * 1.6; vz = az * 1.6; e.y = 1.75;
     if (e.windup <= 0) { if (d < k(e).reach + .4 && standing(target)) g.damage(target, damage, e); e.cooldown = k(e).cooldown; }
   } else if (d < k(e).reach && e.cooldown <= 0) { e.windup = k(e).windup; vx = ax; vz = az; }
-  else { const orbit = d < 4 ? .9 : .2, side = e.id % 2 ? 1 : -1; vx = ax * (1 - orbit) - az * side * orbit; vz = az * (1 - orbit) + ax * side * orbit; }
+  // Back from a scare it closes in to bite; otherwise it keeps circling.
+  else { const orbit = d < 4 ? e.brave > 0 ? .25 : .9 : .2, side = e.id % 2 ? 1 : -1; vx = ax * (1 - orbit) - az * side * orbit; vz = az * (1 - orbit) + ax * side * orbit; }
   // The jitter: the heading twitches on two fast, unrelated beats (a fleeing bat too).
   if (e.windup <= 0) { const twitch = Math.sin(t * 9) * .55 + Math.sin(t * 17.3) * .35, c = Math.cos(twitch), sn = Math.sin(twitch); [vx, vz] = [vx * c - vz * sn, vx * sn + vz * c]; }
   g.layout.moveBody(e, vx * speed * dt, vz * speed * dt, g, .25);

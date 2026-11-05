@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { mushroomThicket, mushroomHalos } from '/engine/models/props/glow-mushrooms.js';
 import { rootThicket } from '/engine/models/props/fosa-biomes.js';
 import { batColony } from '/engine/models/fauna/cave-creatures.js';
+import { fadePointsNear } from '/engine/fx.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { HEIGHT } from './deck.js';
 import { ecoWorldFor, siteShine } from './ecology.js';
@@ -22,6 +23,7 @@ export function createEcoView({ scene }) {
   const moths = new THREE.BufferGeometry(), mothAt = new Float32Array(MOTHS.most * 3);
   moths.setAttribute('position', new THREE.BufferAttribute(mothAt, 3));
   const mothMaterial = new THREE.PointsMaterial({ color: MOTHS.color, map: haloMap, size: MOTHS.size, transparent: true, opacity: .95, depthWrite: false, blending: THREE.AdditiveBlending });
+  fadePointsNear(mothMaterial);
   const mothPoints = new THREE.Points(moths, mothMaterial); mothPoints.frustumCulled = false; mothPoints.name = 'Polillas'; root.add(mothPoints);
   const colony = batColony({ count: COLONY }); colony.name = 'Colonia'; root.add(colony);
   let roostKey = '', list = [], glowsNow = [];
@@ -43,7 +45,7 @@ export function createEcoView({ scene }) {
       sites.push(one);
     });
     if (points.length) {
-      halos = mushroomHalos(points, haloMap, { size: 3.2, opacity: .5 }); root.add(halos);
+      halos = mushroomHalos(points, haloMap, { size: 3.2, opacity: .5 }); fadePointsNear(halos.material, { from: 1, to: 3.5 }); root.add(halos);
       haloColors = halos.geometry.attributes.color; base = Array.from(haloColors.array);
     }
   }

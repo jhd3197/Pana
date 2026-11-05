@@ -25,7 +25,7 @@ calls it; while it travels nobody else can have it. The team's one carrito
 lives in the jornada: push it onto the cargo pad by the entrance and press
 the yellow button (`sendCargo`); it rises through the ceiling (3 s), its
 load banks (`delivered`, haul, mangos) and it comes back down empty (3 s).
-Riding up with the quota met completes the jornada (`completeLevel`):
+Riding up with the quota met takes 2.4 s (`RIDE_HOME`; other rides 5.2 s) and completes the jornada (`completeLevel`):
 everyone still below is hauled to the camp with **1 HP**, and the next,
 deeper jornada is dealt. Banked bolívares also become mangos (one per
 Bs. 10), spent at the camp's shop (`SHOP`, a market stall west of the camp):
@@ -59,8 +59,8 @@ At the montacargas with the way down open the choice banner shows; barks 1
 and 2 are the votes ("¿Nos vamos ya?", "¡Una sala más!") and count for the
 titles.
 
-Extraction: hold E at the truck while every standing pana is within 9 m of
-it. A pana down elsewhere is left behind. A wipe (everyone down for 3 s)
+Extraction: hold E at the truck for 1.5 s while every standing pana is within 9 m of
+it. A pana down elsewhere is left behind. A wipe (everyone down for 2 s)
 pays `wipeShare` % of the truck (option: 20, 0 or 50). Downed panas inside
 the truck zone get up after 3 s (the truck's botiquín).
 
@@ -369,6 +369,10 @@ poison (2 HP/s for 5 s) and slide home when the pana leaves their reach.
 Director waves on floor 1 are 30 % bats; deeper, spiders join.
 Models: `engine/models/fauna/cave-creatures.js`.
 
+**Fear wears off (`BRAVE`, `enemies.js`).** A beam held 4 s on a mummy or a phantom stops freezing it for 5 s. A bat that scatters flees 1.6 s, then ignores the beam for 5 s while it comes back, and an ecosystem body in that state keeps its target (`e.brave`) instead of drifting back to its site past `attention`'s reach. A flare within 4.5 m never wears off.
+
+**The white disc.** The headlamp is a SpotLight of 25-58 cd on the camera, so anything within arm's reach burned to white; in the camp the jeep did it from 0.27 m. `capSpotNearField` (`engine/fx.js`) stops spots gaining strength inside 2.5 m (`LAMP_NEAR`), and the jeep's collider keeps your eyes further off it. Moths and mushroom halos are additive Points that would fill the screen up close: `fadePointsNear`.
+
 ### The food chain (`ecology.js`, `eco-view.js`, `engine/ai/ecosystem.js`)
 
 Moths graze glowing mushrooms, bats eat moths, cuaimas eat bats. `dealEcology`
@@ -376,10 +380,10 @@ Moths graze glowing mushrooms, bats eat moths, cuaimas eat bats. `dealEcology`
 thickets (nothing collides), a roost per bat colony, a lair per cuaima. A jornada's
 chain is rebuilt from those at `start` and `completeLevel` and simulated 150 s
 before anyone arrives, so each floor starts somewhere different. Once someone is
-below it steps once a second. Caps: 30 bats, 7 cuaimas.
+below it steps once a second. Caps: 10 bats, 7 cuaimas.
 
 - **Bodies.** Every creature is a row in `g.eco.pop`; only those within 26 m of a
-  pana, in a woken room, get a body in `g.enemies` (`e.eco` is its id; at most 12
+  pana, in a woken room, get a body in `g.enemies` (`e.eco` is its id; at most 3
   bats, 5 cuaimas) and go back to being numbers past 34 m, wounds kept. A body's
   death kills its creature, and starving or being eaten kills its body. Bodies sit
   outside the Director's cap of 18. The rest of a roost is one instanced draw.
