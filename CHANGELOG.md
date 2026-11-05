@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas: ahora la velocidad se siente.**
+  La cámara se abre al acelerar y se queda atrás antes de alcanzarte, el viento sube con la velocidad, y pasan líneas y rachas por los bordes. La cámara suave queda igual.
 - **Fosa: romper un derrumbe ahora se siente.**
   Mientras mantienes E, las piedras se rajan con grietas que brillan, saltan esquirlas, chispas y polvo, y al final se parten en pedazos. Todos los panas lo ven igual.
 - **Fosa: el fuego ahora parece fuego.**
