@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas: agarrar monedas ahora suena y brilla.**
+  Cada moneda estalla en un destello con estrellas doradas, y la cadena se anuncia sobre el contador al llegar a 3 y en cada fila completa.
 - **Carreritas: ahora la velocidad se siente.**
   La cámara se abre al acelerar y se queda atrás antes de alcanzarte, el viento sube con la velocidad, y pasan líneas y rachas por los bordes. La cámara suave queda igual.
 - **Fosa: romper un derrumbe ahora se siente.**
