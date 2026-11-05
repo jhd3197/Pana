@@ -21,7 +21,7 @@ import { difficultyInfo } from '../../../engine/play/difficulty.js';
 import { rng, clamp } from '../../../engine/random.js';
 import { stepSideWalker } from '../../../engine/play/side-walker.js';
 import { solidAt } from '../../../engine/play/terrain-mask.js';
-import { RULES, activeCapy, alive, center, flightOptions, capiTargets, launch, canUse, teamAlive } from './rules.js';
+import { RULES, activeCapy, alive, center, flightOptions, capiTargets, launch, canUse, teamAlive, walkerOptions } from './rules.js';
 import { weaponOf, reachOf, BASIC_WEAPON } from './weapons.js';
 
 // The shared difficulty's aimError (radians, tuned for a cue) scaled to a lob.
@@ -425,7 +425,7 @@ function keepWalking(m, capy, plan) {
 // Would walking (or hopping) `dir` for the next two seconds keep the capi out of the river?
 function safeWalk(m, capy, dir, hop) {
   const ghost = { x: capy.x, y: capy.y, vx: capy.vx, vy: capy.vy, grounded: capy.grounded, facing: capy.facing, jumpPress: capy.jumpPress || 0, slide: capy.slide || 0 };
-  const options = { radius: RULES.radius, water: m.map.water };
+  const options = walkerOptions(m);
   for (let i = 0; i < 120; i++) {
     const r = stepSideWalker(ghost, { x: dir, jump: (capy.jumpPress || 0) + (hop ? 1 : 0) }, 1 / 60, m.mask, options);
     if (r.drowned || ghost.y < m.map.water + 1) return false;

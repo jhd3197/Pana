@@ -71,6 +71,11 @@ export const FAIR = Object.freeze({ meanHeight: 2.6, front: 3.2, exposure: .2, c
 const SPREAD = .4;       // a team's three capis cover this share of the half map, from the front back
 const GAP = { small: 5, medium: 7, large: 8 };   // the least room between two capis of a team
 const INNER = { small: 14.5, medium: 16, large: 18 };   // a front capi stands at least this far from the middle
+// The cave mountain's mouth: how far its floor lies under the lowland, and the level stretch out from under the ledge.
+// The ledge is 2.1 over that floor, so it stands 0.8 over the lowland: a hop from anywhere on the rim.
+const MOUTH = { drop: 1.3, flat: .8 };
+// A hop as the checks count it: what a capi does holding the key (rules.js RULES.airControl), a little short of its best.
+export const floorsOf = mask => floorGraph(mask, { water: WATER, hop: { up: 7, forward: 3.4, gravity: 18 }, leap: 3 });
 
 // ---------- the plan: every number the map is built from ----------
 
@@ -149,9 +154,11 @@ export function planMap(seed, size, attempt = 0) {
     v.left = Math.min(roof - 1, p.base + between(12, 17)); v.right = clamp(v.left + between(-2.5, 2.5), p.base + 10, roof - 1);
     p.features.push({ type: 'valley', ...v });
     p.keepOut = [[v.at - v.floor - 3.5, v.at + v.floor + 3.5]];
-    p.features.push({ type: 'pond', at: v.at + between(-.35, .35) * v.floor, half: between(2.2, 3.4), bare: true });
+    const pondAt = v.at + between(-.35, .35) * v.floor;
+    p.features.push({ type: 'pond', at: pondAt, half: between(2.2, 3.4), bare: true });
     p.arch = { radius: between(.95, 1.2), arc: between(.8, 2.6) };
-    if (chance(.75)) p.ledges.push({ side: chance(.5) ? -1 : 1, up: between(.35, .6), out: between(2.6, 4) });
+    // The ledge stands away from the pond, on a buttress a capi walks up from the valley's floor.
+    if (chance(.75)) p.ledges.push({ side: pondAt < v.at ? 1 : -1, up: between(.35, .6), out: between(2.6, 4) });
     p.outer = [chance(.5), chance(.5)];
   } else {
     p.base = between(11, 14);
@@ -214,6 +221,13 @@ function shoreHeight(e, w, top) {
   return lerp(beach, top, .5 * smoothstep(t) + .5 * (1 - (1 - t) ** 2.2));
 }
 
+// How high a valley's ledge stands: its share of the cliff, no higher than its buttress has room to come down from.
+const BUTTRESS = .95;
+function ledgeY(p, f, l) {
+  const top = l.side < 0 ? f.left : f.right;
+  return p.base + Math.min(l.up * (top - p.base), (f.floor - l.out) * .8 * BUTTRESS);
+}
+
 // The climbing flank's steps `u` in from the foot of its ledge: a shelf, then
 // a riser (rounded at lip and foot), `rise` up each `shelf + run`.
 function stepsUp(c, u) {
@@ -260,6 +274,12 @@ export function heightAt(p, x) {
     } else if (f.type === 'valley') {
       const d = Math.abs(x - f.at) - f.floor, side = x < f.at ? f.left : f.right;
       h = lerp(p.base + detail(p, x) * .5, side + (rolling(p, x) - p.base) * .4 + detail(p, x) * .7, smoothstep(clamp(d / 2.2)));
+      // The ledge's buttress: solid under the ledge, then a slope down to the floor at a pace a capi walks.
+      for (const l of p.ledges) {
+        const y = ledgeY(p, f, l), tip = f.floor + .9 - l.out, out = l.side * (x - f.at);
+        if (out >= tip && out <= f.floor + 2.2) h = Math.max(h, y - .15);
+        else if (out < tip) h = Math.max(h, y - .15 - (tip - out) * BUTTRESS);
+      }
     } else if (f.type === 'tepuy') h = tepuyHeight(f, x, h);
   }
   for (const f of p.features) if (f.type === 'pond') {
@@ -339,12 +359,14 @@ function clearCells(mask, x0, x1, y0, y1) {
 }
 
 // The low gallery from the tunnel's end under the climbing flank out to its
-// mouth (1.8 high, under the ledge), then a short dip up to the lowland: from
-// its rim a capi hops onto the ledge and walks up the flank.
+// mouth (1.8 high, under the ledge), then a level stretch a body needs to get
+// its head out from under the lip, and a 45° ramp up to the lowland: from its
+// rim a capi hops onto the ledge and walks up the flank.
 function gallery(mask, f, c) {
   const at = d => f.at + c.side * d, span = (d0, d1) => [Math.min(at(d0), at(d1)), Math.max(at(d0), at(d1))];
   clearCells(mask, ...span(f.half - 6.6, c.tip), c.floor, c.floor + 1.8);
-  for (let d = c.tip; d < c.tip + .9; d += mask.cell) clearCells(mask, ...span(d, d + mask.cell), c.floor + (d + mask.cell / 2 - c.tip) / .9, c.low + 1);
+  const flat = MOUTH.flat, run = MOUTH.drop;
+  for (let d = c.tip; d < c.tip + flat + run; d += mask.cell) clearCells(mask, ...span(d, d + mask.cell), c.floor + clamp((d + mask.cell / 2 - c.tip - flat) / run) * MOUTH.drop, c.low + 1);
 }
 
 export function buildGround(p) {
@@ -359,15 +381,15 @@ export function buildGround(p) {
   const bare = { ...p, features: [] };
   for (const f of p.features) if (f.type === 'mesa') { f.base = heightAt(bare, f.at); f.T = Math.min(p.roof, f.base + f.rise); }
   // The climbing flank stands on the lowland by its mouth: the gallery's
-  // floor 1 under it (on the cell grid), the ledge over the mouth 2.1 over
-  // that (1.8 of room under it, 0.3 of rock), its tip 1.2 out from the foot.
+  // floor MOUTH.drop under it (on the cell grid), the ledge over the mouth 2.1
+  // over that (1.8 of room under it, 0.3 of rock), its tip 1.2 out from the foot.
   // Its steps reach the crest's height `reach` × half from the middle (the
   // crest inside stays as it was): risers a capi walks up (about 45°) where
   // that is gentle enough, else short steps under 1 high that it hops.
   for (const f of p.features) if (f.type === 'mountain' && f.climb) {
     const c = f.climb, low = heightAt({ ...p, features: p.features.filter(g => g !== f) }, f.at + c.side * (f.half + 3));
     let top = 0; for (let k = 0; k <= 24; k++) top = Math.max(top, heightAt(p, f.at + c.side * f.half * c.reach * k / 24));
-    c.tip = f.half + 1.2; c.floor = Math.round((low - 1) / CELL) * CELL; c.low = c.floor + 1; c.lip = c.floor + 2.1;
+    c.tip = f.half + 1.2; c.floor = Math.round((low - MOUTH.drop) / CELL) * CELL; c.low = c.floor + MOUTH.drop; c.lip = c.floor + 2.1;
     const slope = (top - c.lip) / (f.half * (1 - c.reach) - 1.2);
     c.run = slope <= .5 ? c.rise : .3; c.shelf = Math.max(.75, c.rise / slope - c.run);
   }
@@ -410,7 +432,7 @@ export function buildGround(p) {
       span(mask, a, .6); p.spans.push(a); p.rocks.push({ x0: l, x1: r, span: a });
       for (const ledge of p.ledges) {
         // A ledge on a cliff, under the arch: cover for a capi knocked into the valley.
-        const top = ledge.side < 0 ? f.left : f.right, y = lerp(p.base, top, ledge.up), x = f.at + ledge.side * (f.floor + .9), toward = -ledge.side;
+        const y = ledgeY(p, f, ledge), x = f.at + ledge.side * (f.floor + .9), toward = -ledge.side;
         for (let d = -1.5; d <= ledge.out; d += .2) fill(mask, x + toward * d, y - .7, .7 + .35 * clamp(1 - d / ledge.out));
         p.rocks.push({ x0: Math.min(x, x + toward * ledge.out) - 1.5, x1: Math.max(x, x + toward * ledge.out) + 1.5, y0: y - 1.6, y1: y + .2 });
         ledge.x = x; ledge.y = y;
@@ -478,7 +500,7 @@ export function buildGround(p) {
 // not steep, with sky over it and earth under it (not a thin bridge).
 export function standable(mask, x) {
   const y = surfaceY(mask, x);
-  if (y === null || y < WATER + 2.5) return null;
+  if (y === null || y <= WATER + 2.5) return null;
   const l = surfaceY(mask, x - .6), r = surfaceY(mask, x + .6);
   if (l === null || r === null || Math.abs(r - l) > 1.25 || Math.abs(surfaceY(mask, x - 1.4) - y) > 2 || Math.abs(surfaceY(mask, x + 1.4) - y) > 2) return null;
   for (let d = .3; d < 3; d += .5) if (!solidAt(mask, x, y - d)) return null;
@@ -602,7 +624,7 @@ function walkBetween(graph, spawns, ys) {
 
 // Everything measured about an attempt (the tests and RESULTS read it too).
 export function measure(p, mask, spawns) {
-  const map = { width: p.width, spawns }, stats = spawnStats(map, mask), graph = floorGraph(mask, { water: WATER });
+  const map = { width: p.width, spawns }, stats = spawnStats(map, mask), graph = floorsOf(mask);
   const ys = stats.map(t => t.map(s => s.y)), walk = walkBetween(graph, spawns, ys);
   const mean = (list, k) => list.reduce((t, s) => t + s[k], 0) / list.length;
   // Who has a shot: each capi at its nearest rival first, then the others.

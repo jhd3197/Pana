@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos: ya puedes subirte a los bordes de la cueva y de la montaña.**
+  La entrada de la cueva deja caminar por debajo del borde y un salto desde el suelo te sube. Mantener la tecla guía tu salto, y las repisas del valle tienen una rampa para llegar a ellas.
 - **Pepazo: cada golpe que das se siente, y cada granada y clase se distingue.**
   La marca de impacto ya no se apaga tras tu primer K.O., ahora trae el número de pepazos y también avisan las bolas que solo empapan. La Piñita es roja, La Pegajosa verde y La Chispita azul. Cada clase dice su ventaja: Balanceado corre más tiempo, Rápido recupera antes el aliento, Regenera se limpia al sacar a alguien. La Correa ahora sí compensa, y Uva es uva de verdad.
 - **Pepazo: la bandera deja de hacer cosas raras.**

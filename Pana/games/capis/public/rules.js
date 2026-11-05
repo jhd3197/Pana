@@ -33,6 +33,7 @@ export const RULES = Object.freeze({
   aimMin: -1.2, aimMax: 1.45, aimRate: 1.3,
   flightMax: 12,       // a shell still flying after this is lost
   turnLimit: 60,       // after this many turns the match is decided by who is left (see `byCount`)
+  airControl: 9, airSpeed: 4.4,   // how much the held key steers a hop
 });
 export const TURN_SECONDS = [30, 35, 45];
 export const TEAM_COLORS = ['#e8569b', '#2ad1b2'];
@@ -91,7 +92,8 @@ export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, 
   return m;
 }
 
-const walkerOptions = (m, frozen) => ({ radius: RULES.radius, water: m.map.water, frozen });
+// The held key steers a capi in the air: a hop started a little short of a ledge still reaches it.
+export const walkerOptions = (m, frozen = false) => ({ radius: RULES.radius, water: m.map.water, frozen, airControl: RULES.airControl, airSpeed: RULES.airSpeed });
 
 export function takeEvents(m) { const out = m.events; m.events = []; return out; }
 

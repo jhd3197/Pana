@@ -50,7 +50,7 @@ test('Montaña de cuevas: a massif over the middle, a tunnel through its foot wi
   assert.ok(rockAt(map, f.at - c.side * (f.half - 2), map.plan.base + 5) > .5, 'its sheer face is rock');
   const ledge = f.at + c.side * (f.half + .5);
   assert.ok(solidAt(mask, ledge, c.lip - .1) && !solidAt(mask, ledge, c.floor + .9) && solidAt(mask, ledge, c.floor - .2), 'a ledge over the gallery');
-  assert.ok(Math.abs(ground(mask, f.at + c.side * (c.tip + 1.5)) - c.low) < .2 && c.lip - c.low <= 1.15, 'the lowland by the mouth a hop under the ledge');
+  assert.ok(Math.abs(ground(mask, f.at + c.side * (c.tip + 2.4)) - c.low) < .2 && c.lip - c.low <= 1.15, 'the lowland by the mouth a hop under the ledge');
   for (let d = f.half - 2; d > f.half * .6; d -= .5) assert.ok(surfaceY(mask, f.at + c.side * (d - .5)) - surfaceY(mask, f.at + c.side * d) < 1.25, `a step at ${d.toFixed(1)} is a hop at most`);
 });
 
