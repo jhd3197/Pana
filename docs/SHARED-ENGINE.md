@@ -669,6 +669,15 @@ system: it awards nothing.
 
 Used by: Fosa (cave-ins; `syncRubble` in `games/reliquia/public/scene.js`, lazy-loaded).
 
+### Lights that do not blind up close
+
+`engine/fx.js`: `capSpotNearField(metres)` stops every SpotLight gaining strength
+inside that distance, so a lamp on the camera does not burn what comes within reach to
+a white disc. Call it before anything compiles; it patches three's shared chunk, so it
+applies to the whole page. `fadePointsNear(material, { from, to })` fades a
+`PointsMaterial` as it reaches the camera, for additive glows that would otherwise fill
+the screen. Used by: Fosa (`view.js`, `eco-view.js`).
+
 ### Carved surfaces
 
 `engine/fx/pom.js` (Three.js) and `engine/fx/pom-sim.js` (its numbers and height maps, no

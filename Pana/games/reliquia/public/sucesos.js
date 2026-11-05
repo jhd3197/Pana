@@ -113,7 +113,7 @@ export function startSuceso(g, kind) {
   const live = below(g); if (!live.length || !SUCESOS[kind]) return false;
   g.suceso = { kind, t: 0, dur: SUCESOS[kind].dur, next: 0 }; g.sucesoLast = kind;
   const near = (target, a, b) => { const angle = random(g) * Math.PI * 2, d = a + random(g) * (b - a); return { x: target.x + Math.cos(angle) * d, z: target.z + Math.sin(angle) * d }; };
-  if (kind === 'murcielagos') for (let i = 0, n = Math.min(12, 4 + 2 * live.length), tries = 0; i < n && tries < 40; tries++) { const q = near(live[Math.floor(random(g) * live.length)], 5, 12); if (spawnEnemy(g, 'bat', q.x, q.z, { born: g.time - 1, hanging: false, y: 2.6 })) i++; }
+  if (kind === 'murcielagos') for (let i = 0, n = Math.min(5, 2 + live.length), tries = 0; i < n && tries < 40; tries++) { const q = near(live[Math.floor(random(g) * live.length)], 5, 12); if (spawnEnemy(g, 'bat', q.x, q.z, { born: g.time - 1, hanging: false, y: 2.6 })) i++; }
   if (kind === 'creciente') for (let i = 0, tries = 0; i < 2 && tries < 30; tries++) { const q = near(live[Math.floor(random(g) * live.length)], 6, 11); if (spawnEnemy(g, 'snake', q.x, q.z, { born: g.time - 1 })) i++; }
   if (kind === 'derrumbe') g.caveIn();
   g.event('suceso', SAY[kind], { suceso: kind });

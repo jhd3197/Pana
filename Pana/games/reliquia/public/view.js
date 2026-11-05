@@ -15,7 +15,7 @@ import { silbon } from '/engine/models/props/reliquia-boss.js';
 import { splatTexture } from '/engine/models/props/paintball.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
-import { Puffs, Shockwaves } from '/engine/fx.js';
+import { Puffs, Shockwaves, capSpotNearField } from '/engine/fx.js';
 import { pixelRatio, bindRenderer, rendererOptions, getSettings } from '/engine/settings.js';
 import { dustMotes } from '/engine/models/props/reliquia-library.js';
 import { createExpeditionWorld, itemModel } from './scene.js';
@@ -70,7 +70,11 @@ function label(text, color, { bubble = false } = {}) {
 }
 const disposeSprite = s => { s.material.map.dispose(); s.material.dispose(); s.removeFromParent(); };
 
+// The lamp on your head stops gaining strength this close: what comes within reach
+// (the truck, a wall, a bat) keeps its colour instead of burning to a white disc.
+const LAMP_NEAR = 2.5;
 export function createView(canvas, { seed = 1, depth = 1 } = {}) {
+  capSpotNearField(LAMP_NEAR);
   const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true }));
   renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -164,9 +168,9 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     // Riding the lift at the camp: the dark of the shaft lifts as you come up (and
     // settles as you go down), so the cavern opens around you. Only ever this screen's picture.
     const inShaft = vf === 0 ? Math.max(0, Math.min(1, -rideY(me || {}) / 6)) : 0, comingUp = vf === 0 && state.lift?.moving && state.lift.to === 0 && state.lift.riders.includes(me?.id);
-    veil += (inShaft - veil) * (1 - Math.exp(-dt * (inShaft > veil ? 5 : 1.1)));
+    veil += (inShaft - veil) * (1 - Math.exp(-dt * (inShaft > veil ? 5 : 2.4)));
     // You turn to face the way out and look up a little; the mouse still has the last word.
-    if (comingUp) { const ease = 1 - Math.exp(-dt * 1.5), turn = Math.atan2(Math.sin(-h), Math.cos(-h)); h += turn * ease; pitch += (.12 - pitch) * ease; }
+    if (comingUp) { const ease = 1 - Math.exp(-dt * 3), turn = Math.atan2(Math.sin(-h), Math.cos(-h)); h += turn * ease; pitch += (.12 - pitch) * ease; }
     // El apagón: every torch stutters and sinks, your lamp with them. "Sustos" softens the show, never the rule.
     const stutter = Math.sin(t * 31) * Math.sin(t * 17 + 1.1) > -.1 ? 1 : .35, out = vf === 0 || state.suceso?.kind !== 'apagon' ? 1 : scares === 'apagados' ? .7 : scares === 'suaves' ? .45 + .2 * stutter : .1 + .3 * stutter;
     // Scares squeeze the fog in; the candles fade with it.

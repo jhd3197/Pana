@@ -142,6 +142,7 @@ test('wipe the bats: moths strip the mushrooms, the team is told, the hiding is 
   assert.ok(dimmed(g.eco, W0) >= .5, `stripped: ${dimmed(g.eco, W0)}`); assert.ok(g.eco.glow < before || g.eco.glow < 50, `glow ${g.eco.glow}`);
   assert.ok(g.eco.moths > 25, `moths ${g.eco.moths}`);
   assert.ok(g.eco.said.dim, 'the team was told once');
+  const bare = W0.sites.find((q, i) => q.plant && coverOf(g.eco, W0, i) < COVER.least); assert.ok(bare, 'a thicket was stripped'); stand(g, bare); step(g, .1);
   assert.ok(!p.covered, 'that thicket hides nobody now');
   const count = g.events.filter(e => e.kind === 'eco' && e.eco === 'dim').length; assert.ok(count <= 1);
   g.director.duration = 1e6;

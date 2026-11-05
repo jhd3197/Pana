@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: menos murciélagos, y lo que espantas con el farol vuelve por ti.**
+  Hay muchos menos murciélagos, tu lámpara ya no se vuelve un disco blanco de cerca, el mensaje de manos llenas dice qué llevas y cómo soltarlo, y terminar la jornada o la expedición tarda la mitad.
 - **Fosa: la cueva está viva.**
   Murciélagos y cuaimas comen, se reproducen y se mueren de hambre. Escóndete en silencio entre hongos que brillan o raíces tupidas. Si acabas con los murciélagos, las polillas apagan los hongos; sin cuaimas, los murciélagos llenan el techo.
 - **¿Quién quiere ser mi pana?: el animador ahora habla de verdad.**

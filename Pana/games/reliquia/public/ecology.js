@@ -16,15 +16,15 @@ import { floorOf } from './deck.js';
 import { distance } from './layout.js';
 
 export const SPECIES = {
-  bat: { eats: 'pests', cap: 30, life: 420, mature: 15, breedAt: 55, birthCost: 14, cool: 16, mutate: .12, hungry: 45, full: 85, base: .35, gain: 200, bite: .03, torpor: .45, catch: 0, ambush: 0, smell: 30, roam: .15, speed: 6, nest: 'roost', rest: 'roost', follow: false, traits: { sight: [1.5, 9], hear: [6, 22], pace: [.7, 1.25] } },
+  bat: { eats: 'pests', cap: 10, life: 420, mature: 15, breedAt: 55, birthCost: 14, cool: 16, mutate: .12, hungry: 45, full: 85, base: .35, gain: 200, bite: .05, torpor: .45, catch: 0, ambush: 0, smell: 30, roam: .15, speed: 6, nest: 'roost', rest: 'roost', follow: false, traits: { sight: [1.5, 9], hear: [6, 22], pace: [.7, 1.25] } },
   snake: { eats: ['bat'], cap: 7, life: 900, mature: 50, breedAt: 68, birthCost: 22, cool: 45, mutate: .1, hungry: 50, full: 50, base: .05, gain: 85, bite: 0, catch: .5, ambush: 20, smell: 32, roam: .05, speed: 1.7, follow: true, traits: { sight: [1.5, 7], hear: [6, 20], pace: [.7, 1.25] } },
 };
 // Seconds simulated before anyone arrives, so each jornada starts mid-story.
 const PREROLL = 150;
 // Bodies: how close a pana must be, how far before one goes back to being a number.
-export const BODIES = { near: 26, far: 34, bat: 12, snake: 5 };
+export const BODIES = { near: 26, far: 34, bat: 3, snake: 5 };
 // A hidden pana is felt within this, heard when noisy; the crowd a roost needs.
-export const COVER = { least: .3, feel: 2.6, fresh: .8, crowd: 8, boom: 12, dim: .5, glow: 5, wake: 6, seen: 1.4, look: .25, chase: 6 };
+export const COVER = { least: .3, feel: 2.6, fresh: .8, crowd: 5, boom: 8, dim: .5, glow: 5, wake: 6, seen: 1.4, look: .25, chase: 6 };
 
 export const ecoWorldFor = L => L.ecoWorld ||= ecoWorld(L.run.ecoSites || [], { species: SPECIES, clear: (a, b) => L.sightClear(a, b, {}) });
 
@@ -41,8 +41,8 @@ export function startEcology(g) {
   // Enough of both for a chain, whatever the deck dealt.
   const count = sp => founders.filter(f => f.sp === sp).length;
   const patches = W.sites.filter(s => s.plant).length, keep = (sp, most) => { while (count(sp) > most) founders.splice(founders.findLastIndex(f => f.sp === sp), 1); };
-  keep('bat', Math.min(14, patches * 3)); keep('snake', 3);
-  for (let i = 0; count('bat') < Math.max(6, patches * 2) && roosts.length; i++) founders.push({ sp: 'bat', at: roosts[i % roosts.length] });
+  keep('bat', Math.min(5, patches + 1)); keep('snake', 3);
+  for (let i = 0; count('bat') < Math.min(5, Math.max(3, patches)) && roosts.length; i++) founders.push({ sp: 'bat', at: roosts[i % roosts.length] });
   for (let i = 0; count('snake') < 3 && lairs.length; i++) founders.push({ sp: 'snake', at: lairs[i % lairs.length] });
   g.eco = createEcosystem(W, { seed: (g.seed * 2246822519 + (g.level || 1) * 3266489917) >>> 0, depth: g.level || 1, founders, pests: .25 });
   advanceEcosystem(g.eco, W, PREROLL);
