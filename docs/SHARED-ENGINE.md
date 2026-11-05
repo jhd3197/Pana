@@ -631,7 +631,7 @@ const motor = createMotor(sound, { profile: 'muscle', topSpeed: 42 });
 motor.update(dt, { speed, boost });
 ```
 
-Used by: Carreritas (tyres, boost, crash, via `drift-audio.js`). Carreritas' car motor is the older `sound.startEngine` putt-putt in `engine/fx.js`, which sounded better to players than `createMotor`; `createMotor` has no user right now.
+Used by: Carreritas (tyres, boost, crash, via `drift-audio.js`; `createWind` and `vehicleSfx.whoosh` through `speed-feel.js`). Carreritas' car motor is the older `sound.startEngine` putt-putt in `engine/fx.js`, which sounded better to players than `createMotor`; `createMotor` has no user right now.
 
 ### Fire
 
@@ -976,6 +976,7 @@ its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
 | Health bar: smooth drain, the lost chunk flashes white, orange, red, holds and drains; green, yellow, red by what is left; sparkles at the edge on a heal (`createDamageBar`, pure `createBarModel`) | `engine/fx/damage.js`, `damage.css` | Trifulca |
 | Damage numbers: pop, fan out on arcs, scale with the amount; white, orange with jitter on a crit, green on a heal (`createDamageNumbers`); drawn-only knockback spring (`createKnock`) | `engine/fx/damage.js` | Trifulca |
 | Rank-up ceremony: riser, white flash, pillar and rings, the title slamming down, stats counting tick by tick, unlocks, confetti. `rankUpToast` plays it and `createRankChip`'s bar crawls through the last sliver, so any game on `engine/progress.js` gets both (`playLevelUp`, `riser`, `levelUp` and `countTick` in `sfx`) | `engine/fx/level-up.js`, `level-up.css`, `engine/progress-ui.js` | Reliquia and Conuco, through `progress-ui` |
+| Speed from the driver's seat: field of view 50 to 75 with speed, camera lag under acceleration that catches up with a small shake on its own noise (seeded dice untouched), how strong edge lines and wind should be. Pure numbers (`createSpeedFeel`); apply them with `setSpeedLines` and `createWind` | `engine/fx/speed.js` | Carreritas (`speed-feel.js`: comfort camera and battle arenas opt out) |
 | Pixel effects as camera-facing sprites (`createWorldFx(THREE, scene)`) or on the HUD layer (`createScreenFx`): pooled, capped, loaded on first use so first load doesn't grow | `engine/fx/pixelfx-bridge.js`, code in `engine/vendor/pixelfx/` (MIT; keep its `LICENSE` and `NOTICE.md`; add an effect through its `README.md`) | Trifulca (`hit-spark`, `crit-hit`, `crit-number`), the rank-up ceremony (`level-up` without its pixel hero, `confetti`) |
 
 ## Player, look and rewards

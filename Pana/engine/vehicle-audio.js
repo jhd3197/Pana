@@ -106,8 +106,30 @@ export function createTyres(sound, { level = 1 } = {}) {
   };
 }
 
+// Wind over the car: a noise loop that gets louder and brighter with `amount` (0..1).
+export function createWind(sound, { level = .09 } = {}) {
+  const ctx = sound.ctx;
+  if (!ctx) return { update() {}, stop() {} };
+  const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain();
+  source.buffer = sharedNoise(); source.loop = true;
+  filter.type = 'bandpass'; filter.frequency.value = 400; filter.Q.value = .7; gain.gain.value = 0;
+  source.connect(filter).connect(gain).connect(sound.out()); source.start();
+  let alive = true;
+  return {
+    update(amount = 0) {
+      if (!alive) return;
+      const a = sound.muted ? 0 : clamp(amount), t = ctx.currentTime;
+      gain.gain.setTargetAtTime(a * level, t, .15);
+      filter.frequency.setTargetAtTime(350 + a * 1900, t, .2);
+    },
+    stop() { if (!alive) return; alive = false; gain.gain.setTargetAtTime(0, ctx.currentTime, .05); setTimeout(() => { try { source.stop(); } catch { /* already stopped */ } }, 300); },
+  };
+}
+
 // One-shots. power: roughly the old bonk() argument (0.4 a bump, 1 a hit, 1.5+ a smash).
 export const vehicleSfx = {
+  // Something passing close at speed; `power` (0..1) with how fast.
+  whoosh(power = 1) { const p = clamp(power, .2, 1); burst({ dur: .2, f0: 900 + rnd(0, 500), f1: 300, q: 1.2, vol: .07 * p, attack: .05, priority: 1 }); },
   skid(power = 1) { const p = clamp(power, .2, 1.4); burst({ dur: .24, f0: 1950, f1: 1300, q: 5, vol: .22 * p, priority: 2 }); burst({ dur: .22, f0: 3600, f1: 2600, q: 3, vol: .1 * p, priority: 2 }); burst({ dur: .26, f0: 650, q: .7, type: 'lowpass', vol: .16 * p, priority: 1 }); },
   boost(power = 1) {
     const p = clamp(power, .3, 1.4);
