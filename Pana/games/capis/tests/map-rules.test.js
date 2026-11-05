@@ -7,8 +7,8 @@
 // (generation time, re-rolls, kinds, fairness) are printed as diagnostics.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateMap, spawnStats, planMap, buildMap, inspectPlan, heightAt, floorsOf, MAP_SIZES, FAIR, ATTEMPTS, KINDS, WATER } from '../public/map-rules.js';
-import { surfaceY, solidAt } from '../../../engine/play/terrain-mask.js';
+import { generateMap, spawnStats, planMap, buildMap, inspectPlan, heightAt, floorsOf, chokeOf, check, MAP_SIZES, FAIR, FFA_KIND_ODDS, ATTEMPTS, KINDS, WATER } from '../public/map-rules.js';
+import { surfaceY, solidAt, createMask, fillHeights } from '../../../engine/play/terrain-mask.js';
 import { stepSideWalker } from '../../../engine/play/side-walker.js';
 import { RULES } from '../public/rules.js';
 import { dropFloating, headroom } from '../../../engine/play/terrain-gen.js';
@@ -249,6 +249,87 @@ test('the two sides are fair by measure: heights, sky, cover, distance, the walk
   }
   t.diagnostic(`spawn height difference, front capis: ${quantiles(front)}; team means: ${quantiles(mean)}`);
   t.diagnostic(`worst over ${all.length} maps: ${JSON.stringify(Object.fromEntries(Object.entries(worst).map(([k, v]) => [k, +v.toFixed(2)])))}`);
+});
+
+// A flat field with a wall across x0..x1, all the way up but for a slot `room` high over the ground.
+function slotted(room, x0 = 25, x1 = 35) {
+  const mask = createMask({ width: 60, height: 30, cell: .1 });
+  fillHeights(mask, () => 8);
+  wall(mask, x0, x1, () => 8 + room);
+  return mask;
+}
+function wall(mask, x0, x1, from) {
+  for (let c = Math.floor(x0 / mask.cell); c < x1 / mask.cell; c++) for (let r = Math.round(from((c + .5) * mask.cell) / mask.cell); r < mask.rows; r++) mask.solid[r * mask.cols + c] = 1;
+}
+const chokeAcross = mask => { const g = floorsOf(mask), a = g.near(10, 8), b = g.near(50, 8); return chokeOf(mask, g, [a], [b]); };
+
+test('a choke is measured on the way across: a tight slot fails, a wide one passes, an open way over a low tunnel is no choke', () => {
+  assert.ok(chokeAcross(slotted(1.8)) < FAIR.choke, 'a slot 1.8 high is too tight');
+  assert.ok(Math.abs(chokeAcross(slotted(1.8)) - 1.8) < .15, `measured ${chokeAcross(slotted(1.8))}`);
+  assert.ok(chokeAcross(slotted(4)) >= FAIR.choke, 'a slot 4 high is wide enough');
+  assert.ok(Math.abs(chokeAcross(slotted(4)) - 4) < .15, `measured ${chokeAcross(slotted(4))}`);
+  // No wall: only the cap of what is measured.
+  const open = createMask({ width: 60, height: 30, cell: .1 });
+  fillHeights(open, () => 8);
+  assert.ok(chokeAcross(open) >= 6);
+  // A low passage under a slab a capi hops onto from the rim and walks over: the slab is the way.
+  const passage = createMask({ width: 60, height: 30, cell: .1 });
+  fillHeights(passage, x => { const d = Math.abs(x - 30); return d >= 16 ? 8 : d >= 14 ? 6.2 + (d - 14) * .9 : 6.2; });
+  for (let c = 160; c < 440; c++) for (let r = 80; r < 88; r++) passage.solid[r * passage.cols + c] = 1;
+  assert.ok(chokeAcross(passage) >= 6, `over the slab: ${chokeAcross(passage)}`);
+  // Walled off above the slab, the passage is all that is left.
+  wall(passage, 28, 32, () => 8);
+  assert.ok(Math.abs(chokeAcross(passage) - 1.8) < .15, `under the slab: ${chokeAcross(passage)}`);
+  // Spots with no way between them are not a choke: `apart` judges those.
+  assert.equal(chokeAcross(slotted(1)), Infinity);
+});
+
+test('the check turns down a map whose only way across is a tight slot, not one with a wide slot', () => {
+  const p = planMap(seedOf(0), 'medium', ATTEMPTS - 1), { mask, loose, spawns } = buildMap(p);
+  assert.equal(check(p, mask, loose, spawns).failed, null, 'the safe map passes untouched');
+  const slot = room => { const m = { ...mask, solid: mask.solid.slice() }; wall(m, p.mid - 2, p.mid + 2, x => heightAt(p, x) + room); return check(p, m, loose, spawns); };
+  const tight = slot(1.8);
+  assert.equal(tight.failed, 'choke');
+  assert.ok(tight.measured.choke < FAIR.choke, `measured ${tight.measured.choke}`);
+  const wide = slot(4);
+  assert.notEqual(wide.failed, 'choke');
+  assert.ok(wide.measured.choke >= FAIR.choke, `measured ${wide.measured.choke}`);
+});
+
+test('every map leaves room on the way across, the cave mountain\'s tunnels and galleries too', t => {
+  const by = {};
+  for (const g of all) {
+    (by[g.map.kind] ||= []).push(g.map.fair.choke);
+    assert.ok(g.map.fair.choke >= FAIR.choke, `${label(g)}: choke ${g.map.fair.choke}`);
+    for (const tt of g.map.plan.tunnels) assert.ok(tt.radius >= 2.2, `${label(g)}: tunnel radius ${tt.radius.toFixed(2)}`);
+  }
+  t.diagnostic(Object.entries(by).map(([k, v]) => `${k} choke ${quantiles(v)}`).join('; '));
+  assert.ok(by.cuevas.every(v => Number.isFinite(v)), 'a capi on the far side goes through the tunnel');
+});
+
+test('a free-for-all draws from its own odds: never cuevas or islas, deterministic, and a team map is not touched', t => {
+  assert.equal(FFA_KIND_ODDS.cuevas, 0); assert.equal(FFA_KIND_ODDS.islas, 0);
+  assert.ok(Math.abs(Object.values(FFA_KIND_ODDS).reduce((a, b) => a + b, 0) - 1) < 1e-9, 'the odds add up');
+  const kinds = {}, reasons = {};
+  for (let i = 0; i < SWEEP; i++) {
+    const { map } = generateMap(seedOf(i), 'large', { mode: 'ffa' });
+    kinds[map.kind] = (kinds[map.kind] || 0) + 1;
+    for (const r of map.rejected) reasons[r] = (reasons[r] || 0) + 1;
+    assert.ok(!['cuevas', 'islas'].includes(map.kind), `seed ${map.seed}: ${map.kind}`);
+    assert.equal(map.failed, null, `seed ${map.seed}: ${map.failed}`);
+    assert.ok(map.fair.choke >= FAIR.choke, `seed ${map.seed}: choke ${map.fair.choke}`);
+  }
+  t.diagnostic(`ffa large: ${JSON.stringify(kinds)}; rejected ${JSON.stringify(reasons)}`);
+  for (const kind of ['cerros', 'terrazas', 'suave']) assert.ok(kinds[kind] >= SWEEP * .05, `${kind} on ${kinds[kind] || 0} of ${SWEEP}`);
+  assert.ok((kinds.cerros + kinds.terrazas + kinds.suave) / SWEEP >= .8, 'mostly the open kinds');
+  for (let i = 0; i < 12; i++) {
+    const a = generateMap(seedOf(i), 'large', { mode: 'ffa' }), b = generateMap(seedOf(i), 'large', { mode: 'ffa' });
+    assert.ok(Buffer.from(a.mask.solid).equals(Buffer.from(b.mask.solid)), `seed ${seedOf(i)}: the same cells`);
+    assert.equal(a.map.kind, b.map.kind);
+    // The team map of the same seed still draws from the team odds.
+    const team = maps.large[i], again = generateMap(seedOf(i), 'large', { mode: 'teams' });
+    assert.ok(Buffer.from(team.mask.solid).equals(Buffer.from(again.mask.solid)), `seed ${seedOf(i)}: teams is the default`);
+  }
 });
 
 test('the last attempt, the mirrored safe map, always passes its checks', () => {

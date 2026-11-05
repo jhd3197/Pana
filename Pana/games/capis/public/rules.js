@@ -90,7 +90,7 @@ export const canUse = (m, team, weapon) => WEAPONS.some(w => w.id === weapon) &&
 export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null, looks = {}, mode = 'teams' } = {}) {
   mode = MODES.includes(mode) ? mode : 'teams';
   // A free-for-all needs the room: six capis, spread out, always on the big map.
-  const { map, mask } = generated || generateMap(seed, mode === 'ffa' ? FFA_SIZE : size);
+  const { map, mask } = generated || generateMap(seed, mode === 'ffa' ? FFA_SIZE : size, { mode });
   const sides = mode === 'ffa' ? FFA_CAPIS : 2;
   const m = { map, mask, mode, teams: sides, seed: map.seed >>> 0, phase: 'aim', winner: null, wind: 0, shot: null, events: [],
     options: { seconds: TURN_SECONDS.includes(seconds) ? seconds : 35, difficulty, size: map.size, mode }, humans,

@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos: mapas más abiertos en Todos contra todos y túneles más anchos.**
+  Todos contra todos sale casi siempre en cerros y terrazas, sin cuevas ni islas, y los túneles ya no aprietan al capi.
+- **Capis a Pintazos: la máquina ya no se queda parada sin tiro.**
+  Si nadie pinta a nadie y no tiene tiro, su capi camina a buscarlo: salta zanjas, se devuelve del agua o abre paso. Menos partidas llegan al límite de turnos.
 - **Fosa: nuevo lugar, el Congo, y algo enorme vive en el agua.**
   Vas en piragua por caños estrechos de agua turbia, entre paredes de lianas, neblina y callejones sin salida. Primero oyes al Mokele, luego ves una sombra altísima en la neblina, y de cerca es pura dentadura. No se mata: piérdelo, escóndete o hazlo cruzar el remolino. Elígelo en Lugar o espéralo en la rotación.
 
