@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Dominó y Caída: las fichas y las cartas ahora pesan.**
+  Se levantan y se inclinan hacia el puntero, crecen con su sombra al tomarlas, se mecen al moverse, caen de golpe con rebote y suenan al sacarlas y al pegarlas en la mesa.
 - **¿Quién quiere ser mi pana?: el animador ahora habla de verdad.**
   Las frases se escriben letra por letra con pausas en comas y puntos, cada pana tiene su voz de blips, y quien habla se mueve y pone cara según lo que dice.
 - **Pepazo: la armería ya no te manda a pana.sh cuando ya estás en pana.sh.**
