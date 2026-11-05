@@ -66,6 +66,9 @@ test('camoState: owned, locked by kills with progress, buyable, short of mangos,
   assert.equal(camoState('liso-coral', { online: false }).state, 'owned');
   assert.deepEqual(camoState('caribe', { online: false }), { state: 'locked', text: 'Disponible en pana.sh' });
   assert.match(camoState('selva', { online: false, signedOut: true }).text, /cuenta de pana\.sh/);
+  // On pana.sh, before its gateway has the camos: never "available on" the site you are on.
+  assert.deepEqual(camoState('caribe', { online: false, hosted: true }), { state: 'locked', text: 'Muy pronto' });
+  assert.equal(camoState('liso-coral', { online: false, hosted: true }).state, 'owned');
   assert.equal(progressText('selva', { carbine: { hits: 99 } }), '15/15 pintadas con La Parrandera', 'progress text never passes the threshold');
 });
 

@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo: la armería ya no te manda a pana.sh cuando ya estás en pana.sh.**
+  Si los camuflajes todavía no están activos en el sitio, dicen "Muy pronto".
 - **Carreritas: agarrar monedas ahora suena y brilla.**
   Cada moneda estalla en un destello con estrellas doradas, y la cadena se anuncia sobre el contador al llegar a 3 y en cada fila completa.
 - **Con cuenta, tus mangos son los mismos en todos los juegos.**

@@ -1098,7 +1098,7 @@ Parrandera"; the client writes its own progress text from the marker names).
 - **Client.** `camo-store.js` wraps `window.PanaSh.camos()` / `buyCamo(id)`
   (cached 30 s, 5 s timeout, never rejects). Without the bridge (public Pana)
   only the start camos are owned and the rest say "Disponible en pana.sh"; a
-  bridge without a session says to sign in. `camos.js` and `camo-store.js` are
+  bridge without a session says to sign in. A hosted page (`window.PanaSh` from the gateway) whose camo bridge is missing says "Muy pronto" instead of "Disponible en pana.sh". `camos.js` and `camo-store.js` are
   dynamic imports (the camo tab, or at once when `window.PanaSh` exists), to
   keep them off the first load (see "First-load budget"). The rules only need the ids, which come
   from `paint-arsenal.js` (`CAMO_IDS`, `START_CAMOS` in `armory-data.js`).
