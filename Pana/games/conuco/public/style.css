@@ -1,0 +1,68 @@
+/* Conuco: a full-window 3D plot under a small kit HUD. Square corners, few words.
+   The game's own colours are named custom properties (--pk-game matches game.json). */
+body {
+  --pk-game: #6fae3f; --pk-game-ink: #10230a;
+  --conuco-sky: #bfe3f0; --conuco-ready: #ffc629; --conuco-tired: #d98a4b; --conuco-empty: rgba(14, 11, 36, .55);
+  margin: 0; overflow: hidden; background: var(--conuco-sky); color: var(--pk-text); font-family: var(--pk-sans);
+}
+/* The kit and this sheet set display; hidden still wins. */
+.sheet[hidden], .bar [hidden] { display: none; }
+#world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.topbar { position: fixed; z-index: 4; top: 12px; left: 16px; right: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; pointer-events: none; }
+.topbar > * { pointer-events: auto; }
+.status { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rank-slot { width: 190px; min-width: 0; }
+.mangos { min-height: 44px; box-sizing: border-box; font-size: 18px; background: var(--pk-hud); }
+#mango-icon { display: inline-flex; font-size: 22px; }
+#game-nav { display: flex; gap: 8px; }
+
+/* One button per bed, the size of the bed on screen; game.js places them from the camera. */
+.beds { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+.bed { position: absolute; display: flex; align-items: flex-end; justify-content: center; padding: 0; border: 2px solid transparent; border-radius: 0; background: none; color: var(--pk-text); cursor: pointer; pointer-events: auto; }
+.bed:hover, .bed:focus-visible, .bed.pana-pad-focus { border-color: var(--pk-text); outline: none; }
+.bed.is-picked { border-color: var(--pk-game); }
+.bed-tag { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; min-width: 24px; padding: 3px 6px; background: var(--pk-hud); font: 800 12px var(--pk-sans); white-space: nowrap; }
+.bed-tag .pk-bar { width: 44px; height: 4px; --pk-bar-color: var(--pk-game); }
+.bed[data-state="empty"] .bed-tag { background: var(--conuco-empty); font-size: 16px; }
+.bed[data-state="ready"] .bed-tag { background: var(--conuco-ready); color: var(--pk-yellow-ink); font-size: 20px; }
+.bed[data-state="wilted"] .bed-tag { background: var(--conuco-tired); color: var(--pk-yellow-ink); font-size: 20px; }
+
+.bar { position: fixed; z-index: 3; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 8px; max-width: calc(100vw - 16px); }
+.bar .pk-btn { white-space: nowrap; }
+.bar .pk-ico { font-size: 20px; }
+
+.sheet { position: fixed; z-index: 5; top: 68px; right: 16px; width: min(360px, calc(100vw - 32px)); max-height: calc(100dvh - 84px); display: flex; flex-direction: column; box-sizing: border-box; padding: 14px; gap: 10px; }
+.sheet-head { display: flex; align-items: center; gap: 8px; }
+.sheet-head h2 { margin: 0; flex: 1; min-width: 0; }
+.sheet-note { color: var(--pk-muted); font-weight: 800; font-size: 13px; white-space: nowrap; }
+.sheet-body { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; }
+.row { display: flex; align-items: center; gap: 10px; padding: 8px; background: var(--pk-deep); border: 1px solid var(--pk-line); }
+.row.is-off { opacity: .6; }
+.row-thumb { flex: none; width: 56px; height: 56px; object-fit: contain; background: var(--pk-raised); }
+.row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.row-name { font-weight: 900; }
+.row-stats { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--pk-muted); font-size: 13px; font-weight: 800; }
+.row-stats span { display: inline-flex; align-items: center; gap: 4px; }
+.row .pk-btn { flex: none; min-width: 72px; }
+.house-tiers { display: flex; gap: 4px; }
+.house-tiers i { flex: 1; height: 8px; background: var(--pk-raised); }
+.house-tiers i.is-on { background: var(--pk-game); }
+.house-picture { width: 100%; aspect-ratio: 16 / 10; object-fit: contain; background: var(--pk-raised); }
+.house-now { font: 900 18px var(--pk-sans); }
+.house-next { display: flex; align-items: center; gap: 10px; }
+.house-next .pk-btn { flex: 1; }
+.sheet-empty { margin: 0; padding: 12px; color: var(--pk-muted); text-align: center; font-weight: 800; }
+
+/* A phone: the sheet sits over the lower half, and the rank bar gives way to the mangos. */
+@media (max-width: 640px) {
+  .rank-slot { width: 104px; }
+  .rank-slot .pk-rank { gap: 6px; }
+  .rank-slot .pk-chip { padding: 4px 6px; font-size: 11px; }
+  .bar { left: 8px; right: 8px; transform: none; justify-content: center; }
+  .bar .pk-btn { flex: 1; min-width: 0; padding: 8px 6px; gap: 6px; font-size: 13px; }
+  .sheet { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 62dvh; }
+}
+@media (max-height: 460px) {
+  .sheet { top: 60px; bottom: 8px; max-height: none; }
+}

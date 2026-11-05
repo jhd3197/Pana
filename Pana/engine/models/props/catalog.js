@@ -32,6 +32,7 @@ import fiesta from './catalog/fiesta.js';
 import signs from './catalog/signs.js';
 import glowPaintball from './catalog/glow-paintball.js';
 import barrio from './catalog/barrio.js';
+import conuco from './catalog/conuco.js';
 
 export default [
   ...ranch,
@@ -68,4 +69,5 @@ export default [
   ...signs,
   ...glowPaintball,
   ...barrio,
+  ...conuco,
 ];
