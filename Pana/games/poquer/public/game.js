@@ -2,7 +2,7 @@ import { prepareScene } from '/engine/game-load.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { OPTION_FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { createTableSeating } from '/engine/play/table-seating.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl } from '/engine/invite.js';
 import { roomCode } from '/engine/game-shell.js';
@@ -28,7 +28,7 @@ const seating = createTableSeating($('table-seating'), (from, to) => {
   room.reseat(room.state.players.indexOf(players[from]), room.state.players.indexOf(players[to]));
 });
 $('organize-table').onclick = () => room.setup();
-const mapPicker = createMapPicker($('map-picker'), mapId => room.setMap(mapId), { table: true, landmarks: true });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.setMap(mapId), { table: true, landmarks: true, room });
 const roomOptions = createRoomOptions($('room-options'), { title: loc('Póquer'), fields: OPTION_FIELDS, change: patch => room.configure(patch), reset: () => room.configure(DEFAULT_OPTIONS, 'plaza') });
 const menu = createGameMenu({ pad: { buttons: true }, title: loc('Póquer · Pana'), orientation: 'libre', sound,
   options: [{ id: 'view', label: loc('Cámara'), choices: [['plaza', loc('En la plaza')], ['mesa', loc('Sobre la mesa')]], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
@@ -52,7 +52,7 @@ function render(state) {
   $('initial-blinds').textContent = `${options.blinds / 2}/${options.blinds}`;
   seating.update(state.players.filter(p => p.connected), { enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.local ? room.id : room.link?.state.players.find(p => p.id === room.link.state.host)?.seat });
   $('organize-table').disabled = !room.connected || !room.isHost;
-  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, canChangeMap(room, state.phase));
   const lobby = state.phase === 'lobby', finished = state.phase === 'finished', starter = state.phase === 'starter', legal = state.legal, canAct = !!legal && room.connected && !menu.isOpen;
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('controls').hidden = lobby || finished || starter;
   $('start').disabled = !room.connected || !room.isHost || (!state.canStart && state.players.filter(p => p.connected && !p.bot).length > 1); $('start').textContent = !room.connected ? loc('Conectando…') : room.isHost ? loc('¡Repartir!') : loc('El anfitrión abre la mesa');

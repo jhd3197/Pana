@@ -188,6 +188,16 @@ capacity rejection; the client accepts 409 and legacy 4009. The plan-56
 Carreritas' `game.json` `players` (twelve) and asserts the next receives
 `full: true`, through the actual HTTP/SDK path.
 
+## No room to answer to: `room.solo`
+
+`connected` alone can't tell a guest still joining from a player whose room never
+came. Rooms set `solo`: true before dialing and after giving up (retries spent, room
+full, link gone), false from `connect()` on. The map picker reads it
+(`canChangeMap`), so a lone player can pick and `practice()` starts on that map
+while a joining guest never gets an open control. A hand-written connection
+(Dominó, Pepazo, Póquer) must also call `onState` on failure, or the lobby keeps
+showing the control as it was.
+
 ## Friend-named bots
 
 `engine/bot-names.js` gives the top 2-3 bots of a match the names of the player's

@@ -13,7 +13,7 @@ export class PaintConnection {
   get id() { return this.local ? 1 : this.link?.me?.seat; }
   get isHost() { return this.local || !!this.link?.isHost; }
   async connect() {
-    this.onStatus(loc('Conectando con tus panas…'));
+    this.solo = false; this.onStatus(loc('Conectando con tus panas…'));
     try {
       const link = await joinRoom('pintura', { code: this.code, name: this.name, avatar: this.avatar, lead: leadFromUrl() });
       if (this.local || this.disposed) { link.leave(); return; } this.link = link; this.connected = true; this.camosSynced = undefined;
@@ -22,9 +22,9 @@ export class PaintConnection {
       link.on('status', (text, failed) => { if (!this.local) { this.connected = !failed; this.onStatus(text || loc('En línea con tus panas'), !!failed); this.onState(this.state); } });
       // The room refused a kit (mid-round): the armory says why.
       link.on('kit-rejected', data => { if (!this.local) this.onKitRejected?.(data || {}); });
-      link.on('left', () => { if (!this.local) { this.connected = false; this.onStatus(loc('Se cortó la conexión. Recarga para volver o practica con bots.'), true); this.onState(this.state); } });
+      link.on('left', () => { if (!this.local) { this.connected = false; this.solo = true; this.onStatus(loc('Se cortó la conexión. Recarga para volver o practica con bots.'), true); this.onState(this.state); } });
       this.onStatus(loc('En línea con tus panas')); if(this.kit) this.selectKit(this.kit); this.onState(this.state);
-    } catch (error) { if (!this.local && !this.disposed) { this.connected = false; this.onStatus(error.full ? loc('Sala llena. Abre otra cancha desde Pana.') : loc('Sin conexión. Puedes practicar con bots.'), true); this.onState(this.state); } }
+    } catch (error) { this.solo = true; if (!this.local && !this.disposed) { this.connected = false; this.onStatus(error.full ? loc('Sala llena. Abre otra cancha desde Pana.') : loc('Sin conexión. Puedes practicar con bots.'), true); this.onState(this.state); } }
   }
   moveSeat(from, to) {
     if (!this.connected) return;
