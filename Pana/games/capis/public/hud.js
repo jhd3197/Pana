@@ -4,7 +4,7 @@
 import { loc } from '/engine/i18n.js';
 import { fillRoster } from '/engine/results.js';
 import { ICONS } from '/engine/icons.js';
-import { activeCapy, alive, standings, ammoLeft } from './rules.js';
+import { activeCapy, alive, standings, ammoLeft, isFfa } from './rules.js';
 import { WEAPONS, weaponOf } from './weapons.js';
 
 // The picker's icon for each weapon (engine/icons.js).
@@ -78,15 +78,19 @@ export function createHud($, { side = soloSide(), pick = () => {} } = {}) {
 
   function build(match) {
     rows = new Map(); tags = new Map(); $('labels').replaceChildren(); shownWeapons = '';
-    for (const team of [0, 1]) {
-      teamNames[team] = side.teamName(team);
-      const list = $(`team-${team}`), title = el('li', 'team-name', teamNames[team]);
+    // A free-for-all is one list of six, each capi in its own colour; two teams, two lists.
+    const ffa = isFfa(match);
+    for (let team = 0; team < match.teams; team++) teamNames[team] = side.teamName(team);
+    $('team-1').hidden = ffa; $('team-0').parentElement.classList.toggle('is-ffa', ffa);
+    for (const team of ffa ? [0] : [0, 1]) {
+      const list = $(`team-${team}`), title = el('li', 'team-name', ffa ? loc('Todos contra todos') : teamNames[team]);
       list.replaceChildren(title);
-      for (const c of match.capys.filter(k => k.team === team)) {
+      for (const c of match.capys.filter(k => ffa || k.team === team)) {
         const row = el('li'), name = el('b', '', c.name), value = el('span'), bar = el('div', 'pk-bar'), fill = el('i');
+        row.dataset.side = c.team;
         name.translate = false; bar.append(fill); row.append(name, value, bar); list.append(row);
         rows.set(c.id, { row, value, bar, shown: '' });
-        const tag = el('span', `team-${team}`, c.name); tag.translate = false; $('labels').append(tag); tags.set(c.id, tag);
+        const tag = el('span', `team-${c.team}`, c.name); tag.translate = false; $('labels').append(tag); tags.set(c.id, tag);
       }
     }
   }
@@ -131,14 +135,17 @@ export function createHud($, { side = soloSide(), pick = () => {} } = {}) {
   }
 
   function results(match) {
-    const human = side.team(), win = match.winner === human, machine = side.teamName(match.winner) === loc('La máquina');
-    $('result-title').textContent = match.winner === -1 ? loc('¡Empate pintado!') : win ? loc('¡Ganaron tus capis!') : machine ? loc('Ganó la máquina') : loc('Ganaron los rivales');
-    $('result-copy').textContent = match.endedBy === 'turns'
-      ? (match.winner === -1 ? loc('Se acabaron los turnos y quedaron parejos.') : loc('Se acabaron los turnos: gana el equipo con más capis en pie y menos pintura.'))
+    const human = side.team(), win = match.winner === human, machine = side.teamName(match.winner) === loc('La máquina'), ffa = isFfa(match);
+    const champion = match.capys.find(c => c.team === match.winner)?.name || '';
+    $('result-title').textContent = match.winner === -1 ? loc('¡Empate pintado!') : ffa ? (win ? loc('¡Tu capi quedó en pie!') : loc('¡Ganó {name}!', { name: champion }))
+      : win ? loc('¡Ganaron tus capis!') : machine ? loc('Ganó la máquina') : loc('Ganaron los rivales');
+    $('result-copy').textContent = ffa && match.endedBy !== 'turns' ? (win ? loc('Ni un capi rival quedó en pie.') : match.winner === -1 ? loc('No quedó ningún capi en pie.') : loc('El último capi en pie se lo lleva.'))
+      : match.endedBy === 'turns'
+      ? (match.winner === -1 ? loc('Se acabaron los turnos y quedaron parejos.') : ffa ? loc('Se acabaron los turnos: gana quien sigue en pie con menos pintura.') : loc('Se acabaron los turnos: gana el equipo con más capis en pie y menos pintura.'))
       : win ? loc('Ni un capi rival quedó en pie.') : match.winner === -1 ? loc('No quedó ningún capi en pie.') : loc('Tus capis terminaron pintados o en el río.');
     fillRoster($('result-roster'), standings(match).map((c, i) => ({
       rank: i + 1, name: c.name, me: c.team === human, score: false,
-      detail: teamNames[c.team], end: c.out === 'water' ? loc('Al río') : c.out ? loc('Pintado') : loc('En pie · {n}%', { n: c.paint }),
+      detail: ffa ? '' : teamNames[c.team], end: c.out === 'water' ? loc('Al río') : c.out ? loc('Pintado') : loc('En pie · {n}%', { n: c.paint }),
     })));
     $('results').hidden = false;
   }

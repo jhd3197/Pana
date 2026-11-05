@@ -10,10 +10,11 @@
 //
 // Two teams of three capis. Up to four panas share them: on a team's turn the
 // next pana of that team plays its capi (controllerOf); a team with no pana is
-// the machine (bot.js), and so is a pana who drops in the middle of a turn.
+// the machine (bot.js), and so is a pana who drops in the middle of a turn. In
+// a free-for-all each pana has a capi of its own and the machine plays the rest.
 // The ground never travels: snapshots carry the list of edits since the
 // map was made from its seed (rules.js applyEdit), and a guest replays them.
-import { createMatch, tickMatch, takeEvents, activeCapy, alive, applyEdit, fire, selectWeapon, canUse, TOMB_SHAPES } from './rules.js';
+import { createMatch, tickMatch, takeEvents, activeCapy, alive, applyEdit, fire, selectWeapon, canUse, TOMB_SHAPES, FFA_CAPIS } from './rules.js';
 import { createBot } from './bot.js';
 import { smallestTeam } from '../../../engine/play/team-balance.js';
 import { defaultOptions, roomOptions } from './options.js';
@@ -44,8 +45,11 @@ export function controllerOf(players, match) {
   return team.length ? team[((t.k || 1) - 1) % team.length].id : null;
 }
 export const teamOf = (players, id) => players.find(p => p.id === id)?.team ?? null;
-// Which teams the machine plays (no pana in them).
-export const botTeams = players => [0, 1].filter(team => !players.some(p => p.team === team));
+// How many sides a match of these options has.
+export const sidesOf = options => options?.mode === 'ffa' ? FFA_CAPIS : 2;
+// Which of the `sides` the machine plays (no pana in them).
+export const botTeams = (players, sides = 2) => Array.from({ length: sides }, (_, team) => team).filter(team => !players.some(p => p.team === team));
+const makeBots = (sides, difficulty, seed) => Array.from({ length: sides }, (_, team) => createBot({ team, difficulty, seed: seed + 1 + team }));
 
 export class CapisTable {
   constructor(prev = null, random = Math.random) {
@@ -66,7 +70,7 @@ export class CapisTable {
     t.eventN = Math.max(0, ...(state?.events || []).map(e => e.n));
     if (t.phase === 'play') {
       t.match = view;
-      t.bots = [0, 1].map(team => createBot({ team, difficulty: view.options.difficulty, seed: view.seed + 1 + team }));
+      t.bots = makeBots(view.teams, view.options.difficulty, view.seed);
     }
     t.fullEdits = 40;
     return t;
@@ -76,12 +80,22 @@ export class CapisTable {
     const known = this.players.find(p => p.id === id);
     if (known) { Object.assign(known, { name, avatar }); this.revision++; return known; }
     if (this.players.length >= MAX_PLAYERS) return null;
-    const count = team => this.players.filter(p => p.team === team).length;
-    const p = { id, name, avatar, team: smallestTeam([count(0), count(1)], 0) };
+    const p = { id, name, avatar, team: this.seatFor() };
     this.players.push(p); this.revision++;
     // A newcomer needs the whole ground: send every edit for a couple of seconds.
     this.fullEdits = 40;
     return p;
+  }
+  // A newcomer's side: the smaller team, or in a free-for-all the first capi nobody has.
+  seatFor() {
+    const count = team => this.players.filter(p => p.team === team).length;
+    if (this.options.mode === 'ffa') return Array.from({ length: FFA_CAPIS }, (_, team) => team).find(team => !count(team));
+    return smallestTeam([count(0), count(1)], 0);
+  }
+  // The mode changed: everyone sits again, in the order they arrived.
+  reseat() {
+    const all = this.players; this.players = [];
+    for (const p of all) { p.team = this.seatFor(); this.players.push(p); }
   }
   removePlayer(id) {
     const before = this.players.length;
@@ -91,7 +105,7 @@ export class CapisTable {
   // A pana changes team in the lobby (the host may move anyone).
   setTeam(id, team) {
     const p = this.players.find(q => q.id === id);
-    if (this.phase !== 'lobby' || !p || (team !== 0 && team !== 1) || p.team === team) return false;
+    if (this.phase !== 'lobby' || this.options.mode === 'ffa' || !p || (team !== 0 && team !== 1) || p.team === team) return false;
     if (this.players.filter(q => q.team === team).length >= TEAM_MAX) return false;
     p.team = team; this.revision++; return true;
   }
@@ -110,7 +124,9 @@ export class CapisTable {
     if (this.phase !== 'lobby') return false;
     const next = roomOptions(this.options, patch || {});
     if (!next) return false;
-    this.options = next; this.revision++; return true;
+    const moved = next.mode !== this.options.mode;
+    this.options = next; if (moved) this.reseat();
+    this.revision++; return true;
   }
   setSeed(seed) {
     const s = mapSeed(seed);
@@ -120,9 +136,9 @@ export class CapisTable {
 
   start() {
     if (this.phase === 'play' && this.match?.phase !== 'finished') return false;
-    const { seconds, difficulty, size } = this.options;
-    this.match = createMatch({ seconds, difficulty, seed: this.seed, size, looks: this.looks() });
-    this.bots = [0, 1].map(team => createBot({ team, difficulty, seed: this.match.seed + 1 + team }));
+    const { seconds, difficulty, size, mode } = this.options;
+    this.match = createMatch({ seconds, difficulty, seed: this.seed, size, mode, looks: this.looks() });
+    this.bots = makeBots(this.match.teams, difficulty, this.match.seed);
     this.phase = 'play'; this.acc = 0; this.pending = null; this.jumps.clear(); this.fullEdits = 40;
     this.record(takeEvents(this.match)); this.revision++;
     return true;
@@ -218,8 +234,8 @@ export function matchView(m, full = true) {
 export function mirror(view, snap) {
   const s = snap?.match;
   if (!s) return { view: null, gap: false };
-  if (!view || view.map.seed !== s.mapSeed || view.map.size !== s.size || view.edits.length > s.editCount || (s.turn?.n ?? 0) < (view.turn?.n ?? 0)) {
-    view = createMatch({ seed: s.mapSeed, size: s.size, seconds: s.options?.seconds, difficulty: s.options?.difficulty });
+  if (!view || view.map.seed !== s.mapSeed || view.map.size !== s.size || view.mode !== (s.options?.mode || 'teams') || view.edits.length > s.editCount || (s.turn?.n ?? 0) < (view.turn?.n ?? 0)) {
+    view = createMatch({ seed: s.mapSeed, size: s.size, seconds: s.options?.seconds, difficulty: s.options?.difficulty, mode: s.options?.mode });
     view.events.length = 0;
   }
   if (view.edits.length < s.editBase) return { view, gap: true };

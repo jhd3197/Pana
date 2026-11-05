@@ -2,7 +2,7 @@
 import { loc } from '/engine/i18n.js';
 
 export default {
-  goal: loc('Deja a los tres capis rivales fuera: píntalos enteros o túmbalos al río antes que ellos a los tuyos.'),
+  goal: loc('Deja a los capis rivales fuera: píntalos enteros o túmbalos al río. En Todos contra todos, gana el último capi en pie.'),
   howTo: [
     loc('Por turnos, mueve a tu capi, apunta y carga el tiro: mientras más lo mantienes, más lejos llega. Al soltar, sale la pintura.'),
     loc('Un capi con 100 % de pintura o que cae al río queda fuera. Después de disparar tienes 3 segundos para cubrirte.'),

@@ -242,8 +242,13 @@ export function aimErrorOf(difficulty, turn = 1, behind = false) {
 }
 // Is `team` behind: fewer capis standing, or as many with clearly more paint on them?
 export function behindOf(m, team) {
-  const mine = teamAlive(m, team), theirs = teamAlive(m, 1 - team), paint = list => list.reduce((s, c) => s + c.paint, 0);
-  return mine.length < theirs.length || (mine.length === theirs.length && paint(mine) > paint(theirs) + 30);
+  const paint = list => list.reduce((s, c) => s + c.paint, 0), mine = teamAlive(m, team);
+  for (let other = 0; other < m.teams; other++) {
+    if (other === team) continue;
+    const theirs = teamAlive(m, other);
+    if (mine.length < theirs.length || (mine.length === theirs.length && paint(mine) > paint(theirs) + 30)) return true;
+  }
+  return false;
 }
 
 // The most a shot of `w` at `rival` could be worth: all its paint on it and
