@@ -27,11 +27,11 @@ import { Puffs } from '/engine/fx.js';
 import { createBlastFx } from '/engine/play/blast-fx.js';
 import { createRecoil, shakeAt } from '/engine/play/recoil.js';
 import { createScope } from '/engine/play/scope.js';
-import { traceRay } from '/engine/play/projectile.js';
+import { launchAimed } from '/engine/play/projectile.js';
 import { createPose, createSpectateCamera, followPose, overheadPose } from '/engine/play/spectate.js';
 import { traceLob, groundAt } from '/engine/play/lob.js';
 import { guideRibbon, guideBeads, guideRing } from '/engine/play/aim-guide.js';
-import { SIZE, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK, SHOT_HEIGHT, shotCover } from './rules.js';
+import { SIZE, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK, SHOT_HEIGHT, sweepShot } from './rules.js';
 // The shared courts' factory (engine/worlds/arenas.js) loads on first use: see setMap.
 let arenasLoad = null; const loadArenas = () => arenasLoad ??= import('/engine/worlds/arenas.js').catch(error => { arenasLoad = null; throw error; });
 
@@ -231,10 +231,13 @@ export function createScene(canvas) {
   }
   // Paint that stopped against cover splats on that face, not on the paving.
   function stick(mesh, s, cover) {
-    for (const o of cover) {
+    for (const o of s.hy == null || s.hy > .05 ? cover : []) {
       const gx = Math.abs(s.x - o.x) - o.w / 2, gz = Math.abs(s.z - o.z) - o.d / 2;
-      if (gx > .35 || gz > .35) continue;
-      const y = Math.min(1.1, o.h - .35);
+      if (gx > .35 || gz > .35 || o.shots === false) continue;
+      // A ball that flew over this box did not stop on it; one that came down on it lies on its top.
+      if (s.hy > o.h + .01 || (s.hy == null && o.h <= SHOT_HEIGHT)) continue;
+      if (s.hy >= o.h - .01) { mesh.rotation.set(-Math.PI / 2, 0, s.id * 1.7); mesh.position.set(s.x, o.h + .02, s.z); return; }
+      const y = Math.max(.1, Math.min(s.hy ?? 1.1, o.h - .35));
       if (gx > gz) { mesh.position.set(o.x + Math.sign(s.x - o.x) * (o.w / 2 + .02), y, s.z); mesh.rotation.set(0, Math.sign(s.x - o.x) * Math.PI / 2, s.id * 1.7); }
       else { mesh.position.set(s.x, y, o.z + Math.sign(s.z - o.z) * (o.d / 2 + .02)); mesh.rotation.set(0, s.z > o.z ? 0 : Math.PI, s.id * 1.7); }
       return;
@@ -416,16 +419,18 @@ export function createScene(canvas) {
         mesh = new THREE.Mesh(ballGeo, glow ? new THREE.MeshBasicMaterial({ color: b.color }) : material(b.color)); scene.add(mesh); ballMeshes.set(b.id, mesh);
         // Unlit balls with a halo read as tracers in the dark.
         // At 85 m/s a ball jumps 4 m per snapshot: a streak the length of that step joins the dots into one line.
-        if (!b.rocket) { const streak = new THREE.Mesh(streakGeo, streakMaterial(b.color)); streak.scale.z = Math.hypot(b.vx, b.vz) * .05; streak.position.z = -streak.scale.z / 2; mesh.add(streak); mesh.userData.streak = streak; }
+        if (!b.rocket) { const streak = new THREE.Mesh(streakGeo, streakMaterial(b.color)); streak.scale.z = Math.hypot(b.vx, b.vy, b.vz) * .05; streak.position.z = -streak.scale.z / 2; mesh.add(streak); mesh.userData.streak = streak; }
         if (glow) { const trail = new THREE.Sprite(haloMaterial(b.color)); trail.scale.setScalar(1.1); mesh.add(trail); }
       }
       // Rockets fly between 50 ms snapshots along their velocity, so a slow one glides instead of stepping.
       const seen = mesh.userData.seen;
       if (!seen || seen.x !== b.x || seen.z !== b.z) mesh.userData.seen = { x: b.x, z: b.z, t: 0 }; else seen.t += dt;
       const ahead = b.rocket ? Math.min(.06, mesh.userData.seen.t) : 0;
-      mesh.position.set(b.x + b.vx * ahead, SHOT_HEIGHT, b.z + b.vz * ahead); mesh.rotation.y = Math.atan2(b.vx, b.vz);
+      // Along its real line; a slow rocket starts just under your eye, not across it.
+      const low = Math.max(0, .16 - Math.hypot(b.x - b.x0, b.z - b.z0) * .04);
+      mesh.position.set(b.x + b.vx * ahead, b.y + b.vy * ahead - low, b.z + b.vz * ahead); mesh.rotation.set(-Math.atan2(b.vy, Math.hypot(b.vx, b.vz)), Math.atan2(b.vx, b.vz), 0, 'YXZ');
       if (b.kind !== 'bazooka') mesh.scale.setScalar(b.rocket ? ROUND_SIZE[b.kind] ?? 6.9 : 1);
-      if (b.rocket) blasts.trail(b.id, mesh.position.clone().addScaledVector(new THREE.Vector3(b.vx, 0, b.vz).normalize(), -.55), dt);
+      if (b.rocket) blasts.trail(b.id, mesh.position.clone().addScaledVector(new THREE.Vector3(b.vx, b.vy, b.vz).normalize(), -.55), dt);
     }
     blasts.keep(flying);
     for (const [id, mesh] of ballMeshes) if (!flying.has(id)) { mesh.removeFromParent(); mesh.userData.dispose?.(); if (mesh.material?.isMeshBasicMaterial) mesh.material.dispose(); ballMeshes.delete(id); }
@@ -433,12 +438,12 @@ export function createScene(canvas) {
     for (const boom of state.booms || []) {
       if (seenBooms.has(boom.id)) continue; seenBooms.add(boom.id);
       const rocket = !!BOOM_SIZE[boom.kind], size = rocket ? BOOM_SIZE[boom.kind] : boom.radius ? boom.radius / 4.6 : .8;
-      blasts.boom({ x: boom.x, z: boom.z, size, color: boom.color, ...(rocket ? {} : { y: (boom.y || 0) + .5, ground: (boom.y || 0) + .08 }) });
+      blasts.boom({ x: boom.x, z: boom.z, size, color: boom.color, ...(rocket && !boom.y ? {} : { y: (boom.y || 0) + .5, ground: (boom.y || 0) + .08 }) });
       if (me && first) feel.shake(shakeAt(Math.hypot(me.x - boom.x, me.z - boom.z), size));
     }
     if (seenBooms.size > 64) for (const n of seenBooms) if (!(state.booms || []).some(b => b.id === n)) seenBooms.delete(n);
     // A blast's splat lies flat where it blew (a crate top too) and covers its radius.
-    for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id, s.pattern)); if (s.blast) { mesh.rotation.set(-Math.PI / 2, 0, s.id * 1.7); mesh.position.set(s.x, (s.y || 0) + .05 + (s.id % 7) * .002, s.z); } else stick(mesh, s, shotCover(coverFor(state.mapId, state.variant || 0))); scene.add(mesh); splats.set(s.id, mesh); if (s.life > 8.6) puffs.spawn({ x: s.x, y: mesh.position.y > .5 ? mesh.position.y : 1.1, z: s.z }, { color: s.color, count: 3, spread: .3, size: .28, rise: .8, life: .35 }); } mesh.scale.setScalar(Math.min(1, s.life) * (s.blast ? s.radius * 2 / 1.25 : s.radius || 1)); }
+    for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id, s.pattern)); if (s.blast) { mesh.rotation.set(-Math.PI / 2, 0, s.id * 1.7); mesh.position.set(s.x, (s.y || 0) + .05 + (s.id % 7) * .002, s.z); } else stick(mesh, s, coverFor(state.mapId, state.variant || 0)); scene.add(mesh); splats.set(s.id, mesh); if (s.life > 8.6) puffs.spawn({ x: s.x, y: mesh.position.y > .5 ? mesh.position.y : 1.1, z: s.z }, { color: s.color, count: 3, spread: .3, size: .28, rise: .8, life: .35 }); } mesh.scale.setScalar(Math.min(1, s.life) * (s.blast ? s.radius * 2 / 1.25 : s.radius || 1)); }
     for (const [id, mesh] of splats) if (!state.splats.some(s => s.id === id)) { mesh.removeFromParent(); splats.delete(id); }
     // Sticky puddles: a flat translucent pool.
     const puddles=state.puddles||[];
@@ -477,16 +482,16 @@ export function createScene(canvas) {
       const reach = kitStats(p.kit, state.options, p.hand), range = reach.speed * reach.life, cover = coverFor(state.mapId, state.variant || 0);
       const targets = state.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated);
       // The round itself when it is in the snapshot (a hip shot wanders off the aim), else the aim.
-      const ball = state.balls.filter(b => b.owner === p.id && b.kind === p.weapon).at(-1), speed = ball ? Math.hypot(ball.vx, ball.vz) : 0;
-      const dx = speed ? ball.vx / speed : p.ax, dz = speed ? ball.vz / speed : p.az;
-      const length = traceRay(p.x, p.z, dx, dz, range, { boxes: cover, targets, padding: .12, y: SHOT_HEIGHT });
+      const ball = state.balls.filter(b => b.owner === p.id && b.kind === p.weapon).at(-1), speed = ball ? Math.hypot(ball.vx, ball.vy, ball.vz) : 0;
+      const line = speed ? { vx: ball.vx / speed * range, vy: ball.vy / speed * range, vz: ball.vz / speed * range } : launchAimed(p.ax, p.az, p.shotPitch || 0, range);
+      const { t, dx, dy, dz } = sweepShot({ x: p.x, y: p.shotY ?? SHOT_HEIGHT, z: p.z, ...line }, 1, cover, targets), end = Math.min(1, t);
       const from = mine && held?.visible ? held.userData.flash.getWorldPosition(new THREE.Vector3()) : mine ? camera.localToWorld(new THREE.Vector3(.1, -.13, -.35)) : new THREE.Vector3(p.x + p.ax * .7, 1.25, p.z + p.az * .7);
-      blasts.tracer(from, new THREE.Vector3(p.x + dx * length, 1.15, p.z + dz * length), '#fff6d8', mine ? .012 : .025);
+      blasts.tracer(from, new THREE.Vector3(p.x + dx * end, (p.shotY ?? SHOT_HEIGHT) + dy * end, p.z + dz * end), '#fff6d8', mine ? .012 : .025);
     },
     // A puff of paint at a marker's muzzle.
   muzzle(p) { puffs.spawn({ x: p.x + p.ax * .6, y: 1.15, z: p.z + p.az * .6 }, { color: p.color, count: 4, spread: .22, size: .22, rise: .3, life: .16 }); },
   look(yawDelta, pitchDelta = 0) { yaw += yawDelta; pitch = THREE.MathUtils.clamp(pitch + pitchDelta, LOOK_DOWN, LOOK_UP); },
-    // Where the crosshair points on the court (shots fly level).
+    // The look's heading on the court (its pitch is `pitch`).
     forward() { return { x: -Math.sin(yaw), z: -Math.cos(yaw) }; },
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },

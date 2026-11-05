@@ -18,7 +18,7 @@ import { locKey } from '../../../engine/i18n.js';
 import { resetJump, jumpCount } from '../../../engine/play/jump.js';
 import { stepWalker, axisMove } from '../../../engine/play/walker.js';
 import { returnToLobby } from '../../../engine/play/round-lobby.js';
-import { segmentBox, launch, sweep } from '../../../engine/play/projectile.js';
+import { segmentBox, launchAimed, sweepArc } from '../../../engine/play/projectile.js';
 import { shotHeight, headHit, aimedPitch } from '../../../engine/play/head-zone.js';
 import { lobVelocity, stepLob, traceLob, touched, falloff, solveLob } from '../../../engine/play/lob.js';
 import { applyCollisionFixes } from './collision-fixes.js';
@@ -32,10 +32,27 @@ export const SIZE = 27, SPREAD = 1.5, DURATION = 180, TARGET = 10, SPEED = 7, RA
 export const READY_TIMEOUT = 8, COUNTDOWN = 3;
 // Seconds a drawn gun waits before it fires or swings (Arma 1 / Arma 2 swap).
 export const SWAP_TIME = .4;
-// Level shots fly SHOT_HEIGHT m up (where the scene draws the ball): cover
+// A shot with no look (Ver la cancha, most bots) flies level SHOT_HEIGHT m up: cover
 // whose top is at or under it (sandbags, ammo piles, barrels, the snake bunkers)
-// lets them pass over instead of standing as an invisible wall above it.
+// lets it pass over instead of standing as an invisible wall above it. A first-person
+// shot leaves the eye along the look (sweepShot), so it lands under the crosshair.
 export const SHOT_HEIGHT = 1.1;
+// A pana is a shot's target from their feet (lifted by their jump) up to this.
+const PANA_TOP = 1.9;
+// A ball still over this when it leaves the court is in the sky: it marks nothing.
+const OVER_FENCE = 3;
+// A rocket bursting under this blows on the floor; higher up it stays in the air.
+const BLAST_AIR = 1.8;
+// One step of a shot's straight flight ({ x, y, z, vx, vy, vz }), against cover it
+// does not clear in this step, panas and the ground. r.hit is 'cover', 'target' or
+// 'ground'; r.victim the pana (one of `panas`) it hit first; r.t > 1 when nothing did.
+export function sweepShot(ball, dt, cover, panas) {
+  const low = Math.min(ball.y, ball.y + ball.vy * dt);
+  const boxes = cover.filter(o => o.shots !== false && (o.h ?? o.height ?? Infinity) > low);
+  const targets = panas.map(pana => ({ x: pana.x, z: pana.z, y: pana.jumpHeight || 0, pana }));
+  const r = sweepArc(ball, dt, { boxes, targets, padding: .12, radius: .7, height: PANA_TOP, gravity: 0 });
+  return { ...r, victim: r.victim?.pana ?? null };
+}
 // Cover that stops a level shot: the boxes taller than the ball's flight.
 export const shotCover = cover => cover.filter(o => o.shots !== false && (o.h ?? o.height ?? Infinity) > SHOT_HEIGHT);
 // Eight seats (game.json `players`): people plus bots never pass it. Bot ids
@@ -82,8 +99,9 @@ export function cleanInput(input = {}) {
   let x = num(input.x), z = num(input.z), length = Math.hypot(x, z); if (length > 1) { x /= length; z /= length; }
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
   // `alt` (also sent as `throw`) is the alternate attack: La Chancleta's throw.
-  // `look` says a real pitch came (first person); without it no shot can reach a head.
-  return { look: Number.isFinite(input.pitch), x, z, ax, az, weapon: WEAPONS.some(m => m.id === input.weapon) ? input.weapon : null, hand: input.hand === 0 || input.hand === 1 ? input.hand : null, fire: input.fire === true, alt: input.alt === true || input.throw === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, pitch, charge, jump: jumpCount(input) };
+  // `look` says a real pitch came (first person); without it a shot flies level and
+  // cannot reach a head. Input is cleaned on both ends of the wire, so cleaning keeps it.
+  return { look: Number.isFinite(input.pitch) && input.look !== false, x, z, ax, az, weapon: WEAPONS.some(m => m.id === input.weapon) ? input.weapon : null, hand: input.hand === 0 || input.hand === 1 ? input.hand : null, fire: input.fire === true, alt: input.alt === true || input.throw === true, aim: input.aim === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true, pitch, charge, jump: jumpCount(input) };
 }
 // Where a thrown melee weapon leaves pana p's hand: like a grenade, 1.45 m up and
 // 0.45 m ahead, never reaching through the cover p stands against.
@@ -473,16 +491,18 @@ export class Arena {
       if (stats.melee) { if (input.fire && !sprinting && !p.swap && startSwing(p.melee, stats)) p.shield = 0; }
       else if (input.fire && !sprinting && !p.swap && !p.cooldown && !p.reload && p.ammo > 0) {
         const rivals=stats.headshot && !input.look ? this.shotTargets(p) : null;
+        // Where this shot left and at what pitch: a tracer starts its line from them.
+        const shotY=input.look ? EYE + (p.jumpHeight || 0) : SHOT_HEIGHT; p.shotY=shotY; p.shotPitch=input.look ? input.pitch : 0;
         p.ammo--; p.shots++; p.fired++; p.cooldown=stats.cadence; p.shield=0;
         const spread=p.aim && stats.aimSpread!=null ? stats.aimSpread : stats.spread;
         const jitter=stats.pellets===1 ? Math.sin(p.shots*2.4)*spread : 0;
         // Several pellets fan evenly across the spread (three: left, centre, right).
         const angles=stats.pellets>1 ? Array.from({length:stats.pellets},(_,i)=>spread*(2*i/(stats.pellets-1)-1)) : [jitter];
         for(const angle of angles) {
-          const flight=launch(p.ax, p.az, stats.speed, angle), y0=EYE + (p.jumpHeight || 0);
+          const flight=launchAimed(p.ax, p.az, input.look ? input.pitch : 0, stats.speed, angle), y0=EYE + (p.jumpHeight || 0);
           // A headshot marker fired without a look: the server's own pitch at the rival it is aimed at.
           const aimed=rivals && aimedPitch({ x:p.x, z:p.z, y0 }, { x:flight.vx, z:flight.vz }, rivals, { cone:HEAD_CONE, width:HEAD_WIDTH, head:HEAD_AIM, chest:CHEST_Y });
-          this.balls.push({ id:++this.serial, owner:p.id, color:p.color, x:p.x, z:p.z, ...flight,
+          this.balls.push({ id:++this.serial, owner:p.id, color:p.color, x:p.x, y:shotY, z:p.z, ...flight,
           life:stats.life, kind:stats.id, rocket:!!stats.splash, direct:!!stats.direct, damage:stats.damage, falloff:stats.falloff || null, splash:stats.splash || 0, pattern:p.kit.pattern, hand:p.weapon==='rapid'?p.shots%2:0,
           // Where it left (damage fades with the distance flown) and, for a headshot marker,
           // the eye height and pitch its ray climbs or drops at (`aimed`: the pana a derived pitch is for).
@@ -493,10 +513,10 @@ export class Arena {
     for (const ball of this.balls) {
       const owner = this.players.find(q => q.id === ball.owner);
       const targets = this.shotTargets(owner, ball.owner);
-      const { t, victim, dx, dz } = sweep(ball, dt, { boxes: this.cover, targets, padding: .12, y: SHOT_HEIGHT });
-      ball.x += dx * Math.min(1, t); ball.z += dz * Math.min(1, t); ball.life -= dt;
+      const { t, victim, dx, dy, dz } = sweepShot(ball, dt, this.cover, targets);
+      ball.x += dx * Math.min(1, t); ball.y += dy * Math.min(1, t); ball.z += dz * Math.min(1, t); ball.life -= dt;
       if (t <= 1 || outside(this.mapId, ball.x, ball.z)) {
-        ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern });
+        ball.life = 0; if (t <= 1 || ball.y < OVER_FENCE) this.splats.push({ id: ball.id, x: ball.x, hy: ball.y, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern });
         // La Bazuca's direct hit knocks out at once; its splash then catches only the panas beside.
         // La Lejana's head hit knocks out too; its body hits fade with the distance flown.
         if (victim && (ball.direct || !ball.rocket)) {
@@ -570,14 +590,15 @@ export class Arena {
   // blast does not shield; one hit per victim.
   blast(b,radius,damage=1) {
     if(b.exploded) return; b.exploded=true;
-    const owner=this.players.find(p=>p.id===b.owner), y=b.y||0;
+    const owner=this.players.find(p=>p.id===b.owner), y=b.rocket && b.y<BLAST_AIR ? 0 : b.y||0;
     for(const p of this.players) {
       if(p.id===b.owner || !p.connected || p.respawn || p.eliminated || p.shield || (!this.options.friendlyFire && this.sameTeam(p,owner))) continue;
       const share=falloff(Math.hypot(p.x-b.x,p.z-b.z,Math.max(0,y-1.8)),radius);
       if(!share || this.cover.some(o=>(o.h ?? o.height ?? Infinity)>y && segmentBox(b.x,b.z,p.x-b.x,p.z-b.z,o,.01)!==null)) continue;
       this.hit(p,owner,b.color,{ x:p.x-b.x, z:p.z-b.z, blast:true, weapon:b.kind },Math.max(1,Math.round(damage*share)));
     }
-    this.splats.push({id:++this.serial,x:b.x,y,z:b.z,color:b.color,life:9,radius:Math.max(radius,1.6),blast:true,pattern:'splat'});
+    // A rocket that burst in the air has only the mark its ball left, if it touched anything.
+    if(!b.rocket || !y) this.splats.push({id:++this.serial,x:b.x,y,z:b.z,color:b.color,life:9,radius:Math.max(radius,1.6),blast:true,pattern:'splat'});
     // Clients turn each new boom into a flash, a fireball, smoke and a shake sized by the radius.
     this.booms.push({id:++this.serial,x:b.x,y,z:b.z,kind:b.kind||'grenade',color:b.color,radius,life:.6});
   }

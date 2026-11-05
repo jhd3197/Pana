@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo: tus tiros van a donde miras, arriba, abajo o en diagonal.**
+  En primera persona el pepazo sale por la mira: pasa por encima de un pana si apuntas alto, pinta el suelo si apuntas abajo y la mancha queda a la altura real.
 - **¿Quién quiere ser mi pana?: el animador ahora habla de verdad.**
   Las frases se escriben letra por letra con pausas en comas y puntos, cada pana tiene su voz de blips, y quien habla se mueve y pone cara según lo que dice.
 - **Pepazo: la armería ya no te manda a pana.sh cuando ya estás en pana.sh.**

@@ -58,6 +58,15 @@ export function traceRay(x, z, dx, dz, range, { boxes = [], targets = [], paddin
   return Math.min(1, t) * range;
 }
 
+// Velocity for a shot along the flat aim (ax, az) tilted by `pitch` radians (up
+// is positive), turned `angle` radians (spread) around the vertical. The speed is
+// the full 3D one, so a steep shot reaches as far along its line as a level one.
+export function launchAimed(ax, az, pitch, speed, angle = 0) {
+  const length = Math.hypot(ax, az) || 1, flat = speed * Math.cos(pitch) / length;
+  const { vx, vz } = launch(ax, az, flat, angle);
+  return { vx, vy: speed * Math.sin(pitch), vz };
+}
+
 // Seconds a projectile at `speed` needs to cover `distance`: how much a slow rocket must lead.
 export const flightTime = (distance, speed) => speed > 0 ? distance / speed : Infinity;
 
