@@ -11,7 +11,7 @@
 //   fire.feed(1);                          // a log on it: embers, a flare-up, a light spike
 //   pool.position.copy(fire.group.position).add(fire.light); pool.intensity = power * fire.light.intensity;
 import * as THREE from 'three';
-import { addFeed, createCrackle, createEmberPool, flameLayout, fireQuality, FIRE_TUNING, lightState, LAYER, stepFeed } from './fire-sim.js';
+import { addFeed, createCrackle, createEmberPool, flameLayout, fireQuality, FIRE_TUNING, lightState, stepFeed } from './fire-sim.js';
 
 const FLAME_VERTEX = /* glsl */`
   uniform float uTime, uFlare, uLevel, uSway;
@@ -210,4 +210,3 @@ export function createFire({ height = 1, radius = .25, seed = 1, quality = 'medi
     dispose() { flameGeometry.dispose(); flameMaterial.dispose(); emberGeometry.dispose(); emberMaterial.dispose(); group.removeFromParent(); },
   };
 }
-export { LAYER };

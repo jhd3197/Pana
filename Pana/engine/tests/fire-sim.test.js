@@ -50,7 +50,7 @@ test('a feed adds up to its cap and dies away', () => {
   for (let t = 0; t < 4; t += .05) { flare = stepFeed(flare, .05); seen.push(flare); }
   assert.ok(seen.every((v, i) => !i || v <= seen[i - 1]), 'never grows on its own');
   assert.ok(seen[9] < .55 && seen[9] > .25, `half a second in: ${seen[9]}`);
-  assert.equal(seen.at(-1) < .002 ? 0 : stepFeed(seen.at(-1), 20), 0, 'gone, not lingering forever');
+  assert.equal(stepFeed(.001, .05), 0, 'gone, not lingering forever');
   const half = stepFeed(1, 1), steps = stepFeed(stepFeed(1, .5), .5);
   assert.ok(Math.abs(half - steps) < 1e-9, 'the same however the frames fall');
 });
@@ -63,11 +63,9 @@ test('the ember pool never passes its cap, and every ember rises and dies', () =
   const y0 = pool.positions[1];
   for (let i = 0; i < 6; i++) pool.step(.05, i * .05);
   assert.ok(pool.positions[1] > y0, 'it rises');
-  const flewFrom = pool.positions[0];
   for (let i = 0; i < 80; i++) pool.step(.05, i * .05);
   assert.equal(pool.alive, 0, 'all burnt out');
   assert.ok(pool.lives.every(l => l === 0));
-  assert.notEqual(flewFrom, undefined);
   assert.equal(pool.spawn(3), 3, 'and the slots come back');
 });
 

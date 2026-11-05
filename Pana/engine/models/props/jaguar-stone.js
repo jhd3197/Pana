@@ -201,16 +201,15 @@ export function jaguarStatue({ seed = 11, stone = 0x6e5c42, moss = true, scale =
     const glyphs = (length, place) => {
       const cells = Math.round(length / .19), pitch = length / cells, flat = (w, h, u, v, tint) => { const g = new THREE.PlaneGeometry(w, h); kit.add(g, place(u, v), tint); };
       flat(length - .02, .13, 0, .37, carve);
-      const raised = paintRaised;
       for (let i = 0; i < cells; i++) {
         const u = -length / 2 + (i + .5) * pitch;
         if (i % 2) {
           // A step fret.
-          flat(pitch * .62, .022, u, .335, raised); flat(pitch * .34, .022, u - pitch * .14, .37, raised); flat(pitch * .16, .022, u - pitch * .23, .405, raised);
+          flat(pitch * .62, .022, u, .335, paintRaised); flat(pitch * .34, .022, u - pitch * .14, .37, paintRaised); flat(pitch * .16, .022, u - pitch * .23, .405, paintRaised);
         } else {
           // A jaguar's face: a square brow, two ears, eyes and a chin.
-          flat(pitch * .56, .018, u, .405, raised); flat(pitch * .56, .018, u, .335, raised); flat(.016, .075, u - pitch * .28, .37, raised); flat(.016, .075, u + pitch * .28, .37, raised);
-          flat(.02, .018, u - pitch * .2, .427, raised); flat(.02, .018, u + pitch * .2, .427, raised); flat(.018, .018, u - pitch * .11, .372, raised); flat(.018, .018, u + pitch * .11, .372, raised);
+          flat(pitch * .56, .018, u, .405, paintRaised); flat(pitch * .56, .018, u, .335, paintRaised); flat(.016, .075, u - pitch * .28, .37, paintRaised); flat(.016, .075, u + pitch * .28, .37, paintRaised);
+          flat(.02, .018, u - pitch * .2, .427, paintRaised); flat(.02, .018, u + pitch * .2, .427, paintRaised); flat(.018, .018, u - pitch * .11, .372, paintRaised); flat(.018, .018, u + pitch * .11, .372, paintRaised);
         }
       }
     };

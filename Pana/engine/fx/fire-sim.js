@@ -96,7 +96,7 @@ export function createEmberPool({ cap = 14, seed = 1, radius = .25, height = 1 }
   const { span, rise, drift, turbulence, drag } = FIRE_TUNING.embers, R = rng(seed * 104729 + 7), max = Math.max(1, cap);
   const positions = new Float32Array(max * 3), lives = new Float32Array(max), velocity = new Float32Array(max * 3), spans = new Float32Array(max), phases = new Float32Array(max);
   for (let i = 0; i < max; i++) { phases[i] = R() * 6.2831; positions[i * 3 + 1] = -1e4; }
-  let limit = max, alive = 0, next = 0, due = 0;
+  let limit = max, alive = 0, due = 0;
   function spawn(n = 1) {
     let made = 0;
     for (let i = 0; i < limit && made < n; i++) {
@@ -127,7 +127,7 @@ export function createEmberPool({ cap = 14, seed = 1, radius = .25, height = 1 }
         velocity[s + 1] *= Math.exp(-drag * dt);
         positions[s] += velocity[s] * dt; positions[s + 1] += velocity[s + 1] * dt; positions[s + 2] += velocity[s + 2] * dt;
       }
-      next = alive; return next;
+      return alive;
     },
   };
 }
