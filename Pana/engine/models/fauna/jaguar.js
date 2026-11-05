@@ -9,8 +9,6 @@
 //                 breathes, looks about and flicks the tail tip
 // melanistic: true gives the black jaguar of the deep selva; gold: true a
 // cursed jaguar of living gold with glowing eyes (Reliquia's vault boss).
-// jaguarForm and sitPose are shared with the stone carvings in
-// props/jaguar-stone.js.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rng } from '/engine/models/core/primitives.js';

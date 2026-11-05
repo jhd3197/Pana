@@ -320,7 +320,16 @@ panel, its name and a bar that is its attention (`e.alert`), not health.
 ### Hiding nooks (`run.nooks`, `dealLair` in `deck.js`)
 
 Two stone slabs against a wall leave a 1.25 m gap, 1.5 m deep, with a chalk hand on
-the lintel and no text (`hideNook`). The boss's body (`SILBON_BODY`, .72 m radius)
+the lintel and no text (`hideNook`). It has to read as a door you can walk through,
+because that is the only tutorial it gets: a pale sill crosses the threshold, flags
+run inside, and the back wall is warm unlit courses around a candle on a ledge (one
+`userData.flames` point, so the floor's `candleFlames` draws it; no light of its
+own). `dress` in `scene.js` hangs nothing within 1.2 m of a nook's rect: a relief
+on the wall behind one stands in the opening and reads as a blocked doorway. The lane
+a .42 m body fits through is only .41 m wide, so a pana stopped by a slab within
+.95 m of the middle slides along it into the opening (`nookFunnel` in `deck.js`,
+called from the walker's `move` in `rules.js`, so it is the same for host and guest
+and draws nothing random). The boss's body (`SILBON_BODY`, .72 m radius)
 does not fit; a pana's (.42) slips in and out. Edges sit on the .25 m collision
 grid (hence the odd eighth in `dig`). Three in the pit room, sometimes one or two
 in others, never in the entrance, the vault or a hidden room; dealt last from their
@@ -521,6 +530,38 @@ calls. Software WebGL is
 pixel-bound, so compare calls and triangles, not milliseconds. The host's
 20 Hz timer shares the main thread with drawing: a host whose GPU lags
 also simulates and publishes less often, which guests feel as lag.
+**Fires** are the shared `engine/fx/fire.js` (`docs/SHARED-ENGINE.md`, "Fire"): every
+brazier and the camp's campfire, two draws each. A brazier's bowl now bakes with the
+floor (it was four animated cones on top of its own draws), and `brazier({ lit: false })`
+is the coal bed under the flame. The flame is premultiplied and partly opaque, because
+the headlamp lights the wall behind it to near-white and added light alone burns out to
+a white smear there. The view's pool lights keep their fixed number: a source with a
+`fire` takes its intensity, wander and colour from `fire.light` every frame, and
+lanterns keep the old breathing. Blackouts dim the flames through `world.candles`
+(`setLevel`). `world.feedFires` flares the ones nearby when a tunnel caves in and when
+la codicia rises, and all of a floor's when a blackout ends. The roar is one looping
+noise band in `ambience.js` following `world.fireNear`, and crackles arrive through
+`view.onFx` from the moment a spark pops. Candles keep their own instanced shader:
+they are tiny, and the library has hundreds of them.
+
+**Cave-ins** break with `engine/fx/rock-crack.js` (`docs/SHARED-ENGINE.md`, "Rock cracks"),
+which `syncRubble` in `scene.js` loads with the first cave-in, off the first-load budget.
+It reads only `state.rubble[id] / RUBBLE_HOLD`, so guests see it from the snapshot and it
+cannot change play: hold time, who can dig and the host's authority are the rules' as
+before, and its random numbers are its own. A heap's sides are inside the tunnel walls,
+so the cracks are aimed at the two ends (`faces`) and spread over the tunnel's width. The
+shared stone goes white under a headlamp, which swallows an emissive crack, so heaps use
+darker clones of its materials and each crack has a dark edge round its glow. A blow
+knocks your hand (`hands.knock`) and jolts the view a little only while you are the one
+holding E within 5 m, never on reduced motion, and the Sustos setting scales it as every shake.
+
+**The stone jaguar** (`jaguarStatue`, `engine/models/props/jaguar-stone.js`) is one
+mesh with one vertex-coloured, flat-shaded material, painted facet by facet: it bakes
+to a single draw, 2.1 k triangles where the old one was 37 meshes and 7.9 k. The headlamp bleaches a pale stone to cream at 3 m, so the stone is
+a dark sandstone; moss goes on steep-up facets of the cat and comes as clumps on the
+plinth, whose tops are one big facet each. The red ring players see around it in
+`derrumbe` is the falling rocks' warning (`rockRings` in `view.js`), not the
+statue's own: it has no behaviour of its own and no collision, as before.
 Static decor is baked per floor; braziers animate; crystal clusters are
 instanced with their own shader and must not go through `bake`. A revealed
 hidden room rebuilds that floor's shell once. Every item kind has one

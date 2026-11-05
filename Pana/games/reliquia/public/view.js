@@ -89,7 +89,9 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   // torches and candles (light), your own lamps (farol), the fog distance
   // (fog, a multiplier) and candles blown out around a point (out).
   const mood = { light: 1, farol: 1, fog: 1, out: null };
-  let world = createExpeditionWorld({ seed, depth }); scene.add(world.group);
+  // What the world sets off that only makes sound: game.js listens.
+  const onFx = e => { if (e.type === 'dust') puffs.spawn({ x: e.x, y: e.y, z: e.z }, { color: lookName === 'biblioteca' ? 0x8e949c : 0xb8a888, count: Math.round(2 + e.strength * 3), spread: .3 + e.strength * .7, size: .16 + e.strength * .14, rise: .55, life: .75 }); else view.onFx?.(e); };
+  let world = createExpeditionWorld({ seed, depth, onFx }); scene.add(world.group);
   const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign); // i18n-ignore: signage painted in the world
   const puffs = new Puffs(scene), waves = new Shockwaves(scene), swarm = createSwarmView({ scene, puffs });
   // Your gloves and sleeves: the suit's colour, holding the two hand items in view.
@@ -110,6 +112,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const avatars = new Map(), enemies = new Map(), carts = new Map(), tmp = new THREE.Vector3();
   let lastState = null, snapAt = 0;
   let veil = 0, scares = 'normal', dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = '', look = CAMP_LOOK, poolAt = 0, wallPush = 0, shakeScale = 1;
+  const baseColor = new THREE.Color();
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
   function setLook(name) {
@@ -362,20 +365,28 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       const [candleColor, candlePower, candleReach] = look.candle || DEEP_LOOK.candle;
       // A burning flare outranks every torch: it is why you threw it.
       if (vf > 0) for (const s of state.flares || []) if (floorOf(s.x) === vf) sources.push({ x: s.x, y: s.y + .4, z: s.z, color: 0xff4a2a, power: 16, reach: 13, d: Math.hypot(s.x - me.x, s.z - me.z) - 14, flare: true });
-      if (vf === 0) for (const l of world.campLamps) sources.push({ ...l, d: Math.hypot(l.x - me.x, l.z - me.z) });
-      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z) });
+      if (vf === 0) for (const l of world.campLamps) sources.push({ ...l, d: Math.hypot(l.x - me.x, l.z - me.z), fire: world.fireAt(0, l.x, l.z) });
+      if (vf > 0) for (const l of world.run.lights) if (l.floor === vf) sources.push({ x: l.x, y: l.kind === 'candelabra' ? 1.95 : 1.6, z: l.z, color: l.kind === 'mineLamp' ? 0xffc070 : l.kind === 'candelabra' ? candleColor : 0xff9a3a, power: l.kind === 'candelabra' ? candlePower : 7, reach: l.kind === 'candelabra' ? candleReach : 11, d: Math.hypot(l.x - me.x, l.z - me.z), fire: l.kind === 'brazier' ? world.fireAt(vf, l.x, l.z) : null });
       for (const p of state.players) if (p.id !== me.id && alive(p) && floorOf(p.x) === vf && (holds(p, 'farol') || holds(p, 'sunCrown'))) sources.push({ x: p.x, y: 1.4, z: p.z, color: holds(p, 'sunCrown') ? 0xffd36a : look.hand || 0xffa850, power: 8, reach: 11, d: Math.hypot(p.x - me.x, p.z - me.z) - 6 });
       sources.sort((a, b) => a.d - b.d);
       // The last two slots go to the nearest glowing mushrooms: no extra lights,
       // and the warm sources they displace are the farthest of the five.
       const glows = (world.floors.get(vf)?.glows || []).map(g => ({ ...g, power: MUSHROOM_LIGHT.power, reach: MUSHROOM_LIGHT.reach, d: Math.hypot(g.x - me.x, g.z - me.z) })).filter(g => g.d < MUSHROOM_LIGHT.within).sort((a, b) => a.d - b.d).slice(0, 2);
       sources.splice(POOL - glows.length, sources.length, ...glows);
-      pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; light.userData.flare = !!s?.flare; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); light.distance = s.reach; } });
+      pool.forEach((light, i) => {
+        const s = sources[i], u = light.userData; u.power = s && s.d < 30 ? s.power : 0; u.flare = !!s?.flare; u.fire = s?.fire || null;
+        if (s) { u.x = s.x; u.y = s.y; u.z = s.z; u.color = s.color; light.position.set(s.x, s.y, s.z); light.color.set(s.color); light.distance = s.reach; }
+      });
     }
     // La codicia shows in the world: torches gutter and dust sifts from the ceiling.
     const greed = Math.min(4, Math.floor((state.codicia || 0) / 25));
     // A slow, uneven breathing on every flame, under the quick gutter.
-    pool.forEach((light, i) => { light.intensity = (light.userData.power || 0) * mood.light * (light.userData.flare ? 1 : out) * (1 - greed * .1) * (.85 + Math.sin(t * (9 + greed * 4) + i * 2) * (.1 + greed * .06)) * (.9 + .1 * Math.sin(t * 1.3 + i * 1.7) * Math.sin(t * .37 + i)); });
+    // A real fire drives its own light: it wanders so the shadows dance, and spikes when fed.
+    pool.forEach((light, i) => {
+      const u = light.userData, fire = u.fire?.light, breath = fire ? fire.intensity : (.85 + Math.sin(t * (9 + greed * 4) + i * 2) * (.1 + greed * .06)) * (.9 + .1 * Math.sin(t * 1.3 + i * 1.7) * Math.sin(t * .37 + i));
+      light.intensity = (u.power || 0) * mood.light * (u.flare ? 1 : out) * (1 - greed * .1) * breath;
+      if (fire) { light.position.set(u.x + fire.x, u.y + fire.y, u.z + fire.z); baseColor.set(u.color); light.color.setRGB(baseColor.r, baseColor.g * (.9 + fire.warmth * .2), baseColor.b * (.75 + fire.warmth * .5)); }
+    });
     dustAt -= dt;
     if (me && vf > 0 && greed > 0 && dustAt <= 0) {
       dustAt = 1.6 / greed;
@@ -397,7 +408,8 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   }
   function resize() { canvas.style.width = '100vw'; canvas.style.height = '100dvh'; renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); camera.aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight); camera.updateProjectionMatrix(); }
   addEventListener('resize', resize); resize();
-  return {
+  const view = {
+    onFx: null,
     renderer, scene, camera, puffs, waves, avatars, enemies, swarm, hands, draw, bark, mood,
     get lookName() { return lookName; },
     // The Sustos setting scales every camera shake (0 turns it off).
@@ -412,7 +424,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     movement(x, z) { return { x: -x * Math.cos(h) - z * Math.sin(h), z: x * Math.sin(h) - z * Math.cos(h) }; },
     shake(amount) { shake = Math.min(1.3, shake + amount); },
     // A new run has a new deck: rebuild the world from its seed.
-    reseed(next, depth, theme) { if (world.run.seed === next && world.run.depth === depth && (!theme || world.run.theme === theme)) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, depth, theme }); scene.add(world.group); },
+    reseed(next, depth, theme) { if (world.run.seed === next && world.run.depth === depth && (!theme || world.run.theme === theme)) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, depth, theme, onFx }); scene.add(world.group); },
     dispose() {
       removeEventListener('resize', resize); unbind?.(); puffs.clear(); waves.clear();
       for (const [id, a] of avatars) removeAvatar(a, id);
@@ -423,4 +435,5 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
       renderer.dispose();
     },
   };
+  return view;
 }
