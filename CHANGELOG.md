@@ -16,6 +16,11 @@ becomes the GitHub release's notes.
   Agazapado sobre su plinto, con colmillos, cola enrollada, manchas talladas y musgo; el jaguar de oro estrena la misma forma.
 - **Fosa: las puertas de piedra con la mano de tiza ahora se ven como lo que son: un escondite.**
   Adentro hay una vela encendida y nada tapa la entrada. Si caminas hacia ella un poco de lado, te deslizas adentro.
+- **Conuco: tu propio pedazo de tierra.**
+  Arregla tu casa con mangos, siembra y cosecha aunque cierres el juego, compra en una tienda que cambia cada cuatro horas para todos y gana adornos al subir de rango.
+- **Trifulca: cada golpe se ve en la barra y en el aire.**
+  La barra se vacía de verde a rojo, el pedazo perdido destella antes de bajar, los números saltan del golpeado y los trompones estampan su número con chispas.
+
 - **Fosa: el campamento ahora es una caverna enorme.**
   Un lago quieto, columnas de roca, cascadas a lo lejos, hongos que brillan y un rostro de piedra tallado bajo el reflector. Se baja por el montacargas y se vuelve subiendo hasta la misma caverna.
 - **Fosa: Sobretiempo, ¿se quedan un rato más?**

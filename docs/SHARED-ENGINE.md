@@ -55,6 +55,29 @@ renderContinue(node, store.list(), { describe: s => `${s.meta.round}`, onContinu
 
 Used by: Fosa. Notes: `docs/knowledge/reliquia.md`, "Saved expeditions".
 
+## Home plot
+
+`engine/plot/` (no DOM, no Three.js). `plot.js`: `createPlot({ game, crops, tiers,
+decor, shop, wallet, progress })` keeps a player's plot under `pana:plot:<game>`, in
+the same shape as `progress.js` (injectable storage and clock, memory when storage
+is blocked, a broken save is cleaned): `plant`, `harvest`, `harvestAll` (mangos and
+XP each with a receipt from the plant, so they pay once), `upgrade`, `buy`,
+`setDecor`, `isDecorUnlocked`, `stock`, `onChange`, and `view()` for what a page
+draws. `growth.js`: `cropState(planted, crop, now)` is the whole of real-time and
+offline growth, from a timestamp (`seed`, `sprout`, `young`, `ready`, `wilted`), and
+`WILT` is how gentle neglect is: a day fresh, a day wilting, then half pay forever,
+never dead. `rotation.js`: `rotatingStock(catalog, { salt, window, size, qty })` with
+`rotationWindow(now, period)` is a shelf the same for everyone at the same moment,
+from epoch time with no server. It walks a seeded shuffle, so an item returns only
+after the rest. The tables are the game's. Models: `engine/models/props/conuco.js`.
+
+```js
+const plot = createPlot({ game: 'conuco', crops: CROPS, tiers: TIERS, decor: DECOR, shop: SHOP, wallet: createMangoWallet(), progress });
+plot.plant(0, 'maiz'); plot.view().beds[0].stage; plot.harvest(0); plot.stock().items;
+```
+
+Used by: Conuco. Tests: `engine/tests/plot.test.js`. Notes: `docs/knowledge/conuco.md`.
+
 ## On foot
 
 ### Player controller (walk, sprint, stamina, collision)
@@ -907,6 +930,18 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Minimap | one per game | Bululú, Carreritas, Curiara, Embuste, Escondidas, Galope, Lancha, Pepazo, Reliquia each draw their own (Curiara and Lancha share `river/minimap`) |
 | Shot charge and aim guide (`guideRibbon` strips, `guideBeads` for an arc in the air, `guideRing` for a landing or blast ring) | `engine/play/shot-charge.js`, `aim-guide.js` | Billar, Bululú, Capis a Pintazos, Criollas, Pepazo (charge: the grenade throw); Billar, Capis a Pintazos (dashed arc), Criollas (guide), Pepazo (grenade arc, ground strip and blast ring) |
 
+### Game feel (damage, pixel effects)
+
+Everything here only draws: no rules, no physics. `engine/fx/feel.js` holds what
+they share: `calm()` (the browser's reduced-motion setting; the engine has none of
+its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
+
+| Piece | Module | Used by |
+|---|---|---|
+| Health bar: smooth drain, the lost chunk flashes white, orange, red, holds and drains; green, yellow, red by what is left; sparkles at the edge on a heal (`createDamageBar`, pure `createBarModel`) | `engine/fx/damage.js`, `damage.css` | Trifulca |
+| Damage numbers: pop, fan out on arcs, scale with the amount; white, orange with jitter on a crit, green on a heal (`createDamageNumbers`); drawn-only knockback spring (`createKnock`) | `engine/fx/damage.js` | Trifulca |
+| Pixel effects as camera-facing sprites (`createWorldFx(THREE, scene)`) or on the HUD layer (`createScreenFx`): pooled, capped, loaded on first use so first load doesn't grow | `engine/fx/pixelfx-bridge.js`, code in `engine/vendor/pixelfx/` (MIT; keep its `LICENSE` and `NOTICE.md`; add an effect through its `README.md`) | Trifulca (`hit-spark`, `crit-hit`, `crit-number`) |
+
 ## Player, look and rewards
 
 | Piece | Module | Used by |
@@ -917,8 +952,8 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Menu card pictures of any 3D object (built, framed by its bounds, drawn once on the shared offscreen renderer, cached by key; `keep(mesh)` draws one part alone) | `engine/object-thumb.js` (`objectThumb(key, build, { width, height, turn, tilt, keep, margin })`) on `engine/snapshot.js` | Pepazo (armory cards: every weapon, part, charm and grenade) |
 | Wardrobe | `engine/wardrobe.js`, `wardrobe-preview.js` | Bochinche, Carreritas, Pepazo, Trifulca (the page also loads `wardrobe-preview` through `pana.sh`) |
 | Friend-named bots (the top 2-3 bots wear the names of the player's friends; `applyFriendNames`, `friendNamesNow`, `loadFriendNames`, `cleanJoinNames`) | `engine/bot-names.js`; server rooms use `hostFriendNames()` in `server/src/room-kit.js`, `engine/net.js` sends the list on join | Bochinche, Billar, Bululú, Caída, Carreritas, Chapita, Criollas, Curiara, Dominó, Embuste, Escondidas, Galope, Lancha, Ludo, Parapente, Pepazo, Póquer, QQSMP, Stop, Tambor, Trifulca |
-| Mangos (shared currency) | `engine/mangos.js` | Bochinche, Carreritas |
-| Rank and XP per game, on this device (`createProgress({ game, ranks, storage })`: `award(amount, receipt, { dive })` pays once and counts a dive unless `dive: false`, `rank`, `xp`, `isUnlocked`, `onChange`; pure `rankAt`, `nextRank`, `progressInRank`, `unlocksAt`, safe in rules and tests). The look: `createRankChip(progress)` (`.pk-rank`: title, thin XP bar, `gain(n)` for "+N XP") and `rankUpToast(result, show)` for a `createFeats` or `createToast` | `engine/progress.js`, `engine/progress-ui.js`; tests `engine/tests/progress.test.js` | Reliquia (`games/reliquia/public/progress.js`: the ranks and `xpFor`) |
+| Mangos (shared currency; `spend` takes them or changes nothing, `peek` reads without adopting Carreritas' old coins) | `engine/mangos.js` | Bochinche, Carreritas, Conuco |
+| Rank and XP per game, on this device (`createProgress({ game, ranks, storage })`: `award(amount, receipt, { dive })` pays once and counts a dive unless `dive: false`, `rank`, `xp`, `isUnlocked`, `onChange`; pure `rankAt`, `nextRank`, `progressInRank`, `unlocksAt`, safe in rules and tests). The look: `createRankChip(progress)` (`.pk-rank`: title, thin XP bar, `gain(n)` for "+N XP") and `rankUpToast(result, show)` for a `createFeats` or `createToast` | `engine/progress.js`, `engine/progress-ui.js`; tests `engine/tests/progress.test.js` | Reliquia (`games/reliquia/public/progress.js`: the ranks and `xpFor`), Conuco (`games/conuco/public/rules.js`) |
 | A game's day and streak (one seed and one rotating set per local date; pure `dayKey`, `dayNumber`, `isDayKey`, `dailySeed(game, day)`, `pickDaily(list, day)` walks the whole list before repeating. `createStreak({ game, storage, now })` under `pana:streak:<game>`: `record(day)` once a day gives `{ days, best, freezesLeft, usedFreeze, milestone }` (3, 7, 14, 30), a freeze every 7 days up to 2 covers one missed day; `peek(day)` reads without counting) | `engine/daily.js`; tests `engine/tests/daily.test.js` | Reliquia (`games/reliquia/public/daily.js`) |
 | Feats, stats, kit rating | `engine/feats.js`, `stats.js`, `kit-rating.js` | Feats: Bochinche, Carreritas, Pepazo. Stats and kit rating: Carreritas, Pepazo |
 | Text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`) | all 24 |

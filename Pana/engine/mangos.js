@@ -34,6 +34,17 @@ export function createMangoWallet(storage = defaultStorage()) {
       write({ ...doc, balance: doc.balance + Math.max(0, Math.floor(amount) || 0), receipts: receipt ? [...doc.receipts, receipt] : doc.receipts });
       return true;
     },
+    // What this device holds now, without adopting a seed: for a game that must
+    // leave an older Carreritas hand-over for Carreritas.
+    peek: () => read()?.balance ?? 0,
+    // Takes mangos only if they are all there; false changes nothing. A wallet
+    // still waiting for that hand-over keeps waiting.
+    spend(amount) {
+      const cost = Math.max(0, Math.floor(amount) || 0), doc = read() ?? { ...clean(), seeded: false };
+      if (doc.balance < cost) return false;
+      write({ ...doc, balance: doc.balance - cost });
+      return true;
+    },
     paid: receipt => (read()?.receipts ?? []).includes(receipt),
     // Another tab changed the balance (a fight paid out while the taller is open).
     onChange(fn) {

@@ -343,3 +343,11 @@ notices and night titles also travel as source. `deviceText` in `hud.js`
 swaps key names on already translated text, so an English translation keeps
 "Space", "or left click", "or right click" and "D or the right arrow" word for
 word and never uses I, O, T, L, K, J or U as ordinary words.
+
+## The fighter's bar
+
+The big bar shows `100 - mareo`, so it empties as the mareo climbs; the rules
+still only know mareo. `public/hud-damage.js` reads damage from how each body's
+mareo changed between snapshots, so anything that raises it counts, and marks a
+crit from the events (`trompon`, or a hit with `counter`, `contra` or `armed`).
+The knockback in `scene.js` is a drawn-only spring on top of the rules' position.

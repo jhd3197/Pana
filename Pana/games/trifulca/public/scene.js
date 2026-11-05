@@ -11,6 +11,9 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
 import { Puffs, Shockwaves } from '/engine/fx.js';
+import { calm } from '/engine/fx/feel.js';
+import { createKnock } from '/engine/fx/damage.js';
+import { createWorldFx, preloadFx } from '/engine/fx/pixelfx-bridge.js';
 import { arenaOf, arenaIdOf, crowdSpot } from './fight-rules.js';
 import { ringside, stepRingside } from './ringside.js';
 import { arenaSteps } from './arenas.js';
@@ -50,6 +53,8 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   const sky = scene.children.find(o => o.material?.uniforms?.daylight);
   const own = new THREE.Group(); scene.add(own);
   const impacts = createCombatImpacts(scene);
+  const sparks = createWorldFx(THREE, scene);
+  preloadFx('hit-spark', 'crit-hit').catch(console.warn);
   const puffs = new Puffs(scene), rings = new Shockwaves(scene);
   const panas = new Map(), props = new Map();
   let arena = null, arenaId = null, dressed = null, spare = null, npcs = [], ref = null, current = null, time = 0;
@@ -166,7 +171,20 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     // The hit fighter flashes; a heavy blow also freezes the pose and shakes the camera.
     const heavy = e.type === 'trompon' || e.type === 'caida' || e.move === 'kick' || e.counter || e.contra || e.armed || e.chain >= 2;
     if (who && ['hit', 'trompon', 'shove', 'impacto', 'caida'].includes(e.type)) who.flash(heavy ? 1 : .7);
+    if (at && ['hit', 'trompon'].includes(e.type)) {
+      // Pixel sparks on the side the blow came from, spraying along it.
+      const from = panas.get(e.by)?.pos, toward = from ? from.clone().sub(at).setY(0).normalize() : v();
+      const right = v(1, 0, 0).applyQuaternion(camera.quaternion);
+      sparks.play(heavy ? 'crit-hit' : 'hit-spark', at.clone().addScaledVector(toward, .35).add(v(0, (e.move === 'sweep' ? .4 : 1.3) + floor(), 0)), { flip: toward.dot(right) > 0, height: 0 });
+    }
     if (heavy && ['hit', 'trompon', 'caida'].includes(e.type)) { hitStop = Math.max(hitStop, e.type === 'hit' ? .05 : .08); shake = Math.max(shake, .32); }
+    if (['hit', 'trompon', 'shove', 'impacto'].includes(e.type) && entry) {
+      // Every clean blow: a small tremble and the body snapping back from the fist.
+      // Drawn only: the rules still own where the fighter stands.
+      if (!calm()) shake = Math.max(shake, .12);
+      const from = panas.get(e.by)?.pos, away = from ? at.clone().sub(from).setY(0).normalize() : v();
+      (entry.knock ??= createKnock()).kick(away.x, away.z, heavy ? 5.5 : 3);
+    }
     // Which side the blow came from, in the victim's facing frame (for stagger).
     const side = (by) => {
       const from = panas.get(by)?.pos;
@@ -238,7 +256,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   }
 
   function frame(dt) {
-    impacts.update(dt, camera);
+    impacts.update(dt, camera); sparks.tick(dt);
     time += dt; zoomT = Math.max(0, zoomT - dt); shake = Math.max(0, shake - dt * 1.4);
     prepareNext();
     const frozen = hitStop > 0; hitStop = Math.max(0, hitStop - dt);
@@ -258,6 +276,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       else if (!still) { stepRingside(entry.pos, goal, shape, inPlay, dt, { rate: 14, speed: 6 }); entry.pos.y += (goal.y - entry.pos.y) * k; }
       let dh = t.h - entry.h; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); entry.h += dh * k;
       entry.pana.root.position.copy(entry.pos); entry.pana.root.rotation.y = entry.h;
+      if (entry.knock) { const off = entry.knock.step(dt); entry.pana.root.position.x += off.x; entry.pana.root.position.z += off.z; }
       entry.pana.setCorner(t.corner);
       entry.pana.showTag(!t.corner);
       const view = { ...t.view };
@@ -405,6 +424,16 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     camera.updateProjectionMatrix();
   }
 
+  // Where a fighter's head is on the screen, for the numbers over it.
+  function screenAt(id, lift = 2.15) {
+    const at = panas.get(id)?.pos;
+    if (!at) return null;
+    const p = v(at.x, at.y + lift, at.z).project(camera);
+    if (p.z > 1) return null;
+    const box = renderer.domElement.getBoundingClientRect();
+    return { x: box.left + (p.x + 1) / 2 * box.width, y: box.top + (1 - p.y) / 2 * box.height };
+  }
+
   // Screen right and screen up as world directions on the ground, for the stick.
   function stickBasis() {
     const forward = v(); camera.getWorldDirection(forward); forward.y = 0; forward.normalize();
@@ -413,7 +442,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   }
 
   function dispose() {
-    impacts.dispose();
+    impacts.dispose(); sparks.dispose();
     for (const entry of panas.values()) entry.pana.dispose();
     for (const entry of props.values()) entry.model.userData.dispose?.();
     if (spare) undress(spare);
@@ -421,6 +450,6 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     ref?.dispose(); lampLights.forEach(l => l.removeFromParent());
     puffs.clear(); rings.clear(); stage.dispose();
   }
-  const api = { renderer, scene, camera, update, react, frame, stickBasis, dispose, setArena, debugCamera: null, panas, get replaying() { return replay.on; }, get arenaId() { return arenaId; }, get refPos() { return ref?.pos ?? null; }, get cameraSide() { return sideIndex; }, get spareArena() { return spare?.id ?? null; }, get neighbours() { return npcs.length; }, get neighboursWanted() { return dressed?.spots.length ?? 0; } };
+  const api = { renderer, scene, camera, update, react, frame, stickBasis, screenAt, dispose, setArena, debugCamera: null, panas, get replaying() { return replay.on; }, get arenaId() { return arenaId; }, get refPos() { return ref?.pos ?? null; }, get cameraSide() { return sideIndex; }, get spareArena() { return spare?.id ?? null; }, get neighbours() { return npcs.length; }, get neighboursWanted() { return dressed?.spots.length ?? 0; } };
   return api;
 }
