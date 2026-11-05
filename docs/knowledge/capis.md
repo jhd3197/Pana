@@ -487,6 +487,18 @@ throw that lands safely closest to the rival, either way, else the one that
 lands furthest from its team (`safeShot`: a capi boxed in a pit). It never
 spends a scarce shot on a hopeless one.
 
+**Looking for a shot.** Most matches at the limit were not walled off: both
+sides stood still, lobbing throws that landed close and painted nobody. A low
+wall or a two-unit ditch ended the walk, and a rival within `APPROACH` never
+started one. So when no paint has landed for two of a team's turns (`quiet`)
+and nothing is feasible from here, the plan has `seek`: it walks whatever the
+range, weighs the shots again every 3 units and stops at the first feasible
+one. Blocked, it hops if that lands dry (`seekOn`), else turns back once. It
+may go on towards water only while it could still walk back (`canReturn`): a
+bank can carry a capi on, and looking only ahead at the edge drowned capis
+mid-walk. If it finds nothing it digs (`digPlan`) even when a lob would land
+within `DIG_MISS`, since that lob opens nothing.
+
 **Aiming.** `aimErrorOf(difficulty, turn, behind)`: the shared difficulty's
 `aimError` (`engine/play/difficulty.js`), scaled ×3 for the angle and ×1.6
 for the power (half for a bounce: its power carries further along the
@@ -501,7 +513,9 @@ before: none of this touches the rules.
 
 **The cost.** About 12 to 18 ms a turn on average and 40 to 56 ms at most on
 an idle machine (the worst turns: a search, a walk and a second search from
-where it ended); a busy machine can multiply both.
+where it ended); a busy machine can multiply both. A turn spent looking for a
+shot searches every 3 units, spread over its frames: up to 130 ms over the
+turn for experto, 260 ms for fácil, whose scarce shots last longer.
 
 **The turn limit.** Two teams that cannot get at each other (three capis
 stuck in a crater, the last rival out of range) would play forever, so after
@@ -509,10 +523,11 @@ stuck in a crater, the last rival out of range) would play forever, so after
 wins, then the one with less paint, else a draw (`byCount`, `endedBy:
 'turns'`, a toast and its own line on the results card). Over 330
 bot-against-bot matches (120 fácil, 90 normal, 120 experto on every size and
-kind) 5.0 %, 3.3 % and 1.7 % end there (the weapon picker's first bot: 30,
-10 and 8 %); `map-matches.test.js` runs 40, 30 and 40 of them. What is left
-is geometry: a capi on a pillar in the sea or in a pit the jump cannot
-leave, 50 to 90 units from the last rival, with a hill between. A match can
+kind) 5.0 %, 3.3 % and 4.2 % end there (7.5, 5.6 and 6.7 % on the same maps
+before the bot looked for a shot; the weapon picker's first bot: 30, 10 and
+8 %); `map-matches.test.js` runs 40, 30 and 40 of them. What is left is
+mostly geometry: a capi on a pillar in the sea or in a pit the jump cannot
+leave, with a hill or a wide water between it and the last rival. A match can
 never stall on ammo: La Piñita never runs out.
 
 **The mix** over those 330 matches: La Piñita 45 to 56 % of the shots
