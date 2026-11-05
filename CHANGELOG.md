@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Dominó y Caída: las fichas y las cartas ahora pesan.**
+  Se levantan y se inclinan hacia el puntero, crecen con su sombra al tomarlas, se mecen al moverse, caen de golpe con rebote y suenan al sacarlas y al pegarlas en la mesa.
 - **Fosa: la cueva está viva.**
   Murciélagos y cuaimas comen, se reproducen y se mueren de hambre. Escóndete en silencio entre hongos que brillan o raíces tupidas. Si acabas con los murciélagos, las polillas apagan los hongos; sin cuaimas, los murciélagos llenan el techo.
 - **¿Quién quiere ser mi pana?: el animador ahora habla de verdad.**

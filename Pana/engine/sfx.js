@@ -326,6 +326,10 @@ export const sfx = {
   chime() { pitch({ dur: .14, f0: 784, type: 'triangle', vol: .07, priority: 3 }); pitch({ dur: .3, f0: 1175, type: 'triangle', vol: .07, delay: .11, priority: 3 }); },
   // One letter of a spoken line, at this speaker's pitch (engine/fx/dialogue.js).
   blip(freq = 320, { volume = 1 } = {}) { pitch({ dur: .035, f0: freq, type: 'square', vol: .018 * volume, priority: 0 }); },
+  // A card or tile leaving its place; `power` for how firmly it was taken.
+  cardFlick(power = 1) { burst({ dur: .05, f0: 3200 * jit(.1), f1: 1800, q: 1.6, vol: .05 * power, priority: 1 }); pitch({ dur: .03, f0: 900 * jit(.1), f1: 500, type: 'triangle', vol: .02 * power, priority: 0 }); },
+  // One landing on the table: a sharp crack with a little body.
+  cardSlap(power = 1) { burst({ dur: .05, f0: 2100 * jit(.08), f1: 700, q: .8, vol: .13 * power, priority: 2 }); pitch({ dur: .08, f0: 190 * jit(.08), f1: 90, vol: .09 * power, priority: 2 }); },
   // A rising whoosh into a big moment: wind climbing with a note under it.
   riser(dur = 1.2, { volume = 1 } = {}) {
     burst({ dur, f0: 350, f1: 5200, q: 1.1, vol: .1 * volume, attack: dur * .7, priority: 3 });

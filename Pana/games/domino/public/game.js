@@ -6,6 +6,7 @@ import { createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { lazySound } from '/engine/lazy-sound.js';
+import { bindHandFeel } from '/engine/fx/hand-feel.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { DominoRoom } from './network.js';
@@ -28,6 +29,7 @@ let barkRound = -1, barkId = 0, barksPrimed = false, resultTimer;
 let world = null, worldReady = false, view = 'plaza', stopped = false;
 
 // Audio is optional; a delayed audio module never prevents the table from loading.
+const handFeel = bindHandFeel(document.getElementById('hand'));
 const audio = lazySound(1);
 
 
@@ -160,6 +162,7 @@ function renderHand(state) {
     button.onclick = () => selectTile(tile.id); $('hand').append(button);
   });
   if (activeTile) $('hand').querySelector(`[data-tile="${activeTile}"]:not(:disabled)`)?.focus({ preventScroll: true });
+  handFeel.after();
   $('hand-count').textContent = seat < 0 ? loc('Mesa llena · estás mirando') : state.phase === 'lobby' ? loc('Tu puesto está listo') : locn(hand.length, '{n} ficha · {pips} puntos', '{n} fichas · {pips} puntos', { pips: pips(hand) });
   const moves = myTurn ? legalMoves(state, seat) : [];
   const tips = state.chain.length ? [...new Set([state.chain[0].a, state.chain.at(-1).b])] : [];

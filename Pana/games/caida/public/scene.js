@@ -8,6 +8,7 @@ import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
 import { deck, previewPlay, teamOf, MODES } from './rules.js';
 import { loc } from '/engine/i18n.js';
+import { createCardFeel } from '/engine/fx/card-feel.js';
 
 const UP = new THREE.Vector3(0, 1, 0), Y = 1.48;
 const LOOKS = [{ hat: 'llanero', outfitColor: '#dc7854' }, { hat: 'pesca', hatColor: '#ddad58', outfitColor: '#4c9385', glasses: 'redondos', face: 'feliz' }, { hat: 'gorra', outfitColor: '#b8c279' }, { hat: 'band', outfitColor: '#c96c59' }];
@@ -126,20 +127,22 @@ export async function createCaidaScene(canvas, { onCard, onStarter, onLoading = 
     }
   }
   const cursor = new THREE.Vector2(), ray = new THREE.Raycaster(); let down;
+  const feel = createCardFeel(THREE, scene, camera, { floor: Y });
   function pick(event) {
     cursor.set(event.clientX / innerWidth * 2 - 1, -event.clientY / innerHeight * 2 + 1); ray.setFromCamera(cursor, camera);
     const hits = ray.intersectObjects([...cards.values()].filter(c => c.playable).map(c => c.model), true);
     if (!hits.length) return null; let node = hits[0].object; while (node && !node.userData.cardId) node = node.parent; return node?.userData.cardId || null;
   }
-  const pointerMove = e => { hover = pick(e); canvas.style.cursor = hover ? 'pointer' : 'default'; };
+  const pointerMove = e => { feel.pointer(e); hover = pick(e); canvas.style.cursor = hover ? 'pointer' : 'default'; };
   const pointerDown = e => { down = [e.clientX, e.clientY]; };
   const pointerUp = e => { if (down && Math.hypot(down[0] - e.clientX, down[1] - e.clientY) < 12) { const id = pick(e); if (id) onCard?.(id); } down = null; };
   canvas.addEventListener('pointermove', pointerMove); canvas.addEventListener('pointerdown', pointerDown); canvas.addEventListener('pointerup', pointerUp);
   function frame(dt) {
     if (disposed) return; time += dt; bubbles.tick(dt); camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 5)); camera.lookAt(target);
+    feel.begin(dt);
     for (const [id, card] of cards) {
       card.lift = Math.max(0, card.lift - dt * 1.6); const dest = card.target.clone(); dest.y += Math.sin(card.lift * Math.PI) * .7 + (id === hover ? .08 : 0);
-      card.model.position.lerp(dest, reduced.matches ? 1 : 1 - Math.exp(-dt * 9)); card.model.quaternion.slerp(card.rotation, reduced.matches ? 1 : 1 - Math.exp(-dt * 10));
+      feel.step(card, dt, { dest, rotation: card.rotation, hovered: id === hover, held: id === selected, arc: card.lift });
     }
     characters.forEach((c, i) => {
       if (!c?.group.visible) return; c.update(dt, {});
@@ -157,7 +160,7 @@ export async function createCaidaScene(canvas, { onCard, onStarter, onLoading = 
   return { scene, camera, renderer, cards, characters, update, frame, setView(value) { cameraMode = value; cameraTarget(); },
     say: bubbles.say, get starter() { return starter; },
     dispose() {
-      disposed = true; starter?.dispose(); removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
+      disposed = true; feel.dispose(); starter?.dispose(); removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
       cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); bubbles.dispose(); table.userData.dispose(); stage.dispose();
     },
   };
