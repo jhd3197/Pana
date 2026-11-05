@@ -44,6 +44,37 @@ export function glowMushrooms({ seed = 1, color, count, wall = false, spread = .
   return out;
 }
 
+// A thicket to walk into and hide in: taller toadstools around the rim, short
+// ones inside, as wide as `radius` and about chest-high. Two draws. The consumer
+// sets how alive it is with userData.setGlow(0…1), which also withers it to brown.
+export function mushroomThicket({ seed = 1, radius = 1.9, color, tall = 2 } = {}) {
+  const r = rng(seed), g = new THREE.Group(), n = Math.round(12 + radius * 8);
+  const tint = MUSHROOM_GLOW[color] ?? (r() < .5 ? MUSHROOM_GLOW.blue : MUSHROOM_GLOW.purple);
+  const cap = capMaterial(tint), lit = new THREE.Color(tint), dead = new THREE.Color(0x4a3a2a), stemLit = new THREE.Color(tint).lerp(new THREE.Color(0xc8cce0), .22), stemDead = new THREE.Color(0x3a2e24);
+  const stem = M(stemLit.getHex(), { emissive: tint, emissiveIntensity: .45, roughness: .85 });
+  for (let i = 0; i < n; i++) {
+    const a = r() * Math.PI * 2, d = radius * Math.sqrt(r()), rim = d / radius, h = rim > .5 ? .8 + r() * (tall - .8) : .3 + r() * .6, w = .14 + h * .17;
+    const x = Math.cos(a) * d, z = Math.sin(a) * d;
+    g.add(mesh(new THREE.CylinderGeometry(w * .16, w * .24, h, 5, 1, true), stem, x, h / 2, z));
+    const dome = mesh(new THREE.SphereGeometry(1, 7, 3, 0, Math.PI * 2, 0, Math.PI / 2), cap, x, h - .015, z);
+    dome.scale.set(w, w * .62, w); dome.rotation.set((r() - .5) * .35, 0, (r() - .5) * .35); g.add(dome);
+  }
+  const out = bake(g); out.name = 'mushroomThicket';
+  g.traverse(o => o.geometry?.dispose());
+  out.userData.glow = { y: 1.1, z: 0, color: tint };
+  // M() shares materials across models: dimming this thicket must dim only this
+  // thicket, so it owns copies of both.
+  let ownCap = null, ownStem = null;
+  out.traverse(o => { if (!o.material) return; const own = o.material.clone(); if (o.material.color.getHex() === lit.getHex()) ownCap = own; else ownStem = own; o.material = own; });
+  out.userData.setGlow = v => {
+    // Squared: a strong tint in linear colour takes over the hue long before it is bright.
+    const k = Math.max(0, Math.min(1, v)) ** 2;
+    ownCap.color.copy(dead).lerp(lit, k); ownCap.emissiveIntensity = .02 + k; ownStem.color.copy(stemDead).lerp(stemLit, k); ownStem.emissiveIntensity = .01 + k * .44;
+  };
+  out.userData.dispose = () => { ownCap.dispose(); ownStem.dispose(); };
+  return out;
+}
+
 // Every halo of a floor in one draw: the points come as { x, y, z, color }.
 export function mushroomHalos(points, map, { size = 2.1, opacity = .6 } = {}) {
   const positions = new Float32Array(points.length * 3), colors = new Float32Array(points.length * 3), c = new THREE.Color();

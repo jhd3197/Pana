@@ -261,6 +261,8 @@ export default [
   },
   { id: 'cave-bat', name: 'Murciélago', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'caveBat', usedBy: ['Fosa'], previewOptions: null, pack: 'wildlife',
     description: 'Murciélago de cueva: pelaje oscuro, orejas grandes y alas de cuero que aletean a tirones; vuela en bandadas y duerme colgado del techo.', tags: ['animal', 'fauna', 'murciélago', 'cueva', 'animado'] },
+  { id: 'bat-colony', name: 'Colonia de murciélagos', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'batColony', usedBy: ['Fosa'], previewOptions: null, pack: 'wildlife',
+    description: 'Murciélagos colgados y plegados en el techo: un solo dibujo a cualquier cantidad, para una cueva llena.', tags: ['animal', 'fauna', 'murciélago', 'cueva', 'colonia'] },
   { id: 'cave-spider', name: 'Araña de la cueva', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'caveSpider', usedBy: ['Fosa'], previewOptions: null, pack: 'wildlife',
     description: 'Araña gorda naranja y negra con ocho patas articuladas que corren; cae del techo.', tags: ['animal', 'fauna', 'araña', 'cueva', 'animado'] },
   { id: 'cuaima', name: 'Cuaima', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'cuaima', usedBy: ['Fosa'], previewOptions: null, pack: 'wildlife',

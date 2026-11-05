@@ -20,6 +20,7 @@ import { Expedition, BARKS, interaction } from './rules.js';
 import { spawnEnemy } from './enemies.js';
 import { startSwarm } from './swarm.js';
 import { startSuceso } from './sucesos.js';
+import { wipeSpecies, crowdRoost } from './ecology.js';
 import { ExpeditionRoom } from './network.js';
 import { createView } from './view.js';
 import { createHud, money } from './hud.js';
@@ -150,6 +151,11 @@ function handle(e) {
     case 'delivered': sfx.bank(true); popCounter($('mangos')); if (e.met) shout(loc('¡Cuota lista! Al montacargas'), { tone: 'teal' }); break;
     case 'spider': sfx.awaken(); view.shake(.2); break;
     case 'scatter': if (near) sfx.flap(); break;
+    // The food chain, at a glance and by ear: a word for the team, a puff where it happened.
+    case 'eco': sfx.flap(); if (e.eco === 'gone' || e.eco === 'boom') view.shake(.15); break;
+    case 'eco-eaten': if (p) ambience.at('hiss', p, view.heading, e.x, e.z, 22); view.puffs.spawn({ x: e.x, y: 1.2, z: e.z }, { color: 0x2b2029, count: 8, spread: .7, size: .4, rise: .5, life: .8 }); break;
+    case 'eco-starved': view.puffs.spawn({ x: e.x, y: .3, z: e.z }, { color: 0x8c8078, count: 5, spread: .4, size: .3, rise: .3, life: .9 }); break;
+    case 'eco-birth': if (p && e.sp === 'bat') ambience.at('squeak', p, view.heading, e.x, e.z, 14); break;
     // The swarm's telegraph: a hiss from each crack, heard across the floor.
     case 'swarm': if (p && floorOf(p.x) === e.floor) { for (const h of e.holes) ambience.at('swarmHiss', p, view.heading, h.x, h.z, 70); view.shake(.15); } break;
     case 'snake-scatter': view.swarm.scatter(e); break;
@@ -273,6 +279,9 @@ if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, m
     g.swarm = null; g.swarmSim = null;
     const started = startSwarm(g, floorOf(p.x), n); room.publish(); return started;
   },
+  // The food chain: wipe a species (bat, snake) or crowd a roost around you, host only.
+  wipe(sp) { const g = room.game; if (!room.isHost || !g) return false; wipeSpecies(g, sp); room.publish(); return true; },
+  crowd(n = 24) { const g = room.game, p = g?.players.find(q => q.id === room.id); if (!room.isHost || !p) return false; const ok = crowdRoost(g, p, n); room.publish(); return ok; },
   // Force a suceso now (apagon, murcielagos, derrumbe, creciente, esporada): host only.
   suceso(kind) { const g = room.game; if (!room.isHost || !g) return false; const ok = startSuceso(g, kind); room.publish(); return ok; },
   fx, samples,

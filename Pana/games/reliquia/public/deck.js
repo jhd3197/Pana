@@ -221,6 +221,7 @@ export function generateRun(seed = 1, { depth = 1, theme = themeFor(depth) } = {
   if (library) libraryHaunts(run, seed, depth);
   dealExtras(run, seed, depth);
   dealLair(run, seed, depth);
+  dealEcology(run, seed, depth);
   cache.set(key, run);
   return run;
 }
@@ -336,6 +337,46 @@ function dealLair(run, seed, depth) {
     const at = [0, -2, 2, -4, 4, -6, 6].map(dx => ({ x: room.x + dx, z })).find(p => !run.obstacles.some(o => o.floor === f && Math.hypot(o.x - p.x, o.z - p.z) < o.r + 1) && !run.solids.some(s => s.floor === f && inRect(p.x, p.z, s.rect, .8)) && !run.nooks.some(n => n.floor === f && inRect(p.x, p.z, n.rect, .8)));
     if (at) run.sleepers.push({ id: sleeper++, kind: 'silbon', floor: f, room: room.id, x: at.x, z: at.z });
   }
+}
+
+// Where the food chain lives (ecology.js), dealt last from its own stream so the
+// rest of the deck never notices: mushroom patches and root thickets a pana can
+// walk into and hide in, a roost per colony of bats, a lair per cuaima. Nothing
+// here collides. `hides` is what a pana can use; every site is for the creatures.
+const ECO_CHANCE = { hongos: [.95, .25], inundada: [.5, .65], biblioteca: [.35, .2], templo: [.5, .45], mina: [.55, .35] };
+function dealEcology(run, seed, depth) {
+  const R = rng((seed * 2654435761 + depth * 40503 + 977) >>> 0), sites = [], [mush, roots] = ECO_CHANCE[run.theme] || ECO_CHANCE.mina;
+  const rooms = run.rooms.filter(r => r.floor > 0 && !r.hidden && !['oculta', 'dorada', 'boveda', 'entrada'].includes(r.kind));
+  const free = (room, x, z, r) => {
+    const f = room.floor, near = (list, gap) => list.some(q => q.floor === f && Math.hypot(q.x - x, q.z - z) < gap + r);
+    if (run.solids.some(s => s.floor === f && inRect(x, z, s.rect, r * .7))) return false;
+    if (run.obstacles.some(o => o.floor === f && Math.hypot(o.x - x, o.z - z) < o.r + r * .7)) return false;
+    if (run.pits.some(p => p.floor === f && inRect(x, z, p.rect, r + .4)) || [...run.corridors, ...run.stubs].some(c => c.floor === f && inRect(x, z, c.rect, r + .6))) return false;
+    if (run.nooks.some(n => n.floor === f && rectGap(x, z, n.rect) < r + 1) || run.seals.some(q => q.floor === f && rectGap(x, z, q.rect) < r + 2)) return false;
+    return !(near(run.lifts, 3) || near(run.cargo, 3) || near(run.carts, 1.5) || near(run.plates, 1) || near(run.chests, .3) || near(run.spots, .3) || near(run.loot, 0) || near(run.puffs, .8) || near(run.cracks, .8) || near(sites, 1.2));
+  };
+  const place = (room, kind, r) => {
+    for (let i = 0; i < 24; i++) {
+      const x = room.x + (R() - .5) * Math.max(0, room.w - 2 * r - 1.2), z = room.z + (R() - .5) * Math.max(0, room.d - 2 * r - 1.2);
+      if (!free(room, x, z, r)) continue;
+      sites.push({ id: `eco${sites.length}`, kind, floor: room.floor, room: room.id, x, z, r, hides: true, plant: kind === 'mushroom', cover: kind === 'mushroom' ? .72 : .62, light: kind === 'mushroom' ? 1 : .1, seed: Math.floor(R() * 1e6) });
+      return true;
+    }
+    return false;
+  };
+  for (const room of rooms) {
+    if (R() < mush) place(room, 'mushroom', 1.7 + R() * .7);
+    if (R() < roots) place(room, 'roots', 1.5 + R() * .5);
+  }
+  // Every floor keeps enough of each for the chain, and for somewhere to hide.
+  for (const [kind, least, r] of [['mushroom', 3, 1.8], ['roots', 1, 1.6]]) for (const room of rooms) if (sites.filter(s => s.kind === kind).length < least) place(room, kind, r);
+  // A roost over each colony, a lair for each cuaima.
+  for (const room of rooms) {
+    const bats = run.sleepers.filter(s => s.kind === 'bat' && s.room === room.id);
+    if (bats.length) sites.push({ id: `eco${sites.length}`, kind: 'roost', floor: room.floor, room: room.id, x: bats[0].x, z: bats[0].z, r: 2.4, hides: false, plant: false, cover: .9, light: .1 });
+  }
+  for (const s of run.sleepers.filter(q => q.kind === 'snake')) sites.push({ id: `eco${sites.length}`, kind: 'lair', floor: s.floor, room: s.room, x: s.x, z: s.z, r: 1.2, hides: false, plant: false, cover: .25, light: .05 });
+  run.ecoSites = sites;
 }
 
 // Dealt after the rooms, from their own stream: the twin plates that open the

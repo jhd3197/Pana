@@ -9,7 +9,8 @@ import { HOPPER, aimInto, overHopper, fitsIn, fillOf, overRim, bounceChance, pla
 import { searchStep, decaySearches } from '../../../engine/play/hiding-spots.js';
 import { layoutFor, distance } from './layout.js';
 import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from './items.js';
-import { spawnEnemy, updateEnemies, holds, wound, stagger } from './enemies.js';
+import { spawnEnemy, updateEnemies, holds, wound, stagger, lightOn } from './enemies.js';
+import { startEcology, tickEcology, wakeBodies } from './ecology.js';
 import { createNoiseBoard, emitNoise, pruneNoises } from '../../../engine/play/noise.js';
 import { createDirector, updateDirector, random } from './director.js';
 import { startSwarm, tickSwarm, swarmDue, swingAtSwarm, SWARM } from './swarm.js';
@@ -246,7 +247,7 @@ export class Expedition {
       touched: {}, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, carts: [], haul: 0,
       lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       level: 1, mangos: 0, quota: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null }, origin: seed >>> 0 || 1,
-      swarm: null, swarmSim: null, swarmAt: SWARM.firstAt, swarmId: 0, director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0,
+      eco: null, swarm: null, swarmSim: null, swarmAt: SWARM.firstAt, swarmId: 0, director: createDirector(), noise: createNoiseBoard(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0,
       strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: 75, sucesoLast: '', twinHint: 0, encargo: null, encargosWon: 0, sobretiempo: 0, silbonAt: 0, daily: '', plainOptions: null });
     this.paths = new Map();
   }
@@ -331,7 +332,7 @@ export class Expedition {
     Object.assign(this, new Expedition(seed, this.options)); this.ledger = ledger; this.eventId = eventId;
     roster.forEach(p => this.addPlayer(p.id, p.name, p.avatar)); this.phase = 'playing';
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));
-    this.quota = pactoQuota(this.options, quotaFor(1, this.players.length), floorWorth(this.layout.run)); this.placeStatues(); this.dealEncargo(); this.sucesoIn = firstSucesoIn(this);
+    this.quota = pactoQuota(this.options, quotaFor(1, this.players.length), floorWorth(this.layout.run)); this.placeStatues(); startEcology(this); this.dealEncargo(); this.sucesoIn = firstSucesoIn(this);
     // Where the jornada happens is part of the first word everyone reads.
     this.event('start', locKey('Jornada 1 · {place}: bajen, llenen el carrito y súbanlo por la carga hasta juntar Bs. {quota}.'), { vars: { quota: this.quota, place: jornadaName(1, themeOf(this)) } });
   }
@@ -698,7 +699,9 @@ export class Expedition {
         let woke = 0;
         // (Pact 'silbon': already up on its own, so it does not rise a second time here.)
         const risen = this.silbonAt < 0;
-        for (const s of run.sleepers) if (s.room === room.id && s.kind !== 'estatua' && !(risen && s.kind === 'silbon') && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' || s.kind === 'bat', ...(s.kind === 'silbon' ? { mode: 'wander', stun: 1.2 } : {}) }) && s.kind === 'mummy') woke++;
+        // Bats and cuaimas live in the ecosystem: they get their bodies from it.
+        for (const s of run.sleepers) if (s.room === room.id && s.kind !== 'estatua' && !(this.eco && (s.kind === 'bat' || s.kind === 'snake')) && !(risen && s.kind === 'silbon') && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' || s.kind === 'bat', ...(s.kind === 'silbon' ? { mode: 'wander', stun: 1.2 } : {}) }) && s.kind === 'mummy') woke++;
+        wakeBodies(this, spawnEnemy);
         if (!risen && run.sleepers.some(s => s.room === room.id && s.kind === 'silbon')) this.event('boss', locKey('El Silbón se levantó.'), { room: room.id, boss: 'silbon' });
         if (woke && room.kind !== 'guardian' && room.kind !== 'boveda') this.event('awaken', locKey('Las vendas se mueven. Prepárense.'), { room: room.id });
         if (room.kind === 'boveda') this.event('vault', locKey('La bóveda de oro. Algo grande respira en la oscuridad…'), { room: room.id });
@@ -719,7 +722,7 @@ export class Expedition {
     }
     // Inside a nook a pana is out of the Silbón's world, unless it just pulled them out.
     for (const p of this.players) { p.exposed = Math.max(0, (p.exposed || 0) - dt); const n = alive(p) && p.exposed <= 0 ? nookAt(run, p.x, p.z) : null; p.hidden = n ? n.id : null; }
-    updateEnemies(this, dt); tickSwarm(this, dt); this.stalk(dt); pruneNoises(this.noise, this.time);
+    tickEcology(this, dt, { spawnEnemy, lightOn }); updateEnemies(this, dt); tickSwarm(this, dt); this.stalk(dt); pruneNoises(this.noise, this.time);
     // Who trails the expedition the most: "el cobarde".
     const standing = this.players.filter(alive);
     if (standing.length > 1 && standing.some(p => floorOf(p.x) > 0)) {
@@ -870,7 +873,7 @@ export class Expedition {
     // A new deck for the next jornada; the camp's own pieces stay as they are.
     const campLoot = Object.fromEntries(Object.entries(this.touched).filter(([id]) => this.layout.run.loot.find(l => l.id === +id)?.floor === 0));
     this.level++; this.seed = levelSeed(this.origin, this.level);
-    Object.assign(this, { touched: campLoot, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, enemies: [], darts: [], shots: [], splats: [], swarm: null, swarmSim: null, swarmAt: this.time + SWARM.firstAt,
+    Object.assign(this, { eco: null, touched: campLoot, chests: {}, spots: {}, searching: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, enemies: [], darts: [], shots: [], splats: [], swarm: null, swarmSim: null, swarmAt: this.time + SWARM.firstAt,
       codicia: 0, deepest: 0, silbonAt: 0, director: createDirector(), noise: createNoiseBoard(), collapseIn: 30, stalkerRest: 0, delivered: 0, cargo: { phase: 'idle', t: 0, cart: null },
       strung: {}, puffed: {}, cracked: {}, rocks: [], flares: [], suceso: null, sucesoIn: firstSucesoIn(this), twinHint: 0 });
     this.dealEncargo();
@@ -883,7 +886,7 @@ export class Expedition {
       p.x = stop.x + (i % 3 - 1) * 1.2; p.z = 3 + Math.floor(i / 3) * 1.2; p.h = 0;
       p.downed = false; p.hp = 1; p.revive = 0; p.invulnerable = 2;
     });
-    this.quota = pactoQuota(this.options, quotaFor(this.level, this.players.filter(p => !p.spectator).length), floorWorth(this.layout.run)); this.placeStatues();
+    this.quota = pactoQuota(this.options, quotaFor(this.level, this.players.filter(p => !p.spectator).length), floorWorth(this.layout.run)); this.placeStatues(); startEcology(this);
     // The next jornada's place (Alternar swaps it) rides in the same line.
     const line = extra
       ? left ? locKey('¡Jornada {level} lista! Subieron Bs. {value}. Sobretiempo: +{extra} mangos. Los que se quedaron abajo llegaron con lo justo. Ahora toca {place}: Bs. {quota}.') : locKey('¡Jornada {level} lista! Subieron Bs. {value}. Sobretiempo: +{extra} mangos. Ahora toca {place}: Bs. {quota}.')
@@ -1144,6 +1147,8 @@ export class Expedition {
       kind = roll < .3 ? 'bat' : (level > 1 || theme === 'hongos') && roll < .3 + .1 * Math.min(3, level) + (theme === 'hongos' ? .15 : 0) ? 'spider' : 'mummy';
       if (kind === 'mummy' && theme === 'inundada' && other < .3) { kind = 'snake'; count = Math.min(2, count); }
       if (kind === 'mummy' && theme === 'templo' && other < .2) kind = 'phantom';
+      // Wiped out on this floor: none come in waves either.
+      if (kind === 'bat' && this.eco?.counts.bat === 0) kind = 'mummy';
       if (kind === 'bat') count = Math.min(6, count * 2 + 1);
     }
     // In the library, now and then a Lector comes instead (never past its cap).
