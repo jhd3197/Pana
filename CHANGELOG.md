@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Trifulca: cada golpe se ve en la barra y en el aire.**
+  La barra se vacía de verde a rojo, el pedazo perdido destella antes de bajar, los números saltan del golpeado y los trompones estampan su número con chispas.
+
 - **Fosa: el campamento ahora es una caverna enorme.**
   Un lago quieto, columnas de roca, cascadas a lo lejos, hongos que brillan y un rostro de piedra tallado bajo el reflector. Se baja por el montacargas y se vuelve subiendo hasta la misma caverna.
 - **Fosa: Sobretiempo, ¿se quedan un rato más?**
