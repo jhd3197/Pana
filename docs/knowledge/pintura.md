@@ -127,7 +127,11 @@ world-axis keys and plane-projected mouse aim at the same 1.1 m height as
 `screen()`; keep those equal. Splats from balls stopped by cover are placed
 vertically on that face; a plaza tree's row has `trunk` (.25 m, the drawn trunk at
 shot height), so each pellet's ray tests that circle, unpadded, instead of the .6 m
-movement box, and its mark sits on the round face at .45 scale. `minimap.js` draws the HUD map; it is a 2D overlay, not
+movement box, and its mark sits on the round face at .45 scale, the newest `TRUNK_MARKS` (6) only.
+Flight and hits stay level, but each ball carries its ray's height (`from`, `rise`: the
+eye along the look, plus a wander up and down from the spread) and a mark goes at
+`markHeight`, kept on the surface. Before that every mark sat at one fixed height
+and read as a neat row. `minimap.js` draws the HUD map; it is a 2D overlay, not
 scene drawing. It is square, north-up and centred on you, showing
 `MINIMAP_RADIUS` (18 m) each way, on an opaque background: 30 m was too far out
 to read in a yard. Three layers: the court's floor, the scenery (`bake` reads the

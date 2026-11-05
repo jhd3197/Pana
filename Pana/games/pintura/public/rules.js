@@ -38,6 +38,12 @@ export const SWAP_TIME = .4;
 export const SHOT_HEIGHT = 1.1;
 // A mark on a trunk is this share of a full splat: any wider and it hangs in the air beside it.
 const TRUNK_SPLAT = .45;
+// A held burst would bury a thin trunk under marks: only the newest stay.
+export const TRUNK_MARKS = 6;
+// The height a shot's ray reaches after `travel` metres, kept on a surface `top` tall.
+// Flight and hits stay level; this says where its mark goes and where the ball is drawn.
+export const rayHeight = (ball, travel) => ball.from + ball.rise * travel;
+export const markHeight = (ball, travel, top) => Math.max(.35, Math.min(rayHeight(ball, travel), top - .35));
 // Cover that stops a level shot: the boxes taller than the ball's flight.
 export const shotCover = cover => cover.filter(o => o.shots !== false && (o.h ?? o.height ?? Infinity) > SHOT_HEIGHT);
 // Eight seats (game.json `players`): people plus bots never pass it. Bot ids
@@ -482,15 +488,18 @@ export class Arena {
         const jitter=stats.pellets===1 ? Math.sin(p.shots*2.4)*spread : 0;
         // Several pellets fan evenly across the spread (three: left, centre, right).
         const angles=stats.pellets>1 ? Array.from({length:stats.pellets},(_,i)=>spread*(2*i/(stats.pellets-1)-1)) : [jitter];
-        for(const angle of angles) {
+        for(const [i,angle] of angles.entries()) {
           const flight=launch(p.ax, p.az, stats.speed, angle), y0=EYE + (p.jumpHeight || 0);
+          // The ray's height: from the eye along the look (at shot height without one), wandering up and
+          // down with the spread as it does sideways, so a burst does not paint one straight line.
+          const from=input.look ? y0 : SHOT_HEIGHT, rise=(input.look ? Math.tan(input.pitch) : 0) + Math.cos((p.shots + i) * 1.7) * spread * (stats.pellets>1 ? .25 : .6);
           // A headshot marker fired without a look: the server's own pitch at the rival it is aimed at.
           const aimed=rivals && aimedPitch({ x:p.x, z:p.z, y0 }, { x:flight.vx, z:flight.vz }, rivals, { cone:HEAD_CONE, width:HEAD_WIDTH, head:HEAD_AIM, chest:CHEST_Y });
           this.balls.push({ id:++this.serial, owner:p.id, color:p.color, x:p.x, z:p.z, ...flight,
           life:stats.life, kind:stats.id, rocket:!!stats.splash, direct:!!stats.direct, damage:stats.damage, falloff:stats.falloff || null, splash:stats.splash || 0, pattern:p.kit.pattern, hand:p.weapon==='rapid'?p.shots%2:0,
           // Where it left (damage fades with the distance flown) and, for a headshot marker,
           // the eye height and pitch its ray climbs or drops at (`aimed`: the pana a derived pitch is for).
-          x0:p.x, z0:p.z, y0, pitch:stats.headshot && input.look ? input.pitch : aimed ? aimed.pitch : null, aimed:aimed ? aimed.target : null });
+          x0:p.x, z0:p.z, y0, from, rise, pitch:stats.headshot && input.look ? input.pitch : aimed ? aimed.pitch : null, aimed:aimed ? aimed.target : null });
         }
       }
     }
@@ -500,7 +509,8 @@ export class Arena {
       const { t, victim, box, dx, dz } = sweep(ball, dt, { boxes: this.cover, targets, padding: .12, y: SHOT_HEIGHT });
       ball.x += dx * Math.min(1, t); ball.z += dz * Math.min(1, t); ball.life -= dt;
       if (t <= 1 || outside(this.mapId, ball.x, ball.z)) {
-        ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern, ...(box?.trunk ? { radius: TRUNK_SPLAT } : {}) });
+        ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern, ...(box && ball.rise != null ? { hy: markHeight(ball, Math.hypot(ball.x - ball.x0, ball.z - ball.z0), box.h ?? box.height ?? 3) } : {}), ...(box?.trunk ? { radius: TRUNK_SPLAT, on: box.ref } : {}) });
+        if (box?.trunk) { const marks = this.splats.filter(s => s.on === box.ref); if (marks.length > TRUNK_MARKS) this.splats.splice(this.splats.indexOf(marks[0]), 1); }
         // La Bazuca's direct hit knocks out at once; its splash then catches only the panas beside.
         // La Lejana's head hit knocks out too; its body hits fade with the distance flown.
         if (victim && (ball.direct || !ball.rocket)) {

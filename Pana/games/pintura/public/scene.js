@@ -31,7 +31,7 @@ import { traceRay } from '/engine/play/projectile.js';
 import { createPose, createSpectateCamera, followPose, overheadPose } from '/engine/play/spectate.js';
 import { traceLob, groundAt } from '/engine/play/lob.js';
 import { guideRibbon, guideBeads, guideRing } from '/engine/play/aim-guide.js';
-import { SIZE, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK, SHOT_HEIGHT, shotCover } from './rules.js';
+import { rayHeight, SIZE, coverFor, boundsFor, grenadeStart, grenadeFlight, TICK, SHOT_HEIGHT, shotCover } from './rules.js';
 // The shared courts' factory (engine/worlds/arenas.js) loads on first use: see setMap.
 let arenasLoad = null; const loadArenas = () => arenasLoad ??= import('/engine/worlds/arenas.js').catch(error => { arenasLoad = null; throw error; });
 
@@ -236,12 +236,12 @@ export function createScene(canvas) {
       if (o.trunk) {
         const dx = s.x - o.x, dz = s.z - o.z, far = Math.hypot(dx, dz) || 1;
         if (far - o.trunk > .1) continue;
-        mesh.position.set(o.x + dx / far * (o.trunk + .02), Math.min(1.1, o.h - .35), o.z + dz / far * (o.trunk + .02)); mesh.rotation.set(0, Math.atan2(dx, dz), s.id * 1.7);
+        mesh.position.set(o.x + dx / far * (o.trunk + .02), s.hy ?? Math.min(1.1, o.h - .35), o.z + dz / far * (o.trunk + .02)); mesh.rotation.set(0, Math.atan2(dx, dz), s.id * 1.7);
         return;
       }
       const gx = Math.abs(s.x - o.x) - o.w / 2, gz = Math.abs(s.z - o.z) - o.d / 2;
       if (gx > .35 || gz > .35) continue;
-      const y = Math.min(1.1, o.h - .35);
+      const y = s.hy ?? Math.min(1.1, o.h - .35);
       if (gx > gz) { mesh.position.set(o.x + Math.sign(s.x - o.x) * (o.w / 2 + .02), y, s.z); mesh.rotation.set(0, Math.sign(s.x - o.x) * Math.PI / 2, s.id * 1.7); }
       else { mesh.position.set(s.x, y, o.z + Math.sign(s.z - o.z) * (o.d / 2 + .02)); mesh.rotation.set(0, s.z > o.z ? 0 : Math.PI, s.id * 1.7); }
       return;
@@ -430,7 +430,9 @@ export function createScene(canvas) {
       const seen = mesh.userData.seen;
       if (!seen || seen.x !== b.x || seen.z !== b.z) mesh.userData.seen = { x: b.x, z: b.z, t: 0 }; else seen.t += dt;
       const ahead = b.rocket ? Math.min(.06, mesh.userData.seen.t) : 0;
-      mesh.position.set(b.x + b.vx * ahead, SHOT_HEIGHT, b.z + b.vz * ahead); mesh.rotation.y = Math.atan2(b.vx, b.vz);
+      // A ball leaves the gun, not your eye, and joins its ray over the first few metres.
+      const flown = Math.hypot(b.x - b.x0, b.z - b.z0), ballY = b.rocket || b.rise == null ? SHOT_HEIGHT : Math.max(.1, SHOT_HEIGHT + (rayHeight(b, flown) - SHOT_HEIGHT) * Math.min(1, flown / 4));
+      mesh.position.set(b.x + b.vx * ahead, ballY, b.z + b.vz * ahead); mesh.rotation.y = Math.atan2(b.vx, b.vz);
       if (b.kind !== 'bazooka') mesh.scale.setScalar(b.rocket ? ROUND_SIZE[b.kind] ?? 6.9 : 1);
       if (b.rocket) blasts.trail(b.id, mesh.position.clone().addScaledVector(new THREE.Vector3(b.vx, 0, b.vz).normalize(), -.55), dt);
     }
