@@ -18,7 +18,8 @@
 //   valle     two high sides with sheer cliffs, a natural arch across the
 //             valley between them, a pond on its floor and a ledge on a cliff
 //   terrazas  a stepped tepuy near the middle, each side its own steps
-// plus caves dug into the slopes that fall towards the shores.
+// plus caves dug into the slopes that fall towards the shores. A free-for-all
+// draws its kind from `FFA_KIND_ODDS` instead: no cuevas, no islas.
 //
 // Seen from the side, anything that overhangs the only way across (a cave
 // mouth, a ledge, a cap) blocks a walker going one way, so the way between
@@ -51,6 +52,9 @@ export const MAP_NAME = 'Llano adentro'; // i18n-ignore: a place name
 // The kinds of map and how often the seed picks each (the last attempt is always 'suave').
 export const KINDS = Object.freeze(['cerros', 'cuevas', 'islas', 'valle', 'terrazas']);
 const KIND_ODDS = [.24, .2, .18, .2, .18];
+// A free-for-all seats six capis on open ground: no massif to tunnel through, no
+// islands to strand them on. Mostly rolling hills, steps and the gentle range.
+export const FFA_KIND_ODDS = Object.freeze({ cerros: .45, terrazas: .3, suave: .15, valle: .1, cuevas: 0, islas: 0 });
 // Seeds are 1..99999, short enough to read out ("Mapa #12345").
 export const SEED_LIMIT = 100000;
 export const mapSeed = value => { const n = Math.floor(Math.abs(Number(value))); return Number.isFinite(n) && n > 0 ? (n % SEED_LIMIT || 1) : null; };
@@ -67,24 +71,28 @@ export const mapSize = id => Object.hasOwn(MAP_SIZES, id) ? id : DEFAULT_SIZE;
 //   span        ground every spawn can walk on, at least
 //   reach       a shot that lands this near counts as a shot
 //   interest    the least interest score a map needs (see `interestOf`)
-export const FAIR = Object.freeze({ meanHeight: 2.6, front: 3.2, exposure: .2, cover: .3, distance: 6, walk: 1.6, shots: 1, span: 6, reach: 2.6, interest: 3.2 });
+//   choke       the least room over the floor on the roomiest way between rivals (see `chokeOf`)
+export const FAIR = Object.freeze({ meanHeight: 2.6, front: 3.2, exposure: .2, cover: .3, distance: 6, walk: 1.6, shots: 1, span: 6, reach: 2.6, interest: 3.2, choke: 2.2 });
 const SPREAD = .4;       // a team's three capis cover this share of the half map, from the front back
 const GAP = { small: 5, medium: 7, large: 8 };   // the least room between two capis of a team
 const INNER = { small: 14.5, medium: 16, large: 18 };   // a front capi stands at least this far from the middle
-// The cave mountain's mouth: how far its floor lies under the lowland, and the level stretch out from under the ledge.
-// The ledge is 2.1 over that floor, so it stands 0.8 over the lowland: a hop from anywhere on the rim.
-const MOUTH = { drop: 1.3, flat: .8 };
+// The cave mountain's mouth: how far its floor lies under the lowland, the ramp's run up to it from the ledge's tip, the room under the ledge,
+// and how far in from the foot the tunnel takes over from the gallery (deep enough for the flank to stand over a tall tunnel).
+// The ledge is 0.3 of rock over that room, so it stands 0.8 over the lowland; the run is the gap from the rim: a hop from anywhere on it.
+const MOUTH = { drop: 1.9, run: 2.1, room: 2.4, under: 9.5 };
 // A hop as the checks count it: what a capi does holding the key (rules.js RULES.airControl), a little short of its best.
 export const floorsOf = mask => floorGraph(mask, { water: WATER, hop: { up: 7, forward: 3.4, gravity: 18 }, leap: 3 });
 
 // ---------- the plan: every number the map is built from ----------
 
-export function planMap(seed, size, attempt = 0) {
+const pickKind = (k, kinds, odds) => { let sum = 0; return kinds.find((_, i) => k < (sum += odds[i])) || kinds[0]; };
+
+export function planMap(seed, size, attempt = 0, { mode = 'teams' } = {}) {
   const { width, height } = MAP_SIZES[size], r = seededStream(`capis-map:${seed}:${size}:${attempt}`);
   const between = (a, b) => a + (b - a) * r(), scale = width / 140, chance = k => r() < k;
   // The kind belongs to the seed: a re-roll keeps it, only the last attempt is the safe one.
   const k = seededStream(`capis-kind:${seed}:${size}`)();
-  let kind = KINDS[KIND_ODDS.findIndex((_, i) => k < KIND_ODDS.slice(0, i + 1).reduce((a, b) => a + b, 0))] || KINDS[0];
+  let kind = mode === 'ffa' ? pickKind(k, Object.keys(FFA_KIND_ODDS), Object.values(FFA_KIND_ODDS)) : pickKind(k, KINDS, KIND_ODDS);
   if (attempt >= ATTEMPTS - 1) kind = 'suave';
   const roof = height - 13;   // the highest ground: room above for a lob
   const p = { seed, size, attempt, kind, width, height, scale, mid: width / 2, roof, detail: between(0, 900),
@@ -129,8 +137,8 @@ export function planMap(seed, size, attempt = 0) {
     const rise = between(1.8, 3.4), rooms = [], room = Math.min(2.6, (m.top - p.base - rise - 3) / 2);
     for (let i = 0, n = 1 + Math.floor(r() * 2); i < n; i++) rooms.push({ at: n === 1 ? between(.35, .65) : i ? between(.6, .8) : between(.2, .4), radius: room });
     // On the climbing side the tunnel ends under the flank and a low gallery runs on to the mouth.
-    const end = side => m.at + side * (m.climb.side === side ? m.half - 6.5 : m.half + 1.5);
-    p.tunnels.push({ from: end(-1), to: end(1), rise, radius: between(1.3, 1.4), rooms, climb: m.climb });
+    const end = side => m.at + side * (m.climb.side === side ? m.half - MOUTH.under : m.half + 1.5);
+    p.tunnels.push({ from: end(-1), to: end(1), rise, radius: between(2.2, 2.4), rooms, climb: m.climb });
     p.outer = [chance(.5), chance(.5)];
   } else if (kind === 'islas') {
     p.base = WATER - 2.6;
@@ -359,14 +367,13 @@ function clearCells(mask, x0, x1, y0, y1) {
 }
 
 // The low gallery from the tunnel's end under the climbing flank out to its
-// mouth (1.8 high, under the ledge), then a level stretch a body needs to get
-// its head out from under the lip, and a 45° ramp up to the lowland: from its
-// rim a capi hops onto the ledge and walks up the flank.
+// mouth (`MOUTH.room` high, under the ledge), then a ramp up to the lowland, a
+// little under 45° (at 45° the cell steps can stop a walker at its foot): from
+// its rim a capi hops onto the ledge and walks up the flank.
 function gallery(mask, f, c) {
   const at = d => f.at + c.side * d, span = (d0, d1) => [Math.min(at(d0), at(d1)), Math.max(at(d0), at(d1))];
-  clearCells(mask, ...span(f.half - 6.6, c.tip), c.floor, c.floor + 1.8);
-  const flat = MOUTH.flat, run = MOUTH.drop;
-  for (let d = c.tip; d < c.tip + flat + run; d += mask.cell) clearCells(mask, ...span(d, d + mask.cell), c.floor + clamp((d + mask.cell / 2 - c.tip - flat) / run) * MOUTH.drop, c.low + 1);
+  clearCells(mask, ...span(f.half - MOUTH.under - .1, c.tip), c.floor, c.floor + MOUTH.room);
+  for (let d = c.tip; d < c.tip + MOUTH.run; d += mask.cell) clearCells(mask, ...span(d, d + mask.cell), c.floor + clamp((d + mask.cell / 2 - c.tip) / MOUTH.run) * MOUTH.drop, c.low + 1);
 }
 
 export function buildGround(p) {
@@ -381,15 +388,15 @@ export function buildGround(p) {
   const bare = { ...p, features: [] };
   for (const f of p.features) if (f.type === 'mesa') { f.base = heightAt(bare, f.at); f.T = Math.min(p.roof, f.base + f.rise); }
   // The climbing flank stands on the lowland by its mouth: the gallery's
-  // floor MOUTH.drop under it (on the cell grid), the ledge over the mouth 2.1
-  // over that (1.8 of room under it, 0.3 of rock), its tip 1.2 out from the foot.
+  // floor MOUTH.drop under it (on the cell grid), the ledge over the mouth
+  // MOUTH.room of room and 0.3 of rock over that, its tip 1.2 out from the foot.
   // Its steps reach the crest's height `reach` × half from the middle (the
   // crest inside stays as it was): risers a capi walks up (about 45°) where
   // that is gentle enough, else short steps under 1 high that it hops.
   for (const f of p.features) if (f.type === 'mountain' && f.climb) {
     const c = f.climb, low = heightAt({ ...p, features: p.features.filter(g => g !== f) }, f.at + c.side * (f.half + 3));
     let top = 0; for (let k = 0; k <= 24; k++) top = Math.max(top, heightAt(p, f.at + c.side * f.half * c.reach * k / 24));
-    c.tip = f.half + 1.2; c.floor = Math.round((low - MOUTH.drop) / CELL) * CELL; c.low = c.floor + MOUTH.drop; c.lip = c.floor + 2.1;
+    c.tip = f.half + 1.2; c.floor = Math.round((low - MOUTH.drop) / CELL) * CELL; c.low = c.floor + MOUTH.drop; c.lip = c.floor + MOUTH.room + .3;
     const slope = (top - c.lip) / (f.half * (1 - c.reach) - 1.2);
     c.run = slope <= .5 ? c.rise : .3; c.shelf = Math.max(.75, c.rise / slope - c.run);
   }
@@ -642,6 +649,34 @@ function walkBetween(graph, spawns, ys) {
   return { there, back, foot: Number.isFinite(foot) && Number.isFinite(footBack), nodes: [0, 1].map(t => [0, 1, 2].map(s => node(t, s))) };
 }
 
+// How tight the way between two sides is: the air over each floor (capped, in
+// world units), and for each spot of `from` and each spot of `to` the route that
+// squeezes least (a low tunnel with an open way over it is no choke). The result
+// is the lowest room on the worst such route. Spots with no way between them are
+// skipped: `apart` and `walled-in` judge those. Infinity when no pair connects.
+const CHOKE_CAP = 6;
+export function chokeOf(mask, graph, from, to) {
+  const { cols, rows, cell, solid } = mask, cap = Math.round(CHOKE_CAP / cell), n = graph.y.length, room = new Uint16Array(n);
+  for (let i = 0; i < n; i++) {
+    const c = Math.min(cols - 1, Math.floor((graph.col[i] + .5) * graph.step / cell)), r0 = Math.round(graph.y[i] / cell);
+    let d = 0; while (d < cap && r0 + d < rows && !solid[(r0 + d) * cols + c]) d++;
+    room[i] = r0 + d >= rows ? cap : d;
+  }
+  let worst = Infinity;
+  for (const a of from) {
+    if (a < 0) continue;
+    // Largest room first: the first time a floor is taken, that is its best route.
+    const best = new Int32Array(n).fill(-1), buckets = Array.from({ length: cap + 1 }, () => []);
+    best[a] = room[a]; buckets[room[a]].push(a);
+    for (let b = cap; b >= 0; b--) for (let i; (i = buckets[b].pop()) !== undefined;) {
+      if (best[i] !== b) continue;
+      for (const j of graph.edges(i)) { const v = Math.min(b, room[j]); if (v > best[j]) { best[j] = v; buckets[v].push(j); } }
+    }
+    for (const b of to) if (b >= 0 && best[b] >= 0) worst = Math.min(worst, best[b] * cell);
+  }
+  return worst;
+}
+
 // Everything measured about an attempt (the tests and RESULTS read it too).
 export function measure(p, mask, spawns) {
   const map = { width: p.width, spawns }, stats = spawnStats(map, mask), graph = floorsOf(mask);
@@ -672,7 +707,8 @@ export function measure(p, mask, spawns) {
     summit = { x: (graph.col[best] + .5) * graph.step, y: graph.y[best], from: reaches.map(team => team.map(r => !!r?.[best])) };
     summit.reached = summit.from.flat().every(Boolean);
   }
-  return { stats, graph, walk, shots, moves, caves, summit, interest: interestOf(p, mask, graph),
+  const choke = Math.min(chokeOf(mask, graph, walk.nodes[0], walk.nodes[1]), chokeOf(mask, graph, walk.nodes[1], walk.nodes[0]));
+  return { stats, graph, walk, shots, moves, caves, summit, choke, interest: interestOf(p, mask, graph),
     diff: { meanHeight: Math.abs(mean(stats[0], 'y') - mean(stats[1], 'y')), front: Math.abs(stats[0][0].y - stats[1][0].y),
       exposure: Math.abs(mean(stats[0], 'exposure') - mean(stats[1], 'exposure')), cover: Math.abs(mean(stats[0], 'cover') - mean(stats[1], 'cover')),
       distance: Math.abs(mean(stats[0], 'rival') - mean(stats[1], 'rival')),
@@ -686,13 +722,14 @@ export function measure(p, mask, spawns) {
 //   boxed-in      a spawn with under FAIR.span of ground to walk
 //   bland         the interest score is under FAIR.interest
 //   apart         a team cannot walk (or hop) to the other's front capi, or back
+//   choke         every way between two rivals squeezes under FAIR.choke of room
 //   cave-shut     a cave or tunnel no capi can walk into
 //   summit-shut   a capi cannot walk (or hop) up to the mountain's summit
 //   uneven-<k>    the two teams differ by more than FAIR[k]
 //   out-of-reach  the front capis cannot hit each other with no wind
 //   no-shot       a team has no capi with a shot at a rival
 //   walled-in     a capi can neither walk to within 32 of a rival nor hit one
-function check(p, mask, loose, spawns) {
+export function check(p, mask, loose, spawns) {
   if (loose.floating.length > p.tunnels.length || loose.floating.some(n => n < 4000)) return { failed: 'floating' };
   if (!spawns) return { failed: 'cramped' };
   const m = measure(p, mask, spawns);
@@ -700,6 +737,7 @@ function check(p, mask, loose, spawns) {
   for (const s of m.stats.flat()) if (s.span < FAIR.span) return fail('boxed-in');
   if (m.interest.score < FAIR.interest) return fail('bland');
   if (!Number.isFinite(m.walk.there) || !Number.isFinite(m.walk.back)) return fail('apart');
+  if (m.choke < FAIR.choke) return fail('choke');
   if (m.caves.some(c => !c.reached)) return fail('cave-shut');
   if (m.summit && !m.summit.reached) return fail('summit-shut');
   for (const k of ['meanHeight', 'front', 'exposure', 'cover', 'distance', 'walk', 'shots']) if (m.diff[k] > FAIR[k]) return fail(`uneven-${k}`);
@@ -718,15 +756,16 @@ export function inspectPlan(p) {
 
 // The map for a seed and a size: { map, mask }. `map` describes it (seed,
 // size, kind, spawns, the plan, which attempt passed and why the others
-// failed, what was measured); `mask` is the ground for the match.
-export function generateMap(seed = 1, size = DEFAULT_SIZE) {
+// failed, what was measured); `mask` is the ground for the match. `mode: 'ffa'`
+// draws the kind from FFA_KIND_ODDS: a seed's free-for-all map is its own.
+export function generateMap(seed = 1, size = DEFAULT_SIZE, { mode = 'teams' } = {}) {
   seed = mapSeed(seed) ?? 1; size = mapSize(size);
   const rejected = [];
   for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
-    const p = planMap(seed, size, attempt), { mask, loose, spawns, failed, measured } = inspectPlan(p);
+    const p = planMap(seed, size, attempt, { mode }), { mask, loose, spawns, failed, measured } = inspectPlan(p);
     if (failed && attempt < ATTEMPTS - 1) { rejected.push(failed); continue; }
     const start = mask.solid.slice(); for (let i = 0; i < start.length; i++) start[i] |= mask.hollow[i];
-    const fair = measured ? { ...measured.diff, interest: measured.interest.score, foot: measured.walk.foot, route: [measured.walk.there, measured.walk.back], shooters: measured.shots, land: measured.interest.land,
+    const fair = measured ? { ...measured.diff, interest: measured.interest.score, choke: measured.choke, foot: measured.walk.foot, route: [measured.walk.there, measured.walk.back], shooters: measured.shots, land: measured.interest.land,
       caves: measured.caves.map(c => ({ what: c.what, reached: c.reached })), summit: measured.summit && { x: measured.summit.x, y: measured.summit.y, from: measured.summit.from }, heights: measured.stats.map(t => t.map(s => +s.y.toFixed(2))) } : null;
     const map = { id: 'llanos', name: MAP_NAME, seed, size, width: p.width, height: p.height, cell: CELL, water: WATER,
       kind: p.kind, plan: p, spawns, attempt, rejected, failed: failed || null, start, loose: loose.removed, fair };

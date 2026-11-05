@@ -51,6 +51,36 @@ test('spawns are spread over the whole map, not two clumps, on every kind of gro
   assert.ok(kinds.size >= 4, [...kinds].join());
 });
 
+test('a free-for-all map is never cuevas or islas, seats six capis on the large map, and teams still get every kind', () => {
+  const kinds = new Set(), teamKinds = new Set();
+  for (let seed = 1; seed <= 60; seed++) {
+    const m = ffa(seed), xs = m.capys.map(c => c.x).sort((a, b) => a - b);
+    kinds.add(m.map.kind);
+    assert.ok(!['cuevas', 'islas'].includes(m.map.kind), `seed ${seed}: ${m.map.kind}`);
+    assert.equal(m.map.size, 'large');
+    assert.equal(m.capys.length, FFA_CAPIS);
+    assert.equal(FFA_CAPIS, 6);
+    assert.ok(xs.at(-1) - xs[0] > m.map.width * .55, `seed ${seed} ${m.map.kind}: they cover ${(xs.at(-1) - xs[0]).toFixed(0)} of ${m.map.width}`);
+    for (let i = 1; i < 6; i++) assert.ok(xs[i] - xs[i - 1] >= 10, `seed ${seed} ${m.map.kind}: ${xs[i - 1].toFixed(1)} and ${xs[i].toFixed(1)} are too close`);
+    for (const c of m.capys) assert.ok(c.y > WATER, `seed ${seed}: dry at ${c.x.toFixed(1)}`);
+    const t = createMatch({ seed, size: 'large' });
+    teamKinds.add(t.map.kind);
+    assert.equal(t.mode, 'teams'); assert.equal(t.teams, 2); assert.equal(t.capys.length, 6);
+    assert.equal(t.map.spawns.length, 2);
+  }
+  assert.ok(kinds.size >= 3, [...kinds].join());
+  assert.ok(teamKinds.has('cuevas') && teamKinds.has('islas'), `teams still get them: ${[...teamKinds].join()}`);
+});
+
+test('every copy of a room builds the same free-for-all map from the seed', () => {
+  const t = new CapisTable({ seed: 6, options: { ...defaultOptions(), mode: 'ffa' } });
+  t.addPlayer(1, 'Ana'); t.start();
+  const { view } = mirror(null, wire(t.snapshot()));
+  assert.equal(view.map.kind, t.match.map.kind);
+  assert.ok(!['cuevas', 'islas'].includes(view.map.kind));
+  assert.ok(Buffer.from(view.mask.solid).equals(Buffer.from(t.match.mask.solid)), 'the same ground');
+});
+
 test('the turn goes round every side still standing', () => {
   const m = ffa(), order = [m.turn.team];
   for (let i = 0; i < 6; i++) { pass(m); order.push(m.turn.team); }
