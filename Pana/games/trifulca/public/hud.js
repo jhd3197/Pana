@@ -3,6 +3,8 @@
 // intro card, the bets, the verdict after each fight and a feed of what the
 // ring is doing.
 import { fighterPortrait, fightStats, createFightFeedback } from './hud-details.js';
+import { createFightDamage } from './hud-damage.js';
+import { jolt } from '/engine/fx/feel.js';
 import { inputState, formatPadLabel } from '/engine/gamepad.js';
 import { fillRoster } from '/engine/results.js';
 import { lineFor, say } from './narrator.js';
@@ -47,9 +49,9 @@ const el = (tag, className = '', text = '') => Object.assign(document.createElem
 // Names and nicknames are shown as they are.
 const raw = (tag, className = '', text = '') => Object.assign(el(tag, className, text), { translate: false });
 
-export function createHud({ me, voice = () => true }) {
-  let state = null, callTimer = 0, feedItems = [], barsKey = '', betsKey = '';
-  const blocks = new Map(), feedback = createFightFeedback();
+export function createHud({ me, voice = () => true, at = () => null }) {
+  let state = null, callTimer = 0, feedItems = [], barsKey = '', betsKey = '', lastPhase = '';
+  const blocks = new Map(), feedback = createFightFeedback(), damage = createFightDamage({ at });
   let verdictKey = '';
 
   const name = (id) => state?.players.find(p => p.id === id)?.name ?? loc('Alguien');
@@ -92,6 +94,8 @@ export function createHud({ me, voice = () => true }) {
   function react(e) {
     coach(e);
     if (state) feedback.react(e, state);
+    damage.react(e);
+    if (['hit', 'trompon', 'shove', 'impacto', 'caida'].includes(e.type)) jolt(blocks.get(e.id)?.block, e.type === 'hit' ? .7 : 1.4);
     const line = lineFor(e, name, names);
     if (line) call(line.text, { vars: line.vars, big: line.big, ref: line.ref, speak: line.say });
     if (e.type === 'count') {
@@ -132,32 +136,33 @@ export function createHud({ me, voice = () => true }) {
 
   // One block per fighter, rebuilt when the lineup changes.
   function buildBars(bodies) {
-    blocks.clear();
+    blocks.clear(); damage.clearBars();
     for (const side of ['left', 'right']) {
       const list = bodies.filter(b => LEFT.includes(b.team) === (side === 'left'));
       $(`bars-${side}`).replaceChildren(...list.map(b => {
         const block = el('div', `fighter fighter--${b.corner}`), top = el('div', 'fighter-name');
         const title = raw('b'), nick = raw('span'), mareo = el('div', 'meter meter--mareo'), low = el('div', 'fighter-low');
         const aguante = el('div', 'meter meter--aguante'), caidas = el('span', 'caidas');
-        const lag = el('em'); mareo.append(lag, el('i')); aguante.append(el('i')); low.append(aguante);
+        aguante.append(el('i')); low.append(aguante);
+        const hp = damage.bar(mareo, side);
         const identity = el('div', 'fighter-identity'); identity.append(title, nick);
         top.append(fighterPortrait(player(b.id), state.players.findIndex(p => p.id === b.id)), identity, caidas);
         const labels = el('div', 'fighter-meters'), status = el('span'), energy = el('span');
         labels.append(status, energy); block.append(top, labels, mareo, low);
         caidas.append(...Array.from({ length: KO_CAIDAS }, () => el('i')));
-        blocks.set(b.id, { block, title, nick, mareo, aguante, caidas, status, energy, lag });
+        blocks.set(b.id, { block, title, nick, mareo, aguante, caidas, status, energy, hp });
         return block;
       }));
     }
   }
-  function bar(body) {
+  function bar(body, fresh) {
     const b = blocks.get(body.id), p = player(body.id);
     if (!b) return;
     b.title.textContent = p ? (p.id === me() ? loc('{name} · tú', { name: p.name }) : p.name) : '';
     b.nick.textContent = body.bench ? loc('en la esquina') : p?.nick ?? '';
     b.block.classList.toggle('is-bench', !!body.bench); b.block.classList.toggle('is-out', !!body.out);
-    b.mareo.style.setProperty('--fill', `${Math.min(100, body.mareo)}%`);
-    b.lag.style.width = `${Math.min(100, body.mareo)}%`;
+    // The bar is what's left before the dizzy spell: it empties as the mareo climbs.
+    b.hp[fresh ? 'snap' : 'set'](100 - body.mareo);
     b.aguante.classList.toggle('is-empty', body.aguante <= 0);
     b.mareo.classList.toggle('is-danger', body.mareo >= MAREO_CALMA || body.act === 'dizzy');
     b.aguante.style.setProperty('--fill', `${body.aguante}%`);
@@ -250,7 +255,9 @@ export function createHud({ me, voice = () => true }) {
     $('bars').hidden = !fighting || bodies.length < 2;
     const key = fighting ? bodies.map(b => `${b.id}${b.corner}`).join() : '';
     if (key !== barsKey) { barsKey = key; buildBars(bodies); }
-    bodies.forEach(bar);
+    const fresh = phase === 'intro' && lastPhase !== 'intro';
+    lastPhase = phase;
+    for (const body of bodies) bar(body, fresh);
     $('clock').classList.toggle('is-low', phase === 'fight' && !state.tutorial && state.time <= 10);
     $('clock').textContent = phase === 'fight' ? Math.max(0, Math.ceil(state.time)) : phase === 'intro' ? 'VS' : '';
     const ladder = state.ladder;
@@ -305,11 +312,12 @@ export function createHud({ me, voice = () => true }) {
 
   function tick(dt) {
     if (state) feedback.tick(dt, state);
+    damage.tick(dt);
     if (callTimer > 0 && (callTimer -= dt) <= 0) $('call').classList.remove('is-on');
     if (feedItems.length) {
       feedItems.forEach(f => { f.t -= dt; });
       if (feedItems[0].t <= 0) { feedItems = feedItems.filter(f => f.t > 0); drawFeed(); }
     }
   }
-  return { react, update, tick, call };
+  return { react, update, tick, call, settle: () => { if (state) damage.settle(state); } };
 }

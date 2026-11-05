@@ -894,6 +894,18 @@ Used by: Pepazo (capture the flag, `games/pintura/public/ctf.js`; domination,
 | Minimap | one per game | Bululú, Carreritas, Curiara, Embuste, Escondidas, Galope, Lancha, Pepazo, Reliquia each draw their own (Curiara and Lancha share `river/minimap`) |
 | Shot charge and aim guide (`guideRibbon` strips, `guideBeads` for an arc in the air, `guideRing` for a landing or blast ring) | `engine/play/shot-charge.js`, `aim-guide.js` | Billar, Bululú, Capis a Pintazos, Criollas, Pepazo (charge: the grenade throw); Billar, Capis a Pintazos (dashed arc), Criollas (guide), Pepazo (grenade arc, ground strip and blast ring) |
 
+### Game feel (damage, pixel effects)
+
+Everything here only draws: no rules, no physics. `engine/fx/feel.js` holds what
+they share: `calm()` (the browser's reduced-motion setting; the engine has none of
+its own), `fxLayer()` (one click-through overlay) and `jolt(el)`.
+
+| Piece | Module | Used by |
+|---|---|---|
+| Health bar: smooth drain, the lost chunk flashes white, orange, red, holds and drains; green, yellow, red by what is left; sparkles at the edge on a heal (`createDamageBar`, pure `createBarModel`) | `engine/fx/damage.js`, `damage.css` | Trifulca |
+| Damage numbers: pop, fan out on arcs, scale with the amount; white, orange with jitter on a crit, green on a heal (`createDamageNumbers`); drawn-only knockback spring (`createKnock`) | `engine/fx/damage.js` | Trifulca |
+| Pixel effects as camera-facing sprites (`createWorldFx(THREE, scene)`) or on the HUD layer (`createScreenFx`): pooled, capped, loaded on first use so first load doesn't grow | `engine/fx/pixelfx-bridge.js`, code in `engine/vendor/pixelfx/` (MIT; keep its `LICENSE` and `NOTICE.md`; add an effect through its `README.md`) | Trifulca (`hit-spark`, `crit-hit`, `crit-number`) |
+
 ## Player, look and rewards
 
 | Piece | Module | Used by |
