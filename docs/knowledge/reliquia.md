@@ -1112,6 +1112,31 @@ rank can turn it off. No engine change was needed.
 - "¡Otra expedición!" starts straight from the results with the same options,
   since the lobby only shows before a room's first dive.
 
+## Cuaderno del buzo (`cuaderno.js`)
+
+Each device keeps its own book on `engine/logbook.js`, under
+`pana:logbook:reliquia`: places, creatures, treasures, sucesos and notes on El
+Silbón. `sightings(state, id, { known, clear })` and `fromEvent(e, state, id)` are
+pure and only read what the game already sends: no second world model and nothing
+new in snapshots.
+
+- **Only a pana who is down there writes.** At the camp, or as a spectator, nothing
+  counts. An enemy counts awake, on your floor, within 14 m, ahead of you and past
+  the walls (`lineClear`), so a sleeping guardian or a statue that is still "just a
+  statue" stays unwritten. The stalker shares the jaguar's page.
+- **`game.js` loads it with `import()`.** Fosa's first load sits at the module cap.
+- **The lobby's chip sits beside Calor,** in the settings panel: under the records
+  the roster clips it at 800 px high, with no sign of that in its bounding box.
+- **`known` is a Set in memory** because `see` runs on every snapshot and the logbook
+  reads storage on each call. It also keeps `lineClear` off for what is written.
+- **XP goes through `diver.earn`** (5 per entry, receipt `logbook:<id>`, not a dive):
+  saved at once, but its line and any rank-up wait for the results, or the ceremony
+  would land in the middle of a chase. The logbook is what stops a second payment;
+  `progress.js` only remembers its last 60 receipts.
+
+`tests/cuaderno.test.js` covers the catalog and what counts; `tests/cuaderno.browser.mjs`
+is two panas finding things apart, then the results' line.
+
 ## Del día and Racha (`daily.js`)
 
 The host presses "Del día" (lobby, or results for a room past its first dive) and the

@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: ya tienes tu Cuaderno del buzo.**
+  Lugares, bichos, tesoros, sucesos y notas sobre El Silbón se anotan la primera vez que te los topas y dan XP una sola vez. Su porcentaje sale en la sala y al terminar.
 - **Fosa y Pepazo: ya no te trancas en las esquinas.**
   Pasas rozando marcos y contenedores sin frenar, y en Fosa las paredes chocan justo donde se ven.
 - **Pepazo: la pintura cae donde apuntas.**
