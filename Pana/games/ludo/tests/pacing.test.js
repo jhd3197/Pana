@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { LudoGame } from '../public/rules.js';
-import { automaticMoveDelay, presentedState, HOP, FLIGHT, motionDuration } from '../public/dice-timing.js';
+import { automaticMoveDelay, presentedState, pauseTick, hostTick, RESULT_HOLD, BEAT_TICK, HOP, FLIGHT, motionDuration } from '../public/dice-timing.js';
 
 test('missed throws retain the acting seat and reject the next player until the result settles',()=>{
   for(const power of [0,.5,1]){
@@ -14,6 +14,30 @@ test('missed throws retain the acting seat and reject the next player until the 
     assert.equal(restored.stepPause(.02),true);assert.equal(presentedState(restored).turn,1);
     assert.equal(restored.accept('b',{seq:1,revision:restored.revision,action:'roll'},'a'),true);
   }
+});
+
+test('a pause tracks the wall clock at any tick spacing and always keeps its closing beat',()=>{
+  const run=spacing=>{
+    const g=new LudoGame(1);g.addPlayer('a','A');g.addPlayer('b','B');g.phase='playing';g.roll(.5);
+    const delay=g.turnPause.remaining;let ticks=0,afterBeat=0;
+    while(g.turnPause){
+      if(g.turnPause.remaining<=RESULT_HOLD)afterBeat++;
+      g.stepPause(pauseTick(g.turnPause.remaining,spacing));ticks++;
+    }
+    return {delay,ticks,afterBeat,elapsed:ticks*spacing};
+  };
+  // A healthy host: real time, give or take a tick.
+  const fast=run(.1);
+  assert.ok(Math.abs(fast.elapsed-fast.delay)<=.2,`${fast.delay}s pause took ${fast.elapsed}s`);
+  // A loaded host: the landing tick, then the beat in ticks, never a stretched flight.
+  const beatTicks=Math.ceil(RESULT_HOLD/BEAT_TICK);
+  for(const spacing of [1,4,23]){
+    const slow=run(spacing);
+    assert.ok(slow.elapsed>=slow.delay,'a pause never ends early');
+    assert.ok(slow.ticks<=Math.ceil((slow.delay-RESULT_HOLD)/spacing)+beatTicks,`${slow.ticks} ticks at ${spacing}s`);
+    assert.equal(slow.afterBeat,beatTicks,'the result stays up for several ticks after the landing');
+  }
+  assert.equal(hostTick(.1),.1);assert.equal(hostTick(60),.75);
 });
 
 test('capture pauses cover every hop and the full return; bonus throws also wait',()=>{

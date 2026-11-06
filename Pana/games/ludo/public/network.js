@@ -1,4 +1,4 @@
-import { automaticMoveDelay } from './dice-timing.js';
+import { automaticMoveDelay, hostTick, pauseTick } from './dice-timing.js';
 import { TableRoom } from '/engine/table-room.js';
 import { loc } from '/engine/i18n.js';
 import { LudoGame, SEAT_CHOICES, chooseMove } from './rules.js';
@@ -18,11 +18,11 @@ export class LudoRoom extends TableRoom {
   unseat(id) { this.game.removePlayer(id); }
   // A local table keeps the lobby's seat count: you and three to five bots.
   practice() { super.practice(loc('Mesa local · tú y {n} bots', { n: this.state.players.length - 1 })); }
-  step(dt) {
-    const game = this.game;
+  step(seconds) {
+    const game = this.game, dt = hostTick(seconds);
     if (game.phase === 'starter') return game.stepStarter(dt);
-    if (game.turnPause) { this.botElapsed = 0; return game.stepPause(dt); }
-    if (game.autoMove) return game.stepAutomatic(dt);
+    if (game.turnPause) { this.botElapsed = 0; return game.stepPause(pauseTick(game.turnPause.remaining, seconds)); }
+    if (game.autoMove) return game.stepAutomatic(pauseTick(game.autoMove.remaining, seconds));
     if (!this.offline && game.stepIdle(dt)) return true;   // local play waits for you
     if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null, game.die ? automaticMoveDelay(game.toss.power) : 1.15)) return false;
     game.die ? game.move(chooseMove(game)) : game.roll();

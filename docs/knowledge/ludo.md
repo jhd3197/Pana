@@ -157,6 +157,26 @@ and late in a match. Moving/finishing dice stay random; repeated numbers are
 allowed. Every seat uses the same rule, independently of name or score. Classic
 random dice remain a lobby option. Thresholds and counters survive migration.
 
+Pauses run on the wall clock up to their last `RESULT_HOLD`, then count at most
+`BEAT_TICK` (.3 s) per tick (`pauseTick`, `dice-timing.js`). So a pause lasts its real
+length or the landing tick plus four, whichever is longer. A flat ceiling cannot do
+both jobs: under CPU throttling `setInterval` was seen firing 3.5 to 23 s apart, and at
+.75 s per tick a 3.18 s pause took up to 155 s. The beat needs its own ceiling because
+a guest's first toss frame arrives 1 to 2.7 s after the roll under load, so a beat
+that ends on the host's clock alone left under 750 ms of result on screen. Heavy
+rendering starves timers harder than frames, so `game.js` also ticks the host from
+the render loop; the timer stays for hidden tabs. Idle, bot and starter clocks use
+`hostTick` (.75 s) so a waking tab does not spend its nap on them.
+
+`turnPause.remaining` on any client, the host's `room.state` included, is the value
+at the last publish and sits at its full length for the whole pause. Only the host's
+`room.game` shows the clock moving, so a stuck value there says nothing about a
+frozen clock.
+
+The turn spotlight runs on the wall clock for 3.2 s, shorter than a few slow
+frames, so a suite waits on `spotlight.cued` and passes `frame` a fixed time to
+hold the cue rather than polling its light.
+
 ## Studio appearance and camino motions
 
 The playable scene, hub preview and Studio use the same textured board,

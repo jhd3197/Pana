@@ -20,12 +20,11 @@ export function createTurnSpotlight(scene, audio) {
     if(!ready)started=null;
     previous={ready,round:state.round};
   }
-  function frame() {
-    const t=started===null?4:(performance.now()-started)/1000;
+  function frame(t=started===null?4:(performance.now()-started)/1000) {
     const strength=Math.max(0,Math.min(1,t/.35,(3.2-t)/.65));
     lights.forEach(({node,intensity})=>{node.intensity=intensity*(1-.6*strength);});
     spot.intensity=3*strength;
   }
   function dispose(){lights.forEach(({node,intensity})=>{node.intensity=intensity;});scene.remove(spot,spot.target);spot.dispose();}
-  return {update,frame,dispose,get active(){return spot.intensity>0;},get seat(){return seat;},light:spot};
+  return {update,frame,dispose,get active(){return spot.intensity>0;},get cued(){return started!==null;},get seat(){return seat;},light:spot};
 }
