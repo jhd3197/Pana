@@ -2,7 +2,7 @@
 // cubrirse, press counters), decided every few tenths of a second with the
 // game's seeded randomness so a restored host plays on identically. Pure.
 import { draw, clamp } from '/engine/random.js';
-import { edge, inRing, canAct } from './fight-rules.js';
+import { edge, inRing, canAct, BODY_GAP } from './fight-rules.js';
 import { INTRO, AFTER, TUTORIAL } from './rules.js';
 
 const CHAIN_SKILL = [.1, .25, .4];
@@ -30,6 +30,8 @@ export function botInput(game, p, dt) {
   }
   const dx = other.x - body.x, dz = other.z - body.z, d = Math.hypot(dx, dz) || 1, fx = dx / d, fz = dz / d;
   const rx = fz, rz = -fx;
+  // Ranges count from where bodies stop, not from the rival's centre.
+  const room = d - BODY_GAP;
   ai.think -= dt; ai.hold -= dt; ai.block -= dt;
   // Parejas: hurt and near the partner, tag out.
   const partner = game.bodies.find(o => o.team === body.team && o.bench);
@@ -41,20 +43,20 @@ export function botInput(game, p, dt) {
     const roll = draw(game);
     ai.plan = 0;
     if (wantsTag && Math.hypot(partner.x - body.x, partner.z - body.z) < 2.1) ai.plan = 'grab';
-    else if (body.prop && d > 1.8 && d < 4.5 && roll < .18 + .06 * level) ai.plan = 'grab';
-    else if (prop && prop.d < 1.1 && d > 1.4 && roll < .3) ai.plan = 'grab';
-    else if (other.act === 'wind' && d < 2.3) {
-      if (d < 1.5 && roll < .35 + .2 * level) ai.plan = 'jab';
+    else if (body.prop && room > .8 && d < 4.5 && roll < .18 + .06 * level) ai.plan = 'grab';
+    else if (prop && prop.d < 1.1 && room > .4 && roll < .3) ai.plan = 'grab';
+    else if (other.act === 'wind' && room < 1.3) {
+      if (room < .5 && roll < .35 + .2 * level) ai.plan = 'jab';
       else if (roll < .75) ai.plan = 'dodge';
       else ai.plan = 'block';
     } else if (other.act === 'jab' && other.at < .1 && roll < .25 + .2 * level) ai.plan = 'block';
-    else if (other.act === 'block' && d < 1.4 && roll < .5) ai.plan = 'grab';
-    else if (['open', 'stun', 'dizzy'].includes(other.act) && d < 1.8) ai.plan = other.act === 'stun' && roll < .6 ? 'jab' : 'trompon';
-    else if (d < 1.5) {
+    else if (other.act === 'block' && room < .4 && roll < .5) ai.plan = 'grab';
+    else if (['open', 'stun', 'dizzy'].includes(other.act) && room < .8) ai.plan = other.act === 'stun' && roll < .6 ? 'jab' : 'trompon';
+    else if (room < .5) {
       ai.plan = roll < .5 ? 'jab' : roll < .66 ? 'trompon' : roll < .74 ? 'grab' : roll < .86 ? 'block' : roll < .93 ? 'dodge' : roll < .96 ? 'taunt' : 0;
     }
     if (!body.prop && body.aguante > 35 && ['jab', 'grab'].includes(ai.plan) && roll > .22) {
-      if (d < 1.1 && other.act === 'block') ai.plan = 'toss';
+      if (room < .1 && other.act === 'block') ai.plan = 'toss';
       else if (roll < .36) ai.plan = 'kick';
       else if (roll < .43) ai.plan = 'sweep';
     }
@@ -77,12 +79,12 @@ export function botInput(game, p, dt) {
   }
   out.g = ai.hold > 0; out.b = ai.block > 0;
   // Close in, keep a jab's distance, circle; back off when dizzy or hurt.
-  let f = d > 1.3 ? 1 : d < 1 ? -.6 : 0;
+  let f = room > .3 ? 1 : room < 0 ? -.6 : 0;
   if (body.act === 'dizzy' || body.mareo > 80) f = -1;
-  if (body.prop && d < 2.2) f = -.8;
+  if (body.prop && room < 1.2) f = -.8;
   out.x = fx * f + rx * ai.side * .45; out.z = fz * f + rz * ai.side * .45;
   if (wantsTag) { const tx = partner.x - body.x, tz = partner.z - body.z, n = Math.hypot(tx, tz) || 1; out.x = tx / n; out.z = tz / n; }
-  else if (prop && prop.d < 3 && !body.prop && d > 1.6) { const tx = prop.o.x - body.x, tz = prop.o.z - body.z, n = Math.hypot(tx, tz) || 1; out.x = tx / n; out.z = tz / n; }
+  else if (prop && prop.d < 3 && !body.prop && room > .6) { const tx = prop.o.x - body.x, tz = prop.o.z - body.z, n = Math.hypot(tx, tz) || 1; out.x = tx / n; out.z = tz / n; }
   const e = edge(game.arena, body.x, body.z);
   if (e.out > -.9 && !wantsTag) { out.x += e.nx * 1.2; out.z += e.nz * 1.2; }
   if (ai.plan === 'dodge') { out.x += rx * ai.side; out.z += rz * ai.side; }
@@ -96,12 +98,12 @@ function profe(game, body, ai, out, dt) {
   if (!me || game.tutorial.done) return out;
   const d = Math.hypot(me.x - body.x, me.z - body.z);
   if (body.act === 'down') { out.gp = bump(ai, 'gp'); return out; }
-  if (step === 'cubrir' && ai.think <= 0 && d < 1.6) { ai.think = 1.3; out.gp = bump(ai, 'gp'); }
-  if ((step === 'esquivar' || step === 'contra') && ai.think <= 0 && d < 1.8) { ai.think = 2.4; out.gp = bump(ai, 'gp'); ai.hold = .4; }
+  if (step === 'cubrir' && ai.think <= 0 && d < BODY_GAP + .6) { ai.think = 1.3; out.gp = bump(ai, 'gp'); }
+  if ((step === 'esquivar' || step === 'contra') && ai.think <= 0 && d < BODY_GAP + .8) { ai.think = 2.4; out.gp = bump(ai, 'gp'); ai.hold = .4; }
   out.g = ai.hold > 0;
   out.b = step === 'agarrar';
   // Stay close and in the middle of the ring.
-  if (d > 1.3 && step !== 'mover') { out.x = (me.x - body.x) / d * .7; out.z = (me.z - body.z) / d * .7; }
+  if (d > BODY_GAP + .3 && step !== 'mover') { out.x = (me.x - body.x) / d * .7; out.z = (me.z - body.z) / d * .7; }
   return out;
 }
 

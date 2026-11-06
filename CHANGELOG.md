@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Trifulca: los peleadores ya no se meten uno dentro del otro.**
+  Cada capi guarda su espacio: los cascos y los cuerpos ya no se funden, y los golpes, empujones y agarres siguen conectando.
 - **Pepazo: el juego va más fluido, sobre todo en El Puerto y La Plaza.**
   Las sombras del mapa ya no se redibujan a cada rato, así que la tarjeta gráfica descansa y apuntar se siente más suave.
 - **Fosa: La Mina del Sol ahora luce como piedra tallada oscura.**

@@ -4,16 +4,23 @@ import { ATTACK_TIMING } from './attack-timing.js';
 // it. rules.js owns the night around it: the queue, bets, dolitas, phases.
 import { clamp } from '/engine/random.js';
 
-// Seconds and metres. Every attack shows its windup before it can land.
+// Centres closer than BODY_GAP ease apart along the line between them, each at
+// most SEPARATE m/s: a deep overlap (a tag-in, a fling) slides out over a few
+// ticks, while walking in, even on a trompón's lunge, still stops at the gap.
+// It is two helmets side on (fighter-look.js HEAD_REACH) plus a sliver of air.
+export const BODY_GAP = 1.4, SEPARATE = 5;
+
+// Seconds and metres. Every attack shows its windup before it can land; reach
+// counts from the gap, so a fist always lands on a body it can't walk through.
 export const T = {
-  kick: { active: [ATTACK_TIMING.kick.impact, ATTACK_TIMING.kick.release], total: ATTACK_TIMING.kick.total, reach: 2, mareo: 19, push: 4, stun: .4, cost: 20, whiff: .22 },
-  sweep: { active: [ATTACK_TIMING.sweep.impact, ATTACK_TIMING.sweep.release], total: ATTACK_TIMING.sweep.total, reach: 1.6, mareo: 13, push: 2.4, stun: .7, cost: 25, whiff: .22 },
-  toss: { active: [ATTACK_TIMING.toss.impact, ATTACK_TIMING.toss.release], total: ATTACK_TIMING.toss.total, reach: 1.25, mareo: 17, push: 3, stun: .9, cost: 30, whiff: .22 },
+  kick: { active: [ATTACK_TIMING.kick.impact, ATTACK_TIMING.kick.release], total: ATTACK_TIMING.kick.total, reach: BODY_GAP + 1, mareo: 19, push: 4, stun: .4, cost: 20, whiff: .22 },
+  sweep: { active: [ATTACK_TIMING.sweep.impact, ATTACK_TIMING.sweep.release], total: ATTACK_TIMING.sweep.total, reach: BODY_GAP + .6, mareo: 13, push: 2.4, stun: .7, cost: 25, whiff: .22 },
+  toss: { active: [ATTACK_TIMING.toss.impact, ATTACK_TIMING.toss.release], total: ATTACK_TIMING.toss.total, reach: BODY_GAP + .25, mareo: 17, push: 3, stun: .9, cost: 30, whiff: .22 },
   hold: .16,            // golpe held longer than this is a trompón
-  jab: { active: [ATTACK_TIMING.jab.impact, ATTACK_TIMING.jab.release], total: .36, reach: 1.6, mareo: 8, push: 2, stun: .24, whiff: .12 },
+  jab: { active: [ATTACK_TIMING.jab.impact, ATTACK_TIMING.jab.release], total: .36, reach: BODY_GAP + .6, mareo: 8, push: 2, stun: .24, whiff: .12 },
   wind: .43,            // .43 windup + .12 extension preserves the .55 s warning
-  trompon: { active: [ATTACK_TIMING.trompon.impact, ATTACK_TIMING.trompon.release], total: .5, reach: 1.7, mareo: 24, push: 7.5, stun: .7, open: .4, whiff: .18 },
-  grab: { active: [ATTACK_TIMING.grab.impact, ATTACK_TIMING.grab.release], total: .55, reach: 1.4, mareo: 5, push: 7, stun: .55, whiff: .15 },
+  trompon: { active: [ATTACK_TIMING.trompon.impact, ATTACK_TIMING.trompon.release], total: .5, reach: BODY_GAP + .7, mareo: 24, push: 7.5, stun: .7, open: .4, whiff: .18 },
+  grab: { active: [ATTACK_TIMING.grab.impact, ATTACK_TIMING.grab.release], total: .55, reach: BODY_GAP + .4, mareo: 5, push: 7, stun: .55, whiff: .15 },
   dodge: { total: .42, safe: [.03, .34], speed: 4.6 },
   // A tap is remembered this long; one made from contact on waits for the end
   // of that attack. A clean hit's recovery can be cut short by one timed tap,
@@ -30,11 +37,6 @@ export const dodgeCue = b => {
 };
 export const SPEED = { forward: 2.7, back: 2.2, side: 2.4 };
 export const MAREO_MAX = 100, MAREO_CALMA = 75, KO_CAIDAS = 3, COUNT_STEP = .85;
-// Centres closer than BODY_GAP (two helmets plus a guard's forward lean) ease
-// apart along the line between them, each at most SEPARATE m/s: a deep overlap
-// (a tag-in, a fling) slides out over a few ticks, while walking in, even on a
-// trompón's lunge, still stops at the gap. 1 m is also where bots back off.
-export const BODY_GAP = 1, SEPARATE = 5;
 // A body flung out of a circle ring stops here: the neighbours stand further out.
 export const EDGE_LIMIT = 1;
 

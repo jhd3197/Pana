@@ -41,6 +41,23 @@ try {
       if (helmet.visible || seen().some((shown, i) => shown !== before[i] && parts[i].name !== 'Dizzy stars')) throw new Error(`${JSON.stringify(look)} not restored`);
       pana.dispose();
     }
+    // The body gap is sized from this: how far the helmet really sticks out in guard.
+    const THREE = await import('three');
+    const { HEAD_REACH } = await import('/g/trifulca/fighter-look.js');
+    const sized = createPana({}, { seed: 2 }), vertex = new THREE.Vector3();
+    sized.setCorner('red');
+    for (const act of ['idle', 'block']) for (let i = 0; i < 60; i++) {
+      sized.update(1 / 60, { act, at: i / 60, moving: 0, gap: 1.4 }, 1 / 60);
+      sized.root.updateWorldMatrix(true, true);
+      sized.character.head.traverseVisible(o => {
+        const at = o.isMesh && o.geometry.attributes.position;
+        for (let v = 0; at && v < at.count; v += 3) {
+          vertex.fromBufferAttribute(at, v).applyMatrix4(o.matrixWorld);
+          if (vertex.z > HEAD_REACH + .01) throw new Error(`${act}: helmet reaches ${vertex.z}, HEAD_REACH says ${HEAD_REACH}`);
+        }
+      });
+    }
+    sized.dispose();
     const fighter = createPana({});
     try {
       for (const act of ['kick', 'sweep', 'toss', 'tumble']) {

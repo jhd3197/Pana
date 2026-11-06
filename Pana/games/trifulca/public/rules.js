@@ -285,7 +285,7 @@ export class Trifulca {
     if (me.act === 'dizzy') { me.act = 'idle'; me.at = 0; }
     if (me.down && me.down.count >= 8) me.down.count = 4;   // all the time you need to get up
     profe.caidas = 0; me.caidas = Math.min(me.caidas, 1);
-    if (TUTORIAL[t.step].id === 'mover' && Math.hypot(me.x - profe.x, me.z - profe.z) < 1.6) this.tutorialCount();
+    if (TUTORIAL[t.step].id === 'mover' && Math.hypot(me.x - profe.x, me.z - profe.z) < BODY_GAP + .6) this.tutorialCount();
   }
 
   // Torneo: which round this match is.

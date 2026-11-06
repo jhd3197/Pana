@@ -17,7 +17,7 @@ import { handRoll } from './glove-shape.js';
 import { T } from './fight-rules.js';
 import { rhythm } from './crowd-life.js';
 import { inkOutlines } from './toon.js';
-import { HEAD_SIZE, ARM_LENGTH, ARM_GUARD, GLOVE_SIZE, punchLength, helmetSwap } from './fighter-look.js';
+import { HEAD_SIZE, ARM_LENGTH, ARM_GUARD, GLOVE_SIZE, punchLength, lungeRoom, helmetSwap } from './fighter-look.js';
 
 const SCULPT = .6;   // buildCharacter's sculpt scale: bones live in sculpt units
 const ease = (a, b, k) => a + (b - a) * k;
@@ -211,7 +211,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     // A whiff's extra recovery: still leaning into the punch that met nothing.
     if (authored && T[act]?.whiff && at > T[act].total) authored['body.rx'] += .22;
     const striking = act === 'jab' || act === 'trompon';
-    armReach.punch = punchLength(view.gap ?? 1.2);
+    armReach.punch = punchLength(view.gap ?? 1.6);
+    armReach.lunge = lungeRoom(view.gap ?? 2);
     const extension = striking ? attackExtension(act, at) : 0;
     applyCombat(authored, view.moving || 0, extension);
     if (corner) gloves.forEach((glove, i) => {

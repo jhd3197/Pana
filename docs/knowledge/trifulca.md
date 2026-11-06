@@ -99,10 +99,14 @@ wins and the titles are handed out.
   `dizzy` for 2.1 s; a clean hit then is a caída. Recovering without one
   resets mareo to 55. Getting up takes `7 + 6 × (caídas − 1)` presses before
   the ref's ten (one count per 0.85 s). Three caídas or the ten is a K.O.
-- Body space: centres closer than `BODY_GAP` (1 m) push apart along the line
+- Body space: centres closer than `BODY_GAP` (1.4 m) push apart along the line
   between them, each body at most `SEPARATE` (5 m/s), so a deep overlap eases
   out in a few ticks while walking in or a trompón lunge still stops at the
-  gap. 0.85 m let the kart helmets and the guard's forward lean fuse heads.
+  gap. The gap is sized from the mesh: the helmet sticks out `HEAD_REACH` (.65 m,
+  measured in `tutorial.browser.mjs`) towards the rival, so two need 1.3 m; at
+  1 m the sim held its gap and the panas still fused heads and chests. Every
+  attack's reach and the bots' ranges count from `BODY_GAP`, so changing it
+  keeps the spacing of the fight.
   Everyone in the ring takes part, also down, dodging or invulnerable bodies
   (invulnerability only stops hits). Benched and knocked-out ones never move but
   nobody stands inside them; a body on the ropes can't give way, so the free one
@@ -228,11 +232,13 @@ duplicated. Reduced motion disables HUD transitions, not gameplay messages.
   the chain. Heavy blows add `hitStop` (fighters' poses freeze 50–80 ms, the host
   keeps simulating) and camera shake.
 - Fight proportions live in `fighter-look.js`, close to the classic pana:
-  `HEAD_SIZE` .5 (the shared character's is .58; there two helmets intersect at the
-  1 m body gap, and at .38 the shell over a tiny head read as a football player),
+  `HEAD_SIZE` .5 (the shared character's is .58, and at .38 the shell over a tiny
+  head read as a football player),
   arms ×`ARM_LENGTH` 1.05 hanging and ×`ARM_GUARD` 1.03 in guard, gloves
   ×`GLOVE_SIZE` 1.2. A punch's arm stretches to `punchLength(gap)`, so the glove
-  stops at the rival at any distance.
+  stops at the rival at any distance. A pose's forward lunge is capped by
+  `lungeRoom(gap)`: the full .3 in open space, what's left between the helmets
+  up close.
 - Gloves don't inherit the arm's scale. The arm stretches along its length and
   the body's squash skews everything under it, so `glove-rig.js` writes the
   glove's matrix each frame from a squared-up copy of the arm's world axes
@@ -314,7 +320,7 @@ New controls are **I / RT** patada (`kick`), **U / LT** barrida (`sweep`),
 **O / RB** volteo (`toss`); **LB** now covers. Touch has dedicated buttons.
 All three use modulo-256 press counters (`k`, `s`, `v`) through LiveRoom,
 require free hands and an idle/guard stance, and cancel an uncommitted punch
-charge. Costs are 20/25/30 aguante, reach 1.9/1.45/1.1 m and mareo 19/13/17.
+charge. Costs are 20/25/30 aguante, reach `BODY_GAP` + 1/.6/.25 m and mareo 19/13/17.
 Kick and sweep are blockable; the close throw beats guard. Dodging any of the
 three exposes its attacker and grants the ordinary counter window. Bots use
 the same inputs. Each clean new move earns two scorecard points.
