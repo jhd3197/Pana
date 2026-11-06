@@ -15,10 +15,16 @@ const PAL = {
   rope: 0xb39766, leaf: 0x4c8c34, leafD: 0x2f6629, niche: 0x181410,
   // grey-green jungle stone for the Olmec head, gate and carved stele
   jungle: 0x9a9a8c, jungleL: 0xb9b8a8, jungleD: 0x74746a, jungleA: 0x8f9a88, jungleMoss: 0x5d8a3a,
+  // dark slate for faces cut from unlit rock
+  carved: 0x101317, carvedL: 0x171a1f, carvedD: 0x030304,
 };
 const GLOW = { fire: 0xff8a2a, glow: 0xffd36e };
 const basics = new Map();
-const mat = key => GLOW[key] !== undefined
+// Matte on purpose: a lamp at the camera's specular washes flat dark faces pale.
+const MATTE = new Set(['carved', 'carvedL', 'carvedD']);
+const mat = key => MATTE.has(key)
+  ? (basics.get(key) ?? basics.set(key, new THREE.MeshLambertMaterial({ color: PAL[key] })).get(key))
+  : GLOW[key] !== undefined
   ? (basics.get(key) ?? basics.set(key, new THREE.MeshBasicMaterial({ color: GLOW[key] })).get(key))
   : M(PAL[key], { roughness: key === 'gold' ? 0.45 : 0.95, metalness: key === 'gold' ? 0.35 : 0 });
 
@@ -110,7 +116,7 @@ function stairs(B, P, x, y, z0, w, n, rise, run, R, broken = 0) {
   }
 }
 // Shared carved head: Bayon (tiered crown and finial) or Olmec (moss cap).
-function carvedHead(B, P, s, R, { crown, keys }) {
+function carvedHead(B, P, s, R, { crown, keys, cap = 'jungleMoss' }) {
   const [base, face, dark] = keys;
   block(B, P, 0, 0, 0, s * 1.05, s * 0.45, s * 0.95, R, 0.3, base);
   const hy = s * 0.45 + s * 0.58;
@@ -127,7 +133,7 @@ function carvedHead(B, P, s, R, { crown, keys }) {
     box(B, face, P, 0, hy + s * 0.84, 0, s * 0.72, s * 0.18, s * 0.62);
     B.add(base, CONE, C(P, T(0, hy + s * 1.13, 0, 0, 0, 0, s * 0.3, s * 0.42, s * 0.3)));
     if (R() < 0.7) box(B, 'moss', P, 0, hy + s * 0.94, 0, s * 0.6, 0.08, s * 0.5);
-  } else box(B, 'jungleMoss', P, 0, hy + s * 0.77, 0, s * 0.8, 0.1, s * 0.6);
+  } else box(B, cap, P, 0, hy + s * 0.77, 0, s * 0.8, 0.1, s * 0.6);
 }
 
 function prasatInto(B, P, s, R, { broken = false, laterite = true } = {}) {
@@ -177,6 +183,14 @@ export function bayonFace({ seed = 72, size = 2.2 } = {}) {
 // Olmec/Maya stone head half-buried in the jungle floor.
 export function olmecHead({ seed = 73, size = 2 } = {}) {
   return build('olmecHead', seed, (B, R) => carvedHead(B, I, size, R, { crown: false, keys: ['jungle', 'jungleL', 'jungleD'] }));
+}
+
+// Altar of dark slate: a carved face on a stone dais, the footprint of sunSeal.
+export function carvedFaceAltar({ seed = 79, size = 2.2 } = {}) {
+  return build('carvedFaceAltar', seed, (B, R) => {
+    block(B, I, 0, 0, 0, size, 0.4, size, R, 0, 'carved');
+    carvedHead(B, T(0, 0.4, 0), size * 0.64, R, { crown: false, keys: ['carved', 'carvedL', 'carvedD'], cap: 'carved' });
+  });
 }
 
 // Drum column on a plinth with capital; broken ones end in a mossy stump.

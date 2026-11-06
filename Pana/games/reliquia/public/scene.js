@@ -8,7 +8,7 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { ruinShell, RUIN_PALETTES } from '/engine/models/props/reliquia-ruins.js';
 import * as treasure from '/engine/models/props/reliquia-treasure.js';
 import { expeditionWinch, expeditionLantern } from '/engine/models/props/reliquia.js';
-import { ruinColumn, fallenColumn, ruinRubble, stela, brazier, sunSeal, olmecHead } from '/engine/models/props/ruins.js';
+import { ruinColumn, fallenColumn, ruinRubble, stela, brazier, sunSeal, olmecHead, carvedFaceAltar } from '/engine/models/props/ruins.js';
 import { goldVein, orePile, mineSupport, mineLanternPost, mineLantern, minePortal, mineCart, mineCrate, mineBarrel, mineTrack, driftSet, timberProp, oreSeam, shaftHeadgear, shaftCribbing, hoistEngine, oreHopper, oreGrit, mineDrips, beamCrawlers } from '/engine/models/props/mine.js';
 import { stalactiteCluster, rootCurtain } from '/engine/models/props/caves.js';
 import { coffin, graveCandles, skull } from '/engine/models/props/cemetery.js';
@@ -105,7 +105,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
   place(campStatic, supplyPile({ seed: 5 }), 14, 0, 11, -.6);
   place(campStatic, mineCrate({ seed: 3 }), -3, 0, 4, .4); place(campStatic, mineCrate({ seed: 5, tnt: true }), -4, 0, 2.6, -.2);
   // The mine is a level gallery into the rock: an open mouth and timber sets inside.
-  place(campStatic, minePortal({ name: 'LA MINA DEL SOL', niche: false }), 0, 0, -1.6, 0);
+  place(campStatic, minePortal({ name: 'LA MINA DEL SOL', niche: false, board: { background: '#2a2e34', color: '#b9b6a8' } }), 0, 0, -1.6, 0);
   place(campStatic, mineSupport({ width: 3.9, height: 3.8, lantern: true }), 0, 0, -3.8);
   for (const [x, z, r] of [[-4, -2.2, 1.6], [4.2, -2.4, 1.4]]) place(campStatic, lajaRock({ seed: x * 13 + 5, radius: r, flat: .8 }), x, 0, z);
   place(camp, treasure.liftShaft({ below: 18, above: 5 }), run.lifts[0].x, 0, run.lifts[0].z, run.lifts[0].h);
@@ -133,7 +133,7 @@ export function createExpeditionWorld({ seed = 1, depth = 1, theme, roof = true,
       case 'support': return mineSupport({ width: 4.6, height: HEIGHT - .1, lantern: true });
       case 'coffin': return coffin({ open: (d.x | 0) % 2 === 0 });
       case 'candles': return graveCandles({ count: 6, seed: d.z | 0 });
-      case 'altar': return sunSeal({ size: 2.2 });
+      case 'altar': return run.theme === 'mina' ? carvedFaceAltar({ size: 2.2 }) : sunSeal({ size: 2.2 });
       case 'mineLamp': return mineLanternPost({});
       case 'prop': return timberProp({ seed: d.x | 0 });
       case 'seam': return oreSeam({ seed: (d.x * 3 + d.z) | 0, copper: (d.x | 0) % 3 === 0 });
