@@ -123,7 +123,7 @@ try {
   await b.locator('#offline-inline').click(); await waitFor(b, () => reliquia.room.offline && reliquia.state.phase === 'lobby'); await b.locator('#start').click();
   await waitFor(b, () => reliquia.state.phase === 'playing'); check('a lost connection offers a local expedition');
   console.log('render', await b.evaluate(() => ({ calls: reliquia.view.renderer.info.render.calls, triangles: reliquia.view.renderer.info.render.triangles })));
-  await b.goto(base + '/'); await b.getByRole('heading', { name: 'Reliquia', exact: true }).waitFor(); check('the hub lists Reliquia');
+  await b.goto(base + '/'); await b.getByRole('heading', { name: 'Fosa', exact: true }).waitFor(); check('the hub lists Fosa');
   const errors = [a, b, c].flatMap(p => p.errors);
   assert.deepEqual(errors, []); check('no uncaught browser errors');
 } catch (error) {

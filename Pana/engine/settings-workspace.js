@@ -34,9 +34,8 @@ const inputRange = (key, label, detail, extra) => range(key, label, detail, { mi
 
 function catalog(legacy) {
   const hints = { title: loc('Ayudas'), rows: [
-    choice('inputHints', loc('Ayudas en pantalla'), loc('Qué controles muestran las ayudas. Elegir uno solo cambia lo que se ve; puedes seguir usando los demás.'), [
+    choice('inputHints', loc('Ayudas en pantalla'), loc('Qué controles muestran los menús y las instrucciones. Elegir uno solo cambia lo que se ve; puedes seguir usando los demás.'), [
       ['auto', loc('Automático'), loc('Siguen lo último que usaste.')], ['keyboard', loc('Teclado'), loc('Siempre teclas.')], ['gamepad', loc('Mando'), loc('Siempre botones del mando.')], ['touch', loc('Táctil'), loc('Siempre los controles de la pantalla.')]]),
-    toggle('hints', loc('Ayudas de controles en pantalla'), loc('Los recordatorios de teclas y botones en las esquinas del juego.')),
   ] };
   const help = key => legacy.help?.[key] && { title: loc('Cómo se juega'), help: key };
   const audio = legacy.sound;

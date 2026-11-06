@@ -32,8 +32,8 @@ wins and the titles are handed out.
 - `queda`, ganador se queda: two fight, the winner stays.
 - `libre`, trifulca libre: up to four in the ring (corners red, blue, yellow,
   green), each facing the nearest foe still standing. Four props spawn at
-  62 % of the ring radius (silla, caja, casco, chancleta). Agarrar picks one
-  up within 1.2 m when no foe is within 1.3 m; with one in hand golpe swings
+  62 % of the ring radius (silla, caja, casco, chancleta, bate). Agarrar picks one
+  up (see "Hit feedback and proportions"); with one in hand golpe swings
   it (+0.35 m reach, ×1.4 mareo, ignores blocking) and agarrar throws it
   (9.5 m/s, 7 m, 22 mareo, 0.55 m hit radius). A knocked-out pana leaves
   (`out`); the last one standing wins; odds are the number of fighters.
@@ -73,7 +73,24 @@ wins and the titles are handed out.
   counter change, and mashing after a caída is just the counter delta.
 - Golpe: a tap (released before `T.hold` = 0.16 s) is a jab; held past it is
   the trompón's 0.43 s windup (`wind`, the glove shakes back), which fires on
-  its own. A press while busy is buffered for 0.2 s.
+  its own.
+- Tap buffering: every button (golpe, patada, barrida, volteo, agarrar,
+  esquivar) goes in one slot (`queued`, last press wins) for `T.buffer` = 0.3 s;
+  a press from an attack's contact on waits for the end of that attack. Kicks
+  used to fire only on a tick the fighter was already free, and a tap on a
+  recovery's last tick read its still-down key as a held trompón: a buffered
+  golpe now counts as held only for as long as the press is old (`pressAge`).
+  Bots skip this for moves other than golpe: their plans would otherwise pile
+  up into kicks.
+- Weight: a whiff adds `whiff` s of recovery (leaning into the air). A clean hit
+  opens a chain for `T.combo.window` = 0.4 s: one tap after contact skips the
+  rest of the recovery and the next attack gets +0.2/+0.35 m reach and ×1.15/×1.35
+  mareo; the third hit shoves ×1.6 and ends it. Tapping before contact or twice
+  in one attack is mashing (`mashed`): it fires after a full recovery, no bonus.
+  A block, a dodge or being hit breaks the chain. Bots chain with `CHAIN_SKILL`.
+- Reaches went up (jab 1.6, trompón 1.7, kick 2, sweep 1.6, toss 1.25) because a
+  jab's own 0.4 m knockback left the next one out of its old 1.4 m, so only the
+  lunging trompón reliably landed. Trompón mareo 24, jab 8 to pay for it.
 - Rock-paper-scissors: a jab landing on a `wind` interrupts it (+6 mareo
   counter); blocking from the front turns jabs into 1.5 chip; a dodge's
   invulnerable window (0.03–0.34 s) makes a trompón whiff and leaves the
@@ -82,26 +99,33 @@ wins and the titles are handed out.
   `dizzy` for 2.1 s; a clean hit then is a caída. Recovering without one
   resets mareo to 55. Getting up takes `7 + 6 × (caídas − 1)` presses before
   the ref's ten (one count per 0.85 s). Three caídas or the ten is a K.O.
-- Body space: centres closer than `BODY_GAP` (1 m) push apart along the line
+- Body space: centres closer than `BODY_GAP` (1.4 m) push apart along the line
   between them, each body at most `SEPARATE` (5 m/s), so a deep overlap eases
   out in a few ticks while walking in or a trompón lunge still stops at the
-  gap. 0.85 m let the kart helmets and the guard's forward lean fuse heads.
+  gap. The gap is sized from the mesh: the helmet sticks out `HEAD_REACH` (.65 m,
+  measured in `tutorial.browser.mjs`) towards the rival, so two need 1.3 m; at
+  1 m the sim held its gap and the panas still fused heads and chests. Every
+  attack's reach and the bots' ranges count from `BODY_GAP`, so changing it
+  keeps the spacing of the fight.
   Everyone in the ring takes part, also down, dodging or invulnerable bodies
-  (invulnerability only stops hits); benched and knocked-out ones don't. Only
+  (invulnerability only stops hits). Benched and knocked-out ones never move but
+  nobody stands inside them; a body on the ropes can't give way, so the free one
+  moves alone; a tag-in lands beside the foe, not in them. Three or more take a
+  second pass. Crowd panas and the ref give way outward in the scene (`ringside.js`). Only
   positions move, so knockback velocity is untouched. Same spot: the first
   body goes to −X. The duel's pull back to z = 0 runs before the step so the
   push has the last word; the ref's clinch range is `BODY_GAP + 0.2`.
 - The bell after `seconds`: card = jabs + 3 × trompones + 6 × caídas
   inflicted + 0.35 × seconds pressing forward + 0.25 × blocks. A gap under 1
   point goes to the crowd (cheers plus bets per corner).
-- Bot balance (12-fight nights, seeds 1–3): roughly a third of fights end by
-  K.O. or count at every level; bravos throw about 1.5× the trompones of
-  tranquilos.
+- Bot balance (12-fight nights, seeds 1–6): about 33 % of fights end by K.O. or
+  count at level 0, 50–55 % at levels 1 and 2; bravos throw about 1.3× the
+  trompones of tranquilos.
 
 ## The ring and the night
 
 - Circle arenas have a human ring (`r` 4.1–4.5 m). A fighter more than 0.1 m
-  out for 0.55 s is shoved back by a neighbour; a pana in the crowd within 2 m
+  out for 0.55 s is sent back by the line, unstunned; a pana in the crowd within 2 m
   who presses golpe does it first and earns 2 dolitas (only when the fighter
   is out or within 0.35 m of the edge). El toldo is a square ring with ropes
   that bounce instead.
@@ -129,7 +153,11 @@ wins and the titles are handed out.
   body outward can flip it. `world.cameraSide` exposes the choice. The crowd
   never stands within `CROWD_GAP` (1.15 rad) of the camera side, and NPC
   neighbours on that side hide during a fight. The ref waits outside the
-  ring, 1.05 rad off the far side, and walks the edge to count. Crowd panas
+  ring, 1.05 rad off the far side, and walks around the edge to count. Everyone
+  outside the fight stays on the band in `ringside.js`: a straight line to a goal
+  across the ring goes through the fight, and a push away from a fighter flung past
+  the crowd points inward, so positions turn around the ring and only ever move
+  out. Bots in the crowd walk along it but never shove; that is a pana's move. Crowd panas
   and neighbours face the fight's middle rather than the centre mark, idle on
   their own seeded rhythm (`crowd-life.js`, deterministic across peers) and
   the neighbours near a landed trompón or a caída gasp; hits stagger the
@@ -142,6 +170,19 @@ wins and the titles are handed out.
 - The replay records every render frame for 6 s and, on a K.O. or a count,
   plays from 1.5 s before the last caída to 0.5 s after it at 0.4× during
   the verdict.
+- Arena rotation: `options.arena` defaults to `rotar` (Varios); any arena can be
+  pinned. `Trifulca.rotation()` keeps a shuffled cycle in the snapshot (a new host
+  continues it), never starting one on the map just played; `arenaNow` is what's
+  on stage. A torneo leaves el toldo out of the cycle for its final. `arenaNext`
+  is published during the verdict so every client dresses the next map then:
+  builders are generators (`arenaSteps`) and the scene runs them `BUILD_MS` per
+  frame, because la calle alone stalls for over a second built at once. The swap
+  is then a camera cut. The scene keeps `LAMP_POOL` point lights on every map
+  (unused ones at intensity 0): another count would recompile every material.
+  The pool is 2 (the ring light and the nearest lamp): software WebGL lost a
+  quarter of its frame rate at 6, and day maps use none. A character costs far
+  more triangles than any prop, so a map gets `NPC_MAX` = 14 neighbours; together
+  these keep the frame rate of the old single-map build.
 - Seven arenas (`ARENAS` in fight-rules.js, dressed in arenas.js): la calle,
   el toldo, el mercado, las motos (night), la manga de coleo (llanero hats on
   the neighbours, wooden stands with seated crowd), el paso de cebra (dusk,
@@ -181,6 +222,45 @@ bars remain mareo and aguante, diamonds count received knockdowns, and ¡Dale!
 remains a taunt. The shared controller strip is styled in-game rather than
 duplicated. Reduced motion disables HUD transitions, not gameplay messages.
 
+## Hit feedback and proportions
+
+- `pana.flash()` lerps emissive white to red on that fighter's own materials
+  (`buildCharacter` makes them per character; ink hulls have no emissive) and
+  restores each one's own emissive afterwards.
+- The burst (`combat-impact.js`) draws without depth test at the contact side:
+  at the victim's centre it sat inside the helmet, mostly hidden. It grows with
+  the chain. Heavy blows add `hitStop` (fighters' poses freeze 50–80 ms, the host
+  keeps simulating) and camera shake.
+- Fight proportions live in `fighter-look.js`, close to the classic pana:
+  `HEAD_SIZE` .5 (the shared character's is .58, and at .38 the shell over a tiny
+  head read as a football player),
+  arms ×`ARM_LENGTH` 1.05 hanging and ×`ARM_GUARD` 1.03 in guard, gloves
+  ×`GLOVE_SIZE` 1.2. A punch's arm stretches to `punchLength(gap)`, so the glove
+  stops at the rival at any distance. A pose's forward lunge is capped by
+  `lungeRoom(gap)`: the full .3 in open space, what's left between the helmets
+  up close.
+- Gloves don't inherit the arm's scale. The arm stretches along its length and
+  the body's squash skews everything under it, so `glove-rig.js` writes the
+  glove's matrix each frame from a squared-up copy of the arm's world axes
+  (`rigidFrame`): one uniform size at any pose, and the wrist point still rides
+  the stretched arm, so reach is unchanged. Don't set `glove.scale` or
+  `glove.position`: `matrixAutoUpdate` is off. `GLOVE_SIZE` is in world units,
+  because `character.group` is outside the .6 sculpt scale.
+- The hand turns on the arm through `userData.hand` (`handRoll` in
+  `glove-shape.js`): thumb up and in on guard, palm down at the end of a
+  straight punch or hook, palm up on an upper. Turning a child of the rigid glove
+  keeps it free of shear; turning the arm would twist the sleeve.
+- Headwear: `helmetSwap` hides every child of the head except the head's own parts,
+  the `face:` extras and the helmet, and restores each one's visibility on `off()`.
+  It lists what stays rather than what goes because worn things come in many forms:
+  `hat:` groups, `outfit:` headwear, `glasses:`, `accessory:glasses` and
+  `addLegacyHat`'s unnamed meshes. A new part of the bare head has to join
+  `BARE_HEAD`. The ref's llanero hat is on purpose.
+- Props: there was no bat; `bate` is now a prop like the rest (`woodenBat`, shared
+  with Chapita). Pick-up range is `PICKUP` 1.7 m. The old rule refused any pick-up
+  with a foe within 1.3 m, which with bodies a metre apart meant nearly always.
+  Now only a foe nearer than a prop beyond `GRAB_FIRST` turns agarrar into a grab.
+
 ## Contact timing
 
 `attack-timing.js` supplies the same impact/release times to rules and procedural
@@ -190,8 +270,8 @@ at the first strike tick. Windup shortens to 0.43 s, preserving the original
 sub-tick overshoot forward instead of dropping it, so server cadence cannot add
 an extra tick before contact; jab contact remains 0.10–0.18 s and grab 0.14–0.24 s.
 The pure `analyseImpact` sampler follows grandma-gta's maximum-extension idea
-to test authored pose curves; it is not a runtime animation-clip loader. Existing
-0.2 s input buffering, directional push, mareo, stars and mash-to-rise remain
+to test authored pose curves; it is not a runtime animation-clip loader. Input
+buffering, directional push, mareo, stars and mash-to-rise remain
 the combat core. A short filtered noise layer sharpens clean jab sounds through
 the shared sound context. Timing tests prove no early or repeated heavy damage.
 
@@ -240,7 +320,7 @@ New controls are **I / RT** patada (`kick`), **U / LT** barrida (`sweep`),
 **O / RB** volteo (`toss`); **LB** now covers. Touch has dedicated buttons.
 All three use modulo-256 press counters (`k`, `s`, `v`) through LiveRoom,
 require free hands and an idle/guard stance, and cancel an uncommitted punch
-charge. Costs are 20/25/30 aguante, reach 1.9/1.45/1.1 m and mareo 19/13/17.
+charge. Costs are 20/25/30 aguante, reach `BODY_GAP` + 1/.6/.25 m and mareo 19/13/17.
 Kick and sweep are blockable; the close throw beats guard. Dodging any of the
 three exposes its attacker and grants the ordinary counter window. Bots use
 the same inputs. Each clean new move earns two scorecard points.
@@ -269,3 +349,11 @@ notices and night titles also travel as source. `deviceText` in `hud.js`
 swaps key names on already translated text, so an English translation keeps
 "Space", "or left click", "or right click" and "D or the right arrow" word for
 word and never uses I, O, T, L, K, J or U as ordinary words.
+
+## The fighter's bar
+
+The big bar shows `100 - mareo`, so it empties as the mareo climbs; the rules
+still only know mareo. `public/hud-damage.js` reads damage from how each body's
+mareo changed between snapshots, so anything that raises it counts, and marks a
+crit from the events (`trompon`, or a hit with `counter`, `contra` or `armed`).
+The knockback in `scene.js` is a drawn-only spring on top of the rules' position.

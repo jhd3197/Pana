@@ -1,4 +1,5 @@
 // Pana adapter around the imported 60 Hz platform-fighting simulation.
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { CombatGame, createEmptyInput } from './combat/engine.js';
 import { CpuController } from './combat/ai.js';
 import { defaultOptions, roomOptions } from './options.js';
@@ -68,6 +69,7 @@ export class Bash {
       const pana = PANA_IDS[(this.seed + this.round * 7 + slot * 5) % PANA_IDS.length];
       this.players.push({ id: 1000 + slot, name: ['Coco', 'Mango', 'Papel', 'Tinta', 'Guayaba', 'Cacao'][slot], avatar: {}, bot: true, style: slot % STYLES.length, pana, traje: slot % 3 });
     }
+    applyFriendNames(this.players.filter(p => p.bot), friendNamesNow(), { taken: this.players.filter(p => !p.bot).map(p => p.name) });
     const config = { players: this.players.map((p, slot) => ({ slot, name: p.name,
       fighter: fighterId(STYLES[p.style], p.pana), skin: '00', cpu: p.bot, cpuLevel: this.options.level })),
       stocks: this.options.stocks, timeLimitSeconds: this.options.seconds,

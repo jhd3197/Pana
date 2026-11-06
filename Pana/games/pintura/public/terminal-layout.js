@@ -57,5 +57,13 @@ export const TERMINAL_COVERS = TERMINAL_STACKS.map(stacks => {
   for (const o of BASE_COVER) if (cover.every(c => gap(c, o) >= 2.4)) cover.push(o);
   return cover;
 });
-// Even seats spawn in the west base, odd seats in the east; the first two are the flag homes.
-export const TERMINAL_SPAWNS = [-9, 9, -3, 3].flatMap(z => BASES.map(({ x, side }) => ({ x: x + side * 2.5, z })));
+// Even seats spawn in the west half, odd seats in the east; the first two are the flag homes.
+// The first eight are the four pads of each base, 6 m apart. Free-for-all needs
+// eight panas 20 m apart (spawn-picker.js MIN_SPAWN_GAP), so each half adds three
+// more in pairs mirrored through the centre: the two back corners of the base and a
+// forward pad by the yard, clear of every layout's containers.
+const OUTPOSTS = [[-55, -27], [-55, 27], [-34, -12]];
+export const TERMINAL_SPAWNS = [
+  ...[-9, 9, -3, 3].flatMap(z => BASES.map(({ x, side }) => ({ x: x + side * 2.5, z }))),
+  ...OUTPOSTS.flatMap(([x, z]) => [{ x, z }, { x: -x, z: -z }]),
+];

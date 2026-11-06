@@ -3,6 +3,8 @@
 // little ring with the Ávila behind), el mercado mayorista (crates that tumble)
 // and la plaza de las motos at night (parked motos that fall like dominoes).
 // Each returns { group, floor, light, npcSpots, update(t, dt), react(event), reset(), dispose() }.
+// Builders are generators: a street of houses takes over a second to build, so
+// arenaSteps lets a live game build one a few pieces per frame.
 import * as THREE from 'three';
 import { house } from '/engine/models/props/plaza-buildings.js';
 import { cornerBodega, streetlightPole, streetFoodKiosk, rooftopWaterTank, parkBench, busStopShelter } from '/engine/models/props/pueblo.js';
@@ -72,10 +74,17 @@ function chalkRing(parent, r) {
 }
 
 export function createArena(id, arena) {
+  const steps = arenaSteps(id, arena);
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
+}
+
+export function* arenaSteps(id, arena) {
   const group = new THREE.Group(), animated = [], random = rng({ calle: 41, toldo: 12, mercado: 77, motos: 5 }[id] || 1);
   const ctx = { group, animated, random, npcSpots: [], dominoes: [], crates: [], moto: null, bull: null, bus: null, ropes: null, floor: 0, lamps: [], camBox: null, hats: false };
   group.name = { calle: 'La calle del barrio', toldo: 'El toldo', mercado: 'El mercado mayorista', motos: 'La plaza de las motos', manga: 'La manga de coleo', cebra: 'El paso de cebra', colonial: 'La calle colonial' }[id]; // i18n-ignore: place names
-  ({ calle: buildCalle, toldo: buildToldo, mercado: buildMercado, motos: buildMotos, manga: buildManga, cebra: buildCebra, colonial: buildColonial }[id] || buildCalle)(ctx, arena);
+  yield* ({ calle: buildCalle, toldo: buildToldo, mercado: buildMercado, motos: buildMotos, manga: buildManga, cebra: buildCebra, colonial: buildColonial }[id] || buildCalle)(ctx, arena);
   const splash = new Puffs(group);
   let wobble = 0, motoRun = null, bullRun = null, busRun = null;
   return {
@@ -167,7 +176,7 @@ function ringNeighbours(ctx, arena, count, skip = () => false) {
   }
 }
 
-function buildCalle(ctx, arena) {
+function* buildCalle(ctx, arena) {
   const { group, random } = ctx;
   ctx.camBox = [8.6, 36];
   ground(group, 15, 90, 0x5d6068);
@@ -180,13 +189,15 @@ function buildCalle(ctx, arena) {
     for (let z = -38; z <= 38; z += 7.6, i++) {
       const h = house({ w: 7.2, h: i % 3 === 1 ? 8.2 : 6.2, seed: 11 + i * 3 + (s > 0 ? 40 : 0), color: COLORS[(i + (s > 0 ? 3 : 0)) % COLORS.length], style: STYLES[(i + (s > 0 ? 2 : 0)) % STYLES.length], label: i === 4 && s < 0 ? 'ABASTO EL TROMPÓN' : '' }); // i18n-ignore: signage painted in the world
       frontAt(group, h, s * 10.5, z, s < 0 ? Math.PI / 2 : -Math.PI / 2);
+      yield;
     }
   }
   // Closing the street at both ends.
-  for (const e of [-1, 1]) [-9, 0, 9].forEach((x, i) => {
+  for (const e of [-1, 1]) for (const [i, x] of [-9, 0, 9].entries()) {
     const h = house({ w: 8.6, h: 8.4, seed: 70 + i + (e > 0 ? 9 : 0), color: COLORS[(i * 3 + (e > 0 ? 1 : 4)) % COLORS.length], style: 'balcon' });
     frontAt(group, h, x, e * 44, e < 0 ? 0 : Math.PI);
-  });
+    yield;
+  }
   // Poles and the spaghetti of cables across the street.
   const poles = [];
   for (const z of [-24, -8, 10, 26]) for (const s of [-1, 1]) {
@@ -195,11 +206,13 @@ function buildCalle(ctx, arena) {
   }
   for (let i = 0; i < poles.length; i += 2) group.add(cableSpan(poles[i], poles[i + 1], { seed: i + 3 }));
   for (let i = 0; i + 2 < poles.length; i++) group.add(cableSpan(poles[i], poles[i + 2], { strands: 3, seed: i + 30 }));
+  yield;
   for (const z of [-15, 16]) { const line = buntingLine({ span: 15, seed: Math.floor(random() * 99), height: 5.2 }); line.position.set(0, 0, z); line.rotation.y = Math.PI / 2; group.add(line); }
   // Parked motos and a car along the curbs; the bodega and the señora.
   for (const [s, z0] of [[-1, -20], [1, 12], [1, -16]]) for (let k = 0; k < 4; k++) {
     placed(group, parkedMoto({ color: MOTO_COLORS[Math.abs(k + z0) % MOTO_COLORS.length], seed: k + z0 + 50, detail: 'light' }), s * 6.6, z0 + k * 1.1, s > 0 ? -Math.PI / 2 + .3 : Math.PI / 2 - .3);
   }
+  yield;
   placed(group, parkedCar('familiar', 9), -6.1, 22, 0);
   placed(group, parkedCar('chamo', 3), 6.1, -30, Math.PI);
   placed(group, streetFoodKiosk(), 8.2, 20, -Math.PI / 2);
@@ -216,14 +229,16 @@ function buildCalle(ctx, arena) {
   const moto = parkedMoto({ color: '#ffc629', seed: 8 }); moto.visible = false; group.add(moto); ctx.moto = moto;
 }
 
-function buildToldo(ctx) {
+function* buildToldo(ctx) {
   const { group, random } = ctx;
   ground(group, 120, 120, 0xd9b48a);
   ground(group, 34, 34, 0xe7d3b3, .02);
   const ring = tentRing({ seed: 3 }); inkOutlines(ring, { only: m => m.userData.ink }); group.add(ring); ctx.ropes = ring.getObjectByName('ropes');
   ctx.floor = RING.floor; ctx.camHeight = 2.5;
   ring.getObjectByName('lamps')?.children.forEach(l => { const p = new THREE.Vector3(); l.getWorldPosition(p); ctx.lamps.push(p); });
+  yield;
   const avila = avilaRidge({ width: 300, height: 52, depth: 70 }); avila.position.set(0, 0, -62); group.add(avila);
+  yield;
   // The audience in plastic chairs, palms and araguaneyes around the plaza.
   const colors = ['#ff4b4b', '#2ad1b2', '#ffc629', '#3d7bf2', '#ff6fae'];
   for (let i = 0; i < 18; i++) {
@@ -234,6 +249,7 @@ function buildToldo(ctx) {
   for (let i = 0; i < 10; i++) {
     const a = i / 10 * Math.PI * 2 + .3, r = 16 + random() * 4;
     placed(group, i % 3 ? palm({ h: 8 + random() * 2, seed: i + 3 }) : araguaney({ seed: i + 1 }), Math.sin(a) * r, Math.cos(a) * r, random() * 6);
+    yield;
   }
   for (const a of [.8, 2.4, 3.9, 5.5]) placed(group, streetLamp(), Math.sin(a) * 12, Math.cos(a) * 12, 0);
   placed(group, streetFoodKiosk(), 13, 6, -Math.PI / 2);
@@ -243,7 +259,7 @@ function buildToldo(ctx) {
   for (let i = 0; i < 8; i++) { const a = (i + .5) / 8 * Math.PI * 2, r = 5.7; ctx.npcSpots.push({ x: Math.sin(a) * r, z: Math.cos(a) * r, face: a + Math.PI, seated: false }); }
 }
 
-function buildMercado(ctx, arena) {
+function* buildMercado(ctx, arena) {
   const { group, random } = ctx;
   ctx.camBox = [7.6, 30];
   ground(group, 22, 90, 0xb8b2a6);
@@ -259,6 +275,7 @@ function buildMercado(ctx, arena) {
         placed(group, pivot, s * 7.4, z + 1.6, s > 0 ? -Math.PI / 2 : Math.PI / 2);
         ctx.crates.push({ object: crates, x: s * 7.4, z: z + 1.6, dir: s, fall: -1e9 });
       }
+      yield;
     }
   }
   for (const [x, z, a] of [[-5.6, -9, .4], [6.1, 8, -2.4], [5.4, -14, 2.9], [-6.2, 15, .9]]) placed(group, marketHandTruck({ seed: Math.floor(x * z) }), x, z, a);
@@ -270,7 +287,7 @@ function buildMercado(ctx, arena) {
   for (const z of [-20, -11, 9, 17]) ctx.npcSpots.push({ x: (z > 0 ? 1 : -1) * 7.6, z: z - 1.2, face: z > 0 ? -Math.PI / 2 : Math.PI / 2, seated: false });
 }
 
-function buildMotos(ctx, arena) {
+function* buildMotos(ctx, arena) {
   const { group, random, dominoes } = ctx;
   ground(group, 120, 120, 0x3b3e48);
   ground(group, 30, 30, 0x6a6470, .02);
@@ -280,18 +297,19 @@ function buildMotos(ctx, arena) {
     const z = -5.4 + k * 1.15, moto = parkedMoto({ color: MOTO_COLORS[(k * 3 + row) % MOTO_COLORS.length], seed: k * 7 + row, detail: k % 2 ? 'light' : 'full' });
     placed(group, moto, x, z, 0);
     dominoes.push({ row, x, z, tipper: moto.userData.tipper, fall: -1e9 });
+    yield;
   }
   // Lamps, bulbs and the kiosk light the plaza.
   for (const [x, z] of [[-11, -11], [11, -11], [-11, 11], [11, 11]]) { placed(group, streetLamp(), x, z); ctx.lamps.push(new THREE.Vector3(x, 4, z)); }
   for (const z of [-9, 0, 9]) { const wire = bulbWire({ span: 24, height: 5, sag: .8, posts: z !== 0 }); wire.position.z = z; group.add(wire); }
   placed(group, streetFoodKiosk(), 0, -14, 0); ctx.lamps.push(new THREE.Vector3(0, 3, -12.5));
   placed(group, parkBench(), -9, 10, 2.4); placed(group, parkBench(), 9, 10, -2.4);
-  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, r = 24 + random() * 6; placed(group, i % 2 ? saman({ seed: i }) : palm({ h: 9, seed: i }), Math.sin(a) * r, Math.cos(a) * r); }
-  [-16, 0, 16].forEach((x, i) => { const h = house({ w: 9, h: 8.4, seed: 90 + i, color: COLORS[(i * 2 + 1) % COLORS.length], style: 'balcon' }); frontAt(group, h, x, -20, 0); });
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, r = 24 + random() * 6; placed(group, i % 2 ? saman({ seed: i }) : palm({ h: 9, seed: i }), Math.sin(a) * r, Math.cos(a) * r); yield; }
+  for (const [i, x] of [-16, 0, 16].entries()) { const h = house({ w: 9, h: 8.4, seed: 90 + i, color: COLORS[(i * 2 + 1) % COLORS.length], style: 'balcon' }); frontAt(group, h, x, -20, 0); yield; }
   ringNeighbours(ctx, arena, 10, (x) => Math.abs(x) > 6);
 }
 
-function buildManga(ctx, arena) {
+function* buildManga(ctx, arena) {
   const { group, random } = ctx;
   ctx.hats = true; ctx.camBox = [40, 6.4];
   ground(group, 140, 140, 0xc9a873);
@@ -308,6 +326,7 @@ function buildManga(ctx, arena) {
         const v = new THREE.Vector3(sx, sy, sz).applyMatrix4(stands.matrixWorld);
         ctx.npcSpots.push({ x: v.x, z: v.z, y: v.y, face: side > 0 ? Math.PI : 0, seated: true });
       });
+      yield;
     }
   }
   placed(group, corralGate({ span: 8, open: .1 }), -34, 0, Math.PI / 2);
@@ -316,13 +335,13 @@ function buildManga(ctx, arena) {
   placed(group, waterWindmill({ height: 10 }), 44, -22, 0);
   for (let i = 0; i < 6; i++) placed(group, hayBale(), -40 + i * 1.6, 13, random());
   placed(group, hitchingRail({ span: 4 }), 38, 13, 0);
-  for (const [x, a] of [[36.5, .2], [39.5, -.3]]) { const horse = llaneroHorse({ seed: Math.floor(x) }); placed(group, horse, x, 14, a); }
-  for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2, r = 46 + random() * 10; placed(group, i % 3 ? saman({ seed: i + 2 }) : palm({ h: 10, seed: i }), Math.sin(a) * r, Math.cos(a) * r); }
+  for (const [x, a] of [[36.5, .2], [39.5, -.3]]) { const horse = llaneroHorse({ seed: Math.floor(x) }); placed(group, horse, x, 14, a); yield; }
+  for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2, r = 46 + random() * 10; placed(group, i % 3 ? saman({ seed: i + 2 }) : palm({ h: 10, seed: i }), Math.sin(a) * r, Math.cos(a) * r); yield; }
   ringNeighbours(ctx, arena, 10, (x, z) => Math.abs(z) > 6.6);
   const bull = hatoCow({ seed: 11, coat: 'brown', locomotion: true }); bull.visible = false; group.add(bull); ctx.bull = bull;
 }
 
-function buildCebra(ctx, arena) {
+function* buildCebra(ctx, arena) {
   const { group, random } = ctx;
   ctx.camBox = [40, 7.6];
   ground(group, 140, 140, 0x3d3f47);
@@ -333,6 +352,7 @@ function buildCebra(ctx, arena) {
   chalkRing(group, arena.r);
   // The bridge above, its lamps lighting the crossing.
   const bridge = lakeBridge({ length: 160, height: 15, span: 40 }); bridge.position.set(0, 0, -4); bridge.rotation.y = .12; group.add(bridge);
+  yield;
   bridge.updateMatrixWorld(true);
   bridge.userData.lamps.filter(([x]) => Math.abs(x) < 14).filter((_, i) => i % 2 === 0).forEach(([x, y, z]) => ctx.lamps.push(new THREE.Vector3(x, y, z).applyMatrix4(bridge.matrixWorld)));
   for (const s of [-1, 1]) {
@@ -342,9 +362,11 @@ function buildCebra(ctx, arena) {
     for (let x = -40; x <= 40; x += 9, i++) {
       const h = house({ w: 8.4, h: i % 2 ? 8.4 : 6.2, seed: 120 + i + (s > 0 ? 30 : 0), color: COLORS[(i * 3 + (s > 0 ? 2 : 0)) % COLORS.length], style: STYLES[(i + (s > 0 ? 1 : 0)) % STYLES.length] });
       frontAt(group, h, x, s * 11.6, s > 0 ? Math.PI : 0);
+      yield;
     }
   }
   placed(group, parkedCar('familiar', 21), -16, -6.2, Math.PI / 2);
+  yield;
   placed(group, parkedCar('chamo', 5), 18, 6.4, -Math.PI / 2);
   placed(group, streetFoodKiosk(), -6, 9.6, Math.PI);
   for (let k = 0; k < 4; k++) placed(group, parkedMoto({ color: MOTO_COLORS[k], seed: k + 70, detail: 'light' }), 9 + k * 1.1, -8.4, 0);
@@ -354,13 +376,16 @@ function buildCebra(ctx, arena) {
   void random;
 }
 
-function buildColonial(ctx, arena) {
+function* buildColonial(ctx, arena) {
   const { group, random } = ctx;
   ctx.camBox = [24, 5.6];
   ground(group, 120, 120, 0xb0b38c, -.02);
   const street = createColonialStreet({ seed: 70 }).group; street.position.y = -.8; group.add(street);
+  yield;
   const mirror = createColonialStreet({ seed: 91 }).group; mirror.position.set(56, -.8 - .5, 0); group.add(mirror);
+  yield;
   const back = createColonialStreet({ seed: 33 }).group; back.position.set(-56, -.8 + .5, 0); group.add(back);
+  yield;
   chalkRing(group, arena.r);
   for (const s of [-1, 1]) for (const x of [-16, -6, 6, 16]) placed(group, cemeteryLampPost(), x, s * 5.6, 0);
   for (const x of [-10, 10]) { const line = buntingLine({ span: 12, seed: Math.floor(random() * 99), height: 5.6 }); line.position.set(x, 0, 0); group.add(line); }

@@ -1,3 +1,4 @@
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { createPitch, throwBall, stepPitch, moving, measure, botShot, distance, copy, STEP } from '/engine/play/bolas-criollas.js';
 import { locKey } from '../../../engine/i18n.js';
 import { validCourtArena } from '/engine/worlds/arena-layouts.js';
@@ -52,6 +53,8 @@ export function acceptAction(g, id, data, hostId) {
   if (data.action === 'start' && id === hostId && ['lobby', 'finished'].includes(g.phase)) {
     const { players, target, revision, mapId, difficulty, local, ballsPerPlayer, opener, lastLoser } = g;
     Object.assign(g, createGame(), { players, target, revision, mapId, difficulty, local, ballsPerPlayer, opener, lastLoser });
+    players.forEach((p, slot) => { if (p.id === null) p.name = BOT_NAMES[slot]; });
+    applyFriendNames(players.filter(p => p.id === null), friendNamesNow(), { taken: players.filter(p => p.id !== null).map(p => p.name) });
     openMatch(g, Number.isSafeInteger(data.seed) ? data.seed : Date.now()); return true;
   }
   if (data.action === 'next' && id === hostId && g.phase === 'hand') { nextHand(g); return true; }

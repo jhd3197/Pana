@@ -27,8 +27,7 @@ const progress = (x) => Math.max(0, Math.min(1, (x - START) / (GOAL - START)));
 export default {
   id: 'momia',
   title: locKey('¡Un, dos, tres, momia!'),
-  howto: locKey('Corre hacia la reliquia mientras la momia cuenta. Cuando se voltee, ¡quieto! Si te ve moviéndote, vuelves al inicio. Disfrazado de barril puedes avanzar despacito (tres veces).'),
-  keys: [['D / →', locKey('correr')], [locKey('Espacio'), locKey('disfrazarte')]],
+  goal: locKey('Llega a la reliquia sin que la momia te vea moverte.'),
   touch: { pad: 'r', action: locKey('Disfraz') },
   icon: 'relic',
   time: TIME,

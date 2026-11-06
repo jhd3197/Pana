@@ -1,0 +1,7 @@
+{
+  "name": "Capis a Pintazos",
+  "description": "Artillería de pintura",
+  "players": 4,
+  "teams": true,
+  "color": "#e8569b"
+}

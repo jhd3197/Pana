@@ -1,3 +1,4 @@
+import { applyFriendNames } from '../../../engine/bot-names.js';
 import { PanaRoom, roomState, memberAvatar, fillBots, cleanKey } from '../../../server/src/room-kit.js';
 import { Poker } from '../public/rules.js';
 
@@ -18,7 +19,10 @@ export default class PokerRoom extends PanaRoom {
       const humans = this.connectedMembers().length;
       // Panas who left stay listed only until the next hand deals.
       this.game.prune(p => p.bot ? humans === 1 : p.connected);
-      if (humans === 1) fillBots(3, (seat, info) => this.game.add(seat, info));
+      if (humans === 1) {
+        fillBots(3, (seat, info) => this.game.add(seat, info));
+        applyFriendNames(this.game.players.filter(p => p.bot), this.hostFriendNames(), { taken: this.game.players.filter(p => !p.bot).map(p => p.name) });
+      }
       this.game.start(); this.publish();
     });
     // ¿Quién empieza?: shakes and slams never wait for the latest revision.

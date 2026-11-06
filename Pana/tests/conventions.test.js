@@ -75,17 +75,59 @@ test('shared room menus include their stylesheet and use pure validated option f
   }
 });
 
+test('"Más ajustes" and the lobby room panel share the kit game skin', () => {
+  const engine = name => read(path.join(app, 'engine', name));
+  const kit = engine('kit.css'), js = engine('room-options.js'), sala = engine('sala.css');
+  const css = engine('room-options.css').split('/* "Más ajustes"')[1] || '';
+  assert(css, 'room-options.css keeps its "Más ajustes" section');
+  for (const cls of ['pk-skin-panel', 'pk-skin-card', 'pk-skin-plate', 'pk-skin-label', 'pk-skin-chips', 'pk-skin-btn', 'pk-skin-go', 'pk-skin-link']) {
+    assert(kit.includes(`.${cls}`), `kit.css misses .${cls}`);
+    assert(js.includes(cls), `room-options.js must dress the dialog with ${cls}`);
+  }
+  // The dialog lays the skin out; it never brings back its own rounded corners or soft shadows.
+  assert.doesNotMatch(css, /border-radius:\s*[1-9]/, 'room-options.css must keep the skin square');
+  assert.doesNotMatch(css, /box-shadow:\s*0 \d+px 0/, 'room-options.css must use the skin hard shadow');
+  for (const token of ['--pk-skin-shadow', '--pk-skin-lean', '--pk-skin-plate-lean', '--pk-skin-chip']) assert(sala.includes(token), `sala.css must read ${token}`);
+});
+
 test('every game has the files the hub and the kit expect', () => {
   const problems = [];
   for (const id of games) {
     const json = meta(id), html = read(pub(id, 'index.html'));
     if (typeof json.name !== 'string' || !json.name) problems.push(`${id}: game.json needs a name`);
     if (typeof json.description !== 'string' || !json.description) problems.push(`${id}: game.json needs a description`);
+    // The hub card's tagline: a few words, not a paragraph (docs/UI-RULES.md).
+    else if (json.description.length > 30) problems.push(`${id}: game.json description is a tagline of 30 characters at most (${json.description.length})`);
     if (!Number.isInteger(json.players) || json.players < 1 || json.players > MAX_MEMBERS) problems.push(`${id}: game.json players must be 1–${MAX_MEMBERS}`);
     if (!/^#[0-9a-f]{6}$/i.test(json.color || '')) problems.push(`${id}: game.json color must be #rrggbb`);
     if ('tileName' in json && (typeof json.tileName !== 'string' || !json.tileName || json.tileName.length > 12)) problems.push(`${id}: game.json tileName is a short name for the hub card (1–12 characters)`);
     if (!fs.existsSync(pub(id, 'card.js'))) problems.push(`${id}: no public/card.js for the hub tile`);
     if (!/href=["']\/engine\/kit\.css["']/.test(html)) problems.push(`${id}: index.html does not link /engine/kit.css`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+// A team game ("teams": true in game.json) shows its sides in the main lobby
+// through engine/team-lobby.js, directly or through engine/play/table-seating.js:
+// one look, one Unirme aquí / Cambiarme aquí / Organizar, auto-balance on join.
+// No game builds the roster cards, team lists or team headings of its own.
+test('team games render lobby teams through the shared team lobby', () => {
+  const problems = [];
+  const shared = /from\s+['"][^'"]*\/engine\/(?:team-lobby|play\/table-seating)\.js['"]/;
+  for (const id of games) {
+    const json = meta(id);
+    if ('teams' in json && typeof json.teams !== 'boolean') problems.push(`${id}: game.json teams is true or false`);
+    const files = walk(path.join(gamesDir, id, 'public'), name => /\.(js|html)$/.test(name)).map(file => [file, read(file)]);
+    if (json.teams && !files.some(([, code]) => shared.test(code))) problems.push(`${id}: game.json says teams, but no public file imports engine/team-lobby.js (createTeamLobby)`);
+    for (const [file, code] of files) {
+      if (/\bcreateLobbyRoster\b/.test(code)) problems.push(`${rel(file)}: builds the lobby roster itself; use createTeamLobby (engine/team-lobby.js)`);
+      if (/pk-roster-(?:group|heading|cards)|data-roster-(?:group|seat)/.test(code)) problems.push(`${rel(file)}: draws team lobby cards by hand; use createTeamLobby (engine/team-lobby.js)`);
+      const declares = /\bcreateTeamLobby\(/.test(code) || /\bseating\.update\([^;]*\bteams\s*:/.test(code);
+      if (declares && !json.teams) problems.push(`${rel(file)}: shows teams in the lobby; add "teams": true to game.json`);
+    }
+    // The lobby markup itself: no team lists or team headings of its own.
+    const lobby = read(pub(id, 'index.html')).match(/<section[^>]*\bid="lobby"[\s\S]*?<\/section>/)?.[0] || '';
+    if (/\bid="team-\d"|class="[^"]*\bteam-list\b|>\s*Equipo [A-D]\s*</.test(lobby)) problems.push(`${id}: index.html lobby has its own team list; use createTeamLobby (engine/team-lobby.js)`);
   }
   assert.deepEqual(problems, []);
 });
@@ -295,6 +337,23 @@ test('every import in served code points at a real file', () => {
   for (const file of served) for (const spec of specifiers(read(file))) {
     const target = resolve(file, spec);
     if (target && !fs.existsSync(target)) problems.push(`${rel(file)}: ${spec}`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+// A module parsed before the page's import map cannot resolve "three", and
+// the browser keeps that failure. A modulepreload served from cache parses at
+// once, so a page with its map after the preload opens once, then breaks.
+test('the import map comes before every module and modulepreload', () => {
+  const pages = [...walk(path.join(app, 'web'), n => n.endsWith('.html')),
+    ...games.flatMap(id => walk(path.join(gamesDir, id, 'public'), n => n.endsWith('.html'))),
+    ...walkAll(path.join(app, 'scripts', 'templates'), n => n.endsWith('.html.tmpl'))];
+  const problems = [];
+  for (const file of pages) {
+    const html = read(file), map = html.search(/<script\b[^>]*type=["']?importmap/i);
+    if (map < 0) continue;
+    const module = html.search(/<link\b[^>]*rel=["']?modulepreload|<script\b[^>]*type=["']?module\b/i);
+    if (module >= 0 && module < map) problems.push(rel(file));
   }
   assert.deepEqual(problems, []);
 });

@@ -20,13 +20,13 @@
 .boch-results td { padding: 11px 8px; border-top: 1px solid rgba(255, 255, 255, .08); font: 22px/1 var(--pk-display); color: #fff; text-align: right; font-variant-numeric: tabular-nums; }
 .boch-results :is(th, td):first-child { text-align: left; }
 .boch-results td:first-child { display: flex; align-items: center; gap: 10px; font-size: 20px; white-space: nowrap; }
-.boch-results td:first-child i { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--ink); }
+.boch-results td:first-child i { flex: none; width: 14px; height: 14px; border-radius: var(--pk-radius-round); background: var(--c); box-shadow: 0 0 0 2px var(--ink); }
 .boch-results td.best { color: var(--pk-teal); }
 .boch-results tr.me td { background: rgba(255, 198, 41, .12); }
 .boch-results .res-awards { grid-area: awards; position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 12px; }
 .boch-results .res-award { display: flex; align-items: center; gap: 10px; padding: 10px 16px 8px 10px; background: rgba(14, 11, 36, .92); box-shadow: 4px 4px 0 var(--ink); transform: skewX(-10deg); }
 .boch-results .res-award > * { transform: skewX(10deg); }
-.boch-results .res-award i { width: 28px; height: 28px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px var(--ink); }
+.boch-results .res-award i { width: 28px; height: 28px; border-radius: var(--pk-radius-round); background: var(--c); box-shadow: 0 0 0 3px var(--ink); }
 .boch-results .res-award b { display: block; font: 18px/1 var(--pk-display); color: var(--pk-yellow); }
 .boch-results .res-award small { font: 800 13px/1.2 var(--pk-sans); color: var(--pk-muted); }
 .boch-results .res-acts { grid-area: acts; position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 14px; }

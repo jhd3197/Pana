@@ -1,11 +1,12 @@
 import { createGameMenu } from '/engine/ui.js';
 import { inviteUrl, newRoomCode, playUrl } from '/engine/invite.js';
-import { isOnline, meta, gameUrl as linkFor } from './games.js';
+import { isOnline, meta, playerCount, gameUrl as linkFor } from './games.js';
 import { icon } from '/engine/icons.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { cachedPortrait } from '/engine/portrait-cache.js';
 import { categories, category, artUrl } from './launcher-art.js';
 import { padControls } from '/engine/gamepad.js';
+import { bindPanaEditorLinks, openPanaEditor } from '/engine/pana-editor.js';
 import { loc, locn, language } from '/engine/i18n.js';
 
 // The tiles free their renderers on pagehide; Back to a cached hub reloads it.
@@ -86,7 +87,8 @@ function loadCreator() {
   });
 }
 function showView() {
-  if (location.hash === "#mi-pana") { location.replace("/personaje"); return; }
+  // Old #mi-pana links open the editor over the hub (engine/pana-editor.js).
+  if (location.hash === "#mi-pana") { history.replaceState(null, '', location.pathname + location.search); openPanaEditor(); }
   const view = { '#mi-pana': 'mi-pana', '#salas': 'salas' }[location.hash] || 'jugar';
   document.body.dataset.view = view;
   for (const a of document.querySelectorAll('.nav [data-view]')) {
@@ -97,6 +99,8 @@ function showView() {
   if (view === 'mi-pana') loadCreator();
   scrollTo(0, 0);
 }
+// Editar pana / Mi pana open over the hub, so a party on pana.sh stays put.
+bindPanaEditorLinks();
 addEventListener('hashchange', showView);
 showView();
 
@@ -108,6 +112,13 @@ function syncName() {
   updateLinks();
 }
 nameInput.addEventListener('input', syncName);
+// Back from the editor with a new look: the face chip and name follow.
+addEventListener('pana:avatar', event => {
+  try { nameInput.value = localStorage.getItem('pana:name') || ''; } catch { /* storage off */ }
+  syncName();
+  const face = cachedPortrait(event.detail.avatar);
+  if (face) document.getElementById('pana-face').src = face;
+});
 
 function playerName() {
   return nameInput.value.trim() || 'pana';
@@ -179,7 +190,7 @@ function gameCard(game) {
   const name = el('h3', 'game-name', tileName(game)); name.translate = false;
   name.setAttribute('aria-label', game.name);
   const body = el('div', 'game-body');
-  body.append(name, el('span', 'game-meta', meta(game)));
+  body.append(name, showPlayers(el('span', 'game-meta'), game));
   const pick = el('button', 'game-pick');
   pick.type = 'button';
   pick.setAttribute('aria-pressed', 'false');
@@ -198,6 +209,16 @@ function gameCard(game) {
   return card;
 }
 
+// Who plays: a person icon and a count ("1", "1-8"); the words are for
+// screen readers and the tooltip.
+function showPlayers(tag, game) {
+  tag.replaceChildren(icon('person'), playerCount(game));
+  tag.setAttribute('role', 'img');
+  tag.setAttribute('aria-label', meta(game));
+  tag.title = meta(game);
+  return tag;
+}
+
 // The hero shows one game at a time. card.js never unmounts, so the old
 // hero canvas loses its WebGL context instead of piling up live ones.
 function feature(game) {
@@ -208,8 +229,7 @@ function feature(game) {
   document.getElementById('feature-tag').textContent = loc(category(game));
   document.getElementById('feature-name').textContent = shortName(game);
   document.getElementById('feature-copy').textContent = game.description;
-  document.getElementById('feature-players').textContent = meta(game);
-  document.getElementById('feature-mode').textContent = isOnline(game) ? loc('En línea · Práctica') : loc('Individual');
+  showPlayers(document.getElementById('feature-players'), game);
   featured.dataset.game = game.id;
   featured.dataset.online = String(isOnline(game));
   featured.href = gameUrl(game, newRoomCode());

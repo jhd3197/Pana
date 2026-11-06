@@ -1,3 +1,4 @@
+import { applyFriendNames } from '../../../engine/bot-names.js';
 import { embusteOptions } from '../public/options.js';
 // ¡Embuste! online: the room runs the whole night (docs/plans/54_embuste.md,
 // option 2). Social deduction lives on secrets, so no client ever gets a
@@ -84,6 +85,7 @@ export default class EmbusteRoom extends PanaRoom {
     for (let i = 0; night.players.size < total; i++) {
       night.addPlayer(BOT_SEAT + i, { name: BOT_NAMES[i % BOT_NAMES.length], avatar: randomAvatar(), bot: true });
     }
+    applyFriendNames([...night.players.values()].filter(p => p.bot), this.hostFriendNames(), { taken: humans.map(m => m.name) });
     Object.assign(night.options, { reveal: this.state.reveal, chat: this.state.chat });
     night.start((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
     this.inputs.clear();

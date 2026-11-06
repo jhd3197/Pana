@@ -2,10 +2,11 @@ import { createRoomOptions } from '/engine/room-options.js';
 import { FIELDS, cleanOptions, maxPip, groupOf, CHAT } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createTableSeating } from '/engine/play/table-seating.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { lazySound } from '/engine/lazy-sound.js';
+import { bindHandFeel } from '/engine/fx/hand-feel.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { DominoRoom } from './network.js';
@@ -28,6 +29,7 @@ let barkRound = -1, barkId = 0, barksPrimed = false, resultTimer;
 let world = null, worldReady = false, view = 'plaza', stopped = false;
 
 // Audio is optional; a delayed audio module never prevents the table from loading.
+const handFeel = bindHandFeel(document.getElementById('hand'));
 const audio = lazySound(1);
 
 
@@ -43,22 +45,12 @@ const roomOptions=createRoomOptions($('room-options'),{title:loc('Dominó'),fiel
 for(const [message,text]of CHAT.entries()){const button=document.createElement('button');button.type='button';button.className='pk-btn pk-btn--sm';button.textContent=text;button.onclick=()=>room.action('chat',{message});$('chat-buttons').append(button);}
 const seating = createTableSeating($('table-seating'), (from, to) => room.action('seat', { from, to }));
 $('organize-table').onclick = () => room.action('setup');
-const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true, landmarks: true });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true, landmarks: true, room });
 const menu = createGameMenu({
   pad: { buttons: true, keys: { lb: ['KeyA', loc('Jugar en la punta A')], rb: ['KeyB', loc('Jugar en la punta B')], x: ['KeyP', loc('Pasar')], y: ['KeyH', loc('Pista')] } },
   title: loc('Dominó · Pana'), sound: audio,
   options: [{ id: 'view', label: loc('Cámara'), choices: [['plaza', loc('Plaza')], ['mesa', loc('Mesa')]], get: () => view, set: setView }],
   note: () => room.members.size > 1 ? loc('La mesa sigue jugando mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
-  controls: [['1 2 3 4 5 6 7 8 9 0', loc('Elegir una ficha de tu mano')], ['A B', loc('Elegir una punta si la ficha cabe en ambas')], ['P', loc('Pasar, solo si no tienes jugada')], ['H', loc('Pedir una pista')], ['M', loc('Activar o silenciar el sonido')], ['Esc', loc('Abrir o cerrar el menú')]],
-  tips: [
-    loc('Mesa clásica de cuatro o ampliada de seis. Los puestos alternos forman dos equipos; Individual reparte puntos a cada pana.'),
-    loc('Siete o diez fichas por pana. La mesa amplía el juego a doble nueve o doble doce cuando hace falta; las sobrantes se apartan, no hay robo.'),
-    loc('La salida puede ser doble seis, ganador anterior (primera mano: doble seis), o un pana al azar. En Más ajustes, ¿Quién empieza? decide la primera mano con el cacho: todos sacuden, tapan y sale el dado más alto.'),
-    loc('Juega una ficha que coincida con una punta. Si sirve en ambas, elige A o B. No puedes pasar si tienes jugada.'),
-    loc('Gana quien se queda sin fichas y suma los puntos que quedaron a sus rivales. Una capicúa es la última ficha que podía jugarse en ambas puntas.'),
-    loc('Con Pase anotado, cada paso da diez puntos al equipo o pana anterior. El anfitrión elige si una tranca puntúa o se reparte sin puntuar.'),
-    loc('Con reloj, al agotarse el turno se juega una ficha legal automáticamente. Los ajustes muestran el tiempo y la meta de la partida.'),
-  ],
   invite: () => inviteUrl(code),
   canOpen: () => !$('result').open,
 });
@@ -116,7 +108,7 @@ function render(state) {
   const chat=state.chat?.at(-1);if(chat&&chat.id!==chatSeen){chatSeen=chat.id;notify(`${chat.name}: ${CHAT[chat.message]}`);world?.say(chat.seat,CHAT[chat.message],2);}
   seating.update(state.players, { teams: state.options.mode==='teams', enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.hostId });
   $('organize-table').disabled = !room.connected || !room.isHost;
-  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, canChangeMap(room, state.phase));
   const seat = room.seat, base = seat < 0 ? 0 : seat, team = groupOf(state,base), rival=state.scores.map((score,i)=>({score,i})).filter(x=>x.i!==team).sort((a,b)=>b.score-a.score)[0]?.i??0;
   const last = state.history.at(-1), eventKey = `${state.round}:${state.history.length}:${state.chain.length}`;
   if (previousEvent && previousEvent !== eventKey && last?.kind === 'play') audio.tone(430, 0, .07, 'triangle', .09);
@@ -170,6 +162,7 @@ function renderHand(state) {
     button.onclick = () => selectTile(tile.id); $('hand').append(button);
   });
   if (activeTile) $('hand').querySelector(`[data-tile="${activeTile}"]:not(:disabled)`)?.focus({ preventScroll: true });
+  handFeel.after();
   $('hand-count').textContent = seat < 0 ? loc('Mesa llena · estás mirando') : state.phase === 'lobby' ? loc('Tu puesto está listo') : locn(hand.length, '{n} ficha · {pips} puntos', '{n} fichas · {pips} puntos', { pips: pips(hand) });
   const moves = myTurn ? legalMoves(state, seat) : [];
   const tips = state.chain.length ? [...new Set([state.chain[0].a, state.chain.at(-1).b])] : [];
@@ -181,7 +174,7 @@ function renderHand(state) {
   $('pass').hidden = !myTurn || moves.length > 0;
   $('round-result').hidden = !ended;
   $('end-actions').hidden = !selected;
-  $('instruction').textContent = seat < 0 && state.phase !== 'lobby' ? loc('Entras cuando se libere un puesto.') : ended ? loc('Una mano más, un cuento más.') : state.phase === 'lobby' ? loc('Reparte las fichas para empezar.') : selected ? loc('Elige dónde colocar tu ficha.') : myTurn ? !state.chain.length && state.openingTile ? loc('Abre la partida con el doble seis.') : moves.length ? loc('Toca una ficha marcada para jugarla.') : 'No tienes jugada. Canta paso.' : loc('Ve pensando tu próxima jugada.');
+  $('turn-note').textContent = seat < 0 && state.phase !== 'lobby' ? loc('Entras cuando se libere un puesto.') : ended ? loc('Una mano más, un cuento más.') : state.phase === 'lobby' ? loc('Reparte las fichas para empezar.') : selected ? loc('Elige dónde colocar tu ficha.') : myTurn ? !state.chain.length && state.openingTile ? loc('Abre la partida con el doble seis.') : moves.length ? loc('Toca una ficha marcada para jugarla.') : 'No tienes jugada. Canta paso.' : loc('Ve pensando tu próxima jugada.');
   if (selected) {
     const ends = legalEnds(state, hand.find(t => t.id === selected));
     $('play-left').textContent = loc('Punta A · {n}', { n: state.chain[0]?.a }); $('play-left').disabled = !ends.includes('left');

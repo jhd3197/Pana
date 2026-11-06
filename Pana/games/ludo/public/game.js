@@ -13,6 +13,9 @@ import { COLOR_NAMES, trackOf, legalMoves, chooseMove, ranking, eventText as eve
 import { loc, locn, formatList } from '/engine/i18n.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { LUDO_OPTIONS, defaultLudoOptions } from './options.js';
+import { createMangoWallet } from '/engine/mangos.js';
+import { icon } from '/engine/icons.js';
+import { createDieShop, DEFAULT_DIE, MANGO_DIE } from './die-shop.js';
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
 const code=roomFromUrl()||newRoomCode();
 params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
@@ -24,19 +27,7 @@ const roomOptions=createRoomOptions($('room-options'),{title:loc('Ludo'),fields:
   change:options=>room.action('options',{options}),reset:()=>room.action('options',{options:defaultLudoOptions()})});
 const menu=createGameMenu({ pad: { buttons: true, keys: { x: ['Space', loc('Agitar el dado; suelta para tirar')], rt: ['Space', loc('Agitar el dado; suelta para tirar')] } },title:loc('Ludo · Pana'),sound,orientation:'libre',
   note:()=>room.members.size>1?loc('La partida continúa mientras estás en el menú.'):loc('La partida está en pausa. Los bots te esperan.'),
-  controls:[[loc('Mantén Espacio'),loc('Agitar el dado; suelta para tirar')],[loc('Arrastra y suelta en la mesa'),loc('Lanzar el dado con más fuerza')],['1 2 3 4',loc('Mover una ficha disponible')],[loc('Ratón / toque'),loc('Tocar una ficha marcada o su botón')],['M',loc('Activar o silenciar el sonido')]],
-  tips:[
-    loc('Cada pana tiene cuatro fichas. Gana quien lleva las cuatro hasta el centro.'),
-    loc('¿Quién empieza? Todos sacuden el cacho a la vez y lo tapan: sale primero el dado más alto. Si hay empate arriba, solo los empatados sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.'),
-    loc('Agita el dado manteniendo el botón o Espacio y suéltalo, o lánzalo arrastrando sobre la mesa. Cuanto más lo agitas, más fuerte vuela; la fuerza no cambia el número.'),
-    loc('El anfitrión elige si sales con seis o con uno y seis. Al salir, la ficha queda en la casilla de salida.'),
-    loc('Salida asistida: si todas tus fichas pendientes están en el patio, tras un límite aleatorio de tres a cinco intentos fallidos sale un seis. Se aplica a todos; la sala puede elegir azar clásico.'),
-    loc('Un único movimiento legal se hace solo al caer el dado. Si solo puedes sacar fichas del patio, sale la primera automáticamente.'),
-    loc('Un seis permite volver a tirar. Si la sala activa la regla, el tercer seis seguido pierde ese lanzamiento y termina el turno; los movimientos anteriores se conservan.'),
-    loc('Las casillas con doble borde y un círculo son seguras: aquí no se come. En las demás, caer sobre fichas rivales las devuelve a su patio. La sala puede dar otra tirada al capturar.'),
-    loc('Las fichas pueden compartir casilla y no forman barreras. El pasillo de tu color es privado. Debes sacar el número exacto para llegar a casa.'),
-    loc('Si no tienes movimiento, el turno pasa automáticamente. Los puestos vacíos juegan con bots; un pana que llega hereda las fichas de un bot.'),
-  ],invite:()=>room.offline?null:inviteUrl(code),
+  invite:()=>room.offline?null:inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({id:'invite',className:'pk-btn'}),menu.createButton({id:'menu',className:'pk-btn'}));
 $('lobby-invite-slot').replaceWith(menu.createInviteButton({id:'lobby-invite',className:'pk-btn'}));
@@ -47,6 +38,20 @@ $('start').onclick=$('again').onclick=()=>{sound.unlock();room.action('start');}
 const thrower=bindDiceThrow({button:$('roll'),surface:$('world'),canThrow:canRoll,
   onStart:()=>sound.unlock(),onThrow:power=>{world?.shakeDie(0);act('roll',{power});},onCancel:()=>world?.shakeDie(0)});
 $('practice').onclick=()=>room.practice();
+const wallet=createMangoWallet(undefined,{source:'ludo'}),dieShop=createDieShop({wallet});
+function renderDieShop(){
+  const {action,cost,missing}=dieShop.offer(MANGO_DIE),label=document.createElement('span');
+  label.textContent=action==='buy'?loc('Comprar dado de mango · {n}',{n:cost}):action==='short'?loc('Dado de mango · te faltan {n}',{n:missing}):action==='equip'?loc('Usar dado de mango'):loc('Guardar dado de mango');
+  $('die-shop').replaceChildren(icon('mango'),label);$('die-shop').disabled=action==='short';$('die-shop').setAttribute('aria-pressed',String(action==='unequip'));
+}
+$('die-shop').onclick=()=>{
+  sound.unlock();const {action}=dieShop.offer(MANGO_DIE);
+  if(action==='buy'&&dieShop.buy(MANGO_DIE))shout(loc('¡Dado de mango en la mesa!'),{tone:'yellow',ms:1500});
+  else if(action==='equip')dieShop.equip(MANGO_DIE);
+  else if(action==='unequip')dieShop.equip(DEFAULT_DIE);
+  world?.setDieLook(dieShop.equipped());renderDieShop();
+};
+renderDieShop();wallet.ready.then(renderDieShop);const stopWallet=wallet.onChange(renderDieShop);
 $('view').onclick=()=>{topView=!topView;world?.setView(topView);$('view').textContent=topView?loc('Vista de mesa'):loc('Vista desde arriba');$('view').setAttribute('aria-pressed',String(topView));};
 const buttons=Array.from({length:4},(_,piece)=>{
   const button=document.createElement('button');button.className='pk-btn piece-button';button.dataset.piece=piece;
@@ -99,13 +104,16 @@ addEventListener('keydown',event=>{
   if(/^[1-4]$/.test(event.key)){event.preventDefault();act('move',{piece:Number(event.key)-1});}
 });
 let previous=performance.now();
-const timer=setInterval(()=>{const now=performance.now();room.tick(Math.min(.2,(now-previous)/1000),menu.isOpen&&room.members.size<=1);previous=now;},100);
+// Heavy rendering starves timers, so frames drive the host clock too; the timer
+// covers a hidden tab, which draws none.
+function hostClock(){if(room.state.turnPause?.kind==='roll'&&(document.hidden||!world?.tossing))room.dieLanded();const now=performance.now();if(now-previous<50)return;room.tick((now-previous)/1000,menu.isOpen&&room.members.size<=1);previous=now;}
+const timer=setInterval(hostClock,100);
 let frameTime=performance.now();
-function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower.power);world?.frame(Math.min(.05,(now-frameTime)/1000));hud.frame(!!world?.tossing,thrower.shaking,thrower.power);if(room.state.phase==='finished')$('results').hidden=!!world?.celebrating;frameTime=now;requestAnimationFrame(frame);}
+function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower.power);world?.frame(Math.min(.05,(now-frameTime)/1000));hostClock();hud.frame(!!world?.tossing,thrower.shaking,thrower.power);if(room.state.phase==='finished')$('results').hidden=!!world?.celebrating;frameTime=now;requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
 render(room.state);room.connect();
 export const sceneReady=import('./scene.js').then(async({createLudoScene})=>{
-  if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece}),onCapture:capture,onStarter:(kind,power)=>{if(!menu.isOpen){sound.unlock();room.action('starter',{cacho:kind,power});}}});await prepareScene(world);render(room.state);$('loading').hidden=true;
+  if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece}),onCapture:capture,onStarter:(kind,power)=>{if(!menu.isOpen){sound.unlock();room.action('starter',{cacho:kind,power});}},dieLook:dieShop.equipped()});await prepareScene(world);render(room.state);$('loading').hidden=true;
 }).catch(error=>{console.error(error);$('loading-copy').textContent=loc('No pudimos abrir la mesa. Comprueba tu conexión y WebGL.');const button=document.createElement('button');button.className='pk-btn';button.textContent=loc('Reintentar');button.onclick=()=>location.reload();$('loading').append(button);throw error;});
-addEventListener('pagehide',()=>{stopped=true;clearInterval(timer);thrower.dispose();hud.dispose();room.dispose();world?.dispose();},{once:true});
+addEventListener('pagehide',()=>{stopped=true;stopWallet();clearInterval(timer);thrower.dispose();hud.dispose();room.dispose();world?.dispose();},{once:true});
 if(params.has('debug'))window.ludoDebug={room,menu,chooseMove,legalMoves,thrower,get world(){return world;}};

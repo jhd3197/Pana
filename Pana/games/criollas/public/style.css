@@ -6,7 +6,7 @@ button { cursor: pointer; }
 button:disabled { cursor: default; opacity: .5; }
 .game-header { position: absolute; z-index: 4; inset: 0 0 auto; height: 64px; display: flex; align-items: center; gap: 22px; padding: 12px 24px; pointer-events: none; }
 .game-header > * { pointer-events: auto; }
-.game-header > span { padding: 8px 12px; border-radius: 8px; background: var(--pk-night); font-size: 12px; font-weight: 900; letter-spacing: .12em; }
+.game-header > span { padding: 8px 12px; border-radius: 0; background: var(--pk-night); font-size: 12px; font-weight: 900; letter-spacing: .12em; }
 .game-header nav { display: flex; gap: 8px; margin-left: auto; }
 .game-header .pk-logo { font-size: 32px; text-decoration: none; }
 /* The court fills the window; the HUD floats over the plaza. */
@@ -25,7 +25,7 @@ button:disabled { cursor: default; opacity: .5; }
 #invite-slot:empty, #room-code:empty { display: none; }
 #invite-slot > button { width: 100%; }
 #scoreboard { position: absolute; z-index: 3; inset: 14px 200px auto; display: flex; justify-content: center; gap: 18px; align-items: center; pointer-events: none; }
-.hand-label { padding: 8px 12px; border-radius: 12px; background: var(--pk-hud); }
+.hand-label { padding: 8px 12px; border-radius: 0; background: var(--pk-hud); }
 .team-score { display: grid; grid-template-columns: 1fr auto; gap: 3px 24px; width: 220px; padding: 10px 18px; }
 .team-score > span { font-weight: 900; font-size: 13px; letter-spacing: .08em; align-self: center; }
 .team-score > b { font-family: var(--pk-display); font-size: 34px; grid-row: span 2; }
@@ -34,14 +34,14 @@ button:disabled { cursor: default; opacity: .5; }
 .hand-label { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; }
 .hand-label span { color: var(--pk-muted); }
 #controls { position: absolute; z-index: 3; bottom: 12px; left: 50%; transform: translateX(-50%); width: min(760px, calc(100% - 240px)); padding: 15px 20px; }
-.side-controls { position: fixed; z-index: 3; left: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 10px; border-radius: 18px; background: var(--pk-night); }
+.side-controls { position: fixed; z-index: 3; left: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 10px; border-radius: 0; background: var(--pk-night); }
 .side-label { font-size: 11px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--pk-muted); }
 .camera-btn { width: 56px; height: 48px; padding: 0; display: grid; place-items: center; font-size: 26px; }
 .turn-info { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .turn-info b { font-size: 17px; }.turn-info span { color: var(--pk-muted); font-size: 13px; }
 .shot-row { display: flex; align-items: center; gap: 18px; }.shot-row > .pk-seg { flex-shrink: 0; margin-right: auto; }
 .fine-controls { display: flex; gap: 6px; }.fine-controls .pk-touch { --pk-touch: 44px; position: static; width: 44px; height: 44px; }
-.control-hint, .guide-note { margin: 9px 0 0; text-align: center; font-size: 11px; color: var(--pk-muted); }.guide-note { margin-top: 3px; }
+.guide-note { margin: 9px 0 0; text-align: center; font-size: 11px; color: var(--pk-muted); }
 #shoot { white-space: nowrap; touch-action: none; font-size: 19px; padding-inline: 16px; min-width: 0; }
 #shoot.is-charging { transform: translateY(3px); }
 #power-bar { pointer-events: none; }
@@ -51,6 +51,8 @@ button:disabled { cursor: default; opacity: .5; }
 #loft-value { min-width: 44px; font-variant-numeric: tabular-nums; }
 #toast { position: absolute; z-index: 30; left: 50%; top: 75px; transform: translateX(-50%); padding: 14px 20px; }
 #recovery { position: absolute; z-index: 20; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 20px; }
+/* The game-name tag gives way to the scoreboard when the screen narrows. */
+@media (max-width: 1180px) { .game-header > span { display: none; } }
 @media (max-width: 700px) {
   .game-header { padding: 8px 12px; height: 56px; gap: 10px; }.game-header > span { font-size: 9px; letter-spacing: .04em; }
   .game-header .pk-logo { font-size: 27px; }.game-header nav .pk-btn { font-size: 12px; padding: 8px; }
@@ -59,10 +61,10 @@ button:disabled { cursor: default; opacity: .5; }
   #welcome > * { grid-column: 1 / -1; }#welcome .pk-title { font-size: 46px; }#welcome .pk-title br { display: none; }
   #welcome .pk-title br::after { content: ' '; }#welcome .pk-stats { gap: 8px; }
   #scoreboard { inset: 62px 10px auto; gap: 8px; }.team-score { width: 36%; padding: 9px 10px; gap: 2px 4px; }.team-score > span { font-size: 11px; }.team-score > b { font-size: 29px; }.team-score > small { font-size: 10px; }.hand-label { font-size: 10px; }
-  .pk-power { bottom: 236px; } .side-controls { left: 8px; top: auto; bottom: 236px; transform: none; padding: 8px; } .camera-btn { width: 46px; height: 42px; font-size: 22px; } .side-label { font-size: 9px; } .side-label kbd { display: none; }
+  .pk-power { bottom: 236px; } .side-controls { left: 8px; top: auto; bottom: 236px; transform: none; padding: 8px; } .camera-btn { width: 46px; height: 42px; font-size: 22px; } .side-label { font-size: 9px; }
   #controls { bottom: max(8px, env(safe-area-inset-bottom)); width: calc(100% - 16px); padding: 12px; }.turn-info { flex-direction: column; gap: 2px; margin-bottom: 9px; }.turn-info b { font-size: 15px; }
-  .shot-row { flex-wrap: wrap; gap: 10px; }.shot-row > .pk-seg { width: 100%; font-size: 12px; margin: 0; }.fine-controls { flex: 1; }#shoot { min-width: 160px; flex: 1; }.control-hint { display: none; }
-  #shoot { font-size: 15px; padding-inline: 10px; } #shoot kbd { display: none; }
+  .shot-row { flex-wrap: wrap; gap: 10px; }.shot-row > .pk-seg { width: 100%; font-size: 12px; margin: 0; }.fine-controls { flex: 1; }#shoot { min-width: 160px; flex: 1; }
+  #shoot { font-size: 15px; padding-inline: 10px; }
   body:has(#loft-control:not([hidden])) .side-controls, body:has(#loft-control:not([hidden])) .pk-power { bottom: 300px; }
 }
 @media (max-height: 520px) and (min-width: 701px) {
@@ -71,5 +73,5 @@ button:disabled { cursor: default; opacity: .5; }
   #scoreboard { inset: 8px 350px auto 150px; }.team-score { padding: 5px 10px; width: 38%; }.team-score > b { font-size: 25px; }
   .pk-power { right: 276px; top: 56px; bottom: 8px; transform: none; height: auto; width: 60px; } .side-controls { left: 8px; top: auto; bottom: 8px; transform: none; padding: 8px; }
   #controls { left: auto; right: 8px; top: 56px; bottom: 8px; transform: none; width: 260px; padding: 13px; }
-  .turn-info { flex-direction: column; }.shot-row { flex-wrap: wrap; gap: 12px; }.shot-row > .pk-seg { width: 100%; }.fine-controls { flex: 1; }.control-hint { display: none; }
+  .turn-info { flex-direction: column; }.shot-row { flex-wrap: wrap; gap: 12px; }.shot-row > .pk-seg { width: 100%; }.fine-controls { flex: 1; }
 }

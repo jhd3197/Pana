@@ -17,7 +17,7 @@ import { mummyCount, MIN_PLAYERS, taskById, WRAP_RANGE, REPORT_RANGE, BELL_RANGE
 import { vineSnare, bandageWrap } from '/engine/models/props/embuste.js';
 import { createPlazaProp } from '/engine/models/props/plaza.js';
 import { createMeeting } from './ui.js';
-import { openTask, HINTS } from './tasks.js';
+import { openTask, CUES } from './tasks.js';
 import { setBar } from '/engine/kit.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { EMBUSTE_OPTIONS, defaultEmbusteOptions } from './options.js';
@@ -62,8 +62,6 @@ function clearInput() { keys.clear(); touch.clear(); }
 const menu = createGameMenu({ pad: { move: 'wasd', cursor: loc('Tareas: apuntar y tocar'), keys: { a: ['KeyE', loc('Usar; mantén para reparar')], b: ['Space', loc('Pulsar en las tareas')], x: ['KeyR', loc('Reportar')], lb: ['KeyQ', loc('Envolver (momia)')], y: ['KeyF', loc('Sabotaje (momia)')], rb: ['KeyC', loc('Disfraz (momia)')] } },
   title: '¡Embuste!', heading: loc('Un respiro'), resumeLabel: loc('Volver a la noche'), sound, notify, // i18n-ignore: the game's name
   note: () => net && !net.online ? loc('La práctica está en pausa.') : loc('La noche sigue: no te quedes solo.'),
-  controls: [['W A S D / ↑ ← ↓ →', loc('Moverte')], ['E', loc('Usar: tareas, escondites, la campana; mantén para reparar')], ['R', loc('Reportar una estatua de vendas')], ['Q', loc('Envolver (momia)')], ['F', loc('Sabotaje (momia)')], ['C', loc('Disfraz (momia)')], ['M', loc('Sonido')]],
-  tips: [loc('Las tareas tapan la pantalla: mira a tu alrededor antes de empezar.'), loc('Si encuentras a un pana envuelto, repórtalo y discutan en la fogata.'), loc('Las momias pueden meterse en los troncos huecos y aparecer al otro lado del mapa.')],
   actions: [{ id: 'menu-practice', label: loc('Practicar con bots'), kind: 'link', visible: () => !!net?.online, run: () => practice() }],
   invite: () => inviteUrl(code),
   onOpen() { paused = true; clearInput(); if (net && !net.online) net.paused = true; },
@@ -97,7 +95,7 @@ function practice() {
 // ---------- actors ----------
 function label(text, color) {
   const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
-  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#0e0b24d8'; ctx.beginPath(); ctx.roundRect(8, 7, 240, 48, 8); ctx.fill();
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#0e0b24d8'; ctx.fillRect(8, 7, 240, 48);
   ctx.fillStyle = color; ctx.font = '800 25px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 128, 32, 224);
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true })); sprite.scale.set(2.6, 0.65, 1); sprite.position.y = 3.1; sprite.renderOrder = 5; return sprite;
@@ -464,7 +462,7 @@ function startTask(t) {
   net.act('task', { station: t.station });
   const s = stationById(t.station), def = taskById(t.id);
   $('task-title').textContent = loc(def.name); $('task-where').textContent = loc(zoneById(s.zone).name);
-  $('task-hint').textContent = HINTS[t.id] || '';
+  $('task-cue').textContent = CUES[t.id] || '';
   show('task', true); clearInput();
   const panel = { station: t.station, opened: performance.now(), sent: 0 };
   panel.dispose = openTask(t.id, $('task-body'), { step: t.step, done: () => finishTask(panel) });

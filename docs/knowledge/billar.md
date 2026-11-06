@@ -79,6 +79,11 @@ hand. Clock snapshots do not increment the gameplay revision, so normal clock
 updates cannot cancel a held shot. Café adds the shared café terrace setting;
 long/short/no guide overrides the difficulty-driven guide without changing bots.
 
+Parejas show as two team panels (`engine/play/table-seating.js` on
+`engine/team-lobby.js`). A newcomer outside the round's active seats takes a
+free seat on the smaller team (`openSeat` in `network.js`); duels fill seats 0
+and 1 in order.
+
 ## Controls and proof
 
 Point/drag to aim, then hold the shot button or Space/Enter. The power meter

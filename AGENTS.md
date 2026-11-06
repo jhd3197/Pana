@@ -14,6 +14,16 @@ The app lives in `Pana/` (server, web, games, engine, scripts, tests). Docs are 
 > in `engine/` (`engine/play/` for mechanics) and add its row to that map in the
 > same change.
 
+## Instructions never go on the HUD
+
+They live in the pause-menu 'Instrucciones' page (`engine/controls-page.js`),
+filled from the game's `public/instructions.js` (goal, how to play, controls per
+device, tips). No controls line, keycaps, "pulsa X para" text or hint panel
+during play; `tests/hud-instructions.test.js` fails on them. A short prompt that
+reacts to the game's state ("E abrir" at a door, "Tu turno", a countdown) is not
+an instruction and may stay while it applies. HUD pieces never stack on each
+other (`engine/tests/hud-layout.browser.js`).
+
 ## Every game is 3D
 
 - The playable view is a Three.js scene with a **perspective camera** and the
@@ -68,6 +78,7 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Loading, loops, teardown, room code in the URL | `engine/game-shell.js` (`bootGame`, `roomCode`) | |
 | Table stage, camera framing | `engine/worlds/table-world.js` (`createTableWorld`) | |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | `docs/knowledge/pana-ui.md` |
+| How to play, controls per device | `engine/controls-page.js` (the menu's Instrucciones tab, from `public/instructions.js`) | pana-ui.md, "Instrucciones"; never on the HUD |
 | Main renderer, picture settings, frame stats | `engine/settings.js` (`rendererOptions`, `bindRenderer`, `shadowSize`), `engine/perf.js`, `npm run perf -- <game>` | pana-kit.md, "Picture settings" |
 | Room codes and invite links | `engine/invite.js` (`inviteUrl`, `roomFromUrl`, `newRoomCode`) | |
 | Player text in other languages | `engine/i18n.js` (`loc`, `locn`, `locKey`), `npm run i18n` | `docs/knowledge/pana-i18n.md` |
@@ -76,13 +87,20 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Anything else online | `engine/net.js` (`HostRoom`, `joinRoom`), `server/src/room-kit.js` | `docs/knowledge/pana-net.md` |
 | Seeded randomness, noise, clamp/lerp/pick | `engine/random.js` (`rng`, `draw`, `fbm2`, `clamp`, `lerp`, `pick`) | no Three.js: safe in `rules.js`; import it by relative path from code a server room loads |
 | End-of-round screen | `.pk-results` + `engine/results.js` (`fillRoster`) | pana-kit.md, "Results screen" |
+| Who holds a record, leaderboard | `engine/records.js` (`createRecordBoard`), `engine/record-widget.js` (`renderRecord`) | `docs/SHARED-ENGINE.md`, "Records" |
+| Save and resume a session | `engine/save-game.js` (`createSaveStore`, `createAutosave`, `findSlot`), `engine/save-widget.js` (`renderContinue`, `renderSlots`) | `docs/SHARED-ENGINE.md`, "Save and resume" |
 | Status toast | `engine/hud.js` (`createToast`) | reads how the element hides from its markup |
+| Bots named after the player's friends | `engine/bot-names.js` (`applyFriendNames`, `friendNamesNow`); server rooms use `this.hostFriendNames()` | `docs/knowledge/pana-net.md`, "Friend-named bots" |
 | Mangos (the shared currency) | `engine/mangos.js` (`createMangoWallet`, `credit` with a receipt) | pay into it, never a game's own wallet; Carreritas' taller spends it |
 | Icons | `engine/icons.js` (SVG); never emoji or symbol glyphs | pana-kit.md, "Icons and colours" |
 | Touch controls, orientation | `engine/touch.js` | pana-kit.md, "Touch controls" |
 | The player's pana | `engine/avatar.js`, `engine/models/characters/pana/avatar-model.js` | `docs/knowledge/character-reference.md` |
 | Walk, sprint, jump, footsteps on foot | `engine/play/walker.js`, `jump.js`, `footsteps.js` | `docs/knowledge/shared-player.md`; Reliquia and Pepazo use it |
+| First-person hands and held items (sway, bob, sprint, swing) | `engine/play/viewmodel.js`, `viewmodel-rig.js` | `docs/SHARED-ENGINE.md`; Reliquia and Pepazo use it |
 | Sound effects, vehicle engines | `engine/sfx.js`, `engine/vehicle-audio.js` | `docs/knowledge/shared-sfx.md`; no audio files |
+| A burning fire (tongues, embers, crackles, a light to lend) | `engine/fx/fire.js` (`createFire`) | `docs/SHARED-ENGINE.md`, "Fire"; Fosa uses it |
+| A rock that cracks and breaks as a hold fills | `engine/fx/rock-crack.js` (`createRockCrack`) | `docs/SHARED-ENGINE.md`, "Rock cracks"; Fosa uses it; lazy-load it |
+| A surface that looks carved (parallax occlusion, generated brick and rock relief) | `engine/fx/pom.js` (`createPomSet`, `applyPom`) | `docs/SHARED-ENGINE.md`, "Carved surfaces"; Fosa uses it; lazy-load it |
 | Who uses which piece, and what is still local | `docs/SHARED-ENGINE.md` | read it first; keep it current |
 | Browser suites | `tests/browser-kit.js` (`launch`, `openGame`, `waitPrepared`, `waitFor`) | |
 
@@ -92,6 +110,8 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
 
 ## Conventions
 
+- Simple people don't like reading: few words, icons over text, short
+  taglines. Follow `docs/UI-RULES.md` for any player-facing text.
 - Every pre-game menu uses the Carreritas side-settings layout from
   `engine/game-entry.js` and `engine/sala.js`; keep game-specific controls,
   teams and start permissions within this shared shell. In-game HUDs remain

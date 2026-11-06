@@ -85,7 +85,9 @@ export function createTerminal(variant = 0) {
       const model = crate(), size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3()), wrapper = new THREE.Group();
       wrapper.add(model); wrapper.scale.set(o.w / 2 / size.x * .94, o.h / size.y, o.d / 2 / size.z * .94);
       put(wrapper, o.x + (i % 2 - .5) * o.w / 2, o.z + (Math.floor(i / 2) - .5) * o.d / 2, 0, 0);
-    } else if (o.kind === 'barrels') for (let i = 0; i < 3; i++) put(oilDrum({ color: [0x2f7cf0, 0xe8402a, 0x3aa85a][(i + Math.round(o.z)) % 3] }), o.x + (i - 1) * .9, o.z + (i - 1) * .6, r() * 6);
+    // Each base's drums mirror the other's (the turn too: r() still runs so the rest of the yard keeps its seed),
+    // so the collision audit fits the same drum boxes on both sides.
+    } else if (o.kind === 'barrels') for (let i = 0; i < 3; i++) { const turn = (r(), Math.sign(o.x) * (1 + i * 2.1 + o.z * .37)); put(oilDrum({ color: [0x2f7cf0, 0xe8402a, 0x3aa85a][(i + Math.round(o.z)) % 3] }), o.x + Math.sign(o.x) * (i - 1) * .9, o.z + (i - 1) * .6, turn); }
   }
   BASES.forEach(({ x, side }, team) => {
     put(teamCanopy({ color: COLORS[team], size: 5.2 }), x + side * 2, 13);

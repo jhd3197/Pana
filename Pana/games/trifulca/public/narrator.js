@@ -19,7 +19,7 @@ export const LINES = {
   dodged: ['¡Lo esquivó!', '¡Pasó rozando!', '¡Le dio al aire!'], // i18n-ignore
   shove: ['¡Pa\' fuera!', '¡Lo mandó pa\'l público!', '¡Empujón!'], // i18n-ignore
   guardbreak: ['¡Le rompió la guardia!', '¡Se le cayeron los brazos!'], // i18n-ignore
-  vecino: ['¡Un vecino lo devuelve!', '¡La señora lo empujó pa\' dentro!', '¡El barrio lo devuelve!'], // i18n-ignore
+  vecino: ['¡Pa\' dentro!', '¡Se salió del ring!', '¡Vuelve al ring!'], // i18n-ignore
   moto: ['¡Pasó una moto!', '¡Cuidado con la moto!', '¡Moto, moto, moto!'], // i18n-ignore
   clinch: ['Ya, vaya.', '¡Sepárense!', 'Ya, ya, suéltense.'], // i18n-ignore
   taunt: ['¡Dale, dale!', '¡Se está luciendo!'], // i18n-ignore
@@ -71,7 +71,7 @@ export function lineFor(e, name) {
     case 'throw': return { text: pick(LINES.throw) };
     case 'impacto': return { text: pick(LINES.impacto), say: Math.random() < .5 };
     case 'pickup': return { text: { silla: locKey('{name} agarró una silla'), caja: locKey('{name} agarró una caja'), casco: locKey('{name} agarró un casco'),
-      chancleta: locKey('{name} agarró una chancleta') }[e.kind] || locKey('{name} agarró algo'), vars: { name: name(e.id) } };
+      chancleta: locKey('{name} agarró una chancleta'), bate: locKey('{name} agarró un bate') }[e.kind] || locKey('{name} agarró algo'), vars: { name: name(e.id) } };
     case 'relevo': return { text: locKey('{line} Entra {name}'), vars: { line: pick(LINES.relevo), name: name(e.id) }, say: true };
     case 'fuera': return { text: '{name}: {line}', vars: { name: name(e.id), line: pick(LINES.fuera) }, big: true, say: true };
     case 'mano': return { text: locKey('Mano de caballero.'), ref: true, say: true };

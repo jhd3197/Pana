@@ -27,12 +27,12 @@ the same tokens.
 | `pk-logo` | PANA wordmark (yellow, coral drop) |
 | `pk-title`, `pk-title--yellow` | Big display title; shadow is `--pk-game` |
 | `pk-heading`, `pk-eyebrow`, `pk-copy`, `pk-num`, `pk-place` | Type roles |
-| `pk-btn` + `--primary --lg --teal --coral --danger --ghost --sm --block` | Buttons. Primary is yellow with a 3D edge |
-| `pk-kbd` | Key cap; inside a primary button it turns ink |
+| `pk-btn` + `--primary --lg --teal --coral --danger --ghost --sm --block` | Buttons. Square, with a hard diagonal offset shadow; primary is yellow with its edge colour as the shadow |
+| `pk-kbd` | Key cap, for menus and dialogs only (never on the HUD); inside a primary button it turns ink |
 | `pk-panel`, `pk-panel--solid`, `pk-well`, `pk-modal` | Surfaces. `pk-panel` is the HUD card over a 3D scene |
 | `pk-stats` > `pk-stat` (`<b>`+`<span>`) | Stat tiles; number uses the game accent |
 | `pk-readout` | HUD label over number (VUELTA 2/3) |
-| `pk-ribbon`, `pk-chip(--teal/--yellow/--coral)`, `pk-dot` | Pills |
+| `pk-ribbon`, `pk-chip(--teal/--yellow/--coral)`, `pk-dot` | Tags. The ribbon is a skewed plate, chips are square, the dot is round |
 | `pk-seg` | Segmented choice; on = `aria-pressed/aria-checked="true"`, `.is-on`, or a checked radio inside a label |
 | `pk-switch` | Toggle (`role="switch" aria-checked`) |
 | `pk-bar` (`--pk-value`, `--pk-bar-color`, `--stripes`), `pk-pips` | Progress |
@@ -41,10 +41,34 @@ the same tokens.
 | `pk-slots` > `pk-slot` (`.is-active`, `pk-slot-n`, `pk-slot-count`) | Inventory |
 | `pk-banner(--yellow/--teal)`, `pk-pop` | Tilted shout; `shout(text)` in kit.js |
 | `pk-toast` | Milestone toast; `createFeats(el)` in engine/feats.js (opt-in per game) |
-| `pk-hints` | Bottom-right key reminders (also mark `data-pana-hint`) |
+| `pk-rank` > `pk-chip`, `pk-bar`, `pk-rank-gain` | Rank chip; built by `createRankChip(progress)` in engine/progress-ui.js |
 | `pk-lobby`, `pk-lobby-top`, `pk-field`, `pk-lobby-foot`, `pk-lobby-room`, `pk-lobby-cta`, `pk-avatars`, `pk-check` | Game launcher column over the live scene |
 | `pk-loading` | Full-screen loading card |
 | `pk-touch` (`--go --coral --sm --lg`, `data-icon="left/right/up/down/jump"`), `pk-dpad`, `pk-touch-zone` | On-screen touch controls (engine/touch.js). See "Touch controls" below |
+
+## One square style
+
+Every interface piece is square: buttons, chips, ribbons, toasts, switches,
+bars, panels, modals, results, HUD cards, touch buttons, inputs and canvas
+name tags. Depth comes from a hard offset shadow, never a soft blur or a
+vertical "3D edge": `--pk-skin-shadow` (`4px 4px` in `--pk-skin-shade`),
+`--pk-drop` (the same offset) or `Npx Npx 0 <edge colour>` on coloured buttons.
+
+- `--pk-r-sm`, `--pk-r`, `--pk-r-lg`, `--pk-r-xl` are kept so old `var()`
+  users inherit the look, and are all `0`. Write `border-radius: 0` or a
+  token; never a px value or a `999px` pill.
+- `var(--pk-radius-round)` (50%) is the one way to a curve, for things that are
+  real circles: avatar and portrait discs, status, team and lives dots, colour
+  swatches, the joystick disc and gamepad cursor, spinners, and balls, coins,
+  pepas, reticles or rhythm rings drawn in CSS. A switch knob, a badge with a
+  number or a letter tile is not a circle.
+- Canvas labels and HUD boxes use `fillRect`/`rect`, not `roundRect`. Canvas
+  art on 3D meshes (cards, board tiles, a pool table, wooden signs) keeps its
+  shapes.
+- `tests/ui-square.test.js` fails on any other radius in `engine/`, `web/` and
+  `games/*/public/` (CSS, inline styles, `roundRect` with a radius). Models
+  under `engine/models/` and the listed canvas art are exempt; Capis is
+  allow-listed until its own restyle lands.
 
 ## Picture settings
 
@@ -153,9 +177,16 @@ right, at the bottom edge, in both orientations.
   `¡JUGAR!` + `Invitar panas ↗` at the bottom. The 3D scene stays visible
   on the right.
 - **HUD:** dark `pk-panel` cards in the corners. Place/score top-left, map
-  or timer top-right, inventory bottom-left, the contextual action (yellow
-  button with a `pk-kbd`) bottom-center, key hints bottom-right. Shouts
-  in the upper middle.
+  or timer top-right, inventory bottom-left, the contextual action (a yellow
+  button that appears only when it applies) bottom-center. Shouts in the
+  upper middle. One element per region: nothing stacks on top of another
+  (`engine/tests/hud-layout.browser.js` checks it at four screen sizes).
+- **Instructions never go on the HUD; they live in the pause-menu
+  'Instrucciones' page (`engine/controls-page.js`),** filled from the game's
+  `public/instructions.js`. No controls line, no keycaps, no "pulsa X para"
+  text during play. A prompt that reacts to the game's state and is needed
+  right now ("E abrir" at a door, "Tu turno", a countdown) is not an
+  instruction and may stay while it applies.
 - **Pause / settings:** the shared menu; do not build one.
 - **Results:** the shared results screen below; do not build one.
 

@@ -6,6 +6,8 @@ import { createTableWorld } from '/engine/worlds/table-world.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
+import { autoRich, blipPitch, moodOf, MOOD_FACE, speakerPose, typewrite, typingSeconds } from '/engine/fx/dialogue.js';
+import { sfx } from '/engine/sfx.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { createQuizStage, createQuizPodium, createHostDesk, createQuizScreen, createStageSpotlight, GOLD, NIGHT } from './studio-set.js';
@@ -35,7 +37,7 @@ function wrap(ctx, text, maxWidth) {
   return [...lines, line];
 }
 function box(ctx, x, y, w, h, r, fill, stroke) {
-  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.fillStyle = fill; ctx.fill();
   if (stroke) { ctx.lineWidth = 5; ctx.strokeStyle = stroke; ctx.stroke(); }
 }
 
@@ -111,7 +113,7 @@ function paintPlate(ctx, w, h, s, p, color) {
   ctx.fillText(note || (p.planted ? loc('{mangos} mangos · plantado', { mangos: mangos(score(p)) }) : loc('{mangos} mangos', { mangos: mangos(score(p)) })), w / 2, h - 40);
 }
 
-export function createQqsmpScene(canvas, { onAnimationCue } = {}) {
+export function createQqsmpScene(canvas, { onAnimationCue, voiceBusy = () => false } = {}) {
   const stage = createTableWorld(canvas, { fit: 'window', exposure: .95, background: '#0b0820', fog: [34, 90], sky: false, fov: 40, plazaScale: .9,
     hemi: ['#7a78e0', '#1a1030', 1.1], sun: { color: '#a9b8ff', intensity: .9, position: [-10, 20, 14], box: 14, far: 60, bias: -.0002 } });
   const { renderer, scene, camera } = stage, own = new THREE.Group(); scene.add(own);
@@ -134,7 +136,27 @@ export function createQqsmpScene(canvas, { onAnimationCue } = {}) {
   const goldMango = makeMango({ gold: true }); goldMango.scale.setScalar(.32); goldMango.position.set(0, 8.55, -5.2); own.add(goldMango);
   const labels = document.getElementById('world-labels');
   const tags = podiums.map(() => { const el = document.createElement('div'); el.className = 'world-label'; el.translate = false; labels.append(el); return el; });
-  const bubbles = createSeatBubbles(labels, SEATS + 1);
+  // Lines are written out letter by letter. Blips hush while a recorded voice is reading.
+  const moods = new Map();
+  const bubbles = createSeatBubbles(labels, SEATS + 1, { typer: (el, text, seat) => {
+    const mood = moodOf(text);
+    el.dataset.mood = mood; moods.set(seat, mood);
+    return typewrite(el, autoRich(text, { wave: [loc('Mango de oro')] }), { onLetter: (ch) => { if (!voiceBusy()) sfx.blip(blipPitch(ch, seat)); } });
+  } });
+  // Whoever is talking bobs, squashes and wears the line's mood. A rig not speaking is left
+  // entirely to the animations; the bob is written absolutely so it can't drift on a rig
+  // nothing else resets, and the squash is on the body because group.scale is the rig's size.
+  const speak = (rig, seat) => {
+    if (!rig) return;
+    const talking = bubbles.talking(seat);
+    if (!talking && !rig._spoke) return;
+    const pose = speakerPose(time + seat, talking ? 1 : 0), body = rig.body.position, base = body.y === rig._spokeY ? rig._spokeBase : body.y;
+    rig._spokeBase = base; rig._spokeY = body.y = base + pose.y;
+    rig.body.scale.set(pose.sx, pose.sy, pose.sx); rig.body.rotation.z = pose.tilt;
+    if (talking) { const face = MOOD_FACE[moods.get(seat)] || 'smile'; if (rig._m !== face) { rig.setExpression(face, { immediate: true }); rig._m = face; } }
+    else { rig.setExpression('natural', { immediate: true }); rig._m = 'natural'; rig._spokeY = undefined; }
+    rig._spoke = talking;
+  };
   const bounds = new THREE.Box3(new THREE.Vector3(-8.6, .3, -5.3), new THREE.Vector3(8.6, 8.4, 2.6));
   const projected = new THREE.Vector3(), aim = new THREE.Vector3();
   let current = null, time = 0, screenKey = '', bottom = 220, measured = 0, pointing = -1, hostTalk = 0;
@@ -172,7 +194,7 @@ export function createQqsmpScene(canvas, { onAnimationCue } = {}) {
     if (key !== screenKey) { screenKey = key; screen.userData.paint((ctx, w, h) => paintScreen(ctx, w, h, state)); }
     pointing = state.phase === 'reveal' && !state.reveal.done ? state.reveal.order[state.reveal.shown - 1] ?? -1 : state.phase === 'finished' ? state.winner : -1;
     const said = lineText(state.hostLine);
-    if (said && said !== lineText(previous?.hostLine) && state.phase !== 'lobby') { bubbles.say(HOST, said, Math.min(4, 1.6 + said.length * .035)); hostTalk = 1.2; }
+    if (said && said !== lineText(previous?.hostLine) && state.phase !== 'lobby') { bubbles.say(HOST, said, Math.min(4, 1.6 + said.length * .035)); hostTalk = Math.max(1.2, typingSeconds(said)); }
     goldMango.visible = state.gold === null || state.phase === 'lobby';
     animations.update(state);
   }
@@ -222,6 +244,10 @@ export function createQqsmpScene(canvas, { onAnimationCue } = {}) {
     hr.rotation.set(pointing >= 0 ? -1.6 : -.5 + talk, 0, pointing >= 0 ? -.3 : -.2); hl.rotation.set(-.6 - talk, 0, .25);
     host.neck.rotation.y = pointing >= 0 ? THREE.MathUtils.clamp(Math.atan2(podiums[pointing].podium.position.x - host.group.position.x, podiums[pointing].podium.position.z - host.group.position.z) - host.group.rotation.y, -.8, .8) : Math.sin(time * .7) * .2;
     animations.frame(dt, paused);
+    if (!paused && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      speak(host, HOST);
+      podiums.forEach((slot, seat) => speak(slot.character, seat));
+    }
     // Once answers are public, give each reaction a TV close-up above the HUD.
     // Keep the full board framed while anyone can still choose an answer.
     const reaction = animations.current;

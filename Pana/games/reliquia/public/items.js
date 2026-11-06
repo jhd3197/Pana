@@ -10,13 +10,15 @@ export const ITEMS = {
   emerald: { name: locKey('Esmeralda'), size: 'small', value: 70, model: 'emerald' },
   pearl: { name: locKey('Perla de Cubagua'), size: 'small', value: 60, model: 'pearl' },
   cup: { name: locKey('Copa de oro'), size: 'small', value: 90, model: 'goldCup' },
+  // Junk: what a library hides more often than treasure.
+  oldBook: { name: locKey('Libro viejo'), size: 'small', value: 10, junk: true, model: 'oldBook' },
   // One-hand treasures: worth more, and they can be thrown across a room.
   mask: { name: locKey('Máscara de oro'), size: 'hand', value: 160, model: 'goldMask' },
   idol: { name: locKey('Ídolo tallado'), size: 'hand', value: 130, model: 'carvedIdol' },
   // Big treasures.
   sunDisk: { name: locKey('Disco del sol'), size: 'big', need: 2, value: 600, radius: 1, model: 'sunDisk' },
   emeraldChest: { name: locKey('Cofre de esmeraldas'), size: 'big', need: 2, value: 700, radius: .9, model: 'emeraldChest' },
-  drum: { name: locKey('Tambor ceremonial'), size: 'big', need: 2, value: 420, radius: .8, model: 'ceremonialDrum' },
+  drum: { name: locKey('Tambor ceremonial'), size: 'big', need: 2, value: 420, radius: .5, halo: 1.3, model: 'ceremonialDrum' },
   mirror: { name: locKey('Espejo maldito'), size: 'big', need: 2, value: 520, radius: .9, model: 'cursedMirror' },
   cart: { name: locKey('Vagoneta de oro'), size: 'big', need: 2, value: 560, radius: 1, model: 'mineCart' },
   stoneHead: { name: locKey('Cabeza de piedra'), size: 'big', need: 3, value: 850, radius: 1.1, model: 'olmecHead' },
@@ -28,6 +30,12 @@ export const ITEMS = {
   farol: { name: locKey('Farol'), size: 'hand', value: 0, tool: true, model: 'expeditionLantern' },
   botiquin: { name: locKey('Botiquín'), size: 'hand', value: 0, tool: true, model: 'botiquin' },
   marcadora: { name: locKey('Marcadora de pintura'), size: 'hand', value: 0, tool: true, model: 'createPaintMarker' },
+  // Thrown, burns on the floor: nothing that fears light comes near it.
+  bengala: { name: locKey('Bengala'), size: 'hand', value: 0, tool: true, model: 'flareStick' },
+  // Ties a hanging rope or a rope bridge at an iron stake, once.
+  cuerda: { name: locKey('Cuerda'), size: 'hand', value: 0, tool: true, model: 'coiledRope' },
+  // El encargo: what someone paid for. Worth a little; delivering it is what pays.
+  encomienda: { name: locKey('El encargo'), size: 'hand', value: 50, model: 'sealedParcel' },
   // Enchanted artifacts: a power with a catch, worth money if they reach the truck.
   echoMask: { name: locKey('Máscara de los ecos'), size: 'hand', value: 220, artifact: true, model: 'echoMask', good: locKey('Revela salas escondidas'), bad: locKey('Llama fantasmas') },
   sandals: { name: locKey('Alpargatas del mensajero'), size: 'hand', value: 200, artifact: true, model: 'messengerSandals', good: locKey('Corres mucho más'), bad: locKey('No frenas a tiempo') },

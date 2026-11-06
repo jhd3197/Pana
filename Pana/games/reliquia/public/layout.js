@@ -1,17 +1,22 @@
 // Collision and navigation for a generated run, renderer-free. The static
-// footprint (rooms, corridors, stairs, pits) is rasterised once per seed into
+// footprint (rooms, corridors, stairs, pits, bookcases) is rasterised once per seed into
 // a 0.25 m bitmap per floor; what changes during a run (closed seals, fake
 // walls, collapsed tunnels) comes from the state at query time.
-import { generateRun, floorOf, inRect, SPACING, CAGE } from './deck.js';
+import { generateRun, themeFor, floorOf, inRect, SPACING, CAGE } from './deck.js';
 import { ITEMS } from './items.js';
+import { slideMove } from '../../../engine/play/walker.js';
 
 const RES = 4, layouts = new Map();
+// The shell's walls stand on a 1 m grid: a cell is floor when its centre is in a
+// rect (ruinShell). Rooms, corridors and stubs collide on that same outline, so
+// a mouth 4.4 m wide on paper stops the body where the 4 m of brick stands.
+const onWallGrid = ([a, b, c, d]) => [Math.floor(a - .5) + 1, Math.floor(b - .5) + 1, Math.ceil(c - .5), Math.ceil(d - .5)];
 export const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
-export function layoutFor(seed = 1, depth = 1) {
-  const key = `${seed}:${depth}`;
+export function layoutFor(seed = 1, depth = 1, theme = themeFor(depth)) {
+  const key = `${seed}:${depth}:${theme}`;
   if (layouts.has(key)) return layouts.get(key);
-  const run = generateRun(seed, { depth }), floors = run.floors;
+  const run = generateRun(seed, { depth, theme }), floors = run.floors;
   const grids = [];
   for (let f = 0; f <= floors; f++) {
     const rects = [...run.rooms, ...run.corridors, ...run.stubs].filter(r => r.floor === f).map(r => r.rect);
@@ -25,15 +30,27 @@ export function layoutFor(seed = 1, depth = 1) {
       const j0 = Math.max(0, Math.ceil((r[1] - z0) * RES - .5)), j1 = Math.min(h - 1, Math.floor((r[3] - z0) * RES - .5));
       for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (test(x0 + (i + .5) / RES, z0 + (j + .5) / RES)) bits[j * w + i] = value;
     };
-    for (const r of rects) fill(r, 1);
-    for (const p of pits) fill(p.rect, 2, (x, z) => !inRect(x, z, p.island) && !bridges.some(b => inRect(x, z, b.rect)));
-    grids.push({ x0, z0, w, h, bits, obstacles: run.obstacles.filter(o => o.floor === f) });
+    for (const r of rects) fill(onWallGrid(r), 1);
+    // A bridge still in a heap (`needs` a cuerda) leaves its span open air until it is tied.
+    for (const p of pits) fill(p.rect, 2, (x, z) => !inRect(x, z, p.island) && !bridges.some(b => !b.needs && inRect(x, z, b.rect)));
+    // Bookcases and reading tables are walls as far as anyone can tell.
+    for (const s of run.solids || []) if (s.floor === f) fill(s.rect, 0);
+    // A nook's two slabs: stone like any wall.
+    for (const n of run.nooks || []) if (n.floor === f) for (const slab of n.slabs) fill(slab, 0);
+    grids.push({ x0, z0, w, h, bits, res: RES, obstacles: run.obstacles.filter(o => o.floor === f) });
   }
   const cell = (x, z) => {
     const g = grids[Math.min(floors, floorOf(x))]; if (!g) return 0;
     const i = Math.floor((x - g.x0) * RES), j = Math.floor((z - g.z0) * RES);
     return i < 0 || j < 0 || i >= g.w || j >= g.h ? 0 : g.bits[j * g.w + i];
   };
+  // Spans a cuerda has tied: floor from then on. Only ever asked about open air.
+  const spans = run.bridges.filter(b => b.needs), lows = run.pits.filter(p => p.low);
+  const floorHere = (x, z, state) => { const c = cell(x, z); return c === 1 || (c === 2 && spans.length > 0 && spans.some(b => state?.strung?.[b.id] && inRect(x, z, b.rect))); };
+  // How far below the floor a hanging platform stands here (0: anywhere else).
+  const lowAt = (x, z) => { for (const p of lows) if (inRect(x, z, p.island)) return p.low; return 0; };
+  // How deep this stretch of open air goes before something is lost: a platform's pit is deeper.
+  const pitDepth = (x, z) => { for (const p of lows) if (inRect(x, z, p.rect)) return p.low; return 0; };
   // Blockers that open or close during the run.
   function blocked(x, z, state, radius) {
     // The empty shaft is a hole: a stop is solid only while the cage waits there.
@@ -43,8 +60,8 @@ export function layoutFor(seed = 1, depth = 1) {
     return false;
   }
   function walkable(x, z, state = {}, radius = .45) {
-    if (!Number.isFinite(x) || !Number.isFinite(z) || cell(x, z) !== 1) return false;
-    for (let i = 0; i < 8; i++) if (cell(x + Math.cos(i * Math.PI / 4) * radius, z + Math.sin(i * Math.PI / 4) * radius) !== 1) return false;
+    if (!Number.isFinite(x) || !Number.isFinite(z) || !floorHere(x, z, state)) return false;
+    for (let i = 0; i < 8; i++) if (!floorHere(x + Math.cos(i * Math.PI / 4) * radius, z + Math.sin(i * Math.PI / 4) * radius, state)) return false;
     if (blocked(x, z, state, radius)) return false;
     const g = grids[floorOf(x)];
     return !g?.obstacles.some(o => (x - o.x) ** 2 + (z - o.z) ** 2 < (o.r + radius) ** 2);
@@ -57,14 +74,41 @@ export function layoutFor(seed = 1, depth = 1) {
     for (let i = 0; i <= n; i++) { const t = n ? i / n : 0; if (!walkable(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, state, radius)) return false; }
     return true;
   }
-  function moveBody(body, dx, dz, state, radius = .45) {
-    const n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / .2));
-    let moved = false;
-    for (let i = 0; i < n; i++) {
-      if (walkable(body.x + dx / n, body.z, state, radius)) { body.x += dx / n; moved = true; }
-      if (walkable(body.x, body.z + dz / n, state, radius)) { body.z += dz / n; moved = true; }
+  // Can an eye at `a` see `b`? Walls, bookcases, wardrobes, fake walls and
+  // rubble block the view; reading tables and copyists' desks are waist-high
+  // and pits are open air, so neither does. The ends' own half metre is
+  // skipped (a body stands against a case). Allocation-free.
+  const low = run.solids.filter(s => s.kind === 'table' || s.kind === 'desk');
+  function sightClear(a, b, state = {}) {
+    if (floorOf(a.x) !== floorOf(b.x)) return false;
+    const d = distance(a, b), n = Math.ceil(d / .2), skip = Math.min(.5, d / 2), f = floorOf(a.x);
+    for (let i = 0; i <= n; i++) {
+      const t = n ? i / n : 0, along = t * d; if (along < skip || along > d - skip) continue;
+      const x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t, c = cell(x, z);
+      if (c === 0 && !low.some(s => s.floor === f && inRect(x, z, s.rect, .05))) return false;
+      for (const wall of run.hidden) if (!state.revealed?.[wall.id] && inRect(x, z, wall.rect)) return false;
+      for (const id in state.rubble || {}) { const r = run.corridors.find(q => q.id === id); if (r && inRect(x, z, r.rect)) return false; }
     }
-    return moved;
+    return true;
+  }
+  const moveBody = (body, dx, dz, state, radius = .45) => slideMove(body, dx, dz, (x, z) => walkable(x, z, state, radius), { slip: radius });
+  // Floor or open pit: what a body that never looks down can step on. Walls,
+  // solids and obstacles still stop it.
+  function passable(x, z, state, radius) {
+    if (!Number.isFinite(x) || !Number.isFinite(z) || cell(x, z) === 0) return false;
+    for (let i = 0; i < 8; i++) if (cell(x + Math.cos(i * Math.PI / 4) * radius, z + Math.sin(i * Math.PI / 4) * radius) === 0) return false;
+    if (blocked(x, z, state, radius)) return false;
+    const g = grids[floorOf(x)];
+    return !g?.obstacles.some(o => (x - o.x) ** 2 + (z - o.z) ** 2 < (o.r + radius) ** 2);
+  }
+  // moveBody for that body: a pit is floor until its centre is over it.
+  const moveAcross = (body, dx, dz, state, radius = .7) => slideMove(body, dx, dz, (x, z) => passable(x, z, state, radius), { slip: radius });
+  // A straight run from a to b for that body, pits included.
+  function crossable(a, b, state, radius = .7) {
+    if (floorOf(a.x) !== floorOf(b.x)) return false;
+    const n = Math.ceil(distance(a, b) / .4);
+    for (let i = 1; i <= n; i++) if (!passable(a.x + (b.x - a.x) * i / n, a.z + (b.z - a.z) * i / n, state, radius)) return false;
+    return true;
   }
   function groundAt(x, z) {
     for (const s of run.stubs) if (s.floor === floorOf(x) && inRect(x, z, s.rect)) {
@@ -72,7 +116,9 @@ export function layoutFor(seed = 1, depth = 1) {
       return s.from + (s.to - s.from) * t;
     }
     // The rope bridge sags like the shared model (deck .75 m lower mid-span).
+    for (const p of lows) if (p.floor === floorOf(x) && inRect(x, z, p.island)) return -p.low;
     for (const b of run.bridges) if (b.floor === floorOf(x) && inRect(x, z, b.rect)) {
+      if (b.beam) return 0;
       const mid = (b.rect[1] + b.rect[3]) / 2, half = (b.rect[3] - b.rect[1]) / 2;
       return -.75 * (1 - ((z - mid) / half) ** 2);
     }
@@ -114,7 +160,9 @@ export function layoutFor(seed = 1, depth = 1) {
   }
   // A pearl the deck rolled against a pit edge or a wall would be unreachable.
   run.loot = run.loot.filter(l => ITEMS[l.kind]?.size === 'big' || l.y || walkable(l.x, l.z, { open: {}, revealed: Object.fromEntries(run.hidden.map(h => [h.id, true])) }, .3));
-  const layout = { run, walkable, lineClear, moveBody, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
+  // A floor's raw bitmap (1: floor, 2: pit, 0: rock), for whoever bakes something from it.
+  const footprint = f => grids[f] || null;
+  const layout = { run, footprint, lowAt, pitDepth, walkable, lineClear, sightClear, moveBody, moveAcross, crossable, groundAt, regionAt, findPath, overPit, floorOf, SPACING };
   layouts.set(key, layout);
   return layout;
 }

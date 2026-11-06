@@ -38,13 +38,14 @@ export function options(argv) {
   if (!/^#[0-9a-f]{6}$/i.test(color)) fail('Color must be #rrggbb.');
   const name = args.name || id[0].toUpperCase() + id.slice(1);
   const description = args.description || (kind === 'table'
-    ? `Una mesa 3D en la plaza para ${players} panas. Juega con tus panas o contra bots.`
-    : `Corre por la plaza 3D con tus panas. Recoge más mangos que nadie antes de que se acabe el tiempo.`);
+    ? 'Mesa con tus panas'
+    : 'Caza de mangos');
+  if (description.length > 30) fail('The description is the hub card tagline: 30 characters at most (docs/UI-RULES.md).');
   // The English the hub shows (public/locales/en.json); a custom description
   // without one is left to translate (npm run i18n -- check names it).
   const descriptionEn = args['description-en'] || (args.description ? '' : kind === 'table'
-    ? `A 3D table in the plaza for ${players} players. Play with your friends or against bots.`
-    : `Run around the 3D plaza with your friends. Grab more mangos than anyone before time runs out.`);
+    ? 'Table with friends'
+    : 'Mango hunt');
   return { id, kind, players, color: color.toLowerCase(), name, description, descriptionEn };
 }
 

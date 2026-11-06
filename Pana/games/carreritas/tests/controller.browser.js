@@ -30,13 +30,15 @@ try {
   await page.waitForFunction(() => race.pads?.[0]?.throttle === .2 && document.documentElement.dataset.panaInput === 'gamepad');
   await page.mouse.move(100, 100); await page.mouse.move(600, 400); await frames();
   assert.equal(await page.locator('html').getAttribute('data-pana-input'), 'gamepad');
-  assert.equal(await page.locator('#swap-item kbd').isVisible(), false, 'Q disappears while native controller input drives the car');
+  assert.equal(await page.locator('#swap-item kbd').count(), 0, 'no Q keycap on the swap button');
   assert.equal(await page.locator('kbd:not([data-pad-key]):visible').count(), 0);
   await page.evaluate(() => { __pad.buttons[7] = { pressed: false, value: 0 }; });
   await press(9); await page.locator('dialog.pana-menu[open]').waitFor();
+  // RB: Instrucciones, on the pad's column; RB again: Mis ajustes on the pad's page.
+  await press(5); await page.locator('.pana-help-controls[data-device=gamepad]').waitFor();
+  assert.match(await page.locator('.pana-help-controls').innerText(), /objeto adelante.*objeto atrás/is);
   await press(5); await page.locator('[data-settings-category=pad]').waitFor();
   assert.equal(await page.getByRole('tab', { name: 'Controles', exact: true }).count(), 0);
-  assert.match(await page.locator('[data-settings-category=pad]').innerText(), /Objeto adelante.*Objeto atrás/s);
   assert.equal(await page.locator('.pana-device-name').innerText(), 'Mando Xbox');
   assert.equal(await page.locator('kbd:not([data-pad-key]):visible').count(), 0, 'controller settings contain no PC key hints');
   if (process.env.PANA_TEST_ARTIFACTS) await page.screenshot({ path: `${process.env.PANA_TEST_ARTIFACTS}/carreritas-controller-settings.png` });

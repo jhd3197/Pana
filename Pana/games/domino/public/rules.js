@@ -1,8 +1,10 @@
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { BOT_PERSONAS, botDelay } from './bot-personas.js';
 import { FIELDS, cleanOptions, maxPip, groupOf, CHAT } from './options.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
 import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
+import { openSeat } from '../../../engine/play/team-balance.js';
 import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 // House rules are explicit in the UI: team block dominoes, opponents' pips score.
 // Pure data and deterministic shuffling keep host migration lossless.
@@ -59,7 +61,8 @@ export class DominoGame {
 
   addPlayer(id, name, avatar = {}) {
     if(this.phase==='lobby'&&!this.players.some(p=>p.id===id||p.id===null)&&this.players.length<6)this.configure({seats:6});
-    const player = this.players.find(p => p.id === id) || this.players.find(p => p.id === null);
+    // A newcomer sits on the smaller pair in Equipos (team = seat % 2).
+    const player = this.players.find(p => p.id === id) || this.players[openSeat(this.players, { teamOf: this.options?.mode === 'teams' ? seat => seat % 2 : null, free: p => p.id === null })];
     if (!player) return false; // Arrivals beyond the current table watch, never reset the round.
     const changed = player.id !== id || player.name !== name || JSON.stringify(player.avatar) !== JSON.stringify(avatar);
     Object.assign(player, { id, name: String(name).slice(0, 16), avatar });
@@ -97,6 +100,8 @@ export class DominoGame {
   start() {
     if (['playing', 'starter'].includes(this.phase)) return false;
     if (this.phase === 'finished') { this.round = 0; this.scores = Array(this.options.mode==='teams'?2:this.players.length).fill(0); this.starter = 0; }
+    for (const p of this.players) if (p.id === null) p.name = BOT_NAMES[p.seat];
+    applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     this.round++; this.chain = []; this.passes = 0; this.result = null; this.history = [];
     const tiles = deck(maxPip(this.options));
     for (let i = tiles.length - 1; i > 0; i--) {

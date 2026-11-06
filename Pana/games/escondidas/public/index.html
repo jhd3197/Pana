@@ -39,7 +39,7 @@
   <main id="hud" class="hidden">
     <div class="clock-panel pk-panel"><span id="phase" class="phase-chip">ESCÓNDETE</span><b id="timer">00:30</b><small id="round">RONDA 1 / 4</small></div>
     <div class="seeker-panel pk-panel"><div class="portrait"><img id="seeker-face" alt=""></div><div><small id="seeker-caption">BUSCADOR</small><b id="seeker-name" translate="no">Coco</b><span id="remaining-players">3 panas escondidos</span></div></div>
-    <div id="crosshair" class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="lock-hint pk-banner">Haz clic para mirar con el ratón · V para verte desde atrás</p>
+    <div id="crosshair" class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="lock-cue pk-banner">Haz clic para mirar con el ratón</p>
     <div id="callout" class="callout" aria-live="polite"><b id="callout-title"></b><span id="callout-detail"></span></div>
     <section id="scoreboard" class="scoreboard pk-panel" hidden aria-label="Tabla de la partida"><span class="pk-eyebrow">Tabla</span><b id="board-title"></b><ol id="board-list" class="pk-roster"></ol></section>
     <div id="center-message" class="center-message pk-panel hidden"><b>Prepárate para buscar…</b><span>Los panas se están escondiendo.</span></div>
@@ -47,12 +47,11 @@
     <section id="disguise-panel" class="disguise-panel pk-panel" aria-label="Camuflaje">
       <div class="disguise-heading"><div><small id="role-title">QUE NO TE PILLEN</small><h2 id="prop-name">Tu pana</h2></div><div class="charges"><span>Cambios</span><b id="charges" aria-label="3 cambios restantes"></b></div></div>
       <div id="prop-list" class="prop-list pk-slots" role="group" aria-label="Elegir disfraz"></div>
-      <div class="disguise-footer"><p id="disguise-tip">Elige un objeto de la plaza.</p><button id="revert" type="button" class="pk-btn pk-btn--sm">Volver a pana <kbd class="pk-kbd">Q</kbd></button></div>
+      <div class="disguise-footer"><p id="disguise-tip">Elige un objeto de la plaza.</p><button id="revert" type="button" class="pk-btn pk-btn--sm">Volver a pana <kbd class="pk-kbd" data-prompt>Q</kbd></button></div>
     </section>
     <div id="suspicion" class="suspicion hidden"><span>¡Te están viendo!</span><div><i id="suspicion-fill"></i></div></div>
-    <button id="action" class="action pk-btn pk-btn--primary"><kbd class="pk-kbd">E</kbd> <span id="action-label">Copiar objeto cercano</span></button>
+    <button id="action" class="action pk-btn pk-btn--primary"><kbd class="pk-kbd" data-prompt>E</kbd> <span id="action-label">Copiar objeto cercano</span></button>
     <aside class="map-wrap pk-panel"><span>PLAZA PANA</span><canvas id="minimap" width="300" height="270" aria-label="Mapa: tu posición y la del buscador"></canvas><small id="map-note"><i></i> Tú <i></i> Buscador</small></aside>
-    <div class="controls pk-hints" data-pana-hint><span><b>W A S D</b> Moverte</span><span><b>Ratón</b> Mirar</span><span><b>Shift</b> Correr</span><span><b>1–5</b> Cambiar</span><span><b>V</b> Verte</span><span><b>Tab</b> Tabla</span></div>
     <div id="touch-controls" class="touch-controls pk-touch-zone pk-dpad" aria-label="Movimiento"><button class="pk-touch" data-icon="up" data-move="up" aria-label="Avanzar"></button><button class="pk-touch" data-icon="left" data-move="left" aria-label="Izquierda"></button><button class="pk-touch" data-icon="down" data-move="down" aria-label="Retroceder"></button><button class="pk-touch" data-icon="right" data-move="right" aria-label="Derecha"></button></div>
   </main>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>

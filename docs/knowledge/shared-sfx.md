@@ -8,17 +8,21 @@ sound by what it is, never by how it is built.
 
 | Module | What it is |
 |---|---|
-| `engine/sfx.js` | `sfx.step(surface, {sprint, foot, volume})`, `jump`, `land`, `shot(kind)`, `impact(surface)`, `splat`, `boom(size, {volume})`, `hitConfirm`, `hurt`, `reload(kind, seconds)`, `reloaded`, `dry`, `swap`, `swish`, `tick`, `confirm`, `back`, `count(n)`, `go`. Also exports the two primitives `burst` (filtered noise that glides and decays) and `pitch` (a falling or rising thump) for building a new sound. |
+| `engine/sfx.js` | `sfx.step(surface, {sprint, foot, volume})`, `jump`, `land`, `shot(kind)`, `impact(surface)`, `splat`, `boom(size, {volume, far})`, `debris(size)` (earth raining back after a blast), `patter(count)` (drops landing), `hitConfirm`, `hurt`, `reload(kind, seconds)`, `reloaded`, `dry`, `swap`, `swish`, `swing(material)` and `smack(material)` (a melee swing and its blow: `wood`, `slap`, `squish`, `swish`, `clang`, `rattle`), `pop` (something back in the hand), `tick`, `confirm`, `back`, `count(n)`, `go`, `boing` (a cartoon hop), `squeak` (a startled small animal), `splash(size)` (falling into water), `chime` (your turn), `sting(win)` (match won or lost; effects, not music). Also exports the two primitives `burst` (filtered noise that glides and decays) and `pitch` (a falling or rising thump) for building a new sound. |
 | `engine/vehicle-audio.js` | `createMotor(sound, {profile, topSpeed})`, `createTyres(sound)`, `vehicleSfx.skid / boost / crash(power, kind)`. |
+| `engine/sample-bank.js` | `createSampleBank(sound, base, sets)`: a game's own short clips (`public/audio/*.mp3`) on the same graph; `play(set, {gain, rate, jitter, at, listener, range, pan, priority})`, `bed(set).set(level, seconds)`, `preload`, `ready`. Pure `pickVariant`, `distanceGain`, `panFor`. |
 | `engine/vehicle-revs.js` | The pure half: `PROFILES` and `stepRevs` (gearbox, shift cut, rev slew). Unit-tested in Node. |
 
 Surfaces for `step`: `concrete stone tile wood metal dirt grass sand water`.
-Shots: `pistol scatter rapid rocket sniper bazooka pellet zap`. Each gun shot
+Shots: `pistol scatter rapid rocket sniper bazooka pellet minigun spray zap`. Each gun shot
 has a low sine "punch" under it (`punch` in `sfx.js`), felt more than heard.
 Reloads follow the weapon: `hopper` (pistol, rapid), `pump` (scatter), `tube`
 (rocket, bazooka), `bolt` (sniper), `magazine`. `boom(size)` is an explosion:
 crack, roar, a deep drop, debris and a long rumble; size ~.8 for a grenade, 1
-for a rocket, 1.25 for La Bazuca.
+for a rocket, 1.25 for La Bazuca. `far` (0..1) takes the crack and the
+debris out first and leaves the rumble, as distance does; pair it with a lower
+`volume`. Capis a Pintazos layers `boom`, `splat`, `debris` (.3 s later) and
+`patter` (.45 s) for one blast.
 Crash kinds: `wall car bump prop`.
 
 ## The motor
@@ -48,4 +52,6 @@ to `PROFILES` in `vehicle-revs.js` (the test checks it fires in an audible band)
 
 ## Used by
 
-Carreritas (tyres, boost, crash, drift skid; its car motor is still the older `sound.startEngine` in `engine/fx.js`, players preferred it to `createMotor`), Pepazo (everything on foot and every gun).
+Recorded clips (`sample-bank.js`): Reliquia (steps, searches, wind, drips, chains, sampled scares). Keep each clip small and mono, list it in the game's `audio/SOURCE.md`, and start gains low (steps ~0.15, beds ~0.04): normalised clips are much louder than the synth.
+
+Carreritas (tyres, boost, crash, drift skid; its car motor is still the older `sound.startEngine` in `engine/fx.js`, players preferred it to `createMotor`), Pepazo (everything on foot, every gun and every melee weapon), Capis a Pintazos (every sound it makes).

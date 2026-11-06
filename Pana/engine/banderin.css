@@ -1,7 +1,7 @@
 /* Banderín: opt-in presentation for the four supplied HUD references.
    Shared lobby/menu behavior and each game's data remain owned by their modules. */
 body.banderin { --hud-panel: #100d25; --hud-edge: #26213f; --hud-angle: polygon(3% 0,100% 0,97% 100%,0 100%); }
-.banderin :is(.pk-btn,.pk-panel,.pk-modal,.pk-ribbon) { border-radius: 2px; }
+.banderin :is(.pk-btn,.pk-panel,.pk-modal,.pk-ribbon) { border-radius: 0; }
 .banderin .pk-btn { border-width: 0; box-shadow: 3px 4px 0 var(--hud-edge); font-weight: 900; }
 .banderin .pk-btn--primary { background: var(--pk-yellow); color: var(--pk-night); font-family: var(--pk-display); letter-spacing: .02em; }
 .banderin .pk-btn:focus-visible { outline: 3px solid var(--pk-teal); outline-offset: 4px; }

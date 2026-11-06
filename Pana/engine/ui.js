@@ -53,8 +53,9 @@ export function createGameMenu({
   title = 'Pana',             // game name, shown above the heading
   heading = loc('Un momentico'),   // headline while paused
   note,                       // () => string: what pausing means right now
-  controls = [],              // [['W A S D', 'Moverte'], …] for keyboard instructions
-  tips = [],                  // extra lines under the controls
+  controls = [],              // [['W A S D', 'Moverte'], …]: older games' keys, shown when there is no instructions.js
+  tips = [],                  // extra lines for the Instrucciones page (with `controls`)
+  instructions,               // the Instrucciones page data (engine/controls-page.js); default ./instructions.js beside the page
   actions = [],               // [{ id, label, run, kind, visible, keepOpen }]
   options = [],               // game settings: [{ id, label, choices: [[value, label]], get, set }]
   sound,                      // the fx.js sound object; follows the saved settings
@@ -70,17 +71,11 @@ export function createGameMenu({
   orientation = 'libre',      // phones: 'horizontal', 'vertical' or 'libre' (either works)
   pad,                        // game controller setup, see engine/gamepad.js
 } = {}) {
-  // Loaded only for a game that sets up a pad, to keep the others' first load small.
-  const padRows = h('div', { hidden: true });
+  // Loaded lazily, to keep every game's first load small.
   const padHint = h('p', { class: 'pana-menu-pad-hint', hidden: true });
-  import('./gamepad.js').then(({ padControls, padHelp, onInputDevice, formatPadLabel }) => {
+  import('./gamepad.js').then(({ padControls, onInputDevice, formatPadLabel }) => {
     if (pad && pause) padControls(pad);
     onInputDevice(state => {
-      const rows = padHelp(pad).map(([key, label]) => [formatPadLabel(key, state.family), label]);
-      padRows.replaceChildren(h('h3', { class: 'pana-keys-title', text: loc('Con mando') }), keyList(rows, true));
-      padRows.hidden = state.device !== 'gamepad';
-      keyboardRows.hidden = state.device !== 'keyboard';
-      touchHelp.hidden = state.device !== 'touch';
       padHint.hidden = state.device !== 'gamepad';
       padHint.textContent = `${formatPadLabel('A', state.family)} · ${loc('Elegir')}    ${formatPadLabel('B', state.family)} · ${loc('Volver')}${pause ? `    ${formatPadLabel('LB / RB', state.family)} · ${loc('Secciones')}` : ''}`;
     });
@@ -179,15 +174,16 @@ export function createGameMenu({
     return { node, refresh };
   }
 
-  // ---------- Controles ----------
-  function keyList(rows, whole) {
-    return h('div', { class: 'pana-keys', role: 'list' }, rows.map(([keys, text]) => h('div', { class: 'pana-key', role: 'listitem' },
-      h('span', { class: 'pana-key-caps' }, keycaps(keys, whole)), h('span', { class: 'pana-key-text', text }))));
+  // ---------- Instrucciones (engine/controls-page.js, loaded when it opens) ----------
+  const helpPanel = h('section', { class: 'pana-panel', role: 'tabpanel', id: id('panel-help'), 'aria-labelledby': id('tab-help') });
+  const helpSource = instructions ?? (pause && globalThis.location ? new URL('instructions.js', document.baseURI).href : null);
+  let helpPage;
+  function prepareHelp() {
+    helpPage ??= import('./controls-page.js').then(({ mountControlsPage }) => mountControlsPage(helpPanel, { instructions: helpSource, legacy: { controls, tips }, pad }))
+      .catch(() => { helpPage = null; defaultNotify(loc('No se pudieron cargar las instrucciones. Vuelve a abrir el menú.')); });
   }
-  const keyboardRows = keyList(controls);
-  const touchHelp = h('p', { class: 'pana-tip', hidden: true, text: loc('Usa los controles táctiles del juego. Puedes ajustar la cámara y la orientación en Ajustes.') });
   // ---------- dialog ----------
-  const tabs = [pause && ['game', loc('Juego'), gamePanel], ['settings', loc('Mis ajustes'), settingsPanel]].filter(Boolean);
+  const tabs = [pause && ['game', loc('Juego'), gamePanel], pause && ['help', loc('Instrucciones'), helpPanel], ['settings', loc('Mis ajustes'), settingsPanel]].filter(Boolean);
   const tabButtons = tabs.map(([key, label]) => h('button', { type: 'button', role: 'tab', id: id(`tab-${key}`), 'aria-controls': id(`panel-${key}`), 'data-tab': key, text: label, onclick: () => showTab(key) }));
   const noteNode = h('p', { class: 'pana-menu-note', id: id('menu-note') });
   const dialog = h('dialog', { class: 'pana-menu', id: id('menu-dialog'), 'aria-labelledby': id('menu-title') },
@@ -204,22 +200,25 @@ export function createGameMenu({
     if (workspace) { workspace.refresh(); return; }
     workspaceLoading ??= import('./settings-workspace.js').then(({ createSettingsWorkspace }) => {
       workspace = createSettingsWorkspace(settingsPanel, {
-        sound, options, title, tips, game: pause, category: reopen,
+        sound, options, title, game: pause, category: reopen,
         orientation: orientationGroup ? [['juego', ownWay], ...Object.entries(ORIENTATIONS)] : null,
-        // The hub has no game to explain: no Cómo se juega tabs there.
-        help: pause ? { keyboard: controls.length ? keyboardRows : null, gamepad: padRows, touch: touchHelp } : {},
+        // How to play lives in the Instrucciones tab, not in Ajustes.
+        help: {},
       });
       workspace.refresh();
     }).catch(() => { workspaceLoading = null; defaultNotify(loc('No se pudieron cargar los controles. Vuelve a abrir Ajustes.')); });
   }
 
+  // 'controls' (the games' Reglas buttons) and 'help' open Instrucciones.
+  const tabKey = key => (key === 'controls' || key === 'instructions' ? 'help' : key);
   function showTab(key) {
-    if (key === 'controls') key = 'settings';
+    key = tabKey(key);
     tab = key; dialog.dataset.tab = key;
     for (const [k, , panel] of tabs) panel.hidden = k !== key;
     for (const b of tabButtons) { const on = b.dataset.tab === key; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; }
-    dialog.querySelector('h2').textContent = key === 'settings' ? loc('A tu manera') : heading;
+    dialog.querySelector('h2').textContent = key === 'settings' ? loc('A tu manera') : key === 'help' ? loc('Instrucciones') : heading;
     if (key === 'settings') prepareSettings();
+    if (key === 'help') prepareHelp();
   }
   dialog.querySelector('.pana-tabs')?.addEventListener('keydown', e => {
     const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key]; if (!step) return;
@@ -245,7 +244,7 @@ export function createGameMenu({
   });
 
   function open(which = tab) {
-    if (which === 'controls') which = 'settings';
+    which = tabKey(which);
     if (isOpen) { showTab(which); return; }
     if (!canOpen()) return;
     isOpen = true; returnFocus = document.activeElement;
@@ -304,7 +303,7 @@ export function createGameMenu({
   }
 
   // ---------- buttons a game places in its own HUD ----------
-  function createButton({ id: buttonId = id('open'), label = loc('Menú'), kbd = 'Esc', className = '' } = {}) {
+  function createButton({ id: buttonId = id('open'), label = loc('Menú'), kbd = null, className = '' } = {}) {
     const button = h('button', { type: 'button', id: buttonId, class: `pana-hud-button ${className}`, 'aria-haspopup': 'dialog', 'aria-controls': dialog.id },
       label, kbd && h('kbd', { text: kbd, 'data-pana-hint': true }));
     button.addEventListener('click', () => (pause ? toggle() : open()));

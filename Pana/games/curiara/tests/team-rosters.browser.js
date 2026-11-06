@@ -13,7 +13,7 @@ try {
     await waitFor(guest, h => window[h].room.state.players.filter(p => p.id != null && !p.bot).length === 2, handle);
     const own = await guest.evaluate(h => window[h].room.id, handle);
     if (game === 'curiara') await host.locator('[data-room-option="crew"][data-value="triples"]').click();
-    if (game === 'pintura') await host.locator('[data-room-option="mode"][data-value="teams"]').click();
+    if (game === 'pintura') await host.locator('[data-room-option="sides"][data-value="teams"]').click();
     const roster = game === 'curiara' ? '#seats' : game === 'criollas' ? '#lobby-roster' : '#team-roster';
     await guest.locator(`${roster}:not([hidden]) [data-roster-group]`).first().waitFor();
     assert.equal(await guest.locator(`${roster} [data-roster-select]`).count(), 0, 'only the host arranges another pana');

@@ -1,12 +1,15 @@
 import * as THREE from 'three';
 // Apply the study's sculpt-space poses to the existing player's wardrobe.
 // Root movement belongs to the host; authored lunges are deliberately bounded.
-export function createCombatRig(character, gloves, shoulders) {
+// A straight arm held out in guard would poke the rival at the body gap, and the
+// same arm at full length would go through them: `arms` gives each arm's length
+// in guard (bent, in effect) and on a punch, which stretches to meet the rival.
+export function createCombatRig(character, shoulders, arms = { guard: 1, punch: 1 }) {
   const ears = character.head.children.filter(o => o.name === 'Cupped ear');
   const earBase = ears.map(o => o.rotation.clone());
   let active = false;
   const pivotOffset = new THREE.Vector3();
-  return function apply(p, moving = 0) {
+  return function apply(p, moving = 0, extension = 0) {
     if (!p) {
       if (active) {
         character.body.position.x = character.body.position.z = 0; character.body.scale.setScalar(1);
@@ -18,7 +21,7 @@ export function createCombatRig(character, gloves, shoulders) {
     }
     active = true;
     const b = character.body, squash = p.squash;
-    b.position.y = p['body.y']; b.position.z = Math.max(-.25, Math.min(.3, p['body.z']));
+    b.position.y = p['body.y']; b.position.z = Math.max(-.25, Math.min(arms.lunge ?? .3, p['body.z']));
     b.rotation.set(p['body.rx'], p['body.ry'] + p.spin, p['body.rz']);
     b.scale.set(1 + squash * .55, 1 - squash, 1 + squash * .55);
     if (p['body.pivot']) {
@@ -33,12 +36,12 @@ export function createCombatRig(character, gloves, shoulders) {
       Math.max(-.2, Math.min(.2, p['neck.rz'] - p['body.rz'] * .5 * stab)));
     character.head.rotation.z = p['head.rz'];
     character.arms.forEach((arm, i) => {
-      const key = i ? 'armR' : 'armL', stretch = p[`${key}.s`];
+      const key = i ? 'armR' : 'armL', striking = p[`${key}.s`] > 1.04;
+      const stretch = p[`${key}.s`] * (striking ? arms.guard + (arms.punch - arms.guard) * extension : arms.guard);
       arm.position.copy(shoulders[i]); arm.position.z += p[`${key}.z`];
       arm.rotation.set(p[`${key}.rx`], p[`${key}.ry`], p[`${key}.rz`]);
-      const width = 1 / Math.sqrt(stretch);
+      const width = 1 / Math.sqrt(p[`${key}.s`]);
       arm.scale.set(width, stretch, width);
-      gloves[i].scale.set(1 / .6 / width, 1 / .6 / stretch, 1 / .6 / width);
     });
     // Keep the shared walking cycle while moving, plant the stance otherwise.
     if (moving < .4) character.legs.forEach((leg, i) => {

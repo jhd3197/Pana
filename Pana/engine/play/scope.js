@@ -45,7 +45,7 @@ export function createScopeOverlay(doc = document, { parent = doc.body, tint = '
   line({ top: '50%', right: '12vmin', height: '.5vmin', width: 'calc(50% - 15vmin)', transform: 'translateY(-50%)' });
   line({ left: '50%', top: '50%', width: '1px', height: '36vmin', transform: 'translate(-50%, -50%)' });
   line({ left: '50%', top: '50%', height: '1px', width: '36vmin', transform: 'translate(-50%, -50%)' });
-  line({ left: '50%', top: '50%', width: '.7vmin', height: '.7vmin', borderRadius: '50%', background: tint, boxShadow: `0 0 1vmin ${tint}`, transform: 'translate(-50%, -50%)' });
+  line({ left: '50%', top: '50%', width: '.7vmin', height: '.7vmin', borderRadius: 'var(--pk-radius-round, 50%)', background: tint, boxShadow: `0 0 1vmin ${tint}`, transform: 'translate(-50%, -50%)' });
   parent.append(root);
   let shown = -1;
   return {

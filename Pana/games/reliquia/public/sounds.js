@@ -10,6 +10,8 @@ export const sfx = {
   shot() { sound.sweep(900, 300, .1, 'sine', .08); },
   splat() { sound.splat(); },
   chest() { sound.chestOpen('gold'); },
+  // A hiding spot searched: wood scraping, then a glint if something was there.
+  search(found, junk) { sound.sweep(240, 120, .22, 'sawtooth', .025); sound.sweep(180, 90, .3, 'triangle', .04); if (found) { sound.tone(1175, .18, .1, 'sine', .06); sound.tone(1568, .26, .16, 'sine', .05); } else if (junk) sound.tone(330, .18, .12, 'triangle', .04); },
   bank(big) { sound.chestOpen(big ? 'gold' : 'purple'); sound.tone(784, .1, .12, 'square', .04); sound.tone(1046, .2, .2, 'square', .04); },
   throw() { sound.whoosh(); },
   bonk() { sound.bonk(1); sound.boing(); },
@@ -28,9 +30,17 @@ export const sfx = {
   boss() { sound.tone(65, 0, 1.2, 'sawtooth', .09); sound.tone(98, .3, 1, 'triangle', .07); },
   pounce() { sound.explode(.8); },
   collapse() { sound.thunder(.9); sound.explode(1); },
+  // A stone hitting the floor; the louder, the closer.
+  rock(near = 1) { sound.explode(.3 + near * .4); sound.tone(70, 0, .25, 'triangle', .08 * near); },
+  // A soft pop and a hiss.
+  spores() { sound.sweep(320, 90, .16, 'sine', .08); sound.sweep(3000, 1400, .5, 'sawtooth', .012); },
+  flare() { sound.sweep(1800, 3200, .5, 'sawtooth', .018); sound.tone(180, 0, .1, 'triangle', .06); },
+  rope() { sound.sweep(240, 130, .3, 'triangle', .05); },
+  shaking() { sound.thunder(.5); },
+  blackout() { sound.sweep(140, 45, .9, 'sawtooth', .05); sound.clickDown(); },
   greed() { sound.tone(110, 0, .9, 'sawtooth', .06); sound.tone(104, .05, .9, 'sawtooth', .05); },
-  // Guácharos scattering: a quick rising chatter.
-  flap() { for (let i = 0; i < 4; i++) sound.tone(1600 + i * 180, i * .05, .05, 'square', .03); },
+  // Bats scattering: thin squeaks over a flurry of soft wingbeats.
+  flap() { for (let i = 0; i < 3; i++) sound.tone(5000 + i * 500, i * .05, .04, 'sine', .03); for (let i = 0; i < 5; i++) sound.tone(150 + i * 8, i * .045, .03, 'triangle', .05); },
   // The idol's laugh: a falling run of yelps.
   laugh() { for (let i = 0; i < 6; i++) sound.tone(620 - i * 40 + (i % 2) * 120, i * .11, .09, 'square', .06); },
   // A pana's shout: a two-note chirp, pitched by seat, louder up close.

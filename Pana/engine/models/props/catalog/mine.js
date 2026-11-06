@@ -5,8 +5,19 @@ const mine = (id, name, factory, description, tags, previewOptions = null, sourc
 });
 
 export default [
+  mine('drift-set', 'Marco de galería', 'driftSet', 'Marco de entibado bajo y estrecho con tablas en techo y lados: el túnel se siente apretado.', ['madera', 'túnel', 'soporte'], { width: 2.7, lantern: true }),
+  mine('timber-prop', 'Puntal de cámara', 'timberProp', 'Poste suelto con taco arriba y cuñas al pie, para cámaras de mineral.', ['madera', 'poste', 'soporte'], { height: 3.9 }),
+  mine('ore-seam', 'Filón en la pared', 'oreSeam', 'Roca con dos líneas de mineral brotando de la pared, de oro o de cobre.', ['oro', 'cobre', 'roca', 'pared'], { seed: 105 }),
+  mine('shaft-headgear', 'Polea del pozo', 'shaftHeadgear', 'Vigas de pared a pared con polea, cable y cubo sobre un pozo vertical.', ['pozo', 'polea', 'cable'], { span: 10, drop: 3 }),
+  mine('shaft-cribbing', 'Forro de pozo', 'shaftCribbing', 'Tablones que revisten las cuatro caras de un pozo, hacia abajo desde el borde.', ['pozo', 'madera'], { width: 6, depth: 6, down: 4 }),
+  mine('hoist-engine', 'Malacate de vapor', 'hoistEngine', 'Caldera, tambor con cable y volante que gira, para una galería de máquinas.', ['máquina', 'vapor', 'animado'], { seed: 109 }),
+  mine('ore-hopper', 'Tolva de mineral', 'oreHopper', 'Tolva de madera sobre patas, con su canal y mineral arriba.', ['tolva', 'mineral', 'madera'], { seed: 111 }),
+  mine('ore-grit', 'Gravilla de mineral', 'oreGrit', 'Esquirlas de roca y pizcas de oro por el suelo, en una sola pasada.', ['suelo', 'mineral', 'detalle'], { seed: 113 }),
+  mine('mine-drips', 'Goteo y polvo de mina', 'mineDrips', 'Gotas de agua y arenilla que caen del techo, una nube de puntos animada.', ['agua', 'polvo', 'animado'], { count: 80 }),
+  mine('beam-crawlers', 'Bichos de viga', 'beamCrawlers', 'Bichos oscuros que caminan por las vigas y huyen cuando llega una luz.', ['bicho', 'madera', 'animado'], { perBeam: 3 }),
   mine('gold-miner', 'Minero', 'miner', 'Minero con casco y lámpara; poses de caminar, picar, sentarse, empujar y descansar.', ['personaje', 'animado'], { seed: 3, pose: 'dig' }, '/engine/models/props/mine-miner.js'),
   mine('mine-cart', 'Vagoneta minera', 'mineCart', 'Vagoneta de hierro sobre ruedas, cargada de roca y pepitas de oro.', ['vagoneta', 'oro', 'rieles'], { seed: 41, load: 'gold' }),
+  mine('mine-cart-open', 'Carrito abierto', 'mineCart', 'Carrito de hierro con borde de latón, paredes y fondo de verdad: lo que lleva se ve adentro.', ['vagoneta', 'carrito', 'abierto'], { seed: 41, load: 'empty', hollow: true }),
   mine('mine-track', 'Vía minera con caballetes', 'mineTrack', 'Rieles sobre durmientes que levantan caballetes arriostrados donde el terreno se hunde.', ['rieles', 'puente', 'caballete'], { groundHeight: 0 }),
   mine('gold-vein', 'Veta de oro', 'goldVein', 'Cristales de oro brotando de una pared de roca, con destellos.', ['oro', 'cristales', 'roca'], { seed: 21 }),
   mine('ore-pile', 'Montón de mineral', 'orePile', 'Montículo de roca con pepitas de oro mezcladas.', ['oro', 'roca', 'mineral'], { seed: 22 }),

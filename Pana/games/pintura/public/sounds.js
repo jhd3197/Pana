@@ -1,18 +1,43 @@
 import { sfx as lib, burst, pitch } from '/engine/sfx.js';
 import { createFootsteps } from '/engine/play/footsteps.js';
+import { MARKERS } from './armory-data.js';
+
+// The six first markers have their own shot; the rest sound like their class
+// (engine/sfx.js profiles). Reloads go the same way: a hopper, a pump, a tube,
+// a bolt or a box magazine.
+const SHOT_OF = { pistolas: 'pistol', subfusiles: 'smg', fusiles: 'smg', ametralladoras: 'minigun', escopetas: 'shotgun', francotiradores: 'sniper', lanzadores: 'launcher', especiales: 'pellet' };
+const OWN_SHOT = new Set(['pistol', 'scatter', 'rapid', 'rocket', 'sniper', 'bazooka', 'slingshot', 'sprayer']);
+const RELOAD_OF = { pistolas: 'hopper', subfusiles: 'magazine', fusiles: 'magazine', ametralladoras: 'magazine', escopetas: 'pump', francotiradores: 'bolt', lanzadores: 'tube', especiales: 'hopper' };
+// The bat thuds, the sandal slaps, the roller squishes, the brush swishes, the bucket clangs, the maraca rattles.
+export const MELEE_SOUND = { bat: 'wood', sandal: 'slap', roller: 'squish', brush: 'swish', bucket: 'clang', maraca: 'rattle' };
+const classOf = weapon => MARKERS.find(m => m.id === weapon)?.class;
+export const shotKind = weapon => OWN_SHOT.has(weapon) ? weapon : SHOT_OF[classOf(weapon)] || 'pistol';
+export const reloadKind = weapon => ['pistol', 'rapid', 'scatter', 'rocket', 'sniper', 'bazooka'].includes(weapon) ? weapon : RELOAD_OF[classOf(weapon)] || 'hopper';
 
 // Pepazo's sounds are the engine's shared library (engine/sfx.js) called by
 // meaning: a distinct shot per marker, a wet splat, the reload clicks, the
 // countdown. Only the knockout fanfare and the "you are out" thud are its own.
 export const sfx = {
   // Your marker, or another pana's quieter with distance (volume 0–1).
-  shot(volume = 1, weapon = 'pistol') { lib.shot(weapon, { volume }); },
+  shot(volume = 1, weapon = 'pistol') { lib.shot(shotKind(weapon), { volume }); },
   dry: lib.dry, reloaded: lib.reloaded, hurt: () => lib.hurt(), swap: lib.swap, go: lib.go,
-  reload: (weapon, seconds) => lib.reload(weapon, seconds),
+  reload: (weapon, seconds) => lib.reload(reloadKind(weapon), seconds),
   impact: (volume = 1) => lib.impact('paint', { volume }),
   // An explosion by what blew up: La Bazuca loudest, a sticky grenade softest.
-  boom: (kind, volume = 1) => lib.boom({ bazooka: 1.25, rocket: 1, pinita: .9, chispita: .8 }[kind] || .65, { volume }),
+  boom: (kind, volume = 1) => lib.boom({ bazooka: 1.25, rocket: 1, pinita: .9, chispita: .8, revolver: .75 }[kind] || .65, { volume }),
+  // The grenade: the pin pulled as the charge starts, the throw's whoosh, a metal
+  // clink on every bounce and the fuse's beeps (quick in the last half second).
+  pin() { burst({ dur: .03, f0: 4200, q: 3, vol: .07, priority: 2 }); pitch({ dur: .09, f0: 2300, f1: 1900, type: 'triangle', vol: .05, delay: .03, priority: 2 }); pitch({ dur: .05, f0: 1500, type: 'triangle', vol: .04, delay: .1, priority: 2 }); },
+  whoosh: (volume = 1) => lib.swish(volume),
+  // Melee: each weapon's swing and blow by its material (MELEE_SOUND), and the chancla back in the hand.
+  swing: (weapon, volume = 1) => lib.swing(MELEE_SOUND[weapon], { volume }),
+  smack: (weapon, volume = 1) => lib.smack(MELEE_SOUND[weapon], { volume }),
+  pop: (volume = 1) => lib.pop(volume),
+  clink(volume = 1) { pitch({ dur: .07, f0: 2600 + Math.random() * 500, f1: 2300, type: 'triangle', vol: .05 * volume, priority: 1 }); burst({ dur: .03, f0: 3400, q: 2.5, vol: .06 * volume, priority: 1 }); pitch({ dur: .05, f0: 180, f1: 110, vol: .05 * volume, priority: 1 }); },
+  beep(volume = 1, urgent = false) { pitch({ dur: urgent ? .045 : .06, f0: urgent ? 1760 : 1320, type: 'square', vol: .035 * volume, priority: 2 }); },
   hitTick: lib.hitConfirm,
+  // A ball that only soaked in (under a whole pepazo): a small tick, not a confirmed hit.
+  hitSoft() { pitch({ dur: .03, f0: 1800, type: 'square', vol: .05, priority: 2 }); },
   count: n => lib.count(n),
   knockout(long = false, streak = 1) {
     burst({ dur: .2, f0: 650, q: .7, vol: .2, priority: 3 });
@@ -29,6 +54,9 @@ const FLOOR = { terminal: 'concrete', muelle: 'wood', noche: 'grass' };
 // Everyone's feet: one shared-controller stepper per pana. Speed comes from how far
 // the avatar moved this frame, so bots and remote panas are heard too, quieter
 // with distance and silent beyond the court's hearing.
+// Metres a rival's steps carry at noise 1; `noise` is 1 when absent or hostile.
+export const STEP_RANGE = 28;
+export const stepNoise = p => Number.isFinite(p?.noise) && p.noise > 0 ? Math.min(2, p.noise) : 1;
 export function createSteps() {
   const feet = new Map(), last = new Map();
   return {
@@ -42,8 +70,10 @@ export function createSteps() {
         const speed = out || !at || !before || jump > 6 || dt < .001 ? 0 : jump / dt;
         const distance = me && p.id !== myId ? Math.hypot(p.x - me.x, p.z - me.z) : 0;
         if (!feet.has(p.id)) feet.set(p.id, createFootsteps());
-        if (distance > 28) { feet.get(p.id).reset(); continue; }
-        feet.get(p.id).update(dt, { speed, height: out ? 0 : p.jumpHeight || 0, sprint: !!p.sprint, surface, volume: p.id === myId ? .8 : .55 / (1 + distance / 6) }, lib);
+        // A rival's class sets how far and how loud its steps carry (`noise`, from the room: Sigiloso's are faint).
+        const noise = p.id === myId ? 1 : stepNoise(p);
+        if (distance > STEP_RANGE * noise) { feet.get(p.id).reset(); continue; }
+        feet.get(p.id).update(dt, { speed, height: out ? 0 : p.jumpHeight || 0, sprint: !!p.sprint, surface, volume: p.id === myId ? .8 : .55 * noise / (1 + distance / 6) }, lib);
       }
       for (const id of feet.keys()) if (!state.players.some(p => p.id === id)) { feet.delete(id); last.delete(id); }
     },

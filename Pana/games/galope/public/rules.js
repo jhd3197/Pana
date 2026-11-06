@@ -1,3 +1,4 @@
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import {nearest, angle, wrap, clamp, LENGTH, HALF_WIDTH, waterDepth} from './course.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { FIELDS, cleanOptions, direction, routeAt, raceJumps, distanceAhead } from './options.js';
@@ -75,6 +76,7 @@ export class Race {
   start(bots=this.options.bots,seed=this.raceId+1) {
     this.players=this.players.filter(p=>!p.bot);
     if(bots)while(this.players.length<6){const i=this.players.length;this.players.push({id:`bot-${i}`,name:BOT_NAMES[i%7],avatar:{hat:'llanero',hatColor:'#e6c691',outfitColor:['#d66c49','#578c85','#e3b349'][i%3]},coat:COATS[i%3],bot:true});}
+    applyFriendNames(this.players.filter(p=>p.bot),friendNamesNow(),{taken:this.players.filter(p=>!p.bot).map(p=>p.name)});
     const random=rng(seed);this.players.forEach((p,i)=>{p.spectator=false;if(this.options.horse==='random')p.coat=COATS[Math.floor(random()*COATS.length)];this.grid(p,i);});
     this.phase='countdown';this.countdown=3;this.time=0;this.finishGrace=null;this.raceId++;
   }

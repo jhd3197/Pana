@@ -78,7 +78,11 @@ try{
   await page.screenshot({path:`${output}/collection.png`});console.log(metrics);
   await page.setViewportSize({width:1400,height:900});
   const placements=[];
-  for(const [id,birds,capys]of [['selva',1,1],['llanos',4,3],['desierto',2,0]]){
+  // Selva and Desierto ship only with the pana.sh overlay, so check whichever circuits this build has.
+  const circuits=[['selva',1,1],['llanos',4,3],['desierto',2,0]];
+  const present=await page.evaluate(ids=>ids.filter(id=>proof.ASSETS.some(a=>a.id===`track-${id}`)),circuits.map(c=>c[0]));
+  assert.ok(present.includes('llanos'),'the public Llanos circuit keeps its wildlife');
+  for(const [id,birds,capys]of circuits.filter(c=>present.includes(c[0]))){
     const result=await page.evaluate(async({id,birds,capys})=>{
       const {THREE,preview,ASSETS,stage,check,hash}=proof;
       const model=await ASSETS.find(a=>a.id===`track-${id}`).build();preview.ownMaterials(model);model.update(0,0);

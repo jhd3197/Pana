@@ -19,6 +19,45 @@ try {
       if (Math.abs(npc.neck.rotation.x) > .5 || Math.abs(npc.neck.rotation.z) > .061) throw new Error('Head rotation accumulated');
     }
     const { createPana } = await import('/g/trifulca/fighters.js');
+    // Only the helmet in a fight, whatever the pana wears, and all of it back afterwards.
+    const { WARDROBE } = await import('/engine/models/characters/pana/wardrobe-data.js');
+    const dressed = (slot, id) => ({ wardrobe: { top: 'franela', hat: 'none', glasses: 'none', neck: 'none', back: 'none', extras: {}, [slot]: id } });
+    const looks = [
+      ...['chef', 'band', 'gorra', 'gorra-atras', 'pesca', 'lana', 'llanero', 'corona'].map(hat => ({ hat, hatColor: '#ff4b4b' })),
+      ...['redondos', 'sol', 'fiesta'].map(glasses => ({ hat: 'none', glasses })),
+      ...WARDROBE.hat.map(([id]) => dressed('hat', id)),
+      ...WARDROBE.glasses.map(([id]) => dressed('glasses', id)),
+    ];
+    const face = /^(Sculpted head|Animated smile|Tongue|Retracting incisors|Broad cocoa muzzle|Inset nostril|Muzzle cleft|eyeL|eyeR|Dizzy stars|face:.*)$/;
+    for (const look of looks) {
+      const pana = createPana(look, { seed: 3 }), parts = pana.character.head.children, seen = () => parts.map(o => o.visible);
+      const helmet = parts.findLast(o => o.name === 'hat:casco'), before = seen();
+      for (const corner of ['red', 'blue']) {
+        pana.setCorner(corner); pana.update(.05, { act: 'idle', at: 0 });
+        const stray = parts.filter(o => o.visible && o !== helmet && !face.test(o.name)).map(o => o.name || 'unnamed');
+        if (stray.length || !helmet.visible) throw new Error(`${JSON.stringify(look)} under the helmet: ${stray}`);
+      }
+      pana.setCorner(null); pana.update(.05, { act: 'crowd' });
+      if (helmet.visible || seen().some((shown, i) => shown !== before[i] && parts[i].name !== 'Dizzy stars')) throw new Error(`${JSON.stringify(look)} not restored`);
+      pana.dispose();
+    }
+    // The body gap is sized from this: how far the helmet really sticks out in guard.
+    const THREE = await import('three');
+    const { HEAD_REACH } = await import('/g/trifulca/fighter-look.js');
+    const sized = createPana({}, { seed: 2 }), vertex = new THREE.Vector3();
+    sized.setCorner('red');
+    for (const act of ['idle', 'block']) for (let i = 0; i < 60; i++) {
+      sized.update(1 / 60, { act, at: i / 60, moving: 0, gap: 1.4 }, 1 / 60);
+      sized.root.updateWorldMatrix(true, true);
+      sized.character.head.traverseVisible(o => {
+        const at = o.isMesh && o.geometry.attributes.position;
+        for (let v = 0; at && v < at.count; v += 3) {
+          vertex.fromBufferAttribute(at, v).applyMatrix4(o.matrixWorld);
+          if (vertex.z > HEAD_REACH + .01) throw new Error(`${act}: helmet reaches ${vertex.z}, HEAD_REACH says ${HEAD_REACH}`);
+        }
+      });
+    }
+    sized.dispose();
     const fighter = createPana({});
     try {
       for (const act of ['kick', 'sweep', 'toss', 'tumble']) {
@@ -66,7 +105,7 @@ try {
     navigator.getGamepads = () => [__pad]; dispatchEvent(new Event('gamepadconnected'));
   });
   await waitFor(page, () => document.documentElement.dataset.panaInput === 'gamepad');
-  assert.equal(await page.locator('#keys').isVisible(), false, 'only the shared controller guide is shown');
+  assert.equal(await page.locator('#keys, .pana-pad-prompts').count(), 0, 'no controls bar: they live in Instrucciones');
   await page.locator('#menu').click();
   const counts = await page.evaluate(() => trifulcaDebug.controls.read().e);
   await page.evaluate(() => { __pad.buttons[1] = { pressed: true, value: 1 }; trifulcaDebug.controls.read(); });

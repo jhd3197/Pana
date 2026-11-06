@@ -1,6 +1,8 @@
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
 import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
+import { openSeat } from '../../../engine/play/team-balance.js';
 import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 import { loc, locKey } from '../../../engine/i18n.js';
 // Pure deterministic rules. Table variants and sources are documented in caida.md.
@@ -144,7 +146,8 @@ export class CaidaGame {
     return true;
   }
   addPlayer(id, name, avatar = {}) {
-    const p = this.players.find(p => p.id === id) || this.players.find(p => p.id === null);
+    // A newcomer sits on the smaller pair when the mode plays in teams.
+    const p = this.players.find(p => p.id === id) || this.players[openSeat(this.players, { teamOf: MODES[this.options.mode]?.teams ? seat => seat % 2 : null, free: p => p.id === null })];
     if (!p) return false;
     const value = { id, name: String(name || 'Pana').slice(0, 16), avatar };
     if (p.id !== value.id || p.name !== value.name || JSON.stringify(p.avatar) !== JSON.stringify(avatar)) { Object.assign(p, value); this.revision++; }
@@ -174,6 +177,8 @@ export class CaidaGame {
   // A new match: the cachos pick the first dealer before any card moves.
   openMatch() {
     if (this.phase === 'finished') { this.round = 0; this.scores.fill(0); }
+    for (const p of this.players) if (p.id === null) p.name = BOT_NAMES[p.seat];
+    applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     this.table = []; this.stock = []; this.history = []; this.result = null; this.last = null; this.lastCapture = null; this.cutAt = null; this.dealCall = null;
     this.players.forEach(p => { p.hand = []; p.captured = []; p.announced = null; });
     this.phase = 'starter'; this.revision++;

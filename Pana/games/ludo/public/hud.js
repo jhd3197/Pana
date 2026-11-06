@@ -52,7 +52,6 @@ export function createLudoHud({buttons,canInspect=()=>true}) {
       button.classList.toggle('recommended',!rolling&&hint.recommended);
       const head=document.createElement('span');head.className='piece-title';
       const dot=document.createElement('i'),name=document.createElement('b');name.textContent=loc('Ficha {n}',{n:i+1});head.append(dot,name);
-      const key=document.createElement('kbd');key.textContent=i+1;head.append(key);
       const label=document.createElement('small');label.textContent=rolling?(value<0?loc('En el patio'):value===home?loc('En casa'):loc('Espera el dado')):hint.label;
       button.replaceChildren(head,label);button.setAttribute('aria-label',hint.recommended&&!rolling?loc('Ficha {n}: {state} · recomendada',{n:i+1,state:label.textContent}):loc('Ficha {n}: {state}',{n:i+1,state:label.textContent}));
     });

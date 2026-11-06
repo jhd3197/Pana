@@ -1,13 +1,23 @@
 // What hunts the panas, renderer-free. Mummies freeze in a farol's beam and
 // rush you in the dark; phantoms come with the echo mask; the guardian slams;
 // jaguars prowl, crouch and pounce, and a farol dazes them once in a while.
-// Guácharos fly in flocks and scatter from a beam; spiders hang from the
+// Bats roost on the ceiling, drop screeching when disturbed, fly in jittery
+// flocks and scatter from a beam; spiders hang from the
 // ceiling until a pana walks under and their bite slows; cuaimas lie coiled
-// by the loot, strike and poison, but never leave home for long.
+// by the loot, strike and poison, but never leave home for long. In the
+// library El Lector hunts by ear (lector.js) and La Estatua only moves unseen
+// (estatua.js); neither cares about light. On every floor El Silbón cannot be
+// killed at all, only lost or lured into the pit (silbon.js); in the Congo that
+// is the Mokele (mokele.js), which loads when it is first needed.
 import { clamp } from '../../../engine/random.js';
 import { locKey } from '../../../engine/i18n.js';
 import { floorOf } from './deck.js';
 import { distance } from './layout.js';
+import { updateLector } from './lector.js';
+import { updateEstatua } from './estatua.js';
+import { updateSilbon } from './silbon.js';
+import { hearNoise } from '../../../engine/play/noise.js';
+import { attention, idleBody, hiddenFrom, glowNear, COVER } from './ecology.js';
 
 export const KINDS = {
   mummy: { hp: 60, speed: 2.6, reach: 1.7, windup: .65, radius: 2.1, damage: 12, cooldown: 1.15, light: 'freeze' },
@@ -18,16 +28,53 @@ export const KINDS = {
   bat: { hp: 14, speed: 6.2, reach: 1.3, windup: .3, radius: 1.2, damage: 5, cooldown: 1.3, light: 'scatter', flying: true },
   spider: { hp: 30, speed: 4.3, reach: 1.4, windup: .28, radius: 1.3, damage: 8, cooldown: 1, light: 'none', slows: 2.5 },
   snake: { hp: 40, speed: 1.6, reach: 2.4, windup: .35, radius: 2.5, damage: 16, cooldown: 1.6, light: 'none', poison: 5, home: 3.5 },
+  // speed is the Lector's homing pace; it wanders and searches slower (lector.js).
+  lector: { hp: 80, speed: 3.6, reach: 1.6, windup: .55, radius: 1.7, damage: 15, cooldown: 1.3, light: 'none', blind: true },
+  estatua: { hp: 400, speed: 0, reach: 1.5, windup: .5, radius: 1.6, damage: 24, cooldown: 2.6, light: 'none', stone: true },
+  // Nothing wounds it (`wound`); speed is its chase, slower than a walking pana.
+  silbon: { hp: 9999, speed: 3.4, reach: 2.2, windup: .8, radius: 2.2, damage: 34, cooldown: 1.6, light: 'none', boss: true, unkillable: true },
+  // The neck reaches further than the Silbón's arm; its chase is below a walking pana until it surges.
+  mokele: { hp: 9999, speed: 3.9, reach: 3.4, windup: .7, radius: 2.6, damage: 38, cooldown: 1.8, light: 'none', boss: true, unkillable: true },
 };
+// The Mokele's rules stay off the first load: only a Congo jornada needs them, and it
+// simply stands still in the water for the moment they take to arrive.
+let mokele = null, mokeleLoad = null;
+export const loadMokele = () => mokeleLoad ??= import('./mokele.js').then(m => { mokele = m; return m; });
+// It gets up on its own this long after the first pana lands, heard well before it is seen.
+export const MOKELE_RISE = 30;
+// How many Lectores may walk one floor at once (later jornadas allow two),
+// and Estatuas: never more than two.
+export const lectorCap = level => (level || 1) >= 5 ? 2 : 1;
+export const ESTATUA_CAP = 2;
+// A hit on an enemy: stone only staggers (true when it took the damage).
+export function wound(e, amount) { if (KINDS[e.kind]?.stone || KINDS[e.kind]?.unkillable) return false; e.hp -= amount; return true; }
+// A stagger. What cannot be killed cannot be stun-locked either: after one it
+// shrugs off the next for a few seconds.
+export function stagger(e, seconds) {
+  if (KINDS[e.kind]?.unkillable) { if (e.immune > 0) return false; e.immune = 5; }
+  e.stun = Math.max(e.stun, seconds); return true;
+}
 const DIFFICULTY = { easy: { hp: .75, damage: .65, speed: .85 }, normal: { hp: 1, damage: 1, speed: 1 }, hard: { hp: 1.35, damage: 1.45, speed: 1.15 } };
 export const scaleFor = g => DIFFICULTY[g.options.difficulty] || DIFFICULTY.normal;
 export const holds = (p, kind) => !!p?.hands?.some(h => h?.kind === kind);
 const standing = p => !p.downed && !p.spectator;
+// Fear wears off. A beam held on a mummy for `after` seconds stops working for
+// `lasts` seconds; a bat that scattered ignores the beam for `lasts` while it comes back.
+export const BRAVE = { after: 4, lasts: 5, flee: 1.6 };
+// A burning flare is the one light nothing gets used to: it is why you threw it.
+const nearFlare = (g, e) => (g.flares || []).some(s => floorOf(s.x) === floorOf(e.x) && Math.hypot(s.x - e.x, s.z - e.z) < 4.5);
 
 // Is this enemy lit? 'beam' when a farol points at it, 'glow' near a crown or brazier.
 export function lightOn(g, e) {
   const f = floorOf(e.x);
-  let glow = g.layout.run.lights.some(l => l.floor === f && (l.x - e.x) ** 2 + (l.z - e.z) ** 2 < 25);
+  // A blackout puts out every torch; a flare burns through it.
+  let glow = g.suceso?.kind !== 'apagon' && g.layout.run.lights.some(l => l.floor === f && (l.x - e.x) ** 2 + (l.z - e.z) ** 2 < 25);
+  for (const s of g.flares || []) {
+    if (floorOf(s.x) !== f) continue;
+    const d = Math.hypot(s.x - e.x, s.z - e.z);
+    if (d < 4.5) return 'beam';
+    if (d < 9) glow = true;
+  }
   for (const p of g.players) {
     if (!standing(p) || floorOf(p.x) !== f) continue;
     const d = distance(p, e);
@@ -38,14 +85,19 @@ export function lightOn(g, e) {
       if (d < 3) glow = true;
     }
   }
-  return glow ? 'glow' : 'dark';
+  // A healthy mushroom patch is light too (ecology.js).
+  return glow || glowNear(g, e) ? 'glow' : 'dark';
 }
 
 export function spawnEnemy(g, kind, x, z, extra = {}) {
   const live = g.enemies.filter(e => e.hp > 0);
   if (!KINDS[kind]) return null;
-  if (['mummy', 'phantom', 'bat', 'spider'].includes(kind) && live.length >= 18) return null;
-  if (!g.layout.walkable(x, z, g, .5)) return null;
+  // A creature with a body (`eco`) has its own cap (ecology.js) and leaves the Director's alone.
+  if (extra.eco == null && ['mummy', 'phantom', 'bat', 'spider', 'lector'].includes(kind) && live.filter(e => e.eco == null).length >= 18) return null;
+  const here = n => live.filter(e => e.kind === kind && floorOf(e.x) === floorOf(x)).length >= n;
+  if ((kind === 'lector' && here(lectorCap(g.level))) || (kind === 'estatua' && here(ESTATUA_CAP)) || ((kind === 'silbon' || kind === 'mokele') && here(1))) return null;
+  // Nothing walks on a hanging platform but the panas who climbed down to it.
+  if (!g.layout.walkable(x, z, g, .5) || g.layout.lowAt(x, z)) return null;
   const k = KINDS[kind], s = scaleFor(g), roster = g.players.filter(p => !p.spectator).length;
   const hp = (k.hp + (k.scale || 0) * Math.max(0, roster - 1)) * s.hp * (1 + .22 * Math.max(0, (g.level || 1) - 1));
   const e = { id: ++g.enemyId, kind, x, z, h: 0, hp, maxHp: hp, cooldown: .8, windup: 0, stun: 0, hit: 0, awake: !['guardian', 'jaguar'].includes(kind),
@@ -58,16 +110,18 @@ function targetFor(g, e) {
   let best = null, score = Infinity;
   for (const p of g.players) {
     if (!standing(p) || floorOf(p.x) !== f) continue;
-    const d = distance(p, e); if (d > range) continue;
+    // Out of a walker's reach down there or on a rope; wings do not care.
+    if (!KINDS[e.kind].flying && (p.rope || g.layout.lowAt(p.x, p.z))) continue;
+    const d = distance(p, e); if (d > range || hiddenFrom(g, e, p, d)) continue;
     const s = d - (holds(p, 'sunCrown') ? 8 : 0) - (e.called === p.id ? 6 : 0);
     if (s < score) { score = s; best = p; }
   }
   return best;
 }
 
-function walk(g, e, target, speed, dt) {
+export function walk(g, e, target, speed, dt) {
   let nav = g.paths.get(e.id);
-  if (!nav || nav.until < g.time || distance(nav.goal, target) > 3) { nav = { path: g.layout.findPath(e, target, g), goal: { x: target.x, z: target.z }, until: g.time + 1 + (e.id % 5) * .1 }; g.paths.set(e.id, nav); }
+  if (!nav || nav.until < g.time || distance(nav.goal, target) > 3) { const path = g.layout.findPath(e, target, g); nav = { path, goal: { x: target.x, z: target.z }, until: g.time + (path.length ? 1 : 3) + (e.id % 5) * .1 }; g.paths.set(e.id, nav); }
   while (nav.path.length && distance(e, nav.path[0]) < .6) nav.path.shift();
   const goal = nav.path[0]; if (!goal) return;
   const d = distance(e, goal);
@@ -79,23 +133,55 @@ export function updateEnemies(g, dt) {
   for (const e of g.enemies) {
     if (e.hp <= 0) continue;
     const k = KINDS[e.kind];
-    e.hit = Math.max(0, e.hit - dt); e.stun = Math.max(0, e.stun - dt); e.immune = Math.max(0, e.immune - dt); e.cooldown -= dt; e.modeT += dt;
+    e.hit = Math.max(0, e.hit - dt); e.stun = Math.max(0, e.stun - dt); e.immune = Math.max(0, e.immune - dt); e.cooldown -= dt; e.modeT += dt; e.brave = Math.max(0, (e.brave || 0) - dt);
     if (g.time - e.born < 1) continue;
     const target = targetFor(g, e);
+    // A bat sleeps on the ceiling until someone passes under it or a noise lands
+    // close: it drops screeching, and that screech carries (the Silbón comes).
+    if (e.hanging && k.flying) {
+      const noise = hearNoise(g.noise, e, { floor: floorOf(e.x), since: e.born, time: g.time }), close = noise && (noise.kind !== 'screech' || Math.hypot(noise.x - e.x, noise.z - e.z) < 7);
+      // Off to feed, its creature's choice (ecology.js): it just lets go.
+      if (e.eco != null && !e.perch) { e.hanging = false; e.y = 2.2; continue; }
+      if ((target && distance(target, e) < (e.touchy ? COVER.wake : 3.8)) || close) screech(g, e);
+      continue;
+    }
     // A spider waits on the ceiling until someone walks under it.
     if (e.hanging) { if (target && distance(target, e) < 4.5) { e.hanging = false; e.cooldown = .6; g.event('spider', locKey('¡Cayó una araña del techo!'), { enemy: e.id }); } continue; }
+    // A statue wakes, silently, once its room has been entered.
+    if (!e.awake && k.stone) { if (!g.woke[e.room]) continue; e.awake = true; }
+    if (k.blind || k.stone) {
+      e.lit = 'dark';
+      const damage = k.damage * s.damage * (1 + .1 * tier) * (.75 + .15 * (g.level || 1)), stunned = e.stun > 0;
+      if (k.blind) updateLector(g, e, k, k.speed * s.speed * (1 + .08 * tier), damage, dt, { walk, stunned });
+      else updateEstatua(g, e, k, damage, dt, { stunned });
+      continue;
+    }
+    if (k.boss) {
+      e.lit = 'dark';
+      const damage = k.damage * s.damage * (.75 + .15 * (g.level || 1));
+      if (e.kind === 'mokele') { if (mokele) mokele.updateMokele(g, e, k, k.speed * s.speed, damage, dt); else loadMokele(); }
+      else updateSilbon(g, e, k, k.speed * s.speed, damage, dt);
+      continue;
+    }
     if (!e.awake) {
       if (target && distance(target, e) < (e.kind === 'jaguar' ? 7 : 10)) { e.awake = true; g.event('boss', e.kind === 'jaguar' ? locKey('¡El jaguar de oro despertó!') : locKey('El guardián del sol se levanta.'), { enemy: e.id, boss: e.kind }); }
       else continue;
     }
     e.lit = lightOn(g, e);
+    // A creature of the ecosystem goes on with its life until it notices someone.
+    // Scared off and coming back, it does not forget who it was after.
+    if (e.eco != null && e.stun <= 0 && !(e.brave > 0 && target) && !attention(g, e, target, dt)) { idleBody(g, e, k, k.speed * s.speed * (e.pace || 1), dt, walk); continue; }
     if (e.stun > 0 || !target) { if (e.mode === 'leap') e.mode = 'recover'; continue; }
-    if (k.light === 'freeze' && e.lit === 'beam') { e.windup = 0; e.frozen = true; continue; }
-    e.frozen = false;
+    if (k.light === 'freeze' && e.lit === 'beam' && (!(e.brave > 0) || nearFlare(g, e))) {
+      e.windup = 0; e.frozen = true;
+      if (!nearFlare(g, e)) { e.dazzled = (e.dazzled || 0) + dt; if (e.dazzled >= BRAVE.after) { e.dazzled = 0; e.brave = BRAVE.lasts; } }
+      continue;
+    }
+    e.frozen = false; if (e.lit !== 'beam') e.dazzled = 0;
     if (k.light === 'daze' && e.lit === 'beam' && e.immune <= 0 && e.mode !== 'leap') {
       e.stun = 1.6; e.immune = 6; e.mode = 'prowl'; g.event('daze', locKey('¡El farol encandiló al jaguar!'), { enemy: e.id }); continue;
     }
-    const speed = k.speed * s.speed * (1 + .08 * tier) * (e.lit === 'dark' && k.light === 'freeze' ? 1.35 : 1) * (k.light === 'slow' && e.lit === 'beam' ? .5 : 1);
+    const speed = k.speed * s.speed * (1 + .08 * tier) * (e.lit === 'dark' && k.light === 'freeze' ? 1.35 : 1) * (k.light === 'slow' && e.lit === 'beam' ? .5 : 1) * (e.pace || 1);
     const damage = k.damage * s.damage * (1 + .1 * tier) * (.75 + .15 * (g.level || 1));
     if (k.cat) { cat(g, e, target, speed, damage, dt); continue; }
     if (k.flying) { bat(g, e, target, speed, damage, dt); continue; }
@@ -123,19 +209,28 @@ export function updateEnemies(g, dt) {
   g.enemies = g.enemies.filter(e => e.hp > 0);
 }
 
-// Guácharos circle a pana, dive in to peck and scatter from a farol's beam.
+// Woken from the roost: a screech the whole room hears.
+export function screech(g, e) {
+  e.hanging = false; e.fleeT = Math.max(e.fleeT || 0, .6); e.cooldown = .6;
+  g.noisy('screech', e); g.event('screech', '', { enemy: e.id, x: e.x, z: e.z });
+}
+// Bats flutter around a pana in jittery bursts, dive to bite and scatter from a farol's beam.
 function bat(g, e, target, speed, damage, dt) {
-  e.y = 2 + Math.sin(g.time * 3 + e.id) * .35;
-  if (e.lit === 'beam' && (e.fleeT || 0) <= 0) { e.fleeT = 1.6; g.event('scatter', '', { enemy: e.id }); }
+  const t = g.time + e.id * 1.7;
+  e.y = 2 + Math.sin(t * 3) * .3 + Math.sin(t * 11) * .16;
+  if (e.lit === 'beam' && (e.fleeT || 0) <= 0 && !(e.brave > 0)) { e.fleeT = BRAVE.flee; e.brave = BRAVE.flee + BRAVE.lasts; g.noisy('screech', e); g.event('scatter', '', { enemy: e.id }); }
   e.fleeT = Math.max(0, (e.fleeT || 0) - dt);
   const d = distance(e, target) || 1, ax = (target.x - e.x) / d, az = (target.z - e.z) / d;
   let vx, vz;
-  if (e.fleeT > 0) { vx = -ax; vz = -az; }
+  if (e.fleeT > 0) { e.windup = 0; vx = -ax; vz = -az; }
   else if (e.windup > 0) {
-    e.windup -= dt; vx = ax * 1.6; vz = az * 1.6; e.y = 1.4;
+    e.windup -= dt; vx = ax * 1.6; vz = az * 1.6; e.y = 1.75;
     if (e.windup <= 0) { if (d < k(e).reach + .4 && standing(target)) g.damage(target, damage, e); e.cooldown = k(e).cooldown; }
   } else if (d < k(e).reach && e.cooldown <= 0) { e.windup = k(e).windup; vx = ax; vz = az; }
-  else { const orbit = d < 4 ? .9 : .2, side = e.id % 2 ? 1 : -1; vx = ax * (1 - orbit) - az * side * orbit; vz = az * (1 - orbit) + ax * side * orbit; }
+  // Back from a scare it closes in to bite; otherwise it keeps circling.
+  else { const orbit = d < 4 ? e.brave > 0 ? .25 : .9 : .2, side = e.id % 2 ? 1 : -1; vx = ax * (1 - orbit) - az * side * orbit; vz = az * (1 - orbit) + ax * side * orbit; }
+  // The jitter: the heading twitches on two fast, unrelated beats (a fleeing bat too).
+  if (e.windup <= 0) { const twitch = Math.sin(t * 9) * .55 + Math.sin(t * 17.3) * .35, c = Math.cos(twitch), sn = Math.sin(twitch); [vx, vz] = [vx * c - vz * sn, vx * sn + vz * c]; }
   g.layout.moveBody(e, vx * speed * dt, vz * speed * dt, g, .25);
   e.h = Math.atan2(vx, vz);
 }

@@ -11,7 +11,33 @@ const INK = '#16161a';
 export const ICONS = {
   kitBarrel: svg('<path d="M4 16h26v8H4z M30 14h6v12h-6z" fill="currentColor"/>'),
   kitHopper: svg('<path d="M7 27C7 9 33 9 33 27z M16 27h8v7h-8z" fill="currentColor"/>'),
+  // A marker's stock in profile, and a sight on its rail (Pepazo's Culata and Mira).
+  kitStock: svg('<path d="M4 13h18l12 9v7H23l-7-8H4z" fill="currentColor"/>'),
+  kitOptic: svg('<path d="M6 13h28v10H6z M12 23h4v6h-4z M24 23h4v6h-4z" fill="currentColor"/><circle cx="20" cy="18" r="3" fill="#16161a"/>'),
+  // A long scope on its rings, and a melee weapon's three places: a taped grip, a paint
+  // drip on the head, a wrist strap on the pommel (Pepazo's gunsmith).
+  kitScope: svg('<path d="M3 15h6l3 2h16l3-3h6v10h-6l-3-3H12l-3 2H3z M14 23h4v6h-4z M22 23h4v6h-4z" fill="currentColor"/>'),
+  kitGrip: svg('<path d="M17 4h6v32h-6z" fill="currentColor"/><path d="M15 12l10-3v4l-10 3z M15 19l10-3v4l-10 3z M15 26l10-3v4l-10 3z" fill="#16161a"/>'),
+  kitDrip: svg('<path d="M20 4C26 13 30 19 30 25a10 10 0 0 1-20 0c0-6 4-12 10-21z" fill="currentColor"/>'),
+  kitStrap: svg('<path d="M17 3h6v14h-6z M20 17c8 0 12 5 12 10s-5 10-12 10S8 32 8 27s4-10 12-10zm0 5c-4 0-6 2-6 5s2 5 6 5 6-2 6-5-2-5-6-5z" fill="currentColor" fill-rule="evenodd"/>'),
   kitVest: svg('<path d="M12 6l4 4h8l4-4 6 6-3 6v16H9V18l-3-6z" fill="currentColor"/>'),
+  // Pepazo's classes and what they change: speed, toughness, healing, quiet steps, the minimap dot.
+  kitBolt: svg('<path d="M23 3L8 23h10l-3 14 17-21H21z" fill="currentColor"/>'),
+  kitShield: svg('<path d="M20 3l14 5v10c0 9-6 16-14 19C12 34 6 27 6 18V8z" fill="currentColor"/>'),
+  kitRegen: svg('<path d="M15 5h10v10h10v10H25v10H15V25H5V15h10z" fill="currentColor"/>'),
+  kitStep: svg('<path d="M10 22c-2-6 0-14 5-14s6 7 4 14z M12 25h7v3c0 3-2 5-4 5s-3-2-3-5z M23 15c-1-5 1-11 5-11s5 6 3 11z M24 18h6v3c0 3-1 4-3 4s-3-1-3-4z" fill="currentColor"/>'),
+  kitRadar: svg('<path d="M20 4a16 16 0 1 0 .01 0zm0 5a11 11 0 1 1-.01 0z" fill="currentColor" fill-rule="evenodd"/><circle cx="20" cy="20" r="4" fill="currentColor"/>'),
+  // Paint weapons in profile, muzzle to the right (Capis a Pintazos' picker): a launcher tube,
+  // a long scoped rifle, a drill bit and a pump scatter with its fan of pellets.
+  weaponBazooka: svg('<path d="M3 15h27v10H3z M30 13h7v14h-7z M10 25h5v7h-5z" fill="currentColor"/>'),
+  weaponSniper: svg('<path d="M2 21h10l3-3h23v4H16l-3 5H5l-3-2z M16 11h12v5H16z" fill="currentColor"/>'),
+  // Tombstones: a plain one, a cross of two sticks, a Celtic cross and an obelisk.
+  tombHeadstone: svg('<path d="M10 35V16a10 10 0 0 1 20 0v19z" fill="currentColor"/>'),
+  tombWooden: svg('<path d="M17 5h6v30h-6z M8 13h24v6H8z" fill="currentColor"/>'),
+  tombCeltic: svg('<path d="M18 4h4v31h-4z M7 14h26v4H7z" fill="currentColor"/><circle cx="20" cy="16" r="7" fill="none" stroke="currentColor" stroke-width="3"/>'),
+  tombObelisk: svg('<path d="M20 3l5 7 2 21h-14l2-21z M9 31h22v4H9z" fill="currentColor"/>'),
+  weaponDrill: svg('<path d="M3 13h14v14H3z M17 15h5v10h-5z M22 16l15 4-15 4z" fill="currentColor"/>'),
+  weaponScatter: svg('<path d="M3 19h18v6H3z M10 25h5v6h-5z" fill="currentColor"/><circle cx="27" cy="14" r="2.5" fill="currentColor"/><circle cx="31" cy="22" r="2.5" fill="currentColor"/><circle cx="27" cy="30" r="2.5" fill="currentColor"/>'),
   kitGrenade: svg('<circle cx="20" cy="23" r="12" fill="currentColor"/><path d="M16 8h8v5h-8z" fill="currentColor"/>'),
   kitMotor: svg('<rect x="8" y="14" width="22" height="16" rx="2" fill="currentColor"/><rect x="12" y="8" width="9" height="6" fill="currentColor"/><path d="M30 18h4v8h-4M8 19H4v6h4" fill="none" stroke="currentColor" stroke-width="2.5"/>'),
   kitWheel: svg('<circle cx="20" cy="20" r="15" fill="#2b2b33" stroke="#16161a" stroke-width="2.5"/><circle cx="20" cy="20" r="6" fill="#d9d4c7" stroke="#16161a" stroke-width="2.5"/>'),
@@ -29,6 +55,8 @@ export const ICONS = {
   'wardrobe-cuello': svg("<path d=\"M8 8c0 11 5 17 12 17S32 19 32 8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.2\" stroke-linecap=\"round\"/><circle cx=\"20\" cy=\"30\" r=\"6\"/>"),
   'wardrobe-espalda': svg("<rect x=\"9\" y=\"11\" width=\"22\" height=\"24\" rx=\"6\"/><path d=\"M15 11V9a5 5 0 0 1 10 0v2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\"/><rect x=\"13\" y=\"24\" width=\"14\" height=\"7\" rx=\"2\" fill=\"var(--panel)\"/>"),
   dice: svg('<rect x="5" y="5" width="30" height="30" rx="7" fill="none" stroke="currentColor" stroke-width="3"/><g fill="currentColor"><circle cx="13" cy="13" r="3"/><circle cx="27" cy="27" r="3"/><circle cx="13" cy="27" r="3"/><circle cx="27" cy="13" r="3"/></g>'),
+  // A padlock: something not yours yet (Pepazo's locked camos).
+  lock: svg('<path d="M13 18v-5a7 7 0 0 1 14 0v5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><rect x="8" y="18" width="24" height="17" rx="3" fill="currentColor" stroke="#16161a" stroke-width="2.5"/><circle cx="20" cy="26" r="2.5" fill="#16161a"/>'),
   close: svg('<path d="m10 10 20 20M30 10 10 30" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>'),
   chevronLeft: svg('<path d="m24 10-8 10 8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
   plus: svg('<path d="M20 9v22M9 20h22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>'),
@@ -38,12 +66,18 @@ export const ICONS = {
   touch: svg('<rect x="11" y="3" width="18" height="34" rx="3.5" fill="none" stroke="currentColor" stroke-width="3.5"/><circle cx="20" cy="31" r="2" fill="currentColor"/>'),
   picture: svg('<rect x="4" y="7" width="32" height="22" rx="1.5" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M9 25l8-8 6 6 3-3 5 5" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M13 35h14" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>'),
   speaker: svg('<path d="M5 15h7l8-7v24l-8-7H5z" fill="currentColor"/><path d="M26 14a8 8 0 0 1 0 12M30 9a14 14 0 0 1 0 22" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>'),
+  // A player: the hub's player count sits next to it.
+  person: svg('<circle cx="20" cy="12" r="7" fill="currentColor"/><path d="M6 36c0-8 6-13 14-13s14 5 14 13z" fill="currentColor"/>'),
   globe: svg('<circle cx="20" cy="20" r="15" fill="none" stroke="currentColor" stroke-width="3.2"/><path d="M5 20h30M20 5c-5 4-7 9-7 15s2 11 7 15c5-4 7-9 7-15s-2-11-7-15z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
   controller: svg('<rect x="5" y="5" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2"/><rect x="22" y="5" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2"/><rect x="5" y="22" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2"/><rect x="22" y="22" width="13" height="13" fill="currentColor"/>'),
   chevronRight: svg('<path d="m16 10 8 10-8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
   mango: svg(`<path d="M8 24c0-10 9-17 18-15 6 1 8 7 7 13-2 9-11 13-18 11-4-1-7-4-7-9z" fill="#ffc629" stroke="#9a6400" stroke-width="3"/><path d="M27 9c1-3 4-5 7-5-1 3-3 5-7 5z" fill="#3a9d3a"/><path d="M14 17c2-3 5-4 8-4" stroke="#fff3b0" stroke-width="3" fill="none" stroke-linecap="round"/>`),
   juice: svg(`<path d="M11 13h18l-2 22H13z" fill="#ffae2b" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 13l4-6h10l4 6" fill="#fff3b0" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 7l3-5" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/><path d="M14 22h12" stroke="#7cc242" stroke-width="3"/>`),
   coin: svg(`<circle cx="20" cy="20" r="14" fill="#ffc629" stroke="#9a6400" stroke-width="3"/><circle cx="20" cy="20" r="8" fill="none" stroke="#ffe58a" stroke-width="2.5"/><path d="M15 15c2-2 4-3 6-3" stroke="#fff3b0" stroke-width="2.5" fill="none" stroke-linecap="round"/>`),
+  sprout: svg(`<path d="M20 36V18" stroke="#2f7a2f" stroke-width="4" fill="none"/><path d="M20 22C12 22 6 17 5 8c9 0 15 5 15 14zM20 18c0-8 6-13 15-13 0 8-6 13-15 13z" fill="#6fc24a" stroke="#2f7a2f" stroke-width="2.5"/>`),
+  house: svg(`<path d="M4 20 20 6l16 14" fill="none" stroke="#b8502f" stroke-width="4"/><path d="M9 18v17h22V18L20 9z" fill="#f3e9d7" stroke="${INK}" stroke-width="2.5"/><rect x="17" y="24" width="7" height="11" fill="#2f6da1" stroke="${INK}" stroke-width="2"/>`),
+  basket: svg(`<path d="M12 17c0-7 4-11 8-11s8 4 8 11" fill="none" stroke="#7a4a1e" stroke-width="3"/><path d="M5 17h30l-4 17H9z" fill="#c98b4a" stroke="${INK}" stroke-width="2.5"/><path d="M13 22l1 8M20 22v8M27 22l-1 8" stroke="${INK}" stroke-width="2"/>`),
+  flower: svg(`<path d="M20 36V22" stroke="#2f7a2f" stroke-width="4"/><g fill="#e8456b" stroke="${INK}" stroke-width="2"><circle cx="20" cy="9" r="5.5"/><circle cx="29" cy="15.5" r="5.5"/><circle cx="25.5" cy="25" r="5.5"/><circle cx="14.5" cy="25" r="5.5"/><circle cx="11" cy="15.5" r="5.5"/></g><circle cx="20" cy="17" r="4.5" fill="#ffc629"/>`),
   crate: svg(`<rect x="6" y="8" width="28" height="26" rx="2" fill="#bf8348" stroke="${INK}" stroke-width="2.5"/><path d="M6 17h28M6 25h28M10 9l20 24" stroke="${INK}" stroke-width="2.2"/>`),
   back: svg(`<path d="M30 30c0-9-6-14-15-14h-5" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/><path d="M30 30c0-9-6-14-15-14h-5" fill="none" stroke="#2ad1b2" stroke-width="3.5" stroke-linecap="round"/><path d="M13 7L4 16l9 9z" fill="#2ad1b2" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>`),
   crown: svg(`<path d="M5 30l2-18 8 8 5-12 5 12 8-8 2 18z" fill="#ffc629" stroke="#9a6400" stroke-width="3" stroke-linejoin="round"/><circle cx="20" cy="25" r="2.5" fill="#ff4b4b"/>`, 'Corona'),
@@ -61,6 +95,10 @@ export const ICONS = {
   camera: svg('<circle cx="12" cy="11" r="5.5" fill="currentColor"/><circle cx="24" cy="11" r="5.5" fill="currentColor"/><rect x="5" y="17" width="23" height="15" rx="3.5" fill="currentColor"/><path d="M28 22l8-4.5v14L28 27z" fill="currentColor"/>'),
   thumbUp: svg('<path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/>', loc('A favor')),
   thumbDown: svg('<g transform="rotate(180 20 20)"><path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/></g>', loc('En contra')),
+  creatureBat: svg('<path d="M20 12l-3 4-3-3c-1 4-6 5-11 4 3 3 4 8 3 12 3-3 7-4 10-2l4 6 4-6c3-2 7-1 10 2-1-4 0-9 3-12-5 1-10 0-11-4l-3 3z" fill="currentColor"/>', loc('Murciélagos')),
+  creatureSnake: svg('<path d="M28 6c4 0 7 3 7 6s-3 5-6 5H14c-2 0-3 1-3 2s1 2 3 2h13c5 0 8 3 8 7s-4 7-9 7H7v-4h19c3 0 5-1 5-3s-2-3-4-3H14c-4 0-7-3-7-6s3-6 7-6h15c1 0 2-.5 2-1s-1-2-3-2h-3V6z" fill="currentColor"/>', loc('Cuaimas')),
+  creatureMoth: svg('<path d="M18 13h4v17h-4z M18 13l-3-6 2-1 3 6 3-6 2 1-3 6z M17 17C12 9 6 8 3 11c0 7 5 12 14 10z M23 17c5-8 11-9 14-6 0 7-5 12-14 10z M17 23c-4 0-9 1-10 6 3 3 8 2 10-2z M23 23c4 0 9 1 10 6-3 3-8 2-10-2z" fill="currentColor"/>', loc('Polillas')),
+  creatureMushroom: svg('<path d="M20 5C10 5 4 13 4 20h32c0-7-6-15-16-15z M15 22h10l1 12c0 2-12 2-12 0z" fill="currentColor"/>', loc('Hongos')),
   heartEmpty:svg(`<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 11-15 20-15 20z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" opacity=".5"/>`),
 };
 

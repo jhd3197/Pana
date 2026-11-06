@@ -16,7 +16,7 @@ import {RaceRoom} from './network.js';
 import {standings} from './rules.js';
 import {at,angle,wrap,nearest,samples,LENGTH,LAPS,groundAt,waterDepth,WATER_Y,WETLANDS,JUMPS,sector,formatTime} from './course.js';
 import {createRaceScene} from './scene.js';
-import {createRider} from '/engine/models/fauna/farm/llanero-rider.js';
+import {createRider,riderSeed} from '/engine/models/fauna/farm/llanero-rider.js';
 import {tickWind} from '/engine/models/vegetation/plant-kit.js';
 import {createHorseWaterFX} from './water-fx.js';
 import { loc } from '/engine/i18n.js';
@@ -31,7 +31,6 @@ const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIE
 const touchButtons=[];
 function clearInput(){keys.clear();for(const b of touchButtons)b.release();touch.clear();}
 const menu=createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', loc('Avanzar')], lt: ['KeyS', loc('Frenar')], a: ['Space', loc('Saltar troncos')], rb: ['ShiftLeft', loc('Remate')], ls: ['ShiftLeft', loc('Remate')], y: ['KeyR', loc('Volver al camino')] } },title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?loc('La carrera sigue mientras abres el menú.'):loc('La carrera está en pausa.'),
-  controls:[['W / ↑',loc('Avanzar')],['A D / ← →',loc('Girar')],['S / ↓',loc('Frenar')],['Shift',loc('Remate: gasta resistencia')],['Espacio',loc('Saltar troncos')],['R',loc('Volver al camino')],['M',loc('Sonido')],['Esc',loc('Menú')]],
   invite:()=>inviteUrl(code),actions:[{id:'local-race',label:loc('Abrir carrera local'),run:()=>room.practice()}],onOpen(){paused=true;clearInput();},onClose(){paused=false;}});
 const navButton='pk-btn pk-btn--sm game-menu-button';
 $('game-nav').append(menu.createInviteButton({id:'invite',label:loc('Invitar'),className:navButton}),menu.createSoundButton({id:'sound',className:navButton}),menu.createButton({id:'menu',className:navButton}));
@@ -85,7 +84,7 @@ function ensureRiders(){
     const key=JSON.stringify([p.avatar,p.coat]),old=riders.get(p.id);
     if(old?.key===key)continue;
     if(old){old.dispose();riders.delete(p.id);}
-    const r=createRider(p.avatar,p.coat,7);r.key=key;r.group.position.set(p.x,groundAt(p.x,p.z),p.z);r.group.rotation.y=p.h;scene.add(r.group);riders.set(p.id,r);
+    const r=createRider(p.avatar,p.coat,riderSeed(p.id));r.key=key;r.group.position.set(p.x,groundAt(p.x,p.z),p.z);r.group.rotation.y=p.h;scene.add(r.group);riders.set(p.id,r);
   }
   return people;
 }
@@ -137,7 +136,9 @@ function frame(){
   const people=ensureRiders();
   // Your own horse where you predict it (RaceRoom's predict), not a round trip behind.
   for(const shown of people){const p=shown.id===room.id?room.predicted??shown:shown,r=riders.get(p.id),y=groundAt(p.x,p.z)+(p.jumpY||0),blend=1-Math.exp(-dt*18);
-    r.group.visible=!p.spectator;r.group.position.lerp(new THREE.Vector3(p.x,y,p.z),blend);r.group.rotation.y+=angle(p.h-r.group.rotation.y)*blend;r.update(frozen?0:dt,p);
+    // Past the line the race has stopped the horse, but it runs out its stride.
+    r.runOut=p.finish==null?0:(r.runOut||0)+Math.max(0,r.gaitSpeed-(p.speed||0))*(frozen?0:dt);
+    r.group.visible=!p.spectator;r.group.position.lerp(new THREE.Vector3(p.x+Math.sin(p.h)*r.runOut,y,p.z+Math.cos(p.h)*r.runOut),blend);r.group.rotation.y+=angle(p.h-r.group.rotation.y)*blend;r.update(frozen?0:dt,p);
   }
   const own=people.find(p=>p.id===room.id),p=own&&!own.spectator?own:standings(state)[0]||people[0],r=riders.get(p.id),q=r.group.position,h=r.group.rotation.y;
   const remate=state.phase==='racing'&&(p.speed||0)>13;

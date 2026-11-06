@@ -11,10 +11,13 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { createAccessories } from '/engine/models/characters/pana/accessories.js';
 import { loc } from '/engine/i18n.js';
-import { boxingGlove, CORNER_COLORS, HELMET_COLORS } from './set.js';
+import { CORNER_COLORS, HELMET_COLORS } from './set.js';
+import { wearGlove, settleGlove } from './glove-rig.js';
+import { handRoll } from './glove-shape.js';
 import { T } from './fight-rules.js';
 import { rhythm } from './crowd-life.js';
 import { inkOutlines } from './toon.js';
+import { HEAD_SIZE, ARM_LENGTH, ARM_GUARD, GLOVE_SIZE, punchLength, lungeRoom, helmetSwap } from './fighter-look.js';
 
 const SCULPT = .6;   // buildCharacter's sculpt scale: bones live in sculpt units
 const ease = (a, b, k) => a + (b - a) * k;
@@ -26,7 +29,7 @@ export function nameTag(text, { me = false } = {}) {
   ctx.font = '700 34px Nunito, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const w = Math.min(250, ctx.measureText(text).width + 34);
   ctx.fillStyle = me ? '#ffc629' : 'rgba(20,20,30,.72)';
-  ctx.beginPath(); ctx.roundRect((256 - w) / 2, 8, w, 48, 24); ctx.fill();
+  ctx.fillRect((256 - w) / 2, 8, w, 48);
   ctx.fillStyle = me ? '#1f1f24' : '#ffffff'; ctx.fillText(text, 128, 33);
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true }));
@@ -37,29 +40,29 @@ export function nameTag(text, { me = false } = {}) {
 
 export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   const look = normalizeAvatar(avatar);
-  const character = buildCharacter(look);
+  const character = buildCharacter(look, { head: HEAD_SIZE });
   const root = new THREE.Group(), tilt = new THREE.Group();
   root.add(tilt); tilt.add(character.group);
   const arms = [character.armL, character.armR], base = arms.map(a => a.position.clone());
   const gloves = arms.map((arm, i) => {
-    const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(1 / SCULPT);
-    glove.position.set(0, -.86, .04); glove.visible = false; inkOutlines(glove); arm.add(glove); return glove;
+    const glove = wearGlove(arm, { side: i ? -1 : 1 });
+    glove.visible = false; inkOutlines(glove); return glove;
   });
-  const applyCombat = createCombatRig(character, gloves, base);
-  // The wardrobe's kart helmet goes on to fight; the pana's own hat comes off.
-  const ownHats = character.head.children.filter(o => o.name.startsWith('hat:'));
+  const armReach = { guard: ARM_GUARD, punch: ARM_GUARD };
+  const applyCombat = createCombatRig(character, base, armReach);
+  // The wardrobe's kart helmet goes on to fight; whatever the pana wears up there comes off.
   const helmet = createAccessories(character, { hat: 'casco', glasses: null, neck: null, back: null, extras: {} });
   helmet.color('hat', 'casco', 'main', HELMET_COLORS[seed % HELMET_COLORS.length]);
   helmet.color('hat', 'casco', 'stripe', seed % HELMET_COLORS.length === 0 ? '#e8443a' : '#ffffff');
-  let ownHeadwear = character.wardrobe.headwear, hatsShown = ownHats.map(o => o.visible);
+  const headgear = helmetSwap(character.head, helmet.hats.casco.root);
   // A ¡! over a pana winding up a trompón: the cue to dodge.
-  const warn = nameTag(loc('¡OJO!'), { me: true }); warn.scale.set(.7, .175, 1); warn.position.y = 2.95; warn.visible = false; root.add(warn);
+  const warn = nameTag(loc('¡OJO!'), { me: true }); warn.scale.set(.7, .175, 1); warn.position.y = 2.7; warn.visible = false; root.add(warn);
   const tag = name ? nameTag(me ? loc('{name} · tú', { name }) : name, { me }) : null;
-  if (tag) { tag.position.y = 2.6; root.add(tag); }
+  if (tag) { tag.position.y = 2.35; root.add(tag); }
   let tagShown = true;
   let corner = null, wobble = 0, wobbleV = 0, sway = 0, swayV = 0, spin = 0, time = 0, shove = 0, cheer = 0, cheerWas = 0, twist = 0;
   let recoil = 0, recoilV = 0, jolt = 0;
-  const pose = arms.map(() => ({ rx: -.04, rz: 0, s: 1, z: 0 })), bounce = seed * 1.7;
+  const pose = arms.map(() => ({ rx: -.04, rz: 0, s: 1, z: 0 })), rolls = arms.map(() => 0), bounce = seed * 1.7;
   const idle = rhythm(seed); // the crowd pana's own sway, seeded so peers agree
   // Each punch, block, taunt and win picks its own style when it starts, so
   // a fight is never the same move twice: jabs alternate hands as rectos,
@@ -81,9 +84,24 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
       glove.visible = !!corner;
       if (corner) glove.traverse(o => { if (o.isMesh && o.material.roughness < .35) o.material.color.set(CORNER_COLORS[corner]); });
     }
-    helmet.show('hat', corner ? 'casco' : 'none');
-    if (corner) { ownHeadwear = character.wardrobe.headwear; hatsShown = ownHats.map(o => o.visible); character.wardrobe.setHeadwear('none'); ownHats.forEach(o => { o.visible = false; }); }
-    else { character.wardrobe.setHeadwear(ownHeadwear); ownHats.forEach((o, i) => { o.visible = hatsShown[i]; }); }
+    if (corner) headgear.on(); else headgear.off();
+  }
+
+  // The hit flash: white, cooling to red. Emissive only, on this pana's own
+  // materials (buildCharacter makes them per character; ink hulls have none).
+  const flashing = [];
+  root.traverse(o => { for (const m of [o.material].flat()) if (m?.emissive && !flashing.some(f => f.m === m)) flashing.push({ m, color: m.emissive.clone(), power: m.emissiveIntensity }); });
+  const FLASH_HOT = new THREE.Color('#ffffff'), FLASH_COOL = new THREE.Color('#ff2410');
+  let flashLeft = 0, flashSpan = 1, flashPower = 1;
+  function flash(power = 1) { flashSpan = flashLeft = .12 + .08 * power; flashPower = .5 + .5 * power; }
+  function stepFlash(dt) {
+    if (flashLeft <= 0) return;
+    flashLeft = Math.max(0, flashLeft - dt);
+    const k = flashLeft / flashSpan;
+    for (const f of flashing) {
+      if (k === 0) { f.m.emissive.copy(f.color); f.m.emissiveIntensity = f.power; continue; }
+      f.m.emissive.copy(FLASH_COOL).lerp(FLASH_HOT, k * k); f.m.emissiveIntensity = flashPower * (.25 + .75 * k);
+    }
   }
 
   // An impulse from a hit: the head snaps back, the body sways and twists
@@ -101,7 +119,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   const doCheer = () => { cheer = 1.4; };
 
   // view: { act, at, moving, dodgeDir, guard } from the fight body, or a crowd pana.
-  function update(dt, view = {}) {
+  function update(dt, view = {}, real = dt) {
+    stepFlash(Math.min(.1, real));
     dt = Math.min(.1, Math.max(0, dt));
     time += dt;
     const act = view.act || 'crowd', at = view.at || 0;
@@ -128,9 +147,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     arms.forEach((arm, i) => {
       const p = pose[i], t = targets[i];
       p.rx = ease(p.rx, t.rx, k); p.rz = ease(p.rz, t.rz, k); p.s = ease(p.s, t.s, k); p.z = ease(p.z, t.z ?? 0, k);
-      arm.rotation.set(p.rx, 0, p.rz); arm.scale.y = p.s;
+      arm.rotation.set(p.rx, 0, p.rz); arm.scale.y = p.s * ARM_LENGTH;
       arm.position.copy(base[i]); arm.position.z += p.z;
-      gloves[i].scale.set(1 / SCULPT, 1 / SCULPT / p.s, 1 / SCULPT);
     });
     // The body: twist into punches, crouch to block or dodge, flop when down.
     const b = character.body, kb = 1 - Math.exp(-dt * 12);
@@ -190,7 +208,18 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
       authored['body.y'] += Math.abs(Math.sin(time * 5.4 + bounce)) * .045;
       authored['armL.rx'] += Math.sin(time * 10.8 + bounce) * .04;
     }
-    applyCombat(authored, view.moving || 0);
+    // A whiff's extra recovery: still leaning into the punch that met nothing.
+    if (authored && T[act]?.whiff && at > T[act].total) authored['body.rx'] += .22;
+    const striking = act === 'jab' || act === 'trompon';
+    armReach.punch = punchLength(view.gap ?? 1.6);
+    armReach.lunge = lungeRoom(view.gap ?? 2);
+    const extension = striking ? attackExtension(act, at) : 0;
+    applyCombat(authored, view.moving || 0, extension);
+    if (corner) gloves.forEach((glove, i) => {
+      const want = handRoll(act, { style: move.style, striking: striking && i === (move.hand ?? 1), extension });
+      rolls[i] = ease(rolls[i], want, k);
+      settleGlove(glove, arms[i], character.group, GLOVE_SIZE, rolls[i]);
+    });
     if (tag) tag.visible = tagShown && act !== 'down';
     warn.visible = act === 'wind' || (['kick', 'sweep', 'toss'].includes(act) && at < T[act].active[0]); if (warn.visible) warn.scale.set(.7 + Math.sin(time * 30) * .06, .175, 1);
   }
@@ -268,5 +297,5 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     gloves.forEach(g => g.userData.dispose()); helmet.dispose(); tag?.userData.dispose(); warn.userData.dispose();
     character.dispose(); root.removeFromParent();
   }
-  return { root, character, update, setCorner, showTag: (on) => { tagShown = on; }, hit, blocked, shove: doShove, cheer: doCheer, dispose, get corner() { return corner; } };
+  return { root, character, update, setCorner, showTag: (on) => { tagShown = on; }, hit, blocked, shove: doShove, cheer: doCheer, flash, dispose, get corner() { return corner; }, get flashing() { return flashLeft > 0; }, get materials() { return flashing.map(f => f.m); } };
 }

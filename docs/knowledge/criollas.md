@@ -92,6 +92,12 @@ just short of the mingo on the thrower's side: aiming at its centre made the
 sharpest bots knock it away and score worse than Normal ones.
 `botShot` without `error` is Bululú's tuned bot, unchanged.
 
+## Lobby teams
+
+The two teams show through `engine/team-lobby.js` (bots as CPU cards). A pana
+who joins takes a bot seat on the smaller team (`openSeat` in `network.js`,
+team = seat % 2); a tie keeps the first bot seat.
+
 ## Physics and room recovery
 
 Coordinates are metres, +Y up, +Z toward the calce at Z=9.8. The court is 11×24 m.

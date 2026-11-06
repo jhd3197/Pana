@@ -19,8 +19,7 @@ const CHANNEL = 5.4, LANE = 1.55;
 export default {
   id: 'raudal',
   title: locKey('¡Raudal!'),
-  howto: locKey('La corriente te lleva. Cambia de carril con A y D para esquivar las piedras y agarrar mangos. Antes de cada salto, Espacio: ¡salta el raudal!'),
-  keys: [['A D / ← →', locKey('cambiar de carril')], [locKey('Espacio'), locKey('saltar el raudal')]],
+  goal: locKey('Baja el raudal esquivando piedras y agarrando mangos.'),
   icon: 'mango',
   time: RAUDAL.time,
 

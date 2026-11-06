@@ -32,6 +32,8 @@ export function createRequestHandler(startedAt, colyseus) {
       const parts = pathname.slice(3).split('/').filter(Boolean);
       const game = parts.shift();
       const baseDir = game && gamePublicDir(game);
+      // /g/<game> without the slash would resolve ./game.js against /g/, so send it to /g/<game>/.
+      if (baseDir && !parts.length && !pathname.endsWith('/')) return res.writeHead(301, { Location: `/g/${game}/${url.search}` }).end();
       if (!baseDir) {
         res.writeHead(404).end('unknown game');
         return;

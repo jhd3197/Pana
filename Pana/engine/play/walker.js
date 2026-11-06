@@ -18,12 +18,57 @@ export function walkVector(input, reversed = false) {
   return length > 1 ? { x: x / length, z: z / length, length } : { x, z, length };
 }
 
+const SLIP_SCAN = .1;
+
 // A `move` for games that test one point at a time: slides along walls by
 // trying each axis alone. `isBlocked(x, z)` is the game's own test.
 export const axisMove = isBlocked => (p, dx, dz) => {
   const x = p.x + dx; if (!isBlocked(x, p.z)) p.x = x;
   const z = p.z + dz; if (!isBlocked(p.x, z)) p.z = z;
 };
+
+// A `move` for a body with a size. `free(x, z)` says the whole body fits there.
+// Each axis runs up to contact, so a body stops against a wall instead of one
+// step short of it. Axis tests alone stall a round body on a corner it only
+// grazes: the step straight ahead is blocked and nothing pushes it aside. With
+// `slip` (the body's radius is the honest value) a blocked step looks up to that
+// far sideways for a way past and spends the blocked motion getting there, so
+// no step travels further than asked. Returns whether the body moved.
+export function slideMove(p, dx, dz, free, { slip = 0, step = .2 } = {}) {
+  const length = Math.hypot(dx, dz), n = Math.max(1, Math.ceil(length / step)), sx = dx / n, sz = dz / n, stride = length / n;
+  const fits = (axis, d) => axis === 'x' ? free(p.x + d, p.z) : free(p.x, p.z + d);
+  const advance = (axis, d) => {
+    if (!d) return true;
+    if (fits(axis, d)) { p[axis] += d; return true; }
+    let lo = 0, hi = d;
+    for (let k = 0; k < 3; k++) { const mid = (lo + hi) / 2; if (fits(axis, mid)) lo = mid; else hi = mid; }
+    p[axis] += lo;
+    return false;
+  };
+  // Blocked along `axis`: is there room a little to the side? The side the step
+  // already leans to, or either one for a step that is nearly head-on.
+  const round = (axis, d, along, x0, z0) => {
+    const other = axis === 'x' ? 'z' : 'x', sides = Math.abs(along) > Math.abs(d) * .25 ? [Math.sign(along)] : [1, -1], open = [true, true];
+    for (let k = 1; k * SLIP_SCAN <= slip + 1e-9; k++) for (let i = 0; i < sides.length; i++) {
+      if (!open[i]) continue;
+      const off = sides[i] * k * SLIP_SCAN, x = other === 'x' ? p.x + off : p.x, z = other === 'z' ? p.z + off : p.z;
+      if (!free(x, z)) { open[i] = false; continue; }
+      if (!free(axis === 'x' ? x + d : x, axis === 'z' ? z + d : z)) continue;
+      const nudge = sides[i] * Math.min(k * SLIP_SCAN, Math.abs(d), Math.max(0, stride - Math.hypot(p.x - x0, p.z - z0)));
+      if (nudge && fits(other, nudge)) { p[other] += nudge; return true; }
+      return false;
+    }
+    return false;
+  };
+  let moved = false;
+  for (let i = 0; i < n; i++) {
+    const x0 = p.x, z0 = p.z, clearX = advance('x', sx), clearZ = advance('z', sz);
+    if (slip > 0 && !clearZ) round('z', sz, sx, x0, z0);
+    if (slip > 0 && !clearX) round('x', sx, sz, x0, z0);
+    if (p.x !== x0 || p.z !== z0) moved = true;
+  }
+  return moved;
+}
 
 // Options (o):
 //   walk, run      speeds (m/s) on foot and sprinting; `scale` multiplies either

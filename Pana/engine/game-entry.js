@@ -42,7 +42,8 @@ if (original) { original.inert = true; settings.append(original); }
 // The entry shell only docks those controls; it never assigns players itself.
 function dockSeats() {
   if (!original) return;
-  const controls = original.panaSala ? [] : [...original.querySelectorAll('[data-pana-roster]')];
+  // Team panels (engine/team-lobby.js) always stand here, in the main lobby.
+  const controls = [...original.querySelectorAll('[data-pana-roster]')];
   const showSeats = () => { roster.hidden = controls.some(node => !node.hidden && !node.classList.contains('hidden')); };
   for (const node of [...controls, ...(original.panaSala ? [] : original.querySelectorAll('[data-room-personal]'))]) {
     const placeholder = document.createComment('roster control home'); node.before(placeholder);
@@ -54,7 +55,20 @@ function dockSeats() {
 layout.append(rosterBox, settings);
 const footer = el('footer', 'pk-game-lobby-foot'), status = el('p', 'pk-copy', loc('Cargando el juego en segundo plano…')); status.id = 'pana-lobby-status'; status.setAttribute('role', 'status');
 const readyButton = el('button', 'pk-btn pk-btn--primary', loc('Preparando…')); readyButton.id = 'pana-lobby-ready'; readyButton.disabled = true;
-const change = el('a', 'pk-btn', loc('Cambiar pana')); change.href = '/#mi-pana';
+// The editor opens over the lobby (engine/pana-editor.js): leaving the page
+// would drop this room's seat and, on pana.sh, send the party home.
+const change = el('a', 'pk-btn', loc('Cambiar pana')); change.href = '/personaje'; change.id = 'pana-lobby-change';
+change.addEventListener('click', async event => {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  const { openPanaEditor } = await import('./pana-editor.js');
+  openPanaEditor();
+});
+// A new look reaches the room's roster (RoomKit's "me" message) and this card.
+addEventListener('pana:avatar', event => {
+  link?.send('me', { name: event.detail.name, avatar: event.detail.avatar });
+  signature = ''; renderRoster();
+});
 footer.append(status, change, readyButton); root.append(head, layout, footer); document.body.append(root); document.body.classList.add('pana-in-lobby');
 const actionTray = el('div', 'pk-game-lobby-actions'); footer.append(actionTray, readyButton);
 window.PANA_LOBBY_LOADING = true;

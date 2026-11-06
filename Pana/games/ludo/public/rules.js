@@ -163,7 +163,8 @@ export class LudoGame {
   }
   start() {
     if (!['lobby', 'finished'].includes(this.phase)) return false;
-    for (const p of this.players) p.pieces.fill(-1);
+    for (const p of this.players) { p.pieces.fill(-1); if (p.id === null) p.name = BOT_NAMES[p.seat]; }
+    applyFriendNames(this.players.filter(p => p.id === null), friendNamesNow(), { taken: this.players.filter(p => p.id !== null).map(p => p.name) });
     this.turnPause = null;
     this.phase = 'starter'; this.turn = 0; this.die = 0; this.lastDie = 0;
     this.resetCounters(); this.autoMove = null;
@@ -296,6 +297,7 @@ export class LudoGame {
     return ok;
   }
 }
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { defaultLudoOptions, ludoOptions } from './options.js';
 import { loc, locKey } from '../../../engine/i18n.js';
 

@@ -75,7 +75,7 @@ This uses the existing trusted-friends host model, not server anti-cheat.
 
 The `event` line is a list of `{ text, vars }` Spanish source sentences;
 `eventText` in `rules.js` joins them in the viewer's language (the cachos'
-note travels as `vars.how`). The protocol is `ludo-v6` since the seat count option.
+note travels as `vars.how`). The protocol is `ludo-v7` since the `landed` report.
 
 ## Visuals and controls
 
@@ -97,6 +97,14 @@ waits for the hunter to land, then flies home spinning while the two seated
 panas cheer and flail and `shout()` calls it out. Captures are read from the
 state diff in `scene.js`, so every screen plays them, but only within a round. Accessible buttons remain available
 when physical pieces overlap. The shared menu freezes bots only with one human.
+
+The mango die (`die-shop.js`, bought from the lobby) is per device: ownership and
+the worn look sit in `pana:ludo:dado` and never reach the room, so only its owner
+sees it, on every throw at that table. Showing it to rivals would mean sending the
+look through the room and proving it with a two-client suite. `offer` reads the
+balance with `peek`, leaving an older Carreritas hand-over for Carreritas. On an
+account `spend` answers optimistically, so a refusal from the server refunds the
+mangos while the die stays owned on that device.
 
 The canvas is sized to the available stage, not the window: its raycasts must
 subtract its bounding rectangle, and its renderer must use its client size
@@ -148,6 +156,37 @@ whose unfinished pieces are all in the yard qualify, including after captures
 and late in a match. Moving/finishing dice stay random; repeated numbers are
 allowed. Every seat uses the same rule, independently of name or score. Classic
 random dice remain a lobby option. Thresholds and counters survive migration.
+
+Pauses run on the wall clock up to their last `RESULT_HOLD`, then count at most
+`BEAT_TICK` (.3 s) per tick (`pauseTick`, `dice-timing.js`). So a pause lasts its real
+length or the landing tick plus four, whichever is longer. A flat ceiling cannot do
+both jobs: under CPU throttling `setInterval` was seen firing 3.5 to 23 s apart, and at
+.75 s per tick a 3.18 s pause took up to 155 s. The beat needs its own ceiling because
+a guest's first toss frame arrives 1 to 2.7 s after the roll under load, so a beat
+that ends on the host's clock alone left under 750 ms of result on screen. Heavy
+rendering starves timers harder than frames, so `game.js` also ticks the host from
+the render loop; the timer stays for hidden tabs. Idle, bot and starter clocks use
+`hostTick` (.75 s) so a waking tab does not spend its nap on them.
+
+Those ceilings only stretch the beat; they cannot place it after a guest's landing,
+and a guest's toss can start later than the whole beat lasts. So a missed roll's beat
+also waits for every member's `landed` message (`createLandingGate`, `dice-timing.js`;
+`LudoRoom.dieLanded`), which makes the hold on every client at least `RESULT_HOLD` from
+its own landing. A hidden tab, which draws no frames, reports at once. A silent member
+costs `LANDING_WAIT` (6 s on the `hostTick` clock) and a new host starts with no reports,
+so a handoff mid-pause can cost that wait once. Forced moves (`autoMove`) are not gated.
+
+`world.tossing` can go true and false again between two samples when a frame outlasts
+the toss, so a suite reads `world.landedAt` rather than polling it.
+
+`turnPause.remaining` on any client, the host's `room.state` included, is the value
+at the last publish and sits at its full length for the whole pause. Only the host's
+`room.game` shows the clock moving, so a stuck value there says nothing about a
+frozen clock.
+
+The turn spotlight runs on the wall clock for 3.2 s, shorter than a few slow
+frames, so a suite waits on `spotlight.cued` and passes `frame` a fixed time to
+hold the cue rather than polling its light.
 
 ## Studio appearance and camino motions
 

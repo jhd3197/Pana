@@ -14,7 +14,7 @@ import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { createPlaza } from './plaza.js';
 import { createHuntEnvironment } from './scene.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { arenaInfo } from '/engine/worlds/arena-layouts.js';
 import { huntLayout } from './layout.js';
 import { RULES } from './rules.js';
@@ -66,8 +66,7 @@ for (const [i, def] of PLAZA_PROPS.entries()) {
   button.setAttribute('aria-label', loc('{object}, tecla {n}', { object: propName(def.id), n: i + 1 })); button.setAttribute('aria-pressed', 'false');
   const img = document.createElement('img'); img.src = previews.get(def.id); img.alt = '';
   const label = document.createElement('b'); label.textContent = propName(def.id);
-  const key = document.createElement('kbd'); key.className = 'pk-slot-n'; key.textContent = i + 1;
-  button.append(img, label, key); button.onclick = () => transform(def.id); $('prop-list').append(button);
+  button.append(img, label); button.onclick = () => transform(def.id); $('prop-list').append(button);
 }
 
 let state = { mapId: 'plaza', layoutSeed: 1, hideSeconds: RULES.hideSeconds, phase: 'lobby', players: [], round: 0, events: [] }, previousPhase = 'lobby';
@@ -84,23 +83,18 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Escondidas', fi
   room.action('configure', { options: DEFAULT_OPTIONS }); room.action('map', { mapId: 'plaza' }); $('role-hide').click();
 } });
 const isSeeker = id => state.seekers?.includes(id) ?? id === state.seeker;
-const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }));
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { room });
 const menu = createGameMenu({
   pad: { move: 'wasd', look: loc('Mirar'), keys: { a: ['KeyE', loc('Revisar o copiar un objeto')], rt: ['KeyE', loc('Revisar o copiar un objeto')], b: ['KeyQ', loc('Volver a pana')], y: ['KeyV', loc('Ver tu disfraz')], lb: ['ShiftLeft', loc('Correr')], ls: ['ShiftLeft', loc('Correr')], view: ['Tab', loc('Ver la tabla')] } },
   orientation: 'vertical',
   title: 'Escondidas', heading: loc('Un momentico.'), resumeLabel: loc('Volver al juego'), sound, notify,
   note: () => room.members.size === 1 ? loc('La práctica queda en pausa mientras descansas.') : loc('La ronda continúa para los demás panas.'),
-  controls: [['W A S D / ↑ ← ↓ →', loc('Caminar hacia donde miras')], [loc('Ratón'), loc('Mirar (haz clic para capturarlo)')], [loc('Clic / E'), loc('Buscador: revisar lo que tienes en la mira')], ['Shift', loc('Correr')], ['1 2 3 4 5', loc('Transformarte')],
-    ['Q', loc('Volver a pana')], ['E', loc('Escondido: copiar el objeto cercano')], ['V', loc('Ver tu disfraz desde atrás')], ['Tab', loc('Ver la tabla')], ['M', loc('Sonido')], ['Esc', loc('Soltar el ratón y abrir el menú')]],
-  tips: [loc('Buscador: apunta al objeto sospechoso y haz clic. Si es un pana, lo pillaste a la primera. Si fallas, esperas 1,6 segundos.'),
-    loc('Escondido: pulsa V para ver tu disfraz desde atrás y comprobar que pasas desapercibido.')],
   options: [{ id: 'view', label: loc('Cámara'), choices: [['primera', loc('Primera persona')], ['tercera', loc('Detrás de tu pana')]], get: () => view, set: value => { view = value; } }],
   invite: () => inviteUrl(code),
   onOpen() { paused = true; keys.clear(); touch.clear(); drag = null; looking.release(); },
   onClose() { paused = false; },
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
-$('menu').querySelector('kbd')?.classList.add('pk-kbd');
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
 // A guest sees itself where it predicts it (HuntRoom's predict), not a round trip behind.
 function getMe() { return room.predicted ?? state.players.find(p => p.id === room.id); }
@@ -147,7 +141,7 @@ function receive(next) {
 function updateHUD() {
   optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase === 'lobby');
   if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
-  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, canChangeMap(room, state.phase));
   $('hunt-seconds-stat').textContent = `${(state.options?.huntSeconds || RULES.huntSeconds) / 60}:00`;
   $('hide-seconds-stat').textContent = `${state.hideSeconds || RULES.hideSeconds}s`;
   $('world').setAttribute('aria-label', loc('{map}, escenario de Escondidas', { map: arenaInfo(state.mapId).name }));
@@ -207,7 +201,9 @@ function updateHUD() {
   const near = nearestProp();
   $('action-label').textContent = spectating ? loc('Observando la ronda') : seeking
     ? state.phase === 'hide' ? loc('Espera a que termine la cuenta') : me?.cooldown > 0 ? loc('Revisando… {s} s', { s: me.cooldown.toFixed(1) }) : loc('Revisar lo que está en la mira')
-    : near ? loc('Copiar {object}', { object: propName(near.type).toLowerCase() }) : state.options?.disguises === 'barrels' ? loc('Acércate a un barril para copiar') : loc('Acércate a un objeto para copiar');
+    : near ? loc('Copiar {object}', { object: propName(near.type).toLowerCase() }) : '';
+  // A hider sees the copy prompt only next to something to copy: no generic "go near an object".
+  show('action', spectating || seeking || !!near);
   $('action').disabled = spectating || seeking && (state.phase !== 'hunt' || me?.cooldown > 0) || !seeking && (!near || me?.changes <= 0);
   const suspicion = me?.suspicion || 0; show('suspicion', suspicion > 3 && !spectating && !seeking);
   $('suspicion-fill').style.width = `${suspicion}%`;

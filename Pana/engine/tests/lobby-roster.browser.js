@@ -37,11 +37,19 @@ try {
   assert.equal(await page.locator('.is-selected').count(), 0);
   await page.evaluate(() => roster.update(groups, { ...options, enabled: false }));
   assert.equal(await page.locator('button:enabled').count(), 0);
+  // Up to three seats sit in one row; four a side stand as a 2×2 grid that fits in view.
+  const columns = () => page.locator('.pk-roster-cards').evaluateAll(n => n.map(c => getComputedStyle(c).gridTemplateColumns.split(' ').length));
+  assert.deepEqual(await columns(), [3, 3]);
+  await page.evaluate(() => { const four = structuredClone(groups); four[0].seats.push({ key: 6, player: null }); four[1].seats.push({ key: 7, player: null }); roster.update(four, options); });
+  assert.deepEqual(await columns(), [2, 2]);
+  const box = await page.locator('[data-roster-group="a"]').boundingBox();
+  assert.ok(box.height < 480, `a 2×2 team panel stays compact (${box.height}px)`);
+  await page.evaluate(() => roster.update(groups, options));
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.evaluate(() => { document.querySelector('#roster').hidden = true; });
   assert.equal(await page.locator('#roster').isVisible(), false);
   await page.evaluate(() => roster.update([{ id: 'bots', title: 'Mesa', seats: [{ key: 0, player: { id: null, name: 'Coco', bot: true } }] }], { ownId: null, hostId: null }));
   assert.equal(await page.locator('.pk-roster-host,.is-own').count(), 0);
-  console.log('PASS grouped roster cards, self/team/empty-seat moves, host arrangement, readiness, keyboard and mobile');
+  console.log('PASS grouped roster cards, 2×2 for four seats, self/team/empty-seat moves, host arrangement, readiness, keyboard and mobile');
 } finally { await browser.close(); }

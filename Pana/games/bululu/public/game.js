@@ -1,4 +1,5 @@
 import { prepareScene } from '/engine/game-load.js';
+import { applyFriendNames, loadFriendNames } from '/engine/bot-names.js';
 import * as THREE from 'three';
 import { sound, Puffs, Shockwaves, popCounter } from '/engine/fx.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
@@ -26,7 +27,7 @@ import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { BululuRoom } from './network.js';
 import { IDLE_INPUT, seeded, withRandom } from './online-rules.js';
-import { readPresentation, writePresentation, line, setLine, setLines, setKeys } from './online-view.js';
+import { readPresentation, writePresentation, line, setLine, setLines } from './online-view.js';
 import { loc, locKey, formatList } from '/engine/i18n.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { OPTION_FIELDS, DEFAULT_OPTIONS, cleanOptions, applyOptions, minigamePool, cpuPace, stealMango, awardFinalBonus, rulesSummary } from './options.js';
@@ -80,6 +81,7 @@ const players = (() => {
     };
   });
 })();
+if (!online) loadFriendNames().then(names => applyFriendNames(players.filter(p => !p.human), names, { taken: [players[0].name] }));
 let me = players[0];
 const isHuman = (p) => p.human && !AUTO;
 // Who plays when in each round, decided by ¿Quién empieza? (starter.js);
@@ -112,9 +114,6 @@ const menu = createGameMenu({ pad: { move: 'wasd', moveLabel: loc('Moverte en lo
   title: 'Bululú', heading: loc('Pausa'), sound, orientation: 'horizontal',   // i18n-ignore: the game's name
   note: () => online ? loc('La partida online sigue mientras abres el menú.') : loc('La partida está en pausa.'),
   invite: () => inviteUrl(code),
-  controls: [[loc('Espacio'), loc('Tirar los dados / saltar')], ['A D / ← →', loc('Moverte en los minijuegos')], ['Tab', loc('Ver el tablero')],
-    [loc('Clic / Espacio'), loc('Estirar y soltar la china')], ['L', loc('Cambiar la luz')], ['M', loc('Sonido')], ['Esc', loc('Pausa')]],
-  tips: [loc('Junta 20 monedas y cómprale un Mango de oro al puesto del árbol. Gana el pana con más mangos de oro.')],
   options: [{ id: 'sky', label: loc('Luz de la isla'), choices: [['day', loc('Día')], ['night', loc('Noche')], ['cycle', loc('Ciclo')]],
     get: () => board.atmosphere.mode, set: mode => selectSky(mode) }],
   actions: [
@@ -323,7 +322,7 @@ function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
   const el = $('prompt');
   closeThrower();
   el.innerHTML = `<p>${line(text)}</p><div class="row">${options.map((o, i) =>
-    `<button data-i="${i}" class="pk-btn${i === 0 ? ' pk-btn--primary primary' : ''}">${line(o.label)}${o.key ? ` <kbd class="pk-kbd" data-pana-hint>${o.key === ' ' ? loc('Espacio') : o.key.toUpperCase()}</kbd>` : ''}</button>`).join('')}</div>`;
+    `<button data-i="${i}" class="pk-btn${i === 0 ? ' pk-btn--primary primary' : ''}">${line(o.label)}</button>`).join('')}</div>`;
   el.classList.toggle('bare', !text);
   el.classList.remove('hidden');
   return new Promise((resolve) => {
@@ -639,8 +638,7 @@ async function playMinigame(entry) {
   setPlank(locKey('MINIJUEGO'));
   setSign(def.title);
   setLine($('mini-title'), def.title);
-  setLine($('mini-howto'), def.howto);
-  setKeys($('mini-keys'), def.keys);
+  setLine($('mini-goal'), def.goal);
   $('mini-intro').classList.remove('hidden');
   if (online) await everyoneReady();
   else if (isHuman(me)) await ask('', [{ label: locKey('¡Listo!'), key: ' ' }]);

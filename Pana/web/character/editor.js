@@ -7,6 +7,7 @@ import { buildSoftCharacter as so } from '/engine/models/characters/pana/model.j
 import { createAccessories as lo } from '/engine/models/characters/pana/accessories.js';
 import { FUR_CHOICES as Nt, COLOR_CHOICES as Gt, COLOR_LABELS as Yo, WARDROBE as ge, wardrobeItem as Ft, wardrobeMeta as Le, DEFAULT_WARDROBE as ut, cloneWardrobe as we, wardrobeColor as pt, normalizeWardrobe } from '/engine/wardrobe.js';
 import { loadAvatar, saveAvatar, loadName, avatarToWardrobe, wardrobeToAvatar } from '/engine/avatar.js';
+import { closeEmbeddedEditor, leaveEditor } from '/engine/pana-editor.js';
 const dt = look => normalizeWardrobe(look, { history: true });
 // Hosted Pana supplies ownership and account persistence; local Pana is free.
 const account = window.PanaWardrobe;
@@ -455,7 +456,7 @@ function Ro(e, t, n, r = {}) {
     (c.onclick =
       r.onClick ||
       (() => {
-        if (lk) return void (location.href = lk.href);
+        if (lk) return void leaveEditor(lk.href);
         let b = we(X);
         (e === "extras" ? (b.extras[t] = !b.extras[t]) : (b[e] = t),
           e === "top" &&
@@ -782,6 +783,8 @@ le("save").onclick = async () => {
       await portrait(avatar, { current: true });
     } catch { /* The saved wardrobe remains usable if a portrait cannot render. */ }
     nt('Pana guardado. \u00A1A jugar!');
+    // Opened over a lobby: saved means back to the game.
+    closeEmbeddedEditor();
   } catch (error) { nt(error.message || 'No se pudo guardar. Intenta otra vez.'); }
   finally { button.disabled = false; button.textContent = 'Guardar para jugar'; }
 };

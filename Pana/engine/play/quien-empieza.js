@@ -42,8 +42,8 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
   const ribbon = place('span', 'pk-ribbon', head, loc('¿Quién empieza?')), say = place('p', 'pk-qe-say', head);
   const clock = place('div', 'pk-bar pk-qe-clock', head); place('i', '', clock);
   const button = place('button', 'pk-btn pk-btn--primary pk-btn--lg pk-qe-shake', layer); button.type = 'button'; button.id = 'pana-starter-shake';
-  const label = place('span', '', button, loc('Sacude el cacho')); place('kbd', 'pk-kbd', button, loc('Espacio')).dataset.panaHint = '';
-  const hint = place('p', 'pk-qe-hint', layer, loc('Mantén para sacudir · suelta para tapar')); hint.dataset.panaHint = '';
+  // The button says what holding it does; the keys are on the Instrucciones page.
+  const label = place('span', '', button, loc('Mantén para sacudir'));
   const strip = place('ol', 'pk-qe-order', layer); strip.setAttribute('aria-label', loc('Orden de salida'));
   say.setAttribute('aria-live', 'polite');
   let bubbles = null, bubbleCount = 0;
@@ -151,9 +151,9 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
     if (say.textContent !== line) say.textContent = line;
     ribbon.textContent = s.flavour === 'moneda' ? loc('¿Cara o sello?') : loc('¿Quién empieza?');
     const canShake = s.phase === 'shake' && mine && mayThrow();
-    button.hidden = hint.hidden = !canShake; clock.hidden = s.phase !== 'shake';
+    button.hidden = !canShake; clock.hidden = s.phase !== 'shake';
     if (!canShake) thrower.cancel();
-    label.textContent = thrower.shaking ? loc('¡Suelta para tapar!') : loc('Sacude el cacho');
+    label.textContent = thrower.shaking ? loc('¡Suelta para tapar!') : loc('Mantén para sacudir');
     strip.hidden = s.phase !== 'order';
     if (s.phase === 'order' && strip.dataset.key !== phaseKey) {
       strip.dataset.key = phaseKey;
@@ -243,7 +243,7 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
       }
     }
     if (state.phase === 'shake') clock.firstChild.style.width = `${Math.max(0, 1 - (lt) / SHAKE_LIMIT) * 100}%`;
-    if (state.phase === 'shake') label.textContent = thrower.shaking ? loc('¡Suelta para tapar!') : loc('Sacude el cacho');
+    if (state.phase === 'shake') label.textContent = thrower.shaking ? loc('¡Suelta para tapar!') : loc('Mantén para sacudir');
   }
 
   function dispose() {

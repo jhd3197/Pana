@@ -1,4 +1,5 @@
-// Control reference remains available without covering the racing view.
+// The race view carries no control reference; it lives in the menu's
+// Instrucciones page.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {menuStep} from './menu-helpers.js';
@@ -14,20 +15,18 @@ try{
   window.__pad.buttons[7]={pressed:true,value:1};
  });
  await page.waitForFunction(()=>document.documentElement.dataset.panaInput==='gamepad');
- await page.waitForFunction(()=>document.querySelector('.pana-pad-prompts'));
- assert.equal(await page.locator('.pana-pad-prompts').isVisible(),false,'no controller strip over the road');
+ assert.equal(await page.locator('.pana-pad-prompts').count(),0,'no controller strip over the road');
  await page.evaluate(()=>{window.__pad.buttons[7]={pressed:false,value:0};});
  await page.keyboard.press('w');
- assert.equal(await page.locator('#race .keys').isVisible(),false,'no keyboard legend over the road');
+ assert.equal(await page.locator('#race .keys, #race .p2-keys, #race kbd').count(),0,'no keyboard legend over the road');
  await page.locator('#pause').click();
  await page.locator('dialog.pana-menu[open]').waitFor();
 
- await page.locator('dialog.pana-menu [data-tab="settings"]').click();
- await page.getByRole('button',{name:'Ratón y teclado',exact:true}).click();
- await page.locator('[data-settings-category="mouse"]').waitFor();
- assert.match(await page.locator('[data-settings-category="mouse"]').innerText(),/Acelerar/,'keyboard reference remains in settings');
+ await page.locator('#pana-tab-help').click();
+ await page.locator('#pana-panel-help[data-ready]').waitFor();
+ assert.match(await page.locator('#pana-panel-help').innerText(),/Acelerar/,'keyboard reference in the Instrucciones page');
  await page.getByRole('button',{name:'Cerrar menú',exact:true}).click();
  assert.equal(await page.locator('dialog.pana-menu').isVisible(),false);
- assert.equal(await page.locator('.pana-pad-prompts').isVisible(),false);
- console.log('Race stays clear; full controls remain in the shared menu.');
+ assert.equal(await page.locator('.pana-pad-prompts').count(),0);
+ console.log('Race stays clear; full controls live in the Instrucciones page.');
 }finally{await browser.close();}

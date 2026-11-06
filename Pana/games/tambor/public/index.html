@@ -39,21 +39,20 @@
     <section id="call" class="call-card" hidden aria-live="assertive">
       <div class="call-ring" aria-hidden="true"><i id="call-ring"></i></div>
       <b id="call-name" class="pk-heading"></b>
-      <span id="call-hint"></span>
+      <span id="call-cue"></span>
       <span id="call-partner" class="call-partner"></span>
       <div id="misses" class="misses" aria-label="Fallas"></div>
     </section>
     <section id="drum" class="drum-panel pk-panel" hidden aria-label="Tu tambor">
       <div class="drum-head"><b id="station-name"></b><span id="combo"></span></div>
       <canvas id="lane" width="320" height="230" aria-hidden="true"></canvas>
-      <span id="station-hint" class="hint"></span>
     </section>
     <section id="crowd" class="crowd-panel pk-panel" hidden aria-label="La gente">
       <b id="line-place"></b>
       <div class="crowd-buttons">
-        <button id="clap" class="pk-btn pk-btn--primary">Aplaudir <kbd class="pk-kbd">Espacio</kbd></button>
-        <button id="want-in" class="pk-btn">¡Quiero entrar! <kbd class="pk-kbd">Q</kbd></button>
-        <button id="jump" class="pk-btn" hidden>¡Entro! <kbd class="pk-kbd">E</kbd></button>
+        <button id="clap" class="pk-btn pk-btn--primary">Aplaudir</button>
+        <button id="want-in" class="pk-btn">¡Quiero entrar!</button>
+        <button id="jump" class="pk-btn" hidden>¡Entro! <kbd class="pk-kbd" data-prompt>E</kbd></button>
       </div>
       <div id="dichos" class="dichos"></div>
     </section>
@@ -72,7 +71,7 @@
   <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Jugar en local</button></div>
   <section id="calibration" class="pk-results" hidden aria-labelledby="calibration-title"><div class="pk-modal pk-results-card">
     <span class="pk-ribbon">AJUSTE</span><h2 id="calibration-title" class="pk-title">Toca cuando suene el golpe</h2>
-    <p class="pk-copy">Ocho golpes. Toca <kbd class="pk-kbd">Espacio</kbd> o el botón justo cuando los oigas. Así la rueda sabe cuánto tarda el sonido en llegarte.</p>
+    <p class="pk-copy">Ocho golpes. Toca <kbd class="pk-kbd" data-prompt>Espacio</kbd> o el botón justo cuando los oigas. Así la rueda sabe cuánto tarda el sonido en llegarte.</p>
     <div class="calibration-dots" id="calibration-dots"></div>
     <button id="calibration-tap" class="pk-btn pk-btn--primary pk-btn--block">¡Golpe!</button>
     <p id="calibration-result" class="pk-copy"></p>

@@ -27,13 +27,30 @@ try {
     await guest.locator('.pk-game-lobby-player.is-own').click();
     await host.waitForFunction(()=>[...document.querySelectorAll('.pk-game-lobby-state')].every(n=>n.textContent==='Listo'));
     if(game==='pintura') {
+      // The main lobby asks only Partida and Modo; the rest waits in Más ajustes.
+      assert.deepEqual(await host.locator('.pk-room-primary .pk-room-field:not([hidden])').evaluateAll(n=>n.map(f=>f.querySelector('button').dataset.roomOption)),['sides','ffaMode']);
+      assert.equal(await host.locator('.pk-room-primary [data-room-option=duration]').count(),0,'round time lives in Más ajustes');
+      // Teams vs everyone is a main setting; the team panels stand in the main lobby.
+      await host.locator('[data-room-option=sides][data-value=teams]').click();
+      await guest.locator('.pk-game-lobby-roster #team-roster .pk-roster-group').first().waitFor();
+      assert.equal(await guest.locator('#team-roster .pk-roster-group').count(),2,'both teams show in the main lobby');
+      assert.equal(await host.locator('#pana-room-dialog #team-roster').count(),0,'teams are not hidden in Más ajustes');
+      assert.ok(await host.locator('[data-room-option=teamMode][data-value=ctf]').isVisible(),'team games are picked next to Equipos');
+      // Four seats a side stand as a 2×2 grid.
+      const cols=await guest.locator('#team-roster .pk-roster-cards').first().evaluate(n=>getComputedStyle(n).gridTemplateColumns.split(' ').length);
+      assert.equal(cols,2,'four seats a side are two columns');
+      await host.locator('[data-room-option=teamMode][data-value=hardcore]').click();
+      await guest.waitForFunction(()=>document.querySelector('.sala-summary').textContent.includes('Hardcore'));
+      await host.locator('#pana-room-more').click();
       await host.locator('[data-room-option=duration][data-value="300"]').click();
       await guest.waitForFunction(()=>document.querySelector('.sala-summary').textContent.includes('5 min'));
+      await guest.locator('#pana-room-more').click();
       assert.ok(await guest.locator('[data-room-option=duration][data-value="180"]').isDisabled());
-      await host.locator('[data-room-option=mode][data-value=teams]').click();
-      await host.locator('#pana-room-more').click();await host.locator('#team-roster').waitFor();
-      assert.equal(await host.locator('#team-roster .pk-roster-group').count(),2,'real team arrangement remains reachable');
-      await host.locator('#pana-room-done').click();
+      await guest.locator('#pana-room-done').click();await host.locator('#pana-room-done').click();
+      await host.locator('[data-room-option=sides][data-value=ffa]').click();
+      await guest.locator('#team-roster').waitFor({state:'hidden'});
+      await host.locator('[data-room-option=teamMode][data-value=ctf]').waitFor({state:'hidden'});
+      assert.ok(await host.locator('[data-room-option=ffaMode][data-value=hardcore][aria-pressed=true]').isVisible(),'Hardcore carries over to todos contra todos');
       const before=await guest.locator('.is-own .pk-kit-level').getAttribute('aria-label');
       await guest.locator('#open-armory').click();assert.ok(await guest.locator('#armory').isVisible());
       assert.equal(await guest.locator('#armory-rating .pk-kit-level').getAttribute('aria-label'),before);

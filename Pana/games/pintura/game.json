@@ -1,6 +1,7 @@
 {
   "name": "Pepazo",
-  "description": "Paintball entre panas. Corre entre las barricadas, apunta y pinta a tus rivales. Rondas rápidas, reapariciones y bots para calentar.",
+  "description": "Paintball entre panas",
   "players": 8,
+  "teams": true,
   "color": "#f28b42"
 }

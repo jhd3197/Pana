@@ -22,17 +22,14 @@ try {
   await page.locator('#pana-set-sound').click();
   await page.locator('.pana-settings-nav button', { hasText: 'Imagen' }).click();
   await page.locator('#pana-set-quality [data-value="baja"]').click();
-  await page.locator('.pana-settings-nav button', { hasText: 'Ratón y teclado' }).click();
-  await page.getByRole('tab', { name: 'Ayudas', exact: true }).click();
-  await page.locator('#pana-set-hints').click();
   assert.deepEqual(await page.evaluate(() => {
     const s=JSON.parse(localStorage.getItem('pana:settings'));
-    return Object.fromEntries(['sound','volume','music','quality','hints','orientation'].map(k=>[k,s[k]]));
+    return Object.fromEntries(['sound','volume','music','quality','orientation'].map(k=>[k,s[k]]));
   }),
-    { sound: false, volume: 0.8, music: 0.5, quality: 'baja', hints: false, orientation: 'juego' });
+    { sound: false, volume: 0.8, music: 0.5, quality: 'baja', orientation: 'juego' });
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#pana-menu-dialog').evaluate(d => d.open), false);
-  check('hub settings save sound, resolution and hints');
+  check('hub settings save sound and resolution');
 
   // A game picks them up on load.
   await page.goto(`${base}/g/carreritas/?debug&manual&track=estadio`);
@@ -53,6 +50,8 @@ try {
   for (let i = 0; i < 8; i++) await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => !!document.activeElement.closest('#pana-menu-dialog')), true);
   await page.locator('#pana-tab-game').focus();
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await page.locator('#pana-tab-help').getAttribute('aria-selected'), 'true', 'Juego → Instrucciones');
   await page.keyboard.press('ArrowRight');
   assert.equal(await page.locator('#pana-tab-settings').getAttribute('aria-selected'), 'true');
   await page.keyboard.press('Escape');

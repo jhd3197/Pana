@@ -105,6 +105,10 @@ actions cannot apply to the new setup. Network member IDs never change on swaps.
 `engine/tests/table-seating.browser.js` exercises the UI over two real clients,
 including a full round, changing partners again, host departure and mobile.
 
+The lobby cards are `engine/team-lobby.js` (docs/SHARED-ENGINE.md, "Team lobby
+and auto-balance"); a newcomer takes a free seat on the smaller pair
+(`openSeat`), a tie keeps the first free seat as before.
+
 ## Models and interaction
 
 `cards.js` draws original Spanish card artwork, used identically for the 3D

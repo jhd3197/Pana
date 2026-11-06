@@ -29,8 +29,6 @@ const roomOptions = createRoomOptions($('room-options'), { title: 'Parapente', f
 const menu = createGameMenu({ title: loc('Parapente · Pana'), sound, orientation: 'libre',
   pad: { move: 'wasd', keys: { rt: ['KeyW', loc('Acelerador')], a: ['KeyW', loc('Acelerador')], lt: ['KeyS', loc('Frenos')], b: ['KeyS', loc('Frenos')], x: ['Space', loc('Orejas')], rb: ['Space', loc('Orejas')] } },
   note: () => room.members.size > 1 ? loc('El vuelo sigue mientras estás en el menú.') : loc('El vuelo está en pausa.'),
-  controls: [['A D / ← →', loc('Girar la vela')], ['W / ↑', loc('Acelerador: más rápido, bajas más')], ['S / ↓', loc('Frenos: más lento y giro cerrado')], ['Espacio', loc('Orejas: bajar rápido')], ['M', loc('Sonido')], ['Esc', loc('Menú')]],
-  tips: [loc('Pasa las balizas en orden: entra en el cilindro a cualquier altura.'), loc('Las térmicas (polvo dorado y zamuros dando vueltas) te suben: gira cerrado con frenos dentro.'), loc('Con altura de sobra, el acelerador gana tiempo; sin altura, te deja en el suelo.'), loc('Los aros dorados te empujan unos segundos.'), loc('Al final, baja con orejas o en espiral y aterriza en la diana de Boca de Tigre.')],
   invite: () => room.offline ? null : inviteUrl(code), actions: [{ id: 'local-flight', label: loc('Abrir vuelo local'), run: () => room.practice() }],
   onOpen() { paused = true; clearInput(); if (room.members.size <= 1) music.pause(); }, onClose() { paused = false; music.resume(); },
 });
@@ -70,12 +68,12 @@ function tip(p, course) {
   if (p.finish !== null) return p.penalty > 0 ? loc('Aterrizaste a {m} m del centro: +{s} s. Esperando a tus panas.', { m: Math.round(p.miss), s: p.penalty.toFixed(1) }) : loc('¡En la diana! Esperando a tus panas.');
   if (p.down > 0) return loc('Aterrizaje forzoso. Te suben otra vez sobre la última baliza…');
   const last = p.beacon >= course.beacons.length, to = targetOf(course, p.beacon), dist = Math.hypot(to.x - p.x, to.z - p.z), agl = p.y - (last ? course.landing.y : course.groundAt(to.x, to.z));
-  if (p.lift > 1.5) return loc('Estás en una térmica: gira cerrado con frenos (S + A o D) y sube.');
-  if (last && agl / Math.max(1, dist) > .35) return loc('Muy alto para la diana: orejas (Espacio) o una espiral para bajar.');
+  if (p.lift > 1.5) return loc('Estás en una térmica: gira cerrado con frenos y sube.');
+  if (last && agl / Math.max(1, dist) > .35) return loc('Muy alto para la diana: orejas o una espiral para bajar.');
   if (last) return loc('Directo a la diana de Boca de Tigre. Frena justo antes de tocar el suelo.');
   if (agl < dist / 10) return loc('Vas bajo para la próxima baliza: busca el polvo dorado de una térmica.');
   if (p.bar) return loc('Acelerador a fondo: más rápido, pero bajas más.');
-  return loc('Rumbo a {place}. Con altura de sobra, el acelerador (W) gana tiempo.', { place: to.name });
+  return loc('Rumbo a {place}.', { place: to.name });
 }
 // What just happened to this pana's wing, from the snapshot's counters.
 let seen = null, lastLift = 0, varioClock = 0, lastPhase = '', lastCount = '', lastRace = 0;

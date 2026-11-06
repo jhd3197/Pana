@@ -14,7 +14,7 @@ export { gothicShape };
 
 const GRAVE_TYPES = ['headstone', 'celtic', 'obelisk', 'ledger', 'wooden'];
 
-export function grave({ type = 'headstone', seed = 1, extras = true, tilt = true } = {}) {
+export function grave({ type = 'headstone', seed = 1, extras = true, tilt = true, mound = true } = {}) {
   const k = new Kit(), R = rng(seed), t = GRAVE_TYPES.includes(type) ? type : 'headstone';
   const P = tilt ? T(0, 0, 0, (R() - 0.5) * 0.18, (R() - 0.5) * 0.3, (R() - 0.5) * 0.2) : I;
   const key = R() < 0.5 ? 'stone' : (R() < 0.5 ? 'stoneL' : 'stoneD');
@@ -33,7 +33,7 @@ export function grave({ type = 'headstone', seed = 1, extras = true, tilt = true
   } else {
     k.box('wood', P, 0, 0.7, 0, 0.12, 1.4, 0.1, 0, 0, 0.08); k.box('wood', P, 0, 1.05, 0, 0.6, 0.1, 0.1, 0, 0, 0.08);
   }
-  if (t !== 'ledger' && t !== 'wooden') k.add('dirt', SPH, C(P, T(0, 0.02, 1.15, 0, 0, 0, 0.55, 0.18, 1.0)));
+  if (mound && t !== 'ledger' && t !== 'wooden') k.add('dirt', SPH, C(P, T(0, 0.02, 1.15, 0, 0, 0, 0.55, 0.18, 1.0)));
   if (extras) {
     if (R() < 0.35) k.box('moss', P, 0, t === 'headstone' ? 1.22 : 0.33, 0, 0.5, 0.06, 0.25);
     if (R() < 0.3) for (let i = 0; i < 3; i++) candle(k, P, -0.35 + i * 0.32, 0, 0.35 + R() * 0.2, R);

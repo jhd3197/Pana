@@ -8,6 +8,528 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ludo: si el anfitrión tiene una PC lenta, la mesa ya no se queda esperando.**
+  Las pausas entre turnos duran casi lo mismo en cualquier equipo, y el resultado del dado se sigue viendo en todas las pantallas, aunque a alguien le caiga tarde.
+- **Ludo: compra el dado de mango con tus mangos y úsalo en la mesa.**
+  Cuesta 150 mangos y se compra una sola vez desde la sala. Puedes guardarlo y volver al dado crema cuando quieras.
+- **Trifulca: los peleadores ya no se meten uno dentro del otro.**
+  Cada capi guarda su espacio: los cascos y los cuerpos ya no se funden, y los golpes, empujones y agarres siguen conectando.
+- **Pepazo: el juego va más fluido, sobre todo en El Puerto y La Plaza.**
+  Las sombras del mapa ya no se redibujan a cada rato, así que la tarjeta gráfica descansa y apuntar se siente más suave.
+- **Fosa: La Mina del Sol ahora luce como piedra tallada oscura.**
+  El altar del ídolo ya no es un sello solar dorado: es un rostro tallado en piedra negra. El letrero de la boca de la mina va a juego.
+- **Fosa: tu rango ya se te ve encima.**
+  Franjas, remiendos y galones en las mangas, puños de cobre, plata u oro, y farol ámbar. Por ahora solo los ves tú.
+- **Fosa: ya tienes tu Cuaderno del buzo.**
+  Lugares, bichos, tesoros, sucesos y notas sobre El Silbón se anotan la primera vez que te los topas y dan XP una sola vez. Su porcentaje sale en la sala y al terminar.
+- **Fosa y Pepazo: ya no te trancas en las esquinas.**
+  Pasas rozando marcos y contenedores sin frenar, y en Fosa las paredes chocan justo donde se ven.
+- **Pepazo: la pintura cae donde apuntas.**
+  Cada mancha queda a la altura real del tiro, no en una fila. Las bolas que no le dan a un tronco siguen de largo, y un tronco guarda solo las últimas manchas.
+- **Pepazo: un mapa más cerrado y sin espacios vacíos, con rivales ocultos hasta que disparan.**
+  Muestra el piso y todo lo que hay en la cancha. Un rival solo sale un momento cuando dispara; tu equipo se ve siempre.
+- **Capis a Pintazos: mapas más abiertos en Todos contra todos y túneles más anchos.**
+  Todos contra todos sale casi siempre en cerros y terrazas, sin cuevas ni islas, y los túneles ya no aprietan al capi.
+- **Capis a Pintazos: la máquina ya no se queda parada sin tiro.**
+  Si nadie pinta a nadie y no tiene tiro, su capi camina a buscarlo: salta zanjas, se devuelve del agua o abre paso. Menos partidas llegan al límite de turnos.
+- **Fosa: nuevo lugar, el Congo, y algo enorme vive en el agua.**
+  Vas en piragua por caños estrechos de agua turbia, entre paredes de lianas, neblina y callejones sin salida. Primero oyes al Mokele, luego ves una sombra altísima en la neblina, y de cerca es pura dentadura. No se mata: piérdelo, escóndete o hazlo cruzar el remolino. Elígelo en Lugar o espéralo en la rotación.
+
+- **Fosa: la Mina ya no se parece a la Biblioteca.**
+  Túneles estrechos con rieles y entibado, cámaras de mineral, galerías de máquinas, ramales ciegos y pozos de agua negra que no deja ver el fondo. Tu lámpara ahora es un cono estrecho: lo que viene se ve cuando ya está cerca, y más abajo casi no queda luz.
+
+- **Sin conexión ya puedes cambiar el mapa antes de jugar.**
+  Si la sala no conecta, eliges el mapa tú y la práctica arranca ahí. La sala ahora dice cómo es cada mapa. Reliquia y Trifulca tienen nombres más claros.
+
+- **Capis a Pintazos: ya hay Todos contra todos.**
+  Seis capis repartidos por el mapa grande, cada uno por su cuenta y con sus propios tiros: gana el último en pie. Con amigos, cada pana lleva su capi y la máquina juega los demás.
+- **Capis a Pintazos: un capi fuera deja su lápida donde cayó.**
+  Si se fue al río, la lápida queda en la orilla más cercana. Un pintazo también la mueve. Elige la tuya en Más ajustes; las otras formas salen muy pronto.
+- **Capis a Pintazos: caen cajas con más tiros.**
+  Baja una en paracaídas cada pocos turnos: tócala y tu equipo gana tiros. Basta con llegarle cerca, y un pintazo la rompe o la lanza lejos, y también te pinta a ti si vas por ella.
+- **Capis a Pintazos: ya puedes subirte a los bordes de la cueva y de la montaña.**
+  La entrada de la cueva deja caminar por debajo del borde y un salto desde el suelo te sube. Mantener la tecla guía tu salto, y las repisas del valle tienen una rampa para llegar a ellas.
+- **Pepazo: cada golpe que das se siente, y cada granada y clase se distingue.**
+  La marca de impacto ya no se apaga tras tu primer K.O., ahora trae el número de pepazos y también avisan las bolas que solo empapan. La Piñita es roja, La Pegajosa verde y La Chispita azul. Cada clase dice su ventaja: Balanceado corre más tiempo, Rápido recupera antes el aliento, Regenera se limpia al sacar a alguien. La Correa ahora sí compensa, y Uva es uva de verdad.
+- **Pepazo: la bandera deja de hacer cosas raras.**
+  Pisar la base ya basta para tomar la bandera o anotar, su columna de luz no te tapa la vista, y si llegas sin tu bandera te avisa en vez de quedarse callada. Los bots con la bandera ya no se quedan parados en su base.
+- **Fosa: menos murciélagos, y lo que espantas con el farol vuelve por ti.**
+  Hay muchos menos murciélagos, tu lámpara ya no se vuelve un disco blanco de cerca, el mensaje de manos llenas dice qué llevas y cómo soltarlo, y terminar la jornada o la expedición tarda la mitad.
+- **Pepazo: tus tiros van a donde miras, arriba, abajo o en diagonal.**
+  En primera persona el pepazo sale por la mira: pasa por encima de un pana si apuntas alto, pinta el suelo si apuntas abajo y la mancha queda a la altura real.
+- **Dominó y Caída: las fichas y las cartas ahora pesan.**
+  Se levantan y se inclinan hacia el puntero, crecen con su sombra al tomarlas, se mecen al moverse, caen de golpe con rebote y suenan al sacarlas y al pegarlas en la mesa.
+- **Fosa: la cueva está viva.**
+  Murciélagos y cuaimas comen, se reproducen y se mueren de hambre. Escóndete en silencio entre hongos que brillan o raíces tupidas. Si acabas con los murciélagos, las polillas apagan los hongos; sin cuaimas, los murciélagos llenan el techo.
+- **¿Quién quiere ser mi pana?: el animador ahora habla de verdad.**
+  Las frases se escriben letra por letra con pausas en comas y puntos, cada pana tiene su voz de blips, y quien habla se mueve y pone cara según lo que dice.
+- **Pepazo: la armería ya no te manda a pana.sh cuando ya estás en pana.sh.**
+  Si los camuflajes todavía no están activos en el sitio, dicen "Muy pronto".
+- **Carreritas: agarrar monedas ahora suena y brilla.**
+  Cada moneda estalla en un destello con estrellas doradas, y la cadena se anuncia sobre el contador al llegar a 3 y en cada fila completa.
+- **Con cuenta, tus mangos son los mismos en todos los juegos.**
+  Bochinche y Carreritas usan el saldo de tu cuenta; sin cuenta, todo sigue guardado en tu dispositivo.
+- **Fosa: los ladrillos y la roca ahora tienen relieve de verdad.**
+  De cerca y de lado se ven las juntas hondas y la piedra partida. En calidad Nítida y en computadora; en teléfonos y otras calidades, un relieve más sencillo.
+- **Carreritas: ahora la velocidad se siente.**
+  La cámara se abre al acelerar y se queda atrás antes de alcanzarte, el viento sube con la velocidad, y pasan líneas y rachas por los bordes. La cámara suave queda igual.
+- **Fosa: romper un derrumbe ahora se siente.**
+  Mientras mantienes E, las piedras se rajan con grietas que brillan, saltan esquirlas, chispas y polvo, y al final se parten en pedazos. Todos los panas lo ven igual.
+- **Fosa: el fuego ahora parece fuego.**
+  Lenguas que lamen, blancas por dentro y naranjas por fuera, chispas que suben y parpadean, sombras que bailan en la pared, un rugido suave y crujidos. Si la ruina tiembla o vuelve la luz, se aviva.
+- **Fosa: el jaguar de piedra ahora da miedo.**
+  Agazapado sobre su plinto, con colmillos, cola enrollada, manchas talladas y musgo; el jaguar de oro estrena la misma forma.
+- **Fosa: las puertas de piedra con la mano de tiza ahora se ven como lo que son: un escondite.**
+  Adentro hay una vela encendida y nada tapa la entrada. Si caminas hacia ella un poco de lado, te deslizas adentro.
+- **Subir de rango ahora se celebra.**
+  La barra de XP se arrastra hasta llenarse, un destello blanco y un pilar de luz, el título cae de golpe, el XP cuenta punto a punto y aparece lo que desbloqueaste.
+- **Trifulca: cada golpe se ve en la barra y en el aire.**
+  La barra se vacía de verde a rojo, el pedazo perdido destella antes de bajar, los números saltan del golpeado y los trompones estampan su número con chispas.
+
+- **Fosa: el campamento ahora es una caverna enorme.**
+  Un lago quieto, columnas de roca, cascadas a lo lejos, hongos que brillan y un rostro de piedra tallado bajo el reflector. Se baja por el montacargas y se vuelve subiendo hasta la misma caverna.
+- **Fosa: Sobretiempo, ¿se quedan un rato más?**
+  Suban más de la cuota y cobran mangos extra, también en bolívares y XP. Si el encargo tiene reloj, el tiempo que sobre paga, pero si se acaba no cobran nada.
+- **Fosa y Pepazo: ahora ves tus manos con lo que cargas.**
+  Guantes y mangas de tu color: en Fosa sostienen el machete, el farol y el botín, y en Pepazo la chancla, con el mismo balanceo y el mismo golpe.
+- **Galope: los caballos ahora corren como caballos.**
+  Caminan, trotan, van a medio galope y galopan según la velocidad, con cada pata a su
+  tiempo y los cascos fijos en el suelo. Cabeza, crin, cola y jinete siguen el ritmo.
+  También en el Coleo de Bululú.
+
+- **Fosa: el campamento ahora es una caverna al borde del abismo.**
+  Roca arriba, faroles que apenas alumbran, un rayo frío que cae al vacío, charcos que gotean y ruidos que suben de abajo. Se juega igual, y carga más liviano.
+- **Fosa: sigan la expedición otro día con Continuar.**
+  Se guarda sola en el campamento, en el navegador del anfitrión: jornada, lugares,
+  mangos y las herramientas de cada pana. Quien vuelve con su nombre cae en su puesto,
+  y el de quien falta queda guardado, también si alguien se va a mitad de partida.
+- **Fosa: bajen a la Expedición del día y cuiden su racha.**
+  Una cueva y unos pactos iguales para todos cada día, con XP extra una vez al día y tu mejor del día en los resultados. Completar una jornada o sacar botín suma a la racha, y cada 7 días ganas un comodín que salva un día perdido.
+- **Fosa: ahora hay récord, y se puede romper.**
+  Cuenta las jornadas que terminas de pie y las remontadas (caer, levantarte y
+  terminar de pie). La sala muestra quién lo tiene y la pantalla final avisa cuando
+  cae.
+- **Fosa: pacten reglas más duras antes de bajar y cobren más.**
+  Seis pactos que se abren con el rango, en Más ajustes de la sala. Cada uno suma Calor,
+  y cada punto de Calor da 10 % más de bolívares y de XP, aunque caigan todos.
+- **Fosa: ahora subes de rango con cada expedición.**
+  Cada bajada da XP, aunque caigan todos: jornadas, lo que llega al camión, encargos,
+  revividas y salir con vida. De Aprendiz a Leyenda, se guarda en tu dispositivo y se
+  ve al final de la expedición.
+- **Fosa ya no se repite: tres lugares nuevos, salas de cuerda y cosas que pasan solas.**
+  Túneles inundados, gruta de hongos y templo caído se suman a la biblioteca y la mina,
+  y cada expedición los recorre en otro orden. Hay cuerdas para bajar a plataformas,
+  cornisas, tablones y puentes que se amarran, y a veces una cámara dorada que se abre
+  con peso en dos losas. Apagones, tormentas de murciélagos, derrumbes, crecientes y
+  esporas llegan sin avisar. Cada jornada trae un encargo que paga mangos, y en la
+  tienda hay bengalas y cuerdas.
+- **Reliquia ahora se llama Fosa: bajen juntos, no se desarmen.**
+  Mismo juego y mismos enlaces, en una fosa oscura de la selva. Hongos azules y
+  morados brillan en paredes, suelos y abismos de todas las jornadas.
+- **Fosa: ahora bajan con casco de buzo de latón.**
+  Traje redondito del color de cada pana, ventanilla grande con la cara adentro,
+  botas marrones y tanquecito. Cada casco lleva su lámpara encendida arriba. Solo
+  cambia el look, no cómo se juega.
+- **Trifulca: ahora sí son guantes de boxeo.**
+  Puño acolchado y curvo, pulgar, muñequera con correa. Los nudillos llegan
+  primero en cada golpe y el guante ya no se tuerce con el brazo.
+- **Trifulca: el árbitro y el público ya no se meten en la pelea.**
+  Rodean el ring por fuera y se apartan hacia afuera. Los bots del público no
+  empujan, y volver al ring al salirte ya no te aturde.
+- **Tus panas ahora salen de rivales.**
+  Los bots más fuertes llevan el nombre de tus panas en 21 juegos, cuando
+  entras con tu cuenta de pana.sh. Sin panas, todo sigue igual.
+- **Reliquia: ahora bajas con traje de explorador y casco de vidrio.**
+  Cada pana lleva un traje ajustado del color de su puesto, con mochila, tanque,
+  botas y una lamparita. El vidrio brilla y se nota de lejos, y la cara se ve
+  por dentro. Solo cambia el look, no cómo se juega.
+- **Trifulca: los peleadores vuelven a verse como panas, y solo con el casco.**
+  Cabeza y brazos casi como antes, guantes más grandes para leer cada golpe. Ni
+  sombrero, ni lentes, ni nada asoma por el casco; al bajar del ring vuelve tu ropa.
+- **Reliquia: si oyes un siseo, vienen las culebras.**
+  Salen a montones de las grietas de otra sala. Muerden poco y te frenan un rato; el
+  machete las desparrama, el farol las espanta y en los huecos no caben.
+- **Reliquia: El Silbón no muere. Piérdelo, escóndete o llévalo al abismo.**
+  Ningún arma lo mata. Si te pierde de vista te busca y se va; caza por el oído, y
+  al correr hacia ti por encima del foso se cae y abre el sello. La sala del foso
+  sale en cada jornada, con el borde bien marcado.
+- **Reliquia: huecos para esconderte, según la dificultad.**
+  Busca la mano de tiza: el Silbón no cabe. En Tranquila nunca mira adentro, en
+  Normal a veces y solo la entrada, en Momia brava te saca a golpes. Antes de mirar
+  se oye la piedra y olfatea: sal a tiempo.
+- **Reliquia: ahora son murciélagos.**
+  Duermen colgados del techo, caen chillando si pasas o haces ruido, y ese chillido
+  atrae al Silbón. Se acabaron los pájaros del campamento.
+- **Reliquia: carrito abierto, y cargarlo tiene su maña.**
+  Se ve por dentro y todo va a su tamaño real, así que cabe lo que quepa. Apunta
+  adentro, lo pesado tarda un poco y rebota más, y una carga montada se cae si frenas
+  o chocas de golpe. Nadie camina más lento.
+- **Reliquia: el tambor ceremonial ya no tapa la sala.**
+  Ahora llega a la rodilla, en madera y cuero, sin tanto brillo.
+- **Trifulca: cada pelea en un mapa distinto, y los golpes se sienten.**
+  Arena Varios rota los mapas sin repetir (o fija uno); un toque siempre sale,
+  un golpe a tiempo encadena, fallar te deja expuesto, el golpeado destella, y
+  hay bate en la trifulca libre.
+- **Pepazo: Acabado, Camuflaje y Llavero juntos en Estilo.**
+  Cada arma tiene un solo botón Estilo con los tres; Atrás, Esc, Retroceso o
+  B suben un nivel a la vez, y las flechas recorren la armería.
+- **Pepazo: llevas dos armas y tu equipo es tu clase.**
+  La armería abajo tiene solo Equipo, Arma 1, Arma 2 y Granadas; cada arma
+  abre su propio menú con sus piezas y Atrás (Esc o B). El Arma 2 es una
+  pistola o una de pescozón: cambias con Q, 1 y 2, Y en el mando o el botón
+  del teléfono. Las clases: Balanceado, Rápido, Tanque, Regenera, Sigiloso y
+  Granadero. Tu kit guardado se pasa solo. Girar sin ratón ahora es ← y →.
+- **Los equipos se ven igual en todos los juegos, en la sala principal, y quien llega entra al equipo más chico.**
+  Dominó, Caída, Billar, Criollas, Chapita, Curiara, Capis y Pepazo usan los
+  mismos paneles: Unirme aquí, Cambiarme aquí y Organizar. En Chapita ya
+  puedes elegir puesto con un toque.
+- **Pepazo: elige «Equipos» o «Todos contra todos» arriba en la sala.**
+  Con equipos eliges el modo (Pintadas, Captura la bandera, Dominación) y
+  los dos equipos salen en la sala, ya no escondidos en Más ajustes.
+- **Pepazo: nuevo modo Hardcore, un pepazo y fuera, en equipos o todos contra todos.**
+  La sala solo pregunta Partida y Modo; cada modo trae su tiempo y su meta, y
+  lo demás está en Más ajustes. Ya no se elige el aguante.
+- **Pepazo: tus compañeros llevan una flechita de su color sobre la cabeza.**
+  Solo en partidas por equipos, también en Bandera y Dominación.
+- **Los equipos de cuatro se ven en dos filas de dos, y los ajustes de la sala son más compactos.**
+  Las opciones salen en filas de botones bajo su nombre en todos los juegos.
+- **El armero de Pepazo tiene un puesto fijo para cada pieza: Mira, Cañón, Tolva y Culata.**
+  Cada puesto ofrece solo lo que le cabe a esa arma: la francotiradora lleva
+  telescópica, la pistola punto rojo o láser, y la tolva viene chica o grande.
+  Cada opción muestra con iconos lo que gana o pierde. Tu kit guardado se
+  pasa solo al nuevo armero.
+- **El polígono de tiro de Pepazo ya dispara con ratón y con mando, y es práctica solo tuya.**
+  Una pantalla corta de carga al entrar; el primer clic ya dispara, el mando
+  mira, camina, dispara y sale con B o Start sin tocar la sala ni tu party.
+  Cambiar pana ya no aparece sobre la armería.
+- **Reliquia arranca en la biblioteca sepultada, y en la sala eliges el Lugar: Alternar, Biblioteca o Mina.**
+  Con Alternar (lo normal) la primera jornada es la biblioteca y la siguiente
+  la mina, y así. El anuncio de cada jornada dice adónde bajan.
+- **Reliquia corre más fluido bajo tierra y en línea.**
+  Abajo ya no dibuja la sombra del sol ni lo que la niebla tapa, y el
+  anfitrión manda solo lo que cambió: unas diez veces menos datos. Los otros
+  panas se ven caminar parejo aunque la conexión venga a saltos.
+- **Editar pana ya no te saca de la sala: el editor se abre encima y al cerrarlo sigues donde estabas.**
+  Desde la sala de un juego o el inicio, tu puesto y tu party se quedan. Al
+  guardar, los demás ven tu pana nuevo. Mi pana también abre bien cada vez,
+  no solo la primera.
+- **La armería de Pepazo muestra cada arma y cada accesorio en foto: menos texto, más fácil de elegir.**
+  Las tarjetas llevan la imagen real del arma, la pieza, el llavero o la
+  granada y solo su nombre. Al elegir un accesorio el arma se pone de lado y
+  la cámara se acerca a la pieza montada; el panel de estadísticas marca con
+  +/− lo que gana o pierde.
+- **Capis a Pintazos ya se juega con amigos: abre una sala con «Con amigos», comparte el link y jueguen hasta cuatro en dos equipos.**
+  Cada quien ve los tiros y los cráteres de los demás. Un equipo sin panas lo
+  juega la máquina, y si alguien se va, su compañero o la máquina sigue por
+  él. «Jugar solo» contra la máquina sigue igual.
+- **En la armería de Pepazo, Probar ahora abre un polígono de tiro de verdad: disparas en primera persona con tu kit a blancos de 10 a 100 m.**
+  Un pasillo techado con luces, distancias pintadas en el piso y en letreros,
+  siluetas de papel, una pizarra, blancos que suben y bajan, uno que corre
+  en un riel y uno grande al fondo. La pintura queda en los blancos y cada
+  impacto dice su distancia y sus pepazos; con las reglas de la ronda
+  (cadencia, dispersión, caída del daño, recarga, granada y pescozón). T
+  repone los blancos y Esc o Volver te regresan a la armería.
+- **En Bochinche, Elige tu pana ahora llena la pantalla con los trece panas en tres filas grandes.**
+  Sin números ni letras en las tarjetas y sin textos largos: el pana, su
+  poder y sus barras. Las flechas recorren la cuadrícula y Enter lo elige.
+- **Las tarjetas del inicio ahora se leen de un vistazo: cada juego trae una frase corta y un ícono con cuántos panas juegan.**
+  Las descripciones largas pasaron a dos o tres palabras ("Artillería de
+  pintura") y "tú vs la máquina" o "hasta 8 panas" ahora es un muñequito con
+  "1" o "1-8".
+- **La Estatua de Reliquia ahora se ve como una estatua de verdad: una doliente de mármol pálido que resalta en la oscuridad.**
+  Sobre un pedestal bajo, con un velo roto, cuencas vacías y una boca
+  entreabierta, manos de dedos largos y musgo en el ruedo. Cada vez que se
+  mueve cambia de pose a la vista: llorando, leyendo un libro, estirando
+  una mano hacia ti, con los brazos al frente o lanzándose encima.
+- **La biblioteca de Reliquia tiene dos monstruos propios: El Lector, un bibliotecario ciego que caza por el oído, y La Estatua, que solo se mueve cuando nadie la mira.**
+  El Lector va adonde oyó el último ruido: correr, saltar, registrar, abrir
+  cofres o pelear lo atraen, y caminar despacio o quedarse quieto no. Antes de
+  venir se para en seco y ladea la cabeza; un libro viejo lanzado lejos lo
+  despista, y el farol no le hace nada. La Estatua espera en una sala como
+  cualquier estatua; si nadie del equipo la tiene a la vista avanza a saltos
+  con un roce de piedra, y los golpes apenas la aturden. Con Sustos suaves sus
+  señales son más leves; con Sustos apagados no suenan, pero hacen lo mismo.
+- **En Pepazo el mapa de la esquina ahora muestra lo que tienes alrededor, y manteniendo Tab ves la cancha completa.**
+  El mapa es cuadrado, sigue a tu pana y cubre unos 30 m a cada lado; tus
+  compañeros, las zonas y las banderas que quedan fuera aparecen como
+  flechitas en el borde. Al mantener Tab (View en el control) la tabla trae
+  el mapa de toda la cancha, y los rivales solo salen si los tienes a la vista.
+- **Las momias de Reliquia ahora dan miedo: altas, flacas, con vendas sucias y dos ojitos fríos en una cara hueca.**
+  Se quedan casi quietas y de pronto se crispan, tuercen la cabeza y la
+  dejan ladeando despacio; cuando te persiguen avanzan a tirones, encorvadas,
+  con un brazo estirado hacia ti y la mirada fija. Antes de golpear alzan
+  los brazos a sacudidas y abren la mandíbula. Bajo el farol se congelan
+  y solo la cabeza te sigue. Antes de verlas se sienten: un susurro, una
+  cadena o una tabla con cada paso, su aliento frío y un zumbido grave que
+  crece. Con Sustos suaves todo es más leve y sin parpadeos; con Sustos
+  apagados no hay señales extra.
+- **Reliquia deja la pantalla limpia: mantén Tab (o View en el mando) para ver el mapa, la brújula, la jornada y al equipo.**
+  Durante la expedición solo quedan la vitalidad, el cansancio, lo que llevas
+  en las manos, el punto de mira y los avisos. Al soltar Tab se cierra; en
+  táctil, el botón Mapa lo abre y lo cierra. En la brújula, el camión, el
+  montacargas, la carga, el sello y el tesoro ya no se tapan entre ellos.
+- **Reliquia ahora suena a biblioteca abandonada: pasos en tablas y piedra, puertas que crujen y susurros a tu espalda.**
+  Tus pasos suenan a madera en la biblioteca y a piedra en la mina, al
+  caminar o correr. Los armarios crujen al abrirlos, los baúles y las gavetas
+  suenan a madera vieja, los estantes y las pilas de libros a páginas y golpes
+  sordos. Hay viento muy bajito, goteras de vez en cuando y la cadena de una
+  lámpara de araña que se mueve si pasas cerca. Los sustos suman susurros,
+  una puerta lejana y un libro que cae a lo lejos; con Sustos suaves llegan
+  menos y siempre de lejos, y con Sustos apagados no suenan.
+- **En la biblioteca de Reliquia las reliquias ya no están a la vista: hay que registrar gavetas, baúles, armarios y muebles tapados.**
+  Mantén E un momento para abrir un baúl, sacar las gavetas de un escritorio,
+  quitarle la sábana a un sillón, abrir un armario, escarbar entre libros
+  caídos, correr un estante o una escalera y ver el nicho de atrás, o encender
+  un candil viejo que alumbra su rincón (y uno junto a la estantería secreta
+  abre el pasadizo). Algunos guardan oro, otros un libro viejo que no vale
+  nada, otros solo polvo, y de vez en cuando sale algo de adentro. La
+  biblioteca ahora es fría, vieja y abandonada en vez de naranja: estanterías
+  de madera oscura con arcos, pilares de piedra, escaleras, una que se vino
+  abajo con los libros regados, telarañas finas en las esquinas, en los arcos
+  y colgando del techo, polvo en el aire, alfombras gastadas, lámparas de
+  araña con velitas y neblina baja solo en la sala de lectura y algún rincón.
+- **Las instrucciones de cada juego viven ahora en el menú de pausa, no en la pantalla.**
+  El menú tiene una página Instrucciones con el objetivo, cómo se juega, los
+  controles y consejos. Muestra las teclas del teclado, los botones de tu mando
+  (con sus nombres de Xbox o PlayStation) o los controles táctiles, según lo que
+  estés usando, y cambia sola si agarras otro. Los 24 juegos quitaron de la
+  pantalla las listas de teclas, las teclas pegadas a los botones y los avisos
+  de "pulsa X para"; quedan solo los avisos del momento, como "E abrir" o "Tu
+  turno". Durante la partida ya no aparece la barra de botones del mando ni la
+  tecla Esc junto a Menú.
+
+- **Los paneles del HUD ya no se montan unos sobre otros.**
+  En pantallas medianas, bajitas o en el teléfono vertical, Dominó, Bululú,
+  Bochinche, Capis, Cocina, Bolas Criollas, Embuste, Escondidas, ¿Quién quiere
+  ser mi pana?, Reliquia y Pepazo acomodan sus paneles para que nada tape a nada.
+
+- **Reliquia tiene un nivel nuevo, La biblioteca sepultada, y toda la mina da más miedo.**
+  La jornada 2 (y luego cada tres) baja a una biblioteca vieja bajo la mina:
+  estanterías altas con pasillos estrechos, una sala de lectura con su lámpara
+  muerta, el archivo prohibido, el taller de los copistas y una estantería que
+  se abre como pasadizo con la máscara de los ecos. Velas, telarañas, polvo en
+  la luz del farol y tablas que crujen. En cada jornada pasan cosas: luces que
+  se apagan, portazos, susurros detrás de ti, una silueta al fondo del pasillo
+  y, de vez en cuando, un susto de verdad. Sustos (Normales, Suaves o
+  Apagados) en el menú de pausa los suaviza o los quita.
+
+- **La Plaza de Pepazo es ahora una plaza de pueblo de verdad, igual para los dos equipos.**
+  Una glorieta en el centro, fuentes bajas, bancos, materos, árboles, kioscos
+  del mercado, carros y carretillas, muros y esquinas de casa, y un portal de
+  columnas en cada costado. Los muros bajos, bancos y fuentes dejan pasar los
+  tiros; lo alto los para. Tres plazas por ronda: Clásica, Mercado y Fiesta.
+- **Alrededor de La Plaza de Pepazo ahora hay un pueblo: fachadas coloniales, iglesia, mercado y bombillos sobre la cancha.**
+  Casas de colores con balcones, postigos y un portal de arcos cierran los
+  cuatro lados, y la iglesia con su campanario y atrio de piedra preside el
+  norte. En la calle hay faroles, bancos, materos, árboles, puestos con toldos,
+  un camión de frutas y motos; el piso tiene rosetón y franjas. La plaza se
+  dibuja con menos de la mitad de llamadas que antes.
+- **En Capis a Pintazos ya puedes subir a la cumbre de la Montaña de cuevas, y las islas, las terrazas y los barrancos se ven más naturales.**
+  Un flanco de la montaña sube en escalones desde una cornisa sobre la boca
+  del túnel (un brinco desde la llanura), así que cualquier capi llega
+  arriba caminando o brincando. Las islas tienen orillas redondeadas que bajan
+  a una playa, sin paredes rectas; las Terrazas del tepuy son de arenisca y
+  laterita cálidas en vez de franjas rojas y blancas; y la capa oscura de
+  tierra bajo la grama se mantiene gruesa en las laderas empinadas.
+
+- **En Captura la bandera de Pepazo quien lleva la bandera corre más lento, y la ayuda dice cuántas capturas ganan.**
+  Con la bandera caminas y corres un 15% más lento (los bots también), así que
+  los defensores pueden alcanzarte. El consejo de Cómo se juega ya no dice
+  "tres capturas": nombra el límite que eligió la sala.
+- **En Dominación de Pepazo las zonas se ven desde arriba aunque estén bajo techo.**
+  En Ver la cancha y la vista desde arriba del espectador, el anillo y la letra
+  de cada zona se dibujan sobre los techos: la zona B de El Puerto ya no se
+  esconde bajo el galpón.
+- **En Pepazo, el tiro a la cabeza con La Lejana cuenta desde cualquier cámara y siempre se anuncia.**
+  Desde Ver la cancha, un tiro que pasa por el centro del rival apuntado le da
+  en la cabeza y lo saca de una; "¡A la cabeza!" ahora gana a las rachas y la
+  venganza (que pasan a la línea de abajo), y también lo ven quien cayó y
+  quien está mirando al tirador.
+- **En Capis a Pintazos los bots mezclan sus armas y terminan las partidas.**
+  Ya no tiran La Piñita en cada turno: La Bazuca para un buen tiro, La Lejana
+  contra un capi expuesto de lejos, El Trueno contra dos capis juntos y La
+  Piñita detrás de una loma o bajo un techo. Caminan hacia el rival cuando
+  está lejos, abren paso cuando una loma los encierra y afinan la puntería con
+  los turnos, así casi ninguna partida llega al límite de 60 turnos; en fácil
+  siguen fallando más que en experto. La Piñita ahora va en las dos patas,
+  frente al pecho, y en la vista de todo el mapa cada capi lleva el arma que
+  tiene en la mano.
+
+- **Pepazo tiene modo Dominación.**
+  Tres zonas por mapa (A, B y C): párate en una para tomarla y cada zona tuya
+  suma un punto por segundo. Puntos y tiempo límite en el lobby, bots que
+  capturan y defienden, y anillos, marcadores y sonidos para cada zona.
+- **En Pepazo, cuando te pintan ves la ronda en vez de una pantalla quieta.**
+  La cámara voltea hacia quien te pintó y luego sigue a un pana vivo; cambias
+  de pana con Q / E (LB / RB en el control o los botones en pantalla) y con
+  Espacio (A) ves la cancha desde arriba. Al reaparecer vuelves a tu vista.
+
+- **Pepazo tiene modo Captura la bandera.**
+  Dos equipos, una bandera en cada base de todos los mapas: tómala, llévala a
+  la tuya y anota mientras la tuya esté en casa. Capturas y tiempo límite en
+  el lobby, bots que atacan, escoltan y defienden, y marcadores y sonidos de
+  cada bandera.
+
+- **En el todos contra todos de Pepazo nadie arranca al lado de otro pana.**
+  Al empezar la ronda cada pana (o bot) queda en su propio punto, a 20 m o más
+  de los demás en todas las canchas y de 2 a 8 panas: El Puerto suma tres puntos
+  de salida por mitad (las esquinas de cada base y uno adelantado). Al reaparecer
+  caes lejos del rival vivo más cercano.
+- **En El Puerto de Pepazo los barriles de cada base ya no tienen una caja invisible alrededor.**
+  Chocas con cada barril, no con una caja de 3 x 2,6 m, y las dos bases tienen
+  los barriles en espejo. `npm run collision-report -- --fix` propone y aplica
+  estos arreglos solo, y una prueba revisa que ninguna cancha tenga cajas así.
+- **En Capis a Pintazos ahora eliges entre cinco armas de Pepazo en cada turno.**
+  La Bazuca (cráter grande, mucho viento), La Piñita (rebota y explota a los
+  3 segundos, nunca se acaba), La Lejana (casi recta, sin viento, duele mucho
+  si le das al capi), La Licuadora (taladra un túnel largo que abre caminos o
+  tumba al rival) y El Trueno (cinco perdigones en abanico). Las cuatro
+  primeras tienen pocos tiros por equipo; se cambian con 1–5, Q E o Tab, o
+  tocando la barra de abajo, y la guía de tiro sigue el vuelo de cada una. La
+  máquina también escoge: guarda La Bazuca para un buen tiro, remata con La
+  Lejana y abre túneles cuando no tiene tiro.
+
+- **El corte del terreno de Capis a Pintazos ahora muestra capas de tierra de verdad.**
+  Bajo la grama hay tierra negra con raíces colgando, y debajo capas de
+  ceniza, arcilla, piedra pómez, ocre y una base oscura que ondulan, se
+  adelgazan y siguen la forma del cerro. Cada cráter las corta limpio y deja
+  el borde chamuscado, y cada tipo de mapa trae sus propios colores.
+
+- **Pepazo tiene un modo de depuración de colisiones para encontrar paredes invisibles.**
+  `?debugCollision=1` o F9 dibuja cada caja de colisión de la cancha (en rojo las
+  que no tienen nada visible que las llene) y Shift+F9 descarga el informe;
+  `npm run collision-report` revisa todas las canchas sin abrir el navegador.
+- **En Pepazo los disparos pasan por encima de los sacos, cajas y barriles bajos.**
+  Ya no hay paredes invisibles sobre la cobertura baja de El Puerto y la Cancha
+  de Noche: si ves a un rival por encima, le puedes dar, y los bots también.
+
+- **En Pepazo, La Lejana saca de una con un tiro a la cabeza y pega más fuerte de cerca.**
+  En primera persona, un tiro a la cabeza tumba a cualquiera a cualquier distancia.
+  Al cuerpo pinta 3 pepazos hasta 10 m y baja a 1 a partir de 50 m (antes, 2 siempre).
+- **Pepazo muestra los controles del aparato que usas, una sola vez.**
+  Con mando salen sus botones (RT, R2…), con teclado sus teclas y en teléfono
+  los gestos; cambia al vuelo si cambias de aparato y se va al primer toque.
+
+- **Todos los juegos y la lista de la portada usan el mismo estilo de esquinas rectas.**
+  Botones, fichas, menús de ajustes, salas, marcadores, resultados, avisos,
+  el editor de personaje y el Studio dejaron las esquinas redondeadas y las
+  sombras gruesas de abajo: ahora son cuadrados con la sombra sesgada del
+  banderín. Solo los avatares, los puntos de color y el joystick siguen redondos.
+
+- **Los mapas de Capis a Pintazos ahora son tierra de lado a lado, de cinco tipos.**
+  Cerros con mesetas, una montaña con un túnel y cuevas, islas unidas por
+  puentes de piedra, un valle con su laguna bajo un arco natural o un tepuy
+  en terrazas: el lobby dice cuál te tocó. Ya no son espejo: cada mapa se
+  mide para que los dos equipos arranquen parejos, y la máquina le apunta al
+  capi que puede pegar en vez de al más cercano.
+
+- **Capis a Pintazos estrena un mapa distinto en cada partida, y más grande.**
+  La orilla se genera de un número: colinas, un río en el medio, a veces El
+  Tepuyito con sus cuevas, islas, mesetas, arcos de piedra y cuevas, igual de
+  justa para los dos equipos. Elige mapa pequeño, mediano o grande, escribe
+  el número de un mapa para repetirlo (también `?seed=`) o pide la revancha en
+  el mismo mapa al terminar.
+
+- **El terreno de Capis a Pintazos ahora se ve hecho a mano.**
+  Bordes suaves sin escalones, tierra con vetas, piedritas y raíces, roca con
+  grietas, arena con su orilla mojada, una franja de grama con matas bajitas
+  en vez de la pared de púas, y un cielo de tarde que pasa de dorado a azul.
+
+- **Capis a Pintazos tiene una orilla nueva y los pintazos se sienten.**
+  El mapa ahora tiene playa, un arco de piedra, El Tepuyito en el medio con
+  cuevas a cada lado, un barranco sobre el río y un banco de arena, con
+  morichales, corocoras y el sol de la tarde llanera. Cada disparo salpica
+  gotas de pintura, terrones y chispas, la pintura chorrea por el cráter y el
+  río salpica cuando algo cae en él; el bombazo suena más lejos o más cerca.
+
+- **En Pepazo El Acolchado ahora parece un chaleco táctico de verdad.**
+  Lleva placas delante y detrás con ribete turquesa, correas, faja lateral con
+  hebillas y bolsillos de bolas con tapa mango; se mueve con tu pana al caminar.
+
+- **Pepazo abre más rápido: la primera carga baja de 161 a 133 módulos.**
+  Las canchas compartidas (Puerto, Hato y Ruinas) se descargan cuando el
+  anfitrión elige una, mientras la tarjeta de carga cubre la espera.
+
+- **En Capis a Pintazos la vista de todo el mapa (Z) va mucho más ligera.**
+  Los capis lejanos se dibujan como una sola pieza más sencilla que sigue sus
+  movimientos, con la bazuca y la pañoleta; de cerca siguen siendo tu pana con
+  todo detalle.
+
+- **En la armería de Pepazo la marcadora se ve sola, centrada y girando.**
+  Las marcadoras, accesorios, granadas y camuflajes se previsualizan sin tu
+  pana delante; tu pana solo aparece en Equipo, con el chaleco puesto, y en la
+  prueba de tiro.
+  En Equipo la marcadora se aparta y tu pana sale sola y centrada, para que
+  el chaleco se vea completo.
+
+- **En Pepazo tu marcadora lleva camuflaje: seis lisos para todos y diez estampados que se ganan pintando o con mangos.**
+  En la armería, Camuflaje muestra cada uno con su muestra y lo previsualiza en
+  la marcadora. Selva, Médanos, Bolívar, Caracas y Jaguar se ganan pintando
+  panas con una marcadora (por ejemplo 15 con La Parrandera) y luego van en
+  cualquier arma; Caribe, Tricolor, Llanero, Rumba y Pepazo se compran con
+  mangos en pana.sh. No hay selector de color libre, y la sala solo acepta los
+  camuflajes que pana.sh firma como tuyos. Uno que compras o desbloqueas en
+  plena sesión vale en la sala sin volver a entrar cuando pana.sh lo firma; si
+  todavía no puede, la armería te dice que entres de nuevo para estrenarlo.
+
+- **En Pepazo llegan Los del pescozón: El Bate, La Chancleta, El Rodillo, La Brocha, El Tobo y La Maraca, y la chancla se lanza.**
+  Se eligen en la armería como las marcadoras, con su alcance, pepazos por
+  golpe, golpes por segundo, movilidad y aguante, y tres accesorios propios
+  (cinta de agarre, goteo de pintura y correa). Cada golpe pinta a una sola
+  persona, la más cercana que tengas delante, sin gastar pepas. Con La
+  Chancleta, clic derecho, F, V, el botón Lanzar o el stick derecho la lanzan en
+  arco: sale de la mano, pinta a quien toque y vuelve sola a los 2,5 segundos.
+  Cada arma suena distinta al golpear.
+
+- **En Pepazo hay 18 marcadoras en ocho clases, cada una con su mira y tres espacios de accesorios.**
+  Llegan La Metra, La Licuadora, La China, El Tambor, La Corneta, La Fumigadora,
+  El Llanero, La Pulga, La Parrandera, El Tuqueque, El Zamuro y La Culebrona. En
+  la armería las eliges por clase con sus números reales (pepazos por segundo,
+  alcance, cargador) y cada pieza va en su sitio del modelo; la nueva Mira
+  (punto rojo, holográfica, láser, telescópica o de pines) acerca la vista,
+  endereza el tiro al apuntar y baja la sensibilidad. En plena ronda cambias con
+  1 a 9, Z y X (o [ y ]), la Y del control o las flechas junto a Mira en el teléfono, y el
+  marcador muestra la marcadora, su clase y sus accesorios. La China y La
+  Fumigadora pintan medio y un quinto de pepazo por tiro: se acumulan hasta
+  completar uno.
+
+- **En Pepazo la granada se lanza de verdad: mantén G para cargarla y mira arriba para lanzarla lejos.**
+  Qué estaba mal: salía de los pies, siempre a ras del suelo a 12 m/s sin
+  importar hacia dónde miraras, con un saltito falso dibujado encima de una
+  burbuja de 22 cm; la mecha (1,1 s) la paraba a pocos metros y la explosión
+  pintaba igual en todo el radio y nada un paso más allá. Ahora sale de la mano
+  en un arco 3D según tu mirada (unos 12 m sin carga y 28 m a plena carga hasta
+  el primer bote), rebota en el piso, las barricadas y la cerca, y unos puntos
+  con un anillo muestran dónde va a pintar. Es una granada de pintura de tu
+  color que gira, pita y parpadea antes de reventar; pinta dos pepazos en el
+  centro y uno en el borde. La Chispita rebota y rebota, La Pegajosa se pega
+  donde cae, la Prueba de la armería sigue funcionando y los bots solo la
+  lanzan cuando el tiro les cae encima a un rival.
+
+- **En Pepazo cada accesorio queda en el espacio donde lo pusiste.**
+  Tocas Accesorio 1 o 2 y eliges qué va ahí (o Ninguno); la armería avisa si
+  una pieza no cabe en tu marcadora o si intentas cambiar el kit en plena ronda,
+  cambiar de marcadora con los números queda guardado, y el cañón afinado hace más
+  rápidos los tiros de La Chispa, El Cohetón y La Bazuca.
+
+- **"Más ajustes" ahora se ve como el panel de la sala.**
+  Esquinas rectas, sombra dura, el título en placa amarilla, las mismas fichas
+  y botones que los ajustes de la sala, en todos los juegos; sigue igual de compacto.
+
+- **En Pepazo eliges cuántos bots juegan, y "Más ajustes" cabe de un vistazo.**
+  La nueva opción Bots (Auto, 0, 1, 2, 3, 5 o 7) vale online y en práctica; Auto sigue
+  igual que antes. El cuadro de ajustes de todos los juegos ahora es compacto,
+  y en Pepazo "Cómo se juega" se abre dentro de los ajustes sin cerrarlos.
+- **Nuevo juego: Capis a Pintazos, artillería de pintura por turnos contra la máquina.**
+  Tres capis por equipo en la orilla del llano: camina, apunta, carga la bazuca
+  de pintura y mide el viento; cada pintazo abre un cráter, la tierra pintada
+  resbala y un capi pintado al 100 % o que cae al río queda fuera.
+- **En Capis a Pintazos los capis son panas de verdad y cargan La Bazuca de Pepazo.**
+  Tu capi líder lleva tu pana con su ropa y gorra; cada capi tiene pañoleta de su equipo,
+  levanta la bazuca para apuntar, la carga con una gota de pintura en la punta,
+  retrocede con el disparo, vuela el cohete de Pepazo, se encoge al recibir un pintazo
+  y celebra al ganar.
+
 ## 0.8.0 - 2026-10-31
 
 - **En Ludo un 1 también da otra tirada.** Si sacas un 1 y mueves, vuelves a

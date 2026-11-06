@@ -1,7 +1,7 @@
-// The HUD around the street: scoreboard, house rules, who pitches to whom,
+// The HUD around the street: scoreboard, who pitches to whom,
 // the big shouts and the results card. Text only, never HTML from names.
 import { fillRoster } from '/engine/results.js';
-import { HOUSE_RULES, ABUELO, teamSeats, styleText, STRIKES, BALLS, OUTS } from './rules.js';
+import { ABUELO, teamSeats, styleText, STRIKES, BALLS, OUTS } from './rules.js';
 import { TEAM_COLORS } from './scene.js';
 import { loc, locn, locKey } from '/engine/i18n.js';
 
@@ -41,7 +41,6 @@ export function renderScoreboard(state) {
   $('inning').textContent = inningText(state);
   document.querySelectorAll('.diamond i').forEach(i => i.classList.toggle('on', state.bases?.[Number(i.dataset.base)] !== null && state.bases?.[Number(i.dataset.base)] !== undefined));
   pips($('balls'), state.balls, BALLS - 1); pips($('strikes'), state.strikes, STRIKES - 1); pips($('outs'), state.outs, OUTS - 1);
-  $('house-rules').replaceChildren(...(state.rules || []).map(id => { const li = el('li'); li.append(el('b', '', loc('Regla:')), ' ', loc(HOUSE_RULES[id])); return li; }));
 }
 
 export function matchupText(state, mySeat) {
@@ -53,14 +52,10 @@ export function matchupText(state, mySeat) {
   return state.derby ? loc('{line} · quedan {n} lanzamientos', { line, n: state.derby.left }) : line;
 }
 
-export function renderLobbyRoster(state, meId) {
-  const rows = [0, 1].flatMap(team => teamSeats(team).map((seat, i) => {
-    const p = state.players[seat], mine = p.id !== null && p.id === meId;
-    return { rank: i + 1, lead: dot(team), name: mine ? loc('{name} · tú', { name: p.name }) : p.name,
-      detail: [p.id === null ? loc('Bot · {style}', { style: loc(styleText(p)) }) : loc('Pana'), p.zurdo ? loc('zurdo') : null, i === 3 ? loc('cuarto bate') : null].filter(Boolean).join(' · '),
-      end: team ? loc('Casa') : loc('Visita'), me: mine };
-  }));
-  fillNames($('roster'), rows);
+// A lobby card's line (engine/team-lobby.js): a bot's style, zurdo, the cleanup hitter.
+export function lobbyDetail(p) {
+  const text = [p.id === null ? loc(styleText(p)) : null, p.zurdo ? loc('zurdo') : null, teamSeats(p.seat % 2).indexOf(p.seat) === 3 ? loc('cuarto bate') : null].filter(Boolean).join(' · ');
+  return text ? el('small', 'pk-roster-status', text) : null;
 }
 
 // The results: the score line, the titles and both teams.

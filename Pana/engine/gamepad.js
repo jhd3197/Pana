@@ -13,6 +13,12 @@
 //     playing: () => state.phase === 'play',       // false: the whole page is a menu
 //   } });
 //   pad: { native: true, help: [['A', 'Golpe'], …] } // the game reads the pad itself in play
+//   <section data-pad-play> inside an open dialog   // a play view over a menu (Pepazo's range): the
+//                                                  // page reads the pad itself, the right stick still
+//                                                  // drives padLook, B / Start click its [data-pad-back]
+//   <button data-pad-back> shown inside a dialog    // B / Start step back through it instead of closing
+//   No button bar is drawn during play: padHelp(pad) fills the pause menu's
+//   Instrucciones page (engine/controls-page.js) when a game declares no pad keys.
 //   padControls({ playing: () => false, menu: () => settings.open() })  // a page that is all menu;
 //                                                  // Start (☰) runs `menu`, B clicks [data-pad-back]
 //
@@ -57,8 +63,6 @@ function publishInput(force=false){
   root.dataset.panaInput=state.device;root.dataset.panaPadFamily=state.family;
   if(changed||force){
     for(const fn of inputListeners)fn(state);
-    // Explicit hint preferences also work without a connected controller.
-    queueMicrotask(()=>showPrompts(menuScope()));
   }
 }
 function activate(device){if(detected!==device){detected=device;publishInput();}}
@@ -217,6 +221,10 @@ function menuPress(scope) {
   if (!now.matches('input[type=range], input[type=text], input:not([type]), textarea, select')) {if(now.matches('a[href]'))stopVibration();else if(getSettings().padVibration)testVibration();now.click();}
 }
 function menuBack(scope) {
+  // A dialog with a page of its own open (Pepazo's armory sub-menus) shows a
+  // [data-pad-back] Atrás: B takes that step back instead of closing the dialog.
+  const step = scope.matches('dialog') && [...scope.querySelectorAll('[data-pad-back]')].find(n => shown(n) && !n.closest('[data-pad-play]'));
+  if (step) { step.click(); return; }
   if (scope.matches('dialog')) { sendKey('keydown', 'Escape', scope); if (scope.open && !scope.classList.contains('pana-menu')) scope.close?.(); return; }
   // Outside a dialog B is "back": the page's [data-pad-back] link (the lobby's
   // Juegos, the editor's Volver a los juegos).
@@ -258,13 +266,7 @@ export function padLook(fn) { lookers.add(fn); return () => lookers.delete(fn); 
 
 // ---------- the loop ----------
 
-let before = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false,promptNode=null;
-function showPrompts(scope){
-  if(!promptNode){promptNode=document.createElement('div');promptNode.className='pana-pad-prompts';promptNode.setAttribute('aria-label',loc('Controles del mando'));document.body.append(promptNode);}
-  const state=inputState();promptNode.hidden=!!scope||state.device!=='gamepad'||!getSettings().hints;
-  const signature=JSON.stringify([padHelp(),state.family]);if(promptNode.dataset.signature===signature)return;promptNode.dataset.signature=signature;
-  promptNode.replaceChildren(...padHelp().map(([key,label])=>{const row=document.createElement('span'),cap=document.createElement('kbd');cap.dataset.padKey='';cap.textContent=formatPadLabel(key);row.append(cap,document.createTextNode(label));return row;}));
-}
+let before = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false;
 function holdKeys(codes) {
   for (const code of keysDown) if (!codes.has(code)) sendKey('keyup', code);
   for (const code of codes) if (!keysDown.has(code)) sendKey('keydown', code);
@@ -315,7 +317,7 @@ function menuPages(scope, step) {
 function frame(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
   const raw=activePad(),pad = readPad(raw);
-  if (!pad) { release(); before = null; running = false;connected=false;padId='';activate(lastPointer);publishInput(true);if(promptNode)promptNode.hidden=true;return; }
+  if (!pad) { release(); before = null; running = false;connected=false;padId='';activate(lastPointer);publishInput(true);return; }
   if(!connected||padId!==(raw.id||'')){connected=true;padId=raw.id||'';publishInput(true);}
   if(suspended||document.hidden){release();before=null;requestAnimationFrame(frame);return;}
   const was = before?.held || {}, edge = name => pad.held[name] && !was[name];
@@ -325,7 +327,17 @@ function frame(now) {
   const steering=(raw.axes||[]).some(v=>Math.abs(v)>getSettings().padDeadzone+.01);
   if(held||steering)activate('gamepad');
   const scope = menuScope();
-  showPrompts(scope);
+
+  // A play view inside a dialog is not that dialog's menu: no focus moves, no
+  // presses behind it; the look still turns and B / Start leave only the view.
+  const surface=[...document.querySelectorAll('[data-pad-play]')].find(shown);
+  if(surface){
+    release(); clearMark(); lastDir='';
+    if(edge('b')||edge('start'))surface.querySelector('[data-pad-back]')?.click();
+    else{const {x,y}=pad.right;if((x||y)&&lookers.size)for(const fn of lookers)fn(x,y,dt);}
+    if(cursor)cursor.hidden=true;
+    before=pad;lastScope=null;requestAnimationFrame(frame);return;
+  }
 
   const testing=scope?.querySelector('[data-pad-test-active]');
   if(testing){

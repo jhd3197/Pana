@@ -3,6 +3,8 @@
 // intro card, the bets, the verdict after each fight and a feed of what the
 // ring is doing.
 import { fighterPortrait, fightStats, createFightFeedback } from './hud-details.js';
+import { createFightDamage } from './hud-damage.js';
+import { jolt } from '/engine/fx/feel.js';
 import { inputState, formatPadLabel } from '/engine/gamepad.js';
 import { fillRoster } from '/engine/results.js';
 import { lineFor, say } from './narrator.js';
@@ -47,9 +49,9 @@ const el = (tag, className = '', text = '') => Object.assign(document.createElem
 // Names and nicknames are shown as they are.
 const raw = (tag, className = '', text = '') => Object.assign(el(tag, className, text), { translate: false });
 
-export function createHud({ me, voice = () => true }) {
-  let state = null, callTimer = 0, feedItems = [], barsKey = '', betsKey = '';
-  const blocks = new Map(), feedback = createFightFeedback();
+export function createHud({ me, voice = () => true, at = () => null }) {
+  let state = null, callTimer = 0, feedItems = [], barsKey = '', betsKey = '', lastPhase = '';
+  const blocks = new Map(), feedback = createFightFeedback(), damage = createFightDamage({ at });
   let verdictKey = '';
 
   const name = (id) => state?.players.find(p => p.id === id)?.name ?? loc('Alguien');
@@ -92,6 +94,8 @@ export function createHud({ me, voice = () => true }) {
   function react(e) {
     coach(e);
     if (state) feedback.react(e, state);
+    damage.react(e);
+    if (['hit', 'trompon', 'shove', 'impacto', 'caida'].includes(e.type)) jolt(blocks.get(e.id)?.block, e.type === 'hit' ? .7 : 1.4);
     const line = lineFor(e, name, names);
     if (line) call(line.text, { vars: line.vars, big: line.big, ref: line.ref, speak: line.say });
     if (e.type === 'count') {
@@ -132,32 +136,33 @@ export function createHud({ me, voice = () => true }) {
 
   // One block per fighter, rebuilt when the lineup changes.
   function buildBars(bodies) {
-    blocks.clear();
+    blocks.clear(); damage.clearBars();
     for (const side of ['left', 'right']) {
       const list = bodies.filter(b => LEFT.includes(b.team) === (side === 'left'));
       $(`bars-${side}`).replaceChildren(...list.map(b => {
         const block = el('div', `fighter fighter--${b.corner}`), top = el('div', 'fighter-name');
         const title = raw('b'), nick = raw('span'), mareo = el('div', 'meter meter--mareo'), low = el('div', 'fighter-low');
         const aguante = el('div', 'meter meter--aguante'), caidas = el('span', 'caidas');
-        const lag = el('em'); mareo.append(lag, el('i')); aguante.append(el('i')); low.append(aguante);
+        aguante.append(el('i')); low.append(aguante);
+        const hp = damage.bar(mareo, side);
         const identity = el('div', 'fighter-identity'); identity.append(title, nick);
         top.append(fighterPortrait(player(b.id), state.players.findIndex(p => p.id === b.id)), identity, caidas);
         const labels = el('div', 'fighter-meters'), status = el('span'), energy = el('span');
         labels.append(status, energy); block.append(top, labels, mareo, low);
         caidas.append(...Array.from({ length: KO_CAIDAS }, () => el('i')));
-        blocks.set(b.id, { block, title, nick, mareo, aguante, caidas, status, energy, lag });
+        blocks.set(b.id, { block, title, nick, mareo, aguante, caidas, status, energy, hp });
         return block;
       }));
     }
   }
-  function bar(body) {
+  function bar(body, fresh) {
     const b = blocks.get(body.id), p = player(body.id);
     if (!b) return;
     b.title.textContent = p ? (p.id === me() ? loc('{name} · tú', { name: p.name }) : p.name) : '';
     b.nick.textContent = body.bench ? loc('en la esquina') : p?.nick ?? '';
     b.block.classList.toggle('is-bench', !!body.bench); b.block.classList.toggle('is-out', !!body.out);
-    b.mareo.style.setProperty('--fill', `${Math.min(100, body.mareo)}%`);
-    b.lag.style.width = `${Math.min(100, body.mareo)}%`;
+    // The bar is what's left before the dizzy spell: it empties as the mareo climbs.
+    b.hp[fresh ? 'snap' : 'set'](100 - body.mareo);
     b.aguante.classList.toggle('is-empty', body.aguante <= 0);
     b.mareo.classList.toggle('is-danger', body.mareo >= MAREO_CALMA || body.act === 'dizzy');
     b.aguante.style.setProperty('--fill', `${body.aguante}%`);
@@ -202,9 +207,11 @@ export function createHud({ me, voice = () => true }) {
     const touch = matchMedia('(pointer: coarse)').matches, words = { J: loc('Golpe'), 'J mantener': loc('Golpe mantener'), K: loc('Cubrir'), Espacio: loc('Esquivar'), L: loc('Agarrar'), D: loc('Derecha'), '→': loc('hacia él') };
     const keyNames = { Espacio: SPACE, 'J mantener': loc('J mantener') };
     const pad = inputState().device === 'gamepad';
-    $('tutorial-keys').replaceChildren(...lesson[2].map(k => {
+    // The step's own keys: a prompt for this lesson only, gone with the card.
+    $('lesson-caps').replaceChildren(...lesson[2].map(k => {
       const label = keyNames[k] ?? k;
       const cap = el('kbd', 'pk-kbd', pad ? k === 'D' ? loc('Stick izq.') : k === '→' ? loc('Derecha') : deviceText(label) : touch ? words[k] || label : label);
+      cap.dataset.prompt = '';
       if (pad) cap.dataset.padKey = '';
       return cap;
     }));
@@ -230,27 +237,13 @@ export function createHud({ me, voice = () => true }) {
     if (text && node.textContent !== text) { node.textContent = text; node.classList.remove('is-on'); void node.offsetWidth; node.classList.add('is-on'); }
   }
 
-  // The key bar lights each button while it is pressed.
-  function keys(c) {
-    const bar = $('keys'); if (bar.hidden) return;
-    const on = { golpe: c.g || c.gp !== lastKeys.gp, cubrir: c.b, esquivar: c.e !== lastKeys.e, agarrar: c.a !== lastKeys.a, dale: c.t !== lastKeys.t, patada: c.k !== lastKeys.k, barrida: c.s !== lastKeys.s, volteo: c.v !== lastKeys.v, mover: !!(c.sx || c.sy) };
-    for (const span of bar.children) {
-      const k = span.dataset.key;
-      if (on[k]) { span.classList.add('is-on'); clearTimeout(span._t); span._t = setTimeout(() => span.classList.remove('is-on'), c.g || c.b || k === 'mover' ? 90 : 220); }
-    }
-    lastKeys = { gp: c.gp, e: c.e, a: c.a, t: c.t, k: c.k, s: c.s, v: c.v };
-  }
-  let lastKeys = {};
-
-  function roleText(phase, mode, myBody, mine) {
-    if (phase === 'intro') return myBody ? (myBody.bench ? loc('Esperas en la esquina: tu pareja te da el relevo con L') : loc('¡Prepárate! Golpe J · Cubrirse K · Esquivar Espacio · Agarrar L')) : loc('Apuesta y dale agua a tu esquina: acércate y pulsa J');
+  function roleText(phase, myBody, mine) {
+    if (phase === 'intro') return myBody ? (myBody.bench ? loc('Esperas en la esquina: tu pareja te da el relevo con L') : loc('¡Prepárate!')) : loc('Apuesta y dale agua a tu esquina: acércate y pulsa J');
     if (phase === 'fight') {
-      if (!myBody) return loc('Eres el ring: J empuja pa\' dentro · L ¡cálmate! (mareo alto) · T ¡dale!');
+      if (!myBody) return loc('Eres el ring');
       if (myBody.out) return loc('Quedaste fuera: mira cómo termina');
       if (myBody.bench) return loc('En la esquina: recuperas el aire. Tu pareja te toca con L');
-      if (mode === 'libre') return loc('J golpe (mantén: trompón) · K cubrirse · Espacio esquivar · L junto a una silla o caja: agarrarla, L otra vez: lanzarla · I patada · U barrida · O volteo');
-      if (mode === 'parejas') return loc('J golpe (mantén: trompón) · K cubrirse · Espacio esquivar · L junto a tu pareja: relevo · I patada · U barrida · O volteo');
-      return loc('J golpe (mantén: trompón) · K cubrirse · Espacio esquivar · L agarrar · I patada · U barrida · O volteo');
+      return '';
     }
     return phase === 'after' && myBody && !mine?.mano ? loc('L: mano de caballero') : '';
   }
@@ -262,7 +255,9 @@ export function createHud({ me, voice = () => true }) {
     $('bars').hidden = !fighting || bodies.length < 2;
     const key = fighting ? bodies.map(b => `${b.id}${b.corner}`).join() : '';
     if (key !== barsKey) { barsKey = key; buildBars(bodies); }
-    bodies.forEach(bar);
+    const fresh = phase === 'intro' && lastPhase !== 'intro';
+    lastPhase = phase;
+    for (const body of bodies) bar(body, fresh);
     $('clock').classList.toggle('is-low', phase === 'fight' && !state.tutorial && state.time <= 10);
     $('clock').textContent = phase === 'fight' ? Math.max(0, Math.ceil(state.time)) : phase === 'intro' ? 'VS' : '';
     const ladder = state.ladder;
@@ -280,15 +275,10 @@ export function createHud({ me, voice = () => true }) {
     const betting = phase === 'intro' && mine && !inFight;
     $('bets').hidden = !betting;
     if (betting) bets(mine, state.fight?.odds || {});
-    $('role').textContent = state.tutorial ? '' : deviceText(roleText(phase, state.options.modo, fighting ? myBody : null, mine));
+    $('role').textContent = state.tutorial ? '' : deviceText(roleText(phase, fighting ? myBody : null, mine));
     tutorialCard(state.tutorial);
-    const lessonAction = state.tutorial && !state.tutorial.done ? { mover: 'mover', jab: 'golpe', trompon: 'golpe', cubrir: 'cubrir', esquivar: 'esquivar', contra: 'golpe', agarrar: 'agarrar', pararse: 'golpe' }[TUTORIAL[state.tutorial.step].id] : '';
-    for (const cap of $('keys').children) cap.classList.toggle('is-lesson', cap.dataset.key === lessonAction);
-    const helpLabels = { mover: loc('Moverte'), golpe: loc('Golpe'), cubrir: loc('Cubrirte'), esquivar: loc('Esquivar'), agarrar: loc('Agarrar') };
-    for (const cap of document.querySelectorAll('.pana-pad-prompts > span')) cap.classList.toggle('is-lesson', !!lessonAction && cap.textContent.includes(helpLabels[lessonAction]));
     prompt(myBody);
-    $('keys').hidden = !(phase === 'fight' && myBody && !myBody.bench && !myBody.out);
-    $('role').hidden = !$('keys').hidden && phase === 'fight';
+    $('role').hidden = !$('role').textContent;
     // The verdict after a fight.
     const verdict = phase === 'after' && state.result && !replaying;
     $('verdict').hidden = !verdict;
@@ -322,11 +312,12 @@ export function createHud({ me, voice = () => true }) {
 
   function tick(dt) {
     if (state) feedback.tick(dt, state);
+    damage.tick(dt);
     if (callTimer > 0 && (callTimer -= dt) <= 0) $('call').classList.remove('is-on');
     if (feedItems.length) {
       feedItems.forEach(f => { f.t -= dt; });
       if (feedItems[0].t <= 0) { feedItems = feedItems.filter(f => f.t > 0); drawFeed(); }
     }
   }
-  return { react, update, tick, call, keys };
+  return { react, update, tick, call, settle: () => { if (state) damage.settle(state); } };
 }

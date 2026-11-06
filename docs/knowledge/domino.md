@@ -56,6 +56,10 @@ Host changes preserve the chosen positions: the table lives on the server.
 The shared `engine/tests/table-seating.browser.js` proves two-client seating,
 results-to-lobby, host migration and mobile controls in all three table games.
 
+The lobby cards are `engine/team-lobby.js` (docs/SHARED-ENGINE.md, "Team lobby
+and auto-balance"); a newcomer takes a free seat on the smaller pair
+(`openSeat`), a tie keeps the first free seat as before.
+
 ## Rendering
 
 `table-model.js` owns the table, chair and tile factories; Studio adapters use
@@ -157,3 +161,11 @@ not reroll the delay. The 10,000 seeded-hand gate checks completion, conservatio
 and a 40–60% non-tied team win envelope: seeds 1–10000 yield 5151/4691 wins and
 158 ties with the current defaults. This is a regression gate for that fixture,
 not a claim of universal balance across all house rules.
+
+## Tile feel
+
+Tiles on the table move on `engine/fx/card-feel.js` springs instead of a lerp, so they
+overshoot a little; the feel keeps them from sinking through the table. The tray of HTML
+buttons is rebuilt on every render, so `engine/fx/hand-feel.js` keeps its state by tile id:
+call `handFeel.after()` after a rebuild. It uses the CSS longhands, leaving the game's own
+`transform` alone.

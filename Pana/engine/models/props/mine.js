@@ -40,6 +40,7 @@ function T(x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) {
   _q.setFromEuler(_e.set(rx, ry, rz));
   return new THREE.Matrix4().compose(V(x, y, z), _q.clone(), V(sx, sy, sz));
 }
+const T_ = T;
 const C = (P, L) => P.clone().multiply(L);
 
 // Add one unit primitive under `g`, positioned by an arbitrary matrix.
@@ -250,7 +251,36 @@ export function mineWheelbarrow({ seed = 31, load = true } = {}) {
   return done(g, 'mine-wheelbarrow');
 }
 
-export function mineCart({ seed = 41, load = 'gold' } = {}) {
+// `hollow`: an open hopper with real walls and a floor you can see into
+// (interior 1 × 1.5 m, floor at .6, rim at 1.02), brass-rimmed, low enough to
+// look into from eye height; what it holds sits inside at its true size.
+function hollowCart(seed, load) {
+  const g = new THREE.Group(), R = rng(seed), W = 1, L = 1.5, FLOOR = .6, RIM = 1.02, T = .05, H = RIM - FLOOR, MID = FLOOR + H / 2;
+  box(g, 'woodD', I, 0, .36, 0, W + .1, .12, L + .1);
+  box(g, 'iron', I, 0, (FLOOR + .42) / 2, 0, W + T * 2, FLOOR - .42, L + T * 2);
+  box(g, 'woodL', I, 0, FLOOR - .01, 0, W + T, .02, L + T);
+  for (const s of [-1, 1]) {
+    box(g, 'iron', I, s * (W + T) / 2, MID, 0, T, H, L + T * 2);
+    box(g, 'iron', I, 0, MID, s * (L + T) / 2, W, H, T);
+    box(g, 'goldD', I, s * (W + T) / 2, RIM + .02, 0, T + .05, .04, L + T * 2 + .05);
+    box(g, 'goldD', I, 0, RIM + .02, s * (L + T) / 2, W, .04, T + .05);
+    for (const z of [-.5, .5]) box(g, 'ironL', I, s * ((W + T) / 2 + .03), MID, z, .02, H, .07);
+  }
+  for (const z of [-.55, .55]) {
+    box(g, 'iron', I, 0, .24, z, 1.25, .08, .08);
+    for (const x of [-.6, .6]) cyl(g, 'iron', I, x, .24, z, .24, .12, 0, 0, Math.PI / 2);
+  }
+  const glints = [];
+  // The gold vagoneta: a real heap in there, gold over ore, under the rim.
+  if (load !== 'empty') for (let i = 0; i < 16; i++) {
+    const gold = load === 'gold' ? i % 2 === 0 : i % 5 === 0, p = V((R() - .5) * .78, FLOOR + .1 + R() * .26, (R() - .5) * 1.26);
+    add(g, gold ? 'gold' : 'rockL', 'dod', T_(p.x, p.y, p.z, R() * 3, R() * 3, R() * 3, .14 + R() * .1, .1 + R() * .08, .14 + R() * .1));
+    if (gold && i < 8) glints.push(p);
+  }
+  return done(g, 'mine-cart', { glints, bounds: [[-.75, 0, -.9], [.75, 1.15, .9]] });
+}
+export function mineCart({ seed = 41, load = 'gold', hollow = false } = {}) {
+  if (hollow) return hollowCart(seed, load);
   const g = new THREE.Group(), R = rng(seed);
   box(g, 'woodD', I, 0, 0.36, 0, 1.0, 0.12, 1.6);
   const hopper = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.62, 0.78, 4, 1).rotateY(Math.PI / 4).scale(1, 1, 1.3), mat(R() < 0.5 ? 'iron' : 'ironL'));
@@ -310,7 +340,7 @@ export function mineTrack({
   return out;
 }
 
-export function minePortal({ seed = 51, name = 'MINA 1', light = false, niche = true } = {}) {
+export function minePortal({ seed = 51, name = 'MINA 1', light = false, niche = true, board: boardLook = { background: '#8a5f38', color: '#f4e3b5' } } = {}) {
   // Tunnel mouth facing +Z: rock face, three timber sets and a lagged roof.
   // niche: false leaves the mouth open for a walkable tunnel behind it.
   const g = new THREE.Group(), R = rng(seed);
@@ -324,7 +354,7 @@ export function minePortal({ seed = 51, name = 'MINA 1', light = false, niche = 
     box(g, 'woodD', I, 0, 4.05, z, 4.6, 0.45, 0.5);
   }
   for (let k = 0; k < 6; k++) box(g, 'woodL', I, 0, 4.33, -k * 0.85 + 0.3, 4.2, 0.1, 0.75);
-  const board = sign(name, 2.6, 0.65, { background: '#8a5f38', color: '#f4e3b5' });
+  const board = sign(name, 2.6, 0.65, boardLook);
   board.position.set(0, 4.75, 0.28); g.add(board);
   for (const s of [-1, 1]) beam(g, 'iron', V(s * 1.1, 4.3, 0.27), V(s * 1.1, 5.1, 0.27), 0.03, 'cyl6');
   lanternAt(g, I, 2.3, 3.2, 0.35); box(g, 'wood', I, 2.1, 3.55, 0.15, 0.5, 0.08, 0.08);
@@ -506,4 +536,180 @@ export function mineGate({ span = 14, height = 11, name = 'MINA DE SAL' } = {}) 
   for (const x of [-span + 1.6, span - 1.6]) { const l = mineLantern({ light: false }); l.position.set(x, height - 2, .9); l.scale.setScalar(2.2); g.add(l); }
   g.name = 'mine-gate'; g.userData.previewBounds = [[-span - 3, 0, -1.5], [span + 3, height + 2, 2]];
   return g;
+}
+
+// ----- Fosa's mine: the timber, shafts and machinery a drift is made of -----
+
+export function driftSet({ width = 2.7, height = 3.3, spacing = 3, lagging = true, lantern = false, seed = 101 } = {}) {
+  // A timber set you walk through along Z; lagging boards close the roof and the
+  // sides back to the next set, so a drift reads low and narrow whatever is above it.
+  const g = new THREE.Group(), R = rng(seed), s = width / 2;
+  for (const x of [-s, s]) box(g, 'wood', I, x, height / 2, 0, 0.3, height, 0.3, 0, 0, -Math.sign(x) * 0.035);
+  box(g, 'woodD', I, 0, height + 0.12, 0, width + 0.5, 0.3, 0.38);
+  if (lagging) {
+    for (let i = 0; i < 5; i++) box(g, i % 2 ? 'woodD' : 'wood', I, -s + (i + 0.5) * width / 5, height + 0.33, spacing / 2 + (R() - 0.5) * 0.12, width / 5 * 0.86, 0.08, spacing + 0.1);
+    for (const x of [-s, s]) for (let i = 0; i < 3; i++) if (R() < 0.75) box(g, 'woodD', I, x + Math.sign(x) * 0.1, 0.55 + i * 0.95 + R() * 0.2, spacing / 2, 0.06, 0.3, spacing * (0.7 + R() * 0.3));
+  }
+  if (lantern) lanternAt(g, I, s - 0.28, height - 0.85, 0.24);
+  return done(g, 'drift-set', { bounds: [[-s - 0.5, 0, -0.4], [s + 0.5, height + 0.5, spacing + 0.2]] });
+}
+
+export function timberProp({ height = 3.9, seed = 103 } = {}) {
+  // A single post shoring up an ore chamber: a head block under the rock, wedges at the foot.
+  const g = new THREE.Group(), R = rng(seed);
+  cyl(g, 'wood', I, 0, height / 2, 0, 0.2, height, 0, 0, (R() - 0.5) * 0.04, 'cyl6');
+  box(g, 'woodD', I, 0, height + 0.08, 0, 1.3, 0.2, 0.5, 0, R() * 3);
+  for (const a of [0, 2.1, 4.2]) box(g, 'woodL', I, Math.cos(a) * 0.26, 0.09, Math.sin(a) * 0.26, 0.3, 0.14, 0.16, 0, -a);
+  return done(g, 'timber-prop');
+}
+
+export function oreSeam({ width = 3.4, height = 2.4, seed = 105, copper = false } = {}) {
+  // Ore showing through a rock face that faces +Z; the origin is on the wall, at the floor.
+  const g = new THREE.Group(), R = rng(seed), metal = copper ? 'copper' : 'gold';
+  for (let i = 0; i < 5; i++) rock(g, i % 2 ? 'rockD' : 'rock', I, (R() - 0.5) * width, 0.5 + R() * height, -0.12 - R() * 0.1, 0.42 + R() * 0.22, R);
+  for (let line = 0; line < 2; line++) {
+    const y0 = 0.7 + line * 0.75 + R() * 0.4, tilt = (R() - 0.5) * 0.5;
+    for (let i = 0; i < 9; i++) {
+      const u = (i / 8 - 0.5) * width, s = 0.05 + R() * 0.08;
+      add(g, i % 4 === 3 ? 'goldD' : metal, 'oct', T(u, y0 + u * tilt + Math.sin(i * 1.7) * 0.14, 0.08 + R() * 0.08, R() * 3, R() * 3, R() * 3, s, s * 0.8, s));
+    }
+  }
+  return done(g, 'ore-seam', { bounds: [[-width / 2 - 0.5, 0, -0.6], [width / 2 + 0.5, height + 0.8, 0.4]] });
+}
+
+export function shaftHeadgear({ span = 18, height = 3.85, drop = 5.2 } = {}) {
+  // Over a shaft, wall to wall along X: two collar beams and a sheave with its
+  // cable and kibble down the hole. Everything is overhead or against the walls.
+  const g = new THREE.Group(), s = span / 2;
+  for (const z of [-0.55, 0.55]) box(g, 'woodD', I, 0, height, z, span, 0.34, 0.34);
+  for (const x of [-s + 0.2, s - 0.2]) for (const z of [-0.55, 0.55]) box(g, 'wood', I, x, height / 2, z, 0.3, height, 0.3);
+  for (const x of [-0.75, 0.75]) box(g, 'wood', I, x, height - 0.04, 0, 0.26, 0.26, 1.5);
+  for (const z of [-0.2, 0.2]) box(g, 'iron', I, 0, height - 0.32, z, 0.12, 0.34, 0.08);
+  add(g, 'iron', 'tor', T(0, height - 0.6, 0, 0, 0, 0, 0.5, 0.5, 0.5));
+  for (const a of [0, 1.05, 2.1]) box(g, 'ironL', I, 0, height - 0.6, 0, 0.9, 0.05, 0.05, 0, 0, a);
+  cyl(g, 'rope', I, 0.5, height - 0.6 - (drop + height - 0.6) / 2, 0, 0.022, drop + height - 0.6, 0, 0, 0, 'cyl6');
+  cyl(g, 'iron', I, 0.5, -drop, 0, 0.42, 0.7);
+  cyl(g, 'ironL', I, 0.5, -drop + 0.34, 0, 0.45, 0.07);
+  return done(g, 'shaft-headgear', { bounds: [[-s, -drop - 0.4, -1], [s, height + 0.4, 1]] });
+}
+
+export function shaftCribbing({ width = 12, depth = 12, down = 5.2, seed = 107 } = {}) {
+  // Timber lining the four sides of a shaft, from just under the rim down `down`
+  // metres. Origin at the shaft's centre on the rim, so it all sits below y = 0.
+  const g = new THREE.Group(), R = rng(seed), a = width / 2 - 0.05, b = depth / 2 - 0.05;
+  for (let y = -0.55; y > -down; y -= 0.95) {
+    const k = R() < 0.5 ? 'wood' : 'woodD';
+    box(g, k, I, 0, y, -b, width - 0.1, 0.5, 0.07); box(g, k, I, 0, y, b, width - 0.1, 0.5, 0.07);
+    box(g, k, I, -a, y, 0, 0.07, 0.5, depth - 0.1); box(g, k, I, a, y, 0, 0.07, 0.5, depth - 0.1);
+  }
+  for (const x of [-a + 0.15, a - 0.15]) for (const z of [-b + 0.15, b - 0.15]) box(g, 'woodD', I, x, -down / 2, z, 0.28, down, 0.28);
+  return done(g, 'shaft-cribbing', { bounds: [[-a, -down, -b], [a, 0.2, b]] });
+}
+
+export function hoistEngine({ seed = 109 } = {}) {
+  // The steam hoist of a machinery gallery, about 3.4 × 1.8 m: boiler, drum and a
+  // flywheel that keeps turning. Keep it out of a static bake if it should move.
+  const g = new THREE.Group(), R = rng(seed);
+  box(g, 'rockD', I, 0, 0.12, 0, 3.4, 0.24, 1.8);
+  cyl(g, 'iron', I, -0.85, 1.05, 0, 0.62, 1.6, 0, 0, Math.PI / 2);
+  for (const x of [-1.4, -0.3]) cyl(g, 'copper', I, x, 1.05, 0, 0.65, 0.08, 0, 0, Math.PI / 2);
+  cyl(g, 'iron', I, -1.2, 2.25, 0, 0.13, 1.1);
+  box(g, 'woodD', I, 0.62, 0.5, 0, 0.3, 0.55, 1.5); box(g, 'woodD', I, 1.3, 0.5, 0, 0.3, 0.55, 1.5);
+  cyl(g, 'ironL', I, 0.96, 1.1, 0, 0.4, 1.05, Math.PI / 2);
+  for (let i = 0; i < 6; i++) cyl(g, 'rope', I, 0.96, 1.1, -0.42 + i * 0.17, 0.43, 0.07, Math.PI / 2);
+  crateAt(g, I, -1.1, 0.24, 1.3, 0.55, R);
+  const out = done(g, 'hoist-engine');
+  const wheel = new THREE.Group();
+  add(wheel, 'iron', 'tor', T(0, 0, 0, 0, 0, 0, 0.72, 0.72, 0.9));
+  for (const a of [0, 0.8, 1.6, 2.4]) box(wheel, 'ironL', I, 0, 0, 0, 1.36, 0.08, 0.06, 0, 0, a);
+  const spun = finish(wheel, 'hoist-wheel'); spun.position.set(0.96, 1.1, 0.72); out.add(spun);
+  out.userData.tick = t => { spun.rotation.z = t * 1.4; };
+  return out;
+}
+
+export function oreHopper({ seed = 111 } = {}) {
+  // A timber ore bin on legs with a chute: stands in about 1.1 m of radius.
+  const g = new THREE.Group(), R = rng(seed);
+  for (const x of [-0.8, 0.8]) for (const z of [-0.8, 0.8]) box(g, 'wood', I, x, 1.1, z, 0.22, 2.2, 0.22);
+  for (const y of [0.8, 2]) for (const s of [-0.8, 0.8]) { box(g, 'woodD', I, 0, y, s, 1.8, 0.14, 0.14); box(g, 'woodD', I, s, y, 0, 0.14, 0.14, 1.8); }
+  add(g, 'woodL', 'hop', T(0, 2.6, 0, 0, Math.PI / 4, 0, 0.62, 0.62, 0.62));
+  beam(g, 'woodD', V(0, 1.85, 0.4), V(0, 0.75, 1.25), 0.4);
+  for (let i = 0; i < 9; i++) rock(g, i % 3 ? 'rockD' : 'gold', I, (R() - 0.5) * 1, 3.1 + R() * 0.15, (R() - 0.5) * 1, 0.14 + R() * 0.1, R);
+  return done(g, 'ore-hopper');
+}
+
+export function oreGrit({ rects = [[-4, -4, 4, 4]], density = 0.55, seed = 113, keep = () => true } = {}) {
+  // Rock chips and a few flecks of gold over a floor: one instanced draw that never collides.
+  const R = rng(seed), chips = [];
+  for (const [a, b, c, d] of rects) for (let i = Math.round((c - a) * (d - b) * density); i > 0; i--) { const x = a + R() * (c - a), z = b + R() * (d - b); if (keep(x, z)) chips.push({ x, z, s: 0.025 + R() * R() * 0.09, h: R() * 6.28, gold: R() < 0.07, tone: 0.6 + R() * 0.5 }); }
+  const geometry = new THREE.DodecahedronGeometry(1, 0), material = new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true });
+  const mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, chips.length)), at = new THREE.Object3D(), tint = new THREE.Color(), gold = new THREE.Color(PAL.gold), rockTint = new THREE.Color(PAL.rockD);
+  chips.forEach((c, i) => { at.position.set(c.x, c.s * 0.35, c.z); at.rotation.set(0, c.h, 0); at.scale.set(c.s, c.s * 0.55, c.s * 1.2); at.updateMatrix(); mesh.setMatrixAt(i, at.matrix); mesh.setColorAt(i, c.gold ? gold : tint.copy(rockTint).multiplyScalar(c.tone)); });
+  mesh.count = chips.length; mesh.receiveShadow = true; mesh.name = 'ore-grit';
+  mesh.computeBoundingSphere();
+  mesh.userData.previewBounds = [[-4, 0, -4], [4, 0.5, 4]];
+  mesh.userData.dispose = () => { geometry.dispose(); material.dispose(); mesh.dispose(); };
+  return mesh;
+}
+
+export function mineDrips({ rects = [[-4, -4, 4, 4]], top = 4.4, count = 140, seed = 115 } = {}) {
+  // Water dripping and ore grit sifting from the roof: one point cloud in one
+  // draw, moved in the shader from absolute time.
+  const R = rng(seed), areas = rects.map(([a, b, c, d]) => (c - a) * (d - b)), total = areas.reduce((n, q) => n + q, 0) || 1;
+  const position = new Float32Array(count * 3), shape = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    let roll = R() * total, k = 0; while (k < rects.length - 1 && (roll -= areas[k]) > 0) k++;
+    const [a, b, c, d] = rects[k], grit = R() < 0.4;
+    position.set([a + R() * (c - a), top, b + R() * (d - b)], i * 3);
+    shape.set([R(), grit ? 0.1 + R() * 0.08 : 0.28 + R() * 0.2, grit ? 1 : 0], i * 3);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(position, 3)); geometry.setAttribute('aShape', new THREE.BufferAttribute(shape, 3));
+  const uniforms = { uTime: { value: 0 }, uFar: { value: 16 } };
+  const material = new THREE.ShaderMaterial({
+    uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: `attribute vec3 aShape; uniform float uTime, uFar; varying float vAlpha, vGrit;
+      void main() {
+        float p = fract(uTime * aShape.y + aShape.x), fall = aShape.z > .5 ? p : p * p;
+        vec3 at = position; at.y -= fall * position.y;
+        at.x += aShape.z * sin(uTime * 2.1 + aShape.x * 40.) * .12;
+        vec4 mv = modelViewMatrix * vec4(at, 1.); float d = -mv.z;
+        vGrit = aShape.z; vAlpha = smoothstep(0., .06, p) * (1. - smoothstep(.88, 1., p)) * (1. - smoothstep(uFar * .5, uFar, d));
+        gl_PointSize = clamp((aShape.z > .5 ? 22. : 30.) / max(d, .5), 1., 7.); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying float vAlpha, vGrit;
+      void main() {
+        vec2 q = gl_PointCoord - .5; q.x *= 1. + (1. - vGrit) * 1.6; float a = 1. - smoothstep(.2, .5, length(q));
+        gl_FragColor = vec4(mix(vec3(.62, .72, .78), vec3(.82, .58, .3), vGrit), a * vAlpha * (vGrit > .5 ? .5 : .7)); }`,
+  });
+  const points = new THREE.Points(geometry, material);
+  points.frustumCulled = false; points.name = 'mine-drips';
+  points.userData.tick = t => { uniforms.uTime.value = t; };
+  points.userData.previewBounds = [[-4, 0, -4], [4, top, 4]];
+  points.userData.dispose = () => { geometry.dispose(); material.dispose(); };
+  return points;
+}
+
+export function beamCrawlers({ beams = [{ x: 0, y: 3.5, z: 0, dx: 1, dz: 0, length: 3 }], perBeam = 2, seed = 117 } = {}) {
+  // Dark crawlers on timber. They creep along their beam until a light comes close
+  // (tick's viewer and reach), then scuttle off its end and only come back later.
+  const R = rng(seed), bugs = beams.flatMap(b => Array.from({ length: perBeam }, () => ({ b, u: R() - 0.5, dir: R() < 0.5 ? -1 : 1, pace: 0.05 + R() * 0.08, away: 0, s: 0.7 + R() * 0.7 })));
+  const geometry = new THREE.BoxGeometry(0.13, 0.025, 0.035), material = new THREE.MeshStandardMaterial({ color: 0x14100c, roughness: 0.55 });
+  const mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, bugs.length)), at = new THREE.Object3D();
+  mesh.frustumCulled = false; mesh.name = 'beam-crawlers'; mesh.userData.bugs = bugs;
+  mesh.userData.tick = (t, dt = 0.016, viewer = null, reach = 2.4) => {
+    bugs.forEach((q, i) => {
+      const { b } = q, x = b.x + b.dx * q.u * b.length, z = b.z + b.dz * q.u * b.length, near = viewer ? Math.hypot(viewer.x - x, viewer.z - z) : 99;
+      if (q.away > 0) q.away -= dt;
+      else if (near < reach) { q.dir = q.u > 0 ? 1 : -1; q.u += q.dir * dt * 1.6; if (Math.abs(q.u) > 0.5) { q.away = 7 + (i % 5); q.u = -q.dir * 0.45; } }
+      else { q.u += q.dir * q.pace * dt; if (Math.abs(q.u) > 0.46) q.dir = -Math.sign(q.u); }
+      at.position.set(x, b.y + Math.sin(t * 9 + i) * 0.004, z);
+      at.rotation.set(0, Math.atan2(-b.dz, b.dx) + (q.dir < 0 ? Math.PI : 0), 0);
+      at.scale.setScalar(q.away > 0 ? 0 : q.s); at.updateMatrix(); mesh.setMatrixAt(i, at.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  };
+  mesh.userData.tick(0);
+  mesh.userData.previewBounds = [[-2, 3, -1], [2, 4, 1]];
+  mesh.userData.dispose = () => { geometry.dispose(); material.dispose(); mesh.dispose(); };
+  return mesh;
 }

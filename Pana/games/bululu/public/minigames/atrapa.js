@@ -65,8 +65,7 @@ function yard(scene) {
 export default {
   id: 'atrapa',
   title: locKey('¡Atrapa los mangos!'),
-  howto: locKey('Muévete y atrapa los mangos con tu cesta. Los de oro valen 3. ¡Ojo con los cocos!'),
-  keys: [['A D / ← →', locKey('moverte')]],
+  goal: locKey('Atrapa más mangos que nadie. ¡Ojo con los cocos!'),
   touch: { action: null },
   icon: 'mango',
   time: 30,

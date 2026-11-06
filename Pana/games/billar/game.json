@@ -1,6 +1,7 @@
 {
   "name": "Billar",
-  "description": "Bola 8 o Bola 9, con hasta seis panas en dos equipos. Apunta, carga el tiro y rota el taco con tus compañeros.",
+  "description": "Bola 8 y Bola 9",
   "players": 6,
+  "teams": true,
   "color": "#20856c"
 }

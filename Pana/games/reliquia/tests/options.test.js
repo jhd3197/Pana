@@ -16,13 +16,13 @@ test('only valid options apply, and only outside a run', () => {
 });
 
 test('each jornada is one floor, deeper and richer; the vault every third', () => {
-  for (const depth of [1, 2, 3, 4]) {
-    const run = layoutFor(8, depth).run;
+  for (const depth of [1, 2, 3, 4]) for (const theme of ['mina', 'biblioteca']) {
+    const run = layoutFor(8, depth, theme).run;
     assert.equal(Math.max(...run.rooms.map(r => r.floor)), 1);
     assert.equal(run.rooms.some(r => r.kind === 'boveda'), depth % 3 === 0);
     assert.equal(run.seals.length, depth % 3 === 0 ? 0 : 1);
   }
-  assert.ok(layoutFor(8, 4).run.sleepers.length > layoutFor(8, 1).run.sleepers.length, 'more sleepers deeper');
+  assert.ok(layoutFor(8, 4, 'mina').run.sleepers.length > layoutFor(8, 1, 'mina').run.sleepers.length, 'more sleepers deeper');
 });
 
 test('difficulty scales enemy health and damage; greed scales la codicia', () => {
@@ -44,4 +44,18 @@ test('without revives a fallen pana stays out; the wipe share and crude barks fo
   const clean = setup({ wipeShare: 0 }); clean.players.forEach(p => { Object.assign(p, { x: 0, z: 4 }); clean.damage(p, 100); });
   for (let i = 0; i < 70; i++) clean.update(.05);
   assert.equal(clean.payout, 0); assert.doesNotMatch(clean.events.at(-1).text, /pajúo/);
+});
+
+test('Sustos: a per-player setting, normal by default, saved and validated', async () => {
+  const { SCARES, loadScares, saveScares, shakeFor } = await import('../public/options.js');
+  const memory = new Map(), storage = { getItem: k => memory.get(k) ?? null, setItem: (k, v) => memory.set(k, v) };
+  assert.equal(SCARES.default, 'normal');
+  assert.deepEqual(SCARES.choices.map(([v]) => v), ['normal', 'suaves', 'apagados']);
+  assert.equal(loadScares(storage), 'normal');
+  assert.equal(saveScares('suaves', storage), true); assert.equal(loadScares(storage), 'suaves');
+  assert.equal(saveScares('terror', storage), false); assert.equal(loadScares(storage), 'suaves');
+  memory.set('pana:reliquia:sustos', 'nonsense'); assert.equal(loadScares(storage), 'normal');
+  assert.equal(loadScares({ getItem() { throw new Error('off'); } }), 'normal');
+  assert.equal(shakeFor('normal'), 1); assert.ok(shakeFor('suaves') < 1 && shakeFor('suaves') > 0); assert.equal(shakeFor('apagados'), 0);
+  assert.equal(validOptions({ sustos: 'suaves' }), false, 'not a room option');
 });

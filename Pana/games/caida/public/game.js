@@ -2,10 +2,11 @@ import { createRoomOptions } from '/engine/room-options.js';
 import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createTableSeating } from '/engine/play/table-seating.js';
-import { createMapPicker } from '/engine/play/map-picker.js';
+import { canChangeMap, createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { lazySound } from '/engine/lazy-sound.js';
+import { bindHandFeel } from '/engine/fx/hand-feel.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { CaidaRoom } from './network.js';
@@ -21,6 +22,7 @@ const notify = createToast($('toast'), { ms: 3600 });
 const code = roomFromUrl() || newRoomCode();
 params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 let world = null, ready = false, stopped = false, selected = null, previousEvent = 0, barksPrimed = false, shownResult = '', resultTimer, announcementTimer;
+const handFeel = bindHandFeel(document.getElementById('hand'));
 const audio = lazySound();
 const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
@@ -28,24 +30,10 @@ const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onSta
 const optionsUI = createRoomOptions($('room-options'), { title: loc('Caída'), fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: { ...DEFAULT_OPTIONS, mapId: 'plaza' } }) });
 const seating = createTableSeating($('table-seating'), (from, to) => room.action('seat', { from, to }));
 $('organize-table').onclick = () => room.action('setup');
-const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true, landmarks: true });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true, landmarks: true, room });
 const dealerUI = createDealerUI(room, () => audio.unlock());
 const menu = createGameMenu({ pad: { buttons: true, keys: { rb: ['Enter', loc('Jugar la carta')], x: ['KeyC', loc('Cantar')], y: ['KeyH', loc('Pista')] } }, title: loc('Caída · Pana'), sound: audio,
   note: () => room.members.size > 1 ? loc('La mesa sigue jugando mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
-  controls: [['1 2 3', loc('Seleccionar una carta')], ['Enter', loc('Jugar la carta seleccionada')], ['C', loc('Cantar antes de jugar la primera carta')], ['H', loc('Pedir una pista')], ['M', loc('Activar o silenciar sonido')], ['Esc', loc('Abrir o cerrar el menú')]],
-  tips: [
-    loc('Gana quien llegue primero a 24 puntos. Son 40 cartas: as, 2, 3, 4, 5, 6, 7, sota (10), caballo (11) y rey (12), en cuatro palos. Los palos no cambian las capturas.'),
-    loc('¿Quién reparte primero? Al abrir la mesa todos sacuden el cacho a la vez y lo tapan: el dado más alto reparte el primer reparto. Si hay empate arriba, solo los empatados sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.'),
-    loc('Se dan tres cartas por persona y cuatro cartas distintas a la mesa. El siguiente al repartidor empieza. Cuando todos juegan sus tres cartas, se reparten tres más. El repartidor cambia después de agotar la baraja.'),
-    loc('Juega una carta del mismo número que una de la mesa para recoger ambas y todas las consecutivas que le sigan, sin saltos: después del 7 viene la sota. Si no hay coincidencia, tu carta se queda en la mesa.'),
-    loc('¡Caída! Solo si recoges la carta que el jugador anterior acaba de dejar: as a 7, un punto; sota, dos; caballo, tres; rey, cuatro. Recoger una carta vieja no es caída. En equipos no se puntúa una caída al compañero.'),
-    loc('Mesa limpia suma cuatro puntos si aún quedan cartas por repartir. En últimas no vale. En esta mesa, caída y mesa limpia suman juntas.'),
-    loc('En cada reparto, quien reparte puede cortar la baraja una vez, boca abajo, y elige empezar por 1 o por 4: 1–2–3–4 o 4–3–2–1. Cada acierto suma el número cantado. Sin aciertos: mal echada, un punto para el siguiente jugador. Los números repetidos se devuelven al fondo antes de continuar.'),
-    loc('Cantos clásicos de esta mesa: ronda (pareja), 1–4 según la carta; rondín (tres iguales), 5; patrulla, también llamada patria (tres consecutivas), 6; vigía (pareja y carta adyacente), 7; registro (as, caballo, rey), 8. Solo el canto de mayor valor, antes de jugar tu primera carta. Puedes jugar sin cantarlo.'),
-    loc('Aquí no se juega flor, matar cantos ni victoria automática por rondín. Puedes desactivar todos los cantos al abrir la mesa.'),
-    loc('La última persona que recoge se lleva las cartas sobrantes, sin puntos de mesa limpia. Al contar, suma cada carta por encima de 20 en uno contra uno o parejas, 13 con tres personas, 10 con cuatro individuales y 6 con seis individuales. Los equipos de tres usan la base de 20. Si varios llegan a 24 al contar, se resuelve desde quien es mano.'),
-    loc('En parejas o equipos de tres, los compañeros ocupan puestos alternos y comparten puntos y cartas recogidas. Los puestos vacíos los juegan bots. Un pana nuevo toma un puesto de bot; los demás observan hasta que haya espacio.'),
-  ],
   actions: [{ id: 'new-table', label: loc('Abrir otra mesa'), run: () => { location.href = '/g/caida/'; } }],
   invite: () => inviteUrl(code),
   canOpen: () => !$('result').open,
@@ -75,7 +63,7 @@ function render(state) {
   seating.update(state.players, { teams: MODES[state.options.mode].teams, enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.hostId });
   $('organize-table').disabled = !room.connected || !room.isHost;
   $('organize-table').textContent = MODES[state.options.mode].teams ? loc('Cambiar equipos · empezar de cero') : loc('Organizar mesa · empezar de cero');
-  mapPicker.update(state.mapId, ready && room.connected && room.isHost && state.phase === 'lobby');
+  mapPicker.update(state.mapId, ready && canChangeMap(room, state.phase));
   document.body.classList.toggle('in-lobby', state.phase === 'lobby'); $('welcome').hidden = state.phase !== 'lobby';
   $('start').disabled = !ready || !room.connected || !room.isHost;
   $('start').textContent = !ready ? loc('Preparando la mesa…') : !room.connected ? loc('Conectando…') : room.isHost ? loc('Abrir la mesa') : loc('El anfitrión abre la mesa');
@@ -122,8 +110,9 @@ function renderHand(state) {
   const player = state.players[room.seat], turn = ownTurn(), hand = player?.hand || [], ended = ['round-over', 'finished'].includes(state.phase);
   if (!turn || !hand.some(c => c.id === selected)) selected = null;
   const focus = document.activeElement?.dataset?.card; $('hand').replaceChildren();
-  hand.forEach((card, i) => { const button = cardButton(card, i); button.disabled = !turn; button.classList.toggle('selected', selected === card.id); button.setAttribute('aria-pressed', String(selected === card.id)); button.onclick = () => selectCard(card.id); $('hand').append(button); });
+  hand.forEach(card => { const button = cardButton(card); button.disabled = !turn; button.classList.toggle('selected', selected === card.id); button.setAttribute('aria-pressed', String(selected === card.id)); button.onclick = () => selectCard(card.id); $('hand').append(button); });
   if (focus) $('hand').querySelector(`[data-card="${focus}"]:not(:disabled)`)?.focus({ preventScroll: true });
+  handFeel.after();
   $('your-name').textContent = player ? locn(hand.length, '{name} · {n} cartas', '{name} · {n} cartas', { name: player.name }) : loc('Estás mirando');
   const captured = player?.captured.length || 0; $('capture-count').textContent = locn(captured, '{n} RECOGIDAS', '{n} RECOGIDAS');
   $('turn-status').textContent = !room.connected ? loc('Reconectando…') : ended ? loc('Reparto terminado') : state.phase === 'lobby' ? loc('La mesa te espera.') : state.phase === 'starter' ? loc('¿Quién reparte primero?') : state.phase === 'dealing' ? loc('{name} prepara el reparto', { name: state.players[state.dealer].name }) : turn ? selected ? loc('¡Tu turno! · juégala o cambia') : loc('¡Tu turno! · elige una carta') : loc('Juega {name}', { name: state.players[state.turn].name });
@@ -132,7 +121,7 @@ function renderHand(state) {
   $('chant').hidden = !chant; $('chant').disabled = !turn; $('chant').textContent = chant ? loc('Cantar {canto} +{points}', { canto: loc(chant.name).toLowerCase(), points: chant.points }) : '';
   $('canto-preview').hidden = !chant;
   $('canto-name').textContent = chant ? `${loc(chant.name)} · +${chant.points}` : '';
-  $('canto-help').textContent = chant ? `${cantoDescription(chant.name)}. ${turn ? loc('Canta antes de jugar.') : loc('Cántala cuando te toque.')}` : '';
+  $('canto-note').textContent = chant ? `${cantoDescription(chant.name)}. ${turn ? loc('Canta antes de jugar.') : loc('Cántala cuando te toque.')}` : '';
   const card = hand.find(c => c.id === selected), preview = previewPlay(state, card, room.seat);
   $('table-cards').hidden = state.phase === 'lobby'; $('table-cards').replaceChildren();
   for (const tableCard of [...state.table].sort((a, b) => a.rank - b.rank)) {
@@ -140,7 +129,7 @@ function renderHand(state) {
     chip.textContent = tableCard.rank; chip.setAttribute('aria-label', cardName(tableCard)); chip.title = cardName(tableCard); chip.onclick = () => notify(state.last?.id === tableCard.id ? loc('{card} · última carta jugada', { card: cardName(tableCard) }) : cardName(tableCard)); $('table-cards').append(chip);
   }
   positionTools();
-  $('instruction').textContent = room.seat < 0 ? loc('Mesa completa. Entras cuando se libere un puesto.') : ended ? loc('Las cuentas claras, la revancha lista.') : !turn ? loc('Mira las cartas y prepara tu jugada.') : !card ? loc('Elige una carta para ver tu jugada.') : preview.capture.length ? captureLine(preview) : loc('{card} se queda en la mesa.', { card: cardName(card) });
+  $('turn-note').textContent = room.seat < 0 ? loc('Mesa completa. Entras cuando se libere un puesto.') : ended ? loc('Las cuentas claras, la revancha lista.') : !turn ? loc('Mira las cartas y prepara tu jugada.') : !card ? loc('Elige una carta para ver tu jugada.') : preview.capture.length ? captureLine(preview) : loc('{card} se queda en la mesa.', { card: cardName(card) });
   world?.update(state, room.seat, selected);
 }
 // The capture preview: one sentence per combination, so each language orders it its own way.

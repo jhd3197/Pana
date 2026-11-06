@@ -2,7 +2,7 @@
 
 Audited 2026-10-30. Generated from the real Studio registry plus a reviewed source ledger.
 
-**622 Studio resources**, including **25 Fauna entries**, **50 vegetation entries**, **32 vehicles** and **43 maps**. **142 resources are preview-only.** The separate ledger identifies **30 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**634 Studio resources**, including **25 Fauna entries**, **50 vegetation entries**, **32 vehicles** and **43 maps**. **142 resources are preview-only.** The separate ledger identifies **30 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -230,7 +230,7 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 
 | Resource / family | Current location | Source | Finding |
 | --- | --- | --- | --- |
-| Reliquia mine and temple | Reliquia; Studio map | [scene.js](../../Pana/games/reliquia/public/scene.js#L54) | Camp with the truck plus floors dealt from a seeded room deck; enclosed ruin galleries from the shared ruinShell, library props only. Treasure, artifact and tool models are cataloged in reliquia-treasure.js. |
+| Fosa mine and temple | Fosa; Studio map | [scene.js](../../Pana/games/reliquia/public/scene.js#L54) | Camp with the truck plus floors dealt from a seeded room deck; enclosed ruin galleries from the shared ruinShell, library props only. Treasure, artifact and tool models are cataloged in reliquia-treasure.js. |
 | Mounted horse and riding tack | Galope, Bululú coleo; hub tile | [llanero-rider.js](../../Pana/engine/models/fauna/farm/llanero-rider.js#L9) | Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt. |
 | Horse course and distinct wetlands | Galope; Studio map | [scene.js](../../Pana/games/galope/public/scene.js#L22) | Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately. |
 | Galope living Llanos landscape | Galope; Studio map | [landscape.js](../../Pana/games/galope/public/landscape.js#L16) | Hato gathering places, bank-connected canoe landing, moriche groves, green/dry grass, shore-only reeds and continuous far plain. All 13 new models have individual Studio previews. |
@@ -475,10 +475,10 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Jaguar · jaguar | Preview only | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
 | Jaguar sentado · jaguar-sitting | Preview only | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
 | Jaguar negro · black-jaguar | Preview only | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
-| Jaguar de oro maldito · gold-jaguar | Reliquia | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
-| Guácharo · guacharo | Reliquia | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | guacharo |
-| Araña de la cueva · cave-spider | Reliquia | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | caveSpider |
-| Cuaima · cuaima | Reliquia | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | cuaima |
+| Jaguar de oro maldito · gold-jaguar | Fosa | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
+| Murciélago · cave-bat | Fosa | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | caveBat |
+| Araña de la cueva · cave-spider | Fosa | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | caveSpider |
+| Cuaima · cuaima | Fosa | [cave-creatures.js](../../Pana/engine/models/fauna/cave-creatures.js) | cuaima |
 
 ### Llanos (10)
 
@@ -506,7 +506,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Puerto Coco · arena-puerto | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/worlds/arenas.js) | createArenaEnvironment |
 | Hato del Sol · arena-hato | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/worlds/arenas.js) | createArenaEnvironment |
 | Ruinas del Mango · arena-ruinas | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/worlds/arenas.js) | createArenaEnvironment |
-| Reliquia · La mina del sol · reliquia | Reliquia | [scene.js](../../Pana/games/reliquia/public/scene.js) | createExpeditionWorld |
+| Fosa · La mina del sol · reliquia | Fosa | [scene.js](../../Pana/games/reliquia/public/scene.js) | createExpeditionWorld |
 | ¡Embuste! · El campamento y el templo · embuste | ¡Embuste! | [scene.js](../../Pana/games/embuste/public/scene.js) | createCampWorld |
 | Galope · La vuelta del estero · galope | Galope | [scene.js](../../Pana/games/galope/public/scene.js) | createCourse |
 | Curiara · Río abajo · curiara | Curiara | [scene.js](../../Pana/engine/river/scene.js) | createRiverWorld |
@@ -547,9 +547,9 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Montacargas · lift-cage | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | liftCage |
-| Pozo del montacargas · lift-shaft | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | liftShaft |
-| Montacargas de carga · cargo-lift | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | cargoLift |
+| Montacargas · lift-cage | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | liftCage |
+| Pozo del montacargas · lift-shaft | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | liftShaft |
+| Montacargas de carga · cargo-lift | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | cargoLift |
 | Minero · gold-miner | Preview only | [mine-miner.js](../../Pana/engine/models/props/mine-miner.js) | miner |
 | Vagoneta minera · mine-cart | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineCart |
 | Vía minera con caballetes · mine-track | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineTrack |
@@ -578,7 +578,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Racimo de cristales · crystal-cluster | Preview only | [crystals.js](../../Pana/engine/models/props/crystals.js) | crystalCluster |
 | Cristales del arcoíris · crystal-garden | Preview only | [crystals.js](../../Pana/engine/models/props/crystals.js) | crystalGarden |
 
-### Objetos (204)
+### Objetos (216)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -603,39 +603,39 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Mazorca · corn | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | corn |
 | Queso · cheese | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | cheese |
 | Fregadero · sink | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | sink |
-| Momia del templo · temple-mummy | Reliquia, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | mummy |
-| Guardián del sol · sun-guardian | Reliquia, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | mummy |
-| Reliquia del sol · sun-relic | Reliquia, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | sunRelic |
-| Rueda del templo · expedition-winch | Reliquia, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | expeditionWinch |
-| Farol de expedición · expedition-lantern | Reliquia, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | expeditionLantern |
-| Monedas de oro · coin-pile | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | coinPile |
-| Esmeralda · emerald | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | emerald |
-| Perla de Cubagua · cubagua-pearl | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | pearl |
-| Copa de oro · gold-cup | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | goldCup |
-| Máscara de oro · gold-mask | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | goldMask |
-| Ídolo tallado · carved-idol | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | carvedIdol |
-| Disco del sol · sun-disk | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | sunDisk |
-| Cofre de esmeraldas · emerald-chest | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | emeraldChest |
-| Tambor ceremonial · ceremonial-drum | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | ceremonialDrum |
-| Espejo maldito · cursed-mirror | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | cursedMirror |
-| Altar de cacao y oro · cacao-altar | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | cacaoAltar |
-| Máscara de los ecos · echo-mask | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | echoMask |
-| Alpargatas del mensajero · messenger-sandals | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | messengerSandals |
-| Corona del sol · sun-crown | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | sunCrown |
-| Ídolo que se ríe · laughing-idol | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | laughingIdol |
-| Botella de miche · miche-bottle | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | micheBottle |
-| Brújula torcida · crooked-compass | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | crookedCompass |
-| Moneda de la suerte · lucky-coin | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | luckyCoin |
-| Corazón de jaguar · jaguar-heart | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | jaguarHeart |
-| Machete · expedition-machete | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | machete |
-| Botiquín · botiquin | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | botiquin |
-| Cofre del templo · treasure-chest | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | treasureChest |
-| Losa trampa · trap-plate | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | trapPlate |
-| Boca de dardos · dart-head | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | dartHead |
-| Sello de la escalera · stair-seal | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | stairSeal |
-| Jaguar de oro · gold-jaguar-statue | Reliquia | [jaguar-stone.js](../../Pana/engine/models/props/jaguar-stone.js) | jaguarStatue |
-| Rapel de la bajada · rappel-rig | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | rappelRig |
-| Cuerda de subida · climb-rope | Reliquia | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | climbRope |
+| Momia del templo · temple-mummy | Fosa, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | mummy |
+| Guardián del sol · sun-guardian | Fosa, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | mummy |
+| Reliquia del sol · sun-relic | Fosa, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | sunRelic |
+| Rueda del templo · expedition-winch | Fosa, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | expeditionWinch |
+| Farol de expedición · expedition-lantern | Fosa, ¡Embuste! | [reliquia.js](../../Pana/engine/models/props/reliquia.js) | expeditionLantern |
+| Monedas de oro · coin-pile | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | coinPile |
+| Esmeralda · emerald | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | emerald |
+| Perla de Cubagua · cubagua-pearl | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | pearl |
+| Copa de oro · gold-cup | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | goldCup |
+| Máscara de oro · gold-mask | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | goldMask |
+| Ídolo tallado · carved-idol | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | carvedIdol |
+| Disco del sol · sun-disk | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | sunDisk |
+| Cofre de esmeraldas · emerald-chest | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | emeraldChest |
+| Tambor ceremonial · ceremonial-drum | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | ceremonialDrum |
+| Espejo maldito · cursed-mirror | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | cursedMirror |
+| Altar de cacao y oro · cacao-altar | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | cacaoAltar |
+| Máscara de los ecos · echo-mask | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | echoMask |
+| Alpargatas del mensajero · messenger-sandals | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | messengerSandals |
+| Corona del sol · sun-crown | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | sunCrown |
+| Ídolo que se ríe · laughing-idol | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | laughingIdol |
+| Botella de miche · miche-bottle | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | micheBottle |
+| Brújula torcida · crooked-compass | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | crookedCompass |
+| Moneda de la suerte · lucky-coin | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | luckyCoin |
+| Corazón de jaguar · jaguar-heart | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | jaguarHeart |
+| Machete · expedition-machete | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | machete |
+| Botiquín · botiquin | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | botiquin |
+| Cofre del templo · treasure-chest | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | treasureChest |
+| Losa trampa · trap-plate | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | trapPlate |
+| Boca de dardos · dart-head | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | dartHead |
+| Sello de la escalera · stair-seal | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | stairSeal |
+| Jaguar de oro · gold-jaguar-statue | Fosa | [jaguar-stone.js](../../Pana/engine/models/props/jaguar-stone.js) | jaguarStatue |
+| Rapel de la bajada · rappel-rig | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | rappelRig |
+| Cuerda de subida · climb-rope | Fosa | [reliquia-treasure.js](../../Pana/engine/models/props/reliquia-treasure.js) | climbRope |
 | Campana del campamento · camp-bell | ¡Embuste! | [embuste.js](../../Pana/engine/models/props/embuste.js) | campBell |
 | Radio de campaña · field-radio | ¡Embuste! | [embuste.js](../../Pana/engine/models/props/embuste.js) | radioSet |
 | Compuerta del río · river-dam | ¡Embuste! | [embuste.js](../../Pana/engine/models/props/embuste.js) | damGate |
@@ -657,6 +657,18 @@ The following list is generated, not manually copied. “In use” is the catalo
 | El Cohetón · paint-coheton | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
 | La Lejana · paint-lejana | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
 | La Bazuca · paint-bazuca | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Metra · paint-metra | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Licuadora · paint-licuadora | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La China · paint-china | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| El Tambor · paint-tambor | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Corneta · paint-corneta | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Fumigadora · paint-fumigadora | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| El Llanero · paint-llanero | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Pulga · paint-pulga | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Parrandera · paint-parrandera | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| El Tuqueque · paint-tuqueque | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| El Zamuro · paint-zamuro | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
+| La Culebrona · paint-culebrona | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintKit |
 | Cohete de La Bazuca · paint-cohete-bazuca | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintRocket |
 | El Acolchado · paint-acolchado | Pepazo | [paintball-kit.js](../../Pana/engine/models/props/paintball-kit.js) | createPaintVest |
 | Marcadora de pintura · paint-marker | ¡Pintura! | [paintball.js](../../Pana/engine/models/props/paintball.js) | createPaintMarker |
@@ -834,6 +846,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Pila de cajas de verdura · produce-crates | Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | produceCrates |
 | Carretilla de mercado · market-hand-truck | Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | marketHandTruck |
 | Silla plástica · plastic-chair | ¡Stop!, Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | plasticChair |
+| Bate de madera · wooden-bat | Chapita, Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | woodenBat |
 | Gradas de madera · wooden-stands | Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | woodenStands |
 | Puente sobre el lago · lake-bridge | Trifulca | [barrio.js](../../Pana/engine/models/props/barrio.js) | lakeBridge |
 
@@ -856,7 +869,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Galería en ruinas · ruin-gallery | Reliquia | [reliquia-ruins.js](../../Pana/engine/models/props/reliquia-ruins.js) | ruinGallery |
+| Galería en ruinas · ruin-gallery | Fosa | [reliquia-ruins.js](../../Pana/engine/models/props/reliquia-ruins.js) | ruinGallery |
 | Torre prasat · prasat | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | prasat |
 | Torre prasat derrumbada · prasat-broken | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | prasat |
 | Rostro de Bayón · bayon-face | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | bayonFace |
@@ -887,12 +900,12 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Entrada del templo de piedra · temple-entrance | Reliquia, ¡Embuste!, Escondidas, ¡Pintura!, Billar, Caída | [jungle.js](../../Pana/engine/models/props/jungle.js) | templeEntrance |
-| Puente colgante de cuerdas · rope-bridge | Reliquia, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | ropeBridge |
+| Entrada del templo de piedra · temple-entrance | Fosa, ¡Embuste!, Escondidas, ¡Pintura!, Billar, Caída | [jungle.js](../../Pana/engine/models/props/jungle.js) | templeEntrance |
+| Puente colgante de cuerdas · rope-bridge | Fosa, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | ropeBridge |
 | Cascada entre rocas · waterfall-rocks | Carreritas, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | waterfallRocks |
 | Arco de piedra con enredaderas · vine-arch | Carreritas, ¡Embuste!, Escondidas, ¡Pintura!, Billar, Caída | [jungle.js](../../Pana/engine/models/props/jungle.js) | vineArch |
 | Puente de bambú · bamboo-bridge | Preview only | [jungle.js](../../Pana/engine/models/props/jungle.js) | bambooBridge |
-| Tótem de piedra antiguo · stone-totem | Carreritas, Reliquia, ¡Embuste!, Escondidas, ¡Pintura!, Billar, Caída | [jungle.js](../../Pana/engine/models/props/jungle.js) | stoneTotem |
+| Tótem de piedra antiguo · stone-totem | Carreritas, Fosa, ¡Embuste!, Escondidas, ¡Pintura!, Billar, Caída | [jungle.js](../../Pana/engine/models/props/jungle.js) | stoneTotem |
 | Tronco hueco · hollow-log | Carreritas, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | hollowLog |
 | Laja del Escudo Guayanés · laja-rock | Curiara | [amazonas.js](../../Pana/engine/models/props/amazonas.js) | lajaRock |
 | Tronco del igapó · igapo-trunk | Curiara | [amazonas.js](../../Pana/engine/models/props/amazonas.js) | igapoTrunk |
@@ -921,7 +934,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Trinitaria · trinitaria | Preview only | [trinitaria.js](../../Pana/engine/models/vegetation/trinitaria.js) | trinitaria |
 | Palma moriche · moriche | Galope | [moriche.js](../../Pana/engine/models/vegetation/moriche.js) | moriche |
 | Paja de sabana · savanna-grass | Galope, Carreritas | [savanna-grass.js](../../Pana/engine/models/vegetation/savanna-grass.js) | savannaGrass |
-| Cocotero · palm | Bululú, Carreritas, Escondidas, Cocina, Reliquia, Billar, Póquer, ¡Pintura!, Caída, Bochinche | [palm.js](../../Pana/engine/models/vegetation/palm.js) | palm |
+| Cocotero · palm | Bululú, Carreritas, Escondidas, Cocina, Fosa, Billar, Póquer, ¡Pintura!, Caída, Bochinche | [palm.js](../../Pana/engine/models/vegetation/palm.js) | palm |
 | Árbol de mango · mangoTree | Bululú, Carreritas, Escondidas, Cocina, Galope, Billar, Póquer, ¡Pintura!, Caída | [mango-tree.js](../../Pana/engine/models/vegetation/mango-tree.js) | mangoTree |
 | Ceiba · ceiba | Bululú, Carreritas | [ceiba.js](../../Pana/engine/models/vegetation/ceiba.js) | ceiba |
 | Pino caribe · pine | Bululú | [pine.js](../../Pana/engine/models/vegetation/pine.js) | pine |
@@ -931,7 +944,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Apamate · apamate | Carreritas | [araguaney.js](../../Pana/engine/models/vegetation/araguaney.js) | araguaney |
 | Bucare en flor · bucare | Carreritas | [araguaney.js](../../Pana/engine/models/vegetation/araguaney.js) | araguaney |
 | Bambú · bamboo | Carreritas, Escondidas, ¡Pintura!, Billar, Caída | [bamboo.js](../../Pana/engine/models/vegetation/bamboo.js) | bamboo |
-| Helecho · fern | Carreritas, Reliquia, Escondidas, ¡Pintura!, Billar, Caída, Bochinche | [fern.js](../../Pana/engine/models/vegetation/fern.js) | fern |
+| Helecho · fern | Carreritas, Fosa, Escondidas, ¡Pintura!, Billar, Caída, Bochinche | [fern.js](../../Pana/engine/models/vegetation/fern.js) | fern |
 | Monstera · monstera | Carreritas | [monstera.js](../../Pana/engine/models/vegetation/monstera.js) | monstera |
 | Heliconia · heliconia | Carreritas, Bochinche | [heliconia.js](../../Pana/engine/models/vegetation/heliconia.js) | heliconia |
 | Cardón · cactus | Carreritas | [cactus.js](../../Pana/engine/models/vegetation/cactus.js) | cactus |

@@ -33,17 +33,6 @@ $('lobby').panaSala = { kitLabel: loc('Categorías'), openKit: () => categories.
   read: () => ({ connection: connection(), players: [], local: null, summary: summaryText(room.state) }) };
 const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', loc('¡Para! la rueda')] } }, title: '¡Stop! · Pana', sound, orientation: 'libre', // i18n-ignore: game name
   note: () => room.members.size > 1 ? loc('La ronda sigue mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
-  controls: [['Tab / Enter', loc('Pasar a la siguiente casilla')], [loc('Espacio'), loc('¡Para! cuando te toca la rueda')], [loc('Ratón / toque'), loc('¡STOP! y los votos')], ['M', loc('Activar o silenciar el sonido')]],
-  tips: [
-    loc('Sale una letra y escribes una palabra por categoría que empiece con ella. Nadie ve tu hoja hasta la revisión.'),
-    loc('El primero que llena todo grita ¡STOP! y los demás tienen 5 segundos. Si nadie termina, se acaba el tiempo.'),
-    loc('Lo que el juego conoce cuenta solo (verde). Lo que no empieza con la letra, no (rojo). Lo dudoso se vota: «¿Eso cuenta?».'),
-    loc('100 puntos si nadie más la puso, 50 si alguien la repitió. Una dudosa que la mesa acepta con dos tercios suma +50 de Creatividad.'),
-    loc('Lo que la mesa acepta se queda: en la próxima partida cuenta solo.'),
-    loc('Con «Más criollo» las groserías van a votación; sin eso, la libreta las tacha sola.'),
-    loc("En «Pa' reírse», «Confiesa» e «Inventa» no hay respuesta correcta: la mesa vota todo y gana el más ocurrido."),
-    loc('El anfitrión puede poner hasta tres categorías propias en «Categorías». Siempre se votan.'),
-  ],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));

@@ -11,7 +11,6 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 .topbar{position:fixed;z-index:10;top:0;right:0;padding:20px 24px;pointer-events:none}
 #game-nav{display:flex;gap:8px;pointer-events:auto}
 #game-nav .pk-btn{min-height:40px;padding:8px 14px;font-size:14px}
-#game-nav kbd{display:inline-flex;align-items:center;min-width:24px;height:22px;padding:0 6px;border:1px solid var(--pk-line-strong);border-bottom-width:3px;border-radius:6px;background:var(--pk-deep);color:var(--pk-yellow);font:900 11px var(--pk-sans)}
 .in-lobby #invite{display:none}
 
 /* lobby */
@@ -40,7 +39,7 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 #dealer-controls{margin:0;padding:0;border:0;min-width:0;display:grid;gap:10px}
 .cut-row{display:grid;grid-template-columns:140px 1fr;gap:18px;align-items:center;margin-top:6px}
 .deal-deck{position:relative;width:128px;height:108px;margin-left:4px}
-.deal-deck canvas{position:absolute;left:8px;top:10px;width:62px;height:93px;border-radius:7px;box-shadow:-2px 3px 0 var(--card-edge),-4px 6px 0 var(--pk-text),-6px 9px 0 var(--card-edge);transition:transform 220ms cubic-bezier(.23,1,.32,1)}
+.deal-deck canvas{position:absolute;left:8px;top:10px;width:62px;height:93px;border-radius:0;box-shadow:-2px 3px 0 var(--card-edge),-4px 6px 0 var(--pk-text),-6px 9px 0 var(--card-edge);transition:transform 220ms cubic-bezier(.23,1,.32,1)}
 .deal-deck.is-cut canvas:first-child{transform:translateX(12px) rotate(-6deg)}
 .deal-deck.is-cut #cut-top{transform:translate(30px,-4px) rotate(4deg)!important}
 .cut-controls{display:grid;gap:4px;font-size:12px;font-weight:800}
@@ -60,7 +59,7 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 #previous-round .pk-roster{margin-top:8px}
 #canto-preview{display:grid;gap:3px;border-top:1px solid var(--pk-line);padding-top:6px}
 #canto-name{color:var(--pk-teal);font-size:14px}
-#canto-help{font-size:12px}
+#canto-note{font-size:12px}
 
 /* score card, top-left */
 .scoreboard{position:fixed;z-index:4;top:20px;left:24px;display:flex;align-items:flex-end;gap:16px;max-width:calc(100vw - 300px);padding:12px 16px;border-width:2px;border-color:#ffffff14}
@@ -71,7 +70,7 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 .score-row .pk-num{display:block;font-size:32px;margin-top:2px}
 .score-row small{display:block;margin-top:2px;font:800 10px var(--pk-sans);color:var(--pk-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .score-row .progress{display:flex;gap:1px;margin-top:6px}
-.progress i{flex:1;height:5px;border-radius:2px;background:var(--pk-raised)}
+.progress i{flex:1;height:5px;border-radius:0;background:var(--pk-raised)}
 .progress i.filled{background:var(--pk-coral)}
 .score-row.active .progress i.filled{background:var(--pk-teal)}
 .progress i:nth-child(12){margin-right:3px}
@@ -89,8 +88,8 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 .deck-info{font-size:12px}
 .connection-line{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;font-weight:700}
 #table-cards{display:flex;flex-wrap:wrap;gap:4px}
-.table-rank{min-width:28px;min-height:32px;padding:2px 6px;border:0;border-radius:6px;background:var(--pk-text);color:var(--pk-night);font:400 15px/1 var(--pk-display);box-shadow:0 3px 0 var(--card-edge)}
-.table-rank.will-capture{background:var(--pk-yellow);box-shadow:0 3px 0 var(--pk-yellow-edge)}
+.table-rank{min-width:28px;min-height:32px;padding:2px 6px;border:0;border-radius:0;background:var(--pk-text);color:var(--pk-night);font:400 15px/1 var(--pk-display);box-shadow:3px 3px 0 var(--card-edge)}
+.table-rank.will-capture{background:var(--pk-yellow);box-shadow:3px 3px 0 var(--pk-yellow-edge)}
 .table-rank:hover{transform:translateY(-1px)}
 
 /* score shout */
@@ -100,19 +99,18 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 /* bottom rack: help left, banner + hand center, actions right */
 .rack{position:fixed;z-index:5;left:24px;right:24px;bottom:22px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:16px;pointer-events:none}
 .rack>*{pointer-events:auto}
-.rack-help{justify-self:start;display:grid;gap:5px;max-width:250px;padding:10px 14px;border-radius:var(--pk-r);font-size:12px;font-weight:700;color:var(--pk-muted)}
+.rack-info{justify-self:start;display:grid;gap:5px;max-width:250px;padding:10px 14px;border-radius:var(--pk-r);font-size:12px;font-weight:700;color:var(--pk-muted)}
 #your-name{color:var(--pk-text);font-size:13px}
-.rack-keys{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:11px}
-.rack-keys .pk-kbd{min-width:22px;height:22px;font-size:11px}
 .rack-center{display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:none}
 .rack-center>*{pointer-events:auto}
 #turn-status{padding:8px 16px;border-radius:var(--pk-r);background:var(--pk-hud);box-shadow:var(--pk-drop);font:800 14px var(--pk-sans);color:var(--pk-text);white-space:nowrap}
-#turn-status.active{padding:9px 20px 5px;background:var(--pk-yellow);color:var(--pk-yellow-ink);box-shadow:0 5px 0 var(--pk-yellow-edge);font:400 24px/1 var(--pk-display);letter-spacing:.5px}
+#turn-status.active{padding:9px 20px 5px;background:var(--pk-yellow);color:var(--pk-yellow-ink);box-shadow:5px 5px 0 var(--pk-yellow-edge);font:400 24px/1 var(--pk-display);letter-spacing:.5px}
 .rack-actions{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .rack-actions>.pk-btn{min-width:150px;justify-content:space-between}
-.rack-actions .pk-kbd{min-width:22px;height:22px;font-size:11px}
 #chant{font-size:14px;justify-content:center}
 .activity{width:220px;padding:10px 14px;border-radius:var(--pk-r)}
+/* The log grows upward from the buttons; on short screens it stops under the score panel (newest first). */
+@media(min-width:721px){.activity{max-height:calc(100vh - 430px);overflow:hidden}}
 .panel-heading{display:flex;justify-content:space-between;gap:10px;white-space:nowrap;font:900 10px var(--pk-sans);letter-spacing:1.2px;color:var(--pk-muted)}
 .activity ol{list-style:none;margin:6px 0 0;padding:0}
 .activity li{padding:6px 0;border-top:1px solid var(--pk-line);font-size:12px;font-weight:700;line-height:1.35;color:var(--pk-muted)}
@@ -121,17 +119,16 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 
 /* hand cards */
 .hand{display:flex;align-items:flex-end;justify-content:center;gap:14px;height:150px}
-.hand-card{position:relative;width:92px;height:138px;padding:0;border:0;border-radius:10px;background:transparent;box-shadow:0 5px 0 rgba(0,0,0,.35);transition:transform .18s,outline-color .18s;transform-origin:50% 120%;outline:3px solid transparent;outline-offset:3px}
-.hand-card canvas{display:block;width:100%;height:100%;border-radius:10px}
+.hand-card{position:relative;width:92px;height:138px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:5px 5px 0 rgba(0,0,0,.35);transition:transform .18s,outline-color .18s;transform-origin:50% 120%;outline:3px solid transparent;outline-offset:3px}
+.hand-card canvas{display:block;width:100%;height:100%;border-radius:0}
 .hand-card:nth-child(1){transform:rotate(-6deg)}.hand-card:nth-child(3){transform:rotate(6deg)}
 .hand-card:not(:disabled){outline-color:var(--pk-yellow)}
 .hand-card:disabled{filter:saturate(.6) brightness(.8)}
 .hand-card:hover:not(:disabled),.hand-card.selected{transform:translateY(-14px)}
 .hand-card.selected{outline-color:var(--pk-teal);outline-width:4px}
-.card-key{position:absolute;bottom:-8px;right:-6px;display:grid;place-items:center;width:24px;height:24px;border:1px solid var(--pk-line-strong);border-bottom-width:3px;border-radius:7px;background:var(--pk-deep);color:var(--pk-yellow);font:900 11px var(--pk-sans)}
 
 /* 3D labels: small dark chips */
-.world-label{position:absolute;z-index:2;transform:translate(-50%,-50%);min-width:72px;padding:5px 10px 4px;border:1px solid var(--pk-line);border-radius:var(--pk-r-sm);background:var(--pk-hud);color:var(--pk-text);text-align:center;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.3);pointer-events:none}
+.world-label{position:absolute;z-index:2;transform:translate(-50%,-50%);min-width:72px;padding:5px 10px 4px;border:1px solid var(--pk-line);border-radius:var(--pk-r-sm);background:var(--pk-hud);color:var(--pk-text);text-align:center;white-space:nowrap;box-shadow:3px 3px 0 rgba(0,0,0,.3);pointer-events:none}
 .world-label strong{display:block;font-size:12px;font-weight:900}
 .world-label span{display:block;font-size:10px;font-weight:700;color:var(--pk-muted)}
 .world-label.active{background:var(--pk-yellow);border-color:var(--pk-yellow);color:var(--pk-yellow-ink)}
@@ -144,7 +141,7 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 /* loading */
 #loading .pk-title{font-size:clamp(36px,6vw,64px)}
 .loading-cards{position:relative;width:150px;height:100px;margin-bottom:auto}
-.loading-cards i{position:absolute;left:45px;top:0;width:62px;height:92px;border:4px solid var(--pk-text);border-radius:8px;background:var(--pk-game);box-shadow:0 5px 0 rgba(0,0,0,.35)}
+.loading-cards i{position:absolute;left:45px;top:0;width:62px;height:92px;border:4px solid var(--pk-text);border-radius:0;background:var(--pk-game);box-shadow:5px 5px 0 rgba(0,0,0,.35)}
 .loading-cards i:first-child{transform:rotate(-18deg) translateX(-26px)}.loading-cards i:last-child{transform:rotate(18deg) translateX(26px)}
 
 /* result dialog */
@@ -156,7 +153,7 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 
 @media(max-height:800px) and (min-width:721px){.welcome{gap:12px;padding-top:24px;padding-bottom:24px}.welcome .pk-title{font-size:44px}.welcome .pk-stat{padding:8px 12px}.welcome .pk-stat b{font-size:22px}.welcome .pk-copy{font-size:15px}}
 @media(max-height:760px) and (min-width:721px){.hand{height:126px}.hand-card{width:78px;height:117px}.rack-center{gap:10px}}
-@media(max-width:1100px) and (min-width:721px){.rack-help{max-width:190px}.rack-actions>.pk-btn{min-width:120px}.activity{width:190px}.hud-right{width:210px}.hand{gap:10px}.hand-card{width:80px;height:120px}}
+@media(max-width:1100px) and (min-width:721px){.rack-info{max-width:190px}.rack-actions>.pk-btn{min-width:120px}.activity{width:190px}.hud-right{width:210px}.hand{gap:10px}.hand-card{width:80px;height:120px}}
 @media(max-width:720px){
   #invite{display:none}
   .topbar{padding:12px}
@@ -181,8 +178,8 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
   .table-info{padding:7px 10px;font-size:12px}
   .rack{left:8px;right:8px;bottom:12px;grid-template-columns:1fr auto;gap:8px}
   .rack-center{grid-column:1/-1;grid-row:1;gap:10px}
-  .rack-help{grid-row:2;max-width:none;align-self:stretch;padding:8px 10px;font-size:11px}
-  .rack-keys,.activity{display:none}
+  .rack-info{grid-row:2;max-width:none;align-self:stretch;padding:8px 10px;font-size:11px}
+  .activity{display:none}
   .rack-actions{grid-row:2;gap:6px}.rack-actions>.pk-btn{min-width:0;min-height:38px;padding:6px 12px;font-size:13px}
   #turn-status{font-size:13px}#turn-status.active{font-size:19px}
   .hand{height:122px;gap:12px}.hand-card{width:76px;height:114px}

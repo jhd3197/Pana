@@ -3,24 +3,24 @@ body { --pk-game: #29a987; --felt: #145448; --felt-light: #247563; --rail: #8250
 .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; gap: 20px; position: relative; z-index: 3; }
 .topbar .pk-logo { font-size: 32px; } #game-nav { display: flex; gap: 8px; } .table-label { font-size: 12px; font-weight: 900; letter-spacing: .16em; } .table-label small { display: block; letter-spacing: 0; color: var(--pk-muted); font-size: 11px; margin-top: 3px; }
 main { position: relative; min-height: calc(100dvh - 76px); }
-.lobby { position: absolute; top: 10px; left: 4vw; bottom: 24px; width: 340px; gap: 14px; padding: 22px; z-index: 2; overflow-y: auto; background: var(--pk-night); border: 1px solid #fff2; border-radius: 20px; }
+.lobby { position: absolute; top: 10px; left: 4vw; bottom: 24px; width: 340px; gap: 14px; padding: 22px; z-index: 2; overflow-y: auto; background: var(--pk-night); border: 1px solid #fff2; border-radius: 0; }
 .lobby .pk-title { font-size: 68px; margin: 0; } .lobby .pk-copy { margin: 0; } .pk-lobby-foot { display: grid; gap: 9px; margin-top: auto; }
 .lobby .pk-stats { grid-template-columns: repeat(3, 1fr); } .lobby .pk-stat { padding: 10px 7px; } .lobby .pk-stat b { font-size: 25px; } .lobby .pk-stat span { font-size: 11px; }
 .table-stage { position: relative; width: min(100%, 1100px); height: clamp(350px, calc(100dvh - 300px), 650px); margin: 0 auto; }
 .in-lobby .table-stage { margin-left: max(390px, 33vw); width: calc(100% - max(390px, 33vw)); height: calc(100dvh - 100px); }
 #world { display: block; width: 100%; height: 100%; }
 .seats { position: absolute; inset: 0; pointer-events: none; }
-.seat { position: absolute; transform: translate(-50%, -50%); text-align: center; width: 136px; padding: 6px 12px; border-radius: 10px; background: var(--pk-night); border: 1px solid #fff2; font-size: 12px; }
+.seat { position: absolute; transform: translate(-50%, -50%); text-align: center; width: 136px; padding: 6px 12px; border-radius: 0; background: var(--pk-night); border: 1px solid #fff2; font-size: 12px; }
 .seat.is-turn { border-color: var(--pk-yellow); box-shadow: 0 0 0 2px var(--pk-yellow); } .seat.is-folded { opacity: .55; } .seat b, .seat span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .seat span { color: var(--pk-muted); font-size: 11px; } .seat strong { color: var(--pk-game); }
 .board-area { position: absolute; top: 47%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
 #pot { display: block; font-family: var(--pk-display); font-size: 30px; margin: 5px 0 10px; color: var(--pk-yellow); }
 .cards { display: flex; gap: 7px; justify-content: center; }
-.card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 58px; height: 80px; border-radius: 7px; background: var(--ivory); color: var(--pk-night); box-shadow: 0 3px 0 #0005; flex-shrink: 0; }
+.card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 58px; height: 80px; border-radius: 0; background: var(--ivory); color: var(--pk-night); box-shadow: 3px 3px 0 #0005; flex-shrink: 0; }
 .card b { font-size: 25px; line-height: 1; } .card svg { width: 24px; height: 24px; margin-top: 5px; fill: currentColor; } .card.red { color: var(--red-suit); } .card.back { border: 3px solid var(--ivory); background: repeating-linear-gradient(45deg, var(--felt) 0 5px, var(--felt-light) 5px 7px); } .card.empty { background: #0002; border: 1px dashed #fff4; box-shadow: none; }
 .controls { display: flex; align-items: center; justify-content: center; gap: 28px; padding: 14px 22px 24px; max-width: 850px; margin: 0 auto; }
 .hand-area > span { display: block; margin-bottom: 8px; text-align: center; } .decision { min-width: 0; flex: 1; } #turn { margin: 0; font-weight: 900; color: var(--pk-yellow); } #message { margin: 4px 0 12px; font-size: 13px; min-height: 18px; color: var(--pk-muted); }
-.actions { display: flex; gap: 8px; } .actions button { flex: 1; white-space: nowrap; } .raise-control { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-top: 12px; flex-wrap: wrap; } #amount { background: var(--pk-purple); border: 1px solid #fff3; color: var(--pk-text); font: inherit; font-size: 16px; width: 90px; padding: 7px; border-radius: 6px; } #limits { color: var(--pk-muted); }
-.showdown { display: grid; gap: 10px; margin: 12px 0; } .showdown-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; } .showdown .card { width: 32px; height: 44px; border-radius: 4px; } .showdown .card b { font-size: 17px; } .showdown .card svg { width: 14px; height: 14px; margin-top: 0; } .pk-results-card { max-height: 90dvh; overflow-y: auto; } .pk-results-card .pk-title { font-size: 42px; }
+.actions { display: flex; gap: 8px; } .actions button { flex: 1; white-space: nowrap; } .raise-control { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-top: 12px; flex-wrap: wrap; } #amount { background: var(--pk-purple); border: 1px solid #fff3; color: var(--pk-text); font: inherit; font-size: 16px; width: 90px; padding: 7px; border-radius: 0; } #limits { color: var(--pk-muted); }
+.showdown { display: grid; gap: 10px; margin: 12px 0; } .showdown-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; } .showdown .card { width: 32px; height: 44px; border-radius: 0; } .showdown .card b { font-size: 17px; } .showdown .card svg { width: 14px; height: 14px; margin-top: 0; } .pk-results-card { max-height: 90dvh; overflow-y: auto; } .pk-results-card .pk-title { font-size: 42px; }
 #recovery { position: fixed; z-index: 70; top: 30%; left: 50%; transform: translateX(-50%); padding: 24px; width: min(380px, 90vw); }
 @media (max-width: 900px) { .lobby { width: 310px; left: 20px; } .in-lobby .table-stage { margin-left: 320px; width: calc(100% - 320px); } .seat { width: 110px; } .board .card { width: 44px; height: 62px; } }
 @media (max-width: 650px) { .topbar { height: 64px; padding: 0 14px; gap: 8px; } .topbar .pk-logo { font-size: 26px; } .table-label { display: none; } #game-nav .pk-btn { font-size: 12px; padding: 9px 12px; } main { min-height: calc(100dvh - 64px); } .lobby { position: relative; top: auto; left: auto; width: calc(100% - 28px); margin: 0 14px 20px; padding: 20px; gap: 12px; } .lobby .pk-title { font-size: 54px; } .in-lobby .table-stage { margin: 0; width: 100%; height: 230px; } .in-lobby main { display: flex; flex-direction: column-reverse; } .in-lobby .board-area { display: none; } .table-stage { height: 345px; } .seat { width: 94px; padding: 5px; font-size: 11px; } .seat span { font-size: 10px; } .board-area { top: 48%; } #pot { font-size: 23px; margin-bottom: 8px; } .board .card { width: 36px; height: 52px; } .board .cards { gap: 4px; } .board .card b { font-size: 20px; } .board .card svg { width: 17px; height: 17px; margin-top: 3px; } .controls { gap: 10px; padding: 8px 14px 20px; flex-wrap: wrap; } .hand-area { width: 100%; display: flex; align-items: center; justify-content: center; gap: 14px; } .hand-area .card { width: 45px; height: 61px; } .hand-area > span { margin: 0; } .decision { flex-basis: 100%; } .actions .pk-btn { padding: 12px 8px; font-size: 13px; } #turn, #message { text-align: center; } .raise-control { justify-content: center; } }
@@ -40,10 +40,10 @@ main { position: relative; min-height: calc(100dvh - 76px); }
 body { overflow: hidden; }
 main { position: static; min-height: 0; }
 .topbar { position: fixed; inset: 16px 24px auto; height: auto; padding: 0; z-index: 5; pointer-events: none; }
-.topbar > * { pointer-events: auto; } .table-label { background: var(--pk-night); padding: 8px 12px; border-radius: 8px; }
+.topbar > * { pointer-events: auto; } .table-label { background: var(--pk-night); padding: 8px 12px; border-radius: 0; }
 .table-stage, .in-lobby .table-stage, body:not(.in-lobby) .table-stage { position: fixed; inset: 0; width: 100%; height: 100dvh; margin: 0; }
 .lobby { position: fixed; top: 84px; bottom: 24px; left: 24px; width: 335px; margin: 0; padding: 24px; gap: 12px; }
-.board-area { top: 82px; left: 24px; transform: none; background: var(--pk-night); border-radius: 10px; padding: 9px 20px; }
+.board-area { top: 82px; left: 24px; transform: none; background: var(--pk-night); border-radius: 0; padding: 9px 20px; }
 #pot { font-size: 23px; margin: 2px 0 0; } #street { font-size: 10px; }
 /* Readable HUD copy of the community meshes, using only the public board. */
 #board { position: static; width: auto; height: auto; margin: 10px 0 2px; gap: 8px; }
@@ -51,7 +51,7 @@ main { position: static; min-height: 0; }
 #board .card b { font-size: 28px; }
 #board .card svg { width: 24px; height: 24px; }
 .in-lobby .board-area { display: none; }
-.controls { position: fixed; z-index: 3; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(780px, calc(100% - 48px)); padding: 16px 22px; margin: 0; border-radius: 16px; background: var(--pk-night); gap: 24px; }
+.controls { position: fixed; z-index: 3; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(780px, calc(100% - 48px)); padding: 16px 22px; margin: 0; border-radius: 0; background: var(--pk-night); gap: 24px; }
 .seat { width: 124px; font-size: 11px; padding: 5px 8px; background: var(--pk-night); }
 .seat strong { color: var(--pk-yellow); } .seat.is-turn { box-shadow: 0 0 0 1px var(--pk-yellow); }
 .hand-area .card { width: 49px; height: 69px; } .hand-area .card b { font-size: 23px; }

@@ -89,8 +89,8 @@ try {
     padControls({ playing: () => true, keys: { rt: ['Space', 'Probar acción'] } });
     setSettings({ inputHints: 'gamepad' });
   });
-  await page.locator('.pana-pad-prompts').waitFor();
-  assert.match(await page.locator('.pana-pad-prompts').innerText(), /Probar acción/, 'manual prompts work without a connected pad');
+  await page.waitForFunction(() => document.documentElement.dataset.panaInput === 'gamepad');
+  assert.equal(await page.locator('.pana-pad-prompts').count(), 0, 'a chosen controller never draws a button bar over play');
   assert.deepEqual(errors, []); await context.close();
   // A physical touch input changes hints too; a saved explicit choice wins.
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

@@ -1,16 +1,20 @@
 // Scenery shadows drawn once, not every frame. The sun's shadow box follows
 // the player, so three.js redraws every tree, house and rock into the shadow
-// map each frame: up to 3 M triangles on Chuao, nearly half the frame's.
-// Here the box snaps to an 8 m grid; the track's still casters render into a
-// cached depth map only when the box moves a cell or one of them changes,
-// and each frame copies that depth into the real shadow map and draws only
-// the moving casters (cars, items, animals) over it. The shadows look the
-// same; the box just steps instead of sliding.
+// map each frame: up to 3 M triangles on Carreritas' Chuao, nearly half the
+// frame's. Here the box snaps to an 8 m grid; the map's still casters render
+// into a cached depth map only when the box moves a cell or one of them
+// changes, and each frame copies that depth into the real shadow map and draws
+// only the moving casters (cars, panas, items, animals) over it. The shadows
+// look the same; the box just steps instead of sliding.
+//
+// mapGroup() returns the current map's group, a direct child of the scene. A
+// new group is noticed by itself; a game that adds to or swaps part of the same
+// group calls refresh().
 import * as THREE from 'three';
 
 const CELL = 8;
 
-export function cacheShadows(renderer, trackGroup) {
+export function cacheShadows(renderer, mapGroup) {
   const shadowMap = renderer.shadowMap, render = shadowMap.render, clear = renderer.clear;
   const gl = renderer.getContext(), properties = renderer.properties;
   // Casters that moved once are drawn every frame from then on; one whose
@@ -70,7 +74,7 @@ export function cacheShadows(renderer, trackGroup) {
   const castFor = (list, on) => { for (const o of list) o.castShadow = on; };
 
   shadowMap.render = function (lights, scene, camera) {
-    const group = trackGroup(), sun = lights[0], shadow = sun?.shadow;
+    const group = mapGroup(), sun = lights[0], shadow = sun?.shadow;
     // A one-off update (shadowMap.needsUpdate) draws the plain way.
     if (!this.enabled || !this.autoUpdate || lights.length !== 1 || !sun.isDirectionalLight
       || group?.parent !== scene || shadow.autoUpdate === false) return render.call(this, lights, scene, camera);
@@ -106,6 +110,8 @@ export function cacheShadows(renderer, trackGroup) {
   };
   return {
     stats,
+    // The map's group gained or lost casters: read them again on the next frame.
+    refresh() { root = null; },
     dispose() { shadowMap.render = render; cache?.dispose(); cache = null; },
   };
 }

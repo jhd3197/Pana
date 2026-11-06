@@ -7,6 +7,7 @@
 // results, so a dropped packet loses nothing. The host owns the clock (`now`,
 // server milliseconds, set before each step), the roles, the Sabor and Bulla
 // meters, the MCP's calls and who gets thrown out of the rueda.
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { draw, clamp } from '/engine/random.js';
 import { defaultOptions, roomOptions } from './options.js';
 import {
@@ -124,6 +125,7 @@ export class Rueda {
     this.players = this.players.filter(p => !p.bot);
     const size = this.mode === 'golpe' ? GOLPE_SIZE : RUEDA_SIZE, skill = BOT_SKILL[this.options.bots] ?? .84;
     for (let i = 0; this.players.length < size; i++) this.addPlayer(BOT_SEAT + i, BOT_NAMES[i], {}, true, clamp(skill + ((i % 3) - 1) * .04, .5, .97));
+    applyFriendNames(this.players.filter(p => p.bot), friendNamesNow(), { rankBy: p => p.skill, taken: this.players.filter(p => !p.bot).map(p => p.name) });
     this.players.forEach((p, i) => Object.assign(p, { order: i, score: 0, stats: freshStats(), sweaty: false, dicho: null }));
     Object.assign(this, { round: this.round + 1, songIndex: 0, titles: [], winner: null, team: 0, golpe: null });
     this.startSong(0);

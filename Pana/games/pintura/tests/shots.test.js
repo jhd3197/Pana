@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MARKERS, kitStats, cleanKit } from '../public/armory-data.js';
-import { Arena, DURATION } from '../public/rules.js';
+import { Arena, DURATION, BOT_ID, SHOT_HEIGHT, coverFor } from '../public/rules.js';
 
 const marker = id => MARKERS.find(m => m.id === id);
 
@@ -43,4 +43,27 @@ test('every shot is counted, even a point-blank one whose ball is gone in one st
   g.step(.05, new Map([[1, { ax: 1, az: 0, fire: true }]]));
   assert.equal(a.fired, 1); assert.equal(g.balls.length, 0, 'the ball already hit'); assert.equal(g.view().players[0].fired, 1);
   g.refill(a); assert.equal(a.fired, 1, 'reloading and respawning never reset the count');
+});
+// El Puerto's sandbag runs (0.7 m) sit under the 1.1 m flight of a ball: a pana
+// seen over them can be hit, while a container (2.65 m) still stops the shot.
+test('shots pass over waist-high cover and still stop on tall cover', () => {
+  const duel = (from, to, aim) => {
+    const g = new Arena('terminal', 'normal', { lives: 0 }); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); g.go(); g.variant = 0;
+    const [a, b] = g.players; Object.assign(a, from, { shield: 0 }); Object.assign(b, to, { shield: 0 });
+    for (let n = 0; n < 20; n++) g.step(.05, new Map([[1, { ...aim, fire: n === 0 }], [2, {}]]));
+    return g.players[1].hits + g.players[1].paint;
+  };
+  const sandbags = coverFor('terminal', 0).find(o => o.kind === 'sandbags');
+  assert.ok(sandbags.h < SHOT_HEIGHT, 'the sandbags are lower than a ball');
+  assert.ok(duel({ x: sandbags.x, z: sandbags.z - 2.5 }, { x: sandbags.x, z: sandbags.z + 3 }, { ax: 0, az: 1 }) > 0, 'a ball clears the sandbags');
+  const container = coverFor('terminal', 0).find(o => !o.kind && o.h > 2 && o.w > o.d);
+  assert.equal(duel({ x: container.x, z: container.z - 3 }, { x: container.x, z: container.z + 3 }, { ax: 0, az: 1 }), 0, 'a container stops it');
+});
+
+test('a bot shoots over sandbags at a rival it can see', () => {
+  const g = new Arena('terminal', 'normal', { lives: 0 }); g.add(1, { name: 'A', avatar: {} }); g.add(BOT_ID, { name: 'Bot', avatar: {}, bot: true }); g.start(); g.go(); g.variant = 0;
+  const sandbags = coverFor('terminal', 0).find(o => o.kind === 'sandbags'), [a, bot] = g.players;
+  Object.assign(a, { x: sandbags.x, z: sandbags.z + 3, shield: 0 }); Object.assign(bot, { x: sandbags.x, z: sandbags.z - 2.5, shield: 0 });
+  let fired = false; for (let n = 0; n < 40 && !fired; n++) { fired = g.bot(bot).fire; g.time -= .05; }
+  assert.ok(fired, 'the bot fires across the sandbags');
 });

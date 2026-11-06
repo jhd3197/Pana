@@ -1,0 +1,13 @@
+/* The typewriter's letters and its two rich-text tags. */
+.pk-tw-word { white-space: nowrap; }
+.pk-tw { display: inline-block; font-style: inherit; }
+.pk-tw--wave { animation: pk-tw-wave 1s ease-in-out infinite; animation-delay: calc(var(--i, 0) * -70ms); color: var(--pk-tw-wave, inherit); }
+.pk-tw--shake { animation: pk-tw-shake .22s steps(3) infinite; animation-delay: calc(var(--i, 0) * -37ms); }
+@keyframes pk-tw-wave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-.28em); } }
+@keyframes pk-tw-shake { 0% { transform: translate(-.05em, .04em) rotate(-3deg); } 50% { transform: translate(.05em, -.05em) rotate(3deg); } 100% { transform: translate(-.03em, -.03em); } }
+@media (prefers-reduced-motion: reduce) { .pk-tw--wave, .pk-tw--shake { animation: none; } }
+
+/* A bubble says its mood through its colour; the seat's game sets data-mood. */
+.pk-bubble[data-mood='high'] { --pk-bubble-ink: #c9460f; }
+.pk-bubble[data-mood='low'] { --pk-bubble-ink: #3f5c8a; }
+.pk-bubble[data-mood='curious'] { --pk-bubble-ink: #6b3fa0; }

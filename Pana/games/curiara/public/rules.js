@@ -1,6 +1,7 @@
 // Curiara race simulation. Pure: the host runs it, guests render snapshots.
 // Boats move with paddle thrust relative to the water plus the river's
 // current; the river (river.js) owns banks, levels and currents.
+import { applyFriendNames, friendNamesNow } from '../../../engine/bot-names.js';
 import { paddleState, stroke, hold, rudder, sync, step as pull, PADDLE } from '/engine/play/paddle.js';
 import { FIELDS, cleanOptions } from './options.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
@@ -102,6 +103,7 @@ export class Race {
       if (!bots && seats === 2) for (const c of members) if (c.bot) c.empty = true;
       this.boats.push(this.newBoat(`c${i}`, members, this.boats.length));
     });
+    applyFriendNames(this.boats.flatMap(b => b.crew).filter(c => c.bot && !c.empty), friendNamesNow(), { rankBy: c => c.brain.skill, taken: this.players.map(p => p.name) });
     for (const p of this.players) p.spectator = false;
     Object.assign(this, { phase: 'countdown', countdown: 3, time: 0, finishGrace: null, snaps: {}, photo: null, slowmo: 0 });
     this.raceId++;

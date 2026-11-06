@@ -8,10 +8,10 @@ function paint(w, h, draw) {
 }
 const once = make => { let t = null; return () => t ??= make(); };
 
-// A rounded tag that always faces the camera; `scale` is its height in metres.
+// A square tag that always faces the camera; `scale` is its height in metres.
 export function label(text, { color = '#fff', bg = 'rgba(20,24,40,.72)', scale = 6 } = {}) {
   const map = paint(512, 128, (g, w, h) => {
-    g.fillStyle = bg; g.beginPath(); g.roundRect(8, 16, w - 16, h - 32, 40); g.fill();
+    g.fillStyle = bg; g.fillRect(8, 16, w - 16, h - 32);
     g.font = '700 54px Nunito, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = color; g.fillText(text, w / 2, h / 2 + 2);
   });
   map.colorSpace = THREE.SRGBColorSpace;

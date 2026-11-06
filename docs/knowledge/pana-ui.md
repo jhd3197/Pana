@@ -59,9 +59,10 @@ Every game and the hub use one pause menu and one settings store:
   changes made in another tab. `bindSound(sound)` and
   `bindRenderer(renderer, max)` keep the fx.js sound and a renderer in step.
 - `engine/ui.js` — `createGameMenu(options)` builds a native modal `<dialog>`
-  with the tabs Juego (resume, game actions, invite, exit), Ajustes (shared
-  settings, device instructions and game options). It owns Esc, focus and input
-  blocking; the game only decides what pausing means.
+  with the tabs Juego (resume, game actions, invite, exit), Instrucciones (how
+  to play and the controls, `engine/controls-page.js`) and Mis ajustes (shared
+  settings and game options). It owns Esc, focus and input blocking; the game
+  only decides what pausing means.
 - `engine/ui.css` — scoped `.pana-*` styles. Pages link it before their own
   stylesheet; ui.js injects it if a page forgot.
 
@@ -76,14 +77,13 @@ renderer.setPixelRatio(pixelRatio(2)); bindRenderer(renderer, 2);
 const menu = createGameMenu({
   title: 'Mi juego', heading: 'Pausa', sound,
   note: () => 'La partida está en pausa.',
-  controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   actions: [{ id: 'restart', label: 'Reiniciar', visible: () => playing, run: restart }],
   options: [{ id: 'sky', label: 'Luz', choices: [['day', 'Día']], get, set }],
   invite: () => inviteUrl(code),     // optional: adds "Copiar invitación"
   onOpen() { paused = true; clearHeldKeys(); },
   onClose() { paused = false; },
 });
-hud.append(menu.createButton({ id: 'menu' }));      // "Menú Esc"
+hud.append(menu.createButton({ id: 'menu' }));      // "Menú"
 // Optional: menu.createSoundButton(), menu.createInviteButton()
 // In the game's keydown handler: if (key === 'm') toggleMute();
 ```
@@ -108,8 +108,76 @@ shows **Orientación** (Según el juego / Horizontal / Vertical, saved as
 screen with "Jugar así" (and, where the browser can lock it, "Pantalla completa").
 `<html data-pana-orientation>` carries the wanted orientation for CSS. The game's
 landscape layout still has to work: test both with a touch emulator.
-Mark keyboard reminders with `data-pana-hint` so the "Ayudas de controles"
-setting can hide them.
+
+## Instrucciones: how to play lives in the menu, never on the HUD
+
+**Instructions never go on the HUD; they live in the pause-menu 'Instrucciones'
+page (`engine/controls-page.js`).** No controls line along the bottom, no keycaps
+next to HUD buttons, no "pulsa X para" text, no hint panel, no one-time hint strip.
+Players who want to know open the menu (Esc, Start, the Menú button) and pick
+Instrucciones, or the lobby's Reglas button (`menu.open('controls')` lands there).
+
+A game declares the page as data in `public/instructions.js`, beside its
+`index.html`; the menu imports it the first time the tab opens, so it costs the
+first load nothing:
+
+```js
+import { loc } from '/engine/i18n.js';
+export default {
+  goal: loc('Llega primero a la meta.'),
+  howTo: [loc('Cada vuelta suma…')],
+  sections: [{ title: loc('Moverte'), rows: [
+    { action: loc('Caminar'), keyboard: 'W A S D / Flechas', gamepad: 'Stick izq.', touch: loc('Joystick') },
+    { action: loc('Saltar'), keyboard: loc('Espacio'), gamepad: 'A', touch: loc('Botón Saltar') },
+  ] }],
+  tips: [loc('…')],
+};
+```
+
+- Each row is one action and its key per device. `" / "` separates
+  alternatives (one keycap each). A missing or `null` key leaves the row out on
+  that device. Gamepad keys use Xbox names (`A`, `RT`, `Stick izq.`, `Cruceta`)
+  and show the connected pad's own (`formatPadLabel`: Cruz, R2… on a
+  PlayStation pad). With no gamepad keys at all, the page shows the menu's
+  `pad` setup (`padHelp`).
+- The page opens on the device in use (`onInputDevice`: keyboard by default,
+  touch on a phone, the pad once one is used, the "Ayudas en pantalla" override
+  included) and follows it live; its Ratón y teclado / Mando / Pantalla táctil
+  switch lets the player look at another.
+- `createGameMenu({ instructions })` takes the data, a function or a module URL
+  instead of the file. A page without `instructions.js` falls back to the older
+  `controls`/`tips` options. The settings workspace no longer has its own "Cómo
+  se juega" tabs.
+- Test IDs: `#pana-tab-help`, `#pana-panel-help` (`[data-ready]` once drawn),
+  `.pana-help-controls[data-device]`, `[data-help-device]`.
+- `tests/hud-instructions.test.js` requires `instructions.js` in every game and
+  fails on `<kbd>`, `data-pana-hint`, hint/help/legend/keys-named elements and
+  controls phrases in a game's files; its `ALLOWED` list names the few
+  contextual prompts that look like hints, each with why.
+  `engine/tests/hud-layout.browser.js` enters play in every game and fails on a
+  visible controls-list text or two HUD pieces overlapping.
+- Contextual prompts are not instructions: "E abrir" while you face a door, "Tu
+  turno", a capture bar, a countdown. They appear only while they apply, are a
+  few words, and never list controls.
+  Their key cap is `<kbd data-prompt>`. A prompt with nothing to do right now
+  is hidden, not turned into advice ("Acércate a una estación" is gone from
+  Cocina; Escondidas shows "Copiar" only next to an object).
+
+### HUD layout check
+
+`engine/tests/hud-layout.browser.js` puts every game into a real round with
+`tests/play-kit.js` (`enterPlay`, one recipe per game in `PLAY`) and reads the
+HUD with `tests/hud-check.js` at 1280×720, 1920×1080, 1024×600 and 390×844.
+A HUD piece is an outermost visible fixed/absolute element; only the boxes that
+paint count (a transparent header spanning the screen paints just its buttons).
+Skipped: dialogs, toasts, shouts, the lobby, `[role=status]`/`[aria-live]`,
+`[data-hud-transient]` layers (Bochinche's hit flashes) and labels pinned to the
+3D world through an inline position (name and station tags). Fixes that held:
+move a centred panel under the menu buttons below ~1180 px instead of shrinking
+it, cap a growing log's height on short screens (Dominó's "En la mesa"), and
+hide a redundant title tag before the scoreboard reaches it (Bolas Criollas).
+`PANA_HUD_GAMES=a,b` narrows the run; `PANA_HUD_SHOTS=<dir>` saves a picture per
+game and size.
 
 ## Shared input settings
 
@@ -140,11 +208,10 @@ hub and `/ajustes.html` reload at once (`game: false` from `createGameMenu`
 with `pause: false`), a game shows a "Recargar ahora" note in the detail panel
 because reloading restarts the match. See `pana-i18n.md`.
 
-Inside a game, each device category opens on **Cómo se juega** (that
-device's controls and the game's tips), then its tuning tabs and **Ayudas**
-(hint device and visibility). The hub has no help tabs. The category
-initially shown follows the active device. Legacy `open('controls')` calls
-route to Ajustes.
+Each device category opens on its tuning tabs, then **Ayudas** (which
+device's names menus show). How to play is the Instrucciones tab, not a
+settings tab. The category initially shown follows the active device. Legacy
+`open('controls')` calls open Instrucciones.
 
 `pana:settings` stores independent `mouseSensitivity`, `mouseVertical`,
 `mouseInvertY`, `touchSensitivity`, `touchInvertY`, `padDeadzone`,
@@ -166,11 +233,10 @@ Mouse hover never changes the device; trusted clicks and key presses do.
 Disconnect releases translated keys. Window blur suspends the
 controller translator until focus returns.
 
-The root carries `data-pana-input` and `data-pana-pad-family`. Keyboard hint
-groups and legacy keycaps hide for controller/touch input; controller keycaps
-use `data-pad-key`. Gameplay controller prompts come from each game's real
-`pad` mapping. Device instructions remain visible in their own settings page
-even when another device navigates there. `padFamily` can
+The root carries `data-pana-input` and `data-pana-pad-family`. Keycaps outside
+the menu hide for controller/touch input; controller keycaps use
+`data-pad-key`. No controller button bar is drawn during play: the pad's
+buttons are listed on the Instrucciones page. `padFamily` can
 override ID-based Xbox/PlayStation/Nintendo/generic labels without changing
 the browser's standard button indices. Controller navigation targets the
 lobby's start action before other primary buttons such as an armory button.
@@ -200,6 +266,26 @@ update its line. A failure leaves the message on the cover with a retry. Each
 switch between the lobby and the game gets a short cover too ("¡A jugar!",
 "De vuelta a la sala…"). The Mi pana editor covers itself with the player's
 portrait until `editor.js` is ready.
+
+## Editar pana over the page
+
+Every "Editar pana" / "Cambiar pana" opens `/personaje?embed=1` in a
+full-screen square `<dialog>` with an iframe (`engine/pana-editor.js`). It
+never navigates. Leaving a lobby page drops the room seat (Colyseus leave
+4000). On pana.sh, a Pana Mayor passing through the hub (the old `/#mi-pana`
+link) also sends the whole party home. In the frame, the editor's back button
+becomes a close (B and Escape close it too), saving closes it, and links out
+(the shop) open a new tab. On close a changed look fires `pana:avatar` on
+window: `game-entry` sends it to the room with RoomKit's `me` message and
+redraws the roster. pana.sh's party.js does not run inside a frame, so the
+frame never takes over the party socket or the "follow the leader" tab.
+
+Trap: a page's import map must come before every `modulepreload` and module
+script (`tests/conventions.test.js`). The browser's preload scanner parses a
+cached preloaded module before the parser reaches a later map. `"three"` then
+fails to resolve and the page keeps that failure. On pana.sh the versioned
+files are cached for a year, so Mi pana opened once and failed on every later
+visit. The gateway now also moves the map to the top of `<head>`.
 
 ## Game controllers
 
@@ -232,7 +318,7 @@ starts from the big control nearest the bottom middle of the screen, and A
 stays with the buttons. `createLookControls` turns the camera with the right
 stick, so first-person games need no `cursor`. `{ native: true, help }` is for
 a game that reads the pad itself (Trifulca): the menus still work, and `help`
-fills the instructions in Ajustes → Mando. Carreritas is native too:
+fills the Mando column of Instrucciones when the game's instructions.js names no buttons. Carreritas is native too:
 controls.js drives the car, and the
 engine owns the garage menus and Start, so its own pad code no longer
 toggles the pause. Without a main button, a menu starts the pad on its
@@ -266,15 +352,18 @@ workspace is lazy too; neither adds to a game's static module budget.
   that closing the menu restores focus to its Play button.
 - Stable test IDs: `#pana-menu-dialog`, `#pana-resume`, `#pana-copy-room`,
   `#pana-set-sound`, `#pana-set-volume`, `#pana-set-quality`,
-  `#pana-set-hints`, `#pana-tab-<game|settings|controls>`, plus each action's
-  own `id`.
+  `#pana-set-hints`, `#pana-tab-<game|help|settings>`, `#pana-panel-help`,
+  plus each action's own `id`.
 
 ## Shared room settings
 
 `engine/room-options.js` owns primary segmented choices and the prototype's
 “Más ajustes” native dialog. Each game supplies a pure field schema with `id`,
 `label`, `default`, typed `choices: [[value, label]]` and optional `advanced`.
-`createRoomOptions(container, { title, fields, change, reset })` calls `change`
+A field may also pass `defaultOf(values)` when its default follows other
+values (Pepazo: each mode's round time and lives); "Más ajustes" counts and
+marks changes against it.
+`createRoomOptions(container, { title, fields, change, reset, help })` calls `change`
 with a patch object, never a key/value pair. Load `room-options.css` with kit.css.
 Call `update(authoritativeValues, mayEdit)` from snapshots, and close the dialog
 when leaving the lobby. Guests can inspect options but cannot edit them.
@@ -287,8 +376,57 @@ fresh/practice state factories as well as migration snapshots.
 
 Escape closes this dialog without also opening the pause menu. Tab wraps among
 visible enabled buttons, inputs, selects and links; closing restores the
-trigger's focus. The two-column
-advanced panel becomes one scrollable column on phones. Shared entry docks
+trigger's focus.
+
+Primary choices in the lobby's settings column sit under their label as one
+grid of square buttons: up to three in a row, four as 2×2, more in two rows
+(`--seg-cols`, set by room-options.js; laid out in `sala.css` and
+`room-options.css`). Keep the main lobby to the one or two choices that define
+the round; the rest belongs in "Más ajustes".
+
+The dialog follows the lobby side panel's compact look: a one-row header (Más
+ajustes eyebrow, game title, host notice, close), one grid of equal cards with
+uppercase 11px labels and 34px segmented chips (3 columns from 900px, 2 from
+600px, 1 on phones; only the grid scrolls), then a thin footer: Restablecer
+sala, the adopted help buttons, Listo.
+
+### Game skin: the room panel's look for any panel or dialog
+
+The lobby room panel (`sala.css`) and "Más ajustes" wear one skin from
+`kit.css`, so a new popup gets the same look by using its classes, never by
+copying values. The tokens are `--pk-skin-shadow` (4px hard offset in
+`--pk-skin-shade`), `--pk-skin-lean` (-5deg), `--pk-skin-plate-lean` (-9deg),
+`--pk-skin-chip`/`-chip-hover`, `--pk-skin-well` and `--pk-skin-panel`;
+`sala.css` reads them too, so changing one changes both.
+
+| Class | Piece |
+|---|---|
+| `pk-skin-panel` | square leaning panel; the plate is a `::before`, so scrolling, hit areas and focus rings stay square. `--pk-skin-fill` sets its colour, `--pk-skin-reach` widens the plate past the box for tall panels |
+| `pk-skin-card` | the same plate for a card inside it (night fill); `.is-changed` adds the yellow ring |
+| `pk-skin-plate` | yellow title plate, display font, skewed like the lobby title |
+| `pk-skin-label` | uppercase muted 11px label |
+| `pk-skin-chips` | square chips (on a `.pk-seg`), yellow when `aria-pressed` |
+| `pk-btn pk-skin-btn` | square night button with the hard shadow (close, Volver, Restablecer) |
+| `pk-btn pk-skin-go` | yellow display-font skewed primary, like the start button (Listo) |
+| `pk-btn pk-skin-link` | small underlined muted text (help links) |
+
+Plates stand straight below 801px, like the lobby panel. The button classes
+carry a `:root` prefix so body themes such as `.banderin .pk-btn` cannot round
+them or swap their shadow. `room-options.js` puts the classes on its own markup
+and on adopted cards, chips and help links, so no game styles the dialog. Adopted `data-room-extra` nodes become
+cards of that grid after the schema fields (class `pk-room-card`); a team roster
+or a bare paragraph spans the whole row. Card copy is clamped (the difficulty
+note to one line, its full text in `title`). Keep choice labels short: chips
+wrap, but a card is about 280px wide on desktop.
+
+Pass `help: { controls, tips, title? }` (or a function returning it), the same
+arrays `createGameMenu` takes, and the adopted `#rules` button opens a "Cómo se
+juega" layer inside the dialog instead of leaving it: keys and tips, a Volver
+button, Escape returns to the settings first and closes the dialog second.
+Its click never reaches the game's own `#rules` handler. Touch players see only
+the tips when there are any. Games without `help` keep the old behaviour: the
+button closes the dialog and its own handler runs. Pepazo hoists its
+`controls`/`tips` into consts and passes them to both. Shared entry docks
 actual game start/practice controls in its footer so a long settings column
 cannot bury them. Six-player roster cards use three columns on desktop and two
 on phones. Table/live scaffolds include real validated example options.
@@ -302,8 +440,8 @@ authoritative update logic. After the game and scene initialize, entry calls
 | Hook | Destination |
 | --- | --- |
 | `data-room-primary` | Primary settings, before schema-generated choices |
-| `data-room-extra` | Más ajustes, after advanced schema choices |
-| `data-room-help` | Más ajustes; a help-button click closes it before the existing help handler runs |
+| `data-room-extra` | Más ajustes, a card in the grid after advanced schema choices |
+| `data-room-help` | Más ajustes footer; with `help` a button opens the in-dialog layer, without it a click closes the dialog before the existing help handler runs |
 | `data-pana-roster` | Left roster area; hides generic member cards while visible |
 | `data-room-personal` | Left roster area, for existing personal controls |
 
@@ -316,17 +454,23 @@ only disables fields generated by the schema. A game's reset callback must also
 reset adopted **room-wide** choices, such as its map, in one validated action;
 it must not reset a player's personal camera.
 
-### Grouped avatar rosters
+### Team lobby (grouped avatar rosters)
 
-Use `createLobbyRoster(container, { onMove })` from `engine/lobby-roster.js` for
-teams, boat crews or individual seats. Its CSS is imported by game-lobby.css.
-The renderer marks its container `data-pana-roster` automatically.
+Games call `createTeamLobby(container, { onMove, titles?, colors?, list?, detail? })`
+from `engine/team-lobby.js` for teams, boat crews or table seats; it renders
+through `engine/lobby-roster.js`, which games no longer import (the conventions
+test fails on it). Its CSS is imported by game-lobby.css. The container gets
+`data-pana-roster`, so entry docks it in the main roster column, sala games too:
+team panels never sit in Más ajustes. A team of up to three seats shows one row of
+cards; four seats a side stand as a 2×2 grid of compact cards (portrait beside
+the name, buttons in one row; `rosterColumns` in `lobby-roster.js`), more in
+two even rows.
 
 ```js
-const roster = createLobbyRoster(container, {
-  onMove: (from, to) => room.moveSeat(from, to),
-});
-roster.update(groups, {
+const lobby = createTeamLobby(container, { onMove: (from, to) => room.moveSeat(from, to) });
+lobby.update({
+  teams: teamPlay(state.options),          // false: one `list` panel, or hidden
+  seats: seats.map((player, key) => ({ key, team: key % 2, player })),
   ownId: room.id, hostId: room.hostId,
   enabled: room.connected && state.phase === 'lobby',
   canArrange: room.isHost,
@@ -334,7 +478,15 @@ roster.update(groups, {
 });
 ```
 
-`groups` is `[{ id, title, color, seats: [{ key, player, label? }] }]`.
+Titles default to Equipo A, Equipo B… in coral and teal. Without teams and
+without `list: { title }` the container hides and the shell's player cards show.
+A newcomer joins the smaller team through `openSeat`/`smallestTeam` in
+`engine/play/team-balance.js` (docs/SHARED-ENGINE.md, "Team lobby and auto-balance").
+Groups with more than three seats get the denser `.is-dense` cards so two rows
+fit beside the settings at 1280×800.
+
+Under it, `lobby-roster.js` takes `groups`:
+`[{ id, title, color, seats: [{ key, player, label? }] }]`.
 Seat keys are stable game-owned numbers or strings. `player` is null for a free
 place, or `{ id, name, avatar, bot }`; optional `label` names a role such as
 Proa/Popa. `members` is an array, not a Map. Raw room members can carry session
@@ -391,8 +543,7 @@ an invite when currently local. No prototype sample players are fabricated.
 
 Connection status and Reintentar occupy one place at the settings card's foot.
 Offline keeps a yellow local-play action; retry reloads the existing connection
-flow. Pepazo's actual team arrangement remains under Más ajustes so the eight
-sala cards stay in place. Other games use the same side-settings presentation while retaining their
+flow. Pepazo's teams stand in the main lobby as team panels (team rounds only). Other games use the same side-settings presentation while retaining their
 game-owned team seating and personal controls. Their start labels, handlers and
 host permissions are not replaced. No optional workshop metadata is required.
 

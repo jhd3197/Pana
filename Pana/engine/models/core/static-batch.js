@@ -7,7 +7,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 // materials that differ only in colour share one batch: each mesh's exact
 // linear colour moves into its vertices (as racer batching does), so a prop
 // of twenty paints is one draw. The new materials are in userData.tinted.
-const KEPT = ['position', 'normal', 'color', 'natureSurface'];
+// `camoPos` is a camo shader's per-vertex position in the model's own space
+// (paintball-kit.js): copied as is, never moved by the mesh's matrix.
+const KEPT = ['position', 'normal', 'color', 'natureSurface', 'camoPos'];
 const plain = a => a && !a.isInterleavedBufferAttribute && !a.normalized && a.array instanceof Float32Array;
 
 // Unindexes one attribute. Float32 data (nearly all of it) gets its own copy

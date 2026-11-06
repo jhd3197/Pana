@@ -181,7 +181,7 @@ export function supplyPile({ seed = 5 } = {}) {
 }
 
 /* ---------- campfire with tripod pot, seats, embers and smoke ---------- */
-export function expeditionCampfire({ seed = 3, light = false } = {}) {
+export function expeditionCampfire({ seed = 3, light = false, flame = true } = {}) {
   const k = kit(), R = rng(seed), P = I;
   for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; k.rock(i % 3 ? 'stone' : 'stoneL', P, Math.cos(a) * 1.65, 0.18, Math.sin(a) * 1.65, 0.42, R); }
   k.cyl('ash', P, 0, 0.04, 0, 1.45, 0.08);
@@ -207,18 +207,19 @@ export function expeditionCampfire({ seed = 3, light = false } = {}) {
   const g = new THREE.Group(); g.add(done(k, 'CampfireRing')); g.name = 'ExpeditionCampfire';
 
   // Animated fire: flame cones, rising embers and drifting smoke puffs.
+  // `flame: false` keeps the smoke and leaves the fire to engine/fx/fire.js.
   const fireAt = V(0, 0.5, 0), flameGeo = new THREE.ConeGeometry(1, 1, 7), flames = new THREE.Group();
   flames.position.set(0, 0.4, 0);
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < (flame ? 7 : 0); i++) {
     const f = new THREE.Mesh(flameGeo, mat(i < 3 ? 'fireY' : 'fire')), a = i / 7 * Math.PI * 2, r = i < 3 ? 0.12 : 0.32;
     f.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); f.userData = { ph: i * 1.7, s: i < 3 ? 0.9 : 1.25 }; flames.add(f);
   }
   g.add(flames);
-  const EMB = 90, embGeo = new THREE.BufferGeometry(), embPos = new Float32Array(EMB * 3), embSeed = new Float32Array(EMB * 3);
+  const EMB = flame ? 90 : 0, embGeo = new THREE.BufferGeometry(), embPos = new Float32Array(EMB * 3), embSeed = new Float32Array(EMB * 3);
   for (let i = 0; i < EMB; i++) embSeed.set([(R() - 0.5) * 0.9, R() * 5, (R() - 0.5) * 0.9], i * 3);
   embGeo.setAttribute('position', new THREE.BufferAttribute(embPos, 3));
   const embMat = new THREE.PointsMaterial({ color: 0xffb050, size: 0.09, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-  const embers = new THREE.Points(embGeo, embMat); embers.frustumCulled = false; g.add(embers);
+  const embers = new THREE.Points(embGeo, embMat); embers.frustumCulled = false; if (flame) g.add(embers);
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = 64;
   const ctx = canvas.getContext('2d'), grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
   grad.addColorStop(0, 'rgba(235,230,220,0.5)'); grad.addColorStop(1, 'rgba(235,230,220,0)'); ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64);
