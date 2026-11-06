@@ -75,7 +75,7 @@ This uses the existing trusted-friends host model, not server anti-cheat.
 
 The `event` line is a list of `{ text, vars }` Spanish source sentences;
 `eventText` in `rules.js` joins them in the viewer's language (the cachos'
-note travels as `vars.how`). The protocol is `ludo-v6` since the seat count option.
+note travels as `vars.how`). The protocol is `ludo-v7` since the `landed` report.
 
 ## Visuals and controls
 
@@ -167,6 +167,17 @@ that ends on the host's clock alone left under 750 ms of result on screen. Heavy
 rendering starves timers harder than frames, so `game.js` also ticks the host from
 the render loop; the timer stays for hidden tabs. Idle, bot and starter clocks use
 `hostTick` (.75 s) so a waking tab does not spend its nap on them.
+
+Those ceilings only stretch the beat; they cannot place it after a guest's landing,
+and a guest's toss can start later than the whole beat lasts. So a missed roll's beat
+also waits for every member's `landed` message (`createLandingGate`, `dice-timing.js`;
+`LudoRoom.dieLanded`), which makes the hold on every client at least `RESULT_HOLD` from
+its own landing. A hidden tab, which draws no frames, reports at once. A silent member
+costs `LANDING_WAIT` (6 s on the `hostTick` clock) and a new host starts with no reports,
+so a handoff mid-pause can cost that wait once. Forced moves (`autoMove`) are not gated.
+
+`world.tossing` can go true and false again between two samples when a frame outlasts
+the toss, so a suite reads `world.landedAt` rather than polling it.
 
 `turnPause.remaining` on any client, the host's `room.state` included, is the value
 at the last publish and sits at its full length for the whole pause. Only the host's

@@ -13,20 +13,23 @@ try {
   });
   await b.waitForFunction(()=>ludoDebug.room.state.turn===0);
   await Promise.all([a,b].map(page=>page.evaluate(()=>{window.pacingSample=new Promise((resolve,reject)=>{
-    let landed=null,sawFlight=false;const start=performance.now();
+    // landedAt, not polling world.tossing: a frame slower than the toss starts and
+    // finishes it between two samples.
+    const before=ludoDebug.world.landedAt,start=performance.now();
     function sample(){
-      const {world,room}=ludoDebug;
-      if(world.tossing)sawFlight=true;
-      if(sawFlight&&!world.tossing&&landed===null)landed=performance.now();
+      const {world,room}=ludoDebug,landed=world.landedAt!==before;
       if(room.state.turnPause && document.querySelector('#turn').textContent.includes('Te toca'))return reject(Error('announced next turn during previous roll'));
-      if(sawFlight&&!room.state.turnPause)return resolve({held:performance.now()-landed,sawFlight});
-      if(performance.now()-start>60000)return reject(Error(`missed roll did not settle: flight=${sawFlight}, pause=${JSON.stringify(room.state.turnPause)}`));
+      if(landed&&!room.state.turnPause)return resolve(performance.now()-world.landedAt);
+      if(performance.now()-start>60000)return reject(Error(`missed roll did not settle: landed=${landed}, pause=${JSON.stringify(room.state.turnPause)}`));
       requestAnimationFrame(sample);
     }sample();
   });})));
+  // The hold must come from the guest's report, not from the gate giving up on it.
+  await a.evaluate(()=>{const room=ludoDebug.room,receive=room.receive;window.landedFrom=[];room.receive=function(id,data){if(data.kind==='landed')window.landedFrom.push(id);return receive.call(this,id,data);};});
   await a.evaluate(()=>{ludoDebug.room.game.roll(1);ludoDebug.room.publish();});
   const samples=await Promise.all([a,b].map(page=>page.evaluate(()=>window.pacingSample)));
-  for(const sample of samples){assert.equal(sample.sawFlight,true);assert.ok(sample.held>750);}
+  for(const held of samples)assert.ok(held>750,`result held ${held} ms`);
+  assert.deepEqual(await a.evaluate(()=>window.landedFrom),[await b.evaluate(()=>ludoDebug.room.id)]);
   // Hold the cue at full strength for the checks: it runs on the wall clock and a
   // slow WebGL frame or capture can outlast its 3.2 s.
   await b.waitForFunction(()=>{const spot=ludoDebug.world.spotlight;if(!spot.cued)return false;window.spotlightFrame=spot.frame;spot.frame=()=>window.spotlightFrame(1);return true;});
