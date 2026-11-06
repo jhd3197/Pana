@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { newBody, arenaOf, control, stepBodies, BODY_GAP, SEPARATE, T } from '../public/fight-rules.js';
 import { Trifulca } from '../public/rules.js';
+import { HEAD_REACH, lungeRoom, punchLength, ARM_GUARD } from '../public/fighter-look.js';
 
 const DT = .05, none = { gp: 0, e: 0, a: 0, t: 0, k: 0, s: 0, v: 0 };
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -10,6 +11,14 @@ function pair(ax, bx, arena = arenaOf('calle')) {
   Object.assign(a, { x: ax, z: 0, h: Math.PI / 2 }); Object.assign(b, { x: bx, z: 0, h: -Math.PI / 2 });
   return { a, b, step: (moves = new Map()) => stepBodies([a, b], arena, DT, moves, () => {}) };
 }
+
+test('the gap clears two helmets, the size the panas actually look', () => {
+  // HEAD_REACH is checked against the real mesh in tutorial.browser.mjs.
+  assert.ok(BODY_GAP >= 2 * HEAD_REACH, `${BODY_GAP} vs ${2 * HEAD_REACH}`);
+  assert.ok(lungeRoom(BODY_GAP) <= BODY_GAP - 2 * HEAD_REACH + 1e-9, 'a lunge at the gap stays out of the rival helmet');
+  assert.equal(lungeRoom(9), .3, 'the full lunge in open space');
+  assert.equal(punchLength(BODY_GAP), ARM_GUARD, 'pressed up close the arm stays bent');
+});
 
 test('two panas on the same spot split the same way every time, softly', () => {
   for (let run = 0; run < 2; run++) {
@@ -62,6 +71,16 @@ test('a jab and a grab still land at the body gap', () => {
   }
 });
 
+test('every blow reaches a body stopped at the gap, with room to spare', () => {
+  for (const act of ['jab', 'trompon', 'grab', 'kick', 'sweep', 'toss']) {
+    assert.ok(T[act].reach > BODY_GAP + .2, `${act} reach ${T[act].reach}`);
+    const { a, b } = pair(-BODY_GAP / 2, BODY_GAP / 2);
+    a.act = act; a.at = T[act].active[0] - DT / 2;
+    stepBodies([a, b], arenaOf('calle'), DT, new Map(), () => {});
+    assert.ok(b.vx > 0 || b.act === 'tumble', `${act} lands`);
+  }
+});
+
 test('a toss still reaches a guard pressed up at the gap', () => {
   const { a, b, step } = pair(-BODY_GAP / 2, BODY_GAP / 2);
   b.act = 'block';
@@ -89,6 +108,23 @@ test('a pana pinned on the ropes keeps the gap too', () => {
     assert.ok(b.x <= arena.half + 1e-9, 'the ropes hold');
     if (i > 20) assert.ok(gap(a, b) >= BODY_GAP - 1e-9, `tick ${i}: ${gap(a, b)}`);
   }
+});
+
+test('four panas piling into one spot all end up a body apart', () => {
+  const arena = arenaOf('calle'), spots = [[-2, 0], [2, 0], [0, -2], [0, 2]];
+  const crowd = spots.map(([x, z], i) => Object.assign(newBody(i + 1, i % 2 ? 'blue' : 'red', arena), { x, z }));
+  const moves = new Map(crowd.map(b => [b.id, { x: -Math.sign(b.x), z: -Math.sign(b.z) }]));
+  for (let i = 0; i < 80; i++) stepBodies(crowd, arena, DT, moves, () => {});
+  for (let x = 0; x < 4; x++) for (let y = x + 1; y < 4; y++) assert.ok(gap(crowd[x], crowd[y]) > BODY_GAP * .95, `${x}-${y}: ${gap(crowd[x], crowd[y])}`);
+});
+
+test('bots still trade blows from the new distance', () => {
+  const game = new Trifulca(3); let landed = 0;
+  const events = game.fightEvent.bind(game);
+  game.fightEvent = (e) => { if (e.type === 'hit') landed++; return events(e); };
+  game.addPlayer('me', 'Ana'); game.start();
+  for (let i = 0; i < 3000 && game.phase !== 'finished'; i++) game.update(DT, new Map());
+  assert.ok(landed > 5, `${landed} hits`);
 });
 
 test('libre and parejas keep every pair apart through a whole night', () => {

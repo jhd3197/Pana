@@ -21,7 +21,7 @@ export function createCombatRig(character, shoulders, arms = { guard: 1, punch: 
     }
     active = true;
     const b = character.body, squash = p.squash;
-    b.position.y = p['body.y']; b.position.z = Math.max(-.25, Math.min(.3, p['body.z']));
+    b.position.y = p['body.y']; b.position.z = Math.max(-.25, Math.min(arms.lunge ?? .3, p['body.z']));
     b.rotation.set(p['body.rx'], p['body.ry'] + p.spin, p['body.rz']);
     b.scale.set(1 + squash * .55, 1 - squash, 1 + squash * .55);
     if (p['body.pivot']) {
