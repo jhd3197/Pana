@@ -52,7 +52,7 @@ try {
   assert.match(await a.locator('#record-line').textContent(), /^2 · /);
   check('the record is saved when the jornada ends, and the Tab panel reads it');
 
-  await a.evaluate(() => { reliquia.room.game.finish('extracted'); reliquia.room.publish(); });
+  await a.evaluate(() => { const g = reliquia.room.game; g.players.find(p => p.id === reliquia.room.id).stats.unaMas = 2; g.finish('extracted'); reliquia.room.publish(); });
   await waitFor(a, () => reliquia.state.phase === 'results'); await waitFor(b, () => reliquia.state.phase === 'results');
   for (const page of [a, b]) await page.locator('#result-record .pk-record-tile').first().waitFor();
   const [rounds, comebacks] = await tiles(a);
@@ -68,8 +68,18 @@ try {
   await a.evaluate(() => reliquia.room.publish());
   assert.equal(await a.evaluate(() => localStorage.getItem('pana:records:reliquia')), stored);
 
+  // Titles carry over: both browsers count this dive's for the whole squad, once.
+  const tallied = page => page.evaluate(() => JSON.parse(localStorage.getItem('pana:titles:reliquia')).players);
+  assert.deepEqual((await tallied(a)).juan.counts, { unaMas: 1 });
+  assert.deepEqual((await tallied(b)).juan.counts, { unaMas: 1 });
+  assert.match(await a.locator('#result-titles .pk-tally-row.is-mine').innerText(), /Juan[\s\S]*El codicioso · 1/);
+  assert.match(await b.locator('#result-titles').innerText(), /Juan[\s\S]*El codicioso · 1/);
+  check('both screens count the dive\'s titles beside the record');
+
   await b.reload({ waitUntil: 'domcontentloaded' });
   await waitFor(b, () => window.PANA_PREPARED === true);
+  await waitFor(b, () => reliquia.state.phase === 'results' || reliquia.state.phase === 'lobby');
+  assert.deepEqual((await tallied(b)).juan.counts, { unaMas: 1 }, 'a reload does not count the dive again');
   assert.equal(await b.evaluate(() => JSON.parse(localStorage.getItem('pana:records:reliquia')).players.ana.best.rounds.value), 2);
   check('the record survives a reload');
 

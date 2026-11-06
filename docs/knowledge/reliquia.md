@@ -82,6 +82,13 @@ leaving mid-expedition keeps what was earned. The lobby and the Tab panel read
 the holder; the results say what fell. The readout has `data-room-personal`, so
 the shared lobby stands it under the roster.
 
+Titles (`titles()` in `rules.js`) carry over as a tally beside the record
+(`createTitleTally`): every diver's browser counts the whole squad's titles once
+per dive, by `receiptFor`, so a reload or a late snapshot adds nothing. A
+spectator's browser reads the tally but never adds to it. It lives in
+`engine/records.js` and not its own module because Fosa's first load sits at its
+module cap. The lobby shows your own row, the results the whole squad's.
+
 ## Saved expeditions
 
 `save.js` keeps sessions on the shared store (`engine/save-game.js`, drawn by

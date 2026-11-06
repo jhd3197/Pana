@@ -46,7 +46,7 @@ wearRank();
 // Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
 let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares); view.scares = scares;
 const presence = createPresence({ view, ambience, samples });
-const record = createFosaRecord({ lobby: $('lobby-record'), end: $('result-record'), line: $('record-line') });
+const record = createFosaRecord({ lobby: $('lobby-record'), end: $('result-record'), line: $('record-line'), lobbyTitles: $('lobby-titles'), endTitles: $('result-titles') });
 view.swarm.onHiss = (x, z) => ambience.at('slither', me(), view.heading, x, z, 16);
 const fx = createEerieFx({ view, ambience, samples, dread: v => { const r = Math.round(v * 20) / 20; if (r !== dreadShown) { dreadShown = r; $('dread').style.opacity = r; } } });
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
