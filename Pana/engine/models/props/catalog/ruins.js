@@ -12,6 +12,7 @@ export default [
   ['ruin-stairs', 'Escalinata en ruinas', 'ruinStairs', { seed: 77, broken: true }, 'Escalones de piedra con alfardas; la versión rota pierde peldaños.', ['escalera', 'templo', 'ruinas']],
   ['stela', 'Estela de glifos', 'stela', { seed: 78 }, 'Estela de remate redondo con una cuadrícula de glifos tallados.', ['estela', 'glifos', 'ruinas']],
   ['sun-seal', 'Sello solar', 'sunSeal', { seed: 79 }, 'Estrado de piedra con anillos, rayos y clavos de oro incrustados.', ['oro', 'sello', 'suelo', 'ruinas']],
+  ['carved-face-altar', 'Altar de rostro tallado', 'carvedFaceAltar', { seed: 79 }, 'Estrado de piedra oscura con un rostro tallado encima, sin una pizca de oro.', ['altar', 'rostro', 'escultura', 'ruinas']],
   ['ruin-brazier', 'Pebetero de piedra', 'brazier', { seed: 80 }, 'Pedestal hexagonal con cuenco y llamas animadas; luz opcional.', ['fuego', 'antorcha', 'templo', 'animado']],
   ['plank-bridge', 'Puente de tablas', 'plankBridge', { seed: 81 }, 'Tablas combadas entre dos salientes, barandas de madera y cuerdas.', ['puente', 'tablas', 'abismo']],
   ['plank-bridge-broken', 'Puente de tablas roto', 'plankBridge', { seed: 82, broken: true }, 'Puente partido al centro con tablas y cuerdas colgando.', ['puente', 'roto', 'abismo', 'obstáculo']],

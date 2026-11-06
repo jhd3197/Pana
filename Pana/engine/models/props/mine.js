@@ -340,7 +340,7 @@ export function mineTrack({
   return out;
 }
 
-export function minePortal({ seed = 51, name = 'MINA 1', light = false, niche = true } = {}) {
+export function minePortal({ seed = 51, name = 'MINA 1', light = false, niche = true, board: boardLook = { background: '#8a5f38', color: '#f4e3b5' } } = {}) {
   // Tunnel mouth facing +Z: rock face, three timber sets and a lagged roof.
   // niche: false leaves the mouth open for a walkable tunnel behind it.
   const g = new THREE.Group(), R = rng(seed);
@@ -354,7 +354,7 @@ export function minePortal({ seed = 51, name = 'MINA 1', light = false, niche = 
     box(g, 'woodD', I, 0, 4.05, z, 4.6, 0.45, 0.5);
   }
   for (let k = 0; k < 6; k++) box(g, 'woodL', I, 0, 4.33, -k * 0.85 + 0.3, 4.2, 0.1, 0.75);
-  const board = sign(name, 2.6, 0.65, { background: '#8a5f38', color: '#f4e3b5' });
+  const board = sign(name, 2.6, 0.65, boardLook);
   board.position.set(0, 4.75, 0.28); g.add(board);
   for (const s of [-1, 1]) beam(g, 'iron', V(s * 1.1, 4.3, 0.27), V(s * 1.1, 5.1, 0.27), 0.03, 'cyl6');
   lanternAt(g, I, 2.3, 3.2, 0.35); box(g, 'wood', I, 2.1, 3.55, 0.15, 0.5, 0.08, 0.08);

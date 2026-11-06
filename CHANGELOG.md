@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: La Mina del Sol ahora luce como piedra tallada oscura.**
+  El altar del ídolo ya no es un sello solar dorado: es un rostro tallado en piedra negra. El letrero de la boca de la mina va a juego.
 - **Fosa: tu rango ya se te ve encima.**
   Franjas, remiendos y galones en las mangas, puños de cobre, plata u oro, y farol ámbar. Por ahora solo los ves tú.
 - **Fosa: ya tienes tu Cuaderno del buzo.**
