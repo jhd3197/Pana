@@ -106,7 +106,7 @@ addEventListener('keydown',event=>{
 let previous=performance.now();
 // Heavy rendering starves timers, so frames drive the host clock too; the timer
 // covers a hidden tab, which draws none.
-function hostClock(){const now=performance.now();if(now-previous<50)return;room.tick((now-previous)/1000,menu.isOpen&&room.members.size<=1);previous=now;}
+function hostClock(){if(room.state.turnPause?.kind==='roll'&&(document.hidden||!world?.tossing))room.dieLanded();const now=performance.now();if(now-previous<50)return;room.tick((now-previous)/1000,menu.isOpen&&room.members.size<=1);previous=now;}
 const timer=setInterval(hostClock,100);
 let frameTime=performance.now();
 function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower.power);world?.frame(Math.min(.05,(now-frameTime)/1000));hostClock();hud.frame(!!world?.tossing,thrower.shaking,thrower.power);if(room.state.phase==='finished')$('results').hidden=!!world?.celebrating;frameTime=now;requestAnimationFrame(frame);}

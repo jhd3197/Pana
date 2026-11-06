@@ -16,6 +16,27 @@ export const BEAT_TICK = .3;
 export const pauseTick = (remaining, seconds) => remaining > RESULT_HOLD
   ? Math.min(seconds, remaining - RESULT_HOLD)
   : Math.min(BEAT_TICK, seconds);
+// The host cannot see a guest's die, and under load a guest's toss starts seconds after
+// the host's, so a missed roll's beat waits until every member has reported its die down.
+// That starts the beat no earlier than the last landing, whatever the frame rate. A member
+// that never reports (frozen, gone quiet) costs LANDING_WAIT at most, on the capped clock.
+export const LANDING_WAIT = 6;
+export const rollKey = state => `${state.round}:${state.rng}`;
+export function createLandingGate() {
+  let key = null, landed = new Set(), waited = 0;
+  const open = next => { if (next !== key) { key = next; landed = new Set(); waited = 0; } };
+  return {
+    land(roll, id) { open(roll); landed.add(id); },
+    // What this tick may take off the pause.
+    spend(roll, pause, members, seconds) {
+      open(roll);
+      const spend = pauseTick(pause.remaining, seconds);
+      if (pause.kind !== 'roll' || pause.remaining > RESULT_HOLD || [...members].every(id => landed.has(id))) return spend;
+      waited += hostTick(seconds);
+      return waited >= LANDING_WAIT ? spend : 0;
+    },
+  };
+}
 export const motionDuration = steps => Math.max(1.2, steps * .3);
 export const movePause = (steps, captured) => Math.max(motionDuration(steps), steps * HOP + (captured ? FLIGHT : 0)) + .45;
 // Rules already know the next seat; presentation keeps the actor until it settles.
