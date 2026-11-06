@@ -331,7 +331,7 @@ JavaScript building geometry:
 
 The sun's shadow box (±40 m) follows the player, so three.js redrew every
 tree, house and rock into the shadow map each frame: 0.6–3.1 M triangles
-and 60–100 draws, 43 % of Chuao's triangles at the start. `shadow-cache.js`
+and 60–100 draws, 43 % of Chuao's triangles at the start. `engine/shadow-cache.js`
 wraps `renderer.shadowMap.render`:
 
 - The light and its target step on an 8 m grid (moving both keeps the

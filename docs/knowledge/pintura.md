@@ -262,6 +262,14 @@ box); trees, lamps, benches, planters and stalls do. Measured in practice
 427k triangles; eye height 295–307 → 115–123 calls, 664–675k → 356–372k
 triangles.
 
+Shadows on every court go through `engine/shadow-cache.js`. A baked map is one
+batch whose bounds always touch the sun's ±30 m box, so culling never helped and
+the whole map went into the shadow map each frame. Now the box steps on an 8 m
+grid and the map's depth is redrawn only when the box steps a cell; panas, paint
+and the Puerto's rocking ships still draw each frame. Anything added to a map's
+group after it stands (the plaza's props and town) calls `shadowCache.refresh()`.
+`pinturaDebug.world.shadowCache.stats` (with `?debug`) counts rebuilds and frames.
+
 ## Muelle de La Guaira
 
 Pepazo-only map (`PAINT_ARENAS` in `engine/worlds/arena-layouts.js`; never in `ARENAS`,
