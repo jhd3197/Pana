@@ -33,6 +33,12 @@ run.report([{ name: 'Ana', me: true, values: { wins: 3 } }]);
 renderRecord(node, board, { me: 'Ana', standings: run.summary('Ana') });
 ```
 
+A tally counts what has no value to beat, like an end-of-match title:
+`createTitleTally({ game })` keeps per-player counts under `pana:titles:<game>`,
+`add(receipt, [{ name, id }])` counts a match once and `of(name)` reads it back.
+`renderTitleTally(node, tally, { names, me, label })` draws a row of chips per
+name beside the record, and hides the node when there is nothing to show.
+
 Used by: Fosa. Notes: `docs/knowledge/reliquia.md`, "The record".
 
 ## Save and resume

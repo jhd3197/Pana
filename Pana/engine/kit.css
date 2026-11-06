@@ -316,6 +316,11 @@
 .pk-record-tile.is-broken, .pk-record-tile.is-first { border-color: var(--pk-yellow); }
 .pk-record-open { justify-self: start; }
 .pk-record-table[hidden] { display: none; }
+.pk-tally { display: grid; gap: 6px; width: 100%; text-align: left; }
+.pk-tally[hidden] { display: none; }
+.pk-tally-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
+.pk-tally-row.is-mine .pk-record-who { color: var(--pk-yellow); }
+.pk-tally .pk-chip { padding: 3px 8px; font-size: 12px; }
 /* saved games (engine/save-widget.js), lobby */
 .pk-save { display: grid; gap: 6px; }
 .pk-save[hidden], .pk-save-roster[hidden] { display: none; }
