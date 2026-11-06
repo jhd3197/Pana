@@ -8,7 +8,7 @@
 //   right.slot.add(model);            // the item: +Y runs up through the fist
 //   right.setGrip('fist');            // 'fist' round a handle, 'open' at rest, 'cup' palm up
 //   applyHeld(right.hand, pose, carry); right.update();    // or right.follow(object): take its pose
-//   right.visible = false; kit.setColor(c); kit.dispose();
+//   right.visible = false; kit.setColor(c); kit.setCuff(c); kit.dispose();
 //
 // The forearm is a one-bone reach: however the hand turns, the sleeve goes from the
 // wrist to a fixed elbow past the screen's edge (`right.elbow`, in the parent's space).
@@ -58,6 +58,7 @@ export function createHandKit({ sleeve = 0xb07a4a, glove = 0x3a2a20, cuff = 0xc9
   const part = (geometry, material, parent) => { const m = new THREE.Mesh(geometry, material); parent.add(m); return m; };
   return {
     setColor(color) { sleeveMaterial.color.set(color); sleeveMaterial.emissive.set(color); },
+    setCuff(color) { cuffMaterial.color.set(color); cuffMaterial.emissive.set(color); },
     // parent: what the hand rides on (the camera). elbow: past the screen's edge, for the right hand.
     hand({ parent, side = 1, elbow = [.42, -.7, .06] } = {}) {
       const root = new THREE.Group(), hand = new THREE.Group(), arm = new THREE.Group(), slot = new THREE.Group();

@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
-import { CLOTH, GLASS, HELMET, LAMP, SELF_GLOW, SHADE, SUIT_PARTS, TONES } from './suit-look.js';
+import { CLOTH, GLASS, HELMET, LAMP, PLAIN, SELF_GLOW, SHADE, SUIT_PARTS, TONES, lookKey, suitParts, suitTones } from './suit-look.js';
 
 // A ball with its pole on the forward axis, starting `from` radians off it.
 function shellGeometry(radius, from, widthSegments, heightSegments, inward) {
@@ -48,9 +48,9 @@ function partGeometry(part) {
   return g;
 }
 
-function mergedPart(parts, main) {
+export function mergedPart(parts, main, tones = TONES) {
   const pieces = parts.map(part => {
-    const g = partGeometry(part), color = new THREE.Color(part.tone === 'main' || part.tone === 'shade' ? main : TONES[part.tone]);
+    const g = partGeometry(part), color = new THREE.Color(part.tone === 'main' || part.tone === 'shade' ? main : tones[part.tone]);
     if (part.tone === 'shade' || part.tone === 'main') color.multiplyScalar(CLOTH);
     if (part.tone === 'shade') color.multiplyScalar(SHADE);
     const colors = new Float32Array(g.attributes.position.count * 3);
@@ -65,7 +65,7 @@ function mergedPart(parts, main) {
 
 // Vertex-coloured, and faintly lit by its own colours so a diver out of the beam
 // is still a colour in the dark. No extra light, and fog still takes it.
-function paintMaterial(options, glow) {
+export function paintMaterial(options, glow) {
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, ...options });
   material.onBeforeCompile = shader => {
     shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
@@ -142,8 +142,8 @@ function beamGeometry() {
   return g;
 }
 
-// Shared by every suit in the view, and geometry by colour, so eight panas cost
-// eight sets of buffers at most and a handful of materials.
+// Shared by every suit in the view, and geometry by colour and look, so eight panas
+// cost eight sets of buffers at most and a handful of materials.
 let shared = null;
 const stitched = new Map();
 function kit() {
@@ -163,9 +163,14 @@ function kit() {
   };
   return shared;
 }
-function geometriesFor(main) {
-  let set = stitched.get(main);
-  if (!set) { set = Object.fromEntries(['torso', 'arm', 'leg', 'helmet'].map(id => [id, mergedPart(SUIT_PARTS[id], main)])); stitched.set(main, set); }
+function geometriesFor(main, look) {
+  const key = `${main}|${lookKey(look)}`;
+  let set = stitched.get(key);
+  if (!set) {
+    const parts = suitParts(look), tones = suitTones(look);
+    set = Object.fromEntries(['torso', 'arm', 'leg', 'helmet'].map(id => [id, mergedPart(parts[id], main, tones)]));
+    stitched.set(key, set);
+  }
   return set;
 }
 
@@ -178,8 +183,9 @@ function isInside(object, ancestor) {
 // returned remove() must run before character.dispose(), which would otherwise
 // free the shared buffers with the rest of that pana's meshes. `lamp` is an
 // anchor on the helmet for a borrowed SpotLight; lit(on) shows its glow and beam.
-export function dressExplorer(character, color) {
-  const { suit, brass, glass, lens, glow, beam, port, beamShape, lensShape } = kit(), parts = geometriesFor(color), meshes = [];
+// look: lookFor() in suit-look.js, what this diver's rank has earned.
+export function dressExplorer(character, color, look = PLAIN) {
+  const { suit, brass, glass, lens, glow, beam, port, beamShape, lensShape } = kit(), parts = geometriesFor(color, look), meshes = [];
   character.body.traverse(o => { if ((o.isMesh || o.isLine) && !isInside(o, character.neck)) o.visible = false; });
   const wear = (bone, geometry, material = suit, shadow = true) => {
     const m = new THREE.Mesh(geometry, material); m.castShadow = shadow; m.receiveShadow = shadow;

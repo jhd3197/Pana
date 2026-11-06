@@ -1072,7 +1072,22 @@ modest runs and wipes reaches Leyenda (4000 XP) in about 50 dives.
 The rank-up toast uses its own `.pk-toast` (`#rank-toast`): Fosa's `#toast` has
 z-index 5 and sits under the results layer. `#rank-toast` is raised to 8% so it
 clears the card's title. The `unlocks` ids in `RANKS` are stable names; the
-`pacto:*` ones gate the lobby (below), the rest nothing reads yet.
+`pacto:*` ones gate the lobby (below), the rest are looks.
+
+**Recortes.** `lookFor(isUnlocked)` in `suit-look.js` turns `traje:*`, `casco:*` and
+`farol:*` into the highest of each that a pana owns; each table's order is the
+ladder. `game.js` hands `progress.isUnlocked` to `view.wear()` at load and on every
+`progress.onChange`, and still never imports the suit. A casco's metal replaces the
+brass tones of the whole suit, not just the helmet, because the cuff is the only
+metal you can see on yourself.
+
+Your own diver is never drawn for you (`view.js` hides `p.id === self`) and a rank
+lives on one device, with no room state carrying it. So nobody else sees your look,
+and you see it only in first person: sleeve bands (`sleeveBands`, on the rig's `arm`
+in `hand-view.js`), the cuffs, and the amber headlamp, which lerps the biome's lamp
+towards `FAROLES.ambar` so a biome still tints it. Other divers always dress `PLAIN`.
+`dressExplorer` takes the look and builds yours too, unseen until a look syncs or a
+third-person shot exists.
 
 ## Pactos and Calor (`pactos.js`)
 

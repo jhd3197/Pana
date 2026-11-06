@@ -1,14 +1,19 @@
 // Your two gloved hands in first person, on the engine's shared rig and motion:
 // the suit's sleeve, brass cuff and whatever each hand holds. They hide while you
 // are down, gripping a treasure or pushing one. The rules' p.swing starts a blow.
+// Your own suit is never drawn for you, so this is where your rank's look shows.
+import * as THREE from 'three';
 import { applyHeld, createHeldMotion, swingPose } from '/engine/play/viewmodel.js';
 import { createHandKit } from '/engine/play/viewmodel-rig.js';
 import { gripFor } from './grips.js';
+import { mergedPart, paintMaterial } from './explorer-suit.js';
+import { SELF_GLOW, sleeveBands, suitTones } from './suit-look.js';
 
 const NARROW = .55;     // how far in the hands come on a portrait screen
+const CUFF = 0xc9a35a;  // the plain suit's, the rig's own default
 
 export function createHands({ camera, itemModel }) {
-  const kit = createHandKit({ glove: 0x57402f, scale: .82, glow: .14 }), carry = {}, pose = [0, 0, 0, 0, 0, 0];
+  const kit = createHandKit({ glove: 0x57402f, cuff: CUFF, scale: .82, glow: .14 }), carry = {}, pose = [0, 0, 0, 0, 0, 0];
   const hands = [0, 1].map(i => ({ rig: kit.hand({ parent: camera, side: i ? -1 : 1 }), motion: createHeldMotion(), key: '', swings: 0, lastSwing: 0, grip: gripFor(null) }));
   hands.forEach(h => h.rig.setGrip(h.grip.shape));
   function hold(h, held) {
@@ -22,8 +27,20 @@ export function createHands({ camera, itemModel }) {
     model.traverse(o => { o.castShadow = false; });
     h.rig.slot.add(model);
   }
+  // The rank's bands, one merged mesh riding each forearm.
+  let bands = null, bandPaint = null;
+  function clearBands() { if (!bands) return; bands.meshes.forEach(m => m.removeFromParent()); bands.geometry.dispose(); bands = null; }
   return {
     hands,
+    wear(look) {
+      const tones = suitTones(look), parts = sleeveBands(look);
+      kit.setCuff(look.casco ? tones.brass : CUFF);
+      clearBands();
+      if (!parts.length) return;
+      bandPaint ??= paintMaterial({ roughness: .7, metalness: .02 }, SELF_GLOW.cloth);
+      const geometry = mergedPart(parts, '#ffffff', tones);
+      bands = { geometry, meshes: hands.map(h => { const m = new THREE.Mesh(geometry, bandPaint); m.name = 'Sleeve band'; h.rig.arm.add(m); return m; }) };
+    },
     update(dt, me, { bob, sway, push = 0, aspect = 1, color }) {
       const hidden = me.downed || me.grip != null || me.push != null, sprint = me.moving && me.vx ** 2 + me.vz ** 2 > 40, spread = aspect < 1 ? NARROW : 1;
       kit.setColor(color);
@@ -47,6 +64,6 @@ export function createHands({ camera, itemModel }) {
     },
     // A small blow with the right hand, as if at the rock in front of you: no rule sees it.
     knock() { hands[0].swings++; },
-    dispose() { kit.dispose(); },
+    dispose() { clearBands(); bandPaint?.dispose(); kit.dispose(); },
   };
 }

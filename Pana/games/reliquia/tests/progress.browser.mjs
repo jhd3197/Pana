@@ -18,6 +18,11 @@ try {
   await waitFor(a, () => reliquia.state.phase === 'results'); await waitFor(b, () => reliquia.state.phase === 'results');
   await waitFor(a, () => document.querySelector('.pk-rank-gain')?.textContent); await waitFor(b, () => document.querySelector('.pk-rank-gain')?.textContent);
   const paid = 10 + 20 + 15 + 10 + 20;
+  // Buzo unlocks the first traje: it goes on your own sleeves with no reload.
+  const sleeves = page => page.evaluate(() => ({ traje: reliquia.view.ownLook.traje, bands: reliquia.view.hands.hands.filter(h => h.rig.arm.getObjectByName('Sleeve band')).length }));
+  await waitFor(a, () => reliquia.view.ownLook.traje === 'franja');
+  assert.deepEqual(await sleeves(a), { traje: 'franja', bands: 2 });
+  check('the rank-up puts the new traje on both sleeves');
   for (const page of [a, b]) {
     assert.equal((await saved(page)).xp, paid); assert.equal((await saved(page)).dives, 1);
     const seen = await ui(page);

@@ -21,7 +21,7 @@ export function suitedAvatar(avatar) {
 }
 
 // `main` and `shade` come from the seat colour; the rest are the same on everyone.
-export const TONES = { brass: '#c98f2c', brassDark: '#8e5f20', rivet: '#e8bd5e', boot: '#6e4424', hose: '#3a2c20', hollow: '#120c08', port: '#2b4a55' };
+export const TONES = { brass: '#c98f2c', brassDark: '#8e5f20', rivet: '#e8bd5e', boot: '#6e4424', hose: '#3a2c20', hollow: '#120c08', port: '#2b4a55', cream: '#f2e3bd', patch: '#7a5734', stitch: '#e9d7a8', night: '#1d2230', braid: '#f4c542' };
 export const SHADE = .72;
 // Your own headlamp bleaches a full-strength colour to white at a few metres, and
 // past its beam the cave is nearly black, so the cloth is painted a little darker
@@ -113,3 +113,65 @@ export const SUIT_PARTS = {
   ],
   lens: [can([0, 1.66, .78], .17, .03, 'rivet', 'z')],
 };
+
+// What a diver's rank has earned (the unlock ids in progress.js), added to the suit
+// above. Each table runs low to high and the highest one owned is what is worn. The
+// cloth stays the seat's colour, so a look never hides who is who.
+const band = (y, tone, tube = .035, radius = .8) => ring([0, y, .02], radius, tube, tone, BODY_SQUASH);
+const patch = (x, y, z, w, h) => [
+  ball([x, y, z], [w, h, .06], 'patch'),
+  ...around(6, a => rivet([x + Math.cos(a) * w * .9, y + Math.sin(a) * h * .9, z + .05], .022, 'stitch')),
+];
+// A ring on your first-person arm, `y` up the forearm from the wrist (the shared hand
+// rig's units), just proud of its cloth. At rest only the first few hundredths of the
+// sleeve are on screen, so these sit either side of the cuff: below 0 is the glove's
+// wrist, past .04 the start of the sleeve. Anything further up is never seen.
+const sleeveBand = (y, height, tone) => can([0, y, 0], (.043 + .021 * Math.max(0, y)) * 1.14, height, tone);
+const shoulders = around(2, a => ball([Math.sin(a) * .66, 1.38, .02], [.24, .08, .24], 'brass'));
+const FRANJA = {
+  torso: [band(1.18, 'cream'), band(.82, 'cream')],
+  arm: [ring([0, -.22, 0], .215, .026, 'cream')],
+  leg: [ring([0, -.08, 0], .285, .028, 'cream')],
+  sleeve: [sleeveBand(-.032, .016, 'cream'), sleeveBand(.052, .018, 'cream')],
+};
+const REMIENDO = {
+  torso: [...FRANJA.torso, ...patch(.36, .66, .63, .2, .17), ...patch(-.42, 1.26, .62, .17, .13)],
+  arm: [...FRANJA.arm, ball([0, -.36, .19], [.1, .09, .035], 'patch')],
+  leg: [...FRANJA.leg, ball([0, -.2, .27], [.14, .1, .04], 'patch')],
+  sleeve: [sleeveBand(-.032, .016, 'cream'), sleeveBand(.058, .03, 'patch')],
+};
+const CAPATAZ = {
+  torso: [band(1.18, 'night', .06), band(1.27, 'braid', .02, .77), band(1.09, 'braid', .02), ...shoulders, can([0, 1.2, .8], .13, .05, 'brass', 'z')],
+  arm: [ring([0, -.2, 0], .212, .024, 'braid'), ring([0, -.3, 0], .218, .024, 'braid')],
+  leg: [ring([0, -.08, 0], .285, .03, 'night')],
+  sleeve: [sleeveBand(-.032, .016, 'night'), sleeveBand(.048, .01, 'braid'), sleeveBand(.066, .01, 'braid')],
+};
+const LEYENDA = {
+  torso: [...CAPATAZ.torso, band(.82, 'braid', .045), ...around(5, a => ball([Math.sin(a) * .1, 1.2 + Math.cos(a) * .1, .84], [.045, .045, .03], 'braid'))],
+  arm: [...CAPATAZ.arm, ring([0, -.12, 0], .205, .024, 'braid')],
+  leg: [ring([0, -.08, 0], .285, .03, 'braid'), ring([0, -.2, 0], .29, .022, 'braid')],
+  sleeve: [sleeveBand(-.032, .016, 'braid'), sleeveBand(-.05, .01, 'braid'), sleeveBand(.05, .014, 'braid'), sleeveBand(.07, .014, 'braid'), sleeveBand(.09, .014, 'braid')],
+};
+export const TRAJES = { franja: FRANJA, remiendo: REMIENDO, capataz: CAPATAZ, leyenda: LEYENDA };
+// A helmet's metal is the whole suit's, so your cuffs show it in first person.
+export const CASCOS = {
+  cobre: { brass: '#c66a3c', brassDark: '#86401f', rivet: '#eb9a6b' },
+  plata: { brass: '#c4ccd4', brassDark: '#7d8791', rivet: '#eef3f7' },
+  oro: { brass: '#f5c518', brassDark: '#b78a0e', rivet: '#fff0a0' },
+};
+// `mix`: how far the headlamp turns this colour, so a biome's own lamp still shows.
+export const FAROLES = { ambar: { lamp: '#ffb35a', mix: .65 } };
+
+export const PLAIN = Object.freeze({ traje: null, casco: null, farol: null });
+export const lookKey = look => `${look.traje || ''}|${look.casco || ''}|${look.farol || ''}`;
+// isUnlocked: progress.isUnlocked, or anything else that answers for an unlock id.
+export function lookFor(isUnlocked) {
+  const highest = (table, kind) => Object.keys(table).filter(id => isUnlocked(`${kind}:${id}`)).pop() ?? null;
+  return { traje: highest(TRAJES, 'traje'), casco: highest(CASCOS, 'casco'), farol: highest(FAROLES, 'farol') };
+}
+export const suitTones = (look = PLAIN) => ({ ...TONES, ...CASCOS[look.casco] });
+export function suitParts(look = PLAIN) {
+  const added = TRAJES[look.traje] || {};
+  return Object.fromEntries(Object.entries(SUIT_PARTS).map(([bone, list]) => [bone, [...list, ...(added[bone] || [])]]));
+}
+export const sleeveBands = (look = PLAIN) => TRAJES[look.traje]?.sleeve || [];
