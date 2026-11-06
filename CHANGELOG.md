@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ludo: compra el dado de mango con tus mangos y úsalo en la mesa.**
+  Cuesta 150 mangos y se compra una sola vez desde la sala. Puedes guardarlo y volver al dado crema cuando quieras.
 - **Trifulca: los peleadores ya no se meten uno dentro del otro.**
   Cada capi guarda su espacio: los cascos y los cuerpos ya no se funden, y los golpes, empujones y agarres siguen conectando.
 - **Pepazo: el juego va más fluido, sobre todo en El Puerto y La Plaza.**
