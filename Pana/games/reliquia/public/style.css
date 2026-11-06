@@ -150,3 +150,5 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
 .titles .title-name{font:400 17px var(--pk-display);color:var(--rel-gold)}
 .titles small{display:block;font:700 12px var(--pk-sans);color:var(--pk-muted)}
 .calor-chip{justify-self:start}
+/* The tally row needs the room the shared lobby leaves over its eyebrow, or an eight-seat roster clips it at 800 px high. */
+.pk-game-lobby-roster:has(#lobby-titles:not([hidden])){padding-bottom:0}.pk-game-lobby-roster:has(#lobby-titles:not([hidden]))>.pk-eyebrow{margin:0 0 4px}

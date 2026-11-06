@@ -211,10 +211,14 @@ export function titles(s) {
   const out = [];
   for (const [stat, title, detail] of TITLES) {
     const best = [...s.players].filter(p => !p.spectator).sort((a, b) => b.stats[stat] - a.stats[stat])[0];
-    if (best && best.stats[stat] > (stat === 'last' ? 20 : 0)) out.push({ title, player: best.id, name: best.name, detail, value: Math.round(best.stats[stat]) });
+    if (best && best.stats[stat] > (stat === 'last' ? 20 : 0)) out.push({ id: stat, title, player: best.id, name: best.name, detail, value: Math.round(best.stats[stat]) });
   }
   return out;
 }
+
+export const titleName = id => TITLES.find(([stat]) => stat === id)?.[1] ?? '';
+// What this dive adds to the tally: one line per title earned, for engine/records.js.
+export const titleEntries = s => titles(s).map(t => ({ name: t.name, id: t.id }));
 
 // A save holds a whole state, so it is only written between floors: everyone at
 // the camp and nothing on its way. Bump the version when a saved state stops loading.
