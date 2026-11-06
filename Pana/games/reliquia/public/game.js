@@ -41,6 +41,8 @@ const notify = createToast($('toast'), { ms: 3400 });
 const qs = new URLSearchParams(location.search), code = roomCode();
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
 const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience(), samples = createSamples(), diver = createFosaProgress();
+const wearRank = () => view.wear(diver.progress.isUnlocked), stopWearing = diver.progress.onChange(wearRank);
+wearRank();
 // Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
 let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares); view.scares = scares;
 const presence = createPresence({ view, ambience, samples });
@@ -273,7 +275,7 @@ view.onFx = e => {
   if (e.type !== 'break' && (keys.has('e') || touch.has('e')) && Math.hypot(e.x - p.x, e.z - p.z) < 5) { view.hands.knock(); if (!stillness.matches) view.shake(e.type === 'hit' ? .13 : .22); }
 };
 record.showLobby(name); show('loading', false); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { dead = true; clearInterval(ticker); cuaderno?.dispose(); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
+addEventListener('pagehide', () => { dead = true; clearInterval(ticker); stopWearing(); cuaderno?.dispose(); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
 if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record, saves,
   get state() { return state; }, get me() { return me(); },
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += .05) room.game.update(Math.min(.05, seconds - t), room.inputs); room.publish(); },

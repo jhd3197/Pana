@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: tu rango ya se te ve encima.**
+  Franjas, remiendos y galones en las mangas, puños de cobre, plata u oro, y farol ámbar. Por ahora solo los ves tú.
 - **Fosa: ya tienes tu Cuaderno del buzo.**
   Lugares, bichos, tesoros, sucesos y notas sobre El Silbón se anotan la primera vez que te los topas y dan XP una sola vez. Su porcentaje sale en la sala y al terminar.
 - **Fosa y Pepazo: ya no te trancas en las esquinas.**

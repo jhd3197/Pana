@@ -25,7 +25,7 @@ import { formatNumber } from '/engine/i18n.js';
 import { holds, alive, cartValue, liftView } from './rules.js';
 import { HOPPER, packCart } from './carga.js';
 import { SILBON } from './silbon.js';
-import { SEAT_COLORS, SUIT_HEAD, seatColor, suitedAvatar } from './suit-look.js';
+import { FAROLES, PLAIN, SEAT_COLORS, SUIT_HEAD, lookFor, lookKey, seatColor, suitedAvatar } from './suit-look.js';
 import { dressExplorer, disposeSuits } from './explorer-suit.js';
 import { createHeadlamps } from './headlamps.js';
 import { createHands } from './hand-view.js';
@@ -132,20 +132,28 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const baseColor = new THREE.Color();
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
+  // This pana's rank look. Only your own is known here: ranks live on each device.
+  let ownLook = PLAIN, selfId = null;
+  const lampTint = new THREE.Color();
+  function tintHeadlamp() {
+    headlamp.color.set(look.lamp || 0xfff0d8);
+    const farol = FAROLES[ownLook.farol];
+    if (farol) headlamp.color.lerp(lampTint.set(farol.lamp), farol.mix);
+  }
   function setLook(name) {
     if (name === lookName) return; lookName = name;
     look = { caverna: CAMP_LOOK, biblioteca: LIBRARY_LOOK, inundada: FLOODED_LOOK, hongos: GROVE_LOOK, templo: TEMPLE_LOOK, congo: CONGO_LOOK, mina: MINE_LOOK, minaHonda: MINE_DEEP_LOOK }[name] || DEEP_LOOK;
     scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
     hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
     sky.mesh.visible = false; renderer.toneMappingExposure = look.exposure;
-    headlamp.color.set(look.lamp || 0xfff0d8); headlamp.decay = look.lampDecay ?? 1.35;
+    tintHeadlamp(); headlamp.decay = look.lampDecay ?? 1.35;
     headlamp.angle = look.lampAngle ?? .44; headlamp.penumbra = look.lampPenumbra ?? .42; headlamp.distance = look.lampReach ?? 24;
   }
   function avatarFor(p, i) {
-    const skin = JSON.stringify(p.avatar); let a = avatars.get(p.id);
+    const mine = p.id === selfId, skin = JSON.stringify(p.avatar) + (mine ? lookKey(ownLook) : ''); let a = avatars.get(p.id);
     if (a && a.skin === skin) return a;
     if (a) removeAvatar(a, p.id);
-    const character = buildCharacter(suitedAvatar(p.avatar), { head: SUIT_HEAD }), suit = dressExplorer(character, seatColor(p.seat)), root = new THREE.Group(), tag = label(p.name, COLORS[p.seat % 8]);
+    const character = buildCharacter(suitedAvatar(p.avatar), { head: SUIT_HEAD }), suit = dressExplorer(character, seatColor(p.seat), mine ? ownLook : PLAIN), root = new THREE.Group(), tag = label(p.name, COLORS[p.seat % 8]);
     tag.position.y = TAG_Y; root.add(character.group, tag); scene.add(root);
     const slots = [new THREE.Group(), new THREE.Group()]; slots[0].position.set(.42, .95, .36); slots[1].position.set(-.42, .95, .36); slots.forEach(s => character.group.add(s));
     a = { root, character, suit, tag, slots, keys: ['', ''], skin, bubble: null, bubbleT: 0 };
@@ -173,6 +181,7 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
 
   function draw(state, me, dt, { downedLook = false, self = me?.id } = {}) {
     const t = performance.now() / 1000, vf = me ? floorOf(me.x) : 0;
+    selfId = self;
     if (state !== lastState) { lastState = state; snapAt = t; }
     // Riders sink and rise with the cage through the shaft.
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
@@ -437,6 +446,13 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     renderer, scene, camera, puffs, waves, avatars, enemies, swarm, hands, draw, bark, mood,
     get congo() { return congo; },
     get lookName() { return lookName; },
+    get ownLook() { return ownLook; },
+    // isUnlocked: progress.isUnlocked. Sleeves and cuffs now; the suit on its next build.
+    wear(isUnlocked) {
+      const next = lookFor(isUnlocked);
+      if (lookKey(next) === lookKey(ownLook)) return;
+      ownLook = next; hands.wear(next); tintHeadlamp();
+    },
     // The Sustos setting scales every camera shake (0 turns it off).
     set shakeScale(v) { shakeScale = v; },
     // The Sustos setting, for how the mummies twitch and whether their eyes gutter.

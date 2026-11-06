@@ -1,7 +1,7 @@
 // Fosa's diver ranks on the shared progress (engine/progress.js): the table, what
 // an expedition pays, and the line on the results screen. The unlock ids are
 // stable names read through progress.isUnlocked(id); 'pacto:*' gates the lobby's
-// pacts (options.js fieldsFor).
+// pacts (options.js fieldsFor), the rest are what you wear (suit-look.js lookFor).
 import { createProgress } from '../../../engine/progress.js';
 import { createRankChip, rankUpToast } from '../../../engine/progress-ui.js';
 import { createFeats } from '../../../engine/feats.js';

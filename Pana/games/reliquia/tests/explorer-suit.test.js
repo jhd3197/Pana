@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { GLASS, HELMET, SEAT_COLORS, SUIT_HEAD, SUIT_PARTS, TONES, portRadius, seatColor, suitedAvatar } from '../public/suit-look.js';
+import { CASCOS, FAROLES, GLASS, HELMET, PLAIN, SEAT_COLORS, SUIT_HEAD, SUIT_PARTS, TONES, TRAJES, lookFor, lookKey, portRadius, seatColor, sleeveBands, suitParts, suitTones, suitedAvatar } from '../public/suit-look.js';
+import { RANKS } from '../public/progress.js';
 
 const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 const apart = (a, b) => Math.hypot(...rgb(a).map((v, i) => v - rgb(b)[i]));
@@ -73,6 +74,58 @@ test('a suit stays cheap: no lights of its own, and a small fixed pool of real l
   const view = fs.readFileSync(new URL('../public/view.js', import.meta.url), 'utf8');
   const lamps = view.match(/DIVER_LAMPS = \{([^}]*)\}/)[1].match(/\d+/g).map(Number);
   assert.ok(Math.max(...lamps) <= 3, 'three real lamps at most');
+});
+
+test('a look is the highest of each kind you own, climbing with your rank', () => {
+  const owning = (...ids) => id => ids.includes(id);
+  assert.deepEqual(lookFor(() => false), { ...PLAIN });
+  assert.deepEqual(lookFor(owning('traje:franja', 'traje:remiendo', 'casco:cobre')), { traje: 'remiendo', casco: 'cobre', farol: null });
+  assert.deepEqual(lookFor(owning('traje:leyenda', 'casco:oro', 'farol:ambar')), { traje: 'leyenda', casco: 'oro', farol: 'ambar' });
+  assert.deepEqual(lookFor(owning('pacto:cuota', 'traje:nada')), { ...PLAIN }, 'a pact or an unknown id dresses nothing');
+  // Walking the real ladder: every rank's new look replaces the last, in order.
+  const owned = new Set(), worn = [];
+  for (const rank of RANKS) { rank.unlocks.forEach(id => owned.add(id)); worn.push(lookFor(id => owned.has(id))); }
+  assert.deepEqual(worn.map(l => l.traje), [null, 'franja', 'remiendo', 'remiendo', 'remiendo', 'capataz', 'capataz', 'leyenda']);
+  assert.deepEqual(worn.map(l => l.casco), [null, null, null, null, 'cobre', 'cobre', 'plata', 'oro']);
+  assert.deepEqual(worn.map(l => l.farol), [null, null, null, 'ambar', 'ambar', 'ambar', 'ambar', 'ambar']);
+});
+
+test('every look a rank unlocks exists, and every look has a rank', () => {
+  const unlocks = RANKS.flatMap(rank => rank.unlocks).filter(id => !id.startsWith('pacto:')).sort();
+  const looks = [...Object.keys(TRAJES).map(id => `traje:${id}`), ...Object.keys(CASCOS).map(id => `casco:${id}`), ...Object.keys(FAROLES).map(id => `farol:${id}`)].sort();
+  assert.deepEqual(looks, unlocks);
+});
+
+test('each traje changes the suit and your own sleeve, and never the seat colour', () => {
+  assert.deepEqual(suitParts(PLAIN), SUIT_PARTS, 'plain is the suit as it was');
+  assert.deepEqual(sleeveBands(PLAIN), []);
+  const signatures = new Set();
+  for (const traje of Object.keys(TRAJES)) {
+    const parts = suitParts({ ...PLAIN, traje });
+    assert.ok(parts.torso.length > SUIT_PARTS.torso.length && parts.arm.length > SUIT_PARTS.arm.length && parts.leg.length > SUIT_PARTS.leg.length, `${traje} shows on body, arms and legs`);
+    assert.deepEqual(parts.helmet, SUIT_PARTS.helmet, 'the helmet is the casco\'s');
+    assert.ok(sleeveBands({ ...PLAIN, traje }).length, `${traje} shows on your own sleeve`);
+    const added = [...parts.torso.slice(SUIT_PARTS.torso.length), ...parts.arm.slice(SUIT_PARTS.arm.length), ...parts.leg.slice(SUIT_PARTS.leg.length), ...sleeveBands({ ...PLAIN, traje })];
+    for (const p of added) { assert.ok(TONES[p.tone], `unknown tone ${p.tone}`); assert.ok(p.tone !== 'main' && p.tone !== 'shade', 'accents are not the seat colour'); }
+    signatures.add(JSON.stringify(added));
+  }
+  assert.equal(signatures.size, Object.keys(TRAJES).length, 'no two trajes look the same');
+  assert.equal(SUIT_PARTS.torso.some(p => p.tone === 'cream'), false, 'a look never leaks into the plain suit');
+});
+
+test('each casco is a metal of its own, and a farol stays a warm amber', () => {
+  assert.deepEqual(suitTones(PLAIN), TONES);
+  const metals = [TONES.brass, ...Object.values(CASCOS).map(c => c.brass)];
+  for (const [i, a] of metals.entries()) for (const b of metals.slice(i + 1)) assert.ok(apart(a, b) > 40, `${a} and ${b} look alike`);
+  for (const id of Object.keys(CASCOS)) { const tones = suitTones({ ...PLAIN, casco: id }); assert.equal(tones.brass, CASCOS[id].brass); assert.equal(tones.boot, TONES.boot, 'only the metal changes'); }
+  const [r, g, b] = rgb(FAROLES.ambar.lamp); assert.ok(r > g && g > b && r - b > 100);
+  assert.ok(FAROLES.ambar.mix > 0 && FAROLES.ambar.mix < 1, 'the biome still tints it');
+});
+
+test('a look has one cache key per combination', () => {
+  const keys = new Set();
+  for (const traje of [null, ...Object.keys(TRAJES)]) for (const casco of [null, ...Object.keys(CASCOS)]) for (const farol of [null, 'ambar']) keys.add(lookKey({ traje, casco, farol }));
+  assert.equal(keys.size, 5 * 4 * 2);
 });
 
 test('nothing that decides play imports the suit', () => {

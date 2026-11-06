@@ -472,7 +472,8 @@ table (`MELEE_SWING`, or `swingTable(rest, offsets)` for your own) and `applyHel
 puts it on an object (`side: -1` mirrors a left hand, `spread` brings it in on a
 portrait screen). A row like `MELEE_CARRY` tunes how much of each it uses.
 `engine/play/viewmodel-rig.js` (Three.js) is the hand: `createHandKit({ sleeve, glove,
-cuff, scale, glow })` shares its geometries and materials, `kit.hand({ parent, side })`
+cuff, scale, glow })` shares its geometries and materials (recolour with `setColor`,
+`setCuff`), `kit.hand({ parent, side })`
 makes a glove, cuff and sleeve (three draws, no shadows, no lights) with a `slot` for
 the item, `setGrip('fist' | 'open' | 'cup')`, `follow(object)` to wrap another
 object's pose, and a sleeve that always reaches a fixed elbow off screen, however
