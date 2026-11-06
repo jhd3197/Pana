@@ -23,7 +23,7 @@ const FACE_UP = { 1: [0, 0, 0], 2: [-Math.PI / 2, 0, 0], 3: [0, 0, Math.PI / 2],
 // far-right, blue near-right; five and six sit between the star's arms the same way.
 const seatAngle = (seat, seats = 4) => -Math.PI * (2 * seat + 1) / seats;
 
-export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) {
+export function createLudoScene(canvas, { onPiece, onCapture, onStarter, dieLook } = {}) {
   // The shared plaza stage (perspective camera, sky, sun) like Billar and Póquer.
   const audio=createLudoSounds(sound,{audible:()=>!document.hidden});
   const stage=createTableWorld(canvas),{renderer,scene,camera}=stage,own=new THREE.Group();scene.add(own);
@@ -36,7 +36,10 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
   let seats=0,board=null,reach=1,nearClearance=0,lap=50,home=56;
   const moments=createLudoMoments(own,pawns,audio,()=>board);
   const spotlight=createTurnSpotlight(scene,audio);
-  const diePivot=new THREE.Group(),die=createLudoDie();die.position.y=-.215;diePivot.add(die);own.add(diePivot);
+  const diePivot=new THREE.Group();let die=null;own.add(diePivot);
+  // The look lives on this device; the pivot keeps the die's pose through a swap.
+  function setDieLook(look){die?.userData.dispose();die?.removeFromParent();die=createLudoDie({look});die.position.y=-.215;diePivot.add(die);}
+  setDieLook(dieLook);
   // Five and six seats bring the star board: a wider table, chairs further out.
   function seatTable(count){
     if(count===seats)return;seats=count;reach=tableScale(seats);({lap,home}=ludoTrack(seats));
@@ -256,5 +259,5 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
   function setView(value){top=!!value;}
   function projectPiece(seat,piece){const p=pawns.find(p=>p.seat===seat&&p.piece===piece),v=p.model.position.clone();v.y+=.2*p.model.scale.y;v.project(camera);const r=canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};}
   function dispose(){disposed=true;audio.dispose();spotlight.dispose();moments.dispose();canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);starter.dispose();pawns.forEach(p=>p.motion?.dispose());characters.forEach(c=>c.dispose());puffs.clear();waves.clear();disposeModel(own);stage.dispose();}
-  return {moments,spotlight,get celebrating(){return moments.celebrating;},update,frame,setView,shakeDie,dispose,characters,pawns,starter,projectPiece,renderer,scene,camera,get die(){return diePivot;},get moving(){return pawns.some(p=>p.path||p.flight||p.motion);},get tossing(){return !!toss;}};
+  return {moments,spotlight,get celebrating(){return moments.celebrating;},update,frame,setView,shakeDie,setDieLook,dispose,characters,pawns,starter,projectPiece,renderer,scene,camera,get die(){return diePivot;},get moving(){return pawns.some(p=>p.path||p.flight||p.motion);},get tossing(){return !!toss;}};
 }

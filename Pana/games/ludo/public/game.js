@@ -13,6 +13,9 @@ import { COLOR_NAMES, trackOf, legalMoves, chooseMove, ranking, eventText as eve
 import { loc, locn, formatList } from '/engine/i18n.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { LUDO_OPTIONS, defaultLudoOptions } from './options.js';
+import { createMangoWallet } from '/engine/mangos.js';
+import { icon } from '/engine/icons.js';
+import { createDieShop, DEFAULT_DIE, MANGO_DIE } from './die-shop.js';
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
 const code=roomFromUrl()||newRoomCode();
 params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
@@ -35,6 +38,20 @@ $('start').onclick=$('again').onclick=()=>{sound.unlock();room.action('start');}
 const thrower=bindDiceThrow({button:$('roll'),surface:$('world'),canThrow:canRoll,
   onStart:()=>sound.unlock(),onThrow:power=>{world?.shakeDie(0);act('roll',{power});},onCancel:()=>world?.shakeDie(0)});
 $('practice').onclick=()=>room.practice();
+const wallet=createMangoWallet(undefined,{source:'ludo'}),dieShop=createDieShop({wallet});
+function renderDieShop(){
+  const {action,cost,missing}=dieShop.offer(MANGO_DIE),label=document.createElement('span');
+  label.textContent=action==='buy'?loc('Comprar dado de mango · {n}',{n:cost}):action==='short'?loc('Dado de mango · te faltan {n}',{n:missing}):action==='equip'?loc('Usar dado de mango'):loc('Guardar dado de mango');
+  $('die-shop').replaceChildren(icon('mango'),label);$('die-shop').disabled=action==='short';$('die-shop').setAttribute('aria-pressed',String(action==='unequip'));
+}
+$('die-shop').onclick=()=>{
+  sound.unlock();const {action}=dieShop.offer(MANGO_DIE);
+  if(action==='buy'&&dieShop.buy(MANGO_DIE))shout(loc('¡Dado de mango en la mesa!'),{tone:'yellow',ms:1500});
+  else if(action==='equip')dieShop.equip(MANGO_DIE);
+  else if(action==='unequip')dieShop.equip(DEFAULT_DIE);
+  world?.setDieLook(dieShop.equipped());renderDieShop();
+};
+renderDieShop();wallet.ready.then(renderDieShop);const stopWallet=wallet.onChange(renderDieShop);
 $('view').onclick=()=>{topView=!topView;world?.setView(topView);$('view').textContent=topView?loc('Vista de mesa'):loc('Vista desde arriba');$('view').setAttribute('aria-pressed',String(topView));};
 const buttons=Array.from({length:4},(_,piece)=>{
   const button=document.createElement('button');button.className='pk-btn piece-button';button.dataset.piece=piece;
@@ -93,7 +110,7 @@ function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower
 requestAnimationFrame(frame);
 render(room.state);room.connect();
 export const sceneReady=import('./scene.js').then(async({createLudoScene})=>{
-  if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece}),onCapture:capture,onStarter:(kind,power)=>{if(!menu.isOpen){sound.unlock();room.action('starter',{cacho:kind,power});}}});await prepareScene(world);render(room.state);$('loading').hidden=true;
+  if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece}),onCapture:capture,onStarter:(kind,power)=>{if(!menu.isOpen){sound.unlock();room.action('starter',{cacho:kind,power});}},dieLook:dieShop.equipped()});await prepareScene(world);render(room.state);$('loading').hidden=true;
 }).catch(error=>{console.error(error);$('loading-copy').textContent=loc('No pudimos abrir la mesa. Comprueba tu conexión y WebGL.');const button=document.createElement('button');button.className='pk-btn';button.textContent=loc('Reintentar');button.onclick=()=>location.reload();$('loading').append(button);throw error;});
-addEventListener('pagehide',()=>{stopped=true;clearInterval(timer);thrower.dispose();hud.dispose();room.dispose();world?.dispose();},{once:true});
+addEventListener('pagehide',()=>{stopped=true;stopWallet();clearInterval(timer);thrower.dispose();hud.dispose();room.dispose();world?.dispose();},{once:true});
 if(params.has('debug'))window.ludoDebug={room,menu,chooseMove,legalMoves,thrower,get world(){return world;}};

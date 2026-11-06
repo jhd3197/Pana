@@ -98,6 +98,14 @@ panas cheer and flail and `shout()` calls it out. Captures are read from the
 state diff in `scene.js`, so every screen plays them, but only within a round. Accessible buttons remain available
 when physical pieces overlap. The shared menu freezes bots only with one human.
 
+The mango die (`die-shop.js`, bought from the lobby) is per device: ownership and
+the worn look sit in `pana:ludo:dado` and never reach the room, so only its owner
+sees it, on every throw at that table. Showing it to rivals would mean sending the
+look through the room and proving it with a two-client suite. `offer` reads the
+balance with `peek`, leaving an older Carreritas hand-over for Carreritas. On an
+account `spend` answers optimistically, so a refusal from the server refunds the
+mangos while the die stays owned on that device.
+
 The canvas is sized to the available stage, not the window: its raycasts must
 subtract its bounding rectangle, and its renderer must use its client size
 after shared quality settings change. Portrait keeps a scrollable lobby below
