@@ -104,9 +104,12 @@ addEventListener('keydown',event=>{
   if(/^[1-4]$/.test(event.key)){event.preventDefault();act('move',{piece:Number(event.key)-1});}
 });
 let previous=performance.now();
-const timer=setInterval(()=>{const now=performance.now();room.tick(Math.min(.2,(now-previous)/1000),menu.isOpen&&room.members.size<=1);previous=now;},100);
+// Heavy rendering starves timers, so frames drive the host clock too; the timer
+// covers a hidden tab, which draws none.
+function hostClock(){const now=performance.now();if(now-previous<50)return;room.tick((now-previous)/1000,menu.isOpen&&room.members.size<=1);previous=now;}
+const timer=setInterval(hostClock,100);
 let frameTime=performance.now();
-function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower.power);world?.frame(Math.min(.05,(now-frameTime)/1000));hud.frame(!!world?.tossing,thrower.shaking,thrower.power);if(room.state.phase==='finished')$('results').hidden=!!world?.celebrating;frameTime=now;requestAnimationFrame(frame);}
+function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower.power);world?.frame(Math.min(.05,(now-frameTime)/1000));hostClock();hud.frame(!!world?.tossing,thrower.shaking,thrower.power);if(room.state.phase==='finished')$('results').hidden=!!world?.celebrating;frameTime=now;requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
 render(room.state);room.connect();
 export const sceneReady=import('./scene.js').then(async({createLudoScene})=>{

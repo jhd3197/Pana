@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ludo: si el anfitrión tiene una PC lenta, la mesa ya no se queda esperando.**
+  Las pausas entre turnos duran casi lo mismo en cualquier equipo, y el resultado del dado se sigue viendo.
 - **Ludo: compra el dado de mango con tus mangos y úsalo en la mesa.**
   Cuesta 150 mangos y se compra una sola vez desde la sala. Puedes guardarlo y volver al dado crema cuando quieras.
 - **Trifulca: los peleadores ya no se meten uno dentro del otro.**

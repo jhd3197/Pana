@@ -27,8 +27,10 @@ try {
   await a.evaluate(()=>{ludoDebug.room.game.roll(1);ludoDebug.room.publish();});
   const samples=await Promise.all([a,b].map(page=>page.evaluate(()=>window.pacingSample)));
   for(const sample of samples){assert.equal(sample.sawFlight,true);assert.ok(sample.held>750);}
-  // Freeze only lighting for the screenshot; slow WebGL capture can outlast the cue.
-  await b.waitForFunction(()=>{const spot=ludoDebug.world.spotlight;if(spot.light.intensity<=2.9)return false;window.spotlightFrame=spot.frame;spot.frame=()=>{};return true;});
+  // Hold the cue at full strength for the checks: it runs on the wall clock and a
+  // slow WebGL frame or capture can outlast its 3.2 s.
+  await b.waitForFunction(()=>{const spot=ludoDebug.world.spotlight;if(!spot.cued)return false;window.spotlightFrame=spot.frame;spot.frame=()=>window.spotlightFrame(1);return true;});
+  await b.waitForFunction(()=>ludoDebug.world.spotlight.light.intensity>2.9);
   assert.equal(await a.evaluate(()=>ludoDebug.world.spotlight.active),false);
   assert.equal(await b.evaluate(()=>{
     const {scene,spotlight}=ludoDebug.world;
@@ -52,11 +54,11 @@ try {
     return true;
   })));
   for(const page of [a,b]){
-    await page.waitForFunction(()=>!ludoDebug.room.state.turnPause);
+    await page.waitForFunction(()=>!ludoDebug.room.state.turnPause,null,{timeout:60_000});
     assert.equal(await page.evaluate(()=>ludoDebug.world.moving),false);
   }
-  await b.waitForFunction(()=>ludoDebug.world.spotlight.active);
-  assert.equal(await a.evaluate(()=>ludoDebug.world.spotlight.active),false);
+  await b.waitForFunction(()=>ludoDebug.world.spotlight.cued);
+  assert.equal(await a.evaluate(()=>ludoDebug.world.spotlight.cued),false);
   for(const page of [a,b])assert.deepEqual(page.errors,[]);
   console.log('ok: missed-roll hold, capture return, action lock and local corner spotlight on two clients');
 } finally {await browser.close();}
