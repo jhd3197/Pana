@@ -17,6 +17,7 @@ import { createTeamMarkers, isTeammate } from '/engine/play/team-marker.js';
 import { teamPlay } from './options.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
+import { cacheShadows } from '/engine/shadow-cache.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bake } from '/engine/models/core/static-batch.js';
@@ -82,6 +83,8 @@ export function createScene(canvas) {
   }
   const defaultCourt = new THREE.Group(); scene.add(defaultCourt);
   let environment = null, mapId = ''; scene.userData.mapId = mapId;
+  // Each map is one big baked batch that culling cannot trim, so its shadows are cached: only panas, paint and ships redraw per frame.
+  const shadowCache = cacheShadows(renderer, () => environment?.group || defaultCourt);
   const materials = new Map(), avatars = new Map(), ballMeshes = new Map(), splats = new Map();
   const teamMarks = createTeamMarkers();
   const material = color => { if (!materials.has(color)) materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: .85 })); return materials.get(color); };
@@ -153,9 +156,9 @@ export function createScene(canvas) {
     environment?.dispose(); environment = null; crates?.dispose(); crates = null; mapId = id; variant = layout; scene.userData.mapId = id;
     defaultCourt.visible = id === 'plaza'; cameraBounds.length = 0; mapReady = Promise.resolve();
     if (id === 'plaza') {
-      crates = createPlazaProps(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...crates.bounds);
+      crates = createPlazaProps(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...crates.bounds); shadowCache.refresh();
       if (town) cameraBounds.push(...town.bounds);
-      else mapReady = loadTown().then(({ createPlazaTown }) => { if (disposed || town) return; town = createPlazaTown({ paving }); defaultCourt.add(town.group); if (mapId === 'plaza') cameraBounds.push(...town.bounds); }).catch(() => {}); // retried on the next pick
+      else mapReady = loadTown().then(({ createPlazaTown }) => { if (disposed || town) return; town = createPlazaTown({ paving }); defaultCourt.add(town.group); shadowCache.refresh(); if (mapId === 'plaza') cameraBounds.push(...town.bounds); }).catch(() => {}); // retried on the next pick
     }
     else if (id === 'muelle' || id === 'noche' || id === 'terminal') stand((id === 'muelle' ? createMuelle : id === 'noche' ? createNoche : createTerminal)(layout));
     else mapReady = loadArenas().then(({ createArenaEnvironment }) => { if (!disposed && mapId === id && variant === layout && !environment) stand(createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) })); }).catch(() => {}); // a failed fetch retries on the next pick
@@ -464,7 +467,7 @@ export function createScene(canvas) {
     aim.visible = !lobby && !first && !!aimPoint; if (aimPoint) aim.position.set(aimPoint.x, .07, aimPoint.z);
     blasts.update(dt); puffs.update(dt); elapsed += dt; sky.update(elapsed); renderer.render(scene, camera);
   }
-  return { renderer, scene, camera, avatars, draw, setMap,
+  return { renderer, scene, camera, avatars, draw, setMap, shadowCache,
     // The current court's own meshes (no panas, paint or effects): what the collision debug view measures.
     mapGroup() { return environment?.group || defaultCourt; },
     setView(value) { cameraView = value; initialized = false; },
@@ -503,6 +506,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { disposed = true; unbind(); meleeHand.dispose(); teamMarks.dispose(); ctfProps.dispose(); domProps.dispose(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); town?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); thrownMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { disposed = true; unbind(); shadowCache.dispose(); meleeHand.dispose(); teamMarks.dispose(); ctfProps.dispose(); domProps.dispose(); blasts.dispose(); puffs.clear(); halos.forEach(m => m.dispose()); streaks.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); town?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); grenadeMeshes.forEach(o => o.userData.dispose()); thrownMeshes.forEach(o => o.userData.dispose()); [arcBeads, arcPath, arcRing].forEach(o => o.userData.dispose()); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, streakGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }

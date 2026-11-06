@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo: el juego va más fluido, sobre todo en El Puerto y La Plaza.**
+  Las sombras del mapa ya no se redibujan a cada rato, así que la tarjeta gráfica descansa y apuntar se siente más suave.
 - **Fosa: La Mina del Sol ahora luce como piedra tallada oscura.**
   El altar del ídolo ya no es un sello solar dorado: es un rostro tallado en piedra negra. El letrero de la boca de la mina va a juego.
 - **Fosa: tu rango ya se te ve encima.**
