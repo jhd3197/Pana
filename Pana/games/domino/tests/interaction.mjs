@@ -10,7 +10,8 @@ try{
  await page.locator('#start').click();
  // The server plays the bots until it is our turn.
  await page.waitForFunction(()=>dominoDebug.room.state.phase==='playing'&&dominoDebug.room.state.turn===dominoDebug.room.seat,null,{timeout:30000});
- await page.waitForTimeout(700);
+ // Dealt tiles fly into the hand; aim only once every legal one has landed.
+ await page.waitForFunction(()=>{const {world,room,legalMoves}=dominoDebug;return legalMoves(room.state,room.seat).every(m=>{const t=world.tiles.get(m.tile);return t&&!t.lift&&t.model.position.distanceTo(t.target)<.01;});});
  const target=await page.evaluate(()=>{
   const {world,room,legalMoves}=dominoDebug;
   for(const move of legalMoves(room.state,room.seat)){
@@ -25,7 +26,8 @@ try{
  await page.waitForFunction(count=>dominoDebug.room.state.chain.length>count,target.count);
  assert.ok(await page.evaluate(id=>dominoDebug.room.state.chain.some(t=>t.id===id),target.id));
  console.log('ok: clicking an actual 3D tile plays it through raycasting');
- await page.locator('#menu').click();await page.locator('#pana-tab-settings').click();await page.locator('.pana-settings-nav button',{hasText:'Ratón y teclado'}).click();await page.getByRole('tab',{name:'Cómo se juega',exact:true}).click();assert.match(await page.locator('#pana-panel-settings').textContent(),/doble seis/);await page.keyboard.press('Escape');
+ // How to play lives in the pause menu's Instrucciones tab, never on the HUD.
+ await page.locator('#menu').click();await page.locator('#pana-tab-help').click();await page.locator('#pana-panel-help[data-ready]').waitFor();assert.match(await page.locator('#pana-panel-help').textContent(),/doble seis/);await page.keyboard.press('Escape');
  await page.evaluate(()=>dominoDebug.room.practice());await page.setViewportSize({width:390,height:844});
  await page.locator('#start').click();
  for(let i=0;i<4;i++){if(await page.evaluate(()=>dominoDebug.room.state.turn===dominoDebug.room.seat))break;await page.evaluate(()=>dominoDebug.room.tick(2));}
