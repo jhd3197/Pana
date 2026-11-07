@@ -12,6 +12,7 @@ export default {
     { action: loc('Elegir una punta si la ficha cabe en ambas'), keyboard: 'A / B', gamepad: 'LB / RB', touch: loc('Toca la punta') },
     { action: loc('Pasar, solo si no tienes jugada'), keyboard: 'P', gamepad: 'X', touch: loc('Botón Pasar') },
     { action: loc('Pedir una pista'), keyboard: 'H', gamepad: 'Y', touch: loc('Botón Pista') },
+    { action: loc('Voltear la mesa, solo de broma'), keyboard: 'F', gamepad: 'LT', touch: loc('Botón Voltear la mesa') },
   ] }, { title: loc('Siempre'), rows: [
     { action: loc('Activar o silenciar el sonido'), keyboard: 'M' },
     { action: loc('Abrir o cerrar el menú'), keyboard: 'Esc', gamepad: 'Start', touch: loc('Botón Menú') },

@@ -6,6 +6,7 @@ import { createGameTable, createGameChair, disposeModel } from '/engine/models/p
 import { createLudoToss, HOP, FLIGHT, motionDuration, rollKey } from './dice-timing.js';
 import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { sound, Puffs, Shockwaves } from '/engine/fx.js';
+import { createTableFlip } from '/engine/fx/table-flip.js';
 import { createLudoBoard, createLudoPawn, createLudoDie, boardPoint, tableScale } from './board-model.js';
 import { createCaminoMotion } from './camino-motion.js';
 import { chooseMotion } from './motion-choice.js';
@@ -71,6 +72,7 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter, dieLook
   const rest=new THREE.Vector3();
   const final=new THREE.Quaternion(),spin=new THREE.Quaternion(),axis=new THREE.Vector3();
   seatTable(4);
+  const tableFlip=createTableFlip(THREE,{table:()=>[table,board],pieces:()=>[...pawns.map(p=>p.model),diePivot],radius:()=>3.5*reach});
   function pick(event){
     const r=canvas.getBoundingClientRect();cursor.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);ray.setFromCamera(cursor,camera);
     const hit=ray.intersectObjects(pawns.filter(p=>p.playable).map(p=>p.model),true)[0];
@@ -188,7 +190,7 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter, dieLook
     const bottom=rect&&!landscape?Math.max(margin,h-rect.top+18):margin;
     stage.frameCamera(bounds,top?[0,6,.35]:[0,1.4,1],{x:margin,y:topInset,width:Math.max(160,landscape?rect.left-margin*2:w-margin*2),height:Math.max(120,h-topInset-bottom)});
     // Keep plaza decorations between the camera and the table out of the close view.
-    camera.near=Math.max(.1,camera.position.distanceTo(focus)-nearClearance);camera.updateProjectionMatrix();
+    camera.near=tableFlip.active?.1:Math.max(.1,camera.position.distanceTo(focus)-nearClearance);camera.updateProjectionMatrix();
     for(const p of pawns){
       const m=p.model;
       poseFace(m,time,p.flight?'surprised':p.progress===home?'happy':'idle');
@@ -245,7 +247,7 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter, dieLook
       diePivot.rotation.set(time*(6+shake*14),time*(4+shake*9),time*5);
     }
     puffs.update(dt);waves.update(dt);starter.frame(dt);
-    moments.frame(dt,!!toss);spotlight.frame();stage.draw(dt);
+    moments.frame(dt,!!toss);spotlight.frame();tableFlip.draw(dt,()=>stage.draw(dt));
   }
   // The local thrower shaking the die (0 = not shaking; up to 1 = as hard as it gets).
   let nextShakeSound=0;
@@ -259,5 +261,5 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter, dieLook
   function setView(value){top=!!value;}
   function projectPiece(seat,piece){const p=pawns.find(p=>p.seat===seat&&p.piece===piece),v=p.model.position.clone();v.y+=.2*p.model.scale.y;v.project(camera);const r=canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};}
   function dispose(){disposed=true;audio.dispose();spotlight.dispose();moments.dispose();canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);starter.dispose();pawns.forEach(p=>p.motion?.dispose());characters.forEach(c=>c.dispose());puffs.clear();waves.clear();disposeModel(own);stage.dispose();}
-  return {moments,spotlight,get celebrating(){return moments.celebrating;},update,frame,setView,shakeDie,setDieLook,dispose,characters,pawns,starter,projectPiece,renderer,scene,camera,get die(){return diePivot;},get moving(){return pawns.some(p=>p.path||p.flight||p.motion);},get tossing(){return !!toss;},get landedAt(){return landedAt;}};
+  return {flip:(seat,seed)=>tableFlip.start(seatAngle(seat,seats),seed),get flipping(){return tableFlip.active;},table,moments,spotlight,get celebrating(){return moments.celebrating;},update,frame,setView,shakeDie,setDieLook,dispose,characters,pawns,starter,projectPiece,renderer,scene,camera,get die(){return diePivot;},get moving(){return pawns.some(p=>p.path||p.flight||p.motion);},get tossing(){return !!toss;},get landedAt(){return landedAt;}};
 }

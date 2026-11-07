@@ -88,6 +88,7 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
 .end-button:disabled{display:none}
 .rack-actions{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .rack-actions>.pk-btn{min-width:150px}
+.rack-row{display:flex;gap:8px;min-width:150px}.rack-row>#hint{flex:1;min-width:0}.rack-row>#flip{flex:none;min-width:0;padding-inline:12px;justify-content:center}
 .rack-actions .pk-btn{justify-content:space-between}
 #camera-view{font-size:13px;min-height:38px;justify-content:center;color:var(--pk-muted)}
 #camera-view[aria-pressed="true"]{color:var(--pk-yellow)}
@@ -143,7 +144,7 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
 .result-card>.pk-btn--primary{margin-top:6px}
 
 @media(max-height:760px) and (min-width:721px){.domino{width:46px;height:92px}.pip-face{padding:4px}.hand{min-height:96px}.rack-center{gap:10px}.hud-right{top:72px}.seat-card{top:188px;transform:none;padding:8px 6px;gap:3px}.seat-card .seat-badge{width:32px;height:32px;font-size:13px}.activity-panel{max-height:150px;overflow:hidden}}
-@media(max-width:1100px) and (min-width:721px){.rack-info{max-width:190px}.rack-actions{min-width:120px}.hand{gap:7px}.domino{width:44px;height:88px}.hud-right{width:210px}.activity-panel{width:190px}.rack-actions>.pk-btn{min-width:120px}}
+@media(max-width:1100px) and (min-width:721px){.rack-info{max-width:190px}.rack-actions,.rack-row{min-width:120px}.hand{gap:7px}.domino{width:44px;height:88px}.hud-right{width:210px}.activity-panel{width:190px}.rack-actions>.pk-btn{min-width:120px}}
 @media(max-width:720px){
   #invite{display:none}
   .topbar{padding:12px}
@@ -164,7 +165,7 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
   .rack-panel{left:8px;right:8px;bottom:12px;grid-template-columns:1fr auto;gap:8px}
   .rack-center{grid-column:1/-1;grid-row:1;gap:10px}
   .rack-info{grid-row:2;max-width:none;align-self:stretch;padding:8px 10px;font-size:11px}
-  .rack-actions{grid-row:2;gap:6px}.rack-actions>.pk-btn{min-width:0}
+  .rack-actions{grid-row:2;gap:6px}.rack-row{min-width:0;gap:6px}.rack-actions>.pk-btn{min-width:0}
   .rack-actions .pk-btn{min-height:38px;padding:6px 12px;font-size:13px}
   #camera-view{font-size:12px}
   #turn-status{font-size:13px}#turn-status.your-turn{font-size:19px;white-space:normal;text-align:center}

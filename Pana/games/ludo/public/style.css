@@ -79,8 +79,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
 .piece-button small { display: block; font: 800 10px/1.3 var(--pk-sans); margin-top: 5px; white-space: normal; }
 .piece-button.recommended::after { content: 'MEJOR'; position: absolute; top: -9px; right: 3px; padding: 1px 4px; background: var(--pk-yellow); color: var(--ludo-ink); font: 900 8px var(--pk-sans); }
 #die-shop { display: flex; align-items: center; justify-content: center; gap: 8px; }
-#view, #details { position: fixed; top: 76px; border-radius: 0; }
-#view { right: 24px; }
+#details, .hud-corner { position: fixed; top: 76px; }
+#view, #flip, #details { border-radius: 0; }
+.hud-corner { right: 24px; display: flex; gap: 8px; }
 #details { left: 24px; }
 .connection { position: fixed; bottom: 4px; left: 12px; right: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 10px; color: var(--pk-night); z-index: 5; }
 #results { --pk-results-z: 8; }
@@ -97,8 +98,9 @@ body.pana-starter .action-panel { visibility: hidden; }
   #welcome .pk-lobby-foot { margin-top: 8px; grid-template-columns: 1fr 1fr; gap: 8px; }
   #lobby-room { grid-column: 1/-1; font-size: 11px; }
   #start { font-size: 18px; padding: 10px; }
-  #details, #view { top: 66px; font-size: 10px; padding: 8px; }
-  #details { left: 12px; } #view { right: 12px; }
+  #details, .hud-corner { top: 66px; }
+  #details, #view, #flip { font-size: 10px; padding: 8px; }
+  #details { left: 12px; } .hud-corner { right: 12px; gap: 6px; }
   #scoreboard { inset: 112px 16px auto; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
   .score { padding: 8px 10px; }
   .score-head { flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
@@ -130,7 +132,8 @@ body.pana-starter .action-panel { visibility: hidden; }
   #roll { width: 100%; min-width: 0; font-size: 17px; padding: 8px; }
   #pieces { width: calc(100% + 52px); flex: none; margin-left: -52px; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .piece-button { min-height: 48px; }
-  #details, #view { top: 70px; font-size: 10px; }
+  #details, .hud-corner { top: 70px; }
+  #details, #view, #flip { font-size: 10px; }
   #scoreboard { inset: 110px 320px 24px 24px; gap: 10px; }
   .score { padding: 6px 10px; } .score-head b { font-size: 16px; } .score-head small { font-size: 9px; }
   .race-tracks { gap: 4px; } .race-track { font-size: 9px; } .race-line { height: 5px; }

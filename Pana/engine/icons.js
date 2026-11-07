@@ -59,6 +59,7 @@ export const ICONS = {
   lock: svg('<path d="M13 18v-5a7 7 0 0 1 14 0v5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><rect x="8" y="18" width="24" height="17" rx="3" fill="currentColor" stroke="#16161a" stroke-width="2.5"/><circle cx="20" cy="26" r="2.5" fill="#16161a"/>'),
   close: svg('<path d="m10 10 20 20M30 10 10 30" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>'),
   chevronLeft: svg('<path d="m24 10-8 10 8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
+  tableFlip: svg('<path d="M7 30 29 8l5 5-22 22z" fill="currentColor"/><path d="m16 25 7 8M25 16l8 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M6 13l3-7 3 6M14 7l3-3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>'),
   plus: svg('<path d="M20 9v22M9 20h22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>'),
   // Ajustes categories (engine/settings-workspace.js).
   mouse: svg('<rect x="11" y="4" width="18" height="32" rx="9" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M20 5v10" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>'),

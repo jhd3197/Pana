@@ -9,6 +9,7 @@ import { createSpanishCard, createScoreToken } from '/engine/models/props/spanis
 import { deck, previewPlay, teamOf, MODES } from './rules.js';
 import { loc } from '/engine/i18n.js';
 import { createCardFeel } from '/engine/fx/card-feel.js';
+import { createTableFlip } from '/engine/fx/table-flip.js';
 
 const UP = new THREE.Vector3(0, 1, 0), Y = 1.48;
 const LOOKS = [{ hat: 'llanero', outfitColor: '#dc7854' }, { hat: 'pesca', hatColor: '#ddad58', outfitColor: '#4c9385', glasses: 'redondos', face: 'feliz' }, { hat: 'gorra', outfitColor: '#b8c279' }, { hat: 'band', outfitColor: '#c96c59' }];
@@ -34,6 +35,7 @@ export async function createCaidaScene(canvas, { onCard, onStarter, onLoading = 
     const scoreTokens = Array.from({ length: 12 }, () => { const token = createScoreToken(); scene.add(token); return token; }); tokens.push(scoreTokens);
   }
   const bubbles = createSeatBubbles(document.getElementById('world-labels'), 6);
+  const tableFlip = createTableFlip(THREE, { table: () => [table], pieces: () => [...[...cards.values()].map(c => c.model), ...tokens.flat()], radius: () => 3.5 * table.scale.x });
   const angleOf = seat => seat * Math.PI * 2 / (state?.players.length || 2);
   function cameraTarget(immediate = false) {
     const mobile = innerWidth < 700, angle = angleOf(ownSeat) + (cameraMode === 'mesa' ? .02 : .17);
@@ -154,11 +156,12 @@ export async function createCaidaScene(canvas, { onCard, onStarter, onLoading = 
       bubbles.place(i, (projected.x * .5 + .5) * innerWidth, (-projected.y * .5 + .5) * innerHeight);
     });
     starter?.frame(dt);
-    stage.draw(dt);
+    tableFlip.draw(dt, () => stage.draw(dt));
   }
   const resize = () => { renderer.setSize(innerWidth, innerHeight); cameraTarget(); }; addEventListener('resize', resize);
   return { scene, camera, renderer, cards, characters, update, frame, setView(value) { cameraMode = value; cameraTarget(); },
     say: bubbles.say, get starter() { return starter; },
+    flip(seat, seed) { return tableFlip.start(angleOf(seat), seed); }, get flipping() { return tableFlip.active; }, table,
     dispose() {
       disposed = true; feel.dispose(); starter?.dispose(); removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
       cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); bubbles.dispose(); table.userData.dispose(); stage.dispose();

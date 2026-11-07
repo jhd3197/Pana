@@ -16,6 +16,8 @@ import { LUDO_OPTIONS, defaultLudoOptions } from './options.js';
 import { createMangoWallet } from '/engine/mangos.js';
 import { icon } from '/engine/icons.js';
 import { createDieShop, DEFAULT_DIE, MANGO_DIE } from './die-shop.js';
+import { createFlipControl } from '/engine/play/flip-control.js';
+import { canFlip } from '/engine/play/flip-rules.js';
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
 const code=roomFromUrl()||newRoomCode();
 params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
@@ -25,7 +27,7 @@ const room=new LudoRoom({code,name:loadName(),avatar:loadAvatar(),onState:render
 });
 const roomOptions=createRoomOptions($('room-options'),{title:loc('Ludo'),fields:LUDO_OPTIONS,
   change:options=>room.action('options',{options}),reset:()=>room.action('options',{options:defaultLudoOptions()})});
-const menu=createGameMenu({ pad: { buttons: true, keys: { x: ['Space', loc('Agitar el dado; suelta para tirar')], rt: ['Space', loc('Agitar el dado; suelta para tirar')] } },title:loc('Ludo · Pana'),sound,orientation:'libre',
+const menu=createGameMenu({ pad: { buttons: true, keys: { lt: ['KeyF', loc('Voltear la mesa')], x: ['Space', loc('Agitar el dado; suelta para tirar')], rt: ['Space', loc('Agitar el dado; suelta para tirar')] } },title:loc('Ludo · Pana'),sound,orientation:'libre',
   note:()=>room.members.size>1?loc('La partida continúa mientras estás en el menú.'):loc('La partida está en pausa. Los bots te esperan.'),
   invite:()=>room.offline?null:inviteUrl(code),
 });
@@ -67,6 +69,9 @@ function capture({by,victims}){
   else if(victims.includes(mine))shout(loc('¡{name} te comió!',{name:room.state.players[by].name}),{ms:1500});
   else shout(loc('¡{name} se comió a {names}!',{name:room.state.players[by].name,names:formatList(names)}),{tone:'yellow',ms:1400});
 }
+const flip=createFlipControl({button:$('flip'),room,sound,canUse:()=>!!world&&room.connected&&canFlip(room.state,room.id)&&!menu.isOpen,
+  play:(seat,seed)=>world?.flip(seat,seed),say:(seat,text)=>shout(text,{tone:'yellow',ms:1600})});
+$('flip').prepend(icon('tableFlip'));
 function act(action,values={}){if(menu.isOpen||!ownTurn()||action==='move'&&world?.tossing)return;sound.unlock();room.action(action,values);}
 function render(rawState){
   const state=presentedState(rawState);
@@ -83,7 +88,7 @@ function render(rawState){
   fillRoster($('lobby-roster'),state.players.map(p=>({rank:p.seat+1,name:p.id===room.id?loc('{name} · tú',{name:p.name}):p.name,detail:loc(COLOR_NAMES[p.seat]),end:p.id===null?loc('Bot'):loc('Listo'),me:p.id===room.id})));
   let eventText=eventLine(state.event);
   if(state.options.assistedEntry&&state.phase==='playing'&&!state.die&&state.entryMisses?.[state.turn])eventText+=' '+locn(state.entryMisses[state.turn],'Salida asistida: {n} intentos sin salir.','Salida asistida: {n} intentos sin salir.');
-  $('roll').disabled=!ownTurn()||!!state.die;
+  $('roll').disabled=!ownTurn()||!!state.die;flip.sync();
   if($('roll').disabled)thrower.cancel();
   $('results').hidden=!ended;$('again').disabled=!room.connected||!room.isHost;
   if(ended){
@@ -101,6 +106,7 @@ addEventListener('keydown',event=>{
   if(menu.isOpen||event.repeat||event.target.closest?.('input,textarea,select,[contenteditable]'))return;
   if(event.key.toLowerCase()==='m')toggleMute();
   if(event.key.toLowerCase()==='v'&&!$('hud').hidden)$('view').click();
+  if(event.key.toLowerCase()==='f')flip.trigger();
   if(/^[1-4]$/.test(event.key)){event.preventDefault();act('move',{piece:Number(event.key)-1});}
 });
 let previous=performance.now();
@@ -115,5 +121,5 @@ render(room.state);room.connect();
 export const sceneReady=import('./scene.js').then(async({createLudoScene})=>{
   if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece}),onCapture:capture,onStarter:(kind,power)=>{if(!menu.isOpen){sound.unlock();room.action('starter',{cacho:kind,power});}},dieLook:dieShop.equipped()});await prepareScene(world);render(room.state);$('loading').hidden=true;
 }).catch(error=>{console.error(error);$('loading-copy').textContent=loc('No pudimos abrir la mesa. Comprueba tu conexión y WebGL.');const button=document.createElement('button');button.className='pk-btn';button.textContent=loc('Reintentar');button.onclick=()=>location.reload();$('loading').append(button);throw error;});
-addEventListener('pagehide',()=>{stopped=true;stopWallet();clearInterval(timer);thrower.dispose();hud.dispose();room.dispose();world?.dispose();},{once:true});
+addEventListener('pagehide',()=>{stopped=true;flip.dispose();stopWallet();clearInterval(timer);thrower.dispose();hud.dispose();room.dispose();world?.dispose();},{once:true});
 if(params.has('debug'))window.ludoDebug={room,menu,chooseMove,legalMoves,thrower,get world(){return world;}};

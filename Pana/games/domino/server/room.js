@@ -5,6 +5,7 @@
 import crypto from 'node:crypto';
 import { PanaRoom, roomState, memberAvatar } from '../../../server/src/room-kit.js';
 import { DominoGame } from '../public/rules.js';
+import { canFlip, createFlipGate, FLIP_COOLDOWN } from '../../../engine/play/flip-rules.js';
 
 const TICK = .1;
 
@@ -22,6 +23,13 @@ export default class DominoRoom extends PanaRoom {
       // The room numbers each member's actions; a client's own count is never trusted.
       const accepted = this.game.accept(seat, { ...data, seq: (this.game.ledger[seat] || 0) + 1 }, this.hostSeat());
       this.publish(accepted ? null : client);
+    });
+    // A table flip is an emote: relayed on the sender's turn, and the game is never touched.
+    const flips = createFlipGate(FLIP_COOLDOWN - 1);
+    this.onMessage('flip', (client, data) => {
+      const seat = this.seatOf(client);
+      if (!canFlip(this.game, seat) || !flips.allow(seat)) return;
+      this.broadcast('flip', { seat, seed: Number(data?.seed) >>> 0 }, { except: client });
     });
     this.clock.setInterval(() => { if (!this.paused() && this.game.tick(TICK)) this.publish(); }, TICK * 1000);
   }
