@@ -58,10 +58,14 @@ try{
   await a.locator('#start').click();await sync(a,b);
   assert.equal(await b.evaluate(()=>ludoDebug.room.state.phase),'starter');
   // ¿Quién empieza?: everyone shakes at once. Juan holds the cacho button, Ana holds Space.
+  // A pana who never shakes slams on their own after SHAKE_LIMIT seconds of the
+  // host's clock (quien-empieza.test.js covers that). Two software-WebGL pages
+  // can spend that long just starting, so restart the clock before each input.
+  const freshShake=()=>a.evaluate(()=>{ludoDebug.room.game.starter.t=0;});
   await a.locator('#pana-starter-shake').waitFor();await b.locator('#pana-starter-shake').waitFor();
-  await a.locator('#pana-starter-shake').dispatchEvent('pointerdown',{pointerId:3,button:0});
+  await freshShake();await a.locator('#pana-starter-shake').dispatchEvent('pointerdown',{pointerId:3,button:0});
   await b.waitForFunction(()=>ludoDebug.room.state.starter.shaking.includes(0));
-  await b.evaluate(()=>document.activeElement?.blur());await b.keyboard.down(' ');
+  await freshShake();await b.evaluate(()=>document.activeElement?.blur());await b.keyboard.down(' ');
   await a.waitForFunction(()=>ludoDebug.room.state.starter.shaking.includes(1));
   assert.ok(await a.evaluate(()=>ludoDebug.world.starter.group.visible),'the cachos are on the table');
   await a.screenshot({path:'art/ludo/desktop-starter.png'});
@@ -194,8 +198,8 @@ try{
   assert.ok(await m.locator('#world').evaluate(el=>el.getBoundingClientRect().height>250));
   await m.evaluate(()=>ludoDebug.room.cut());await m.locator('#practice').waitFor({state:'visible'});await m.locator('#practice').click();
   assert.ok(await m.locator('#invite').isDisabled());await m.locator('#start').click();assert.equal(await m.evaluate(()=>ludoDebug.room.state.phase),'starter');
-  // Build the five models (three boards) and twenty-one shared animation previews through the real catalog.
-  assert.equal(await m.evaluate(async()=>{const {ASSETS}=await import('/studio/catalog.js');for(const asset of ASSETS.filter(a=>a.id.startsWith('ludo-'))){const {group}=await asset.build();if(!group.children.length)throw Error('empty model');group.userData.dispose();}return ASSETS.filter(a=>a.id.startsWith('ludo-')).length;}),26);
+  // Build the six models (three boards, the cream and mango dice, the pawn) and twenty-one shared animation previews through the real catalog.
+  assert.equal(await m.evaluate(async()=>{const {ASSETS}=await import('/studio/catalog.js');for(const asset of ASSETS.filter(a=>a.id.startsWith('ludo-'))){const {group}=await asset.build();if(!group.children.length)throw Error('empty model');group.userData.dispose();}return ASSETS.filter(a=>a.id.startsWith('ludo-')).length;}),27);
   const response=await m.request.get(`${base}/api/games`);const listing=await response.json();assert.ok(JSON.stringify(listing).includes('Ludo'));
   await m.goto(base);await m.getByRole('heading',{name:'Ludo',exact:true}).waitFor();
   console.log('ok: win/rematch, portrait and landscape touch, local fallback, Studio models and hub discovery');
