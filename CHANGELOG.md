@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: la Escalera de Calor guarda tu Calor máximo.**
+  Termina una expedición con más Calor que nunca y ganas XP extra una sola vez; tu Calor máx se ve en la sala y al terminar.
+
 ## 0.9.0 - 2026-11-07
 
 - **Caída, Dominó y Ludo: ¿te dio rabia? Voltea la mesa.**

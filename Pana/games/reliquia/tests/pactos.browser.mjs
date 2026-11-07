@@ -1,5 +1,6 @@
 // Two real clients and pacts: the host's rank decides the menu, the guest sees the
-// choice and the Calor chip, the expedition plays it and both are paid the bonus.
+// choice and the Calor chip, the expedition plays it and both are paid the bonus;
+// the first finished Calor is a new rung of the Escalera, paid once.
 import assert from 'node:assert/strict';
 import { launch, openGame, waitFor } from '../../../tests/browser-kit.js';
 
@@ -50,11 +51,18 @@ try {
   for (const page of [a, b]) {
     await waitFor(page, () => document.getElementById('result-calor')?.textContent === 'Calor +10 %');
     assert.equal(await page.locator('#result-calor').isVisible(), true);
-    assert.equal(await page.evaluate(() => document.querySelector('.pk-rank-gain').textContent), '+66 XP');
+    // 66 for the dive, 10 for the first rung of the Escalera de Calor.
+    assert.equal(await page.evaluate(() => document.querySelector('.pk-rank-gain').textContent), '+76 XP');
+    await waitFor(page, () => document.getElementById('result-calor-max')?.textContent === 'Calor máx 1');
+    await waitFor(page, () => document.getElementById('rank-toast')?.textContent.includes('Calor máximo: 1'));
     assert.equal(await page.evaluate(() => document.getElementById('result-payout').textContent.replace(/\D/g, '')), '1100');
     const fits = await page.evaluate(() => { const r = document.querySelector('.pk-rank').getBoundingClientRect(), c = document.querySelector('.pk-results-card').getBoundingClientRect(); return r.left >= c.left && r.right <= c.right; });
     assert.ok(fits, 'the line stays inside the card');
     assert.deepEqual(page.errors, []);
   }
   check('the expedition plays the pact and both are paid the bonus');
+
+  await a.evaluate(() => reliquia.room.publish());   // another render of the same results
+  assert.equal(await a.evaluate(() => JSON.parse(localStorage.getItem('pana:progress:reliquia')).receipts.filter(r => r === 'calor:1').length), 1);
+  check('a new Calor máximo is kept and its rung paid once')
 } finally { await browser.close(); }
