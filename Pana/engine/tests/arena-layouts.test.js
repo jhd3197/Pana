@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ARENAS, ARENA_SPAWNS, arenaLayout, createHuntLayout, outsideTable } from '../worlds/arena-layouts.js';
 import { propDefinition } from '../models/props/plaza-definitions.js';
 import { HuntRound } from '../../games/escondidas/public/rules.js';
-import { Arena, blocked, RADIUS, coverFor, spawnsFor } from '../../games/pintura/public/rules.js';
+import { Arena, blocked, RADIUS, SHOT_HEIGHT, coverFor, spawnsFor } from '../../games/pintura/public/rules.js';
 import { createGame, acceptAction, snapshot } from '../../games/billar/public/rules.js';
 import { CaidaGame } from '../../games/caida/public/rules.js';
 
@@ -49,9 +49,11 @@ for (const { id } of ARENAS.filter(m => m.id !== 'plaza')) {
     game.add(1, { name: 'Uno' }); game.add(2, { name: 'Dos' }); game.start(); game.go();
     Object.assign(game.players[0], { x: o.x - o.w / 2 - 2, z: o.z, shield: 0 });
     Object.assign(game.players[1], { x: o.x + o.w / 2 + 2, z: o.z, shield: 0 });
-    game.balls.push({ id: 1, owner: 1, x: game.players[0].x, z: o.z, vx: 300, vz: 0, life: 2 });
+    // Shaped like a fired ball: shots sweep in 3D, so without a height one misses every box.
+    const x = game.players[0].x;
+    game.balls.push({ id: 1, owner: 1, x, y: SHOT_HEIGHT, z: o.z, x0: x, z0: o.z, from: SHOT_HEIGHT, rise: 0, vx: 300, vy: 0, vz: 0, life: 2 });
     game.step(.05); assert.equal(game.balls.length, 0); assert.equal(game.players[1].hits, 0);
-    assert.ok(game.splats[0].x < o.x);
+    assert.ok(game.splats[0].x < o.x); assert.ok(Number.isFinite(game.splats[0].hy));
   });
 }
 
