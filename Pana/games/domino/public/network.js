@@ -24,6 +24,7 @@ export class DominoRoom {
       if (this.offline || this.disposed) { link.leave(); return; }
       this.link = link; this.connected = true;
       link.on('view', state => { if (!this.offline) { this.state = state; this.onState(state); } });
+      link.on('flip', ({ seat, seed }) => { if (!this.offline) this.onEmote?.(seat, { name: 'flip', seed }); });
       link.on('state', () => { if (!this.offline) { this.status(); this.onState(this.state); } });
       link.on('status', (text, failed) => { if (this.offline) return; this.connected = !failed; failed ? this.onStatus(loc('Sin conexión. Reconectando…'), true) : this.status(); });
       link.on('left', () => { if (this.offline) return; this.connected = false; this.solo = true; this.onStatus(loc('No pudimos conectar. Puedes jugar en local.'), true); this.onState(this.state); });
@@ -47,6 +48,8 @@ export class DominoRoom {
     if (action === 'options' && values.patch?.seats && this.state.players.slice(values.patch.seats).some(p => p.id !== null)) return false;
     this.link.send('action', data); return true;
   }
+  // Cosmetic only: the room checks the turn and passes it on, the game never sees it.
+  emote({ seed }) { if (!this.offline) this.link?.send('flip', { seed }); }
   // paused: the menu is open with nobody else at the table. Online the server
   // holds the bots while every pana there has paused.
   tick(dt, paused = false) {

@@ -35,3 +35,28 @@ test('only the host deals; a dropped pana plays as a bot and gets their seat bac
   assert.ok(ana);
   t.room.onDispose();
 });
+
+test('a table flip goes to the others on your turn, and the game never hears of it', () => {
+  const t = createTestRoom(DominoRoom, { code: 'domino-flip' });
+  const ana = t.join('ana'), beto = t.join('beto');
+  const flips = () => t.broadcasts.filter(b => b.type === 'flip');
+  t.send(ana.client, 'flip', { seed: 1 });
+  assert.equal(flips().length, 0, 'not in the lobby');
+  t.send(ana.client, 'action', { action: 'options', patch: { starter: 'regla' }, revision: t.room.game.revision });
+  t.send(ana.client, 'action', { action: 'start', revision: t.room.game.revision });
+  for (let i = 0; i < 400 && ![1, 2].includes(t.room.game.players[t.room.game.turn].id); i++) t.tick();
+  const turn = t.room.game.players[t.room.game.turn].id;
+  assert.ok([1, 2].includes(turn), 'the bots hand a pana the turn');
+  const [mine, other] = turn === 1 ? [ana, beto] : [beto, ana];
+  const before = JSON.stringify(t.room.game.snapshot?.() ?? t.room.game.view(0)), sent = mine.sent.length;
+  t.send(other.client, 'flip', { seed: 2 });
+  assert.equal(flips().length, 0, 'out of turn');
+  t.send(mine.client, 'flip', { seed: 77 });
+  t.send(mine.client, 'flip', { seed: 78 });
+  assert.equal(flips().length, 1, 'the cooldown holds');
+  assert.deepEqual(flips()[0].msg, { seat: turn, seed: 77 });
+  assert.equal(flips()[0].opts.except, mine.client);
+  assert.equal(JSON.stringify(t.room.game.snapshot?.() ?? t.room.game.view(0)), before, 'the game is untouched');
+  assert.equal(mine.sent.length, sent, 'no new view: nothing happened to the game');
+  t.room.onDispose();
+});

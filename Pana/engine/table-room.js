@@ -64,8 +64,12 @@ export class TableRoom extends HostRoom {
       // Publish even a refused action, so the sender sees the table as it is.
       if (this.table.accept(this.game, id, data, this.hostId)) { this.botElapsed = 0; this.accepted?.(); }
       this.publish();
-    }
+    } else if (data.kind === 'emote') this.onEmote?.(id, data);
   }
+
+  // Cosmetic only (a table flip): to everyone beside the game, through no
+  // host, so it can't touch the state, the turn or a seq. onEmote(id, data) reads it.
+  emote(data) { this.send({ ...data, kind: 'emote' }); }
 
   action(action, values = {}) {
     if (!this.connected) { if (this.texts.waiting) this.onNotice(this.texts.waiting); return false; }

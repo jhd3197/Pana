@@ -117,3 +117,54 @@ export function createRecordBoard({ game, metrics, storage = defaultStorage(), n
   load();
   return { game, metrics, holder, standings: me => standings(null, me), table, submit, startRun };
 }
+
+// A tally: how many times each player has earned something that has no value to
+// beat, like an end-of-match title. Same rules as the board: one per browser
+// under `pana:titles:<game>`, a player is their name, storage trouble never
+// throws. A match counts once, by its receipt, so a reload changes nothing.
+//
+//   const tally = createTitleTally({ game: 'reliquia' });
+//   tally.add(matchId, [{ name: 'Ana', id: 'unaMas' }]);        // true the first time
+//   tally.of('Ana');                                            // [{ id: 'unaMas', count: 1 }]
+export function createTitleTally({ game, storage = defaultStorage(), now = () => Date.now(), maxPlayers = MAX_PLAYERS, maxReceipts = 60 }) {
+  const KEY = `pana:titles:${game}`;
+  let players = {}, receipts = [];
+  const load = () => {
+    try {
+      const raw = JSON.parse(storage?.getItem(KEY) ?? 'null');
+      if (raw?.players && typeof raw.players === 'object') players = raw.players;
+      if (Array.isArray(raw?.receipts)) receipts = raw.receipts;
+    } catch { /* blocked or malformed: keep what is in memory */ }
+  };
+  const save = () => { try { storage?.setItem(KEY, JSON.stringify({ players, receipts })); } catch { /* full or disabled */ } };
+
+  function add(receipt, entries) {
+    load();
+    if (receipts.includes(receipt)) return false;
+    receipts = [...receipts, receipt].slice(-maxReceipts);
+    const t = now();
+    for (const { name, id } of entries) {
+      const key = keyOf(name);
+      if (!key || !id) continue;
+      const p = players[key] ??= { name: String(name).trim(), counts: {}, t };
+      p.name = String(name).trim(); p.t = t;
+      p.counts ??= {};
+      p.counts[id] = (Number.isFinite(p.counts[id]) ? p.counts[id] : 0) + 1;
+    }
+    // A full tally forgets whoever has gone longest without earning anything.
+    const old = Object.entries(players).sort(([, a], [, b]) => (a.t ?? 0) - (b.t ?? 0));
+    for (const [key] of old.slice(0, Math.max(0, old.length - maxPlayers))) delete players[key];
+    save();
+    return true;
+  }
+  // What a player has earned, most often first.
+  function of(name) {
+    load();
+    return Object.entries(players[keyOf(name)]?.counts ?? {})
+      .filter(([, count]) => Number.isFinite(count) && count > 0)
+      .map(([id, count]) => ({ id, count }))
+      .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
+  }
+  load();
+  return { game, add, of };
+}

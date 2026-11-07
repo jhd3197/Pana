@@ -33,6 +33,12 @@ run.report([{ name: 'Ana', me: true, values: { wins: 3 } }]);
 renderRecord(node, board, { me: 'Ana', standings: run.summary('Ana') });
 ```
 
+A tally counts what has no value to beat, like an end-of-match title:
+`createTitleTally({ game })` keeps per-player counts under `pana:titles:<game>`,
+`add(receipt, [{ name, id }])` counts a match once and `of(name)` reads it back.
+`renderTitleTally(node, tally, { names, me, label })` draws a row of chips per
+name beside the record, and hides the node when there is nothing to show.
+
 Used by: Fosa. Notes: `docs/knowledge/reliquia.md`, "The record".
 
 ## Save and resume
@@ -451,6 +457,18 @@ followPose(pose, head, aim, { clip }); rig.step(dt, pose); camera.lookAt(rig.loo
 The game picks the targets: it only uses what the room already sends everyone,
 and a team game passes teammates only. Used by: Pepazo (`spectate-hud.js` for the
 label, keys and buttons; `scene.js` for the camera).
+
+### Table flip
+
+`engine/fx/table-flip.js` draws it, `engine/play/flip-control.js` is the button
+and the cooldown, `engine/play/flip-rules.js` says who may (no DOM, a server room
+can import it). `createTableFlip(THREE, { table, pieces, radius })`: `start(angle,
+seed)`, and `draw(dt, () => stage.draw(dt))` in place of `stage.draw`. It poses
+matrices for one render and never writes position or rotation, so nothing can be
+left over. The message goes through `room.emote` (`TableRoom`) and arrives at
+`room.onEmote`, beside the game, so state, turn and seq never see it.
+
+Used by: Caída, Dominó, Ludo.
 
 ### Recoil and camera shake
 

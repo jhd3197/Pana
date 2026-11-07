@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRecordBoard } from '../records.js';
+import { createRecordBoard, createTitleTally } from '../records.js';
 
 function memStorage() {
   const map = new Map();
@@ -127,4 +127,37 @@ test('broken or missing storage and a throwing pipe never throw', () => {
   assert.equal(b.holder('rounds').value, 2);
   const malformed = memStorage(); malformed.setItem('pana:records:demo', '{nope');
   assert.equal(make({ storage: malformed }).board.holder('rounds'), null);
+});
+
+test('a tally counts a match once, by its receipt, and survives a reload', () => {
+  const storage = memStorage();
+  const tally = createTitleTally({ game: 'x', storage });
+  assert.equal(tally.add('dive-1', [{ name: 'Ana', id: 'unaMas' }, { name: 'Beto', id: 'banked' }]), true);
+  assert.equal(tally.add('dive-1', [{ name: 'Ana', id: 'unaMas' }]), false);
+  tally.add('dive-2', [{ name: ' ana ', id: 'unaMas' }, { name: 'Ana', id: 'dropped' }]);
+  assert.deepEqual(tally.of('ANA'), [{ id: 'unaMas', count: 2 }, { id: 'dropped', count: 1 }]);
+  assert.ok(storage.getItem('pana:titles:x'));
+  const again = createTitleTally({ game: 'x', storage });
+  assert.deepEqual(again.of('Beto'), [{ id: 'banked', count: 1 }]);
+  assert.equal(again.add('dive-2', [{ name: 'Ana', id: 'unaMas' }]), false);
+  assert.deepEqual(again.of('Nadie'), []);
+});
+
+test('a tally forgets the longest idle player and shrugs off bad storage', () => {
+  let t = 0;
+  const tally = createTitleTally({ game: 'x', storage: memStorage(), now: () => ++t, maxPlayers: 2 });
+  for (const name of ['Ana', 'Beto', 'Cris']) tally.add(name, [{ name, id: 'a' }]);
+  assert.deepEqual(tally.of('Ana'), []);
+  assert.equal(tally.of('Cris').length, 1);
+
+  const broken = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('full'); } };
+  const offline = createTitleTally({ game: 'x', storage: broken });
+  offline.add('d', [{ name: 'Ana', id: 'a' }]);
+  assert.deepEqual(offline.of('Ana'), [{ id: 'a', count: 1 }]);
+
+  const junk = memStorage(); junk.setItem('pana:titles:x', '{"players":{"ana":{"name":"Ana","counts":{"a":"x","b":2}}},"receipts":"no"}');
+  const read = createTitleTally({ game: 'x', storage: junk });
+  assert.deepEqual(read.of('Ana'), [{ id: 'b', count: 2 }]);
+  assert.equal(read.add('d', [{ name: 'Ana', id: 'a' }]), true);
+  assert.deepEqual(read.of('Ana'), [{ id: 'b', count: 2 }, { id: 'a', count: 1 }]);
 });

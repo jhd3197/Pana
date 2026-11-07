@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Caída, Dominó y Ludo: ¿te dio rabia? Voltea la mesa.**
+  En tu turno, el botón Voltear la mesa (o la tecla F) tumba la mesa y todo sale volando, y en dos segundos vuelve a su sitio. Todos en la sala lo ven y la partida no cambia.
+- **Fosa: tus títulos ya se acumulan.**
+  Junto a los récords se ve cuántas veces fuiste El codicioso, El cargador y los demás, en la sala y al terminar la expedición.
 - **Ludo: si el anfitrión tiene una PC lenta, la mesa ya no se queda esperando.**
   Las pausas entre turnos duran casi lo mismo en cualquier equipo, y el resultado del dado se sigue viendo en todas las pantallas, aunque a alguien le caiga tarde.
 - **Ludo: compra el dado de mango con tus mangos y úsalo en la mesa.**

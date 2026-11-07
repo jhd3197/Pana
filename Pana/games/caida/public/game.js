@@ -16,6 +16,8 @@ import { cardButton } from './cards.js';
 import { createDealerUI } from './dealer-ui.js';
 import { barksFor } from './barks.js';
 import { createToast } from '/engine/hud.js';
+import { createFlipControl } from '/engine/play/flip-control.js';
+import { icon } from '/engine/icons.js';
 
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search);
 const notify = createToast($('toast'), { ms: 3600 });
@@ -32,7 +34,7 @@ const seating = createTableSeating($('table-seating'), (from, to) => room.action
 $('organize-table').onclick = () => room.action('setup');
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true, landmarks: true, room });
 const dealerUI = createDealerUI(room, () => audio.unlock());
-const menu = createGameMenu({ pad: { buttons: true, keys: { rb: ['Enter', loc('Jugar la carta')], x: ['KeyC', loc('Cantar')], y: ['KeyH', loc('Pista')] } }, title: loc('Caída · Pana'), sound: audio,
+const menu = createGameMenu({ pad: { buttons: true, keys: { lt: ['KeyF', loc('Voltear la mesa')], rb: ['Enter', loc('Jugar la carta')], x: ['KeyC', loc('Cantar')], y: ['KeyH', loc('Pista')] } }, title: loc('Caída · Pana'), sound: audio,
   note: () => room.members.size > 1 ? loc('La mesa sigue jugando mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
   actions: [{ id: 'new-table', label: loc('Abrir otra mesa'), run: () => { location.href = '/g/caida/'; } }],
   invite: () => inviteUrl(code),
@@ -48,6 +50,9 @@ $('play').onclick = playSelected; $('chant').onclick = () => room.action('chant'
 $('review').onclick = closeResult; $('round-result').onclick = showResult;
 $('result').addEventListener('cancel', e => { e.preventDefault(); closeResult(); });
 function ownTurn() { return ready && room.connected && room.state.phase === 'playing' && room.seat >= 0 && room.state.turn === room.seat; }
+const flip = createFlipControl({ button: $('flip'), room, sound: audio, canUse: () => ownTurn() && !menu.isOpen,
+  play: (seat, seed) => world?.flip(seat, seed), say: (seat, text) => world?.say(seat, text, 2) });
+$('flip').prepend(icon('tableFlip'));
 function selectCard(id) { if (!ownTurn() || menu.isOpen) return; selected = selected === id ? null : id; renderHand(room.state); }
 function playSelected() { if (!ownTurn() || !selected) return; const id = selected; selected = null; room.action('play', { card: id }); }
 function hint() {
@@ -116,7 +121,7 @@ function renderHand(state) {
   $('your-name').textContent = player ? locn(hand.length, '{name} · {n} cartas', '{name} · {n} cartas', { name: player.name }) : loc('Estás mirando');
   const captured = player?.captured.length || 0; $('capture-count').textContent = locn(captured, '{n} RECOGIDAS', '{n} RECOGIDAS');
   $('turn-status').textContent = !room.connected ? loc('Reconectando…') : ended ? loc('Reparto terminado') : state.phase === 'lobby' ? loc('La mesa te espera.') : state.phase === 'starter' ? loc('¿Quién reparte primero?') : state.phase === 'dealing' ? loc('{name} prepara el reparto', { name: state.players[state.dealer].name }) : turn ? selected ? loc('¡Tu turno! · juégala o cambia') : loc('¡Tu turno! · elige una carta') : loc('Juega {name}', { name: state.players[state.turn].name });
-  $('turn-status').classList.toggle('active', turn); $('hint').disabled = !turn; $('play').disabled = !turn || !selected; $('play').hidden = ended; $('round-result').hidden = !ended;
+  $('turn-status').classList.toggle('active', turn); $('hint').disabled = !turn; flip.sync(); $('play').disabled = !turn || !selected; $('play').hidden = ended; $('round-result').hidden = !ended;
   const chant = state.phase === 'playing' && state.options.cantos && player && !player.announced ? canto(hand) : null;
   $('chant').hidden = !chant; $('chant').disabled = !turn; $('chant').textContent = chant ? loc('Cantar {canto} +{points}', { canto: loc(chant.name).toLowerCase(), points: chant.points }) : '';
   $('canto-preview').hidden = !chant;
@@ -165,13 +170,14 @@ addEventListener('keydown', event => {
   if (menu.isOpen || $('result').open || event.repeat || event.target.closest?.('input,textarea,select,[contenteditable]')) return;
   const key = event.key.toLowerCase(); if (key === 'm') toggleMute(); if (key === 'h') hint();
   if (!ownTurn()) return;
+  if (key === 'f') flip.trigger();
   if (/^[123]$/.test(key)) { event.preventDefault(); const card = room.state.players[room.seat].hand[Number(key) - 1]; if (card) selectCard(card.id); }
   if (key === 'enter' && selected) { event.preventDefault(); playSelected(); }
   if (key === 'c') room.action('chant');
 });
 let lastTick = performance.now(); const timer = setInterval(() => { const now = performance.now(), dt = Math.min(.25, (now - lastTick) / 1000); lastTick = now; room.tick(dt, menu.isOpen && room.members.size <= 1); }, 100);
 let frameTime = performance.now(); function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now; world?.frame(dt); requestAnimationFrame(frame); } requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(resultTimer); notify.dispose(); clearTimeout(announcementTimer); room.dispose(); world?.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; flip.dispose(); clearInterval(timer); clearTimeout(resultTimer); notify.dispose(); clearTimeout(announcementTimer); room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
 export const sceneReady = import('./scene.js').then(m => m.createCaidaScene($('world'), { onCard: selectCard, onStarter: (cacho, power) => { if (!menu.isOpen) { audio.unlock(); room.action('starter', { cacho, power }); } }, onLoading: text => { $('loading-copy').textContent = text; } })).then(async scene => {
   if (stopped) { scene.dispose(); return; }

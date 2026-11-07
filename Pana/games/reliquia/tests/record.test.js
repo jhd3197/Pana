@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Expedition, recordRows } from '../public/rules.js';
+import { Expedition, recordRows, titleEntries, titleName } from '../public/rules.js';
 import { createRecordBoard } from '../../../engine/records.js';
 
 function setup(n = 2) {
@@ -78,4 +78,12 @@ test('an expedition\'s rows feed the shared board', () => {
   board.submit(recordRows(g, 1));
   assert.deepEqual(board.holder('rounds').names.sort(), ['Pana 1', 'Pana 2']);
   assert.deepEqual(board.holder('comebacks'), { names: ['Pana 1'], value: 1, t: board.holder('comebacks').t });
+});
+
+test('a dive\'s titles become tally entries, and every id has a name', () => {
+  const g = setup(), [a, b] = g.players;
+  a.stats.unaMas = 2; b.stats.banked = 900;
+  assert.deepEqual(titleEntries(g), [{ name: 'Pana 1', id: 'unaMas' }, { name: 'Pana 2', id: 'banked' }]);
+  for (const stat of ['unaMas', 'dropped', 'banked', 'curses', 'last']) assert.ok(titleName(stat));
+  assert.equal(titleName('gone'), '');
 });

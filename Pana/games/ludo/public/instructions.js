@@ -12,6 +12,7 @@ export default {
     { action: loc('Agitar el dado; suelta para tirar'), keyboard: loc('Mantén Espacio'), gamepad: 'X / RT', touch: loc('Mantén el botón del dado') },
     { action: loc('Lanzar el dado con más fuerza'), keyboard: loc('Arrastra y suelta en la mesa'), touch: loc('Arrastra y suelta en la mesa') },
     { action: loc('Mover una ficha disponible'), keyboard: loc('1 a 4 / Clic'), gamepad: 'Cruceta + A', touch: loc('Toca la ficha o su botón') },
+    { action: loc('Voltear la mesa, solo de broma'), keyboard: 'F', gamepad: 'LT', touch: loc('Botón Voltear la mesa') },
   ] }, { title: loc('Siempre'), rows: [
     { action: loc('Ver el progreso de los panas'), keyboard: loc('Mantén Shift'), touch: loc('Botón Ver panas') },
     { action: loc('Cambiar a la vista desde arriba'), keyboard: 'V', touch: loc('Botón Vista desde arriba') },

@@ -4,6 +4,7 @@
 //
 //   renderRecord(node, board, { me: name, standings: run.summary(name) });   // end screen
 //   renderRecord(node, board, { me: name, compact: true });                  // lobby
+//   renderTitleTally(node, tally, { names, me: name, label: id => loc(...) }); // beside it
 import { loc, locale, formatList, formatNumber } from './i18n.js';
 import { fillRoster } from './results.js';
 
@@ -47,6 +48,28 @@ export function renderRecord(node, board, { me = '', standings = board.standings
   })));
   open.onclick = () => { roster.hidden = !roster.hidden; open.setAttribute('aria-expanded', String(!roster.hidden)); };
   node.append(open, roster);
+}
+
+// A row of chips per name ("El codicioso · 3"), for names with something to show;
+// the node hides when none has. A label that comes back empty skips that id.
+export function renderTitleTally(node, tally, { names = [], me = '', label = id => id } = {}) {
+  const key = name => String(name ?? '').trim().toLowerCase();
+  const rows = [...new Set(names.map(key))].flatMap(id => {
+    const name = names.find(n => key(n) === id);
+    const chips = tally.of(name).flatMap(({ id: title, count }) => {
+      const text = label(title);
+      return text ? [el('span', 'pk-chip', `${text} · ${formatNumber(count)}`)] : [];
+    });
+    if (!chips.length) return [];
+    const row = el('div', id === key(me) ? 'pk-tally-row is-mine' : 'pk-tally-row');
+    const who = el('span', 'pk-record-who', name);
+    who.translate = false;
+    row.append(who, ...chips);
+    return [row];
+  });
+  node.classList.add('pk-tally');
+  node.replaceChildren(...rows);
+  node.hidden = !rows.length;
 }
 
 // A line for tight spots ("5 · Ana"); empty until someone holds the record.

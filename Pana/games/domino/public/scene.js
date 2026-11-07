@@ -10,6 +10,7 @@ import { chainLayout } from './tiles.js';
 import { deck, legalEnds } from './rules.js';
 import { loc } from '/engine/i18n.js';
 import { createCardFeel } from '/engine/fx/card-feel.js';
+import { createTableFlip } from '/engine/fx/table-flip.js';
 
 const seatNote = (label, bot) => bot ? loc('{label} · bot', { label }) : label;
 
@@ -37,6 +38,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
   }
   const bubbles = createSeatBubbles(document.getElementById('world-labels'), 6);
   const tiles = new Map();
+  const tableFlip = createTableFlip(THREE, { table: () => [table], pieces: () => [...tiles.values()].map(t => t.model), radius: () => 3.5 * table.scale.x });
   // Rivals' hands arrive face down with no ids (the server keeps them). Each
   // hidden slot borrows a mesh nobody can see, and keeps it while it stays.
   const lent = new Map();   // seat → tile ids shown in that hand
@@ -229,12 +231,13 @@ export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLo
       tip.element.style.left = `${(projected.x * .5 + .5) * innerWidth}px`; tip.element.style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
     }
     starter.frame(dt);
-    stage.draw(dt);
+    tableFlip.draw(dt, () => stage.draw(dt));
   }
   const resize = () => { renderer.setSize(innerWidth, innerHeight); cameraTarget(); }; addEventListener('resize', resize);
   return { scene, camera, renderer, characters, tiles, update, frame, get starter() { return starter; },
     setView(value) { cameraMode = value; cameraTarget(); },
     say: bubbles.say,
+    flip(seat, seed) { return tableFlip.start(seat * Math.PI * 2 / seatCount, seed); }, get flipping() { return tableFlip.active; }, table,
     dispose() {
       feel.dispose();
       disposed = true; removeEventListener('resize', resize);
