@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.9.0 - 2026-11-07
+
 - **Caída, Dominó y Ludo: ¿te dio rabia? Voltea la mesa.**
   En tu turno, el botón Voltear la mesa (o la tecla F) tumba la mesa y todo sale volando, y en dos segundos vuelve a su sitio. Todos en la sala lo ven y la partida no cambia.
 - **Fosa: tus títulos ya se acumulan.**
