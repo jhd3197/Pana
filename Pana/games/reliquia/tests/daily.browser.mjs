@@ -53,6 +53,8 @@ try {
 
   // The guest played yesterday and the day before, with a freeze saved: this makes day 3.
   await b.evaluate(() => { const d = new Date(); d.setDate(d.getDate() - 1); const y = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; localStorage.setItem('pana:streak:reliquia', JSON.stringify({ days: 2, best: 2, freezes: 1, last: y })); });
+  // Every text the results toast shows, in order: a new Calor máximo follows the racha.
+  for (const page of [a, b]) await page.evaluate(() => { window.toasts = []; new MutationObserver(() => { const t = document.getElementById('rank-toast')?.textContent; if (t && t !== window.toasts.at(-1)) window.toasts.push(t); }).observe(document.body, { childList: true, subtree: true, characterData: true }); });
   await finish(a, { time: 300, haul: 1000, level: 2, outcome: 'extracted' });
   for (const page of [a, b]) await waitFor(page, () => reliquia.state.phase === 'results' && document.getElementById('daily-best')?.textContent);
   const first = {};
@@ -71,8 +73,11 @@ try {
   }
   assert.equal(await visible(a, 'daily-again'), true); assert.equal(await visible(b, 'daily-again'), false);
   assert.equal(await b.locator('#streak-freezes').textContent(), 'Comodín 1');
-  await waitFor(b, () => /3 días seguidos/.test(document.getElementById('rank-toast')?.textContent || ''));
-  assert.doesNotMatch(await a.locator('#rank-toast').textContent(), /seguidos/);
+  await waitFor(b, () => window.toasts.some(t => /3 días seguidos/.test(t)));
+  await waitFor(b, () => window.toasts.some(t => /Calor máximo/.test(t)));
+  const shown = await b.evaluate(() => window.toasts);
+  assert.ok(shown.findIndex(t => /seguidos/.test(t)) < shown.findIndex(t => /Calor máximo/.test(t)), 'the racha comes before the new Calor máximo');
+  assert.ok(!(await a.evaluate(() => window.toasts)).some(t => /seguidos/.test(t)));
   if (shots) await b.screenshot({ path: `${shots}/daily-results.png` });
   check('each screen is paid its bonus and shows the best and the streak');
 
