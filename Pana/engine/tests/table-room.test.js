@@ -67,3 +67,17 @@ test('offline guests are told to reconnect instead of acting', () => {
   assert.equal(room.action('add'), false);
   assert.equal(notices.length, 1);
 });
+
+test('an emote reaches onEmote on host and guest and leaves the game alone', () => {
+  const room = new CounterRoom(), seen = [];
+  room.onEmote = (id, data) => seen.push([id, data.seed]);
+  room.practice();
+  const before = JSON.stringify(room.state);
+  room.emote({ name: 'flip', seed: 4, kind: 'action' });
+  assert.deepEqual(room.sent.at(-1), { name: 'flip', seed: 4, kind: 'emote' }, 'never mistaken for an action');
+  const sent = room.sent.length;
+  room.receive(2, { kind: 'emote', name: 'flip', seed: 5 });
+  assert.deepEqual(seen, [[2, 5]]);
+  assert.equal(JSON.stringify(room.state), before, 'no state change');
+  assert.equal(room.sent.length, sent, 'nothing published');
+});

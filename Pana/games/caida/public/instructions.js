@@ -13,6 +13,7 @@ export default {
     { action: loc('Jugar la carta seleccionada'), keyboard: 'Enter', gamepad: 'RB', touch: loc('Botón Jugar') },
     { action: loc('Cantar antes de jugar la primera carta'), keyboard: 'C', gamepad: 'X', touch: loc('Botón Cantar') },
     { action: loc('Pedir una pista'), keyboard: 'H', gamepad: 'Y', touch: loc('Botón Pista') },
+    { action: loc('Voltear la mesa, solo de broma'), keyboard: 'F', gamepad: 'LT', touch: loc('Botón Voltear la mesa') },
   ] }, { title: loc('Siempre'), rows: [
     { action: loc('Activar o silenciar sonido'), keyboard: 'M' },
     { action: loc('Abrir o cerrar el menú'), keyboard: 'Esc', gamepad: 'Start', touch: loc('Botón Menú') },

@@ -74,6 +74,14 @@ on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
   `memberJoined`, `memberHello` and `takeOver` too. Reliquia's `network.js`
   is the worked example (about a tenth of the bytes).
 
+## Cosmetic messages
+
+`TableRoom.emote(data)` goes to everyone beside the game and lands in
+`room.onEmote(id, data)`: no host, no seq, no publish, so it cannot change state.
+A flip is checked at the receiver (`canFlip`, and a cooldown per sender). If the
+sender's move reaches you first, that flip is dropped, which costs only a look.
+Dominó has no relay: its server room checks the turn and rebroadcasts `flip`.
+
 ## A host-simulated game on HostRoom directly
 
 Extend `HostRoom`; keep only the game's rules.

@@ -14,6 +14,8 @@ import { legalEnds, legalMoves, chooseMove, pips, TARGET } from './rules.js';
 import { barksFor } from './barks.js';
 import { domino } from './tiles.js';
 import { createToast } from '/engine/hud.js';
+import { createFlipControl } from '/engine/play/flip-control.js';
+import { icon } from '/engine/icons.js';
 import { loc, locn, formatList } from '/engine/i18n.js';
 
 const $ = id => document.getElementById(id);
@@ -47,7 +49,7 @@ const seating = createTableSeating($('table-seating'), (from, to) => room.action
 $('organize-table').onclick = () => room.action('setup');
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true, landmarks: true, room });
 const menu = createGameMenu({
-  pad: { buttons: true, keys: { lb: ['KeyA', loc('Jugar en la punta A')], rb: ['KeyB', loc('Jugar en la punta B')], x: ['KeyP', loc('Pasar')], y: ['KeyH', loc('Pista')] } },
+  pad: { buttons: true, keys: { lt: ['KeyF', loc('Voltear la mesa')], lb: ['KeyA', loc('Jugar en la punta A')], rb: ['KeyB', loc('Jugar en la punta B')], x: ['KeyP', loc('Pasar')], y: ['KeyH', loc('Pista')] } },
   title: loc('Dominó · Pana'), sound: audio,
   options: [{ id: 'view', label: loc('Cámara'), choices: [['plaza', loc('Plaza')], ['mesa', loc('Mesa')]], get: () => view, set: setView }],
   note: () => room.members.size > 1 ? loc('La mesa sigue jugando mientras estás en el menú.') : loc('La partida está en pausa. Los bots te esperan.'),
@@ -78,6 +80,9 @@ $('camera-view').onclick = () => setView(view === 'plaza' ? 'mesa' : 'plaza');
 for (const button of document.querySelectorAll('[data-view]')) button.onclick = () => setView(button.dataset.view);
 
 function ownTurn() { return worldReady && room.connected && room.state.phase === 'playing' && room.seat >= 0 && room.state.turn === room.seat; }
+const flip = createFlipControl({ button: $('flip'), room, sound: audio, canUse: () => ownTurn() && !menu.isOpen,
+  play: (seat, seed) => world?.flip(seat, seed), say: (seat, text) => world?.say(seat, text, 2) });
+$('flip').prepend(icon('tableFlip'));
 function selectTile(id) {
   if (!ownTurn()) return;
   const tile = room.state.players[room.seat].hand.find(t => t.id === id), ends = legalEnds(room.state, tile);
@@ -170,7 +175,7 @@ function renderHand(state) {
   $('turn-status').textContent = !room.connected ? loc('Esperando conexión…') : ended ? loc('Mano terminada') : state.phase === 'lobby' ? loc('La mesa te espera.') : state.phase === 'starter' ? loc('¿Quién empieza?')
     : myTurn ? selected ? loc('¡Tu turno! · elige la punta') : !state.chain.length ? loc('¡Tu turno! · abre la mano') : moves.length ? tips.length > 1 ? loc('¡Tu turno! · juega al {a} o al {b}', { a: tips[0], b: tips[1] }) : loc('¡Tu turno! · juega al {a}', { a: tips[0] }) : loc('¡Tu turno! · canta paso') : loc('Turno de {name}', { name: state.players[state.turn].name });
   if(state.phase==='playing'&&state.options.turnSeconds)$('turn-status').textContent+=` · ${Math.ceil(state.turnRemaining)} s`;
-  $('hint').disabled = !myTurn;
+  $('hint').disabled = !myTurn; flip.sync();
   $('pass').hidden = !myTurn || moves.length > 0;
   $('round-result').hidden = !ended;
   $('end-actions').hidden = !selected;
@@ -252,6 +257,7 @@ addEventListener('keydown', event => {
   if (key === 'm') toggleMute();
   if (key === 'h') hint();
   if (!ownTurn()) return;
+  if (key === 'f') flip.trigger();
   if (/^[0-9]$/.test(key)) { event.preventDefault(); const tile = room.state.players[room.seat].hand[(Number(key)||10) - 1]; if (tile) selectTile(tile.id); }
   if (key === 'a' && selected) playSelected('left');
   if (key === 'b' && selected) playSelected('right');
@@ -265,7 +271,7 @@ const timer = setInterval(() => {
 let frameTime = performance.now();
 function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now; if(!quiet)world?.frame(dt); requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); notify.dispose(); clearTimeout(resultTimer); roomOptions.dispose();room.dispose(); world?.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; flip.dispose(); clearInterval(timer); notify.dispose(); clearTimeout(resultTimer); roomOptions.dispose();room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
 export const sceneReady = import('./scene.js').then(module => module.createDominoScene($('world'), { onTile: selectTile, onEnd: playSelected, onStarter: (cacho, power) => { if (!menu.isOpen) { audio.unlock(); room.action('starter', { cacho, power }); } }, onLoading: message => { $('loading-copy').textContent = message; } })).then(async scene => {
   if (stopped) { scene.dispose(); return; }
