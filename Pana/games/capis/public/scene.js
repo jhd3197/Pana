@@ -278,6 +278,9 @@ export function createCapisScene(canvas, match) {
   const at = new THREE.Vector3(), dir = new THREE.Vector3(), tail = new THREE.Vector3(), NOSE = new THREE.Vector3(0, 0, 1), back = new THREE.Vector2(), UP = { x: 0, y: 1 };
   let wide = false, hold = 0, holdAt = null, time = 0, shooter = null, flashT = 0, trailT = 0;
   let closeUp = 0;   // a narrower view for test screenshots (capisDebug)
+  // The setup's whole-map view: { top, bottom } of the ground in world units and
+  // { above, below } screen pixels the page's bars cover, so the map fits between them.
+  let fit = null;
   const viewWidth = () => wide ? match.map.width + 8 : closeUp || (camera.aspect < 1 ? 22 : 34);
   // The whole map sits on the bottom of the screen with the sky above it,
   // however wide the map is: the bottom edge stays a little under the water.
@@ -534,13 +537,21 @@ export function createCapisScene(canvas, match) {
     // Camera: the shell in flight, a fresh blast for a moment, else the capi whose turn it is.
     hold = Math.max(0, hold - dt);
     const target = match.shot ? { x: match.shot.x, y: match.shot.y + (match.shot.resting ? 1.5 : 0) } : hold && holdAt ? holdAt : active ? { x: active.x, y: active.y + 1.5 } : focus;
-    const half = viewWidth() / 2;
-    const tx = wide ? match.map.width / 2 : THREE.MathUtils.clamp(target.x, half - 6, match.map.width - half + 6);
-    const ty = wide ? wideY(half) : Math.max(match.map.water + 4, target.y);
+    let half = viewWidth() / 2;
+    let tx = wide ? match.map.width / 2 : THREE.MathUtils.clamp(target.x, half - 6, match.map.width - half + 6);
+    let ty = wide ? wideY(half) : Math.max(match.map.water + 4, target.y);
+    if (wide && fit) {
+      // World units per pixel so the map's width and height both fit the free band, its middle on the band's.
+      const room = Math.max(80, innerHeight - fit.above - fit.below), upp = Math.max((match.map.width + 6) * 1.04 / innerWidth, (fit.top - fit.bottom) * 1.1 / room);
+      half = upp * innerWidth / 2;
+      ty = (fit.top + fit.bottom) / 2 - (fit.below - fit.above) / 2 * upp;
+    }
     focus.lerp(goal.set(tx, ty), 1 - Math.exp(-dt * (match.shot ? 6 : 3)));
     const distance = half / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / camera.aspect;
     // The haze starts past the ground, so a wide map is not fogged in the whole-map view.
     scene.fog.near = Math.max(80, distance + 12); scene.fog.far = scene.fog.near + 190;
+    // A portrait phone's whole-map view sits farther back than the usual far plane.
+    const far = Math.max(600, distance + 260); if (camera.far !== far) { camera.far = far; camera.updateProjectionMatrix(); }
     const kick = feel.update(dt, { decay: 4 });
     camera.position.set(focus.x + kick.yaw * 25, focus.y + distance * .16 + kick.pitch * 25, FRONT + distance);
     camera.lookAt(focus.x + kick.yaw * 25, focus.y, FRONT);
@@ -587,6 +598,10 @@ export function createCapisScene(canvas, match) {
     // For tests: what lies on the ground, as drawn.
     get props() { return { crates: [...crateMeshes.values()].map(g => ({ x: g.position.x, y: g.position.y, chute: g.userData.chute.visible })), tombs: [...tombMeshes.entries()].map(([id, g]) => ({ id, shape: g.userData.shape, x: g.position.x, y: g.position.y, visible: g.visible })) }; },
     get wide() { return wide; }, set wide(on) { wide = !!on; },
+    set fit(f) { fit = f || null; },
+    // Where world (x, y) on the capis' plane is on screen, and whether the camera reached its goal.
+    screenOf(x, y) { const v = new THREE.Vector3(x, y, FRONT).project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; },
+    get settled() { return focus.distanceTo(goal) < .05; },
     set closeUp(width) { closeUp = Number(width) || 0; },
     get calls() { return renderer.info.render.calls; },
     // How a sound at (x, y) reaches the player: volume, and how far (0..1) for muffling.

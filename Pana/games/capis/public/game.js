@@ -200,6 +200,15 @@ function showSetup(v) {
   setupUi.render({ ...v, mine, selected, host: !online || room.isHost, names: match.capys.map(c => c.name) });
   $('setup-back').disabled = online && !room.isHost;
 }
+// The setup's view: the whole ground between the top bar and the setup bar.
+function fitSetup() {
+  if (!world) return;
+  if (!inSetup) { world.fit = null; return; }
+  let top = match.map.water;
+  for (let x = 0; x <= match.map.width; x += 2) top = Math.max(top, surfaceY(match.mask, x) ?? 0);
+  const bar = $('setup').getBoundingClientRect(), head = document.querySelector('.topbar')?.getBoundingClientRect();
+  world.fit = { top: top + 3, bottom: match.map.water - 2, above: (head?.bottom ?? 0) + 4, below: innerHeight - bar.top + 8 };
+}
 function pickMap(index) {
   const v = currentSetup(); if (!v) return;
   if (online) { room.action('setup', { step: 'pick', index, rev: v.rev }); return; }
@@ -402,7 +411,7 @@ export const { sceneReady } = bootGame({
     lobbyView();
   },
   frame: (dt, scene) => {
-    step(dt); clockTicks(); charge.update(); render();
+    step(dt); clockTicks(); charge.update(); render(); fitSetup();
     scene.frame(dt, { playing, power: power ?? null, weapon: activeCapy(match)?.weapon, difficulty: difficultyInfo(options.difficulty), labels: playing ? hud.labels : null });
   },
 });
