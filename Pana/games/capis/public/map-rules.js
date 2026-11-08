@@ -181,16 +181,14 @@ export function planMap(seed, size, attempt = 0, { mode = 'teams' } = {}) {
   return p;
 }
 
-// A free-for-all stands on a tepuy: the whole range lifted `FFA_TEPUY.lift`
-// higher, and between every two neighbours' sixths of the land a ridge with
-// an uneven plateau on top, tall enough to hide a capi from a flat shot but
-// with sides a capi walks up (no steeper than `steep`, under the walker's
-// 52°), so the land stays one piece and nobody is boxed in.
-export const FFA_TEPUY = Object.freeze({ lift: 8, rise: [3.4, 6.2], half: [1.6, 3.6], steep: [.6, .8], fall: 1.25, margin: 8 });
-// A seed whose first tries leave a capi boxed in (a ridge stacked on a mesa
-// by the shore) retries on gentler ground: from `soften` on, lower ridges
-// with easier sides and shores that fall at the old pace.
-const SOFTEN = Object.freeze({ from: 4, rise: .7, steep: .75 });
+// A free-for-all stands on a tepuy: the land lifted `FFA_TEPUY.lift` and two
+// broad tables on it at their own heights (tableAt), apart or as one massif
+// of two tiers, their faces rock lips and ramps a capi climbs both ways.
+export const FFA_TEPUY = Object.freeze({ lift: 8, rise: [3.4, 6.2], fall: 1.25, margin: 8,
+  // The tables (tableDrop): heights, and the faces' lips, ramps, treads and landings.
+  low: [6.5, 8.5], high: [10.5, 13], lip: .9, lipRun: .18, steep: 1.1, ramp: [1.8, 2.6], tread: [1.5, 1.8], landing: [1.3, 1.6] });
+// Late tries (rarely needed) stand the tables lower.
+const SOFTEN = Object.freeze({ from: 4, rise: .7 });
 function tepuyRidges(p, r, attempt = 0) {
   const soft = attempt >= SOFTEN.from;
   const between = (a, b) => a + (b - a) * r(), { margin } = FFA_TEPUY, slice = (p.width - 2 * margin) / 6;
@@ -198,25 +196,59 @@ function tepuyRidges(p, r, attempt = 0) {
   // Six capis spread over the whole land: no sheer mesa face, cap or cave
   // mouth may stand between two of them (a walker climbs neither), and no
   // cave at the shores, where the end capis stand.
-  for (const f of p.features) if (f.type === 'mesa') Object.assign(f, { face: 0, cap: false, cave: 0 });
+  // The two tables take the place of the kind's mesas, terraces, valley and pond.
+  p.features = []; p.ledges = [];
   p.outer = null;
   // The taller land falls to the sea over a longer run, at the pace it did before.
-  if (!soft) for (const e of new Set(p.ends)) e.fall *= FFA_TEPUY.fall;
-  p.ridges = [];
-  for (let i = 1; i < 6; i++) {
-    const rise = between(...FFA_TEPUY.rise) * (soft ? SOFTEN.rise : 1);
-    p.ridges.push({ at: margin + slice * i + between(-.12, .12) * slice, rise, half: between(...FFA_TEPUY.half), steep: between(...FFA_TEPUY.steep) * (soft ? SOFTEN.steep : 1),
-      tilt: between(-.18, .18), notch: between(-.4, .4) });
-  }
+  // Calmer ground under them, so the tables read flat against it.
+  p.lf.amp *= .4; p.hills = p.hills.map(h => ({ ...h, height: h.height * .35 }));
+  // Two tables at their own heights (one low, one high, either order),
+  // apart with a sheltered hollow between, or side by side as one massif
+  // of two tiers joined by a stair. Their tops hold four of the six capis;
+  // the shores hold the other two.
+  // The lifted land's shores fall over a run long enough that their steepest
+  // part (1.175 times the mean) stays under 0.95, walkable both ways.
+  for (const e of new Set(p.ends)) e.fall = Math.max(e.fall, (p.base + p.lf.amp + 1 - (e.style === 'beach' ? WATER + 3.2 : WATER + 7)) * 1.24);
+  const T = FFA_TEPUY, hi = r() < .5, joined = r() < .4, w = p.width;
+  p.tepuys = [0, 1].map(i => ({ rise: (i === Number(hi) ? between(...T.high) : between(...T.low)) * (soft ? SOFTEN.rise : 1),
+    ramp: between(...T.ramp), tread: between(...T.tread), landing: between(...T.landing), rough: r() * 50, tilt: between(-.04, .04) }));
+  // Faces and all, the tables stand clear of the shores' slopes (the two would add up too steep).
+  const shore = e => e.run + e.fall + 1.5, [a, b] = p.tepuys;
+  const lo = shore(p.ends[0]) + faceWidth(a, a.rise * 1.05), hi2 = w - shore(p.ends[1]) - faceWidth(b, b.rise * 1.05), span = hi2 - lo;
+  if (joined) { const m = lo + span * between(.45, .55); Object.assign(a, { from: lo, to: m }); Object.assign(b, { from: m, to: hi2 }); }
+  else { Object.assign(a, { from: lo, to: lo + span * between(.34, .4) }); Object.assign(b, { from: hi2 - span * between(.34, .4), to: hi2 }); }
 }
+// How far out from its edge a table's face reaches the ground.
+function faceWidth(f, rise) { let d = 0; while (d < 60 && tableDrop(f, d, rise).y < rise) d += .25; return d; }
 
-// A ridge laid over the ground: a plateau `half` either side of its middle,
-// tilted and with a shallow notch so no two tops are alike, then sides
-// falling at `steep` back to the ground around.
-function ridgeHeight(f, x) {
-  const d = Math.abs(x - f.at), u = (x - f.at) / f.half;
-  const top = f.rise * (1 + f.tilt * clamp(u, -1, 1)) - Math.max(0, f.notch) * Math.exp(-(((u - f.notch) * 2.2) ** 2));
-  return d <= f.half ? top : Math.max(0, top - (d - f.half) * f.steep);
+// The drop below a table's top at distance d out from its edge. Going out:
+// a sheer lip (`lip` tall, under the capi's 1.44 hop), a tread, a rock ramp
+// at `steep` (under the walker's 52°), a landing, and again. Climbing it the
+// other way every lip has a tread before it for the run-up and a landing
+// after it, so the hop clears the lip and comes down on flat ground.
+function tableDrop(f, d, rise) {
+  const { lip, lipRun, steep } = FFA_TEPUY;
+  let y = 0, at = 0;
+  while (y < rise) {
+    if (d < at + lipRun) return { y: Math.min(rise, y + lip * (d - at) / lipRun), face: true };
+    at += lipRun; y += lip; if (y >= rise) break;
+    if (d < at + f.tread) return { y, face: false };
+    at += f.tread;
+    const r = Math.min(f.ramp, rise - y), run = r / steep;
+    if (d < at + run) return { y: y + r * (d - at) / run, face: true };
+    at += run; y += r; if (y >= rise) break;
+    if (d < at + f.landing) return { y, face: false };
+    at += f.landing;
+  }
+  return { y: rise, face: false };
+}
+// A table's height over the ground at x (0 off it) and whether x is on its rock face.
+function tableAt(f, x) {
+  const out = x < f.from ? f.from - x : x > f.to ? x - f.to : 0, u = clamp((x - (f.from + f.to) / 2) / ((f.to - f.from) / 2), -1, 1);
+  const inside = Math.min(x - f.from, f.to - x), top = f.rise * (1 + f.tilt * u) + (fbm2(x * .3 + f.rough, 3.1, { octaves: 2 }) - .5) * .5 * clamp(inside / 3);
+  if (!out) return { h: top, face: false };
+  const edge = f.rise * (1 + f.tilt * Math.sign(x - f.from - (f.to - f.from) / 2)), d = tableDrop(f, out, edge);
+  return { h: Math.max(0, edge - d.y), face: d.face && edge - d.y > 0 };
 }
 
 // ---------- the ground's profile ----------
@@ -337,7 +369,7 @@ export function heightAt(p, x) {
     if (d < 3.5) h = Math.min(h, lerp(WATER - 1.8, h, smoothstep(clamp(d / 3.5))));
   }
   if (p.knoll) h += p.knoll.height * Math.exp(-(((x - p.mid) / p.knoll.width) ** 2));
-  if (p.ridges) for (const f of p.ridges) h += ridgeHeight(f, x);
+  if (p.tepuys) { const ground = h; for (const f of p.tepuys) h = Math.max(h, ground + tableAt(f, x).h); }
   // The ends: the land falls towards the sea, into a beach or a cliff.
   for (const [i, s] of p.ends.entries()) {
     const e = i ? p.width - x : x;
@@ -785,7 +817,7 @@ export function check(p, mask, loose, spawns) {
   if (m.summit && !m.summit.reached) return fail('summit-shut');
   // A free-for-all seats its six by spreadSpawns, not the two teams': the
   // teams' evenness checks do not apply, every spot walking to every other does.
-  if (p.mode === 'ffa') return ffaReach({ width: p.width, seed: p.seed, size: p.size }, mask, undefined, m.graph).connected ? { failed: null, measured: m } : fail('ffa-apart');
+  if (p.mode === 'ffa') return ffaReach({ width: p.width, seed: p.seed, size: p.size }, mask).connected ? { failed: null, measured: m } : fail('ffa-apart');
   for (const k of ['meanHeight', 'front', 'exposure', 'cover', 'distance', 'walk', 'shots']) if (m.diff[k] > FAIR[k]) return fail(`uneven-${k}`);
   if (!m.shots[0].some(Boolean) || !m.shots[1].some(Boolean)) return fail('no-shot');
   for (let t = 0; t < 2; t++) for (let s = 0; s < 3; s++) if (!m.moves[t][s] && !m.shots[t][s]) return fail('walled-in');
@@ -797,7 +829,12 @@ export function check(p, mask, loose, spawns) {
 // Can every free-for-all spot walk (or hop, with the checks' short hop: under
 // the walker's 1.44 jump, slopes under its 52°) to every other, both ways?
 // `xs` defaults to spreadSpawns' six. { connected, nodes, pairs: [[from, to, ok]] }.
-export function ffaReach(map, mask, xs = spreadSpawns(map, mask), graph = floorsOf(mask)) {
+// The free-for-all's reach: no better than the real walker. It walks slopes up
+// to 0.3 a 0.2 column (56°, the cell steps of a 52° ramp), hops at its own
+// take-off (7.2 up, 2.8 along, no steering in the air) and every pair is
+// checked both ways, so a drop never stands in for the way back.
+export const ffaGraph = mask => floorGraph(mask, { water: WATER, stepUp: .3, hop: { up: 7.2, forward: 2.8, gravity: 18 }, leap: 2.6 });
+export function ffaReach(map, mask, xs = spreadSpawns(map, mask), graph = ffaGraph(mask)) {
   const nodes = xs.map(x => { const y = surfaceY(mask, x); return y === null ? -1 : graph.near(x, y, .6); }), pairs = [];
   for (const [i, a] of nodes.entries()) {
     const seen = a >= 0 ? graph.reach(a) : null;
@@ -841,6 +878,8 @@ export function generateMap(seed = 1, size = DEFAULT_SIZE, { mode = 'teams' } = 
 export function rockAt(map, x, y) {
   const p = map.plan;
   let k = 0;
+  // A table's faces are rock down to a little under them.
+  if (p.tepuys) for (const f of p.tepuys) if (tableAt(f, x).face && y > heightAt(p, x) - 3.5) k = .8;
   for (const b of p.rocks) {
     if (x < b.x0 || x > b.x1) continue;
     if (b.span) { if (Math.abs(y - spanY(b.span, x)) < b.span.radius + .45) k = Math.max(k, .75); }

@@ -29,26 +29,34 @@ test('seeded: all six free-for-all spots walk or hop to one another, both ways',
 
 test('La Licuadora is in every side\'s kit from the first turn', () => assert.ok(startingAmmo().drill > 0));
 
-test('neighbours have cover: most flat shots between them hit the ridge', () => {
-  let blocked = 0, pairs = 0;
+test('cover comes from the tables: a share of neighbour pairs is hidden from a flat shot', t => {
+  let blocked = 0, pairs = 0, least = 5;
   for (const seed of SEEDS) {
     const { map, mask } = built.get(seed), xs = spreadSpawns(map, mask).sort((a, b) => a - b), ys = xs.map(x => surfaceY(mask, x));
+    let here = 0;
     for (let i = 0; i < 5; i++) {
       pairs++;
-      for (let t = .05; t < .95; t += .01) if (solidAt(mask, xs[i] + (xs[i + 1] - xs[i]) * t, ys[i] + 2 + (ys[i + 1] - ys[i]) * t)) { blocked++; break; }
+      for (let t = .05; t < .95; t += .01) if (solidAt(mask, xs[i] + (xs[i + 1] - xs[i]) * t, ys[i] + 2 + (ys[i + 1] - ys[i]) * t)) { blocked++; here++; break; }
     }
+    least = Math.min(least, here);
   }
-  assert.ok(blocked / pairs >= .8, `${blocked} of ${pairs}`);
+  t.diagnostic(`${blocked} of ${pairs} flat shots blocked; least on a map ${least}`);
+  assert.ok(blocked / pairs >= .3, `${blocked} of ${pairs}`);
 });
 
-test('taller than the teams\' Llanos, with five uneven plateaus, and teams maps untouched', () => {
-  let ffa = 0, teams = 0;
-  for (const seed of SEEDS.slice(0, 8)) {
+test('two tables at distinct heights with lips under the hop and ramps under the slope; first tries pass; teams maps untouched', () => {
+  const hop = SIDE_WALKER.jump ** 2 / (2 * SIDE_WALKER.gravity);
+  assert.ok(FFA_TEPUY.lip < hop - .4, 'a lip is hopped with room to spare');
+  assert.ok(FFA_TEPUY.steep < Math.tan(SIDE_WALKER.maxClimb) * .9, 'a ramp is walked');
+  let ffa = 0, teams = 0, first = 0;
+  for (const seed of SEEDS) {
     const p = planMap(seed, 'large', 0, { mode: 'ffa' }), q = planMap(seed, 'large', 0);
-    assert.equal(p.ridges.length, 5); assert.equal(q.ridges, undefined);
-    assert.ok(p.ridges.every(f => f.rise >= FFA_TEPUY.rise[0] && f.steep < Math.tan(SIDE_WALKER.maxClimb)));
-    const { map, mask } = built.get(seed); ffa += spreadSpawns(map, mask).reduce((a, x) => a + surfaceY(mask, x), 0) / 6;
-    teams += generateMap(seed, 'large').map.fair.heights.flat().reduce((a, b) => a + b) / 6;
+    assert.equal(p.tepuys.length, 2); assert.equal(q.tepuys, undefined);
+    assert.ok(Math.abs(p.tepuys[0].rise - p.tepuys[1].rise) >= 2, `seed ${seed}: two tiers`);
+    for (const f of p.tepuys) assert.ok(f.tread > 1.4 && f.landing > 1.2 && f.to - f.from > 12, `seed ${seed}: run-up, landing and a broad top`);
+    const { map, mask } = built.get(seed); if (map.attempt === 0) first++;
+    if (seed <= 8) { ffa += spreadSpawns(map, mask).reduce((a, x) => a + surfaceY(mask, x), 0) / 6; teams += generateMap(seed, 'large').map.fair.heights.flat().reduce((a, b) => a + b) / 6; }
   }
+  assert.ok(first >= SEEDS.length - 2, `${first} of ${SEEDS.length} on the first try`);
   assert.ok(ffa > teams + 8 * 2, `ffa ${(ffa / 8).toFixed(1)} vs teams ${(teams / 8).toFixed(1)}`);
 });
