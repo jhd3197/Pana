@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos: cada capi muestra cuánta vida le queda.**
+  Sobre cada capi, tuyo o rival, va su número de vida en un cuadrito que pasa de verde a amarillo y a rojo; la lista de equipos dice el mismo número.
 - **Capis a Pintazos: con mando, RT dispara y A salta.**
   Mantén RT (R2) para cargar y suéltalo para pintar; A (Cruz) salta, como en Pepazo.
 

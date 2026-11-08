@@ -25,7 +25,7 @@ import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { supplyCrate } from '/engine/models/props/expedition-camp.js';
 import { grave } from '/engine/models/props/cemetery.js';
 import { simulateFlight, simulateBounce } from '/engine/play/ballistic.js';
-import { RULES, TEAM_COLORS, alive, muzzle, flightOptions, activeCapy, launch } from './rules.js';
+import { RULES, TEAM_COLORS, alive, healthOf, muzzle, flightOptions, activeCapy, launch } from './rules.js';
 import { WEAPONS, weaponOf } from './weapons.js';
 import { aiming, bodyPose, barrelPose } from './poses.js';
 import { createBackdrop } from './backdrop.js';
@@ -552,7 +552,7 @@ export function createCapisScene(canvas, match) {
     if (view.labels) {
       view.labels(match.capys.map(c => {
         const g = capis.get(c.id).root; at.set(g.position.x, g.position.y + HEAD, FRONT).project(camera);
-        return { id: c.id, x: (at.x + 1) / 2 * w, y: (1 - at.y) / 2 * h, visible: !c.out && at.z < 1 && g.visible };
+        return { id: c.id, x: (at.x + 1) / 2 * w, y: (1 - at.y) / 2 * h, visible: !c.out && at.z < 1 && g.visible, hp: healthOf(c) };
       }));
     }
     renderer.render(scene, camera);

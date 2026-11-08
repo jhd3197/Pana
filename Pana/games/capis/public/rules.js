@@ -53,6 +53,10 @@ export const TEAM_COLORS = ['#e8569b', '#2ad1b2', '#f5b301', '#8e5cf0', '#3fa7ff
 const NAMES = [['Toño', 'Chela', 'Nené'], ['Pancho', 'Lula', 'Gordo']]; // i18n-ignore
 
 export const alive = c => !c.out;
+// A capi soaks up to HEALTH paint and is out at that: what it has left is its health,
+// the number on its tag and in the team list (painted out or in the river: 0).
+export const HEALTH = 100;
+export const healthOf = c => c.out ? 0 : Math.max(0, Math.round(HEALTH - c.paint));
 export const center = c => ({ x: c.x, y: c.y + RULES.radius });
 export const activeCapy = m => m.capys.find(c => c.id === m.turn?.capy) || null;
 export const teamAlive = (m, team) => m.capys.filter(c => c.team === team && alive(c));
@@ -221,11 +225,11 @@ function hurt(m, x, y, w, team, victim = null) {
   }
 }
 function hit(m, c, paint, team, vx, vy, weapon) {
-  c.paint = Math.min(100, c.paint + paint);
+  c.paint = Math.min(HEALTH, c.paint + paint);
   c.by = team;   // whose colour soaks in
   knock(c, vx, vy);
   m.events.push({ type: 'hit', capy: c.id, team: c.team, paint, by: team, weapon });
-  if (c.paint >= 100) { c.out = 'paint'; layTomb(m, c, c.x, c.y); m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'paint' }); }
+  if (c.paint >= HEALTH) { c.out = 'paint'; layTomb(m, c, c.x, c.y); m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'paint' }); }
 }
 
 // A capi out leaves a tombstone where it fell: it falls with the ground like a

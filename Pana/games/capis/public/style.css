@@ -1,7 +1,7 @@
 /* Capis a Pintazos: a full-window side view of the Llanos under the kit's HUD.
    The game's own colours are named custom properties on this rule
    (--pk-game matches game.json; --team-0/1 match TEAM_COLORS in rules.js). */
-body { --pk-game: #e8569b; --team-0: #e8569b; --team-1: #2ad1b2; --team-2: #f5b301; --team-3: #8e5cf0; --team-4: #3fa7ff; --team-5: #ff7a33; --wind: #bfe9ff;
+body { --pk-game: #e8569b; --team-0: #e8569b; --team-1: #2ad1b2; --team-2: #f5b301; --team-3: #8e5cf0; --team-4: #3fa7ff; --team-5: #ff7a33; --wind: #bfe9ff; --hp-ok: #3ccf5a; --hp-bad: #ff4d4d; --hp-ink: #10131a;
   margin: 0; overflow: hidden; background: var(--pk-night); color: var(--pk-text); font-family: var(--pk-sans); }
 #world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 .topbar { position: fixed; top: 16px; left: 20px; right: 20px; display: flex; align-items: center; justify-content: space-between; z-index: 4; pointer-events: none; }
@@ -28,8 +28,8 @@ body { --pk-game: #e8569b; --team-0: #e8569b; --team-1: #2ad1b2; --team-2: #f5b3
 .team-list li .pk-bar { grid-column: 1 / -1; height: 7px; }
 .team-list li.is-turn b { color: var(--pk-yellow); }
 .team-list li.is-out { opacity: .45; text-decoration: line-through; }
-#team-0 .pk-bar { --pk-bar-color: var(--team-1); }
-#team-1 .pk-bar { --pk-bar-color: var(--team-0); }
+#team-0 .pk-bar { --pk-bar-color: var(--team-0); }
+#team-1 .pk-bar { --pk-bar-color: var(--team-1); }
 .team-list .team-name { grid-column: 1 / -1; font: 400 14px var(--pk-display); letter-spacing: .02em; }
 #team-0 .team-name { color: var(--team-0); } #team-1 .team-name { color: var(--team-1); }
 /* A free-for-all: one list of six, each capi's name and bar in its own colour. */
@@ -73,9 +73,17 @@ body { --pk-game: #e8569b; --team-0: #e8569b; --team-1: #2ad1b2; --team-2: #f5b3
 .weapon-note { font: 700 11px var(--pk-sans); opacity: .8; min-height: 1em; max-width: 520px; text-align: center; }
 
 .labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
-.labels span { position: absolute; left: 0; top: 0; padding: 1px 7px; border-radius: 0; background: rgba(0, 0, 0, .55); font: 800 11px var(--pk-sans); white-space: nowrap; }
-.labels span.team-0 { color: var(--team-0); } .labels span.team-1 { color: var(--team-1); } .labels span.team-2 { color: var(--team-2); }
-.labels span.team-3 { color: var(--team-3); } .labels span.team-4 { color: var(--team-4); } .labels span.team-5 { color: var(--team-5); }
+.labels .capi-tag { position: absolute; left: 0; top: 0; display: flex; align-items: stretch; white-space: nowrap; border-radius: 0;
+  background: rgba(14, 11, 36, .82); border: 2px solid currentColor; box-shadow: 2px 2px 0 rgba(14, 11, 36, .85); }
+.labels .capi-tag.team-0 { color: var(--team-0); } .labels .capi-tag.team-1 { color: var(--team-1); } .labels .capi-tag.team-2 { color: var(--team-2); }
+.labels .capi-tag.team-3 { color: var(--team-3); } .labels .capi-tag.team-4 { color: var(--team-4); } .labels .capi-tag.team-5 { color: var(--team-5); }
+/* The name in the capi's colour; its health on a square chip: green, yellow under 60, red under 30. */
+.capi-tag .tag-name { padding: 2px 6px; font: 800 11px/1.2 var(--pk-sans); }
+.capi-tag .tag-hp { --hp: var(--hp-ok); display: grid; place-items: center; min-width: 26px; padding: 1px 4px; font-size: 15px; font-style: normal;
+  color: var(--hp-ink); background: var(--hp); }
+.capi-tag[data-hp="low"] .tag-hp { --hp: var(--pk-yellow); } .capi-tag[data-hp="bad"] .tag-hp { --hp: var(--hp-bad); }
+/* Small screens: only the health chip, outlined in the capi's colour. */
+@media (max-width: 700px), (max-height: 520px) { .capi-tag .tag-name { display: none; } .capi-tag .tag-hp { font-size: 13px; min-width: 22px; } }
 
 #touch { display: none; position: fixed; inset: auto 0 16px 0; padding: 0 16px; justify-content: space-between; align-items: end; z-index: 4; pointer-events: none; }
 #touch > * { pointer-events: auto; display: flex; gap: 10px; align-items: end; }
