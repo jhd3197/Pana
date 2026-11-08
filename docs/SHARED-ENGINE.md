@@ -631,7 +631,26 @@ sfx.shot('scatter'); sfx.step('grass', { sprint: true, foot: 1 });
 ```
 
 Used by: Pepazo, Reliquia (steps, jump, landing), Capis a Pintazos (bazooka,
-boom with distance, debris, patter, splat, boing, squeak, splash, chime, tick, sting). Notes: `docs/knowledge/shared-sfx.md`.
+boom with distance, debris, patter, splat, boing, splash, chime, tick, sting). Notes: `docs/knowledge/shared-sfx.md`.
+
+### Character voices
+
+`engine/voice.js`. A cartoon voice per character for its own reactions:
+`hurt` ("eep"), `oof`, `jump`, `ko`, `win`, `taunt`, `dizzy`, `rise`, as tone
+glides from `sfx.js`'s `pitch`. The pitch, pace and timbre come from a hash of
+the character's id, so it sounds the same all match and on every screen. One
+character speaks at most every 0.35 s and at most two lines start within
+0.3 s; lines use voice priority 1, below shots, hits and cues. Nothing plays
+before audio is unlocked or while muted; the master volume applies.
+
+```js
+const voices = createVoices({ sound, pitch });   // sound from fx.js, pitch from sfx.js
+voices.say(capi.id, 'hurt', { volume: .8, delay: 0 });
+```
+
+Never for music, UI, shots, explosions or a cue the player needs. Used by:
+Capis a Pintazos (hit, jump, out, the winner), Trifulca (hit, trompón, dizzy,
+caída, rise, fuera, taunt, the winner). Test: `engine/tests/voice.test.js`.
 
 ### Sampled clips (short MP3s a game ships)
 

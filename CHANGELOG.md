@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos y Trifulca: cada capi tiene su propia vocecita.**
+  Chilla cuando le pegan, dice "hup" al saltar, se queja al caer y celebra al ganar, cada uno con su tono, igual en todas las pantallas.
 - **Capis a Pintazos: cada capi muestra cuánta vida le queda.**
   Sobre cada capi, tuyo o rival, va su número de vida en un cuadrito que pasa de verde a amarillo y a rojo; la lista de equipos dice el mismo número.
 - **Capis a Pintazos: con mando, RT dispara y A salta.**
