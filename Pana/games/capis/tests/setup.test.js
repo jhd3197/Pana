@@ -7,6 +7,7 @@ import { createSetup, candidateSeeds, choose, place, unplace, launch, setupGroun
 import { generateMap, WATER } from '../public/map-rules.js';
 import { createMatch } from '../public/rules.js';
 import { surfaceY } from '../../../engine/play/terrain-mask.js';
+import { AUTO_GAP } from '../public/setup-spawns.js';
 
 const freshGround = seed => { const { map, mask } = generateMap(seed, 'large', { mode: 'ffa' }); return setupGround(map, mask); };
 // Host 'h' owns capis 0 and 1 (a pana may own several), 'g' owns 2; the rest are bots.
@@ -60,6 +61,22 @@ test('bots and panas who did not choose get fair, apart spots; launch locks seed
   const m = createMatch({ seed: done.seed, mode: 'ffa', spawnXs: done.spawns });
   assert.deepEqual(m.capys.map(c => c.x), done.spawns.map(x => m.capys.find(c => c.x === x).x));
   assert.equal(m.capys[0].x, xs[0]);
+});
+
+test('custom positions leave every automatic start at least twenty units away', () => {
+  for (const seed of candidateSeeds(77)) {
+    const ground = groundOf(seed); let accepted = 0;
+    for (let x = 8; x <= ground.map.width - 8; x += .5) {
+      const s = fresh();
+      if (!place(s, 'h', 0, x, ground).ok) continue;
+      accepted++;
+      const xs = resolveSpawns(s, ground);
+      assert.equal(xs[0], x, 'the human keeps the selected position');
+      for (let i = 1; i < xs.length; i++) for (let j = 0; j < i; j++)
+        assert.ok(Math.abs(xs[i] - xs[j]) >= AUTO_GAP, `${seed}: ${xs}`);
+    }
+    assert.ok(accepted > 50, `${seed}: tested legal positions across the terrain`);
+  }
 });
 
 test('a pana leaving or a late join taking a seat clears that capi\'s pick', () => {
@@ -118,12 +135,14 @@ test('the three candidates of a setup have distinct layouts and profiles', () =>
     const seeds = candidateSeeds(setupSeed), kinds = seeds.map(seed => ffaLayout(seed).kind);
     assert.equal(new Set(kinds).size, 3, `setup ${setupSeed}: ${kinds.join()}`);
     const profiles = seeds.map(seed => {
-      const { mask } = freshGround(seed), ys = Array.from({ length: 36 }, (_, k) => surfaceY(mask, 5 + k * 5) ?? 0), lo = Math.min(...ys), hi = Math.max(...ys);
-      return ys.map(y => (y - lo) / (hi - lo));
+      const { mask } = freshGround(seed);
+      return Array.from({ length: 36 }, (_, k) => surfaceY(mask, 5 + k * (mask.width - 10) / 35) ?? 0);
     });
     for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) {
-      const d = profiles[a].reduce((sum, y, k) => sum + Math.abs(y - profiles[b][k]), 0) / 36;
-      assert.ok(d > .15, `setup ${setupSeed}: maps ${a + 1} and ${b + 1} differ by only ${d.toFixed(2)}`);
+      // Authored presets share six tepuyes, unlike the rejected one/two-massif
+      // generator. Compare visible world-space relief across their full width.
+      const different = profiles[a].filter((y, k) => Math.abs(y - profiles[b][k]) > 2).length;
+      assert.ok(different >= 8, `setup ${setupSeed}: maps ${a + 1} and ${b + 1} differ at only ${different}/36 samples`);
     }
   }
 });

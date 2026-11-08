@@ -192,13 +192,13 @@ The play is 2D (side-on), drawn as a 2.5D side view so it is still a 3D game
 A room option next to Equipos. Six capis, each its own side: a `team` in the
 rules is a side, so its colour, its shots, its turn and its bot all still go by
 `team`; `match.teams` says how many (2 or 6). The map is always large (`roomOptions`
-forces it and `createMatch` too, so a guest's copy agrees). Its kind comes from
-`FFA_KIND_ODDS`: cerros .45, terrazas .3, suave .15, valle .1, never cuevas or
-islas, whose tunnels and islands strand six capis.
+forces it and `createMatch` too, so a guest's copy agrees). FFA uses the authored
+220-unit studio maps: La Corona, El Cañón and Los Morochos. See the studio
+integration section below for seeds, terrain parity and movement guarantees.
 
-- **Spawns** are `spreadSpawns` in map-rules.js: one per sixth of the map, at least
-  0.55 of a sixth apart, shuffled by the seed. The map's own team spawns and its
-  fairness checks are untouched: no re-roll depends on the mode.
+- **Spawns** are `spreadSpawns` in map-rules.js: six validated studio starts,
+  at least 20 units apart, shuffled by the seed. Team maps keep their existing
+  generator and fairness checks.
 - **Turns** go round the sides still standing (`nextTeam`); the limit is 90 turns
   (`ffaTurnLimit`), then most capis standing, then least paint (`byCount`). A
   winner is the last side standing; `-1` is a draw.
@@ -807,3 +807,52 @@ the model in the paws following), a charged La Piñita, then each weapon
 fired once with no errors and the play view under 150 draws, then a win,
 the results card, a rematch on the same map and the way back to the lobby
 with a new one.
+## Authored Map Studio integration
+
+Free-for-all uses the original studio's deterministic `tepuy-maps.js` and
+`ruins.js`, with module imports adapted for Pana and localization keys kept as
+Spanish source values. The reference HTML's SHA-256 is
+`2f6b1ed84d0e75d02058c7ca0acf81d6c0036d2938f9b630a84d955408d6bdcd`.
+The 29-preset catalog is preserved; only La Corona (1201), El Cañón (4410)
+and Los Morochos (1515), at the authored large size 220 × 56, are admitted to
+multiplayer. Other presets are design data, not a claim of playability.
+
+`studio-maps.js` shuffles those three candidates from the shared setup seed.
+The authored preset seed builds the cells; `map.seed` remains the room's
+selection seed, while `authoredSeed` identifies the source terrain and strata.
+Host and guest regenerate the same mask. No fallback generator changes a
+failed authored map. A dynamic-programming spawn picker requires six legal
+starts at least 20 apart and four of five neighbouring flat shots blocked.
+All three admitted presets currently block five of five. The source-output
+hashes in `studio-terrain.json` cover solid and hollow cells for all 87
+preset/size combinations; never regenerate them merely to pass a failed test.
+
+The studio's stair treads can be about 0.19 wide. The old circular body could
+hit several risers at once and bounce away, despite each riser being lower
+than a jump. `walkerOptions` opts these maps into `stair-footing.js` only on
+the original plan's flank intervals. A narrow foot contact profile and a
+maximum 1.05 tread step allow the authored stairs; standing headroom is still
+required. Tall walls and ceilings remain obstacles. Walk speed, jump takeoff,
+gravity, air steering and projectile hit radius stay unchanged, as does
+movement outside these intervals and on ordinary maps. The navigation graph
+uses the same stair rise only in these intervals, with several horizontal
+jump speeds to represent air steering; it never increases jump height.
+
+`tepuy.test.js` additionally drives the actual walker across all ten neighbouring
+routes on every admitted map. It tries several legal takeoff positions at
+shelter mouths: walking straight into a sima is not proof of an impossible
+route. Source equality, actual movement, spacing and cover are separate checks.
+The existing setup suite proves ownership, map switching, reconnects, locking
+and desktop/mobile placement with real clients. Authored terrain palettes,
+strata and the two active ambient tables are reused by the game scene.
+`studio-scenery.js` ports the studio's distant tepuy geometry and rock/waterfall
+shaders with their original seeds. Rendering still uses the game's camera,
+quality settings and shared renderer rather than the editor's postprocessing.
+
+`setup-spawns.js` completes human placements using a prefix dynamic program.
+It prefers the validated automatic starts, but can use other legal reachable
+ground when a human occupies their spacing margin. Every automatic start stays
+at least 20 units from all others; humans retain the existing 10-unit manual
+placement rule. A placement that leaves no complete spaced assignment is
+rejected before it changes setup state. Greedy farthest-first is insufficient:
+it can crowd the last automatic capi even when a complete assignment exists.

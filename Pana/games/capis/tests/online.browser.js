@@ -82,11 +82,16 @@ try {
   await waitFor(beto, () => capisDebug.match.turn.team === 2 && capisDebug.match.crates.length > 0, null, 60_000);
   const crate = page => page.evaluate(() => capisDebug.match.crates.map(k => [k.id, +k.x.toFixed(1), k.weapon]));
   assert.deepEqual(await crate(beto), await crate(ana), 'the crate on turn 3 reaches both');
-  await ana.evaluate(async () => {
+  const eliminated = await ana.evaluate(async () => {
     const m = capisDebug.match, c = m.capys.find(k => k.team === 1), { explode } = await import('/g/capis/rules.js');
     c.paint = 99; explode(m, c.x, c.y + .6, 2, 'grenade');
+    return { id: c.id, out: c.out, tomb: m.tombs.some(t => t.id === c.id) };
   });
-  await waitFor(beto, () => capisDebug.match.tombs.length === 1 && capisDebug.match.capys.find(c => c.team === 1).out === 'paint');
+  assert.equal(eliminated.out, 'paint', 'the host eliminates the intended capi');
+  assert.equal(eliminated.tomb, true, 'the host creates its tombstone');
+  // Another capi can already be out on an authored map. Check this capi's
+  // replicated tombstone rather than assuming it is the only one in the match.
+  await waitFor(beto, id => capisDebug.match.tombs.some(t => t.id === id) && capisDebug.match.capys.find(c => c.id === id).out === 'paint', eliminated.id);
   assert.deepEqual([...ana.errors, ...beto.errors], []);
   console.log('PASS capis online: todos contra todos, a capi per pana, the machine plays the rest, crates and tombstones on both screens.');
 } finally { await browser.close(); }

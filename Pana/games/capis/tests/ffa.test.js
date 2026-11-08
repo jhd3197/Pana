@@ -4,12 +4,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMatch, tickMatch, takeEvents, activeCapy, explode, byCount, ammoLeft, fire, TEAM_COLORS, FFA_CAPIS, RULES } from '../public/rules.js';
-import { generateMap, spreadSpawns, MAP_SIZES, WATER } from '../public/map-rules.js';
+import { generateMap, spreadSpawns, WATER } from '../public/map-rules.js';
 import { createBot, behindOf } from '../public/bot.js';
 import { CapisTable, botTeams, controllerOf, mirror, sidesOf } from '../public/online.js';
 import { defaultOptions, roomOptions } from '../public/options.js';
 import { surfaceY, fillHeights } from '../../../engine/play/terrain-mask.js';
 
+import { TEPUY_SIZES } from '../public/tepuy-maps.js';
 const DT = 1 / 60;
 const wire = x => JSON.parse(JSON.stringify(x));
 const ffa = (seed = 6, extra = {}) => createMatch({ seed, mode: 'ffa', ...extra });
@@ -27,7 +28,7 @@ test('the option is there, Equipos by default; todos contra todos forces the big
 
 test('six capis, each its own side and colour, on the large map, whatever size was asked for', () => {
   const m = ffa(6, { size: 'small' });
-  assert.equal(m.map.size, 'large'); assert.equal(m.map.width, MAP_SIZES.large.width);
+  assert.equal(m.map.size, 'large'); assert.equal(m.map.width, TEPUY_SIZES.large.width);
   assert.equal(m.teams, 6); assert.equal(m.capys.length, FFA_CAPIS);
   assert.deepEqual(m.capys.map(c => c.team), [0, 1, 2, 3, 4, 5]);
   assert.equal(new Set(m.capys.map(c => c.name)).size, 6, 'six names');
@@ -55,7 +56,7 @@ test('a free-for-all map is never cuevas or islas, seats six capis on the large 
   const kinds = new Set(), teamKinds = new Set();
   for (let seed = 1; seed <= 60; seed++) {
     const m = ffa(seed), xs = m.capys.map(c => c.x).sort((a, b) => a - b);
-    kinds.add(m.map.kind);
+    kinds.add(m.map.figure);
     assert.ok(!['cuevas', 'islas'].includes(m.map.kind), `seed ${seed}: ${m.map.kind}`);
     assert.equal(m.map.size, 'large');
     assert.equal(m.capys.length, FFA_CAPIS);

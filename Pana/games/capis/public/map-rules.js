@@ -40,6 +40,9 @@ import { fbm2, smoothstep, lerp, clamp } from '../../../engine/random.js';
 import { seededStream, bumps, dropFloating, walkSpans, walkTo, topLine, skyExposure, floorGraph, coverToward, relief } from '../../../engine/play/terrain-gen.js';
 import { simulateFlight, aimVelocity } from '../../../engine/play/ballistic.js';
 import { RULES, muzzle } from './rules.js';
+import { generateStudioMap, studioFigure } from './studio-maps.js';
+import { tepuyRockAt } from './tepuy-maps.js';
+import { onStairs, STAIR_RISE } from '../../../engine/play/stair-footing.js';
 
 export const MAP_SIZES = Object.freeze({
   small: Object.freeze({ width: 100, height: 46 }),
@@ -195,7 +198,7 @@ function tepuyRidges(p, r) {
   // Low land between the massifs: calm, near the old llano's height.
   p.features = []; p.ledges = []; p.outer = null; p.knoll = null; p.mirror = false;   // the layout mirrors itself (ffaLayout)
   p.base = between(11, 12.5); p.lf.amp = Math.min(p.lf.amp, 1.4);
-  const { kind, mirror } = ffaLayout(p.seed), at = f => f * w, j = () => between(-.015, .015);
+  const { kind, mirror } = legacyFfaLayout(p.seed), at = f => f * w, j = () => between(-.015, .015);
   // The layout (ffaLayout) sets where the highlands stand; this try's stream
   // only nudges them. A mesa has a ramp up from each side, side by side; an
   // edge massif one ramp up from its inner foot. Each top a little uneven
@@ -218,7 +221,8 @@ function tepuyRidges(p, r) {
 // a mesa and an edge massif, a massif at each edge, or one wide tall tepuy in
 // the middle; maybe mirrored.
 export const FFA_LAYOUTS = Object.freeze(['mesa-massif', 'twin-massifs', 'central-tepuy']);
-export function ffaLayout(seed) {
+export const ffaLayout = seed => ({ kind: studioFigure(seed).id, mirror: false });
+function legacyFfaLayout(seed) {
   const r = seededStream(`capis-layout:${seed}`);
   return { kind: FFA_LAYOUTS[Math.floor(r() * FFA_LAYOUTS.length)], mirror: r() < .5 };
 }
@@ -656,6 +660,11 @@ export function hiddenFrom(mask, a, ya, b, yb) {
 }
 const sheltered = new WeakMap();
 export function spreadSpawns(map, mask, count = 6) {
+  if (map.studio) {
+    const xs = map.ffaSpawns.slice(0, count), r = seededStream(`capis-ffa:${map.seed}:${map.size}`);
+    for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; }
+    return xs;
+  }
   const key = `${map.seed}:${map.size}:${count}`, memo = sheltered.get(mask);
   if (memo?.key === key) return [...memo.xs];
   const xs = shelterSpawns(map, mask, count) || evenSpawns(map, mask, count);
@@ -891,7 +900,8 @@ export function check(p, mask, loose, spawns) {
 // to 0.3 a 0.2 column (56°, the cell steps of a 52° ramp), hops at its own
 // take-off (7.2 up, 2.8 along, no steering in the air) and every pair is
 // checked both ways, so a drop never stands in for the way back.
-export const ffaGraph = mask => floorGraph(mask, { water: WATER, stepUp: .3, hop: { up: 7.2, forward: 2.8, gravity: 18 }, leap: 2.6 });
+export const ffaGraph = mask => floorGraph(mask, { water: WATER, stepUp: mask.stairs ? x => onStairs(mask.stairs, x) ? STAIR_RISE : .3 : .3,
+  hop: { up: 7.2, forward: 2.8, gravity: 18 }, leap: 2.6, hopSpeeds: mask.stairs ? [1.4, 2.8, 3.4, 4] : null });
 export function ffaReach(map, mask, xs = spreadSpawns(map, mask), graph = ffaGraph(mask)) {
   const nodes = xs.map(x => { const y = surfaceY(mask, x); return y === null ? -1 : graph.near(x, y, .6); }), pairs = [];
   for (const [i, a] of nodes.entries()) {
@@ -913,6 +923,7 @@ export function inspectPlan(p) {
 // draws the kind from FFA_KIND_ODDS: a seed's free-for-all map is its own.
 export function generateMap(seed = 1, size = DEFAULT_SIZE, { mode = 'teams' } = {}) {
   seed = mapSeed(seed) ?? 1; size = mapSize(size);
+  if (mode === 'ffa') return generateStudioMap(seed);
   const rejected = [];
   for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
     const p = planMap(seed, size, attempt, { mode }), { mask, loose, spawns, failed, measured } = inspectPlan(p);
@@ -945,6 +956,7 @@ function massifColumn(p, x) {
   return cache.get(k);
 }
 export function rockAt(map, x, y) {
+  if (map.studio) return tepuyRockAt(map, x, y);
   const p = map.plan;
   let k = 0;
   // A table's faces are rock down to a little under them.

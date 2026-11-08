@@ -115,7 +115,7 @@ export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, 
 }
 
 // The held key steers a capi in the air: a hop started a little short of a ledge still reaches it.
-export const walkerOptions = (m, frozen = false) => ({ radius: RULES.radius, water: m.map.water, frozen, airControl: RULES.airControl, airSpeed: RULES.airSpeed });
+export const walkerOptions = (m, frozen = false) => ({ radius: RULES.radius, water: m.map.water, frozen, airControl: RULES.airControl, airSpeed: RULES.airSpeed, stairs: !!m.map.studio });
 
 export function takeEvents(m) { const out = m.events; m.events = []; return out; }
 

@@ -30,6 +30,8 @@ import { WEAPONS, weaponOf } from './weapons.js';
 import { aiming, bodyPose, barrelPose } from './poses.js';
 import { createBackdrop } from './backdrop.js';
 import { rockAt, grassAt, strataPalette } from './map-rules.js';
+import { tepuyStrata } from './tepuy-maps.js';
+import { STUDIO_LOOKS } from './studio-looks.js';
 
 const FRONT = 1;               // the depth where capis and shells move
 const SLAB = [-2.6, .55];      // the earth's back and front faces
@@ -80,14 +82,23 @@ export function createCapisScene(canvas, match) {
   const unbind = bindRenderer(renderer, 2);
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, .5, 600);
   // Late afternoon in the Llanos: warm low sun from the front left, a soft warm rim from behind.
-  scene.add(new THREE.HemisphereLight('#ffe9c8', '#5f5a34', 1.45));
+  const hemi = new THREE.HemisphereLight('#ffe9c8', '#5f5a34', 1.45); scene.add(hemi);
   const sun = new THREE.DirectionalLight('#ffd9a8', 2.5); sun.position.set(-34, 30, 34); scene.add(sun);
   const rim = new THREE.DirectionalLight('#ffb27a', .7); rim.position.set(30, 14, -40); scene.add(rim);
   const backdrop = createBackdrop(scene, match.map, match.mask);
   let mask = match.mask, shown = match.map;
   // The cut face's layers belong to the map: its kind's colours, shifted by its seed.
-  const strataOf = map => strataPalette(map.seed, map.kind);
+  const strataOf = map => map.studio ? tepuyStrata(map.authoredSeed, map.style) : strataPalette(map.seed, map.kind);
   const palette = { ...PALETTE, sandBelow: match.map.water + 2.4, water: match.map.water, strata: strataOf(match.map) };
+  function setLook(map) {
+    const look = map.studio && STUDIO_LOOKS[map.ambient];
+    Object.assign(palette, PALETTE, look?.terrain || {});
+    const l = look?.open;
+    hemi.color.set(l?.hemi[0] || '#ffe9c8'); hemi.groundColor.set(l?.hemi[1] || '#5f5a34'); hemi.intensity = l?.hemi[2] ?? 1.45;
+    sun.color.set(l?.light[0] || '#ffd9a8'); sun.intensity = l?.light[1] ?? 2.5;
+    rim.color.set(l?.rim[0] || '#ffb27a'); rim.intensity = l?.rim[1] ?? .7;
+  }
+  setLook(match.map);
 
   // ---------- the ground ----------
   // One shader draws the slab (engine/play/terrain-material.js): the front
@@ -189,7 +200,8 @@ export function createCapisScene(canvas, match) {
     takeDirty(mask);
     // A map of another size needs ground textures of another size.
     palette.strata = strataOf(shown);
-    if (resized) { terrain.dispose(); terrain = makeTerrain(); if (plain) terrain.fallback(); } else { terrain.setStrata(palette.strata); terrain.reset(mask); }
+    setLook(shown);
+    if (resized || remap) { terrain.dispose(); terrain = makeTerrain(); if (plain) terrain.fallback(); } else { terrain.setStrata(palette.strata); terrain.reset(mask); }
     if (remap) backdrop.setMap(next.map, mask); else backdrop.shore(mask);
     backdrop.react('idle');
     for (const spray of sprays) spray.clear();

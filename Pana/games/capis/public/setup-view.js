@@ -3,6 +3,7 @@
 // the host's start. Draws a setup view (online.js setupView) and reports taps;
 // game.js decides what they do.
 import { loc } from '/engine/i18n.js';
+import { studioFigure } from './studio-maps.js';
 
 export const SETUP_ERRORS = {
   'out-of-bounds': () => loc('Fuera del mapa'), unsafe: () => loc('Ahí no se puede parar'), overlap: () => loc('Muy cerca de otro capi'),
@@ -26,7 +27,7 @@ export function createSetupView($, { pick, select, go, back }) {
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'pk-btn pk-btn--ghost setup-map'; b.dataset.map = i; b.disabled = !v.host;
         b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(i === v.pick));
-        b.textContent = loc('Mapa {n}', { n: i + 1 }); b.title = `#${seed}`;
+        b.textContent = studioFigure(seed).name; b.translate = false; b.title = `#${seed}`;
         return b;
       }));
       capis.replaceChildren(...v.mine.map(capi => {

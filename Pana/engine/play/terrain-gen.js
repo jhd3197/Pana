@@ -152,7 +152,7 @@ export function headroom(mask, x, y, height = 2.4) {
 //   seen[g.near(x2, y2)]                           // can it get there?
 //   g.reach(from, { hops: false })                 // on foot only
 export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clearance = 1.7, maxSlope = Math.tan(50 * Math.PI / 180), stepUp = .35,
-  hop = { up: 7, forward: 2.6, gravity: 18 }, leap = 2.4, body = 1.5 } = {}) {
+  hop = { up: 7, forward: 2.6, gravity: 18 }, leap = 2.4, body = 1.5, hopSpeeds = null } = {}) {
   const { cols, rows, solid, cell } = mask, count = Math.floor(mask.width / step), need = Math.ceil(clearance / cell);
   const colOf = k => Math.min(cols - 1, Math.floor((k + .5) * step / cell));
   const air = (c, r) => r >= rows || (r >= 0 && !solid[r * cols + c]);
@@ -183,17 +183,17 @@ export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clear
   const clear = (k, from, to) => { const c = colOf(k); for (let r = Math.max(0, Math.floor(from / cell)); r <= Math.floor(to / cell); r++) if (!air(c, r)) return false; return true; };
   function edges(i, hops, out) {
     out.length = 0;
-    const k = col[i], h = y[i], rise = Math.max(stepUp, maxSlope * step);
+    const k = col[i], h = y[i], rise = Math.max(typeof stepUp === 'function' ? stepUp((k + .5) * step) : stepUp, maxSlope * step);
     for (const dir of [-1, 1]) {
       const n = k + dir;
       if (n >= 0 && n < count && clear(n, h + rise + cell, h + body)) { const j = landing(n, h + rise); if (j >= 0) out.push(j); }
       if (!hops || !clear(k, h + cell, h + body + hop.up * hop.up / (2 * hop.gravity))) continue;
       // The arc of a jump, column by column: blocked by ground in the body's
       // way, landed where the feet meet ground while coming down.
-      for (let s = 1; s * step <= leap; s++) {
+      for (const forward of hopSpeeds || [hop.forward]) for (let s = 1; s * step <= leap; s++) {
         const m = k + dir * s;
         if (m < 0 || m >= count) break;
-        const t = s * step / hop.forward, feet = h + hop.up * t - hop.gravity * t * t / 2;
+        const t = s * step / forward, feet = h + hop.up * t - hop.gravity * t * t / 2;
         if (!clear(m, feet + .1, feet + body)) break;
         if (hop.up - hop.gravity * t < 0) {
           const j = landing(m, feet + .1);

@@ -1294,3 +1294,15 @@ git ls-files 'Pana/engine/*.js' 'Pana/engine/play/*.js'
 Imports are matched by path, so a game that loads a module through a re-export or
 a dynamic `import()` with a variable path can be missed; fix the row if you find
 one.
+
+### Authored stair footing
+
+`engine/play/stair-footing.js`, used by `side-walker.js` when a caller passes
+`stairs: true` and supplies `mask.stairs` as world-space x intervals. It follows
+steps up to `STAIR_RISE` (1.05), requires standing headroom, and uses narrow foot
+contacts on those runs. Outside the runs the normal circular collision stays
+unchanged. Capis opts in for the authored studio tepuy flanks; jump height,
+gravity, movement speed and projectile hitboxes do not change. Its regression
+suite checks both directions, tall walls, ceilings and opt-in isolation.
+`floorGraph` also accepts a `stepUp(x)` callback and optional `hopSpeeds` for
+navigation that represents these runs and air steering without raising jumps.

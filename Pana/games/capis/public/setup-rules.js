@@ -14,9 +14,10 @@
 // walks to every other spot. Every capi nobody placed takes a fair spot of its
 // own. Each accepted change bumps `rev`; a message carrying an older rev is
 // stale and turned down, so a late pick never lands on the next map.
-import { seededStream } from '../../../engine/play/terrain-gen.js';
 import { surfaceY } from '../../../engine/play/terrain-mask.js';
-import { mapSeed, spreadSpawns, standable, ffaGraph, generateMap, ffaLayout, FFA_TEPUY } from './map-rules.js';
+import { spreadSpawns, standable, ffaGraph, generateMap, FFA_TEPUY } from './map-rules.js';
+import { studioCandidates } from './studio-maps.js';
+import { completeSpawns } from './setup-spawns.js';
 
 export const CANDIDATES = 3;
 export const PLACE_GAP = 10;   // the least room between two capis' starts (spreadSpawns keeps more)
@@ -24,12 +25,7 @@ export const PLACE_GAP = 10;   // the least room between two capis' starts (spre
 // Three map seeds from a setup seed, the same on every client, each of its
 // own layout (map-rules ffaLayout), so the three maps differ in shape.
 export function candidateSeeds(setupSeed) {
-  const r = seededStream(`capis-setup:${setupSeed}`), out = [], kinds = new Set();
-  while (out.length < CANDIDATES) {
-    const s = mapSeed(1 + Math.floor(r() * 99998)), k = ffaLayout(s).kind;
-    if (!out.includes(s) && !kinds.has(k)) { out.push(s); kinds.add(k); }
-  }
-  return out;
+  return studioCandidates(setupSeed);
 }
 
 export function createSetup({ setupSeed = 1, hostId = null, owners = {} } = {}) {
@@ -77,6 +73,7 @@ export function spotProblem(s, capi, x, ground) {
   for (const [other, ox] of Object.entries(s.places)) if (Number(other) !== capi && Math.abs(ox - x) < PLACE_GAP) return 'overlap';
   const node = graph.near(x, y, .6);
   if (node < 0 || hub < 0 || !graph.reach(node)[hub] || !graph.reach(hub)[node]) return 'unreachable';
+  if (!completeSpawns({ ...s.places, [capi]: Math.round(x * 100) / 100 }, ground)) return 'overlap';
   return null;
 }
 
@@ -107,18 +104,11 @@ export function setOwner(s, capi, playerId) {
 export function dropPlayer(s, playerId) { for (const [capi, owner] of Object.entries(s.owners)) if (owner === playerId) setOwner(s, Number(capi), null); }
 
 // A start for each of `count` capis: the placed ones where they chose, the
-// rest on spreadSpawns' fair spots, each its own if no pick crowds it, else
-// the free one farthest from everybody.
+// rest on a complete spaced set, preferring spreadSpawns' fair spots. Human
+// picks remain untouched; automatic starts stay twenty units from all others.
 export function resolveSpawns(s, ground, count = 6) {
-  const { auto } = ground, xs = Array(count).fill(null);
-  for (const [capi, x] of Object.entries(s.places)) if (Number(capi) < count) xs[Number(capi)] = x;
-  const taken = () => xs.filter(x => x !== null), clear = x => taken().every(o => Math.abs(o - x) >= PLACE_GAP);
-  for (let i = 0; i < count; i++) {
-    if (xs[i] !== null) continue;
-    if (clear(auto[i])) { xs[i] = auto[i]; continue; }
-    const free = auto.filter(x => !xs.includes(x));
-    xs[i] = free.reduce((best, x) => Math.min(...taken().map(o => Math.abs(o - x))) > Math.min(...taken().map(o => Math.abs(o - best))) ? x : best);
-  }
+  const xs = completeSpawns(s.places, ground, count);
+  if (!xs) throw new Error('Setup has no complete spaced spawn assignment');
   return xs;
 }
 
