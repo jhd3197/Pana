@@ -55,23 +55,27 @@ try{
   await a.screenshot({path:'art/ludo/desktop-lobby.png'});
   // A reproducible, untied opener; tie rules have their own shared tests.
   await a.evaluate(()=>{ludoDebug.room.game.rng=1;});
+  // A pana who never shakes slams on their own after SHAKE_LIMIT seconds of the
+  // host's clock (quien-empieza.test.js covers that). On a slow runner the guest
+  // can see the host's state that late, so the starter's clock stands still
+  // until both panas have slammed; the bots and the lift then run as usual.
+  const holdStarter=hold=>a.evaluate(hold=>{const room=ludoDebug.room;room.realStep??=room.step;
+    room.step=hold?function(seconds){return this.game.phase==='starter'?false:this.realStep(seconds);}:room.realStep;},hold);
+  await holdStarter(true);
   await a.locator('#start').click();await sync(a,b);
   assert.equal(await b.evaluate(()=>ludoDebug.room.state.phase),'starter');
   // ¿Quién empieza?: everyone shakes at once. Juan holds the cacho button, Ana holds Space.
-  // A pana who never shakes slams on their own after SHAKE_LIMIT seconds of the
-  // host's clock (quien-empieza.test.js covers that). Two software-WebGL pages
-  // can spend that long just starting, so restart the clock before each input.
-  const freshShake=()=>a.evaluate(()=>{ludoDebug.room.game.starter.t=0;});
   await a.locator('#pana-starter-shake').waitFor();await b.locator('#pana-starter-shake').waitFor();
-  await freshShake();await a.locator('#pana-starter-shake').dispatchEvent('pointerdown',{pointerId:3,button:0});
+  await a.locator('#pana-starter-shake').dispatchEvent('pointerdown',{pointerId:3,button:0});
   await b.waitForFunction(()=>ludoDebug.room.state.starter.shaking.includes(0));
-  await freshShake();await b.evaluate(()=>document.activeElement?.blur());await b.keyboard.down(' ');
+  await b.evaluate(()=>document.activeElement?.blur());await b.keyboard.down(' ');
   await a.waitForFunction(()=>ludoDebug.room.state.starter.shaking.includes(1));
   assert.ok(await a.evaluate(()=>ludoDebug.world.starter.group.visible),'the cachos are on the table');
   await a.screenshot({path:'art/ludo/desktop-starter.png'});
   await a.locator('#pana-starter-shake').dispatchEvent('pointerup',{pointerId:3,button:0});
   await b.keyboard.up(' ');
   await b.waitForFunction(()=>0 in ludoDebug.room.state.starter.slammed&&1 in ludoDebug.room.state.starter.slammed||ludoDebug.room.state.starter.phase!=='shake');
+  await holdStarter(false);
   await a.waitForFunction(()=>ludoDebug.world.starter.revealed||ludoDebug.room.state.phase==='playing',null,{timeout:90000});
   await b.waitForFunction(()=>ludoDebug.world.starter.revealed||ludoDebug.room.state.phase==='playing',null,{timeout:90000});
   await a.screenshot({path:'art/ludo/desktop-starter-lift.png'});
@@ -122,13 +126,16 @@ try{
   await a.evaluate(()=>{const g=ludoDebug.room.game;g.turnPause=null;g.round--;g.revision++;ludoDebug.room.publish();});await sync(a,b);
   // Then Ludo's own die: a flick across the table throws hard.
   await a.evaluate(()=>{const g=ludoDebug.room.game;g.turnPause=null;g.autoMove=null;g.turn=0;g.die=0;g.revision++;ludoDebug.room.publish();});await sync(a,b);
+  const landed=await b.evaluate(()=>ludoDebug.world.landedAt);
   const box=await a.locator('#world').boundingBox(),cx=box.x+box.width/2,cy=box.y+box.height*.7;
   await a.mouse.move(cx,cy);await a.mouse.down();
   for(let i=1;i<=6;i++)await a.mouse.move(cx,cy-i*40);
   await a.mouse.up();
   await b.waitForFunction(()=>ludoDebug.room.state.lastDie>0&&ludoDebug.room.state.toss.seat===0);
   assert.ok(await b.evaluate(()=>ludoDebug.room.state.toss.power)>.5,'a flick throws hard');
-  await b.waitForFunction(()=>ludoDebug.world.tossing);
+  // The toss runs on the wall clock: a slow guest may draw it start to finish
+  // between two polls, so a die that already landed after the flick counts too.
+  await b.waitForFunction(landed=>ludoDebug.world.tossing||ludoDebug.world.landedAt>landed,landed);
   console.log('ok: ¿Quién empieza? decides who starts, everyone shaking at once');
   // Deterministic seed gives repeatable real UI turns, including leaving the yard.
   await a.evaluate(()=>{ludoDebug.room.game.rng=123;ludoDebug.room.publish();});await sync(a,b);

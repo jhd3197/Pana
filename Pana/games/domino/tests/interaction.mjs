@@ -5,13 +5,19 @@ const page=await browser.newPage({viewport:{width:1440,height:900}});page.on('pa
 await page.addInitScript(()=>localStorage.setItem('pana:settings',JSON.stringify({sound:false,music:false,quality:'baja'})));
 try{
  await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/g/domino/?room=pick-${Date.now()}&name=Juan&debug`);
- await page.waitForFunction(()=>dominoDebug.world&&dominoDebug.room.connected,null,{timeout:90000});
+ await page.waitForFunction(()=>window.dominoDebug?.world&&dominoDebug.room.connected,null,{timeout:90000});
  await waitPrepared(page);
  await page.locator('#start').click();
  // The server plays the bots until it is our turn.
- await page.waitForFunction(()=>dominoDebug.room.state.phase==='playing'&&dominoDebug.room.state.turn===dominoDebug.room.seat,null,{timeout:30000});
+ const ourTurn=()=>page.waitForFunction(()=>dominoDebug.room.state.phase==='playing'&&dominoDebug.room.state.turn===dominoDebug.room.seat,null,{timeout:30000});
+ await ourTurn();
+ // Some deals leave nothing to play on our turn: sing paso until a tile fits.
+ for(let i=0;i<7&&!await page.evaluate(()=>dominoDebug.legalMoves(dominoDebug.room.state,dominoDebug.room.seat).length);i++){
+  await page.locator('#pass').click();
+  await page.waitForFunction(()=>dominoDebug.room.state.turn!==dominoDebug.room.seat||dominoDebug.room.state.phase!=='playing');await ourTurn();
+ }
  // Dealt tiles fly into the hand; aim only once every legal one has landed.
- await page.waitForFunction(()=>{const {world,room,legalMoves}=dominoDebug;return legalMoves(room.state,room.seat).every(m=>{const t=world.tiles.get(m.tile);return t&&!t.lift&&t.model.position.distanceTo(t.target)<.01;});});
+ await page.waitForFunction(()=>{const {world,room,legalMoves}=dominoDebug;const moves=legalMoves(room.state,room.seat);return moves.length&&moves.every(m=>{const t=world.tiles.get(m.tile);return t&&!t.lift&&t.model.position.distanceTo(t.target)<.01;});});
  const target=await page.evaluate(()=>{
   const {world,room,legalMoves}=dominoDebug;
   for(const move of legalMoves(room.state,room.seat)){
