@@ -16,7 +16,7 @@
 // stale and turned down, so a late pick never lands on the next map.
 import { seededStream } from '../../../engine/play/terrain-gen.js';
 import { surfaceY } from '../../../engine/play/terrain-mask.js';
-import { mapSeed, spreadSpawns, standable, floorsOf, generateMap, FFA_TEPUY } from './map-rules.js';
+import { mapSeed, spreadSpawns, standable, ffaGraph, generateMap, FFA_TEPUY } from './map-rules.js';
 
 export const CANDIDATES = 3;
 export const PLACE_GAP = 10;   // the least room between two capis' starts (spreadSpawns keeps more)
@@ -35,7 +35,8 @@ export const seedOf = s => s.seeds[s.pick];
 
 // What placing reads about a candidate's ground, built once per map.
 export function setupGround(map, mask) {
-  const graph = floorsOf(mask), auto = spreadSpawns(map, mask), y = surfaceY(mask, auto[0]);
+  // The same strict graph the generator proves the starts with (map-rules ffaGraph).
+  const graph = ffaGraph(mask), auto = spreadSpawns(map, mask), y = surfaceY(mask, auto[0]);
   return { map, mask, graph, auto, hub: graph.near(auto[0], y, .6) };
 }
 

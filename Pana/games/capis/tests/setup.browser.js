@@ -67,6 +67,23 @@ const auto = (page, capi) => page.evaluate(async capi => {
   const { groundOf } = await import('/g/capis/setup-rules.js'), s = capisDebug.setup;
   return groundOf(s.seeds[s.pick]).auto[capi];
 }, capi);
+// A spot the setup takes for `capi` on the shown map: the nearest to `near`
+// at least 2 from where it is now, its problem checked by the setup's own rule.
+const validSpot = (page, capi, near) => page.evaluate(async ({ capi, near }) => {
+  const { groundOf, spotProblem } = await import('/g/capis/setup-rules.js'), s = capisDebug.setup, g = groundOf(s.seeds[s.pick]), now = s.spawns[capi];
+  for (let d = 0; d < 80; d += .5) for (const x of [near + d, near - d]) if (Math.abs(x - now) >= 2 && !spotProblem({ places: s.places }, capi, x, g)) return x;
+  return null;
+}, { capi, near });
+// Spots the setup must turn down on the shown map, each with the rule that does:
+// a massif's sheer face, the roof over a ramp tunnel, the ledge atop the right massif's ramp.
+const badSpots = page => page.evaluate(async () => {
+  const { groundOf, spotProblem } = await import('/g/capis/setup-rules.js'), s = capisDebug.setup, g = groundOf(s.seeds[s.pick]), [mesa, right] = g.map.plan.massifs;
+  const find = (from, to, want) => { for (let x = from; x <= to; x += .25) { const r = spotProblem({ places: s.places }, 0, x, g); if (want(r)) return { x, reason: r }; } return null; };
+  return { face: find(right.from - 5, right.from, r => r === 'unsafe'), roof: find(mesa.from + 1.5, mesa.from + 8, r => r === 'unreachable'),
+    ledge: find(right.from + 1.5, right.from + 12, r => r === 'unreachable') };
+});
+// Tap or click the map at world x and wait for the setup to answer.
+const tapAt = async (page, x, touch) => { const p = await screenAt(page, x); if (touch) await page.touchscreen.tap(p.x, p.y); else await page.mouse.click(p.x, p.y); };
 const placeOwn = page => page.evaluate(async () => {
   const { groundOf } = await import('/g/capis/setup-rules.js'), s = capisDebug.setup;
   capisDebug.placeAt(groundOf(s.seeds[s.pick]).auto[1]);
@@ -91,14 +108,25 @@ try {
   await ana.locator('[data-map="1"]').click();
   await waitFor(beto, () => capisDebug.setup.pick === 1 && capisDebug.match.map.seed === capisDebug.setup.seeds[1] && capisDebug.world.match === capisDebug.match);
   // Beto clicks the map on capi 3's fair spot.
-  const target = await auto(beto, 3), at = await screenAt(beto, target);
-  await beto.mouse.click(at.x, at.y);
+  // Beto clicks a spot the setup takes, near capi 3's fair one: his marker moves there.
+  const target = await validSpot(beto, 1, await auto(beto, 3));
+  assert.ok(target != null, 'a valid spot on the map');
+  await tapAt(beto, target, false);
   await waitFor(ana, () => capisDebug.setup.places[1] != null);
   const placed = await ana.evaluate(() => capisDebug.setup.places[1]);
   assert.ok(Math.abs(placed - target) < 1.5, `placed at ${placed}, clicked at ${target}`);
+  // A sheer face, a tunnel's roof and the ledge over a ramp are turned down, said on the bar, and the marker stays.
+  const bad = await badSpots(beto);
+  for (const [what, spot] of Object.entries(bad)) {
+    assert.ok(spot, `seed's ${what}: no such spot found`);
+    await tapAt(beto, spot.x, false);
+    await waitFor(beto, text => document.getElementById('setup-note').textContent === text, { es: { unsafe: 'Ahí no se puede parar', unreachable: 'Desde ahí no se llega' } }.es[spot.reason]);
+    assert.equal(await ana.evaluate(() => capisDebug.setup.places[1]), placed, `${what} at ${spot.x}: refused (${spot.reason})`);
+  }
   await waitFor(beto, () => Math.abs(capisDebug.match.capys[1].x - capisDebug.setup.places[1]) < .01);
   await assertMapShown(beto, 'desktop guest');
   await shot(beto, 'setup-desktop-guest');
+  await beto.screenshot({ path: join(dir, 'tepuy7-setup-desktop.png') });
 
   // Forged (Ana's capi 0) and stale picks: the host turns them down and Beto hears why.
   const rev = await beto.evaluate(() => capisDebug.setup.rev);
@@ -130,6 +158,8 @@ try {
   await ana.locator('#setup-go').click();
   await waitFor(beto2, () => capisDebug.playing && capisDebug.match.phase === 'aim' && capisDebug.match.teams === 6);
   assert.equal(await beto2.evaluate(() => capisDebug.match.map.seed), seeds[1]);
+  const cells = page => page.evaluate(() => { let h = 0; const s = capisDebug.match.mask.solid; for (let i = 0; i < s.length; i++) h = (h * 31 + s[i] + (i & 7)) | 0; return [h, capisDebug.match.mask.hollow.reduce((a, b) => a + b, 0)]; });
+  assert.deepEqual(await cells(beto2), await cells(ana), 'host and guest carve the same ground and tunnels');
   const xs = await ana.evaluate(() => capisDebug.match.capys.map(c => c.x));
   for (let i = 0; i < 6; i++) assert.ok(Math.abs(xs[i] - spawns[i]) < 1.5, `capi ${i}: ${xs[i]} vs ${spawns[i]}`);
   assert.equal(await ana.evaluate(() => capisDebug.room.game.setupAct('x', 'place', { capi: 1, x: 90, rev: 0 }).reason), 'locked');
@@ -143,13 +173,17 @@ try {
   await waitFor(solo, () => capisDebug.inSetup && capisDebug.world.match === capisDebug.match);
   await assertMapShown(solo, 'phone');
   await shot(solo, 'setup-mobile-before');
-  const want = await auto(solo, 2) + 3, p = await screenAt(solo, want);
-  await solo.touchscreen.tap(p.x, p.y);
+  const was = await solo.evaluate(() => capisDebug.match.capys[0].x), want = await validSpot(solo, 0, await auto(solo, 2));
+  assert.ok(want != null, 'a valid spot on the phone map');
+  await tapAt(solo, want, true);
   await waitFor(solo, () => capisDebug.setup.places[0] != null);
+  await waitFor(solo, x => Math.abs(capisDebug.match.capys[0].x - x) < .01, await solo.evaluate(() => capisDebug.setup.places[0]));
+  assert.ok(Math.abs(await solo.evaluate(() => capisDebug.match.capys[0].x) - was) >= 1.5, 'the marker moved');
   const got = await solo.evaluate(() => capisDebug.setup.places[0]);
   assert.ok(Math.abs(got - want) < 1.5, `tapped ${want}, placed ${got}`);
   await assertMapShown(solo, 'phone placed');
   await shot(solo, 'setup-mobile-placed');
+  await solo.screenshot({ path: join(dir, 'tepuy7-setup-phone.png') });
   await solo.locator('#setup-go').tap();
   await waitFor(solo, () => capisDebug.playing && capisDebug.match.teams === 6);
   const startXs = await solo.evaluate(() => capisDebug.match.capys.map(c => c.x));

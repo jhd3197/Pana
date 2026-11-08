@@ -218,7 +218,7 @@ function pickMap(index) {
 function placeAt(x) {
   const v = currentSetup(); if (!v || selected == null) return;
   const bad = spotProblem({ places: v.places }, selected, x, groundOf(v.seeds[v.pick]));
-  if (bad) { sfx.dry(); notify(setupError(bad)); return; }
+  if (bad) { sfx.dry(); notify(setupError(bad)); $('setup-note').textContent = setupError(bad); return; }
   sfx.land('grass', { power: .4, volume: .7 });
   if (online) { room.action('setup', { step: 'place', capi: selected, x, rev: v.rev }); return; }
   const r = place(soloSetup, 'me', selected, x, groundOf(seedOf(soloSetup)), soloSetup.rev);
