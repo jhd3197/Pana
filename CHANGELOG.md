@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Póquer: al final de la mano ves la mesa, la mano ganadora y por qué ganó.**
+  Las cinco cartas ganadoras se iluminan, con el nombre de la mano y el desempate (kicker, mesa que juega, pozos laterales). Si te retiraste, solo tú ves tus cartas en gris, y "¡Habrías ganado!" solo cuando es cierto con la mesa real.
+
 ## 0.9.0 - 2026-11-07
 
 - **Caída, Dominó y Ludo: ¿te dio rabia? Voltea la mesa.**

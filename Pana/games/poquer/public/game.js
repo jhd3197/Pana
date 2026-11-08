@@ -93,14 +93,38 @@ function render(state) {
     $('result-title').textContent = winners.length === 1 ? loc('¡Ganó {name}!', { name: winners[0].name }) : loc('¡Pozo repartido!');
     $('result-copy').textContent = locn(state.result.total, '{n} fichas en juego.', '{n} fichas en juego.') + ' ' + messageText(state.message);
     fillRoster($('result-board'), [...state.players].sort((a, b) => (state.result.payouts[b.id] || 0) - (state.result.payouts[a.id] || 0)).map(p => ({ name: p.name, detail: locn(p.chips, '{n} fichas en la mesa', '{n} fichas en la mesa'), end: state.result.payouts[p.id] ? `+${state.result.payouts[p.id]}` : '0', me: p.id === room.id })));
-    if (lastRevision !== state.revision) {
-      $('showdown').replaceChildren();
-      for (const p of state.players.filter(p => p.hole.length && p.hole.every(c => c !== null))) { const row = document.createElement('div'), label = document.createElement('span'), cards = document.createElement('div'); row.className = 'showdown-row'; label.textContent = p.name + ' · ' + (p.handName ? loc(p.handName, { $ctx: 'mano' }) : loc('Cartas privadas')); cards.className = 'cards'; renderCards(cards, p.hole); row.append(label, cards); $('showdown').append(row); }
-    }
+    if (lastRevision !== state.revision) renderShowdown(state);
     $('again').disabled = !room.isHost || !room.connected || !state.canStart; $('again').textContent = room.isHost ? loc('Siguiente mano') : loc('El anfitrión reparte');
     if (lastPhase !== 'finished') $('again').focus();
   }
   lastRevision = state.revision; lastPhase = state.phase; lastTurn = state.turn;
+}
+// End of hand: the board, each pot's winner with the best five lit and why
+// they won, every revealed hand, and (only on the folder's own screen) the
+// cards they threw away, greyed.
+function renderShowdown(state) {
+  const box = $('showdown'), name = id => state.players.find(p => p.id === id)?.name || '';
+  const row = (cls, title, cards, best, note) => {
+    const node = document.createElement('div'), label = document.createElement('span'), list = document.createElement('div');
+    node.className = `showdown-row ${cls}`; label.innerHTML = '<b></b><small></small>'; label.children[0].textContent = title; label.children[1].textContent = note || '';
+    list.className = 'cards'; renderCards(list, cards, 0, best); node.append(label, list); return node;
+  };
+  const explained = state.result.explain || [], main = explained[0], lit = main ? Object.values(main.best).flat() : null;
+  const nodes = [];
+  if (state.board.length) nodes.push(row('showdown-board', loc('La mesa'), state.board, lit?.length ? lit : null));
+  for (const pot of explained) {
+    const who = pot.winners.map(name).join(' · '), why = messageText([pot.why]);
+    const title = `${who} · ${loc(pot.hand, { $ctx: 'mano' })}`, note = pot.rival != null && pot.winners.length === 1 ? `${why} ${loc('Contra {name}.', { name: name(pot.rival) })}` : why;
+    const node = row('showdown-win', explained.length > 1 ? `${title} · ${pot.amount}` : title, [], null, note);
+    for (const id of pot.winners) { const hole = state.players.find(p => p.id === id)?.hole || []; if (hole.every(c => c !== null)) { const list = document.createElement('div'); list.className = 'cards'; renderCards(list, hole, 0, pot.best[id] || null); node.append(list); } }
+    nodes.push(node);
+  }
+  if (!state.result.showdown) nodes.push(row('showdown-win', loc('{name} se lleva el pozo.', { name: name(state.result.pots[0]?.winners[0]) }), [], null, loc('Los demás se retiraron.')));
+  const winners = new Set(explained.flatMap(p => p.winners));
+  for (const p of state.players.filter(p => !winners.has(p.id) && !p.folded && p.hole.length && p.hole.every(c => c !== null))) nodes.push(row('', `${p.name} · ${p.handName ? loc(p.handName, { $ctx: 'mano' }) : loc('Cartas privadas')}`, p.hole));
+  const mine = state.result.folded;
+  if (mine) nodes.push(row('showdown-folded', mine.hand ? loc('Te retiraste · {hand}', { hand: loc(mine.hand, { $ctx: 'mano' }) }) : loc('Te retiraste'), mine.hole, null, mine.wouldWin ? loc('¡Habrías ganado! Solo tú ves estas cartas.') : loc('Solo tú ves estas cartas.')));
+  box.replaceChildren(...nodes);
 }
 let previous = performance.now(), tickTime = previous;
 const timer = setInterval(() => { const now = performance.now(); room.tick((now - tickTime) / 1000, menu.isOpen); tickTime = now;
