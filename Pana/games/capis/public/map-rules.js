@@ -177,80 +177,67 @@ export function planMap(seed, size, attempt = 0, { mode = 'teams' } = {}) {
     hillsAlong(lo, hi, 2 + Math.floor(r() * 2), 3);
     p.outer = [chance(.55), chance(.55)];
   }
-  if (mode === 'ffa') { p.mode = 'ffa'; tepuyRidges(p, r, attempt); }
+  if (mode === 'ffa') { p.mode = 'ffa'; tepuyRidges(p, r); }
   return p;
 }
 
-// A free-for-all stands on a tepuy: the land lifted `FFA_TEPUY.lift` and two
-// broad tables on it at their own heights (tableAt), apart or as one massif
-// of two tiers, their faces rock lips and ramps a capi climbs both ways.
-export const FFA_TEPUY = Object.freeze({ lift: 8, rise: [3.4, 6.2], fall: 1.25, margin: 8,
-  // The tables (tableDrop): heights, and the faces' lips, ramps, treads and landings.
-  low: [8.5, 10.5], high: [13, 16], lip: .9, lipRun: .18, steep: 1.1, ramp: [1.8, 2.6], tread: [1.5, 1.8], landing: [1.3, 1.6] });
-// Late tries (rarely needed) stand the tables lower.
-const SOFTEN = Object.freeze({ from: 4, rise: .7 });
-function tepuyRidges(p, r, attempt = 0) {
-  const soft = attempt >= SOFTEN.from;
-  const between = (a, b) => a + (b - a) * r(), { margin } = FFA_TEPUY, slice = (p.width - 2 * margin) / 6;
-  p.base += FFA_TEPUY.lift;
-  // Six capis spread over the whole land: no sheer mesa face, cap or cave
-  // mouth may stand between two of them (a walker climbs neither), and no
-  // cave at the shores, where the end capis stand.
-  // The two tables take the place of the kind's mesas, terraces, valley and pond.
-  p.features = []; p.ledges = [];
-  p.outer = null;
-  // The taller land falls to the sea over a longer run, at the pace it did before.
-  // Calmer ground under them, so the tables read flat against it.
-  p.lf.amp *= .4; p.hills = p.hills.map(h => ({ ...h, height: h.height * .35 }));
-  // Two tables at their own heights (one low, one high, either order),
-  // apart with a sheltered hollow between, or side by side as one massif
-  // of two tiers joined by a stair. Their tops hold four of the six capis;
-  // the shores hold the other two.
-  // The lifted land's shores fall over a run long enough that their steepest
-  // part (1.175 times the mean) stays under 0.95, walkable both ways.
-  for (const e of new Set(p.ends)) e.fall = Math.max(e.fall, (p.base + p.lf.amp + 1 - (e.style === 'beach' ? WATER + 3.2 : WATER + 7)) * 1.24);
-  const T = FFA_TEPUY, hi = r() < .5, joined = r() < .4, w = p.width;
-  p.tepuys = [0, 1].map(i => ({ rise: (i === Number(hi) ? between(...T.high) : between(...T.low)) * (soft ? SOFTEN.rise : 1),
-    ramp: between(...T.ramp), tread: between(...T.tread), landing: between(...T.landing), rough: r() * 50, tilt: between(-.04, .04) }));
-  // Faces and all, the tables stand clear of the shores' slopes (the two would add up too steep).
-  const shore = e => e.run + e.fall + 1.5, [a, b] = p.tepuys;
-  const lo = shore(p.ends[0]) + faceWidth(a, a.rise * 1.05), hi2 = w - shore(p.ends[1]) - faceWidth(b, b.rise * 1.05), span = hi2 - lo;
-  if (joined) { const m = lo + span * between(.42, .58); Object.assign(a, { from: lo, to: m }); Object.assign(b, { from: m, to: hi2 }); }
-  else { Object.assign(a, { from: lo, to: lo + span * between(.38, .44) }); Object.assign(b, { from: hi2 - span * between(.38, .44), to: hi2 }); }
+// A free-for-all stands on a tepuy: low land on the left, a sheer-sided
+// central mesa, a low valley and a sheer massif running off the right edge,
+// each reached by ramp tunnels inside the rock (massifPassages).
+// FFA_MASSIFS: the tops' heights (the highest ground stays under the map's
+// roof, 45), the summit knob, how sheer a face is (rise per unit), the
+// ramps' slope (under the walker's 52°, 1.28) and the tunnels' radius.
+export const FFA_MASSIFS = Object.freeze({ mesa: [26, 29], right: [40, 42.5], knob: 2.4, face: 6, ramp: 1.1, tunnel: 1.35 });
+// The land the six starts keep off at either end (setup-rules.js reads it too).
+export const FFA_TEPUY = Object.freeze({ margin: 8 });
+function tepuyRidges(p, r) {
+  const between = (a, b) => a + (b - a) * r(), w = p.width, M = FFA_MASSIFS;
+  // Low land between the massifs: calm, near the old llano's height.
+  p.features = []; p.ledges = []; p.outer = null; p.knoll = null;
+  p.base = between(11, 12.5); p.lf.amp = Math.min(p.lf.amp, 1.4);
+  const at = f => f * w;
+  // A hill on the low land, the central mesa (a ramp up from each side, side
+  // by side) and the right massif (one ramp up from its inner foot); each top
+  // a little uneven with a summit knob.
+  p.hills = [{ at: at(.2), height: 3.2, width: 7 }];
+  p.massifs = [
+    { id: 'mesa', from: at(.36), to: at(.58), top: between(...M.mesa), climb: -1, knob: .5 },
+    { id: 'right', from: at(.75), to: w + 4, top: between(...M.right), climb: -1, knob: .45 },
+  ];
+  for (const m of p.massifs) m.rough = r() * 50;
 }
-// How far out from its edge a table's face reaches the ground.
-function faceWidth(f, rise) { let d = 0; while (d < 60 && tableDrop(f, d, rise).y < rise) d += .25; return d; }
 
-// The drop below a table's top at distance d out from its edge. Going out:
-// a sheer lip (`lip` tall, under the capi's 1.44 hop), a tread, a rock ramp
-// at `steep` (under the walker's 52°), a landing, and again. Climbing it the
-// other way every lip has a tread before it for the run-up and a landing
-// after it, so the hop clears the lip and comes down on flat ground.
-function tableDrop(f, d, rise) {
-  const { lip, lipRun, steep } = FFA_TEPUY;
-  let y = 0, at = 0;
-  while (y < rise) {
-    if (d < at + lipRun) return { y: Math.min(rise, y + lip * (d - at) / lipRun), face: true };
-    at += lipRun; y += lip; if (y >= rise) break;
-    if (d < at + f.tread) return { y, face: false };
-    at += f.tread;
-    const r = Math.min(f.ramp, rise - y), run = r / steep;
-    if (d < at + run) return { y: y + r * (d - at) / run, face: true };
-    at += run; y += r; if (y >= rise) break;
-    if (d < at + f.landing) return { y, face: false };
-    at += f.landing;
+// The massifs over the ground at x (heightAt, after the shores): flat tops a
+// little uneven, a summit knob, faces near sheer (FFA_MASSIFS.face).
+function massifsAt(p, x, h, ground) {
+  for (const m of p.massifs) {
+    const top = m.top || ground + m.rise, mid = m.from + (m.to - m.from) * (m.knob ?? .5), span = m.to - m.from;
+    const knob = m.knob == null ? 0 : FFA_MASSIFS.knob * Math.exp(-(((x - mid) / (span * .09)) ** 2));
+    const y = top + knob + (fbm2(x * .25 + m.rough, 1.9, { octaves: 2 }) - .5) * .8, out = x < m.from ? m.from - x : x > m.to ? x - m.to : 0;
+    h = Math.max(h, y - out * FFA_MASSIFS.face);
   }
-  return { y: rise, face: false };
-}
-// A table's height over the ground at x (0 off it) and whether x is on its rock face.
-function tableAt(f, x) {
-  const out = x < f.from ? f.from - x : x > f.to ? x - f.to : 0, u = clamp((x - (f.from + f.to) / 2) / ((f.to - f.from) / 2), -1, 1);
-  const inside = Math.min(x - f.from, f.to - x), top = f.rise * (1 + f.tilt * u) + (fbm2(x * .3 + f.rough, 3.1, { octaves: 2 }) - .5) * .5 * clamp(inside / 3);
-  if (!out) return { h: top, face: false };
-  const edge = f.rise * (1 + f.tilt * Math.sign(x - f.from - (f.to - f.from) / 2)), d = tableDrop(f, out, edge);
-  return { h: Math.max(0, edge - d.y), face: d.face && edge - d.y > 0 };
+  return h;
 }
 
+// Each massif's ways in, carved as tunnels (buildGround). In a side view a
+// switchback cannot work: where its upper flight starts over the lower one
+// the step is the walker's height plus the rock (over 1.7), above its 1.44
+// hop. So every way runs one way in x: a ramp at FFA_MASSIFS.ramp (47.7°,
+// under the walker's 52°) from the foot of the inner face, inward under the
+// top, out through it. The mesa has one from each side, side by side (two ways
+// may never cross or stack: the upper floor would stand on the lower's
+// headroom), so it is crossed by going up one and down the other. A massif
+// with `arch` gets a passage through its foot instead.
+function massifPassages(p) {
+  const out = [], bare = { ...p, massifs: null }, g = x => heightAt(bare, x), M = FFA_MASSIFS;
+  const ramp = (face, dir, top) => { const foot = face + dir * ((top + M.knob - g(face + dir * 6)) / M.face + 1.2), y0 = g(foot), run = (top + .6 - y0) / M.ramp; return [{ x: foot + dir * 1.5, y: g(foot + dir * 1.5) }, { x: foot, y: y0 }, { x: face, y: y0 }, { x: face - dir * run, y: top + .6 }]; };
+  for (const m of p.massifs) {
+    if (m.arch) { const w = m.rise / M.face + 1.4, y = Math.max(g(m.from - w), g(m.to + w)); out.push([{ x: m.from - w - 1.5, y: g(m.from - w - 1.5) }, { x: m.from - w, y }, { x: m.to + w, y }, { x: m.to + w + 1.5, y: g(m.to + w + 1.5) }]); continue; }
+    if (m.id === 'mesa') { out.push(ramp(m.from, -1, m.top), ramp(m.to, 1, m.top)); continue; }
+    out.push(ramp(m.climb > 0 ? m.to : m.from, m.climb, m.top));
+  }
+  return out;
+}
 // ---------- the ground's profile ----------
 
 // Rolling ground along the whole map, not mirrored.
@@ -369,7 +356,6 @@ export function heightAt(p, x) {
     if (d < 3.5) h = Math.min(h, lerp(WATER - 1.8, h, smoothstep(clamp(d / 3.5))));
   }
   if (p.knoll) h += p.knoll.height * Math.exp(-(((x - p.mid) / p.knoll.width) ** 2));
-  if (p.tepuys) { const ground = h; for (const f of p.tepuys) h = Math.max(h, ground + tableAt(f, x).h); }
   // The ends: the land falls towards the sea, into a beach or a cliff.
   for (const [i, s] of p.ends.entries()) {
     const e = i ? p.width - x : x;
@@ -388,6 +374,7 @@ export function heightAt(p, x) {
     }
   }
   if (climb) h = climbHeight(climb.f, x, climb.crest, h);
+  if (p.massifs) h = massifsAt(p, x, h, p.base);
   return clamp(h, -1, p.height - 4);
 }
 
@@ -551,6 +538,7 @@ export function buildGround(p) {
     t.points = points;
     p.caveSpots.push({ x: lerp(t.from, t.to, .5), y: points[2].y, what: 'tunnel' });
   }
+  if (p.massifs) { p.passages = massifPassages(p); for (const path of p.passages) tunnel(mask, path, FFA_MASSIFS.tunnel); }
   for (const f of p.features) if (f.type === 'mesa' && f.cave) {
     // A cave at the foot of the mesa's steep face.
     const edge = f.at + f.face * (f.top + 1.6), y = heightAt(p, edge + f.face * .6);
@@ -645,7 +633,7 @@ export function spawnsFor(p, mask) {
 // from each other's flat shot (a table edge or a lip between them), then the
 // most even spacing. Deterministic (a dynamic programme over a 1-unit grid);
 // the team order is shuffled from the seed. Falls back to evenSpawns.
-export const SPAWN_GAP = 20, SPAWN_SPREAD = 40;   // 20: playtest, the one beside you was too easy to hit
+export const SPAWN_GAP = 20, SPAWN_SPREAD = 56;   // 20: playtest, the one beside you was too easy to hit
 export function hiddenFrom(mask, a, ya, b, yb) {
   for (let t = .05; t < .95; t += .01) if (solidAt(mask, a + (b - a) * t, ya + 2 + (yb - ya) * t)) return true;
   return false;
@@ -859,11 +847,11 @@ export function measure(p, mask, spawns) {
 //   walled-in     a capi can neither walk to within 32 of a rival nor hit one
 //   ffa-apart     (free-for-all) one of the six spots cannot walk or hop to another
 export function check(p, mask, loose, spawns) {
-  if (loose.floating.length > p.tunnels.length || loose.floating.some(n => n < 4000)) return { failed: 'floating' };
+  if (loose.floating.length > p.tunnels.length + 3 * (p.passages?.length || 0) || loose.floating.some(n => n < 4000)) return { failed: 'floating' };
   if (!spawns) return { failed: 'cramped' };
   const m = measure(p, mask, spawns);
   const fail = failed => ({ failed, measured: m });
-  for (const s of m.stats.flat()) if (s.span < FAIR.span) return fail('boxed-in');
+  if (p.mode !== 'ffa') for (const s of m.stats.flat()) if (s.span < FAIR.span) return fail('boxed-in');
   if (m.interest.score < FAIR.interest) return fail('bland');
   if (p.mode !== 'ffa' && (!Number.isFinite(m.walk.there) || !Number.isFinite(m.walk.back))) return fail('apart');
   if (m.choke < FAIR.choke) return fail('choke');
@@ -929,13 +917,13 @@ export function generateMap(seed = 1, size = DEFAULT_SIZE, { mode = 'teams' } = 
 // and its ledge, the bridges and ledges and the cliffs at the ends. The
 // soil's layers between them (the islands' banks too, down to the beach)
 // are the shader's strata (`strataPalette`).
-// Per column: the land without the tables, the ground with them, and whether a table stands there.
-const tableColumns = new WeakMap();
-function tableColumn(p, x) {
-  let cache = tableColumns.get(p); if (!cache) tableColumns.set(p, cache = new Map());
+// Per column: the land without the massifs, the ground with them, and whether a massif stands there.
+const massifColumns = new WeakMap();
+function massifColumn(p, x) {
+  let cache = massifColumns.get(p); if (!cache) massifColumns.set(p, cache = new Map());
   const k = Math.round(x * 10);
   if (!cache.has(k)) {
-    const ground = heightAt({ ...p, tepuys: null }, x), top = heightAt(p, x);
+    const ground = heightAt({ ...p, massifs: null }, x), top = heightAt(p, x);
     cache.set(k, { ground, top, on: top - ground > .5 });
   }
   return cache.get(k);
@@ -944,8 +932,8 @@ export function rockAt(map, x, y) {
   const p = map.plan;
   let k = 0;
   // A table's faces are rock down to a little under them.
-  if (p.tepuys) {
-    const c = tableColumn(p, x);
+  if (p.massifs) {
+    const c = massifColumn(p, x);
     if (c.on && y < c.top - .35 && y > c.ground - 1) k = .9;
   }
   for (const b of p.rocks) {

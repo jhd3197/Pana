@@ -4,9 +4,10 @@
 // side's kit for digging through whatever the ground becomes.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateMap, spreadSpawns, ffaReach, planMap, FFA_TEPUY } from '../public/map-rules.js';
+import { generateMap, spreadSpawns, ffaReach, planMap, FFA_MASSIFS, WATER } from '../public/map-rules.js';
+import { RULES } from '../public/rules.js';
 import { startingAmmo } from '../public/weapons.js';
-import { SIDE_WALKER } from '../../../engine/play/side-walker.js';
+import { SIDE_WALKER, stepSideWalker } from '../../../engine/play/side-walker.js';
 import { solidAt, surfaceY } from '../../../engine/play/terrain-mask.js';
 
 const SEEDS = Array.from({ length: 16 }, (_, i) => i + 1);
@@ -41,19 +42,37 @@ test('neighbours have cover: most flat shots between them hit the ridge', () => 
   assert.ok(blocked / pairs >= .8, `${blocked} of ${pairs}`);
 });
 
-test('two tables at distinct heights with lips under the hop and ramps under the slope; first tries pass; teams maps untouched', () => {
-  const hop = SIDE_WALKER.jump ** 2 / (2 * SIDE_WALKER.gravity);
-  assert.ok(FFA_TEPUY.lip < hop - .4, 'a lip is hopped with room to spare');
-  assert.ok(FFA_TEPUY.steep < Math.tan(SIDE_WALKER.maxClimb) * .9, 'a ramp is walked');
-  let ffa = 0, teams = 0, first = 0;
+test('two sheer highlands with real relief, ramps under the slope, first tries pass, teams maps untouched', () => {
+  assert.ok(FFA_MASSIFS.ramp < Math.tan(SIDE_WALKER.maxClimb) * .9, 'a ramp is walked');
+  assert.ok(FFA_MASSIFS.face >= 5, 'the faces are sheer');
+  let first = 0;
   for (const seed of SEEDS) {
     const p = planMap(seed, 'large', 0, { mode: 'ffa' }), q = planMap(seed, 'large', 0);
-    assert.equal(p.tepuys.length, 2); assert.equal(q.tepuys, undefined);
-    assert.ok(Math.abs(p.tepuys[0].rise - p.tepuys[1].rise) >= 2, `seed ${seed}: two tiers`);
-    for (const f of p.tepuys) assert.ok(f.tread > 1.4 && f.landing > 1.2 && f.to - f.from > 12, `seed ${seed}: run-up, landing and a broad top`);
+    assert.equal(p.massifs.length, 2); assert.equal(q.massifs, undefined);
     const { map, mask } = built.get(seed); if (map.attempt === 0) first++;
-    if (seed <= 8) { ffa += spreadSpawns(map, mask).reduce((a, x) => a + surfaceY(mask, x), 0) / 6; teams += generateMap(seed, 'large').map.fair.heights.flat().reduce((a, b) => a + b) / 6; }
+    const ys = Array.from({ length: 141 }, (_, k) => surfaceY(mask, 20 + k)).filter(y => y !== null);
+    assert.ok(Math.max(...ys) - Math.min(...ys) >= 25, `seed ${seed}: relief ${(Math.max(...ys) - Math.min(...ys)).toFixed(1)}`);
   }
   assert.ok(first >= SEEDS.length - 2, `${first} of ${SEEDS.length} on the first try`);
-  assert.ok(ffa > teams + 8 * 2, `ffa ${(ffa / 8).toFixed(1)} vs teams ${(teams / 8).toFixed(1)}`);
+});
+
+// The real walker (side-walker.js with Capis' own options) walks from every
+// spot to its neighbours and back: hold the key towards it, hop when blocked.
+test('a capi really walks every route between neighbouring spots, both ways', () => {
+  const opts = { radius: RULES.radius, water: WATER, airControl: RULES.airControl, airSpeed: RULES.airSpeed };
+  for (const seed of [4, 6, 11]) {
+    const { mask } = built.get(seed) || generateMap(seed, 'large', { mode: 'ffa' }), xs = spreadSpawns(built.get(seed).map, mask).sort((a, b) => a - b), ys = xs.map(x => surfaceY(mask, x));
+    for (let i = 0; i < 5; i++) for (const [a, b] of [[i, i + 1], [i + 1, i]]) {
+      const c = { x: xs[a], y: ys[a], vx: 0, vy: 0, grounded: true, facing: 1, slide: 0, paint: 0, jumpPress: 0 };
+      let jump = 0, ok = false, last = c.x;
+      for (let t = 0; t < 60 * 90 && !ok; t++) {
+        const r = stepSideWalker(c, { x: Math.sign(xs[b] - c.x), jump }, 1 / 60, mask, opts);
+        assert.ok(c.y > WATER, `seed ${seed}: drowned going ${xs[a].toFixed(0)} -> ${xs[b].toFixed(0)}`);
+        ok = Math.abs(c.x - xs[b]) < 1 && Math.abs(c.y - ys[b]) < 1.5 && c.grounded;
+        if (r.blocked && c.grounded) jump++;
+        if (t % 120 === 0) { if (Math.abs(c.x - last) < .3) jump++; last = c.x; }
+      }
+      assert.ok(ok, `seed ${seed}: ${xs[a].toFixed(0)} -> ${xs[b].toFixed(0)} stopped at ${c.x.toFixed(1)}, ${c.y.toFixed(1)}`);
+    }
+  }
 });
