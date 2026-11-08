@@ -91,7 +91,7 @@ export const canUse = (m, team, weapon) => WEAPONS.some(w => w.id === weapon) &&
 
 // A match on the map of `seed` and `size` (map-rules.js): the same seed
 // gives the same ground, spawns and winds, so a match can be replayed.
-export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null, looks = {}, mode = 'teams' } = {}) {
+export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null, looks = {}, mode = 'teams', spawnXs = null } = {}) {
   mode = MODES.includes(mode) ? mode : 'teams';
   // A free-for-all needs the room: six capis, spread out, always on the big map.
   const { map, mask } = generated || generateMap(seed, mode === 'ffa' ? FFA_SIZE : size, { mode });
@@ -105,7 +105,7 @@ export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, 
   const capi = (id, team, slot, name, x, facing) => m.capys.push({ id, team, slot, name, x, y: surfaceY(mask, x) ?? map.height - 2, vx: 0, vy: 0,
     grounded: false, facing, aim: .55, paint: 0, out: null, jumpPress: 0, slide: 0, weapon: FIRST_WEAPON });
   // In a free-for-all each capi is its own side, facing the middle of the map.
-  if (mode === 'ffa') spreadSpawns(map, mask, FFA_CAPIS).forEach((x, team) => capi(`f${team}`, team, 0, NAMES.flat()[team], x, x < map.width / 2 ? 1 : -1));
+  if (mode === 'ffa') (spawnXs?.length === FFA_CAPIS ? spawnXs : spreadSpawns(map, mask, FFA_CAPIS)).forEach((x, team) => capi(`f${team}`, team, 0, NAMES.flat()[team], x, x < map.width / 2 ? 1 : -1));
   else map.spawns.forEach((xs, team) => xs.forEach((x, slot) => capi(`${team}-${slot}`, team, slot, NAMES[team][slot], x, team ? -1 : 1)));
   // Settle everyone onto the ground before the first turn.
   for (let i = 0; i < 60; i++) for (const c of m.capys) stepSideWalker(c, {}, 1 / 60, m.mask, walkerOptions(m, true));

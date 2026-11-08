@@ -177,7 +177,41 @@ export function planMap(seed, size, attempt = 0, { mode = 'teams' } = {}) {
     hillsAlong(lo, hi, 2 + Math.floor(r() * 2), 3);
     p.outer = [chance(.55), chance(.55)];
   }
+  if (mode === 'ffa') { p.mode = 'ffa'; tepuyRidges(p, r); }
   return p;
+}
+
+// A free-for-all stands on a tepuy: the whole range lifted `FFA_TEPUY.lift`
+// higher, and between every two neighbours' sixths of the land a ridge with
+// an uneven plateau on top, tall enough to hide a capi from a flat shot but
+// with sides a capi walks up (no steeper than `steep`, under the walker's
+// 52°), so the land stays one piece and nobody is boxed in.
+export const FFA_TEPUY = Object.freeze({ lift: 8, rise: [3.4, 6.2], half: [1.6, 3.6], steep: [.6, .8], fall: 1.25, margin: 8 });
+function tepuyRidges(p, r) {
+  const between = (a, b) => a + (b - a) * r(), { margin } = FFA_TEPUY, slice = (p.width - 2 * margin) / 6;
+  p.base += FFA_TEPUY.lift;
+  // Six capis spread over the whole land: no sheer mesa face, cap or cave
+  // mouth may stand between two of them (a walker climbs neither), and no
+  // cave at the shores, where the end capis stand.
+  for (const f of p.features) if (f.type === 'mesa') Object.assign(f, { face: 0, cap: false, cave: 0 });
+  p.outer = null;
+  // The taller land falls to the sea over a longer run, at the pace it did before.
+  for (const e of new Set(p.ends)) e.fall *= FFA_TEPUY.fall;
+  p.ridges = [];
+  for (let i = 1; i < 6; i++) {
+    const rise = between(...FFA_TEPUY.rise);
+    p.ridges.push({ at: margin + slice * i + between(-.12, .12) * slice, rise, half: between(...FFA_TEPUY.half), steep: between(...FFA_TEPUY.steep),
+      tilt: between(-.18, .18), notch: between(-.4, .4) });
+  }
+}
+
+// A ridge laid over the ground: a plateau `half` either side of its middle,
+// tilted and with a shallow notch so no two tops are alike, then sides
+// falling at `steep` back to the ground around.
+function ridgeHeight(f, x) {
+  const d = Math.abs(x - f.at), u = (x - f.at) / f.half;
+  const top = f.rise * (1 + f.tilt * clamp(u, -1, 1)) - Math.max(0, f.notch) * Math.exp(-(((u - f.notch) * 2.2) ** 2));
+  return d <= f.half ? top : Math.max(0, top - (d - f.half) * f.steep);
 }
 
 // ---------- the ground's profile ----------
@@ -197,6 +231,8 @@ function detail(p, x) {
 function mesaHeight(f, x, h) {
   const steep = f.at + f.face * f.top, ramp = f.at - f.face * f.top, T = f.T;
   if (Math.abs(x - f.at) <= f.top) return Math.max(h, T);
+  // A free-for-all's mesa is a plateau with a ramp either side (see tepuyRidges).
+  if (!f.face) return Math.max(h, T - (Math.abs(x - f.at) - f.top) * .62);
   if (Math.sign(x - f.at) === f.face) return Math.max(h, lerp(h, T, smoothstep(clamp(1 - Math.abs(x - steep) / 1.1))));
   return Math.max(h, T - Math.abs(x - ramp) * .62);
 }
@@ -296,6 +332,7 @@ export function heightAt(p, x) {
     if (d < 3.5) h = Math.min(h, lerp(WATER - 1.8, h, smoothstep(clamp(d / 3.5))));
   }
   if (p.knoll) h += p.knoll.height * Math.exp(-(((x - p.mid) / p.knoll.width) ** 2));
+  if (p.ridges) for (const f of p.ridges) h += ridgeHeight(f, x);
   // The ends: the land falls towards the sea, into a beach or a cliff.
   for (const [i, s] of p.ends.entries()) {
     const e = i ? p.width - x : x;
@@ -729,6 +766,7 @@ export function measure(p, mask, spawns) {
 //   out-of-reach  the front capis cannot hit each other with no wind
 //   no-shot       a team has no capi with a shot at a rival
 //   walled-in     a capi can neither walk to within 32 of a rival nor hit one
+//   ffa-apart     (free-for-all) one of the six spots cannot walk or hop to another
 export function check(p, mask, loose, spawns) {
   if (loose.floating.length > p.tunnels.length || loose.floating.some(n => n < 4000)) return { failed: 'floating' };
   if (!spawns) return { failed: 'cramped' };
@@ -736,16 +774,31 @@ export function check(p, mask, loose, spawns) {
   const fail = failed => ({ failed, measured: m });
   for (const s of m.stats.flat()) if (s.span < FAIR.span) return fail('boxed-in');
   if (m.interest.score < FAIR.interest) return fail('bland');
-  if (!Number.isFinite(m.walk.there) || !Number.isFinite(m.walk.back)) return fail('apart');
+  if (p.mode !== 'ffa' && (!Number.isFinite(m.walk.there) || !Number.isFinite(m.walk.back))) return fail('apart');
   if (m.choke < FAIR.choke) return fail('choke');
   if (m.caves.some(c => !c.reached)) return fail('cave-shut');
   if (m.summit && !m.summit.reached) return fail('summit-shut');
+  // A free-for-all seats its six by spreadSpawns, not the two teams': the
+  // teams' evenness checks do not apply, every spot walking to every other does.
+  if (p.mode === 'ffa') return ffaReach({ width: p.width, seed: p.seed, size: p.size }, mask, undefined, m.graph).connected ? { failed: null, measured: m } : fail('ffa-apart');
   for (const k of ['meanHeight', 'front', 'exposure', 'cover', 'distance', 'walk', 'shots']) if (m.diff[k] > FAIR[k]) return fail(`uneven-${k}`);
   if (!m.shots[0].some(Boolean) || !m.shots[1].some(Boolean)) return fail('no-shot');
   for (let t = 0; t < 2; t++) for (let s = 0; s < 3; s++) if (!m.moves[t][s] && !m.shots[t][s]) return fail('walled-in');
   const at = (team, slot) => ({ x: spawns[team][slot], y: m.stats[team][slot].y });
   if (!reachable(mask, at(0, 0), { ...at(1, 0), y: at(1, 0).y + .35 }) || !reachable(mask, at(1, 0), { ...at(0, 0), y: at(0, 0).y + .35 })) return fail('out-of-reach');
   return { failed: null, measured: m };
+}
+
+// Can every free-for-all spot walk (or hop, with the checks' short hop: under
+// the walker's 1.44 jump, slopes under its 52°) to every other, both ways?
+// `xs` defaults to spreadSpawns' six. { connected, nodes, pairs: [[from, to, ok]] }.
+export function ffaReach(map, mask, xs = spreadSpawns(map, mask), graph = floorsOf(mask)) {
+  const nodes = xs.map(x => { const y = surfaceY(mask, x); return y === null ? -1 : graph.near(x, y, .6); }), pairs = [];
+  for (const [i, a] of nodes.entries()) {
+    const seen = a >= 0 ? graph.reach(a) : null;
+    for (const [j, b] of nodes.entries()) if (i !== j) pairs.push([i, j, !!(seen && b >= 0 && seen[b])]);
+  }
+  return { connected: pairs.every(q => q[2]), nodes, pairs, graph };
 }
 
 // One attempt built and checked: { mask, loose, spawns, failed, measured }.
