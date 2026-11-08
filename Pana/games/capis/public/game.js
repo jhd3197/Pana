@@ -25,6 +25,7 @@ import { createHud, createTombPicker } from './hud.js';
 import { TOMBS, createTombStore } from './tombs.js';
 import { mapSeed, mapSize, SEED_LIMIT } from './map-rules.js';
 import { CapisRoom } from './network.js';
+import { PAD } from './pad.js';
 import { teamOf, botTeams, sidesOf, freshEvents, TEAM_MAX } from './online.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
@@ -156,7 +157,7 @@ const pickSeed = next => { if (online) room.action('seed', { seed: next }); else
 $('seed-input').addEventListener('change', () => pickSeed(mapSeed($('seed-input').value) ?? seed));
 $('seed-new').onclick = () => pickSeed(newSeed());
 const menu = createGameMenu({ title: 'Capis a Pintazos · Pana', sound, orientation: 'libre', // i18n-ignore: the game's name
-  pad: { move: 'wasd', keys: { a: ['Space', loc('Cargar y disparar')], b: ['Enter', loc('Saltar')], y: ['KeyZ', loc('Ver todo el mapa')] } },
+  pad: PAD,
   note: () => online ? loc('La partida sigue mientras estás en el menú.') : loc('La partida está en pausa.'),
   invite: () => inviteUrl(code),
 });

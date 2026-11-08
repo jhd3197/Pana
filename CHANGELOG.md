@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos: con mando, RT dispara y A salta.**
+  Mantén RT (R2) para cargar y suéltalo para pintar; A (Cruz) salta, como en Pepazo.
+
 ## 0.9.0 - 2026-11-07
 
 - **Caída, Dominó y Ludo: ¿te dio rabia? Voltea la mesa.**

@@ -10,8 +10,8 @@ export default {
   sections: [{ title: loc('En tu turno'), rows: [
     { action: loc('Caminar'), keyboard: `A D / ${loc('Flechas')}`, gamepad: 'Stick izq. / Cruceta', touch: loc('Flechas izquierda y derecha') },
     { action: loc('Apuntar'), keyboard: `W S / ${loc('Ratón')}`, gamepad: 'Stick izq. / Cruceta', touch: loc('Botones arriba y abajo') },
-    { action: loc('Mantén para cargar, suelta para disparar'), keyboard: `${loc('Espacio')} / ${loc('Clic')}`, gamepad: 'A', touch: loc('Botón ¡Pinta!') },
-    { action: loc('Saltar'), keyboard: 'Enter / J', gamepad: 'B', touch: loc('Botón Saltar') },
+    { action: loc('Mantén para cargar, suelta para disparar'), keyboard: `${loc('Espacio')} / ${loc('Clic')}`, gamepad: 'RT', touch: loc('Botón ¡Pinta!') },
+    { action: loc('Saltar'), keyboard: 'Enter / J', gamepad: 'A', touch: loc('Botón Saltar') },
     { action: loc('Elegir un arma'), keyboard: `${loc('1 a 5')} / ${loc('Clic en el arma')}`, touch: loc('Toca el arma') },
     { action: loc('Arma anterior o siguiente'), keyboard: 'Q / E / Tab' },
   ] }, { title: loc('Siempre'), rows: [

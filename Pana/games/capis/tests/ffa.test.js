@@ -61,7 +61,8 @@ test('a free-for-all map is never cuevas or islas, seats six capis on the large 
     assert.equal(m.capys.length, FFA_CAPIS);
     assert.equal(FFA_CAPIS, 6);
     assert.ok(xs.at(-1) - xs[0] > m.map.width * .55, `seed ${seed} ${m.map.kind}: they cover ${(xs.at(-1) - xs[0]).toFixed(0)} of ${m.map.width}`);
-    for (let i = 1; i < 6; i++) assert.ok(xs[i] - xs[i - 1] >= 10, `seed ${seed} ${m.map.kind}: ${xs[i - 1].toFixed(1)} and ${xs[i].toFixed(1)} are too close`);
+    // Neighbours stand a fair shot apart (playtest: the one beside you was too easy to hit).
+    for (let i = 1; i < 6; i++) assert.ok(xs[i] - xs[i - 1] >= 20, `seed ${seed} ${m.map.kind}: ${xs[i - 1].toFixed(1)} and ${xs[i].toFixed(1)} are too close`);
     for (const c of m.capys) assert.ok(c.y > WATER, `seed ${seed}: dry at ${c.x.toFixed(1)}`);
     const t = createMatch({ seed, size: 'large' });
     teamKinds.add(t.map.kind);
