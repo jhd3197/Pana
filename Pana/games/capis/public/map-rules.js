@@ -186,7 +186,7 @@ export function planMap(seed, size, attempt = 0, { mode = 'teams' } = {}) {
 // of two tiers, their faces rock lips and ramps a capi climbs both ways.
 export const FFA_TEPUY = Object.freeze({ lift: 8, rise: [3.4, 6.2], fall: 1.25, margin: 8,
   // The tables (tableDrop): heights, and the faces' lips, ramps, treads and landings.
-  low: [6.5, 8.5], high: [10.5, 13], lip: .9, lipRun: .18, steep: 1.1, ramp: [1.8, 2.6], tread: [1.5, 1.8], landing: [1.3, 1.6] });
+  low: [8.5, 10.5], high: [13, 16], lip: .9, lipRun: .18, steep: 1.1, ramp: [1.8, 2.6], tread: [1.5, 1.8], landing: [1.3, 1.6] });
 // Late tries (rarely needed) stand the tables lower.
 const SOFTEN = Object.freeze({ from: 4, rise: .7 });
 function tepuyRidges(p, r, attempt = 0) {
@@ -215,8 +215,8 @@ function tepuyRidges(p, r, attempt = 0) {
   // Faces and all, the tables stand clear of the shores' slopes (the two would add up too steep).
   const shore = e => e.run + e.fall + 1.5, [a, b] = p.tepuys;
   const lo = shore(p.ends[0]) + faceWidth(a, a.rise * 1.05), hi2 = w - shore(p.ends[1]) - faceWidth(b, b.rise * 1.05), span = hi2 - lo;
-  if (joined) { const m = lo + span * between(.45, .55); Object.assign(a, { from: lo, to: m }); Object.assign(b, { from: m, to: hi2 }); }
-  else { Object.assign(a, { from: lo, to: lo + span * between(.34, .4) }); Object.assign(b, { from: hi2 - span * between(.34, .4), to: hi2 }); }
+  if (joined) { const m = lo + span * between(.42, .58); Object.assign(a, { from: lo, to: m }); Object.assign(b, { from: m, to: hi2 }); }
+  else { Object.assign(a, { from: lo, to: lo + span * between(.38, .44) }); Object.assign(b, { from: hi2 - span * between(.38, .44), to: hi2 }); }
 }
 // How far out from its edge a table's face reaches the ground.
 function faceWidth(f, rise) { let d = 0; while (d < 60 && tableDrop(f, d, rise).y < rise) d += .25; return d; }
@@ -638,7 +638,62 @@ export function spawnsFor(p, mask) {
 // Six spots for a free-for-all, spread over the whole map: one in each sixth of
 // the land, as near its middle as there is good ground, all at least `gap`
 // apart. A seeded shuffle says who stands where, so nobody always gets the end.
+// Free-for-all starts in shelter: of the ground a capi stands on and that the
+// strict graph (ffaGraph) links both ways to the land's middle, 5 or more
+// above the water, the six
+// spots, SPAWN_GAP to SPAWN_SPREAD apart, with the most neighbours hidden
+// from each other's flat shot (a table edge or a lip between them), then the
+// most even spacing. Deterministic (a dynamic programme over a 1-unit grid);
+// the team order is shuffled from the seed. Falls back to evenSpawns.
+export const SPAWN_GAP = 20, SPAWN_SPREAD = 40;   // 20: playtest, the one beside you was too easy to hit
+export function hiddenFrom(mask, a, ya, b, yb) {
+  for (let t = .05; t < .95; t += .01) if (solidAt(mask, a + (b - a) * t, ya + 2 + (yb - ya) * t)) return true;
+  return false;
+}
+const sheltered = new WeakMap();
 export function spreadSpawns(map, mask, count = 6) {
+  const key = `${map.seed}:${map.size}:${count}`, memo = sheltered.get(mask);
+  if (memo?.key === key) return [...memo.xs];
+  const xs = shelterSpawns(map, mask, count) || evenSpawns(map, mask, count);
+  const r = seededStream(`capis-ffa:${map.seed}:${map.size}`);
+  for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; }
+  sheltered.set(mask, { key, xs: [...xs] });
+  return xs;
+}
+function shelterSpawns(map, mask, count) {
+  const margin = 8, graph = ffaGraph(mask), cand = [];
+  // The middle's floor, and every floor it reaches and is reached from.
+  let hub = -1;
+  for (let d = 0; d < 40 && hub < 0; d += .5) for (const x of [map.width / 2 + d, map.width / 2 - d]) { const y = standable(mask, x); if (y !== null && hub < 0) hub = graph.near(x, y, .6); }
+  if (hub < 0) return null;
+  const out = graph.reach(hub), node = (x, y) => graph.near(x, y, .6);
+  for (let x = margin; x <= map.width - margin; x += 1) {
+    const y = standable(mask, x); if (y === null || y < WATER + 5) continue;
+    const n = node(x, y); if (n < 0 || !out[n] || !graph.reach(n)[hub]) continue;
+    cand.push({ x, y });
+  }
+  const n = cand.length, ideal = (map.width - 2 * margin) / count;
+  if (n < count) return null;
+  // best[k][j]: the score of k+1 spots ending at candidate j.
+  const best = Array.from({ length: count }, () => new Float64Array(n).fill(-Infinity)), from = Array.from({ length: count }, () => new Int32Array(n).fill(-1));
+  for (let j = 0; j < n; j++) if (cand[j].x <= margin + ideal) best[0][j] = 0;
+  for (let k = 1; k < count; k++) for (let j = 0; j < n; j++) for (let i = j - 1; i >= 0; i--) {
+    const gap = cand[j].x - cand[i].x;
+    if (gap < SPAWN_GAP) continue;
+    if (gap > SPAWN_SPREAD) break;
+    if (best[k - 1][i] === -Infinity) continue;
+    const v = best[k - 1][i] + (hiddenFrom(mask, cand[i].x, cand[i].y, cand[j].x, cand[j].y) ? 10 : 0) - Math.abs(gap - ideal) * .05;
+    if (v > best[k][j]) { best[k][j] = v; from[k][j] = i; }
+  }
+  let end = -1;
+  for (let j = 0; j < n; j++) if (cand[j].x >= map.width - margin - ideal && best[count - 1][j] > (end < 0 ? -Infinity : best[count - 1][end])) end = j;
+  if (end < 0) return null;
+  const xs = [];
+  for (let k = count - 1, j = end; k >= 0; j = from[k][j], k--) xs.unshift(cand[j].x);
+  return xs;
+}
+// Six spots spread evenly (the old way, kept for land the shelter search finds no answer on).
+function evenSpawns(map, mask, count = 6) {
   const r = seededStream(`capis-ffa:${map.seed}:${map.size}`), { width } = map, margin = 8, slice = (width - 2 * margin) / count, gap = slice * .55;
   const spots = [];
   for (let x = margin; x <= width - margin; x += .25) if (standable(mask, x) !== null) spots.push(x);
@@ -651,7 +706,6 @@ export function spreadSpawns(map, mask, count = 6) {
     if (best === null) for (const x of [margin, ...spots]) if (best === null || Math.min(...xs.map(o => Math.abs(o - x))) > Math.min(...xs.map(o => Math.abs(o - best)))) best = x;
     xs.push(best);
   }
-  for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; }
   return xs;
 }
 
@@ -875,11 +929,25 @@ export function generateMap(seed = 1, size = DEFAULT_SIZE, { mode = 'teams' } = 
 // and its ledge, the bridges and ledges and the cliffs at the ends. The
 // soil's layers between them (the islands' banks too, down to the beach)
 // are the shader's strata (`strataPalette`).
+// Per column: the land without the tables, the ground with them, and whether a table stands there.
+const tableColumns = new WeakMap();
+function tableColumn(p, x) {
+  let cache = tableColumns.get(p); if (!cache) tableColumns.set(p, cache = new Map());
+  const k = Math.round(x * 10);
+  if (!cache.has(k)) {
+    const ground = heightAt({ ...p, tepuys: null }, x), top = heightAt(p, x);
+    cache.set(k, { ground, top, on: top - ground > .5 });
+  }
+  return cache.get(k);
+}
 export function rockAt(map, x, y) {
   const p = map.plan;
   let k = 0;
   // A table's faces are rock down to a little under them.
-  if (p.tepuys) for (const f of p.tepuys) if (tableAt(f, x).face && y > heightAt(p, x) - 3.5) k = .8;
+  if (p.tepuys) {
+    const c = tableColumn(p, x);
+    if (c.on && y < c.top - .35 && y > c.ground - 1) k = .9;
+  }
   for (const b of p.rocks) {
     if (x < b.x0 || x > b.x1) continue;
     if (b.span) { if (Math.abs(y - spanY(b.span, x)) < b.span.radius + .45) k = Math.max(k, .75); }

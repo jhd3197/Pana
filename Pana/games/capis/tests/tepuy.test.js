@@ -29,19 +29,16 @@ test('seeded: all six free-for-all spots walk or hop to one another, both ways',
 
 test('La Licuadora is in every side\'s kit from the first turn', () => assert.ok(startingAmmo().drill > 0));
 
-test('cover comes from the tables: a share of neighbour pairs is hidden from a flat shot', t => {
-  let blocked = 0, pairs = 0, least = 5;
+test('neighbours have cover: most flat shots between them hit the ridge', () => {
+  let blocked = 0, pairs = 0;
   for (const seed of SEEDS) {
     const { map, mask } = built.get(seed), xs = spreadSpawns(map, mask).sort((a, b) => a - b), ys = xs.map(x => surfaceY(mask, x));
-    let here = 0;
     for (let i = 0; i < 5; i++) {
       pairs++;
-      for (let t = .05; t < .95; t += .01) if (solidAt(mask, xs[i] + (xs[i + 1] - xs[i]) * t, ys[i] + 2 + (ys[i + 1] - ys[i]) * t)) { blocked++; here++; break; }
+      for (let t = .05; t < .95; t += .01) if (solidAt(mask, xs[i] + (xs[i + 1] - xs[i]) * t, ys[i] + 2 + (ys[i + 1] - ys[i]) * t)) { blocked++; break; }
     }
-    least = Math.min(least, here);
   }
-  t.diagnostic(`${blocked} of ${pairs} flat shots blocked; least on a map ${least}`);
-  assert.ok(blocked / pairs >= .3, `${blocked} of ${pairs}`);
+  assert.ok(blocked / pairs >= .8, `${blocked} of ${pairs}`);
 });
 
 test('two tables at distinct heights with lips under the hop and ramps under the slope; first tries pass; teams maps untouched', () => {
