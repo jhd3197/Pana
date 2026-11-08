@@ -68,6 +68,9 @@ try {
   assert.deepEqual(await beto.evaluate(() => capisDebug.room.state.players.map(p => [p.name, p.team])), [['Ana', 0], ['Beto', 1]], 'one capi each');
   assert.equal(await ana.locator('#capis-roster').isHidden(), true, 'no team cards');
   await ana.locator('#start').click();
+  // The setup comes first (setup.browser.js covers it); the host starts at once.
+  await waitFor(beto, () => capisDebug.inSetup);
+  await ana.locator('#setup-go').click();
   await waitFor(beto, () => capisDebug.playing && capisDebug.match.phase === 'aim' && capisDebug.match.teams === 6);
   const six = page => page.evaluate(() => capisDebug.match.capys.map(c => [c.id, c.team, +c.x.toFixed(1)]));
   assert.deepEqual(await six(beto), await six(ana), 'the same six capis at the same spots');

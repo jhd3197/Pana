@@ -112,3 +112,4 @@ body *, body *::before, body *::after { border-radius: 0 !important; }
 .setup-row [aria-checked="true"] { background: var(--pk-game); color: #fff; }
 .setup-capi[data-placed="true"]::after { content: ""; display: inline-block; width: 8px; height: 8px; margin-left: 6px; background: currentColor; }
 .setup-note { margin: 0; font-weight: 800; }
+.setup-panel[hidden] { display: none; }
