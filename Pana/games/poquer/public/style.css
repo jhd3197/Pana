@@ -111,4 +111,4 @@ body.pana-starter .board-area { visibility: hidden; }
 .showdown-row .card.is-best { outline: 3px solid var(--pk-game); outline-offset: 0; transform: translateY(-3px); } .showdown-row .card.is-dim { opacity: .45; }
 .showdown-board { padding-bottom: 10px; border-bottom: 2px solid #fff2; } .showdown-win > span b { color: var(--pk-game); }
 .showdown-folded { opacity: .7; filter: grayscale(1); padding: 8px; border: 2px dashed #fff4; }
-@media (max-width: 650px) { .showdown-row { flex-wrap: wrap; } .showdown-row > span { flex-basis: 100%; } .showdown-row .cards { justify-content: flex-start; } }
+@media (max-width: 650px) { .showdown-row { flex-wrap: wrap; justify-content: flex-start; } .showdown-row > span { flex-basis: 100%; } .showdown-row .cards { justify-content: flex-start; } }

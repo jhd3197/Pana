@@ -121,7 +121,7 @@ function renderShowdown(state) {
   }
   if (!state.result.showdown) nodes.push(row('showdown-win', loc('{name} se lleva el pozo.', { name: name(state.result.pots[0]?.winners[0]) }), [], null, loc('Los demás se retiraron.')));
   const winners = new Set(explained.flatMap(p => p.winners));
-  for (const p of state.players.filter(p => !winners.has(p.id) && !p.folded && p.hole.length && p.hole.every(c => c !== null))) nodes.push(row('', `${p.name} · ${p.handName ? loc(p.handName, { $ctx: 'mano' }) : loc('Cartas privadas')}`, p.hole));
+  for (const p of state.players.filter(p => state.result.showdown && !winners.has(p.id) && !p.folded && p.hole.length && p.hole.every(c => c !== null))) nodes.push(row('', `${p.name} · ${p.handName ? loc(p.handName, { $ctx: 'mano' }) : loc('Cartas privadas')}`, p.hole));
   const mine = state.result.folded;
   if (mine) nodes.push(row('showdown-folded', mine.hand ? loc('Te retiraste · {hand}', { hand: loc(mine.hand, { $ctx: 'mano' }) }) : loc('Te retiraste'), mine.hole, null, mine.wouldWin ? loc('¡Habrías ganado! Solo tú ves estas cartas.') : loc('Solo tú ves estas cartas.')));
   box.replaceChildren(...nodes);
