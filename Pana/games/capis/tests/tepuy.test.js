@@ -4,7 +4,7 @@
 // side's kit for digging through whatever the ground becomes.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateMap, spreadSpawns, ffaReach, planMap, FFA_MASSIFS, WATER } from '../public/map-rules.js';
+import { generateMap, spreadSpawns, ffaReach, planMap, ffaLayout, FFA_LAYOUTS, FFA_MASSIFS, WATER } from '../public/map-rules.js';
 import { RULES } from '../public/rules.js';
 import { startingAmmo } from '../public/weapons.js';
 import { SIDE_WALKER, stepSideWalker } from '../../../engine/play/side-walker.js';
@@ -42,13 +42,13 @@ test('neighbours have cover: most flat shots between them hit the ridge', () => 
   assert.ok(blocked / pairs >= .8, `${blocked} of ${pairs}`);
 });
 
-test('two sheer highlands with real relief, ramps under the slope, first tries pass, teams maps untouched', () => {
+test('sheer highlands with real relief, ramps under the slope, first tries pass, teams maps untouched', () => {
   assert.ok(FFA_MASSIFS.ramp < Math.tan(SIDE_WALKER.maxClimb) * .9, 'a ramp is walked');
   assert.ok(FFA_MASSIFS.face >= 5, 'the faces are sheer');
   let first = 0;
   for (const seed of SEEDS) {
     const p = planMap(seed, 'large', 0, { mode: 'ffa' }), q = planMap(seed, 'large', 0);
-    assert.equal(p.massifs.length, 2); assert.equal(q.massifs, undefined);
+    assert.ok(p.massifs.length >= 1 && p.massifs.length <= 2); assert.equal(q.massifs, undefined);
     const { map, mask } = built.get(seed); if (map.attempt === 0) first++;
     const ys = Array.from({ length: 141 }, (_, k) => surfaceY(mask, 20 + k)).filter(y => y !== null);
     assert.ok(Math.max(...ys) - Math.min(...ys) >= 25, `seed ${seed}: relief ${(Math.max(...ys) - Math.min(...ys)).toFixed(1)}`);
@@ -58,9 +58,13 @@ test('two sheer highlands with real relief, ramps under the slope, first tries p
 
 // The real walker (side-walker.js with Capis' own options) walks from every
 // spot to its neighbours and back: hold the key towards it, hop when blocked.
-test('a capi really walks every route between neighbouring spots, both ways', () => {
+test('a capi really walks every route between neighbouring spots, both ways, on every layout', () => {
   const opts = { radius: RULES.radius, water: WATER, airControl: RULES.airControl, airSpeed: RULES.airSpeed };
-  for (const seed of [4, 6, 11]) {
+  // One seed of each layout, plain and mirrored (ffaLayout), each walked 10 ways.
+  const variants = new Map();
+  for (const seed of SEEDS) { const l = ffaLayout(seed), k = `${l.kind}${l.mirror ? '/mirrored' : ''}`; if (!variants.has(k)) variants.set(k, seed); }
+  assert.equal(variants.size, FFA_LAYOUTS.length * 2, [...variants.keys()].join());
+  for (const seed of variants.values()) {
     const { mask } = built.get(seed) || generateMap(seed, 'large', { mode: 'ffa' }), xs = spreadSpawns(built.get(seed).map, mask).sort((a, b) => a - b), ys = xs.map(x => surfaceY(mask, x));
     for (let i = 0; i < 5; i++) for (const [a, b] of [[i, i + 1], [i + 1, i]]) {
       const c = { x: xs[a], y: ys[a], vx: 0, vy: 0, grounded: true, facing: 1, slide: 0, paint: 0, jumpPress: 0 };

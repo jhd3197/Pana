@@ -109,3 +109,21 @@ test('teams mode skips the setup', () => {
   const t = new CapisTable({ seed: 5 }); t.setHost('h'); t.addPlayer('h', 'Ana');
   assert.ok(t.start()); assert.equal(t.phase, 'play');
 });
+
+// The three maps a setup offers differ in shape, not only in height: each its
+// own layout, and their ground profiles (scaled to 0..1) far apart.
+import { ffaLayout } from '../public/map-rules.js';
+test('the three candidates of a setup have distinct layouts and profiles', () => {
+  for (let setupSeed = 1; setupSeed <= 6; setupSeed++) {
+    const seeds = candidateSeeds(setupSeed), kinds = seeds.map(seed => ffaLayout(seed).kind);
+    assert.equal(new Set(kinds).size, 3, `setup ${setupSeed}: ${kinds.join()}`);
+    const profiles = seeds.map(seed => {
+      const { mask } = freshGround(seed), ys = Array.from({ length: 36 }, (_, k) => surfaceY(mask, 5 + k * 5) ?? 0), lo = Math.min(...ys), hi = Math.max(...ys);
+      return ys.map(y => (y - lo) / (hi - lo));
+    });
+    for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) {
+      const d = profiles[a].reduce((sum, y, k) => sum + Math.abs(y - profiles[b][k]), 0) / 36;
+      assert.ok(d > .15, `setup ${setupSeed}: maps ${a + 1} and ${b + 1} differ by only ${d.toFixed(2)}`);
+    }
+  }
+});

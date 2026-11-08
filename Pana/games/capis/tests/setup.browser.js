@@ -77,10 +77,12 @@ const validSpot = (page, capi, near) => page.evaluate(async ({ capi, near }) => 
 // Spots the setup must turn down on the shown map, each with the rule that does:
 // a massif's sheer face, the roof over a ramp tunnel, the ledge atop the right massif's ramp.
 const badSpots = page => page.evaluate(async () => {
-  const { groundOf, spotProblem } = await import('/g/capis/setup-rules.js'), s = capisDebug.setup, g = groundOf(s.seeds[s.pick]), [mesa, right] = g.map.plan.massifs;
-  const find = (from, to, want) => { for (let x = from; x <= to; x += .25) { const r = spotProblem({ places: s.places }, 0, x, g); if (want(r)) return { x, reason: r }; } return null; };
-  return { face: find(right.from - 5, right.from, r => r === 'unsafe'), roof: find(mesa.from + 1.5, mesa.from + 8, r => r === 'unreachable'),
-    ledge: find(right.from + 1.5, right.from + 12, r => r === 'unreachable') };
+  const { groundOf, spotProblem } = await import('/g/capis/setup-rules.js'), s = capisDebug.setup, g = groundOf(s.seeds[s.pick]), [a, b] = g.map.plan.massifs, w = g.map.width;
+  const find = (from, to, want) => { for (let x = Math.max(9, from); x <= Math.min(w - 9, to); x += .25) { const r = spotProblem({ places: s.places }, 0, x, g); if (want(r)) return { x, reason: r }; } return null; };
+  // The sheer face beside either side of a highland; a roof over a ramp on one highland, the ledge over a ramp on the other.
+  const face = m => find(m.from - 5, m.from, r => r === 'unsafe') || find(m.to, m.to + 5, r => r === 'unsafe');
+  const other = b || { from: (a.from + a.to) / 2, to: a.to };   // one highland: its far half
+  return { face: face(a) || (b && face(b)), roof: find(a.from, b ? a.to : other.from, r => r === 'unreachable'), ledge: find(other.from, other.to, r => r === 'unreachable') };
 });
 // Tap or click the map at world x and wait for the setup to answer.
 const tapAt = async (page, x, touch) => { const p = await screenAt(page, x); if (touch) await page.touchscreen.tap(p.x, p.y); else await page.mouse.click(p.x, p.y); };

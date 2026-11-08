@@ -187,24 +187,40 @@ export function planMap(seed, size, attempt = 0, { mode = 'teams' } = {}) {
 // FFA_MASSIFS: the tops' heights (the highest ground stays under the map's
 // roof, 45), the summit knob, how sheer a face is (rise per unit), the
 // ramps' slope (under the walker's 52°, 1.28) and the tunnels' radius.
-export const FFA_MASSIFS = Object.freeze({ mesa: [26, 29], right: [40, 42.5], knob: 2.4, face: 6, ramp: 1.1, tunnel: 1.35 });
+export const FFA_MASSIFS = Object.freeze({ mesa: [26, 29], tall: [36, 38.5], right: [40, 42.5], knob: 2.4, face: 6, ramp: 1.1, tunnel: 1.35 });
 // The land the six starts keep off at either end (setup-rules.js reads it too).
 export const FFA_TEPUY = Object.freeze({ margin: 8 });
 function tepuyRidges(p, r) {
   const between = (a, b) => a + (b - a) * r(), w = p.width, M = FFA_MASSIFS;
   // Low land between the massifs: calm, near the old llano's height.
-  p.features = []; p.ledges = []; p.outer = null; p.knoll = null;
+  p.features = []; p.ledges = []; p.outer = null; p.knoll = null; p.mirror = false;   // the layout mirrors itself (ffaLayout)
   p.base = between(11, 12.5); p.lf.amp = Math.min(p.lf.amp, 1.4);
-  const at = f => f * w;
-  // A hill on the low land, the central mesa (a ramp up from each side, side
-  // by side) and the right massif (one ramp up from its inner foot); each top
-  // a little uneven with a summit knob.
-  p.hills = [{ at: at(.2), height: 3.2, width: 7 }];
-  p.massifs = [
-    { id: 'mesa', from: at(.36), to: at(.58), top: between(...M.mesa), climb: -1, knob: .5 },
-    { id: 'right', from: at(.75), to: w + 4, top: between(...M.right), climb: -1, knob: .45 },
-  ];
+  const { kind, mirror } = ffaLayout(p.seed), at = f => f * w, j = () => between(-.015, .015);
+  // The layout (ffaLayout) sets where the highlands stand; this try's stream
+  // only nudges them. A mesa has a ramp up from each side, side by side; an
+  // edge massif one ramp up from its inner foot. Each top a little uneven
+  // with a summit knob; hills give cover on the low land.
+  // A mesa only shifts (its width holds two ramps side by side, run = rise / ramp each).
+  const mesa = (a, b, k = .5, tops = M.mesa) => { const d = j(); return { id: 'mesa', from: at(a + d), to: at(b + d), top: between(...tops), knob: k }; };
+  const edge = side => side < 0 ? { id: 'edge', from: -4, to: at(.25 + j()), top: between(...M.right), climb: 1, knob: .6 }
+    : { id: 'edge', from: at(.75 + j()), to: w + 4, top: between(...M.right), climb: -1, knob: .45 };
+  if (kind === 'mesa-massif') { p.hills = [{ at: at(.2), height: 3.2, width: 7 }]; p.massifs = [mesa(.36, .58), edge(1)]; }
+  else if (kind === 'twin-massifs') { p.hills = [.36, .5, .64].map(f => ({ at: at(f + j()), height: between(4, 4.8), width: 8 })); p.massifs = [edge(-1), edge(1)]; }
+  else { p.hills = [.13, .24, .76, .87].map(f => ({ at: at(f + j()), height: between(4, 4.8), width: 8 })); p.massifs = [mesa(.31, .69, between(.4, .6), M.tall)]; }
+  if (mirror) {
+    p.hills = p.hills.map(h => ({ ...h, at: w - h.at }));
+    p.massifs = p.massifs.map(m => ({ ...m, from: w - m.to, to: w - m.from, climb: -(m.climb || 0), knob: 1 - m.knob }));
+  }
   for (const m of p.massifs) m.rough = r() * 50;
+}
+
+// A free-for-all seed's layout, from the seed alone (every try of it keeps it):
+// a mesa and an edge massif, a massif at each edge, or one wide tall tepuy in
+// the middle; maybe mirrored.
+export const FFA_LAYOUTS = Object.freeze(['mesa-massif', 'twin-massifs', 'central-tepuy']);
+export function ffaLayout(seed) {
+  const r = seededStream(`capis-layout:${seed}`);
+  return { kind: FFA_LAYOUTS[Math.floor(r() * FFA_LAYOUTS.length)], mirror: r() < .5 };
 }
 
 // The massifs over the ground at x (heightAt, after the shores): flat tops a

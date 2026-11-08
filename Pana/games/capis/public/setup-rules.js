@@ -16,15 +16,19 @@
 // stale and turned down, so a late pick never lands on the next map.
 import { seededStream } from '../../../engine/play/terrain-gen.js';
 import { surfaceY } from '../../../engine/play/terrain-mask.js';
-import { mapSeed, spreadSpawns, standable, ffaGraph, generateMap, FFA_TEPUY } from './map-rules.js';
+import { mapSeed, spreadSpawns, standable, ffaGraph, generateMap, ffaLayout, FFA_TEPUY } from './map-rules.js';
 
 export const CANDIDATES = 3;
 export const PLACE_GAP = 10;   // the least room between two capis' starts (spreadSpawns keeps more)
 
-// Three distinct map seeds from a setup seed: the same on every client.
+// Three map seeds from a setup seed, the same on every client, each of its
+// own layout (map-rules ffaLayout), so the three maps differ in shape.
 export function candidateSeeds(setupSeed) {
-  const r = seededStream(`capis-setup:${setupSeed}`), out = [];
-  while (out.length < CANDIDATES) { const s = mapSeed(1 + Math.floor(r() * 99998)); if (!out.includes(s)) out.push(s); }
+  const r = seededStream(`capis-setup:${setupSeed}`), out = [], kinds = new Set();
+  while (out.length < CANDIDATES) {
+    const s = mapSeed(1 + Math.floor(r() * 99998)), k = ffaLayout(s).kind;
+    if (!out.includes(s) && !kinds.has(k)) { out.push(s); kinds.add(k); }
+  }
   return out;
 }
 
