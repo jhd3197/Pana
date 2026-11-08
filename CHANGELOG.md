@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Capis a Pintazos, todos contra todos: antes de empezar se elige el mapa y dónde arranca cada capi.**
+  El anfitrión escoge entre tres mapas; cada pana toca el mapa para poner a sus capis y la máquina pone al resto.
 - **Capis a Pintazos, todos contra todos: el llano ahora es un tepuy.**
   La tierra sube más y entre cada dos capis hay una loma con meseta que tapa el tiro recto; todos pueden caminar hasta todos.
 - **Capis a Pintazos y Trifulca: cada capi tiene su propia vocecita.**

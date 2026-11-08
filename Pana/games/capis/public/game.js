@@ -27,7 +27,10 @@ import { TOMBS, createTombStore } from './tombs.js';
 import { mapSeed, mapSize, SEED_LIMIT } from './map-rules.js';
 import { CapisRoom } from './network.js';
 import { PAD } from './pad.js';
-import { teamOf, botTeams, sidesOf, freshEvents, TEAM_MAX } from './online.js';
+import { teamOf, botTeams, sidesOf, freshEvents, TEAM_MAX, setupView } from './online.js';
+import { createSetup, choose as chooseMap, place, launch, seedOf, groundOf, spotProblem } from './setup-rules.js';
+import { createSetupView, setupError } from './setup-view.js';
+import { surfaceY } from '/engine/play/terrain-mask.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const HUMAN = 0, STEP = 1 / 60;
@@ -101,10 +104,11 @@ $('online').onclick = goOnline;
 // Every snapshot (the host's own too): the lobby, the match and its events.
 function roomState(state) {
   if (!online) return;
+  if (state.phase === 'setup' && state.setup) showSetup(state.setup);
   if (state.phase === 'lobby') {
     if (state.players.some(p => p.id === room.id)) tellTomb();
     const played = playing || match === room.view;
-    if (playing) toLobby();
+    if (playing || inSetup) toLobby();
     options = { ...state.options };
     // The lobby previews the room's map; after a match, the ground comes back whole.
     if (played) { seed = state.seed; match = preLobby(); }
@@ -165,11 +169,65 @@ const menu = createGameMenu({ title: 'Capis a Pintazos · Pana', sound, orientat
 $('game-nav').append(menu.createButton({ id: 'menu', className: 'pk-btn' }));
 $('rules').onclick = () => menu.open('controls');
 
+// ---------- the free-for-all's setup ----------
+// Between start and the first turn: three maps (the host switches), each pana
+// places its own capis by tapping the whole-map view, the host starts any time.
+// Solo runs setup-rules.js here; online the room's host runs it (online.js).
+let soloSetup = null, inSetup = false, selected = null, lastReject = 0;
+const meId = () => online ? room.id : 'me';
+const currentSetup = () => online ? (room.state.phase === 'setup' ? room.state.setup : null) : soloSetup && setupView(soloSetup);
+const mineOf = v => Object.entries(v.owners).filter(([, id]) => id === meId()).map(([capi]) => Number(capi)).sort((a, b) => a - b);
+const setupUi = createSetupView($, { pick: pickMap, select: capi => { selected = capi; showSetup(currentSetup()); }, go: () => start(), back: () => {
+  if (online) { if (room.isHost) room.action('lobby'); return; }
+  soloSetup = null; toLobby(); preview();
+} });
+function showSetup(v) {
+  if (!v) return;
+  if (!inSetup) {
+    inSetup = true; playing = false; charge.cancel(); setupUi.reset();
+    $('lobby').hidden = true; $('hud').hidden = true; $('results').hidden = true; $('setup').hidden = false;
+    document.body.classList.remove('in-lobby'); document.body.classList.add('in-setup');
+  }
+  if (world) world.wide = true;
+  // The chosen map, every capi standing where it would start.
+  const at = v.seeds[v.pick];
+  if (match.map.seed !== at || match.mode !== 'ffa') { match = createMatch({ seed: at, mode: 'ffa', spawnXs: v.spawns }); world?.setMatch(match); hud.build(match); }
+  for (const c of match.capys) { const x = v.spawns[c.team]; if (Number.isFinite(x)) { c.x = x; c.y = surfaceY(match.mask, x) ?? c.y; } }
+  const mine = mineOf(v);
+  if (!mine.includes(selected)) selected = mine.find(capi => !Object.hasOwn(v.places, capi)) ?? mine[0] ?? null;
+  const reject = online && v.rejects?.[room.id];
+  if (reject && reject.n > lastReject) { sfx.dry(); notify(setupError(reject.reason)); lastReject = reject.n; }
+  setupUi.render({ ...v, mine, selected, host: !online || room.isHost, names: match.capys.map(c => c.name) });
+  $('setup-back').disabled = online && !room.isHost;
+}
+function pickMap(index) {
+  const v = currentSetup(); if (!v) return;
+  if (online) { room.action('setup', { step: 'pick', index, rev: v.rev }); return; }
+  chooseMap(soloSetup, 'me', index, soloSetup.rev); showSetup(currentSetup());
+}
+// Put the chosen capi at map x: checked here first for a quick answer; online the host has the last word.
+function placeAt(x) {
+  const v = currentSetup(); if (!v || selected == null) return;
+  const bad = spotProblem({ places: v.places }, selected, x, groundOf(v.seeds[v.pick]));
+  if (bad) { sfx.dry(); notify(setupError(bad)); return; }
+  sfx.land('grass', { power: .4, volume: .7 });
+  if (online) { room.action('setup', { step: 'place', capi: selected, x, rev: v.rev }); return; }
+  const r = place(soloSetup, 'me', selected, x, groundOf(seedOf(soloSetup)), soloSetup.rev);
+  if (!r.ok) notify(setupError(r.reason));
+  showSetup(currentSetup());
+}
+
 // ---------- the match ----------
-function start() {
+function start(again = false) {
   sound.unlock();
   if (online) { room.action('start'); return; }
-  match = createMatch({ seconds: options.seconds, difficulty: options.difficulty, seed, size: options.size, mode: options.mode, looks: looks() });
+  let spawnXs = null;
+  if (options.mode === 'ffa' && !again) {
+    if (!soloSetup) { soloSetup = createSetup({ setupSeed: seed, hostId: 'me', owners: { [HUMAN]: 'me' } }); showSetup(currentSetup()); return; }
+    const done = launch(soloSetup, 'me', groundOf(seedOf(soloSetup)));
+    seed = done.seed; spawnXs = done.spawns; soloSetup = null;
+  }
+  match = createMatch({ seconds: options.seconds, difficulty: options.difficulty, seed, size: options.size, mode: options.mode, looks: looks(), spawnXs });
   // The address replays this map: share it, or reload it, for the same ground.
   const url = new URL(location.href); url.searchParams.set('seed', String(seed)); url.searchParams.set('size', options.size); if (options.mode === 'ffa') url.searchParams.set('mode', 'ffa'); else url.searchParams.delete('mode'); history.replaceState(null, '', url);
   // The machine plays every side but ours.
@@ -178,20 +236,22 @@ function start() {
   acc = 0; begin();
 }
 function begin() {
-  sound.unlock(); playing = true; if (world) world.wide = false;
+  sound.unlock(); playing = true; inSetup = false; if (world) world.wide = false;
+  $('setup').hidden = true; document.body.classList.remove('in-setup');
   $('map-seed').textContent = mapLabel(match.map);
   $('results').hidden = true; $('lobby').hidden = true; $('hud').hidden = false; document.body.classList.remove('in-lobby');
   render();
 }
 function toLobby() {
-  playing = false; charge.cancel();
+  playing = false; inSetup = false; charge.cancel();
+  $('setup').hidden = true; document.body.classList.remove('in-setup');
   $('results').hidden = true; $('hud').hidden = true; $('lobby').hidden = false; document.body.classList.add('in-lobby');
   if (world) world.wide = true;
 }
-$('start').onclick = start;
+$('start').onclick = () => start();
 // Another match: a new map in the lobby, or a rematch on this one (online, the host's call).
 $('again').onclick = () => { if (online) room.action('lobby'); else { seed = newSeed(); toLobby(); preview(); } };
-$('same-map').onclick = start;
+$('same-map').onclick = () => start(true);
 
 // ---------- input ----------
 const keys = new Set(), touch = new Set();
@@ -251,6 +311,8 @@ const canvas = $('world');
 canvas.addEventListener('pointermove', (event) => { if (event.pointerType === 'mouse' && playing && world) mouseAt = world.pick(event.clientX, event.clientY); });
 canvas.addEventListener('pointerdown', (event) => { if (event.pointerType !== 'mouse' || event.button !== 0 || !playing) return; mouseAt = world.pick(event.clientX, event.clientY); charge.begin('pointer'); });
 addEventListener('pointerup', (event) => { if (event.pointerType === 'mouse') charge.release('pointer'); });
+// Setup: a tap or a click on the whole map puts the chosen capi there (mouse and touch alike).
+canvas.addEventListener('pointerdown', (event) => { if (!inSetup || !world || menu.isOpen || (event.pointerType === 'mouse' && event.button !== 0)) return; const at = world.pick(event.clientX, event.clientY); if (at) placeAt(at.x); });
 const letGo = () => { keys.clear(); touch.clear(); charge.cancel(); pads.forEach(p => p.release()); };
 addEventListener('blur', letGo);
 document.addEventListener('visibilitychange', () => { if (document.hidden) letGo(); });
@@ -346,4 +408,5 @@ export const { sceneReady } = bootGame({
 });
 // A party or invite link (?room=) joins that room at once.
 if (roomFromUrl()) goOnline(); else lobbyView();
-if (params.has('debug')) window.capisDebug = { get match() { return match; }, get world() { return world; }, start, fire: (p) => fire(match, p), choose, options: () => options, get playing() { return playing; }, room, get online() { return online; }, tombs };
+if (params.has('debug')) window.capisDebug = { get match() { return match; }, get world() { return world; }, start, fire: (p) => fire(match, p), choose, options: () => options, get playing() { return playing; }, room, get online() { return online; }, tombs,
+  get setup() { return currentSetup(); }, get inSetup() { return inSetup; }, get selected() { return selected; }, placeAt, pickMap };

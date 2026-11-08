@@ -36,6 +36,13 @@
     </div>
     <div class="pk-lobby-foot"><p id="connection" class="pk-copy" role="status" hidden></p><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando…</button><button id="online" class="pk-btn pk-btn--ghost pk-btn--lg" type="button">Con amigos</button></div>
   </section>
+  <section id="setup" class="setup-panel pk-panel" hidden aria-labelledby="setup-title">
+    <span id="setup-title" class="pk-eyebrow">Elige mapa y lugar</span>
+    <div id="setup-maps" class="setup-row" role="radiogroup" aria-label="Mapas"></div>
+    <div id="setup-capis" class="setup-row" role="radiogroup" aria-label="Tus capis"></div>
+    <p id="setup-note" class="pk-copy setup-note" role="status"></p>
+    <div class="setup-row"><button id="setup-back" class="pk-btn pk-btn--ghost" type="button">Volver</button><button id="setup-go" class="pk-btn pk-btn--primary" type="button">¡A pintar!</button></div>
+  </section>
   <main id="hud" hidden>
     <section class="turn-panel pk-panel" aria-label="Turno">
       <span id="turn-who" class="pk-eyebrow"></span>

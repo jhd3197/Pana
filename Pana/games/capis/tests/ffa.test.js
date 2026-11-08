@@ -75,7 +75,7 @@ test('a free-for-all map is never cuevas or islas, seats six capis on the large 
 
 test('every copy of a room builds the same free-for-all map from the seed', () => {
   const t = new CapisTable({ seed: 6, options: { ...defaultOptions(), mode: 'ffa' } });
-  t.addPlayer(1, 'Ana'); t.start();
+  t.addPlayer(1, 'Ana'); t.start(); t.start(); // the setup, then the match
   const { view } = mirror(null, wire(t.snapshot()));
   assert.equal(view.map.kind, t.match.map.kind);
   assert.ok(!['cuevas', 'islas'].includes(view.map.kind));
@@ -169,7 +169,7 @@ test('a room seats each pana on its own capi; the machine plays the rest; a copy
   assert.equal(t.players[3].team, 3);
   t.removePlayer(2); t.addPlayer(5, 'Eli');
   assert.equal(t.players.at(-1).team, 1, 'the free capi');
-  t.start();
+  t.start(); t.start(); // the setup, then the match
   assert.equal(t.match.mode, 'ffa'); assert.equal(t.bots.length, 6);
   assert.equal(t.controller, 1, 'Ana opens');
   assert.equal(controllerOf(t.players, { phase: 'aim', turn: { team: 5, k: 1 } }), null, 'capi 5 is the machine');
@@ -186,7 +186,7 @@ test('a room seats each pana on its own capi; the machine plays the rest; a copy
 
 test('a new host in a free-for-all carries on with a machine for every side', () => {
   const t = new CapisTable({ seed: 6, options: { ...defaultOptions(), mode: 'ffa' } });
-  t.addPlayer(1, 'Ana'); t.start();
+  t.addPlayer(1, 'Ana'); t.start(); t.start();
   const { view } = mirror(null, wire(t.snapshot())), next = CapisTable.restore(wire(t.snapshot()), view);
   assert.equal(next.bots.length, 6);
   assert.equal(next.match.teams, 6);
