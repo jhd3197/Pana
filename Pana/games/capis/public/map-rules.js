@@ -177,7 +177,7 @@ export function planMap(seed, size, attempt = 0, { mode = 'teams' } = {}) {
     hillsAlong(lo, hi, 2 + Math.floor(r() * 2), 3);
     p.outer = [chance(.55), chance(.55)];
   }
-  if (mode === 'ffa') { p.mode = 'ffa'; tepuyRidges(p, r); }
+  if (mode === 'ffa') { p.mode = 'ffa'; tepuyRidges(p, r, attempt); }
   return p;
 }
 
@@ -187,7 +187,12 @@ export function planMap(seed, size, attempt = 0, { mode = 'teams' } = {}) {
 // with sides a capi walks up (no steeper than `steep`, under the walker's
 // 52°), so the land stays one piece and nobody is boxed in.
 export const FFA_TEPUY = Object.freeze({ lift: 8, rise: [3.4, 6.2], half: [1.6, 3.6], steep: [.6, .8], fall: 1.25, margin: 8 });
-function tepuyRidges(p, r) {
+// A seed whose first tries leave a capi boxed in (a ridge stacked on a mesa
+// by the shore) retries on gentler ground: from `soften` on, lower ridges
+// with easier sides and shores that fall at the old pace.
+const SOFTEN = Object.freeze({ from: 4, rise: .7, steep: .75 });
+function tepuyRidges(p, r, attempt = 0) {
+  const soft = attempt >= SOFTEN.from;
   const between = (a, b) => a + (b - a) * r(), { margin } = FFA_TEPUY, slice = (p.width - 2 * margin) / 6;
   p.base += FFA_TEPUY.lift;
   // Six capis spread over the whole land: no sheer mesa face, cap or cave
@@ -196,11 +201,11 @@ function tepuyRidges(p, r) {
   for (const f of p.features) if (f.type === 'mesa') Object.assign(f, { face: 0, cap: false, cave: 0 });
   p.outer = null;
   // The taller land falls to the sea over a longer run, at the pace it did before.
-  for (const e of new Set(p.ends)) e.fall *= FFA_TEPUY.fall;
+  if (!soft) for (const e of new Set(p.ends)) e.fall *= FFA_TEPUY.fall;
   p.ridges = [];
   for (let i = 1; i < 6; i++) {
-    const rise = between(...FFA_TEPUY.rise);
-    p.ridges.push({ at: margin + slice * i + between(-.12, .12) * slice, rise, half: between(...FFA_TEPUY.half), steep: between(...FFA_TEPUY.steep),
+    const rise = between(...FFA_TEPUY.rise) * (soft ? SOFTEN.rise : 1);
+    p.ridges.push({ at: margin + slice * i + between(-.12, .12) * slice, rise, half: between(...FFA_TEPUY.half), steep: between(...FFA_TEPUY.steep) * (soft ? SOFTEN.steep : 1),
       tilt: between(-.18, .18), notch: between(-.4, .4) });
   }
 }
