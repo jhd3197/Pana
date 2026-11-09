@@ -2143,7 +2143,7 @@ export function createAccessories(e, selection = null) {
   function $(o, i) {
     if (
       (P.traverse(child => child.geometry?.dispose()), P.clear(),
-      (P.visible = o !== "none" && i !== "chef"),
+      (P.visible = o !== "none" && !["chef", "samurai", "inframundo"].includes(i)),
       Object.values(r.tops).forEach((p) =>
         p.group.traverse((h) => {
           h.name === "Pana crown emblem" && (h.visible = o === "none");

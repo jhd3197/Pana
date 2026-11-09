@@ -11,7 +11,7 @@ export const CHARACTERS = [
   character('pana', 'Pana original'),
   character('pana-chef', 'Pana cocinero', { chef: true }),
   character('pana-driver', 'Pana conductor', { seated: true }),
-  ...[['shirt', 'Franela'], ['chef', 'Delantal y gorro'], ['hoodie', 'Suéter y gorra'], ['tropical', 'Camisa tropical'], ['sport', 'Conjunto deportivo']].map(([outfit, name]) => ({
+  ...[['shirt', 'Franela'], ['chef', 'Delantal y gorro'], ['hoodie', 'Suéter y gorra'], ['tropical', 'Camisa tropical'], ['sport', 'Conjunto deportivo'], ['samurai', 'Armadura samurái'], ['inframundo', 'Capucha del inframundo']].map(([outfit, name]) => ({
     id: `outfit-${outfit}`, name, category: 'Vestuario', source: '/engine/models/characters/pana/model.js', factory: 'buildSoftCharacter', usedBy: shared, tags: ['outfits.js'],
     async build() { const { buildSoftCharacter } = await import('/engine/models/characters/pana/model.js'); const model = buildSoftCharacter({ outfit }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
   })),
