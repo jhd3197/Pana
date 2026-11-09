@@ -573,8 +573,8 @@ export function buildGround(p) {
     carve(mask, face - out * .4, WATER + 2.3, 1.9);
     p.rocks.push({ x0: Math.min(face, face - out * 3), x1: Math.max(face, face - out * 3), y0: WATER - 1, y1: WATER + 5 });
   }
-  mask.hollow = new Uint8Array(before.length);
-  for (let i = 0; i < before.length; i++) mask.hollow[i] = before[i] & (1 - mask.solid[i]);
+  const hollow = mask.hollow = new Uint8Array(before.length), { solid } = mask;
+  for (let i = 0; i < before.length; i++) hollow[i] = before[i] & (1 - solid[i]);
   for (const [i, s] of p.ends.entries()) if (s.style === 'cliff') {
     const face = i ? p.width - s.run : s.run, out = i ? 1 : -1;
     fill(mask, face - out * .5, heightAt(p, face - out * 1.4) - .6, .75);
@@ -587,14 +587,21 @@ export function buildGround(p) {
 
 // Can a capi stand at x and start a match there? Open ground above the water,
 // not steep, with sky over it and earth under it (not a thin bridge).
-export function standable(mask, x) {
-  const y = surfaceY(mask, x);
+// `surface` is surfaceY on this mask (a sweep passes surfacesOf's, read once a column).
+export function standable(mask, x, surface = x => surfaceY(mask, x)) {
+  const y = surface(x);
   if (y === null || y <= WATER + 2.5) return null;
-  const l = surfaceY(mask, x - .6), r = surfaceY(mask, x + .6);
-  if (l === null || r === null || Math.abs(r - l) > 1.25 || Math.abs(surfaceY(mask, x - 1.4) - y) > 2 || Math.abs(surfaceY(mask, x + 1.4) - y) > 2) return null;
+  const l = surface(x - .6), r = surface(x + .6);
+  if (l === null || r === null || Math.abs(r - l) > 1.25 || Math.abs(surface(x - 1.4) - y) > 2 || Math.abs(surface(x + 1.4) - y) > 2) return null;
   for (let d = .3; d < 3; d += .5) if (!solidAt(mask, x, y - d)) return null;
   return skyExposure(mask, x, y + 1) >= .5 ? y : null;
 }
+
+// surfaceY on a mask that does not change meanwhile, read once a column.
+const surfacesOf = mask => {
+  const tops = new Map();
+  return x => { const c = Math.floor(x / mask.cell); let y = tops.get(c); if (y === undefined) tops.set(c, y = surfaceY(mask, x)); return y; };
+};
 
 // Three spawns a team, front to back: team 0 on the left, team 1 on the
 // right; slot 0 is the front capi (nearest the middle), at least INNER from
@@ -603,11 +610,11 @@ export function standable(mask, x) {
 // best (front capi first, then the mean). A mirrored map mirrors team 0.
 export function spawnsFor(p, mask) {
   const r = seededStream(`capis-spawns:${p.seed}:${p.size}:${p.attempt}`), gap = GAP[p.size], inner = INNER[p.size];
-  const out = x => (p.keepOut || []).some(([a, b]) => x >= a && x <= b);
+  const out = x => (p.keepOut || []).some(([a, b]) => x >= a && x <= b), surface = surfacesOf(mask);
   // Every spot each side can start on: distance from the middle and height.
   const sides = [0, 1].map(team => {
     const dir = team ? 1 : -1, outer = p.mid - p.ends[team].run - 3, spots = [], ys = new Map();
-    for (let d = inner; d < outer; d += .25) { if (out(p.mid + dir * d)) continue; const y = standable(mask, p.mid + dir * d); if (y !== null) { spots.push(d); ys.set(d, y); } }
+    for (let d = inner; d < outer; d += .25) { if (out(p.mid + dir * d)) continue; const y = standable(mask, p.mid + dir * d, surface); if (y !== null) { spots.push(d); ys.set(d, y); } }
     return { dir, outer, spots, ys };
   });
   if (!sides[0].spots.length || !sides[1].spots.length) return null;

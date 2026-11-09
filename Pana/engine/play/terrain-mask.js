@@ -32,10 +32,14 @@ export function takeDirty(m) { const d = m.dirty; m.dirty = null; return d; }
 
 // Solid below heightAt(x) in every column (world units).
 export function fillHeights(m, heightAt) {
-  for (let c = 0; c < m.cols; c++) {
-    const top = heightAt((c + .5) * m.cell);
-    for (let r = 0; r < m.rows; r++) m.solid[r * m.cols + c] = (r + .5) * m.cell <= top ? 1 : 0;
+  // The rows under each column's top first, then the cells row by row (in memory order).
+  const { cols, rows, cell, solid } = m, under = new Int32Array(cols);
+  for (let c = 0; c < cols; c++) {
+    const top = heightAt((c + .5) * cell);
+    let r = 0; while (r < rows && (r + .5) * cell <= top) r++;
+    under[c] = r;
   }
+  for (let r = 0; r < rows; r++) for (let c = 0, i = r * cols; c < cols; c++, i++) solid[i] = r < under[c] ? 1 : 0;
   markDirty(m, 0, 0, m.cols - 1, m.rows - 1);
 }
 
