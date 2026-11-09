@@ -874,8 +874,15 @@ it can crowd the last automatic capi even when a complete assignment exists.
 ## Frame cost and the browser suites
 
 Under software WebGL (the browser suites, CI) a match drew at about 2.3 fps
-at 1280×800, and the clock steps at most 0.25 s a frame, so every phase wait
-was slow. Nearly all of a frame is the terrain slab's fragment shader (a flat
+at 1280×800, so every phase wait was slow.
+
+Solo steps the match from its own `elapsedClock()` read each frame, never the
+frame's `dt`: `bootGame` caps that `dt` at 0.05 s, so at 2 fps a solo match
+ran at a tenth of real speed (a 30 s bot turn took minutes) while online,
+on its 50 ms wall-clock timer, kept real time. With the wall clock the
+accumulator catches up to 0.25 s a frame, as intended: capis.browser at 4×
+CPU throttle went from 306 s to 145 s, and on CI runners (slower still) it
+had hit the 600 s suite limit. The scene still animates on the capped `dt`. Nearly all of a frame is the terrain slab's fragment shader (a flat
 colour there gives about 10 fps; band selection, rock, topsoil, cover and
 paint each cost a similar slice). At low detail Capis draws the ground with
 `createTerrain({ lite: true })`, about 5 fps: capis.browser went from 435 s to

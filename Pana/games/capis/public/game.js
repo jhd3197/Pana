@@ -397,6 +397,10 @@ function clockTicks() {
 const clock = elapsedClock();
 const roomTimer = setInterval(() => { const dt = clock(); if (online) room.tick(dt, keysInput()); }, 50);
 addEventListener('pagehide', () => { clearInterval(roomTimer); room.dispose(); }, { once: true });
+// Solo steps on the wall clock too, not the frame's dt (capped at .05 s by the
+// shell): on a slow frame the match catches up to .25 s, so turns and flights
+// keep real time down to a few frames a second instead of slowing with them.
+const soloClock = elapsedClock();
 
 function render() {
   if (!playing) return;
@@ -411,7 +415,7 @@ export const { sceneReady } = bootGame({
     lobbyView();
   },
   frame: (dt, scene) => {
-    step(dt); clockTicks(); charge.update(); render(); fitSetup();
+    step(soloClock()); clockTicks(); charge.update(); render(); fitSetup();
     scene.frame(dt, { playing, power: power ?? null, weapon: activeCapy(match)?.weapon, difficulty: difficultyInfo(options.difficulty), labels: playing ? hud.labels : null });
   },
 });
