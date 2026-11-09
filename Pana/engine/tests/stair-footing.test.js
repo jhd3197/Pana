@@ -30,3 +30,12 @@ test('outside authored stair runs, jumping and air steering stay exactly unchang
   run(a, m, { x: 1, jump: 1 }, opts, 1); run(b, m, { x: 1, jump: 1 }, { ...opts, stairs: true }, 1);
   assert.deepEqual(a, b);
 });
+test('a steep non-stair slope still needs a hop when stairs are enabled elsewhere', () => {
+  // A 60° ramp (steeper than maxClimb) rising 1 over 0.58, outside the authored run.
+  const m = createMask({ width: 30, height: 20, cell: .1 });
+  fillHeights(m, x => 3 + Math.min(1, Math.max(0, (x - 10) / .58))); m.stairs = [[20, 25]];
+  const walk = body(8, 3); run(walk, m, { x: 1 }, { stairs: true }, 2);
+  assert.ok(walk.x < 10.3 && walk.y < 3.5, `walking stops at the slope (${walk.x.toFixed(2)}, ${walk.y.toFixed(2)})`);
+  const hop = body(8, 3); run(hop, m, { x: 1 }, { stairs: true }, .4); run(hop, m, { x: 1, jump: 1 }, { stairs: true }, 1.6);
+  assert.ok(hop.x > 11 && Math.abs(hop.y - 4) < .15, `a hop gets up (${hop.x.toFixed(2)}, ${hop.y.toFixed(2)})`);
+});

@@ -1,7 +1,7 @@
 // Authored studio presets admitted to multiplayer after movement/cover checks.
 import { generateTepuyMap, tepuyFigure } from './tepuy-maps.js';
 import { seededStream } from '../../../engine/play/terrain-gen.js';
-import { standable, hiddenFrom } from './map-rules.js';
+import { standable, hiddenFrom, ffaGraph, WATER } from './map-rules.js';
 
 export const STUDIO_PRESETS = Object.freeze(['corona', 'canon', 'morochos']);
 export function studioFigure(seed) {
@@ -17,7 +17,11 @@ export function generateStudioMap(seed) {
   const figure = studioFigure(seed), built = generateTepuyMap(figure.seed, 'large', figure.style, figure.shape);
   const { map, mask } = built;
   Object.assign(map, { seed, authoredSeed: figure.seed, figure: figure.id, name: figure.name, ambient: figure.ambient, studio: true, attempt: 0 });
-  mask.stairs = map.plan.mesas.flatMap(m => [[m.cx - m.tw - m.flanks[0].room, m.cx - m.tw], [m.cx + m.tw, m.cx + m.tw + m.flanks[1].room]]);
+  // Only the flanks' steep step runs are stairs; cap risers, terraces and
+  // bare slopes keep the ordinary climb limit (a hop).
+  mask.stairs = map.plan.mesas.flatMap(m => [
+    ...m.flanks[0].stairs.map(([a, b]) => [m.cx - m.tw - b, m.cx - m.tw - a]),
+    ...m.flanks[1].stairs.map(([a, b]) => [m.cx + m.tw + a, m.cx + m.tw + b])]).sort((a, b) => a[0] - b[0]);
   map.ffaSpawns = studioSpawns(map, mask);
   return built;
 }
@@ -25,8 +29,18 @@ export function generateStudioMap(seed) {
 // Dynamic programming keeps the original spacing/cover safeguards. No changes
 // to the authored mask, no fallback generator, and no crowding failed spawns.
 export function studioSpawns(map, mask) {
-  const cand = [], count = 6, margin = 8, ideal = (map.width - margin * 2) / count;
-  for (let x = margin; x <= map.width - margin; x += .5) { const y = standable(mask, x); if (y !== null) cand.push({ x, y }); }
+  // Only ground 5 or more above the water that the strict graph links both
+  // ways to the land's middle (the same filter as map-rules shelterSpawns).
+  const cand = [], count = 6, margin = 8, ideal = (map.width - margin * 2) / count, graph = ffaGraph(mask);
+  let hub = -1;
+  for (let d = 0; d < 40 && hub < 0; d += .5) for (const x of [map.width / 2 + d, map.width / 2 - d]) { const y = standable(mask, x); if (y !== null && hub < 0) hub = graph.near(x, y, .6); }
+  if (hub < 0) throw new Error(`No middle floor on studio preset ${map.figure}`);
+  const fromHub = graph.reach(hub), toHub = graph.reachedBy(hub);
+  for (let x = margin; x <= map.width - margin; x += .5) {
+    const y = standable(mask, x); if (y === null || y < WATER + 5) continue;
+    const node = graph.near(x, y, .6); if (node < 0 || !fromHub[node] || !toHub[node]) continue;
+    cand.push({ x, y });
+  }
   const n = cand.length, best = Array.from({ length: count }, () => new Float64Array(n).fill(-Infinity));
   const from = Array.from({ length: count }, () => new Int32Array(n).fill(-1));
   for (let j = 0; j < n; j++) if (cand[j].x <= margin + ideal) best[0][j] = 0;

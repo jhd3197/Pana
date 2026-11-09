@@ -11,7 +11,7 @@ becomes the GitHub release's notes.
 - **Capis a Pintazos, todos contra todos: antes de empezar se elige el mapa y dónde arranca cada capi.**
   El anfitrión escoge entre tres mapas; cada pana toca el mapa para poner a sus capis y la máquina pone al resto.
 - **Capis a Pintazos: juega en La Corona, El Cañón y Los Morochos del Map Studio.**
-  Los mapas conservan su terreno original; los capis suben sus escalones y arrancan separados, con cobertura. El anfitrión y sus panas ven el mismo mapa, bloqueado al empezar.
+  Los mapas conservan su terreno original; los capis suben sus escalones y arrancan separados, con cobertura. Cada partida reparte distinto quién arranca dónde; el anfitrión y sus panas ven el mismo mapa, bloqueado al empezar.
 - **Capis a Pintazos y Trifulca: cada capi tiene su propia vocecita.**
   Chilla cuando le pegan, dice "hup" al saltar, se queja al caer y celebra al ganar, cada uno con su tono, igual en todas las pantallas.
 - **Capis a Pintazos: cada capi muestra cuánta vida le queda.**

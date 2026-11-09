@@ -830,7 +830,14 @@ preset/size combinations; never regenerate them merely to pass a failed test.
 The studio's stair treads can be about 0.19 wide. The old circular body could
 hit several risers at once and bounce away, despite each riser being lower
 than a jump. `walkerOptions` opts these maps into `stair-footing.js` only on
-the original plan's flank intervals. A narrow foot contact profile and a
+the step runs `flankProfile` records in each flank's `stairs` (the cap's two
+risers, the steep wall's riser-and-tread steps and the talus terraces, as
+distances out from the top's edge). Tops, valley floors, the pond's drop and
+any carved or bare slope keep the ordinary 52° climb limit, so a steep slope
+outside a run still needs a hop. Dropping the cap risers from the runs made a
+capi hop at the rim of El Cañón's middle top and fall into its sima, breaking
+a neighbour route; the terraces' faces are near 52° once rasterised and also
+need to be runs. A narrow foot contact profile and a
 maximum 1.05 tread step allow the authored stairs; standing headroom is still
 required. Tall walls and ceilings remain obstacles. Walk speed, jump takeoff,
 gravity, air steering and projectile hit radius stay unchanged, as does
@@ -842,6 +849,13 @@ jump speeds to represent air steering; it never increases jump height.
 routes on every admitted map. It tries several legal takeoff positions at
 shelter mouths: walking straight into a sima is not proof of an impossible
 route. Source equality, actual movement, spacing and cover are separate checks.
+Automatic starts keep the generator's filters: 5 or more above the water and
+linked both ways to the middle's floor on `ffaGraph`. Which seat takes which
+start is shuffled by the setup seed (`seatSpawns`), not the map seed: the
+presets' seeds are fixed, so a map-seed shuffle seated everyone the same way
+every match. The setup checks read the hub's reach both ways once per map
+(`floorGraph` `reachedBy`); one search per spot made the setup suite crawl.
+
 The existing setup suite proves ownership, map switching, reconnects, locking
 and desktop/mobile placement with real clients. Authored terrain palettes,
 strata and the two active ambient tables are reused by the game scene.

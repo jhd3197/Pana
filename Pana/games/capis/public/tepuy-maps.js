@@ -231,12 +231,16 @@ export function planTepuy(seed, size = 'medium', style = 'w', shape = {}) {
 // the talus. A pond's flank stops where the arch meets it and falls sheer to
 // the water; an end flank goes on over a shoulder and steps down to the beach.
 function flankProfile(r, T, stop, room, { pond = null, shore = 0 } = {}) {
-  const between = (a, b) => a + (b - a) * r(), pts = [[0, T]];
+  const between = (a, b) => a + (b - a) * r(), pts = [[0, T]], stairs = [];
   let d = 0, h = T;
+  // `stairs`: the [from, to] runs (distance out from the top edge) built of
+  // risers and treads. Stair footing walks only these; the pond's drop, the
+  // sand into the sea and every carved or bare slope keep the climb limit.
   const step = (run, rise, shelf, sag = .04) => { d += run; h -= rise; pts.push([d, h]); if (shelf > 0) { d += shelf; h -= sag; pts.push([d, h]); } };
   const cap = [between(.7, 1), between(.6, .95)];
   step(.22, cap[0], between(.45, .8));
   step(.22, cap[1], between(1.1, 1.9), .08);
+  stairs.push([0, d]);   // the cap's two risers are steps too
   let drop = h - stop, run = Math.max(1, room - d - (pond ? .9 : 0));
   // The wall of the tepuy (steep, most of the fall) and the talus skirt at its foot (gentler).
   const wallShare = pond ? 1 : between(.55, .68), wallRun = pond ? run : run * between(.34, .44);
@@ -244,12 +248,16 @@ function flankProfile(r, T, stop, room, { pond = null, shore = 0 } = {}) {
     if (drop <= .01) return;
     if (drop / run <= .6) {
       // Gentle: terraces, a short steeper face then a flatter tread.
-      const k = Math.max(1, Math.round(run / 1.4)), per = run / k, fall = drop / k;
+      const k = Math.max(1, Math.round(run / 1.4)), per = run / k, fall = drop / k, from = d;
       for (let i = 0; i < k; i++) { const j = between(.85, 1.15); step(per * .38, fall * .68 * j, per * .62, fall * (1 - .68 * j)); }
+      stairs.push([from, d]);
     } else {
       // Steep: steps no higher than a hop, a riser and a tread each.
-      const k = Math.max(1, Math.ceil(drop / STEP)), per = run / k, fall = drop / k;
+      // Each run is kept (`stairs`, distance out from the top edge) for opt-in
+      // stair footing, like the terraces' above.
+      const k = Math.max(1, Math.ceil(drop / STEP)), per = run / k, fall = drop / k, from = d;
       for (let i = 0; i < k; i++) { const riser = Math.min(.3, per * .4); step(riser, fall * between(.9, 1.1), per - riser, 0); }
+      stairs.push([from, d]);
     }
   };
   const h0 = h;
@@ -266,7 +274,7 @@ function flankProfile(r, T, stop, room, { pond = null, shore = 0 } = {}) {
     part(h - (TEPUY_WATER + .8), shore * .55);
     d += shore * .33; pts.push([d, TEPUY_WATER - 2.4]);
   }
-  return { pts, room, stop, end: !!shore };
+  return { pts, room, stop, end: !!shore, stairs };
 }
 
 // Height of a flank profile `d` out from the top edge (past its end: its last height).

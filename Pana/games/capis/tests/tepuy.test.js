@@ -59,3 +59,16 @@ test('a capi really crosses all ten neighbour routes on every admitted studio ma
     }
   }
 });
+
+test('studio presets mark only the flanks\' authored step runs as stairs', async () => {
+  const { generateStudioMap, STUDIO_PRESETS } = await import('../public/studio-maps.js');
+  const { tepuyFigure: figure } = await import('../public/tepuy-maps.js');
+  const { onStairs } = await import('../../../engine/play/stair-footing.js');
+  for (const id of STUDIO_PRESETS) {
+    const { map, mask } = generateStudioMap(figure(id).seed), runs = mask.stairs;
+    assert.ok(runs.length > 12 && runs.every(([a, b]) => b > a && b - a < 8), `${id}: short authored runs`);
+    // A top and the valley floors past the flanks are never stairs.
+    for (const m of map.plan.mesas) for (const x of [m.cx, m.cx - m.tw + 1, m.cx + m.tw - 1]) assert.equal(onStairs(runs, x), false, `${id}: the top at ${x.toFixed(1)}`);
+    for (const v of map.plan.valleys) if (v.kind === 'flat' || v.kind === 'pond') assert.equal(onStairs(runs, v.x), false, `${id}: the valley at ${v.x.toFixed(1)}`);
+  }
+});
