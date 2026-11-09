@@ -28,6 +28,10 @@ export const STEP = .05;
 // A guest resends an unchanged input this often, so the host never expires it
 // (inputTtl) and a new host gets it soon after taking over.
 const INPUT_HEARTBEAT = 200;
+// A guest whose own frames come slower than inputTtl (a busy phone, software
+// WebGL) keeps its held key for 1.5 of its usual gaps between inputs, at most
+// this long; a guest that stops sending still expires on its last usual gap.
+const SLOW_GUEST_TTL = 3000;
 // -1…1, anything else (NaN, strings, absent) is a released stick.
 export const axis = (v) => Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0;
 
@@ -46,6 +50,7 @@ export class LiveRoom extends HostRoom {
     // Prediction numbers every input; the host echoes the last one it applied per guest.
     this.prediction = predict && createPrediction({ ...predict, slice: STEP });
     this.inputSeq = 0; this.acks = new Map();
+    this.arrivals = new Map();   // guest id → { at, gap }: when its inputs come in
   }
 
   // Your own body as you predict it (a guest with `predict`), else null.
@@ -53,8 +58,8 @@ export class LiveRoom extends HostRoom {
 
   cleanInput(raw) { return raw ?? {}; }
 
-  takeOver() { this.inputs.clear(); this.lastAction.clear(); this.acks.clear(); this.prediction?.reset(); }
-  memberLeft(id) { this.inputs.delete(id); this.lastAction.delete(id); this.acks.delete(id); }
+  takeOver() { this.inputs.clear(); this.lastAction.clear(); this.acks.clear(); this.arrivals.clear(); this.prediction?.reset(); }
+  memberLeft(id) { this.inputs.delete(id); this.lastAction.delete(id); this.acks.delete(id); this.arrivals.delete(id); }
 
   receive(id, data) {
     if (data.kind === 'snapshot') {
@@ -64,7 +69,7 @@ export class LiveRoom extends HostRoom {
         this.onState(this.state);
       }
     } else if (data.kind === 'input') {
-      if (this.isHost) this.takeInput(id, data);
+      if (this.isHost) { this.arrived(id); this.takeInput(id, data); }
     } else if (data.kind === 'action') {
       // Actions arrive once each: a repeated or older seq is a resend.
       if (!this.isHost || !Number.isSafeInteger(data.seq) || data.seq <= (this.lastAction.get(id) || 0)) return;
@@ -75,6 +80,13 @@ export class LiveRoom extends HostRoom {
   }
 
   ownInput(input) { return this.cleanInput(input); }
+  arrived(id, now = performance.now()) {
+    const last = this.arrivals.get(id);
+    this.arrivals.set(id, { at: now, gap: last ? now - last.at : 0 });
+  }
+  // How long this guest's latest input stays live: inputTtl, or longer for a guest
+  // that sends slowly (judged on its gap before the latest input).
+  ttlFor(id) { return Math.max(this.live.inputTtl, Math.min(SLOW_GUEST_TTL, 1.5 * (this.arrivals.get(id)?.gap || 0))); }
   takeInput(id, data) {
     this.inputs.set(id, { ...this.cleanInput(data.input), at: performance.now() });
     if (Number.isSafeInteger(data.seq)) this.acks.set(id, data.seq);
@@ -141,8 +153,9 @@ export class LiveRoom extends HostRoom {
     // since the previous tick. A host that ticks slowly (a busy phone, a tab in
     // the background firing timers about once a second) would otherwise drop a
     // held key on every tick, and the guest would freeze.
+    // A guest that ticks slowly gets the same courtesy from ttlFor.
     const now = performance.now(), previous = this.lastTick ?? now;
-    for (const [id, value] of this.inputs) if (id !== this.id && now - value.at > this.live.inputTtl && value.at < previous) this.expire(id, value);
+    for (const [id, value] of this.inputs) if (id !== this.id && now - value.at > this.ttlFor(id) && value.at < previous) this.expire(id, value);
     this.lastTick = now;
     if (!paused) for (let left = Math.min(this.live.maxCatchUp, dt); left > 1e-6; left -= STEP) this.game.update(Math.min(STEP, left), this.inputs);
     this.publish();
