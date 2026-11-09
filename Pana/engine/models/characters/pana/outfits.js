@@ -5,9 +5,15 @@ import { createChefOutfit } from '/engine/models/characters/pana/chef.js';
 import { createActionDetails } from '/engine/models/characters/pana/action-outfits.js';
 import { createFurFoundation } from '/engine/models/characters/pana/foundation.js';
 
-const DEFAULT_COLORS = { shirt: '#ee3024', chef: '#ee3024', hoodie: '#3479cb', tropical: '#3479cb', sport: '#ee3024' };
-const PRESET_HEADWEAR = { shirt: 'none', chef: 'chef', hoodie: 'cap', tropical: 'none', sport: 'band', base: 'none' };
-const DEFAULT_HEADWEAR_COLORS = { chef: '#ee3024', cap: '#3479cb', band: '#ee3024' };
+const DEFAULT_COLORS = { shirt: '#ee3024', chef: '#ee3024', hoodie: '#3479cb', tropical: '#3479cb', sport: '#ee3024', samurai: '#2d3e6e', inframundo: '#2a2233' };
+const PRESET_HEADWEAR = { shirt: 'none', chef: 'chef', hoodie: 'cap', tropical: 'none', sport: 'band', base: 'none', samurai: 'kabuto', inframundo: 'hood' };
+const DEFAULT_HEADWEAR_COLORS = { chef: '#ee3024', cap: '#3479cb', band: '#ee3024', kabuto: '#232a44', hood: '#2a2233' };
+// Costume tops reuse an existing garment cut; only their layers are new.
+const CUT = { samurai: 'tropical', inframundo: 'hoodie' };
+const cutOf = id => CUT[id] || id;
+// Costumes build on first use, so panas that never wear one skip their
+// geometry and games skip the module on first load.
+const COSTUME_TOPS = Object.keys(CUT), COSTUME_HEADWEAR = ['kabuto', 'hood'];
 
 // Fitting a top to the fur repeats the same work for every pana: one body
 // shape, so the same garment, arm pose and surface give the same points. The
@@ -21,11 +27,13 @@ function fitOnce(key, fit) {
 }
 
 // Each top has one connected surface. The original shirt uses unchanged defaults.
-function createTop(style, { body, arms, material, texture, foundation }) {
-  const group = new THREE.Group(); group.name = `outfit:${style}`; body.add(group);
-  const cloth = material(`${style} cotton`, DEFAULT_COLORS[style], { roughness: 0.92, sheen: 0.24, sheenColor: '#ffad87', bumpMap: texture, bumpScale: 0.003, side: THREE.DoubleSide });
-  const trim = material(`${style} binding`, DEFAULT_COLORS[style], { roughness: 0.92, bumpMap: texture, bumpScale: 0.002 });
-  const root = new THREE.Bone(); root.name = `${style}:root`; body.add(root);
+function createTop(id, { body, arms, material, texture, foundation }) {
+  // `style` is the garment cut; a costume top shares the cut of an existing one.
+  const style = cutOf(id);
+  const group = new THREE.Group(); group.name = `outfit:${id}`; body.add(group);
+  const cloth = material(`${id} cotton`, DEFAULT_COLORS[id], { roughness: 0.92, sheen: 0.24, sheenColor: '#ffad87', bumpMap: texture, bumpScale: 0.003, side: THREE.DoubleSide });
+  const trim = material(`${id} binding`, DEFAULT_COLORS[id], { roughness: 0.92, bumpMap: texture, bumpScale: 0.002 });
+  const root = new THREE.Bone(); root.name = `${id}:root`; body.add(root);
   const { geometry, collar, cuffs } = shirtGeometry(arms, { style });
   if (['sport', 'tropical'].includes(style)) {
     const positions = geometry.attributes.position, weights = geometry.attributes.skinWeight, point = new THREE.Vector3();
@@ -105,6 +113,17 @@ export function createWardrobe(context) {
   const foundation = createFurFoundation(context);
   const tops = Object.fromEntries(['shirt', 'hoodie', 'tropical', 'sport'].map(style => [style, createTop(style, { ...context, foundation })]));
   const chef = createChefOutfit({ ...context, foundation }), details = createActionDetails({ ...context, tops });
+  let costume = null, costumeLoad = null, disposed = false;
+  // The tops are built at once (same module); the layers over them arrive with
+  // the import and re-sync, so a costume shows its cut a frame or two early.
+  const loadCostumes = () => costumeLoad ||= (async () => {
+    COSTUME_TOPS.forEach(id => { tops[id] = createTop(id, { ...context, foundation }); tops[id].setColor(colors[id]); });
+    const { createCostumeDetails } = await import('/engine/models/characters/pana/costume-outfits.js');
+    if (disposed) return;
+    costume = createCostumeDetails({ ...context, tops, foundation });
+    COSTUME_HEADWEAR.forEach(id => costume.setHeadwearColor(id, headwearColors[id]));
+    syncVisibility();
+  })();
   const colors = { ...DEFAULT_COLORS }, headwearColors = { ...DEFAULT_HEADWEAR_COLORS };
   let selected = 'shirt', headwear = 'none', wristbands = false;
   const applyColor = (id, value) => {
@@ -114,17 +133,20 @@ export function createWardrobe(context) {
   };
   const applyHeadwearColor = (id, value) => {
     headwearColors[id] = value;
-    if (id === 'chef') chef.setHatColor(value); else details.setHeadwearColor(id, value);
+    if (id === 'chef') chef.setHatColor(value); else if (COSTUME_HEADWEAR.includes(id)) costume?.setHeadwearColor(id, value); else details.setHeadwearColor(id, value);
   };
   const syncVisibility = () => {
+    const cut = cutOf(selected);
+    if (COSTUME_TOPS.includes(selected) || COSTUME_HEADWEAR.includes(headwear)) loadCostumes();
     Object.entries(tops).forEach(([id, top]) => top.setVisible(id === selected));
-    foundation.setVisible(['chef', 'sport', 'tropical'].includes(selected));
+    foundation.setVisible(['chef', 'sport', 'tropical'].includes(cut));
     chef.setApronVisible(selected === 'chef'); chef.setHatVisible(headwear === 'chef');
-    details.setHeadwear(headwear); details.setWristbands(wristbands, selected === 'hoodie');
+    details.setHeadwear(headwear); details.setWristbands(wristbands, cut === 'hoodie');
+    costume?.setHeadwear(headwear); costume?.setOutfit(selected);
     details.setWristColor(colors[selected] || colors.shirt);
     arms.forEach(arm => {
       const skin = arm.getObjectByName('Arm and mitten');
-      const start = selected === 'hoodie' ? 25 * 40 * 6 : ['shirt', 'tropical'].includes(selected) ? skin.userData.coveredIndexCount : 0;
+      const start = cut === 'hoodie' ? 25 * 40 * 6 : ['shirt', 'tropical'].includes(cut) ? skin.userData.coveredIndexCount : 0;
       skin.geometry.setDrawRange(start, skin.geometry.index.count - start);
     });
   };
@@ -138,6 +160,8 @@ export function createWardrobe(context) {
     get preset() { return headwear === PRESET_HEADWEAR[selected] && wristbands === (selected === 'sport') ? selected : null; },
     get color() { return colors[selected] || colors.shirt; },
     get headwearColor() { return headwearColors[headwear] || null; },
+    // Resolves once the costume layers exist (tests, screenshots).
+    loadCostumes,
     // Presets coordinate the pieces; individual setters preserve the other slots.
     setOutfit(value) {
       if (value !== 'base' && !Object.hasOwn(DEFAULT_COLORS, value)) return;
@@ -168,6 +192,6 @@ export function createWardrobe(context) {
       details.setWristColor(colors[selected] || colors.shirt);
     },
     update() { Object.values(tops).forEach(top => top.update()); },
-    dispose() { Object.values(tops).forEach(top => top.dispose()); foundation.dispose(); details.dispose(); },
+    dispose() { disposed = true; Object.values(tops).forEach(top => top.dispose()); foundation.dispose(); details.dispose(); },
   };
 }

@@ -20,15 +20,25 @@ const app = path.resolve(import.meta.dirname, '..');
 export const games = fs.readdirSync(path.join(app, 'games'))
   .filter(id => fs.existsSync(path.join(app, 'games', id, 'public', 'index.html'))).sort();
 
-export function launch(options = {}) {
+export async function launch(options = {}) {
   const executablePath = process.env.PANA_BROWSER_PATH;
-  return chromium.launch({
+  const browser = await chromium.launch({
     headless: true,
     // Background tabs keep ticking, so a multi-client suite's hidden pages still play.
     args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'],
     ...(executablePath ? { executablePath } : {}),
     ...options,
   });
+  // PANA_CPU_THROTTLE=4 slows every page's CPU fourfold, like a shared CI runner.
+  const rate = Number(process.env.PANA_CPU_THROTTLE) || 0;
+  if (rate > 1) {
+    const throttle = async page => { const cdp = await page.context().newCDPSession(page); await cdp.send('Emulation.setCPUThrottlingRate', { rate }); };
+    const newContext = browser.newContext.bind(browser);
+    browser.newContext = async (...args) => { const context = await newContext(...args); context.on('page', throttle); return context; };
+    const newPage = browser.newPage.bind(browser);
+    browser.newPage = async (...args) => { const page = await newPage(...args); await throttle(page); return page; };
+  }
+  return browser;
 }
 
 // Absolute path for screenshots, independent of the directory the suite ran from.
