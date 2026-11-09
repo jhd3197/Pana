@@ -6,7 +6,7 @@
 // capi) with a team bandana, each holding the weapon it picked from Pepazo's
 // arsenal (weapons.js); the world behind is real 3D scenery (backdrop.js).
 import * as THREE from 'three';
-import { rendererOptions, bindRenderer } from '/engine/settings.js';
+import { rendererOptions, bindRenderer, getSettings } from '/engine/settings.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
@@ -106,7 +106,9 @@ export function createCapisScene(canvas, match) {
   // starting ground plus the map's hollows) so a crater reads as a dent.
   // What the earth is made of comes from the map on show (map-rules.js).
   const ground = { rockAt: (x, y) => rockAt(shown, x, y), grassAt: (x, y) => grassAt(shown, x, y) };
-  const makeTerrain = () => createTerrain(scene, mask, { palette, ...ground, zBack: SLAB[0], zFront: SLAB[1], back: true, renderer });
+  // Low detail draws the cheap ground (no grain, pebbles, roots or cracks): the
+  // slab's shader is most of a frame on a slow GPU or a software renderer.
+  const makeTerrain = () => createTerrain(scene, mask, { palette, ...ground, zBack: SLAB[0], zFront: SLAB[1], back: true, renderer, lite: getSettings().detail === 'baja' });
   let terrain = makeTerrain(), plain = false;
   // If the ground's shader cannot compile here, draw it in plain colour instead of not at all.
   renderer.debug.onShaderError = (gl, program, vs, fs) => {

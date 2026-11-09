@@ -176,7 +176,11 @@ mask, { palette, rockAt, grassAt, zBack, zFront, back, renderer })` builds the
 front face, a wall extruded from the outline and an optional back wall (the
 starting ground plus `mask.hollow`), three draws in all, with soil, strata,
 pebbles, roots, rock, sand, a grass band with short tufts and the paint all
-computed in the fragment shader (Lambert lighting and fog kept).
+computed in the fragment shader (Lambert lighting and fog kept). `lite: true`
+(opt-in; Capis sets it at low detail) keeps the silhouette, plain strata
+bands, rock layers, grass, sand, scorch and paint and drops the fine grain,
+seams, pebbles, roots, cracks and band blending: about twice the frame rate
+under a software renderer, where the full shader is most of a frame.
 `palette.strata` (keys of `DEFAULT_STRATA`: topsoil, ash, clay, pumice, ochre,
 loam, base and seam colours, `period`, `fold`, `tilt`, `phase`) sets the soil
 profile; `setStrata(strata)` swaps it for the next map without a rebuild.

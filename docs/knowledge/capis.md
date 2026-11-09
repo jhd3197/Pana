@@ -870,3 +870,15 @@ at least 20 units from all others; humans retain the existing 10-unit manual
 placement rule. A placement that leaves no complete spaced assignment is
 rejected before it changes setup state. Greedy farthest-first is insufficient:
 it can crowd the last automatic capi even when a complete assignment exists.
+
+## Frame cost and the browser suites
+
+Under software WebGL (the browser suites, CI) a match drew at about 2.3 fps
+at 1280×800, and the clock steps at most 0.25 s a frame, so every phase wait
+was slow. Nearly all of a frame is the terrain slab's fragment shader (a flat
+colour there gives about 10 fps; band selection, rock, topsoil, cover and
+paint each cost a similar slice). At low detail Capis draws the ground with
+`createTerrain({ lite: true })`, about 5 fps: capis.browser went from 435 s to
+177 s and setup.browser from 325 s to 162 s locally. Turning off
+antialiasing or alpha-to-coverage gains little.
+
