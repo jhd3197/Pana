@@ -30,8 +30,9 @@ try {
   const pages = [a, b];
   await waitFor(a, () => poquerDebug.room.connected && poquerDebug.room.isHost && poquerDebug.room.state.players.length === 2);
   await waitFor(b, () => poquerDebug.room.connected && poquerDebug.room.state.players.length === 2);
-  // The host's seat order picks the dealer: no cachos for this suite.
-  await a.evaluate(() => poquerDebug.room.configure({ starter: 'anfitrion' })); await waitFor(b, () => poquerDebug.room.state.options.starter === 'anfitrion');
+  // The host's seat order picks the dealer (no cachos), and the longest turn
+  // clock so a slow screen never has a hand folded for it.
+  await a.evaluate(() => poquerDebug.room.configure({ starter: 'anfitrion', turnSeconds: 40 })); await waitFor(b, () => poquerDebug.room.state.options.starter === 'anfitrion' && poquerDebug.room.state.options.turnSeconds === 40);
   await a.locator('#start').click(); await waitFor(b, () => poquerDebug.room.state.phase === 'preflop'); await synced(a, b);
 
   // Hand 1: check it down to a real showdown.

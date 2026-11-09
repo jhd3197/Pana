@@ -29,6 +29,9 @@ try {
   const a = await open('Juan'), b = await open('María');
   await wait(a, () => poquerDebug.room.state.players.length === 2); assert.ok(await b.locator('#start').isDisabled());
   await wait(a, () => poquerDebug.world.avatars.size === 2); await a.screenshot({ path: `${out}/lobby.png` });
+  // The online turn clock keeps running while a slow screen deals: give the
+  // suite the longest one a host can pick so it never folds a hand for us.
+  await a.evaluate(() => poquerDebug.room.configure({ turnSeconds: 40 })); await wait(b, () => poquerDebug.room.state.options.turnSeconds === 40);
   // ¿Quién empieza?: both panas shake their cacho at once; the highest takes the button.
   await a.locator('#start').click(); await wait(b, () => poquerDebug.room.state.phase === 'starter');
   await wait(b, () => poquerDebug.world.starter.active);
