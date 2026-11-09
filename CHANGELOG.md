@@ -20,6 +20,8 @@ becomes the GitHub release's notes.
   Sobre cada capi, tuyo o rival, va su número de vida en un cuadrito que pasa de verde a amarillo y a rojo; la lista de equipos dice el mismo número.
 - **Capis a Pintazos: con mando, RT dispara y A salta.**
   Mantén RT (R2) para cargar y suéltalo para pintar; A (Cruz) salta, como en Pepazo.
+- **Tu pana ya se puede vestir de samurái o del inframundo.**
+  En el vestidor hay armadura samurái con kabuto, y capucha del inframundo con huesos; cada pieza se combina y cambia de color.
 
 ## 0.9.0 - 2026-11-07
 

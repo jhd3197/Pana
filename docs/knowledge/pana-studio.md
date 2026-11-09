@@ -260,9 +260,13 @@ bad geometry and incompatible morph arrays; do not restore the old traversal.
 
 ## Verification
 
-`web/studio/tests/studio.browser.js` opens every registered preview, checks unique
-IDs, source links, filters, empty results, inventory export and mobile overflow,
-then saves a mixed wardrobe and checks the standing/seated game adapter.
+`web/studio/tests/studio.browser.js` checks unique IDs, filters, empty results,
+inventory export and mobile overflow, then saves a mixed wardrobe and checks the
+standing/seated game adapter. `studio-previews-1..3.browser.js` open every
+registered preview between them (every third entry each, `preview-kit.js`) and
+check its source link and that it holds geometry. At about 520 entries one
+suite previewing the whole catalog took the full 600 s per-suite limit under
+software WebGL; add a fourth shard when a shard nears 300 s.
 Run with the same optional Playwright package and browser executable arguments
 as `web/character/tests/proportions.browser.js`.
 Large map constructors can block the main thread during the click itself, so

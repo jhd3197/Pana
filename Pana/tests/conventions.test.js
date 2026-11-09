@@ -183,8 +183,8 @@ test('online games use the shared room kit', () => {
 
 // Studio's catalog loads without Three.js (a bare 'three' import would fail
 // here), so the library page stays light; every entry must point at real code.
-// Building each model needs WebGL: web/studio/tests/studio.browser.js previews
-// every entry and engine/tests/model-library.browser.js builds every model.
+// Building each model needs WebGL: web/studio/tests/studio-previews-*.browser.js
+// preview every entry and engine/tests/model-library.browser.js builds every model.
 test('every Studio catalog entry is complete and points at real source', async () => {
   const { ASSETS, CATEGORIES, sourcePath } = await import('/studio/catalog.js');
   const repo = path.resolve(app, '..'), problems = [], ids = new Set();

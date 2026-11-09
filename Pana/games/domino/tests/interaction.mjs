@@ -5,12 +5,19 @@ const page=await browser.newPage({viewport:{width:1440,height:900}});page.on('pa
 await page.addInitScript(()=>localStorage.setItem('pana:settings',JSON.stringify({sound:false,music:false,quality:'baja'})));
 try{
  await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/g/domino/?room=pick-${Date.now()}&name=Juan&debug`);
- await page.waitForFunction(()=>dominoDebug.world&&dominoDebug.room.connected,null,{timeout:90000});
+ await page.waitForFunction(()=>window.dominoDebug?.world&&dominoDebug.room.connected,null,{timeout:90000});
  await waitPrepared(page);
  await page.locator('#start').click();
  // The server plays the bots until it is our turn.
- await page.waitForFunction(()=>dominoDebug.room.state.phase==='playing'&&dominoDebug.room.state.turn===dominoDebug.room.seat,null,{timeout:30000});
- await page.waitForTimeout(700);
+ const ourTurn=()=>page.waitForFunction(()=>dominoDebug.room.state.phase==='playing'&&dominoDebug.room.state.turn===dominoDebug.room.seat,null,{timeout:30000});
+ await ourTurn();
+ // Some deals leave nothing to play on our turn: sing paso until a tile fits.
+ for(let i=0;i<7&&!await page.evaluate(()=>dominoDebug.legalMoves(dominoDebug.room.state,dominoDebug.room.seat).length);i++){
+  await page.locator('#pass').click();
+  await page.waitForFunction(()=>dominoDebug.room.state.turn!==dominoDebug.room.seat||dominoDebug.room.state.phase!=='playing');await ourTurn();
+ }
+ // Dealt tiles fly into the hand; aim only once every legal one has landed.
+ await page.waitForFunction(()=>{const {world,room,legalMoves}=dominoDebug;const moves=legalMoves(room.state,room.seat);return moves.length&&moves.every(m=>{const t=world.tiles.get(m.tile);return t&&!t.lift&&t.model.position.distanceTo(t.target)<.01;});});
  const target=await page.evaluate(()=>{
   const {world,room,legalMoves}=dominoDebug;
   for(const move of legalMoves(room.state,room.seat)){
@@ -25,7 +32,8 @@ try{
  await page.waitForFunction(count=>dominoDebug.room.state.chain.length>count,target.count);
  assert.ok(await page.evaluate(id=>dominoDebug.room.state.chain.some(t=>t.id===id),target.id));
  console.log('ok: clicking an actual 3D tile plays it through raycasting');
- await page.locator('#menu').click();await page.locator('#pana-tab-settings').click();await page.locator('.pana-settings-nav button',{hasText:'Ratón y teclado'}).click();await page.getByRole('tab',{name:'Cómo se juega',exact:true}).click();assert.match(await page.locator('#pana-panel-settings').textContent(),/doble seis/);await page.keyboard.press('Escape');
+ // How to play lives in the pause menu's Instrucciones tab, never on the HUD.
+ await page.locator('#menu').click();await page.locator('#pana-tab-help').click();await page.locator('#pana-panel-help[data-ready]').waitFor();assert.match(await page.locator('#pana-panel-help').textContent(),/doble seis/);await page.keyboard.press('Escape');
  await page.evaluate(()=>dominoDebug.room.practice());await page.setViewportSize({width:390,height:844});
  await page.locator('#start').click();
  for(let i=0;i<4;i++){if(await page.evaluate(()=>dominoDebug.room.state.turn===dominoDebug.room.seat))break;await page.evaluate(()=>dominoDebug.room.tick(2));}
