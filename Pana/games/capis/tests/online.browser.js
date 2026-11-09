@@ -42,7 +42,9 @@ try {
   await guest.keyboard.up('a');
   await guest.keyboard.down(' ');
   await waitFor(guest, () => !document.getElementById('power-bar').hidden);
-  await guest.waitForFunction(() => parseInt(document.getElementById('power-value').textContent) >= 40, null, { timeout: 30_000, polling: 30 }).catch(async e => {
+  // The meter swings up and down every two seconds and repaints once a frame; a slow
+  // software-GL frame can keep landing on the low side, so sample it on the clock.
+  await guest.waitForFunction(() => capisDebug.charge.update() >= .4 && parseInt(document.getElementById('power-value').textContent) >= 40, null, { timeout: 30_000, polling: 30 }).catch(async e => {
     console.log('DIAG', await guest.evaluate(() => ({ hidden: document.hidden, bar: document.getElementById('power-bar').hidden, text: document.getElementById('power-value').textContent, phase: capisDebug.match.phase, ctl: capisDebug.room.state.controller, id: capisDebug.room.id, playing: capisDebug.playing })));
     throw e; });
   await guest.keyboard.up(' ');

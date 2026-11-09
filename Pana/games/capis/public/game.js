@@ -417,5 +417,5 @@ export const { sceneReady } = bootGame({
 });
 // A party or invite link (?room=) joins that room at once.
 if (roomFromUrl()) goOnline(); else lobbyView();
-if (params.has('debug')) window.capisDebug = { get match() { return match; }, get world() { return world; }, start, fire: (p) => fire(match, p), choose, options: () => options, get playing() { return playing; }, room, get online() { return online; }, tombs,
+if (params.has('debug')) window.capisDebug = { get match() { return match; }, get world() { return world; }, start, fire: (p) => fire(match, p), choose, options: () => options, get playing() { return playing; }, room, get online() { return online; }, tombs, charge,
   get setup() { return currentSetup(); }, get inSetup() { return inSetup; }, get selected() { return selected; }, placeAt, pickMap };
