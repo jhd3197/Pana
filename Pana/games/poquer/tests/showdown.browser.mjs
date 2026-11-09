@@ -9,8 +9,12 @@ import { launch, openGame, waitFor } from '../../../tests/browser-kit.js';
 const shots = path.join(os.tmpdir(), 'poker-shots'); fs.mkdirSync(shots, { recursive: true });
 const room = `poker-sd-${Date.now()}`, browser = await launch();
 const view = p => p.evaluate(() => ({ id: poquerDebug.room.id, state: poquerDebug.room.state }));
-// Both screens on the same revision before anyone acts again.
-async function synced(a, b) { const { state } = await view(a); await waitFor(b, r => poquerDebug.room.state.revision === r, state.revision); }
+// Both screens on the same revision before anyone acts again. Either may be a
+// message behind, so both wait for the newer of the two, never an older one.
+async function synced(a, b) {
+  const revision = Math.max(...await Promise.all([a, b].map(async p => (await view(p)).state.revision)));
+  for (const p of [a, b]) await waitFor(p, r => poquerDebug.room.state.revision === r, revision);
+}
 async function act(pages, action) {
   const turn = await pages[0].evaluate(() => poquerDebug.room.state.turn);
   const actor = (await Promise.all(pages.map(p => p.evaluate(() => poquerDebug.room.id)))).indexOf(turn);
