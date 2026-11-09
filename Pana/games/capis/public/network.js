@@ -27,7 +27,8 @@ export class CapisRoom extends LiveRoom {
 
   takeOver(previous) {
     super.takeOver(previous);
-    this.game = previous == null && this.state.phase !== 'play' ? new CapisTable(this.state) : CapisTable.restore(this.state, this.view);
+    this.game = previous == null && this.state.phase === 'lobby' ? new CapisTable(this.state) : CapisTable.restore(this.state, this.view);
+    this.game.setHost(this.id);
     this.seat();
     this.publish();
     if (previous != null) this.onNotice(loc('Cambió el anfitrión. La partida sigue.'));
@@ -56,6 +57,7 @@ export class CapisRoom extends LiveRoom {
     else if (data.action === 'tomb') g.setTomb(id, data.shape);
     else if (data.action === 'team') g.setTeam(host && data.id != null ? data.id : id, data.team);
     else if (data.action === 'fire' || data.action === 'weapon') g.act(id, data.action, data);
+    else if (data.action === 'setup') g.setupAct(id, data.step, data);
     else if (data.action === 'resync') g.fullEdits = Math.max(g.fullEdits, 2);
     else return;
     this.publish();

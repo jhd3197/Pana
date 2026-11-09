@@ -87,3 +87,14 @@ test('cover towards a side sees a wall on that side only; relief measures the dr
   const flat = relief(ground(() => 10), { water: 4 });
   assert.ok(flat.relief < .2 && flat.bumpy < .05);
 });
+
+test('floorGraph reachedBy matches reach(i)[to] for every floor', () => {
+  const m = createMask({ width: 40, height: 20, cell: .1 });
+  // A ledge you can drop off but not climb back onto, and a hop-high step.
+  fillHeights(m, x => x < 12 ? 3 : x < 20 ? 6.5 : x < 30 ? 4 : 5);
+  const g = floorGraph(m, { water: 1 });
+  for (const hops of [true, false]) for (const to of [g.near(5, 3), g.near(25, 4), g.near(35, 5)]) {
+    const back = g.reachedBy(to, { hops });
+    for (let i = 0; i < g.y.length; i++) assert.equal(back[i], g.reach(i, { hops })[to], `hops ${hops}: floor ${i} -> ${to}`);
+  }
+});

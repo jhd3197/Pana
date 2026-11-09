@@ -6,7 +6,7 @@
 // capi) with a team bandana, each holding the weapon it picked from Pepazo's
 // arsenal (weapons.js); the world behind is real 3D scenery (backdrop.js).
 import * as THREE from 'three';
-import { rendererOptions, bindRenderer } from '/engine/settings.js';
+import { rendererOptions, bindRenderer, getSettings } from '/engine/settings.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
@@ -25,11 +25,13 @@ import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { supplyCrate } from '/engine/models/props/expedition-camp.js';
 import { grave } from '/engine/models/props/cemetery.js';
 import { simulateFlight, simulateBounce } from '/engine/play/ballistic.js';
-import { RULES, TEAM_COLORS, alive, muzzle, flightOptions, activeCapy, launch } from './rules.js';
+import { RULES, TEAM_COLORS, alive, healthOf, muzzle, flightOptions, activeCapy, launch } from './rules.js';
 import { WEAPONS, weaponOf } from './weapons.js';
 import { aiming, bodyPose, barrelPose } from './poses.js';
 import { createBackdrop } from './backdrop.js';
 import { rockAt, grassAt, strataPalette } from './map-rules.js';
+import { tepuyStrata } from './tepuy-maps.js';
+import { STUDIO_LOOKS } from './studio-looks.js';
 
 const FRONT = 1;               // the depth where capis and shells move
 const SLAB = [-2.6, .55];      // the earth's back and front faces
@@ -80,14 +82,23 @@ export function createCapisScene(canvas, match) {
   const unbind = bindRenderer(renderer, 2);
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, .5, 600);
   // Late afternoon in the Llanos: warm low sun from the front left, a soft warm rim from behind.
-  scene.add(new THREE.HemisphereLight('#ffe9c8', '#5f5a34', 1.45));
+  const hemi = new THREE.HemisphereLight('#ffe9c8', '#5f5a34', 1.45); scene.add(hemi);
   const sun = new THREE.DirectionalLight('#ffd9a8', 2.5); sun.position.set(-34, 30, 34); scene.add(sun);
   const rim = new THREE.DirectionalLight('#ffb27a', .7); rim.position.set(30, 14, -40); scene.add(rim);
   const backdrop = createBackdrop(scene, match.map, match.mask);
   let mask = match.mask, shown = match.map;
   // The cut face's layers belong to the map: its kind's colours, shifted by its seed.
-  const strataOf = map => strataPalette(map.seed, map.kind);
+  const strataOf = map => map.studio ? tepuyStrata(map.authoredSeed, map.style) : strataPalette(map.seed, map.kind);
   const palette = { ...PALETTE, sandBelow: match.map.water + 2.4, water: match.map.water, strata: strataOf(match.map) };
+  function setLook(map) {
+    const look = map.studio && STUDIO_LOOKS[map.ambient];
+    Object.assign(palette, PALETTE, look?.terrain || {});
+    const l = look?.open;
+    hemi.color.set(l?.hemi[0] || '#ffe9c8'); hemi.groundColor.set(l?.hemi[1] || '#5f5a34'); hemi.intensity = l?.hemi[2] ?? 1.45;
+    sun.color.set(l?.light[0] || '#ffd9a8'); sun.intensity = l?.light[1] ?? 2.5;
+    rim.color.set(l?.rim[0] || '#ffb27a'); rim.intensity = l?.rim[1] ?? .7;
+  }
+  setLook(match.map);
 
   // ---------- the ground ----------
   // One shader draws the slab (engine/play/terrain-material.js): the front
@@ -95,7 +106,9 @@ export function createCapisScene(canvas, match) {
   // starting ground plus the map's hollows) so a crater reads as a dent.
   // What the earth is made of comes from the map on show (map-rules.js).
   const ground = { rockAt: (x, y) => rockAt(shown, x, y), grassAt: (x, y) => grassAt(shown, x, y) };
-  const makeTerrain = () => createTerrain(scene, mask, { palette, ...ground, zBack: SLAB[0], zFront: SLAB[1], back: true, renderer });
+  // Low detail draws the cheap ground (no grain, pebbles, roots or cracks): the
+  // slab's shader is most of a frame on a slow GPU or a software renderer.
+  const makeTerrain = () => createTerrain(scene, mask, { palette, ...ground, zBack: SLAB[0], zFront: SLAB[1], back: true, renderer, lite: getSettings().detail === 'baja' });
   let terrain = makeTerrain(), plain = false;
   // If the ground's shader cannot compile here, draw it in plain colour instead of not at all.
   renderer.debug.onShaderError = (gl, program, vs, fs) => {
@@ -189,7 +202,8 @@ export function createCapisScene(canvas, match) {
     takeDirty(mask);
     // A map of another size needs ground textures of another size.
     palette.strata = strataOf(shown);
-    if (resized) { terrain.dispose(); terrain = makeTerrain(); if (plain) terrain.fallback(); } else { terrain.setStrata(palette.strata); terrain.reset(mask); }
+    setLook(shown);
+    if (resized || remap) { terrain.dispose(); terrain = makeTerrain(); if (plain) terrain.fallback(); } else { terrain.setStrata(palette.strata); terrain.reset(mask); }
     if (remap) backdrop.setMap(next.map, mask); else backdrop.shore(mask);
     backdrop.react('idle');
     for (const spray of sprays) spray.clear();
@@ -278,6 +292,9 @@ export function createCapisScene(canvas, match) {
   const at = new THREE.Vector3(), dir = new THREE.Vector3(), tail = new THREE.Vector3(), NOSE = new THREE.Vector3(0, 0, 1), back = new THREE.Vector2(), UP = { x: 0, y: 1 };
   let wide = false, hold = 0, holdAt = null, time = 0, shooter = null, flashT = 0, trailT = 0;
   let closeUp = 0;   // a narrower view for test screenshots (capisDebug)
+  // The setup's whole-map view: { top, bottom } of the ground in world units and
+  // { above, below } screen pixels the page's bars cover, so the map fits between them.
+  let fit = null;
   const viewWidth = () => wide ? match.map.width + 8 : closeUp || (camera.aspect < 1 ? 22 : 34);
   // The whole map sits on the bottom of the screen with the sky above it,
   // however wide the map is: the bottom edge stays a little under the water.
@@ -534,13 +551,21 @@ export function createCapisScene(canvas, match) {
     // Camera: the shell in flight, a fresh blast for a moment, else the capi whose turn it is.
     hold = Math.max(0, hold - dt);
     const target = match.shot ? { x: match.shot.x, y: match.shot.y + (match.shot.resting ? 1.5 : 0) } : hold && holdAt ? holdAt : active ? { x: active.x, y: active.y + 1.5 } : focus;
-    const half = viewWidth() / 2;
-    const tx = wide ? match.map.width / 2 : THREE.MathUtils.clamp(target.x, half - 6, match.map.width - half + 6);
-    const ty = wide ? wideY(half) : Math.max(match.map.water + 4, target.y);
+    let half = viewWidth() / 2;
+    let tx = wide ? match.map.width / 2 : THREE.MathUtils.clamp(target.x, half - 6, match.map.width - half + 6);
+    let ty = wide ? wideY(half) : Math.max(match.map.water + 4, target.y);
+    if (wide && fit) {
+      // World units per pixel so the map's width and height both fit the free band, its middle on the band's.
+      const room = Math.max(80, innerHeight - fit.above - fit.below), upp = Math.max((match.map.width + 6) * 1.04 / innerWidth, (fit.top - fit.bottom) * 1.1 / room);
+      half = upp * innerWidth / 2;
+      ty = (fit.top + fit.bottom) / 2 - (fit.below - fit.above) / 2 * upp;
+    }
     focus.lerp(goal.set(tx, ty), 1 - Math.exp(-dt * (match.shot ? 6 : 3)));
     const distance = half / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / camera.aspect;
     // The haze starts past the ground, so a wide map is not fogged in the whole-map view.
     scene.fog.near = Math.max(80, distance + 12); scene.fog.far = scene.fog.near + 190;
+    // A portrait phone's whole-map view sits farther back than the usual far plane.
+    const far = Math.max(600, distance + 260); if (camera.far !== far) { camera.far = far; camera.updateProjectionMatrix(); }
     const kick = feel.update(dt, { decay: 4 });
     camera.position.set(focus.x + kick.yaw * 25, focus.y + distance * .16 + kick.pitch * 25, FRONT + distance);
     camera.lookAt(focus.x + kick.yaw * 25, focus.y, FRONT);
@@ -552,7 +577,7 @@ export function createCapisScene(canvas, match) {
     if (view.labels) {
       view.labels(match.capys.map(c => {
         const g = capis.get(c.id).root; at.set(g.position.x, g.position.y + HEAD, FRONT).project(camera);
-        return { id: c.id, x: (at.x + 1) / 2 * w, y: (1 - at.y) / 2 * h, visible: !c.out && at.z < 1 && g.visible };
+        return { id: c.id, x: (at.x + 1) / 2 * w, y: (1 - at.y) / 2 * h, visible: !c.out && at.z < 1 && g.visible, hp: healthOf(c) };
       }));
     }
     renderer.render(scene, camera);
@@ -587,6 +612,10 @@ export function createCapisScene(canvas, match) {
     // For tests: what lies on the ground, as drawn.
     get props() { return { crates: [...crateMeshes.values()].map(g => ({ x: g.position.x, y: g.position.y, chute: g.userData.chute.visible })), tombs: [...tombMeshes.entries()].map(([id, g]) => ({ id, shape: g.userData.shape, x: g.position.x, y: g.position.y, visible: g.visible })) }; },
     get wide() { return wide; }, set wide(on) { wide = !!on; },
+    set fit(f) { fit = f || null; },
+    // Where world (x, y) on the capis' plane is on screen, and whether the camera reached its goal.
+    screenOf(x, y) { const v = new THREE.Vector3(x, y, FRONT).project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; },
+    get settled() { return focus.distanceTo(goal) < .05; },
     set closeUp(width) { closeUp = Number(width) || 0; },
     get calls() { return renderer.info.render.calls; },
     // How a sound at (x, y) reaches the player: volume, and how far (0..1) for muffling.

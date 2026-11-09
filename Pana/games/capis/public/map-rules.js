@@ -40,6 +40,9 @@ import { fbm2, smoothstep, lerp, clamp } from '../../../engine/random.js';
 import { seededStream, bumps, dropFloating, walkSpans, walkTo, topLine, skyExposure, floorGraph, coverToward, relief } from '../../../engine/play/terrain-gen.js';
 import { simulateFlight, aimVelocity } from '../../../engine/play/ballistic.js';
 import { RULES, muzzle } from './rules.js';
+import { generateStudioMap, studioFigure } from './studio-maps.js';
+import { tepuyRockAt } from './tepuy-maps.js';
+import { onStairs, STAIR_RISE } from '../../../engine/play/stair-footing.js';
 
 export const MAP_SIZES = Object.freeze({
   small: Object.freeze({ width: 100, height: 46 }),
@@ -177,9 +180,84 @@ export function planMap(seed, size, attempt = 0, { mode = 'teams' } = {}) {
     hillsAlong(lo, hi, 2 + Math.floor(r() * 2), 3);
     p.outer = [chance(.55), chance(.55)];
   }
+  if (mode === 'ffa') { p.mode = 'ffa'; tepuyRidges(p, r); }
   return p;
 }
 
+// A free-for-all stands on a tepuy: low land on the left, a sheer-sided
+// central mesa, a low valley and a sheer massif running off the right edge,
+// each reached by ramp tunnels inside the rock (massifPassages).
+// FFA_MASSIFS: the tops' heights (the highest ground stays under the map's
+// roof, 45), the summit knob, how sheer a face is (rise per unit), the
+// ramps' slope (under the walker's 52°, 1.28) and the tunnels' radius.
+export const FFA_MASSIFS = Object.freeze({ mesa: [26, 29], tall: [36, 38.5], right: [40, 42.5], knob: 2.4, face: 6, ramp: 1.1, tunnel: 1.35 });
+// The land the six starts keep off at either end (setup-rules.js reads it too).
+export const FFA_TEPUY = Object.freeze({ margin: 8 });
+function tepuyRidges(p, r) {
+  const between = (a, b) => a + (b - a) * r(), w = p.width, M = FFA_MASSIFS;
+  // Low land between the massifs: calm, near the old llano's height.
+  p.features = []; p.ledges = []; p.outer = null; p.knoll = null; p.mirror = false;   // the layout mirrors itself (ffaLayout)
+  p.base = between(11, 12.5); p.lf.amp = Math.min(p.lf.amp, 1.4);
+  const { kind, mirror } = legacyFfaLayout(p.seed), at = f => f * w, j = () => between(-.015, .015);
+  // The layout (ffaLayout) sets where the highlands stand; this try's stream
+  // only nudges them. A mesa has a ramp up from each side, side by side; an
+  // edge massif one ramp up from its inner foot. Each top a little uneven
+  // with a summit knob; hills give cover on the low land.
+  // A mesa only shifts (its width holds two ramps side by side, run = rise / ramp each).
+  const mesa = (a, b, k = .5, tops = M.mesa) => { const d = j(); return { id: 'mesa', from: at(a + d), to: at(b + d), top: between(...tops), knob: k }; };
+  const edge = side => side < 0 ? { id: 'edge', from: -4, to: at(.25 + j()), top: between(...M.right), climb: 1, knob: .6 }
+    : { id: 'edge', from: at(.75 + j()), to: w + 4, top: between(...M.right), climb: -1, knob: .45 };
+  if (kind === 'mesa-massif') { p.hills = [{ at: at(.2), height: 3.2, width: 7 }]; p.massifs = [mesa(.36, .58), edge(1)]; }
+  else if (kind === 'twin-massifs') { p.hills = [.36, .5, .64].map(f => ({ at: at(f + j()), height: between(4, 4.8), width: 8 })); p.massifs = [edge(-1), edge(1)]; }
+  else { p.hills = [.13, .24, .76, .87].map(f => ({ at: at(f + j()), height: between(4, 4.8), width: 8 })); p.massifs = [mesa(.31, .69, between(.4, .6), M.tall)]; }
+  if (mirror) {
+    p.hills = p.hills.map(h => ({ ...h, at: w - h.at }));
+    p.massifs = p.massifs.map(m => ({ ...m, from: w - m.to, to: w - m.from, climb: -(m.climb || 0), knob: 1 - m.knob }));
+  }
+  for (const m of p.massifs) m.rough = r() * 50;
+}
+
+// A free-for-all seed's layout, from the seed alone (every try of it keeps it):
+// a mesa and an edge massif, a massif at each edge, or one wide tall tepuy in
+// the middle; maybe mirrored.
+export const FFA_LAYOUTS = Object.freeze(['mesa-massif', 'twin-massifs', 'central-tepuy']);
+export const ffaLayout = seed => ({ kind: studioFigure(seed).id, mirror: false });
+function legacyFfaLayout(seed) {
+  const r = seededStream(`capis-layout:${seed}`);
+  return { kind: FFA_LAYOUTS[Math.floor(r() * FFA_LAYOUTS.length)], mirror: r() < .5 };
+}
+
+// The massifs over the ground at x (heightAt, after the shores): flat tops a
+// little uneven, a summit knob, faces near sheer (FFA_MASSIFS.face).
+function massifsAt(p, x, h, ground) {
+  for (const m of p.massifs) {
+    const top = m.top || ground + m.rise, mid = m.from + (m.to - m.from) * (m.knob ?? .5), span = m.to - m.from;
+    const knob = m.knob == null ? 0 : FFA_MASSIFS.knob * Math.exp(-(((x - mid) / (span * .09)) ** 2));
+    const y = top + knob + (fbm2(x * .25 + m.rough, 1.9, { octaves: 2 }) - .5) * .8, out = x < m.from ? m.from - x : x > m.to ? x - m.to : 0;
+    h = Math.max(h, y - out * FFA_MASSIFS.face);
+  }
+  return h;
+}
+
+// Each massif's ways in, carved as tunnels (buildGround). In a side view a
+// switchback cannot work: where its upper flight starts over the lower one
+// the step is the walker's height plus the rock (over 1.7), above its 1.44
+// hop. So every way runs one way in x: a ramp at FFA_MASSIFS.ramp (47.7°,
+// under the walker's 52°) from the foot of the inner face, inward under the
+// top, out through it. The mesa has one from each side, side by side (two ways
+// may never cross or stack: the upper floor would stand on the lower's
+// headroom), so it is crossed by going up one and down the other. A massif
+// with `arch` gets a passage through its foot instead.
+function massifPassages(p) {
+  const out = [], bare = { ...p, massifs: null }, g = x => heightAt(bare, x), M = FFA_MASSIFS;
+  const ramp = (face, dir, top) => { const foot = face + dir * ((top + M.knob - g(face + dir * 6)) / M.face + 1.2), y0 = g(foot), run = (top + .6 - y0) / M.ramp; return [{ x: foot + dir * 1.5, y: g(foot + dir * 1.5) }, { x: foot, y: y0 }, { x: face, y: y0 }, { x: face - dir * run, y: top + .6 }]; };
+  for (const m of p.massifs) {
+    if (m.arch) { const w = m.rise / M.face + 1.4, y = Math.max(g(m.from - w), g(m.to + w)); out.push([{ x: m.from - w - 1.5, y: g(m.from - w - 1.5) }, { x: m.from - w, y }, { x: m.to + w, y }, { x: m.to + w + 1.5, y: g(m.to + w + 1.5) }]); continue; }
+    if (m.id === 'mesa') { out.push(ramp(m.from, -1, m.top), ramp(m.to, 1, m.top)); continue; }
+    out.push(ramp(m.climb > 0 ? m.to : m.from, m.climb, m.top));
+  }
+  return out;
+}
 // ---------- the ground's profile ----------
 
 // Rolling ground along the whole map, not mirrored.
@@ -197,6 +275,8 @@ function detail(p, x) {
 function mesaHeight(f, x, h) {
   const steep = f.at + f.face * f.top, ramp = f.at - f.face * f.top, T = f.T;
   if (Math.abs(x - f.at) <= f.top) return Math.max(h, T);
+  // A free-for-all's mesa is a plateau with a ramp either side (see tepuyRidges).
+  if (!f.face) return Math.max(h, T - (Math.abs(x - f.at) - f.top) * .62);
   if (Math.sign(x - f.at) === f.face) return Math.max(h, lerp(h, T, smoothstep(clamp(1 - Math.abs(x - steep) / 1.1))));
   return Math.max(h, T - Math.abs(x - ramp) * .62);
 }
@@ -314,6 +394,7 @@ export function heightAt(p, x) {
     }
   }
   if (climb) h = climbHeight(climb.f, x, climb.crest, h);
+  if (p.massifs) h = massifsAt(p, x, h, p.base);
   return clamp(h, -1, p.height - 4);
 }
 
@@ -477,6 +558,7 @@ export function buildGround(p) {
     t.points = points;
     p.caveSpots.push({ x: lerp(t.from, t.to, .5), y: points[2].y, what: 'tunnel' });
   }
+  if (p.massifs) { p.passages = massifPassages(p); for (const path of p.passages) tunnel(mask, path, FFA_MASSIFS.tunnel); }
   for (const f of p.features) if (f.type === 'mesa' && f.cave) {
     // A cave at the foot of the mesa's steep face.
     const edge = f.at + f.face * (f.top + 1.6), y = heightAt(p, edge + f.face * .6);
@@ -564,7 +646,67 @@ export function spawnsFor(p, mask) {
 // Six spots for a free-for-all, spread over the whole map: one in each sixth of
 // the land, as near its middle as there is good ground, all at least `gap`
 // apart. A seeded shuffle says who stands where, so nobody always gets the end.
+// Free-for-all starts in shelter: of the ground a capi stands on and that the
+// strict graph (ffaGraph) links both ways to the land's middle, 5 or more
+// above the water, the six
+// spots, SPAWN_GAP to SPAWN_SPREAD apart, with the most neighbours hidden
+// from each other's flat shot (a table edge or a lip between them), then the
+// most even spacing. Deterministic (a dynamic programme over a 1-unit grid);
+// the team order is shuffled from the seed. Falls back to evenSpawns.
+export const SPAWN_GAP = 20, SPAWN_SPREAD = 56;   // 20: playtest, the one beside you was too easy to hit
+export function hiddenFrom(mask, a, ya, b, yb) {
+  for (let t = .05; t < .95; t += .01) if (solidAt(mask, a + (b - a) * t, ya + 2 + (yb - ya) * t)) return true;
+  return false;
+}
+const sheltered = new WeakMap();
 export function spreadSpawns(map, mask, count = 6) {
+  if (map.studio) {
+    const xs = map.ffaSpawns.slice(0, count), r = seededStream(`capis-ffa:${map.seed}:${map.size}`);
+    for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; }
+    return xs;
+  }
+  const key = `${map.seed}:${map.size}:${count}`, memo = sheltered.get(mask);
+  if (memo?.key === key) return [...memo.xs];
+  const xs = shelterSpawns(map, mask, count) || evenSpawns(map, mask, count);
+  const r = seededStream(`capis-ffa:${map.seed}:${map.size}`);
+  for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; }
+  sheltered.set(mask, { key, xs: [...xs] });
+  return xs;
+}
+function shelterSpawns(map, mask, count) {
+  const margin = 8, graph = ffaGraph(mask), cand = [];
+  // The middle's floor, and every floor it reaches and is reached from.
+  let hub = -1;
+  for (let d = 0; d < 40 && hub < 0; d += .5) for (const x of [map.width / 2 + d, map.width / 2 - d]) { const y = standable(mask, x); if (y !== null && hub < 0) hub = graph.near(x, y, .6); }
+  if (hub < 0) return null;
+  const out = graph.reach(hub), back = graph.reachedBy(hub), node = (x, y) => graph.near(x, y, .6);
+  for (let x = margin; x <= map.width - margin; x += 1) {
+    const y = standable(mask, x); if (y === null || y < WATER + 5) continue;
+    const n = node(x, y); if (n < 0 || !out[n] || !back[n]) continue;
+    cand.push({ x, y });
+  }
+  const n = cand.length, ideal = (map.width - 2 * margin) / count;
+  if (n < count) return null;
+  // best[k][j]: the score of k+1 spots ending at candidate j.
+  const best = Array.from({ length: count }, () => new Float64Array(n).fill(-Infinity)), from = Array.from({ length: count }, () => new Int32Array(n).fill(-1));
+  for (let j = 0; j < n; j++) if (cand[j].x <= margin + ideal) best[0][j] = 0;
+  for (let k = 1; k < count; k++) for (let j = 0; j < n; j++) for (let i = j - 1; i >= 0; i--) {
+    const gap = cand[j].x - cand[i].x;
+    if (gap < SPAWN_GAP) continue;
+    if (gap > SPAWN_SPREAD) break;
+    if (best[k - 1][i] === -Infinity) continue;
+    const v = best[k - 1][i] + (hiddenFrom(mask, cand[i].x, cand[i].y, cand[j].x, cand[j].y) ? 10 : 0) - Math.abs(gap - ideal) * .05;
+    if (v > best[k][j]) { best[k][j] = v; from[k][j] = i; }
+  }
+  let end = -1;
+  for (let j = 0; j < n; j++) if (cand[j].x >= map.width - margin - ideal && best[count - 1][j] > (end < 0 ? -Infinity : best[count - 1][end])) end = j;
+  if (end < 0) return null;
+  const xs = [];
+  for (let k = count - 1, j = end; k >= 0; j = from[k][j], k--) xs.unshift(cand[j].x);
+  return xs;
+}
+// Six spots spread evenly (the old way, kept for land the shelter search finds no answer on).
+function evenSpawns(map, mask, count = 6) {
   const r = seededStream(`capis-ffa:${map.seed}:${map.size}`), { width } = map, margin = 8, slice = (width - 2 * margin) / count, gap = slice * .55;
   const spots = [];
   for (let x = margin; x <= width - margin; x += .25) if (standable(mask, x) !== null) spots.push(x);
@@ -577,7 +719,6 @@ export function spreadSpawns(map, mask, count = 6) {
     if (best === null) for (const x of [margin, ...spots]) if (best === null || Math.min(...xs.map(o => Math.abs(o - x))) > Math.min(...xs.map(o => Math.abs(o - best)))) best = x;
     xs.push(best);
   }
-  for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; }
   return xs;
 }
 
@@ -729,23 +870,45 @@ export function measure(p, mask, spawns) {
 //   out-of-reach  the front capis cannot hit each other with no wind
 //   no-shot       a team has no capi with a shot at a rival
 //   walled-in     a capi can neither walk to within 32 of a rival nor hit one
+//   ffa-apart     (free-for-all) one of the six spots cannot walk or hop to another
 export function check(p, mask, loose, spawns) {
-  if (loose.floating.length > p.tunnels.length || loose.floating.some(n => n < 4000)) return { failed: 'floating' };
+  if (loose.floating.length > p.tunnels.length + 3 * (p.passages?.length || 0) || loose.floating.some(n => n < 4000)) return { failed: 'floating' };
   if (!spawns) return { failed: 'cramped' };
   const m = measure(p, mask, spawns);
   const fail = failed => ({ failed, measured: m });
-  for (const s of m.stats.flat()) if (s.span < FAIR.span) return fail('boxed-in');
+  if (p.mode !== 'ffa') for (const s of m.stats.flat()) if (s.span < FAIR.span) return fail('boxed-in');
   if (m.interest.score < FAIR.interest) return fail('bland');
-  if (!Number.isFinite(m.walk.there) || !Number.isFinite(m.walk.back)) return fail('apart');
+  if (p.mode !== 'ffa' && (!Number.isFinite(m.walk.there) || !Number.isFinite(m.walk.back))) return fail('apart');
   if (m.choke < FAIR.choke) return fail('choke');
   if (m.caves.some(c => !c.reached)) return fail('cave-shut');
   if (m.summit && !m.summit.reached) return fail('summit-shut');
+  // A free-for-all seats its six by spreadSpawns, not the two teams': the
+  // teams' evenness checks do not apply, every spot walking to every other does.
+  if (p.mode === 'ffa') return ffaReach({ width: p.width, seed: p.seed, size: p.size }, mask).connected ? { failed: null, measured: m } : fail('ffa-apart');
   for (const k of ['meanHeight', 'front', 'exposure', 'cover', 'distance', 'walk', 'shots']) if (m.diff[k] > FAIR[k]) return fail(`uneven-${k}`);
   if (!m.shots[0].some(Boolean) || !m.shots[1].some(Boolean)) return fail('no-shot');
   for (let t = 0; t < 2; t++) for (let s = 0; s < 3; s++) if (!m.moves[t][s] && !m.shots[t][s]) return fail('walled-in');
   const at = (team, slot) => ({ x: spawns[team][slot], y: m.stats[team][slot].y });
   if (!reachable(mask, at(0, 0), { ...at(1, 0), y: at(1, 0).y + .35 }) || !reachable(mask, at(1, 0), { ...at(0, 0), y: at(0, 0).y + .35 })) return fail('out-of-reach');
   return { failed: null, measured: m };
+}
+
+// Can every free-for-all spot walk (or hop, with the checks' short hop: under
+// the walker's 1.44 jump, slopes under its 52°) to every other, both ways?
+// `xs` defaults to spreadSpawns' six. { connected, nodes, pairs: [[from, to, ok]] }.
+// The free-for-all's reach: no better than the real walker. It walks slopes up
+// to 0.3 a 0.2 column (56°, the cell steps of a 52° ramp), hops at its own
+// take-off (7.2 up, 2.8 along, no steering in the air) and every pair is
+// checked both ways, so a drop never stands in for the way back.
+export const ffaGraph = mask => floorGraph(mask, { water: WATER, stepUp: mask.stairs ? x => onStairs(mask.stairs, x) ? STAIR_RISE : .3 : .3,
+  hop: { up: 7.2, forward: 2.8, gravity: 18 }, leap: 2.6, hopSpeeds: mask.stairs ? [1.4, 2.8, 3.4, 4] : null });
+export function ffaReach(map, mask, xs = spreadSpawns(map, mask), graph = ffaGraph(mask)) {
+  const nodes = xs.map(x => { const y = surfaceY(mask, x); return y === null ? -1 : graph.near(x, y, .6); }), pairs = [];
+  for (const [i, a] of nodes.entries()) {
+    const seen = a >= 0 ? graph.reach(a) : null;
+    for (const [j, b] of nodes.entries()) if (i !== j) pairs.push([i, j, !!(seen && b >= 0 && seen[b])]);
+  }
+  return { connected: pairs.every(q => q[2]), nodes, pairs, graph };
 }
 
 // One attempt built and checked: { mask, loose, spawns, failed, measured }.
@@ -760,6 +923,7 @@ export function inspectPlan(p) {
 // draws the kind from FFA_KIND_ODDS: a seed's free-for-all map is its own.
 export function generateMap(seed = 1, size = DEFAULT_SIZE, { mode = 'teams' } = {}) {
   seed = mapSeed(seed) ?? 1; size = mapSize(size);
+  if (mode === 'ffa') return generateStudioMap(seed);
   const rejected = [];
   for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
     const p = planMap(seed, size, attempt, { mode }), { mask, loose, spawns, failed, measured } = inspectPlan(p);
@@ -780,9 +944,26 @@ export function generateMap(seed = 1, size = DEFAULT_SIZE, { mode = 'teams' } = 
 // and its ledge, the bridges and ledges and the cliffs at the ends. The
 // soil's layers between them (the islands' banks too, down to the beach)
 // are the shader's strata (`strataPalette`).
+// Per column: the land without the massifs, the ground with them, and whether a massif stands there.
+const massifColumns = new WeakMap();
+function massifColumn(p, x) {
+  let cache = massifColumns.get(p); if (!cache) massifColumns.set(p, cache = new Map());
+  const k = Math.round(x * 10);
+  if (!cache.has(k)) {
+    const ground = heightAt({ ...p, massifs: null }, x), top = heightAt(p, x);
+    cache.set(k, { ground, top, on: top - ground > .5 });
+  }
+  return cache.get(k);
+}
 export function rockAt(map, x, y) {
+  if (map.studio) return tepuyRockAt(map, x, y);
   const p = map.plan;
   let k = 0;
+  // A table's faces are rock down to a little under them.
+  if (p.massifs) {
+    const c = massifColumn(p, x);
+    if (c.on && y < c.top - .35 && y > c.ground - 1) k = .9;
+  }
   for (const b of p.rocks) {
     if (x < b.x0 || x > b.x1) continue;
     if (b.span) { if (Math.abs(y - spanY(b.span, x)) < b.span.radius + .45) k = Math.max(k, .75); }

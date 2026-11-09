@@ -1,0 +1,524 @@
+[
+  {
+    "id": "corona",
+    "size": "small",
+    "solid": "47f1a7bbf9869ae9024a65d8ec8b16e281346393bf5e1d84626a169169077c32",
+    "hollow": "5d890d8bba5ba7b1f9f3294941d3eb57d8f453d231d235a9a85b1cbf7b3725e4"
+  },
+  {
+    "id": "corona",
+    "size": "medium",
+    "solid": "9adcb76bc043f1f729cd7d67cc135fb30fc0f1e04c76ebda829c2cc35094ce73",
+    "hollow": "0e278c1bd134c8a2b45c308c4422683a05f2eb92cc13007cdf6c330c9d778030"
+  },
+  {
+    "id": "corona",
+    "size": "large",
+    "solid": "7bf01491e0d82633f529e1974c14042393f9598afb84b39089bb361dcbc41fed",
+    "hollow": "b3c5384a60b1863b31f876b6e53be0d0275baa105b9427db893d8e4e88284215"
+  },
+  {
+    "id": "escalera",
+    "size": "small",
+    "solid": "80346be2a4388c4e59cf8891b77a3f0be1733dc745c9dea75162d7ee64f0044b",
+    "hollow": "bcea51af892e41cd6f8c7820e2279849b5a06258bd05e380a9840fc7bca0d8ca"
+  },
+  {
+    "id": "escalera",
+    "size": "medium",
+    "solid": "88bdf1382355d64582cb8a7a3c678a4205220f3ee326030c2f78cd598032038f",
+    "hollow": "2e9f1fc272a0ad6c6221273098900d6d33b89b9d1ca8ce4e1cedc12f4c0174b1"
+  },
+  {
+    "id": "escalera",
+    "size": "large",
+    "solid": "2755fe3f9e5cd52ff20a8afc87278ec529c1d9c95f5955c7d6c5c9d2c4e85ae1",
+    "hollow": "f711af40a671d95709a3d66597f23bd7883f18d89ffddb5c6672b4c5a6c13397"
+  },
+  {
+    "id": "canon",
+    "size": "small",
+    "solid": "1e0f1881260e64010ba9c7c8597724103c5e65d1c1d410c930bf494bfd7f1167",
+    "hollow": "8ab76bf37f6f4bf948ad0bdba17c663d8f3c36cdb187051572ffa5f4e34b1735"
+  },
+  {
+    "id": "canon",
+    "size": "medium",
+    "solid": "316233df77cb8aaa89783e8078f760cb84bccd88bf5ed7957a741d6e6c028dad",
+    "hollow": "974aa362058c47b8d84aec9eb575857cab52526ccef3b4bba21f88eaad27324a"
+  },
+  {
+    "id": "canon",
+    "size": "large",
+    "solid": "7f02e6cec6d7fff20d7039b39a0bbc01bc36d854d81bb0c44fda476d72118f84",
+    "hollow": "78d8857c1b4248f0ca2c642dd934f3b9adbab85cafb5c6c953ccdf37db895bfb"
+  },
+  {
+    "id": "sierra",
+    "size": "small",
+    "solid": "d89d8f29698e2bb8d545a208b92d80dd191ebad3ba29831bcee5fe3f52b03b08",
+    "hollow": "b423b2d66dbd0ac375ce897691d213d933bb112de239692206b2268d9c7f02f4"
+  },
+  {
+    "id": "sierra",
+    "size": "medium",
+    "solid": "5a00a57c10aeb4049d750a4ebc3a9c35537484ea4bb7aa4f4d2f910878857de1",
+    "hollow": "c507a29cb2018df782ec0ba90615fbb39f84b6aecac13b1a6505f32d13eec0c9"
+  },
+  {
+    "id": "sierra",
+    "size": "large",
+    "solid": "13c78cce94ce95cf68e2d2e98bb4f5147aa7783f8879289d6b6fc5286a270f58",
+    "hollow": "c556251a53f9a5562fad56d8328a9966efce6cd2bd45cf1a600a3f08a1f7a502"
+  },
+  {
+    "id": "caroni",
+    "size": "small",
+    "solid": "f545b6117ff27d391577f1f15972e62b2630ba19c235b6bb15a051c8d0816b5a",
+    "hollow": "5f64b49451a71b0ce3ad0cc0c2f4844aa607e4282b0caf71124909bd51881d5e"
+  },
+  {
+    "id": "caroni",
+    "size": "medium",
+    "solid": "b406e139ef2284600acfa963706b2bc472a6b21a0593dbada8efe17881b79fae",
+    "hollow": "88cc6ab0ab1cc08b03130d5c37efc9ac1adaf94a9107b10534924c92fd8b2c3c"
+  },
+  {
+    "id": "caroni",
+    "size": "large",
+    "solid": "0fcdc093b50ef4fc9a67060f7a2964d6902960b43d77ca1e1e033249e1b7a058",
+    "hollow": "a2c52899c2b3dccb70e87fa4d7f72892a9a51e32ce8a9fdf7b7667407e9b2d9d"
+  },
+  {
+    "id": "lomo",
+    "size": "small",
+    "solid": "290c497d6c27c712b86e18e85ecf0bdf383a3a1923b4bb5b58799e65f634650e",
+    "hollow": "88f388dba798d7a4a5fe1afa265fa03c76aef0449ac10fe2e3686ee6218a0270"
+  },
+  {
+    "id": "lomo",
+    "size": "medium",
+    "solid": "6af5db594ab2d3c93e19543a8a4921585953ad91019ede8dc67fd0d6daaca5d7",
+    "hollow": "72d0bd2b3ca3c6dac94e29eb3cf1c9354c9b8e2320f8f1e777254bc37e802a19"
+  },
+  {
+    "id": "lomo",
+    "size": "large",
+    "solid": "36a02bc985504a1ab89dbf4cbcc9f80b93aa5085c5d2e677762648b95bdb696c",
+    "hollow": "f83e37983f078bf6ea663922892bcf1ddaf25b3bb4ce34d04618eb561bead091"
+  },
+  {
+    "id": "granv",
+    "size": "small",
+    "solid": "19d26ed8ea49f50100efe36a7a60312e9f073c1d018e5afcb9b07b63b2d12861",
+    "hollow": "60a2958c3d6401a8b3340c77838a1949704845736e9d809e1fa162b88d545ee0"
+  },
+  {
+    "id": "granv",
+    "size": "medium",
+    "solid": "1da7f57129cee5104892e85555729ef9465a1248a86682c98df24471d5ce7c9a",
+    "hollow": "d39b1a7f819a42746c7218a2b5607d913bd84a573abde259316a600115db952a"
+  },
+  {
+    "id": "granv",
+    "size": "large",
+    "solid": "b00682f230d1cb73cf9076b73b5a5a86e1a9380cc50953c6151789884dc6d6ff",
+    "hollow": "8c9dbafc0ba658a35d8729f3b21957f75b6229787e5b31405fd041adaad1226c"
+  },
+  {
+    "id": "murallas",
+    "size": "small",
+    "solid": "1cb513841992a9e8f4786f628a0a782626deda544bb9e74aa92f2b13fb96396f",
+    "hollow": "372416970fa1b6770156aaca5d8f6d385c112cdeddfbf3a79702bf2a372bb491"
+  },
+  {
+    "id": "murallas",
+    "size": "medium",
+    "solid": "b74cf70ee7a5148a5cfbc4fb816a252cab1dcfb271c79776ddc50b03ff06da65",
+    "hollow": "8f42316e6943ab9b7461d055f884d02a4f0a4e8905e55a773938603ad0820572"
+  },
+  {
+    "id": "murallas",
+    "size": "large",
+    "solid": "719b70130d25751b3d3d2553bc9f8943a5126cf273a9718d3c6464304ad3f0c7",
+    "hollow": "78300f141e18d89d82468432b6ac367beccbe3951d0dab20aebeedd13eb16302"
+  },
+  {
+    "id": "fosa",
+    "size": "small",
+    "solid": "866c04dfc5d83946a96694f86adfc8ea68234603a09ecc537a46cf4f75f99cb1",
+    "hollow": "b7e3ee3e9f241936682d4c61093f50959ed309d5979361f93780ea0b77992b07"
+  },
+  {
+    "id": "fosa",
+    "size": "medium",
+    "solid": "c242d5302544ca0812a5484a7e70f233c902b11cde1fddfaba9dfb24a36d4f96",
+    "hollow": "d12ea155499b4078407314132093fc0c2bd537b60b24d1e43d1d52dc277113fd"
+  },
+  {
+    "id": "fosa",
+    "size": "large",
+    "solid": "4926e36bd445ac2f4b451524b451ef8a30e6b045f9de889163ff990135617db6",
+    "hollow": "790298f4dae8591745e473b2ad8288c8e0b09233cf38c765c6b159602354f5e7"
+  },
+  {
+    "id": "hormiguero",
+    "size": "small",
+    "solid": "dd1b4338c66d02cf7a417b4dcc36e97abca765680485f920b6d381563ba87ec0",
+    "hollow": "3162f707c97414f3ffc59971d61e6fe4d60c994d642b920eb7b80cd64a9bcdd0"
+  },
+  {
+    "id": "hormiguero",
+    "size": "medium",
+    "solid": "a4317355faacaf927c8c0404dde358266826f8e7cff8d3795d294eb44dd635cc",
+    "hollow": "b32877a58b913efac4da65e5779f850c53459d3c72a5447e0ba1d00c00866142"
+  },
+  {
+    "id": "hormiguero",
+    "size": "large",
+    "solid": "e0139a1ae02f06f557f4bb078342f700a185faf05055d0ad71ccd041611f4ef6",
+    "hollow": "f13b01d0699d1b11b5fbcede9d854af9ba239b3bbbf080a4e3e7aa15061153ce"
+  },
+  {
+    "id": "rio",
+    "size": "small",
+    "solid": "6a387fadcb85bff83dde3c97f76c36db87520c8e05d4e7988ac0d6d442ae9de1",
+    "hollow": "626f93ee0937e21ad1ccc8cd2eee31eebc56bc75dec4783149c134863a4fa3c9"
+  },
+  {
+    "id": "rio",
+    "size": "medium",
+    "solid": "610c616dda11008c12c60ec61676d7f511284580d58d3a2a2c6bf8eb0290f059",
+    "hollow": "cd2f4e55e6b0f688f0ccc6dbd1fed362ac9f015b4ac9d9b7581c0dfc1709e45b"
+  },
+  {
+    "id": "rio",
+    "size": "large",
+    "solid": "1e256a9a7e53a00f6a6b87e1b4e65b2f639808f9ae51ad1ce377f9253dabd827",
+    "hollow": "fa9ba1a0ff60c725ecadade2032f91a01403481360650d192b75ff2fb976b9e4"
+  },
+  {
+    "id": "olla",
+    "size": "small",
+    "solid": "dee443df63c398214b7e47ecdd25d3b23b32d110c0068fa23207906d41d9d63e",
+    "hollow": "ab4dcb556329bd1ba7829f0175b29e50d79698752a3fb826f124c3e7fcd6bfa2"
+  },
+  {
+    "id": "olla",
+    "size": "medium",
+    "solid": "8fa5cdb171af96ebb9ec62b1e6cb1ea939fdbed935c20466f7b18109382ffede",
+    "hollow": "8b00c3336d22aa033a3405c6306e306539af4be3bf3a546125f9efe20a2e9372"
+  },
+  {
+    "id": "olla",
+    "size": "large",
+    "solid": "54e76832cc0b4c386930b4821403ee094655064edabb608c87a5d118c2317fcb",
+    "hollow": "a541bf46ae0f5006a33a04a4fd2062e458794014d047a378760f1693dcccf57d"
+  },
+  {
+    "id": "ciudad",
+    "size": "small",
+    "solid": "8192b532dec630aefea69ab89a1fd397e4fbcddd30e1e927ad701ce613cad2a8",
+    "hollow": "32d6b434620a69e36588d8983a38727c8e813da9e562d0438e7ff8ca8c7f2794"
+  },
+  {
+    "id": "ciudad",
+    "size": "medium",
+    "solid": "9f23a91e375609614394950183368fdbb1437b3db37e9398ffce4050f6a24111",
+    "hollow": "fa1e79f761cf1192491933ca7c6295949ff74bfcfe45c9a48baa5cd86109dafb"
+  },
+  {
+    "id": "ciudad",
+    "size": "large",
+    "solid": "3c7251530359abc090aed9c69576626c00059a9b540cfe528e440aac619f2f5a",
+    "hollow": "f46bc884e3db78799e76a6ef92d6f640429f4e07980cce01c4e062da0493226b"
+  },
+  {
+    "id": "saladorada",
+    "size": "small",
+    "solid": "93915f435b1f7736b02970237ec32885f1e89fb4b0ffb6150e28f859699a7983",
+    "hollow": "4ec63b50eacda78ef39eedf3db6b89ddcefce6401378346a1837748e45c82674"
+  },
+  {
+    "id": "saladorada",
+    "size": "medium",
+    "solid": "f7f99abd0eb61e01273eddaaa7fd9881795f6bc571efafd499631fdadbe71eab",
+    "hollow": "297a003963cfa66ab257df1c57c849eba40e2e2b13dd6d6c136a135449d3daa7"
+  },
+  {
+    "id": "saladorada",
+    "size": "large",
+    "solid": "4b4cbaf56ac074d596aeace74e3f2b44de4a72c909e6f9a54048cdba138c7b07",
+    "hollow": "085738d75c7bf5bfe61d6d3827c49903a5bccd9aec2aff95cc7b7f81e4ba4844"
+  },
+  {
+    "id": "escalinata",
+    "size": "small",
+    "solid": "c0d18da250a81fed5da53f7ff17d1a377115bf458275f43aee31c815de37cd16",
+    "hollow": "e849c364e29f0821695132040699aa3dee2fa622222a1a2762739016aa5bbb73"
+  },
+  {
+    "id": "escalinata",
+    "size": "medium",
+    "solid": "5e6fbddbae8a05ac6f9cfc009e8bc759ab0ae74ba0faa6c7f0fdc0266db14d30",
+    "hollow": "1066d4a9973470fd6b0d2d9d1825c417ac20f7950c52370dceae7b66efd60f50"
+  },
+  {
+    "id": "escalinata",
+    "size": "large",
+    "solid": "b2143a82c35ec275d5a4cf8a66285178bf721cf03dc94ccdf357ea130453822c",
+    "hollow": "9c99dad715bd6360a48215492a592df37324d087b8b71f1506cc93849e3d3e22"
+  },
+  {
+    "id": "morochos",
+    "size": "small",
+    "solid": "fefd6c9a6ec08ab034b54ccd39de343763e2ebbd8ab9ea6e83c62b0f828b029a",
+    "hollow": "bc5f17a8408d3f9a4df6fca426939049bd5033bfd0b1d66d2d743c315dc88ed6"
+  },
+  {
+    "id": "morochos",
+    "size": "medium",
+    "solid": "ff54d110d9f3a9e1ca5c1db8a7030df31064a118534c8d0aeb606416e6c82774",
+    "hollow": "2a3e5f35ecbf189346ad117e0339f7011d34de674b32536990f82def5871ed9c"
+  },
+  {
+    "id": "morochos",
+    "size": "large",
+    "solid": "24456537f4ff1556688a383bebb9e65a1130887c3b331da2ad8062a16bb52a50",
+    "hollow": "644b6f81be798619052c52fb69b6ff4dc4000f55076a43656d57f23cdb9a349b"
+  },
+  {
+    "id": "hamaca",
+    "size": "small",
+    "solid": "edee6e1ef1df0549638213bbb876df64c58d2d28bd9eb2ce87d3afc8c66526e3",
+    "hollow": "1134121ff3e31b756fd69d9160b344b27db1f51a55ee4dfddc986ca4a815dd17"
+  },
+  {
+    "id": "hamaca",
+    "size": "medium",
+    "solid": "87afbcbc8f044d2053237acbe5a49821c6da933b0442843a9c53fc4f92139720",
+    "hollow": "c0dd1c89cfb87202b985d4b88266194c3efb6aa161d29131599d1ff3424ac5b8"
+  },
+  {
+    "id": "hamaca",
+    "size": "large",
+    "solid": "5da2387bade6ec7c80c1f5beacf1af6f203344e8ad32a16db297ff77dbe5d98e",
+    "hollow": "20a025fa6776cf60f1c6c4c26950e408a1d3e9ab734de103a49ca03160f9cb49"
+  },
+  {
+    "id": "serrucho",
+    "size": "small",
+    "solid": "601baa1a41a86b97e53731684b47b5f045894f75ea96454bb89ada34d3f75ea9",
+    "hollow": "f25043ba71371a1d765c5f3b94317fa63df06d9dd3bf5eeac7f7276bf6d5a3f4"
+  },
+  {
+    "id": "serrucho",
+    "size": "medium",
+    "solid": "dee96bb2505cc6473c0249104927c2d81bb684e49dfe1c69bef3e85f82b251d3",
+    "hollow": "a6f7036d91facd61153a318cc493c6a6f65a897a580ebe03d6c4eda351971ef8"
+  },
+  {
+    "id": "serrucho",
+    "size": "large",
+    "solid": "56017240200ae4c2b663ae8ddf8d6ff4e916ec3ce132e031db11c2fa6ebdafed",
+    "hollow": "e7f3a7b95793b6d02dc20297b4e5be3e1f7a81db2f37e2241082dd00bb48ce05"
+  },
+  {
+    "id": "sabana",
+    "size": "small",
+    "solid": "c7c3fdccbf86eed65b852a3ffd6201685643fe15488459402da90841bcea974e",
+    "hollow": "4216a9e402bc81f927d0cd69924f6916276d9eb77bcbb78a17d04e8d8935537e"
+  },
+  {
+    "id": "sabana",
+    "size": "medium",
+    "solid": "0a61cb64f7fd19ea6d708084da180acc28596861fc33d5fe3f22872334e819ed",
+    "hollow": "61591a291e03a758be99893387e8fde1cd482b6b6e063a2af4308b3087c9abb8"
+  },
+  {
+    "id": "sabana",
+    "size": "large",
+    "solid": "3e4d17ca74adf2b6ceba7f576e43344d85446d83b144bb9d4cdcdb25be45ce4d",
+    "hollow": "93383084b7a29e76fa10320266a3e540cbf21716a5259a5e2277107d7a195ef3"
+  },
+  {
+    "id": "abismos",
+    "size": "small",
+    "solid": "ba3402a8c04812e60908dced22f839f1bf30402eb05c6826a9825b5053c6fa1f",
+    "hollow": "771f65f32becbe2403b4ebe3b267170e77cb67d2f9f16c13676595f6b37ca307"
+  },
+  {
+    "id": "abismos",
+    "size": "medium",
+    "solid": "3fe0daaf80358d9a287f476c0e78dc95e0755b60b6fb058f89c3e7d53ca49d1d",
+    "hollow": "6d4cae982ca13c3dcf42b0ecef7e8f45f971dc1fb2866b6f4f60d54b9ca1f615"
+  },
+  {
+    "id": "abismos",
+    "size": "large",
+    "solid": "90d9d399a970f0f5d2bd3a9d3a514a837a2d8406a09068fd6e8a5c1f55304212",
+    "hollow": "35fa35930346b1b89bb2724150929110093235327bce7995321cbd7c6daacfad"
+  },
+  {
+    "id": "archipielago",
+    "size": "small",
+    "solid": "f44375c7abdfe0b9694df82ca2418fd977f87ec8e5412ad2234c77ff5dd089dc",
+    "hollow": "6ea7c440277f562054228d0893646fc6976180366a16ed96e5db2059c8e1951d"
+  },
+  {
+    "id": "archipielago",
+    "size": "medium",
+    "solid": "8e28620e33dd9dc53756ac2c568fc3214d6ae111de65ce9f7881f951c1fd6cd2",
+    "hollow": "1d0a41679ac36a06bd307508b18edd13622cf6cded4d2ba6fc45ec5b1b68239d"
+  },
+  {
+    "id": "archipielago",
+    "size": "large",
+    "solid": "13faec7cfa4f186e9ba0144950985a0cc8796a6e2bdca6c14bc5688cf5c4f997",
+    "hollow": "daa8ff0cf90ff961eeb65815e5d7f0f51f224be1e3866e262c56cad3b0e8e1fa"
+  },
+  {
+    "id": "rosario",
+    "size": "small",
+    "solid": "a2aef1812aa19b75c2e78f70733f70d79370e1f7090de112496cda1bcb802d6d",
+    "hollow": "76721a21d9413fa87747b95b7d1d7a89ede62c717901e92cb17f7a832c1d0eb9"
+  },
+  {
+    "id": "rosario",
+    "size": "medium",
+    "solid": "5a4b140748aa053dfaff204802fd5ed89668e35d4d4ed6d8cc908b78f4a48eb0",
+    "hollow": "83b6e9b9f0c8419d1af3678208e47d24ab85f461241876dbceffa690f4299c9e"
+  },
+  {
+    "id": "rosario",
+    "size": "large",
+    "solid": "da61db2cf12a3e36b6dd48de514ae5770728cbfd5781be53afe87321fc6872fb",
+    "hollow": "ade7afd6a3fcf5384cfaa1c2f23d514fa6ae3582e433b077bf05a1ad40aabf38"
+  },
+  {
+    "id": "embudo",
+    "size": "small",
+    "solid": "786de6e1d1a739d83fd4073ac04a50cc203f47f81e22ed775f781a53f95d15e5",
+    "hollow": "5d9f3165cb6ce5523671c393d28ad9a9cb2088a3212330612e4272456082e25a"
+  },
+  {
+    "id": "embudo",
+    "size": "medium",
+    "solid": "2769f08db18a441df95473b9390ff42bfd4ffefcb59e93e9200cdd6b47d497ac",
+    "hollow": "c9e5a5471109b32c3041eb0017adcab90fd40fb93ec5086c57b029f04ba4d29e"
+  },
+  {
+    "id": "embudo",
+    "size": "large",
+    "solid": "d4d06f752f3d7a98609782a6da3961b4c59421db2a7633cd18ee368b24598497",
+    "hollow": "d1d2e4895ee7ec1f5a3a2cd30c7a346b39a9add5b68d43946bd94ec1bea4bbc7"
+  },
+  {
+    "id": "disputado",
+    "size": "small",
+    "solid": "2530efa33c742ea191b52f7624c65b30cadce3bdba27e9703a2ce0b4a90eea7d",
+    "hollow": "e6d85c1e1b87e2f3d4f76c18c6b758743d83c8bece400ccc2862d6a0f48460b4"
+  },
+  {
+    "id": "disputado",
+    "size": "medium",
+    "solid": "f4d1b12881aa034486a5920388cdffb7f836eaafe6f452e6c7784033459f0276",
+    "hollow": "6f3282fb79f1590d80d9c0d3540ac95a6f1d6038753218c47205e6affb43c5ff"
+  },
+  {
+    "id": "disputado",
+    "size": "large",
+    "solid": "6a37a6e5316ad7a1f531bf7b573e82e934ac228e0e0d3ed8605f65fabf6ecd33",
+    "hollow": "526e50d4e1d6ac681d65ddff4d914402491c439164568b23a01a52aebfdbca3a"
+  },
+  {
+    "id": "enfrentadas",
+    "size": "small",
+    "solid": "ee3e742ddf87cab234545584533a975c8776e4e58520074edee9b5aae07ae27b",
+    "hollow": "95c4190c8aeefed8dcff61e526d897ac1fcb3fbf5fe85e5bb97fe87680244483"
+  },
+  {
+    "id": "enfrentadas",
+    "size": "medium",
+    "solid": "96828a4918a8e7d392a91199b368f0f815a17ce4b7354bbf0472da7655d705e3",
+    "hollow": "aa2632d1128eba2dd7aafd6f8604964e30b06f299692135e33cfe0b6f139986c"
+  },
+  {
+    "id": "enfrentadas",
+    "size": "large",
+    "solid": "cc4d10d50f51b3db02bd7861b18119d7a388ce685cf06e5376444e06a4f7fcd0",
+    "hollow": "e0c028c6828520d56f5ed5ead14b2d90ca0fabfd1f2433dc9f249a2791a1ec72"
+  },
+  {
+    "id": "catedral",
+    "size": "small",
+    "solid": "62de90134c1eb094c8a308db7c331c4d9c2f31f6669280c86a4de03d8c8fac29",
+    "hollow": "58ca85ce5df0960e29c1b10ac6d226524b10e9ad757181ce5df37cf66ec873d9"
+  },
+  {
+    "id": "catedral",
+    "size": "medium",
+    "solid": "50ee80f39226ab6eeaf3d7232f855a46cb84520dd13698ecd59a5386069947a3",
+    "hollow": "82b386e6708ec3372befc7caacfafa4d607c0af1b5c3c5bd752ee41b3cccd847"
+  },
+  {
+    "id": "catedral",
+    "size": "large",
+    "solid": "e1d9c3ee329a6e77eb0d5c1280c518f5ce8593440bb9fde1fb3c59236216dbf5",
+    "hollow": "d37c6e135e25ae6c3f197acac34f93a2ef8afe32dde94e3a031b7bfd9fb8adaa"
+  },
+  {
+    "id": "tunel",
+    "size": "small",
+    "solid": "1dbe8e9fe40841b39fad10d3151b51df308ea9cd87a382d9b9e87a9c6b8297b5",
+    "hollow": "4e0ddf549eaee45066614edbc7710913b471642c7129a6331428b56ed9a01a99"
+  },
+  {
+    "id": "tunel",
+    "size": "medium",
+    "solid": "6388eb1306a1187addcc0fc2cf404d752b517a830f36cf834a46f235c0d64ee5",
+    "hollow": "2c7ca094c52e916190b6e50c74656d71bb5c35d240b0a9923a2543a1972bfd4a"
+  },
+  {
+    "id": "tunel",
+    "size": "large",
+    "solid": "3cfeaf0fedfba7a9ecaec79493664d3c3de9504c9ec16f3fb75ca7a2464abbb2",
+    "hollow": "4b9e68f761611e247c7e5740a9019a028f91d307a2475d5170537cf355cb2b68"
+  },
+  {
+    "id": "geoda",
+    "size": "small",
+    "solid": "16d8192dc5bed1f67efc12562283e869a0daae7af078e96aa44a1ee068f85681",
+    "hollow": "05b0115930a89dd76f1c307fb30650fb10b2421380f84364fadec870392a4048"
+  },
+  {
+    "id": "geoda",
+    "size": "medium",
+    "solid": "ea0f29a8bb16f862c7b4a6b0aeb1c67236a9e3ddd18a5915358e8de698fcb544",
+    "hollow": "7e97d36dd41172035a085e1f4e7e48313c11ffb76d404534284df2317b409c21"
+  },
+  {
+    "id": "geoda",
+    "size": "large",
+    "solid": "f8970ef1e52561c4a5bc6b2d547b98df366e6e6c21f91361986168bd54c02998",
+    "hollow": "52267188006fe3ebc740913f2c20f5c50b5b7ef4ed0d9ce1d3f210d49a788463"
+  },
+  {
+    "id": "colina",
+    "size": "small",
+    "solid": "8b947f9c818f9751fdaf02781081a6191de9ec1503e073ac8b0c21ac41796bc8",
+    "hollow": "670d9e89792dd1a536dc30006f1bb356c8c1b226d27bc4df631dbc13592ba713"
+  },
+  {
+    "id": "colina",
+    "size": "medium",
+    "solid": "0055e9eaa700ae85c6d1dbbe639b5039cbc323496fc46ee866418508260ad1d5",
+    "hollow": "9e53624dfaf68a0d2b8977f1e3910c51474ed8200b49de8a6aa3fdec41e61d10"
+  },
+  {
+    "id": "colina",
+    "size": "large",
+    "solid": "96e1130a0ef86a5c805008bbf5c39e4927c37f8b60166ab20f3de9005c06cd00",
+    "hollow": "b0225abec07319a2e0d45cc56d8369bcfd9248e3778c73c13ba5f7b9d7ead828"
+  }
+]
