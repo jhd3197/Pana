@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.10.0 - 2026-11-09
+
 - **Póquer: al final de la mano ves la mesa, la mano ganadora y por qué ganó.**
   Las cinco cartas ganadoras se iluminan, con el nombre de la mano y el desempate (kicker, mesa que juega, pozos laterales). Si te retiraste, solo tú ves tus cartas en gris, y "¡Habrías ganado!" solo cuando es cierto con la mesa real.
 - **Fosa: la Escalera de Calor guarda tu Calor máximo.**
