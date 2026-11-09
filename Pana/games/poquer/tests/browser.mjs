@@ -1,49 +1,31 @@
+// Two real panas at one online table: the cachos pick the dealer, private
+// cards stay private, and a whole hand runs every street to the showdown.
+// The table's later life is seats.browser.mjs; phones are mobile.browser.mjs.
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { mkdir } from 'node:fs/promises';
-const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
-const base = process.env.PANA_TEST_URL || 'http://localhost:8461', code = `poker-${Date.now()}`, errors = [];
-const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
-const out = 'Pana/games/poquer/qa'; await mkdir(out, { recursive: true });
-const wait = (p, fn, arg) => p.waitForFunction(fn, arg, { timeout: 60000 });
-// context: an earlier page's, to come back from the same device (its localStorage).
-async function open(name, room = code, mobile = false, context = null) {
-  context ??= await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1 });
-  await context.addInitScript(name => { localStorage.setItem('pana:name', name); localStorage.setItem('pana:settings', JSON.stringify({ sound: false, quality: 'baja' })); localStorage.setItem('pana:avatar', JSON.stringify({ outfit: 'hoodie', outfitColor: '#3775cc', hat: 'gorra' })); }, name);
-  const p = await context.newPage(); p.on('pageerror', e => errors.push(e.message));
-  // ?untimed (debug rooms only): the turn clock never plays a human's turn, so
-  // a slow software-rendered screen is never folded between two checks.
-  await p.goto(`${base}/g/poquer/?room=${room}&debug&untimed`, { waitUntil: 'domcontentloaded' });
-  await wait(p, () => window.poquerDebug?.room.connected && poquerDebug.room.id); return p;
-}
-async function same(a, b) {
-  const state = await a.evaluate(() => poquerDebug.room.state);
-  await wait(b, revision => poquerDebug.room.state.revision === revision, state.revision);
-  const other = await b.evaluate(() => poquerDebug.room.state);
-  assert.deepEqual(other.board, state.board); assert.equal(other.pot, state.pot); assert.equal(other.turn, state.turn);
-}
-// The deal and the cachos can hold the buttons after the turn arrives: wait
-// until it is this pana's turn and the button is live, never assume it.
-async function act(p, selector) {
-  await wait(p, sel => poquerDebug.room.state.turn === poquerDebug.room.id && !document.querySelector(sel)?.disabled, selector);
-  const rev = await p.evaluate(() => poquerDebug.room.state.revision); await p.locator(selector).click(); await wait(p, rev => poquerDebug.room.state.revision > rev, rev); }
+import { pokerSuite } from './poker-kit.js';
+const { errors, out, wait, open, same, act, close } = pokerSuite(import.meta.url), code = `poker-${Date.now()}`;
 try {
-  const a = await open('Juan'), b = await open('María');
+  const a = await open('Juan', code), b = await open('María', code);
   await wait(a, () => poquerDebug.room.state.players.length === 2); assert.ok(await b.locator('#start').isDisabled());
   await wait(a, () => poquerDebug.world.avatars.size === 2); await a.screenshot({ path: `${out}/lobby.png` });
-  // ¿Quién empieza?: both panas shake their cacho at once; the highest takes the button.
+  // ¿Quién empieza?: both panas shake their cacho at once and slam it; the highest takes the button.
   await a.locator('#start').click(); await wait(b, () => poquerDebug.room.state.phase === 'starter');
-  await wait(b, () => poquerDebug.world.starter.active);
+  // ?untimed never slams a cacho for its pana, so both screens still show them.
+  await wait(a, () => poquerDebug.world.starter.active); await wait(b, () => poquerDebug.world.starter.active);
   assert.ok(await b.evaluate(() => poquerDebug.world.starter.active), 'the cachos are on the table');
   const seatOf = p => p.evaluate(() => poquerDebug.room.state.players.findIndex(q => q.id === poquerDebug.room.id));
-  const [seatA, seatB] = [await seatOf(a), await seatOf(b)];
-  await b.locator('#pana-starter-shake').dispatchEvent('pointerdown', { pointerId: 4, button: 0 });
-  await a.evaluate(() => document.activeElement?.blur()); await a.keyboard.down(' ');
-  // A slow screen may already have been slammed for it after eight seconds.
-  await wait(a, seats => { const s = poquerDebug.room.state.starter; return !s || seats.every(seat => s.shaking.includes(seat) || seat in s.slammed || s.phase !== 'shake'); }, [seatA, seatB]);
-  await a.screenshot({ path: `${out}/starter.png` });
-  await a.keyboard.up(' '); await b.locator('#pana-starter-shake').dispatchEvent('pointerup', { pointerId: 4, button: 0 });
-  await wait(b, () => poquerDebug.room.state.phase === 'preflop'); await same(a, b);
+  const seats = [await seatOf(a), await seatOf(b)], offered = () => !document.querySelector('#pana-starter-shake').hidden;
+  // A tie throws again (heads-up, both panas) until the dealer is known.
+  for (let round = 1; await b.evaluate(() => poquerDebug.room.state.phase === 'starter'); round++) {
+    await wait(a, offered); await wait(b, offered);
+    await b.locator('#pana-starter-shake').dispatchEvent('pointerdown', { pointerId: 4, button: 0 });
+    await a.evaluate(() => document.activeElement?.blur()); await a.keyboard.down(' ');
+    await wait(a, ([seats, round]) => { const s = poquerDebug.room.state.starter; return s?.phase === 'shake' && s.round === round && seats.every(seat => s.shaking.includes(seat)); }, [seats, round]);
+    if (round === 1) await a.screenshot({ path: `${out}/starter.png` });
+    await a.keyboard.up(' '); await b.locator('#pana-starter-shake').dispatchEvent('pointerup', { pointerId: 4, button: 0 });
+    await wait(b, round => { const { phase, starter } = poquerDebug.room.state; return phase === 'preflop' || starter?.phase === 'shake' && starter.round > round; }, round);
+  }
+  await same(a, b);
   // The message travels as Spanish source sentences ({ text, vars }); each client translates it.
   assert.match(await a.evaluate(() => poquerDebug.room.state.message.map(m => m.text).join(' ')), /reparte/);
   assert.equal(await a.evaluate(() => poquerDebug.world.starter.active), false, 'the cachos leave the table');
@@ -69,43 +51,5 @@ try {
   assert.equal(await a.evaluate(() => poquerDebug.room.state.players.reduce((n, p) => n + p.chips, 0)), 2000);
   assert.ok(await b.evaluate(() => poquerDebug.room.state.players.every(p => p.hole.every(Number.isInteger))));
   await a.screenshot({ path: `${out}/results.png` }); console.log('ok: raises, calls, all streets, showdown, split/awarded pot and conservation');
-  await a.locator('#again').click(); await wait(b, () => poquerDebug.room.state.hand === 2); await same(a, b);
-  await a.close(); await wait(b, () => poquerDebug.room.isHost && poquerDebug.room.state.phase === 'finished');
-  const c = await open('Luis'); await wait(b, () => poquerDebug.room.state.players.some(p => p.name === 'Luis'));
-  await b.locator('#again').click(); await wait(c, () => poquerDebug.room.state.hand === 3); await same(b, c);
-  const actor = await b.evaluate(() => poquerDebug.room.state.turn === poquerDebug.room.id) ? b : c;
-  await act(actor, '#fold'); await same(b, c); assert.equal(await b.evaluate(() => poquerDebug.room.state.phase), 'finished');
-  console.log('ok: host departure folds its hand; next host deals and new player participates');
-  await b.locator('#again').click(); await wait(c, () => poquerDebug.room.state.hand === 4); await same(b, c);
-  const bankroll = await b.evaluate(() => poquerDebug.room.state.pot + poquerDebug.room.state.players.reduce((n, p) => n + p.chips, 0));
-  const shove = await b.evaluate(() => poquerDebug.room.state.turn === poquerDebug.room.id) ? b : c, caller = shove === b ? c : b;
-  const maximum = await shove.evaluate(() => poquerDebug.room.state.legal.max); await wait(shove, () => !document.querySelector('#amount').disabled); await shove.locator('#amount').fill(String(maximum)); await act(shove, '#raise'); await same(b, c);
-  await act(caller, '#call'); await same(b, c); assert.equal(await b.evaluate(() => poquerDebug.room.state.phase), 'finished'); assert.equal(await c.evaluate(() => poquerDebug.room.state.board.length), 5);
-  assert.equal(await b.evaluate(() => poquerDebug.room.state.players.reduce((n, p) => n + p.chips, 0)), bankroll);
-  console.log('ok: online all-in and call run out the board and conserve both stacks');
-  // Leaving and coming back keeps your stack (after the all-in: 0, 1000 on a split, or 2000), not a fresh one;
-  // someone else using the same name never gets it.
-  const stack = await b.evaluate(() => poquerDebug.room.state.players.find(p => p.name === 'Luis').chips), device = c.context();
-  await c.close(); await wait(b, () => !poquerDebug.room.state.players.find(p => p.name === 'Luis')?.connected);
-  const impostor = await open('Luis'); await wait(b, () => poquerDebug.room.state.players.some(p => p.name === 'Luis' && p.connected));
-  await wait(impostor, () => poquerDebug.room.state.players.find(p => p.id === poquerDebug.room.id)?.chips === 1000);   // a name alone starts fresh
-  await impostor.close(); await wait(b, () => !poquerDebug.room.state.players.some(p => p.name === 'Luis' && p.connected));
-  const back = await open('Luis', code, false, device);
-  await wait(back, chips => poquerDebug.room.state.players.find(p => p.id === poquerDebug.room.id)?.chips === chips, stack);   // not a fresh stack
-  console.log('ok: a pana who leaves and rejoins keeps their stack; a name alone does not');
-  await b.close(); await back.close();
-  const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` });
-  // Practice opens with the cachos too: a finger on the table shakes, lifting it slams.
-  await m.locator('#practice').tap(); await m.locator('#pana-starter-shake').waitFor();
-  assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); await m.screenshot({ path: `${out}/mobile-starter.png` });
-  await m.locator('#world').tap(); await wait(m, () => 0 in (poquerDebug.room.state.starter?.slammed || { 0: 1 }));
-  await wait(m, () => poquerDebug.room.local && poquerDebug.room.state.hand === 1);
-  await m.locator('#menu').tap(); const revision = await m.evaluate(() => poquerDebug.room.state.revision); await m.waitForTimeout(1400); assert.equal(await m.evaluate(() => poquerDebug.room.state.revision), revision);
-  await m.locator('#pana-resume').tap(); await wait(m, () => !!poquerDebug.room.state.legal);
-  await m.screenshot({ path: `${out}/mobile-playing.png` }); assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  for (const id of ['fold', 'call', 'raise']) { const box = await m.locator(`#${id}`).boundingBox(); assert.ok(box.x >= 0 && box.x + box.width <= 391); assert.ok(box.y + box.height <= 844); }
-  await m.locator('#call').tap(); await m.setViewportSize({ width: 844, height: 390 }); await m.screenshot({ path: `${out}/mobile-landscape.png` });
-  assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  console.log('ok: mobile cards/actions, shared pause, bot practice and landscape layout');
   assert.deepEqual(errors, []); console.log('Poker browser proof passed.');
-} finally { await browser.close(); }
+} finally { await close(); }
