@@ -10,6 +10,8 @@ becomes the GitHub release's notes.
 
 - **Fosa: la Escalera de Calor guarda tu Calor máximo.**
   Termina una expedición con más Calor que nunca y ganas XP extra una sola vez; tu Calor máx se ve en la sala y al terminar.
+- **Tu pana ya se puede vestir de samurái o del inframundo.**
+  En el vestidor hay armadura samurái con kabuto, y capucha del inframundo con huesos; cada pieza se combina y cambia de color.
 
 ## 0.9.0 - 2026-11-07
 

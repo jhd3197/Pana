@@ -43,6 +43,18 @@ try {
       await page.screenshot({ path: `${output}/${outfit}-${glasses}.png` });
     }
   }
+  // Costumes build on first use: their tops and head pieces swap with the outfit.
+  assert.equal(await page.evaluate(() => 'samurai' in panaStudio.pana.wardrobe.tops), false);
+  for (const [outfit, piece] of [['samurai', 'outfit:samurai-kabuto'], ['inframundo', 'outfit:inframundo-hood']]) {
+    const state = await page.evaluate(async ([o, name]) => {
+      const p = panaStudio.pana; p.setOutfit(o); await p.wardrobe.loadCostumes();
+      return { visibleTops: Object.entries(p.wardrobe.tops).filter(([, t]) => t.group.visible).map(([id]) => id),
+        piece: p.head.getObjectByName(name).visible, sode: p.arms.every(a => a.getObjectByName('outfit:samurai-sode').visible) };
+    }, [outfit, piece]);
+    assert.deepEqual(state, { visibleTops: [outfit], piece: true, sode: outfit === 'samurai' });
+    await settle(); await page.screenshot({ path: `${output}/${outfit}.png` });
+  }
+  await page.evaluate(() => panaStudio.pana.setOutfit('shirt'));
   // Color is remembered per look; printed flowers and ivory sports fabric stay light.
   await page.locator('[data-outfit="hoodie"]').click(); await page.locator('[data-color="#7da941"]').click();
   await page.locator('[data-outfit="tropical"]').click();
