@@ -307,25 +307,22 @@ test('every map leaves room on the way across, the cave mountain\'s tunnels and 
   assert.ok(by.cuevas.every(v => Number.isFinite(v)), 'a capi on the far side goes through the tunnel');
 });
 
-test('a free-for-all draws from its own odds: never cuevas or islas, deterministic, and a team map is not touched', t => {
-  assert.equal(FFA_KIND_ODDS.cuevas, 0); assert.equal(FFA_KIND_ODDS.islas, 0);
-  assert.ok(Math.abs(Object.values(FFA_KIND_ODDS).reduce((a, b) => a + b, 0) - 1) < 1e-9, 'the odds add up');
-  const kinds = {}, reasons = {};
+test('FFA selects only admitted studio presets deterministically; team maps are untouched', t => {
+  const figures = {};
   for (let i = 0; i < SWEEP; i++) {
     const { map } = generateMap(seedOf(i), 'large', { mode: 'ffa' });
-    kinds[map.kind] = (kinds[map.kind] || 0) + 1;
-    for (const r of map.rejected) reasons[r] = (reasons[r] || 0) + 1;
-    assert.ok(!['cuevas', 'islas'].includes(map.kind), `seed ${map.seed}: ${map.kind}`);
-    assert.equal(map.failed, null, `seed ${map.seed}: ${map.failed}`);
-    assert.ok(map.fair.choke >= FAIR.choke, `seed ${map.seed}: choke ${map.fair.choke}`);
+    figures[map.figure] = (figures[map.figure] || 0) + 1;
+    assert.ok(['corona', 'canon', 'morochos'].includes(map.figure));
+    assert.equal(map.studio, true);
+    assert.equal(map.attempt, 0, 'never reroll or substitute authored terrain');
+    assert.equal(map.width, 220);
   }
-  t.diagnostic(`ffa large: ${JSON.stringify(kinds)}; rejected ${JSON.stringify(reasons)}`);
-  for (const kind of ['cerros', 'terrazas', 'suave']) assert.ok(kinds[kind] >= SWEEP * .05, `${kind} on ${kinds[kind] || 0} of ${SWEEP}`);
-  assert.ok((kinds.cerros + kinds.terrazas + kinds.suave) / SWEEP >= .8, 'mostly the open kinds');
+  t.diagnostic(`ffa studio presets: ${JSON.stringify(figures)}`);
+  for (const figure of ['corona', 'canon', 'morochos']) assert.ok(figures[figure] >= SWEEP * .05, `${figure} on ${figures[figure] || 0} of ${SWEEP}`);
   for (let i = 0; i < 12; i++) {
     const a = generateMap(seedOf(i), 'large', { mode: 'ffa' }), b = generateMap(seedOf(i), 'large', { mode: 'ffa' });
     assert.ok(Buffer.from(a.mask.solid).equals(Buffer.from(b.mask.solid)), `seed ${seedOf(i)}: the same cells`);
-    assert.equal(a.map.kind, b.map.kind);
+    assert.equal(a.map.figure, b.map.figure);
     // The team map of the same seed still draws from the team odds.
     const team = maps.large[i], again = generateMap(seedOf(i), 'large', { mode: 'teams' });
     assert.ok(Buffer.from(team.mask.solid).equals(Buffer.from(again.mask.solid)), `seed ${seedOf(i)}: teams is the default`);

@@ -4,12 +4,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMatch, tickMatch, takeEvents, activeCapy, explode, byCount, ammoLeft, fire, TEAM_COLORS, FFA_CAPIS, RULES } from '../public/rules.js';
-import { generateMap, spreadSpawns, MAP_SIZES, WATER } from '../public/map-rules.js';
+import { generateMap, spreadSpawns, WATER } from '../public/map-rules.js';
 import { createBot, behindOf } from '../public/bot.js';
 import { CapisTable, botTeams, controllerOf, mirror, sidesOf } from '../public/online.js';
 import { defaultOptions, roomOptions } from '../public/options.js';
 import { surfaceY, fillHeights } from '../../../engine/play/terrain-mask.js';
 
+import { TEPUY_SIZES } from '../public/tepuy-maps.js';
 const DT = 1 / 60;
 const wire = x => JSON.parse(JSON.stringify(x));
 const ffa = (seed = 6, extra = {}) => createMatch({ seed, mode: 'ffa', ...extra });
@@ -27,7 +28,7 @@ test('the option is there, Equipos by default; todos contra todos forces the big
 
 test('six capis, each its own side and colour, on the large map, whatever size was asked for', () => {
   const m = ffa(6, { size: 'small' });
-  assert.equal(m.map.size, 'large'); assert.equal(m.map.width, MAP_SIZES.large.width);
+  assert.equal(m.map.size, 'large'); assert.equal(m.map.width, TEPUY_SIZES.large.width);
   assert.equal(m.teams, 6); assert.equal(m.capys.length, FFA_CAPIS);
   assert.deepEqual(m.capys.map(c => c.team), [0, 1, 2, 3, 4, 5]);
   assert.equal(new Set(m.capys.map(c => c.name)).size, 6, 'six names');
@@ -55,13 +56,14 @@ test('a free-for-all map is never cuevas or islas, seats six capis on the large 
   const kinds = new Set(), teamKinds = new Set();
   for (let seed = 1; seed <= 60; seed++) {
     const m = ffa(seed), xs = m.capys.map(c => c.x).sort((a, b) => a - b);
-    kinds.add(m.map.kind);
+    kinds.add(m.map.figure);
     assert.ok(!['cuevas', 'islas'].includes(m.map.kind), `seed ${seed}: ${m.map.kind}`);
     assert.equal(m.map.size, 'large');
     assert.equal(m.capys.length, FFA_CAPIS);
     assert.equal(FFA_CAPIS, 6);
     assert.ok(xs.at(-1) - xs[0] > m.map.width * .55, `seed ${seed} ${m.map.kind}: they cover ${(xs.at(-1) - xs[0]).toFixed(0)} of ${m.map.width}`);
-    for (let i = 1; i < 6; i++) assert.ok(xs[i] - xs[i - 1] >= 10, `seed ${seed} ${m.map.kind}: ${xs[i - 1].toFixed(1)} and ${xs[i].toFixed(1)} are too close`);
+    // Neighbours stand a fair shot apart (playtest: the one beside you was too easy to hit).
+    for (let i = 1; i < 6; i++) assert.ok(xs[i] - xs[i - 1] >= 20, `seed ${seed} ${m.map.kind}: ${xs[i - 1].toFixed(1)} and ${xs[i].toFixed(1)} are too close`);
     for (const c of m.capys) assert.ok(c.y > WATER, `seed ${seed}: dry at ${c.x.toFixed(1)}`);
     const t = createMatch({ seed, size: 'large' });
     teamKinds.add(t.map.kind);
@@ -74,7 +76,7 @@ test('a free-for-all map is never cuevas or islas, seats six capis on the large 
 
 test('every copy of a room builds the same free-for-all map from the seed', () => {
   const t = new CapisTable({ seed: 6, options: { ...defaultOptions(), mode: 'ffa' } });
-  t.addPlayer(1, 'Ana'); t.start();
+  t.addPlayer(1, 'Ana'); t.start(); t.start(); // the setup, then the match
   const { view } = mirror(null, wire(t.snapshot()));
   assert.equal(view.map.kind, t.match.map.kind);
   assert.ok(!['cuevas', 'islas'].includes(view.map.kind));
@@ -168,7 +170,7 @@ test('a room seats each pana on its own capi; the machine plays the rest; a copy
   assert.equal(t.players[3].team, 3);
   t.removePlayer(2); t.addPlayer(5, 'Eli');
   assert.equal(t.players.at(-1).team, 1, 'the free capi');
-  t.start();
+  t.start(); t.start(); // the setup, then the match
   assert.equal(t.match.mode, 'ffa'); assert.equal(t.bots.length, 6);
   assert.equal(t.controller, 1, 'Ana opens');
   assert.equal(controllerOf(t.players, { phase: 'aim', turn: { team: 5, k: 1 } }), null, 'capi 5 is the machine');
@@ -185,7 +187,7 @@ test('a room seats each pana on its own capi; the machine plays the rest; a copy
 
 test('a new host in a free-for-all carries on with a machine for every side', () => {
   const t = new CapisTable({ seed: 6, options: { ...defaultOptions(), mode: 'ffa' } });
-  t.addPlayer(1, 'Ana'); t.start();
+  t.addPlayer(1, 'Ana'); t.start(); t.start();
   const { view } = mirror(null, wire(t.snapshot())), next = CapisTable.restore(wire(t.snapshot()), view);
   assert.equal(next.bots.length, 6);
   assert.equal(next.match.teams, 6);

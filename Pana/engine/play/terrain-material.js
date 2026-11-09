@@ -33,6 +33,11 @@
 //   ground.update(takeDirty(mask));   // after a blast or a splash
 //   ground.reset(mask);               // a new match
 //
+// `lite: true` (opt-in, e.g. at low quality) keeps the silhouette, the strata
+// bands, rock layers, topsoil, grass, sand, scorch and paint, and skips the
+// fine detail: per-band grain, seams, pebbles, roots, rock cracks and warp,
+// sand grain. Same meshes and textures; only the fragment cost drops.
+//
 // Lambert lighting, fog and tone mapping come from three.js
 // (MeshLambertMaterial with the colour swapped in onBeforeCompile). If the
 // shader fails to compile, `fallback()` swaps in a plain Lambert cut out by
@@ -137,6 +142,13 @@ vec3 tBandCol(float k, int i) {
 // Each band swells and pinches along x (a slow wave of its own).
 vec4 tBand(float s, float x, out float id, out vec3 col, out vec3 prev, out vec3 next) {
   float P = uStrataP.x, k = floor(s / P), u = fract(s / P);
+#ifdef TERRAIN_LITE
+  // Lite: seven equal bands per run, no swell, no blending into the neighbours.
+  int jl = int(min(6.0, floor(u * 7.0)));
+  float atl = float(jl) / 7.0;
+  id = k * 7.0 + float(jl); col = tBandCol(k, jl); prev = col; next = col;
+  return vec4(tKind(k, jl), (u - atl) * 7.0, (u - atl) * P, (atl + 1.0 / 7.0 - u) * P);
+#endif
   float w[7], sum = 0.0;
   for (int i = 0; i < 7; i++) {
     float h = tHash(vec2(k, float(i) + 30.0)), f = 0.06 + 0.22 * tHash(vec2(k, float(i) + 35.0));
@@ -190,19 +202,25 @@ vec4 terrainColor() {
   // drape over hills, partly level, plus a gentle dip; then the contacts wave
   // and each band thickens and thins along x.
   float s = uStrataP.y * (0.7 * top.r + 0.3 * top.g - P.y) + (1.0 - uStrataP.y) * (uSize.y * 0.5 - P.y) + uStrataP.z * P.x;
-  s += (tFbm(vec2(X * 0.07, 1.7)) - 0.5) * 1.8 + (tNoise(vec2(X * 0.5, 3.3)) - 0.5) * 0.3;
+  s += (tFbm(vec2(X * 0.07, 1.7)) - 0.5) * 1.8;
+#ifndef TERRAIN_LITE
+  s += (tNoise(vec2(X * 0.5, 3.3)) - 0.5) * 0.3;
   s += (tNoise(vec2(X * 0.09, s * 0.4)) - 0.5) * 1.4;
   s += (tNoise(vec2(X * 1.6, s * 1.2)) - 0.5) * 0.22 + (tNoise(vec2(X * 7.0, s * 5.0)) - 0.5) * 0.08 * tFade(0.04, px);
+#endif
   float bid; vec3 bcol, bprev, bnext;
   vec4 B = tBand(s, X, bid, bcol, bprev, bnext);
   float kind = B.x, aa = max(px * 0.75, 0.012);
   vec3 soil = bcol;
   // Some contacts are sharp, some grade over a hand's width.
   float soft = 0.2 * tHash(vec2(bid, 41.0)) * tHash(vec2(bid, 42.0)), softN = 0.2 * tHash(vec2(bid + 1.0, 41.0)) * tHash(vec2(bid + 1.0, 42.0));
+#ifndef TERRAIN_LITE
   soil = mix(soil, bprev, 0.5 * (1.0 - smoothstep(0.0, aa + soft, B.z)));
   soil = mix(soil, bnext, 0.5 * (1.0 - smoothstep(0.0, aa + softN, B.w)));
   soil *= 0.88 + 0.24 * tNoise(vec2(X * 0.3, bid * 1.7));     // each band's shade drifts along it
+#endif
   soil *= 0.9 + 0.2 * tFbm(W * 0.8 + 13.0);                   // and mottles
+#ifndef TERRAIN_LITE
   float fine = (tNoise(mat2(0.8, -0.6, 0.6, 0.8) * W * 34.0) - 0.5) * tFade(0.03, px);
   float mid = tNoise(W * vec2(5.0, 7.0) + 3.0) - 0.5;
   float clod = (tNoise(W * 13.0 + 7.0) - 0.5) * tFade(0.08, px);
@@ -242,23 +260,38 @@ vec4 terrainColor() {
   soil = mix(soil, pebCol, peb.x);
   soil = mix(soil, stoneCol, stone.x);
 
+#endif
+#ifdef TERRAIN_LITE
+  soil = mix(soil, uStrata[6], smoothstep(4.0, 18.0, top.g - P.y) * 0.5);   // darker towards the base
+#endif
+
   // --- rock: grey-brown layers and cracks where rockAt says
   // Read rock a little off to the side by a noise, so its edges wander instead of following the map's boxes.
+#ifndef TERRAIN_LITE
   vec2 warp = (vec2(tFbm(W * 0.32 + 21.0), tFbm(W * 0.32 + 47.0)) - 0.5) * 2.4 + (vec2(tNoise(W * 1.3), tNoise(W * 1.3 + 5.0)) - 0.5) * 0.5;
+#else
+  vec2 warp = vec2(0.0);
+#endif
   float rockHere = texture2D(uField, (q + warp) / uSize).b;
   float rk = smoothstep(0.32, 0.6, rockHere + (tNoise(W * 3.0) - 0.5) * 0.2);
   if (rk > 0.0) {
+#ifdef TERRAIN_LITE
+    float lv = W.y * 2.6 + sin(W.x * 0.9) * 0.25 + sin(W.x * 0.23 + W.y * 0.2) * 0.8;
+#else
     float lv = W.y * 2.6 + (tFbm(vec2(W.x * 0.22, W.y * 0.2)) - 0.5) * 3.4 + sin(W.x * 0.9) * 0.25;
+#endif
     float layer = fract(lv), band = floor(lv);
     vec3 rock = uRock * (0.78 + 0.3 * tHash(vec2(band, 3.0))) * (0.9 + 0.14 * smoothstep(0.0, 0.5, layer));
     rock = mix(rock, rock * vec3(0.92, 0.95, 1.04), tHash(vec2(band, 4.0)) * 0.6);
-    rock = mix(rock, rock * vec3(1.06, 0.98, 0.9), tNoise(W * 0.7));
     rock *= 1.0 - 0.25 * smoothstep(0.9, 0.99, layer) * tFade(0.12, px);
+#ifndef TERRAIN_LITE
+    rock = mix(rock, rock * vec3(1.06, 0.98, 0.9), tNoise(W * 0.7));
     float crack = abs(tFbm(W * vec2(0.9, 1.4) + 3.0) * 2.0 - 1.0);
     float lines = (1.0 - smoothstep(0.0, 0.035, crack)) * smoothstep(0.35, 0.6, tNoise(W * 0.6 + 11.0));
     rock *= 1.0 - 0.4 * lines * tFade(0.1, px);
     rock *= 1.0 + 0.08 * (1.0 - smoothstep(0.0, 0.08, crack - 0.04)) * (1.0 - lines) * tFade(0.1, px);
     rock *= 0.92 + 0.16 * tNoise(W * 9.0) * tFade(0.05, px);
+#endif
     rock = mix(rock, rock * bcol / max(dot(bcol, vec3(0.333)), 0.05), 0.3);   // the band shows through the rock
     soil = mix(soil, rock, rk);
   }
@@ -273,10 +306,15 @@ vec4 terrainColor() {
   float slopeK = mix(1.0, min(sqrt(1.0 + top.b * top.b), 2.6), 1.0 - smoothstep(1.7, 2.9, top.g - P.y));
   float tb = (band + 0.16 + 0.14 * tNoise(vec2(X * 1.3, 5.0)) + 0.05 * tNoise(vec2(X * 7.0, 6.0))) * slopeK;
   float topK = 1.0 - smoothstep(tb - 0.07 * slopeK, tb + 0.09 * slopeK, od + (tNoise(W * 8.0) - 0.5) * 0.14 * slopeK);
+#ifdef TERRAIN_LITE
+  vec3 tsoil = uStrata[0];
+#else
   vec3 tsoil = uStrata[0] * (0.82 + 0.36 * tFbm(W * 4.5 + 2.0)) * (1.0 + fine * 0.2);
   tsoil *= 1.0 + smoothstep(0.8, 0.9, tNoise(W * 21.0)) * 0.3 * tFade(0.04, px);
+#endif
   soil = mix(soil, tsoil, topK * (1.0 - rk * 0.6));
   soil *= 1.0 - 0.32 * exp(-max(under, 0.0) / 0.07) * grassy;
+#ifndef TERRAIN_LITE
   // thick roots with a branch, and fine rootlets, hanging from the grass, each its own length
   float rc = floor(W.x / 0.47), rlen = 0.35 + 0.8 * tHash(vec2(rc, 12.0));
   float rx = (rc + 0.2 + 0.6 * tHash(vec2(rc, 11.0))) * 0.47 + sin(under * 9.0 + rc) * 0.035 + under * (tHash(vec2(rc, 13.0)) - 0.5) * 0.5;
@@ -290,12 +328,14 @@ vec4 terrainColor() {
   root = max(root, (1.0 - smoothstep(lw * 0.4, lw, abs(W.x - lx))) * step(-0.02, under) * step(under, llen) * step(0.3, tHash(vec2(lc, 25.0))) * 0.75 * tFade(0.012, px));
   soil = mix(soil, mix(soil, uRoot, 0.7), root * wasGrass * (1.0 - rk) * tFade(0.05, px));
 
+#endif
   // --- sand on the beach and the sandbar: grain, faint ripples, wet by the water
   float sandDepth = 0.18 + 2.6 * sandCover * sandCover + (tNoise(vec2(W.x * 1.7, 6.0)) - 0.5) * 0.25;
   float sandAmt = step(0.02, sandCover) * (1.0 - smoothstep(sandDepth - 0.08, sandDepth + 0.08, od));
   if (sandAmt > 0.0) {
     float wetK = max(smoothstep(uSandBelow - 1.3, uSandBelow - 1.9, surf), smoothstep(uWater + 0.55, uWater + 0.15, P.y + (tNoise(vec2(P.x * 2.0, 0.0)) - 0.5) * 0.12));
     vec3 sand = mix(uSand, uWet, wetK);
+#ifndef TERRAIN_LITE
     float grain = (tNoise(W * 41.0) - 0.5) * tFade(0.025, px);
     sand *= 0.96 + 0.2 * grain + 0.08 * (tFbm(W * 2.5) - 0.5);
     // fine bedding lines that follow the slope of the beach, faintly wavy
@@ -305,6 +345,7 @@ vec4 terrainColor() {
     vec2 G = mat2(0.86, -0.5, 0.5, 0.86) * W * 30.0;
     sand *= 1.0 + (smoothstep(0.82, 0.92, tNoise(G)) * 0.28 - smoothstep(0.2, 0.1, tNoise(G + 13.0)) * 0.22) * tFade(0.035, px);
     sand = mix(sand, vec3(0.92, 0.88, 0.8), smoothstep(0.93, 0.97, tNoise(W * 9.0 + 4.0)) * 0.7 * tFade(0.08, px));
+#endif
     // a darker band under the bedding: damp sand settling on the earth below
     sand *= 1.0 - 0.18 * smoothstep(sandDepth - 0.6, sandDepth, od);
     soil = mix(soil, sand, sandAmt);
@@ -318,7 +359,11 @@ vec4 terrainColor() {
   // --- the cover: grass with a bright lip on the top, or bare damp topsoil (not on a crater's floor: the bands show)
   float g = 1.0 - smoothstep(band - 0.02, band + 0.015, depth);
   float lip = 1.0 - smoothstep(0.0, 0.05, depth);
+#ifdef TERRAIN_LITE
+  vec3 grass = uGrass;
+#else
   vec3 grass = uGrass * (0.92 + 0.16 * tNoise(vec2(W.x * 3.0, W.y * 6.0)));
+#endif
   grass = mix(grass * 1.08, grass * 0.68, smoothstep(0.0, band, depth));
   grass = mix(grass, uGrass * vec3(1.25, 1.2, 0.95), lip * 0.6);
   vec3 bareTop = mix(uTopsoil * 0.85, uTopsoil * 1.1, lip);
@@ -339,14 +384,22 @@ vec4 terrainColor() {
   if (skin > 0.5) {
     float up = smoothstep(0.35, 0.75, N.y);
     float back = clamp((P.z - uZBack) / (uZFront - uZBack), 0.0, 1.0);
+#ifdef TERRAIN_LITE
+    vec3 topGrass = uGrass * (0.85 + 0.25 * tNoise(vec2(P.x, P.z) * 9.0)), topBare = uTopsoil, topSand = uSand;
+#else
     vec3 topGrass = uGrass * (0.8 + 0.18 * tNoise(vec2(P.x, P.z) * 9.0) + 0.14 * tNoise(vec2(P.x * 2.0, P.z * 1.6)) + 0.1 * tNoise(vec2(P.x, P.z) * 31.0) * tFade(0.04, px));
     vec3 topBare = uTopsoil * (0.9 + 0.2 * tNoise(vec2(P.x * 6.0, P.z * 6.0)));
     vec3 topSand = uSand * (0.92 + 0.1 * tNoise(vec2(P.x * 30.0, P.z * 30.0)));
+#endif
     vec3 topCol = mix(mix(topGrass, topBare, F.a), topSand, sandy);
     color = mix(color * mix(0.55, 0.95, back), topCol * mix(0.82, 1.0, back), up * smoothstep(0.0, 0.35, 1.0 - depth) * (1.0 - blasted));
   }
   // --- a fresh crater: damp and scorched along its new face, charred right at the edge, fading into the soil
+#ifdef TERRAIN_LITE
+  float near = smoothstep(0.0, 0.42, S.g - F.g), breakup = 1.0;
+#else
   float near = smoothstep(0.0, 0.42, S.g - F.g), breakup = 0.7 + 0.6 * tNoise(W * 3.0 + 31.0);
+#endif
   float scorch = max(near, blastWide * 0.7) * breakup * (1.0 - uBack) * mix(1.0, 0.8, skin);
   color *= 1.0 - 0.5 * clamp(scorch, 0.0, 1.0);
   color = mix(color, vec3(0.05, 0.038, 0.03), clamp(near * near * breakup, 0.0, 1.0) * 0.7 * (1.0 - uBack) * mix(1.0, 0.25, skin));
@@ -364,7 +417,11 @@ vec4 terrainColor() {
   }
   // A crisp wet edge where the coat thins out, fully coloured inside.
   float soak = smoothstep(0.1, 0.26, stain + (tNoise(P.xy * 6.0) - 0.5) * 0.12) * mix(0.72, 0.94, smoothstep(0.2, 0.8, stain));
+#ifdef TERRAIN_LITE
+  vec3 wetPaint = tint * (1.0 - 0.25 * (1.0 - smoothstep(0.1, 0.2, stain)));
+#else
   vec3 wetPaint = tint * (0.9 + 0.16 * tNoise(P.xy * 3.0)) * (1.0 - 0.25 * (1.0 - smoothstep(0.1, 0.2, stain)));
+#endif
   color = mix(color, wetPaint, soak * (1.0 - uBack));
   return vec4(color, alpha);
 }
@@ -398,7 +455,7 @@ function strataUniforms(strata = {}, uniforms = {}) {
 }
 
 // The terrain material: Lambert with the ground's colour from the shader.
-export function terrainMaterial({ fieldTex, paintTex, startTex, topTex, mask, palette = {}, back = false, a2c = true, zBack = -2.6, zFront = .55, detail = getSettings().detail }) {
+export function terrainMaterial({ fieldTex, paintTex, startTex, topTex, mask, palette = {}, back = false, a2c = true, zBack = -2.6, zFront = .55, detail = getSettings().detail, lite = false }) {
   const p = palette, tints = (p.tints || [[255, 80, 160]]).slice(0, 6);
   while (tints.length < 6) tints.push(tints[tints.length - 1]);
   const uniforms = {
@@ -413,7 +470,8 @@ export function terrainMaterial({ fieldTex, paintTex, startTex, topTex, mask, pa
     ...strataUniforms(p.strata),
   };
   const material = new THREE.MeshLambertMaterial({ alphaToCoverage: a2c });
-  material.defines = { TERRAIN_OCTAVES: detail === 'baja' ? 3 : 4 };
+  // lite: the cheap ground for software renderers and slow machines (TERRAIN_LITE in the GLSL).
+  material.defines = lite ? { TERRAIN_OCTAVES: 2, TERRAIN_LITE: 1 } : { TERRAIN_OCTAVES: detail === 'baja' ? 3 : 4 };
   material.onBeforeCompile = shader => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
@@ -423,7 +481,7 @@ export function terrainMaterial({ fieldTex, paintTex, startTex, topTex, mask, pa
       .replace('#include <common>', `#include <common>\n${GLSL}`)
       .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = terrainColor();');
   };
-  material.customProgramCacheKey = () => `terrain-${material.defines.TERRAIN_OCTAVES}`;
+  material.customProgramCacheKey = () => `terrain-${material.defines.TERRAIN_OCTAVES}${lite ? '-lite' : ''}`;
   material.userData.uniforms = uniforms;
   return material;
 }
@@ -437,13 +495,13 @@ export function terrainMaterial({ fieldTex, paintTex, startTex, topTex, mask, pa
 //            tilt a dip along x, phase a noise offset); setStrata() changes it
 //   rockAt(x, y), grassAt(x, y): as for fieldRGBA
 //   back: a Uint8Array like mask.solid of extra ground for the back wall (hollows), or false
-export function createTerrain(scene, mask, { palette = {}, rockAt = null, grassAt = null, zBack = -2.6, zFront = .55, back = null, renderer = null } = {}) {
+export function createTerrain(scene, mask, { palette = {}, rockAt = null, grassAt = null, zBack = -2.6, zFront = .55, back = null, renderer = null, lite = false } = {}) {
   const gl = renderer?.getContext?.(), a2c = !!gl?.getContextAttributes?.()?.antialias;
   const opts = { rockAt, grassAt, tints: palette.tints?.length || 2 };
   let tex = makeTextures(mask), backTex = back !== false ? makeTextures(mask) : null;
   const start = makeStart(mask);
   const plane = new THREE.PlaneGeometry(mask.width, mask.height);
-  const material = terrainMaterial({ ...tex, ...start, mask, palette, a2c, zBack, zFront });
+  const material = terrainMaterial({ ...tex, ...start, mask, palette, a2c, zBack, zFront, lite });
   const front = new THREE.Mesh(plane, material);
   front.position.set(mask.width / 2, mask.height / 2, zFront); front.name = 'terrain-front';
   const skin = new THREE.Mesh(new THREE.BufferGeometry(), material);
@@ -451,7 +509,7 @@ export function createTerrain(scene, mask, { palette = {}, rockAt = null, grassA
   const group = new THREE.Group(); group.add(front, skin);
   let backWall = null;
   if (backTex) {
-    backWall = new THREE.Mesh(plane, terrainMaterial({ ...backTex, startTex: start.startTex, topTex: start.topTex, mask, palette, back: true, a2c, zBack, zFront }));
+    backWall = new THREE.Mesh(plane, terrainMaterial({ ...backTex, startTex: start.startTex, topTex: start.topTex, mask, palette, back: true, a2c, zBack, zFront, lite }));
     backWall.position.set(mask.width / 2, mask.height / 2, zBack - .05); backWall.name = 'terrain-back'; group.add(backWall);
   }
   scene.add(group);

@@ -19,6 +19,7 @@ import { createBot } from './bot.js';
 import { smallestTeam } from '../../../engine/play/team-balance.js';
 import { defaultOptions, roomOptions } from './options.js';
 import { mapSeed, SEED_LIMIT } from './map-rules.js';
+import { createSetup, choose, place, unplace, launch, setOwner, dropPlayer, resolveSpawns, seedOf, groundOf } from './setup-rules.js';
 
 export const MAX_PLAYERS = 4, TEAM_MAX = 3;
 const STEP = 1 / 60;
@@ -60,7 +61,10 @@ export class CapisTable {
     this.players = []; this.match = null; this.bots = [null, null];
     this.log = []; this.eventN = 0; this.acc = 0;
     this.pending = null; this.jumps = new Map(); this.fullEdits = 0;
+    // A free-for-all's setup (setup-rules.js) between start and the first turn; the host's id runs it.
+    this.setup = null; this.hostId = null; this.rejects = {}; this.rejectN = 0;
   }
+  setHost(id) { this.hostId = id; if (this.setup) this.setup.hostId = id; }
 
   // A new host continues from the last snapshot and its own copy of the match.
   static restore(state, view, random) {
@@ -72,6 +76,11 @@ export class CapisTable {
       t.match = view;
       t.bots = makeBots(view.teams, view.options.difficulty, view.seed);
     }
+    if (state?.phase === 'setup' && state.setup) {
+      const s = state.setup;
+      t.setup = { ...createSetup({ setupSeed: s.setupSeed, owners: s.owners }), pick: s.pick, rev: s.rev, places: { ...s.places } };
+      t.phase = 'setup';
+    }
     t.fullEdits = 40;
     return t;
   }
@@ -82,6 +91,7 @@ export class CapisTable {
     if (this.players.length >= MAX_PLAYERS) return null;
     const p = { id, name, avatar, team: this.seatFor() };
     this.players.push(p); this.revision++;
+    if (this.setup && p.team != null) setOwner(this.setup, p.team, id);
     // A newcomer needs the whole ground: send every edit for a couple of seconds.
     this.fullEdits = 40;
     return p;
@@ -100,6 +110,7 @@ export class CapisTable {
   removePlayer(id) {
     const before = this.players.length;
     this.players = this.players.filter(p => p.id !== id); this.jumps.delete(id);
+    if (this.setup) dropPlayer(this.setup, id);
     if (this.players.length !== before) this.revision++;
   }
   // A pana changes team in the lobby (the host may move anyone).
@@ -134,10 +145,24 @@ export class CapisTable {
     this.seed = s; this.revision++; return true;
   }
 
+  // Start: a free-for-all from the lobby goes to its setup first; from the
+  // setup (the host's call, any time) it launches on the chosen map and starts.
   start() {
     if (this.phase === 'play' && this.match?.phase !== 'finished') return false;
     const { seconds, difficulty, size, mode } = this.options;
-    this.match = createMatch({ seconds, difficulty, seed: this.seed, size, mode, looks: this.looks() });
+    let spawnXs = null;
+    if (this.phase === 'lobby' && mode === 'ffa') {
+      const owners = {}; for (const p of this.players) if (p.team != null) owners[p.team] = p.id;
+      this.setup = createSetup({ setupSeed: this.seed, hostId: this.hostId, owners });
+      this.phase = 'setup'; this.rejects = {}; this.revision++;
+      return true;
+    }
+    if (this.phase === 'setup') {
+      const done = launch(this.setup, this.setup.hostId, groundOf(seedOf(this.setup)), FFA_CAPIS);
+      if (!done.ok) return false;
+      this.seed = done.seed; spawnXs = done.spawns; this.setup = null;
+    }
+    this.match = createMatch({ seconds, difficulty, seed: this.seed, size, mode, looks: this.looks(), spawnXs });
     this.bots = makeBots(this.match.teams, difficulty, this.match.seed);
     this.phase = 'play'; this.acc = 0; this.pending = null; this.jumps.clear(); this.fullEdits = 40;
     this.record(takeEvents(this.match)); this.revision++;
@@ -146,8 +171,21 @@ export class CapisTable {
   // Back to the lobby with a new map (LiveRoom answers the host's 'lobby' action with this).
   toLobby() {
     if (this.phase === 'lobby') return false;
-    this.phase = 'lobby'; this.match = null; this.seed = newSeed(this.random); this.revision++;
+    this.phase = 'lobby'; this.match = null; this.setup = null; this.seed = newSeed(this.random); this.revision++;
     return true;
+  }
+
+  // A setup message from pana `id`: the host switches the map, anyone places
+  // or lifts its own capis. A turned-down one is remembered for that pana.
+  setupAct(id, action, data = {}) {
+    const s = this.setup;
+    if (this.phase !== 'setup' || !s) return { ok: false, reason: 'locked' };
+    const rev = Number.isSafeInteger(data.rev) ? data.rev : -1, capi = Number(data.capi);
+    const r = action === 'pick' ? choose(s, id, data.index, rev)
+      : action === 'place' ? place(s, id, capi, Number(data.x), groundOf(seedOf(s)), rev)
+      : action === 'unplace' ? unplace(s, id, capi, rev) : { ok: false, reason: 'bad-action' };
+    if (r.ok) this.revision++; else { this.rejects[id] = { reason: r.reason, n: ++this.rejectN }; }
+    return r;
   }
 
   get controller() { return controllerOf(this.players, this.match); }
@@ -213,8 +251,15 @@ export class CapisTable {
     if (full) this.fullEdits--;
     return { phase: this.phase, revision: this.revision, options: { ...this.options }, seed: this.seed,
       players: this.players.map(p => ({ ...p })), controller: this.controller,
-      match: this.match ? matchView(this.match, full) : null, events: this.log.slice(-EVENT_TAIL) };
+      match: this.match ? matchView(this.match, full) : null, events: this.log.slice(-EVENT_TAIL),
+      setup: this.setup && setupView(this.setup, this.rejects) };
   }
+}
+
+// What every client draws of the setup: the maps, the picks, every capi's start.
+export function setupView(s, rejects = {}) {
+  return { setupSeed: s.setupSeed, seeds: [...s.seeds], pick: s.pick, rev: s.rev, owners: { ...s.owners }, places: { ...s.places },
+    spawns: resolveSpawns(s, groundOf(seedOf(s)), FFA_CAPIS), rejects: { ...rejects } };
 }
 
 // What changes during a match, without the map, the ground or the event queue.

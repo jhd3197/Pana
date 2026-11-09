@@ -12,6 +12,7 @@
 // while a side view needs one gravity for jumps, ledges and knockback.
 import { jumpCount } from './jump.js';
 import { groundBelow, circleHits, surfaceNormal, stainAt, slopeAt } from './terrain-mask.js';
+import { onStairs, stairBodyHits, stairFloor } from './stair-footing.js';
 
 const DEG = Math.PI / 180;
 export const SIDE_WALKER = Object.freeze({
@@ -41,6 +42,8 @@ export const settled = p => p.drowned || (p.grounded && Math.abs(p.slide || 0) <
 
 export function stepSideWalker(p, input = {}, dt, mask, options = {}) {
   const o = { ...SIDE_WALKER, ...options }, cell = mask.cell, out = { jumped: false, landed: false, drowned: false, blocked: false };
+  const stairs = o.stairs ? mask.stairs : null;
+  const bodyHits = (x, y, radius) => stairs ? stairBodyHits(mask, x, y, radius, stairs) : circleHits(mask, x, y, radius);
   if (p.drowned) return out;
   const count = jumpCount(input, p.jumpPress || 0), pressed = count !== (p.jumpPress || 0); p.jumpPress = count;
   const dir = o.frozen ? 0 : sign(input.x || 0);
@@ -67,7 +70,9 @@ export function stepSideWalker(p, input = {}, dt, mask, options = {}) {
     for (let i = 0; i < steps; i++) {
       const nx = p.x + d;
       if (nx < 0 || nx > mask.width) { out.blocked = true; p.slide = 0; break; }
-      const wall = circleHits(mask, nx + sign(d) * o.radius * .3, p.y + o.stepUp + o.radius, o.radius * .75);
+      const tread = stairFloor(mask, nx, p.y, stairs);
+      if (tread !== null) { p.x = nx; p.y = tread; continue; }
+      const wall = bodyHits(nx + sign(d) * (onStairs(stairs, nx) ? .03 : o.radius * .3), p.y + o.stepUp + o.radius, o.radius * .75);
       const top = groundBelow(mask, nx, p.y + o.stepUp, o.stepUp + o.stepDown);
       const steep = top !== null && top > p.y + cell * .5 && !slick && Math.atan(Math.abs(slopeAt(mask, nx, top))) > o.maxClimb;
       if (wall || steep) { out.blocked = true; p.slide = 0; break; }
@@ -82,11 +87,11 @@ export function stepSideWalker(p, input = {}, dt, mask, options = {}) {
     const dx = p.vx * dt, dy = p.vy * dt, steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / (cell * .5)));
     for (let i = 0; i < steps; i++) {
       const nx = p.x + dx / steps, ny = p.y + dy / steps;
-      if (!circleHits(mask, nx, ny + o.radius, o.radius * .9)) { p.x = nx; p.y = ny; continue; }
-      const n = surfaceNormal(mask, nx, ny + o.radius, o.radius * 1.4);
+      if (!bodyHits(nx, ny + o.radius, o.radius * .9)) { p.x = nx; p.y = ny; continue; }
+      const n = surfaceNormal(mask, nx, ny + o.radius, onStairs(stairs, nx) ? .2 : o.radius * 1.4);
       // Land only with ground under the feet: brushing the side of a rounded
       // lip is a wall to slide off, not a floor (that left bodies perched in the air).
-      const floor = n.y > .5 && p.vy <= 0 ? groundBelow(mask, nx, ny + o.radius, o.radius + o.stepDown) : null;
+      const floor = (onStairs(stairs, nx) || n.y > .5) && p.vy <= 0 ? groundBelow(mask, nx, ny + o.radius, o.radius + o.stepDown) : null;
       if (floor !== null) {
         p.x = nx; p.y = floor; p.grounded = true; out.landed = true;
         p.slide = stainAt(mask, p.x, p.y - cell, .3) >= o.slick ? p.vx * .6 : 0; p.vx = p.vy = 0;
@@ -97,8 +102,8 @@ export function stepSideWalker(p, input = {}, dt, mask, options = {}) {
       const into = p.vx * n.x + p.vy * n.y, falling = p.vy <= 0;
       if (into < 0) { p.vx -= 1.3 * into * n.x; p.vy -= 1.3 * into * n.y; }
       let px = nx, py = ny;
-      for (let k = 0; k < 8 && circleHits(mask, px, py + o.radius, o.radius * .9); k++) { px += n.x * cell * .5; py += n.y * cell * .5; }
-      if (circleHits(mask, px, py + o.radius, o.radius * .9)) {
+      for (let k = 0; k < 8 && bodyHits(px, py + o.radius, o.radius * .9); k++) { px += n.x * cell * .5; py += n.y * cell * .5; }
+      if (bodyHits(px, py + o.radius, o.radius * .9)) {
         // Wedged in a narrow V (a steep wall and a slope): rest on the floor under the feet.
         const rest = falling ? groundBelow(mask, p.x, p.y + o.radius, o.radius + o.stepDown) : null;
         if (rest !== null) { p.y = rest; p.grounded = true; out.landed = true; p.vx = p.vy = 0; p.slide = 0; }

@@ -17,6 +17,8 @@ import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { fbm2, rng } from '/engine/random.js';
+import { STUDIO_LOOKS } from './studio-looks.js';
+import { createStudioScenery } from './studio-scenery.js';
 
 // The sky by how high you look: a warm cream horizon, gold, then soft teal and blue.
 const SKY = [[0, '#ffd6a0'], [.03, '#fde0b4'], [.075, '#dce6cc'], [.13, '#a7d2da'], [.21, '#76b1dc'], [.4, '#4683c8']];
@@ -100,8 +102,9 @@ function savannaMaterial() {
 }
 
 // The sky's colour from the elevation of the view ray, with a warm bloom towards the sun.
-function skyMaterial(sunX) {
-  const stops = SKY.map(([at, hex]) => ({ at, color: new THREE.Color(hex) }));
+function skyMaterial(sunX, look = null) {
+  const colors = look ? [[0, look.sky[2]], [.13, look.sky[1]], [.4, look.sky[0]]] : SKY;
+  const stops = colors.map(([at, hex]) => ({ at, color: new THREE.Color(hex) }));
   const glsl = stops.slice(1).map((s, i) => `c = mix(c, vec3(${s.color.r.toFixed(4)}, ${s.color.g.toFixed(4)}, ${s.color.b.toFixed(4)}), smoothstep(${stops[i].at.toFixed(3)}, ${s.at.toFixed(3)}, e));`).join(' ');
   const first = stops[0].color;
   return new THREE.ShaderMaterial({
@@ -142,7 +145,7 @@ export function createBackdrop(scene, map, mask) {
   const glow = glowTexture(), uniforms = { uTime: { value: 0 }, uSunX: { value: 0 } };
   scene.background = new THREE.Color(SKY[0][1]);
   scene.fog = new THREE.Fog(HAZE, 80, 270);
-  const sky = skyMaterial(0);
+  let sky = skyMaterial(0);
   // Sky: graded by the height of the view direction (not the world height), so
   // the play view and the whole map both get the warm horizon and the blue above.
   const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(1400, 420), sky); group.add(skyMesh);
@@ -193,12 +196,26 @@ export function createBackdrop(scene, map, mask) {
     foam.count = n; foam.instanceMatrix.needsUpdate = true;
   }
   // The map's own scenery (ridges, groves, palms, reeds, rocks), rebuilt for each map.
-  let layout = null, palms = [];
+  let layout = null, palms = [], studioScenery = null;
   function setMap(next, ground) {
+    studioScenery?.dispose();
+    studioScenery = next.studio ? createStudioScenery(scene, next) : null;
     map = next; mid = map.width / 2; wrap = Math.max(440, map.width * 3);
+    const look = map.studio && STUDIO_LOOKS[map.ambient]?.open;
+    sky.dispose(); sky = skyMaterial(mid + SUN_AT.dx, look); skyMesh.material = sky;
+    scene.background.set(look?.sky[2] || SKY[0][1]); scene.fog.color.set(look?.fog || HAZE);
+    river.material.color.set(look?.water || RIVER); clouds.material.color.set(look?.cloud || '#ffffff');
+    sunGlow.material.color.set(look?.glow || '#ffc27a'); sunDisc.material.color.set(look?.sun || '#fff1cf');
+    near.set(look?.ground || SAVANNA); far.set(look?.far || SAVANNA_FAR);
+    for (let i = 0; i < flat.attributes.position.count; i++) {
+      const k = THREE.MathUtils.smoothstep(flat.attributes.position.getY(i), -70, 70), c = near.clone().lerp(far, k * k);
+      flat.attributes.color.setXYZ(i, c.r, c.g, c.b);
+    }
+    flat.attributes.color.needsUpdate = true;
     const sunX = mid + SUN_AT.dx, wide = Math.max(1, map.width / 140), random = rng(map.seed * 7 + 5);
-    uniforms.uSunX.value = sunX; sky.uniforms.uSun.value.set(sunX, SUN_AT.y, SUN_AT.z);
-    skyMesh.position.set(mid, 60, -240); sunGlow.position.set(sunX, SUN_AT.y, SUN_AT.z + 2); sunDisc.position.set(sunX, SUN_AT.y, SUN_AT.z);
+    const sunY = look?.sunY ?? SUN_AT.y;
+    uniforms.uSunX.value = sunX; sky.uniforms.uSun.value.set(sunX, sunY, SUN_AT.z);
+    skyMesh.position.set(mid, 60, -240); sunGlow.position.set(sunX, sunY, SUN_AT.z + 2); sunDisc.position.set(sunX, sunY, SUN_AT.z);
     river.position.set(mid, map.water, -50); deep.position.set(mid, map.water - 15, 3.2); savanna.position.set(mid, map.water + 1.2, -100);
     routes[0].cx = mid - map.width * .25; routes[0].r = 46 * wide; routes[1].cx = mid + map.width * .44; routes[1].r = 60 * wide;
     placeClouds(0);
@@ -257,6 +274,7 @@ export function createBackdrop(scene, map, mask) {
       else mood = kind;
     },
     update(dt) {
+      studioScenery?.update(dt);
       time += dt; uniforms.uTime.value = time;
       if (mood === 'win' && Math.sin(time * 5) > .95) pana.bounce(.8);
       pana.update(dt, { dizzy: mood === 'lose' });
@@ -266,6 +284,7 @@ export function createBackdrop(scene, map, mask) {
       foamMaterial.opacity = .42 + Math.sin(time * 1.7) * .14;
     },
     dispose() {
+      studioScenery?.dispose();
       pana.dispose(); birds.userData.dispose?.(); glow.dispose();
       group.traverse(o => { o.geometry?.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m?.dispose?.()); });
       group.removeFromParent();
