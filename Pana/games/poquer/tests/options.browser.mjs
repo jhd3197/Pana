@@ -68,7 +68,12 @@ try {
   assert(result.result.showdown); assert.equal(result.players.reduce((n, p) => n + p.chips, 0), 10000);
   assert.deepEqual(result.players.find(p => p.id !== own.id).hole, [null, null, null, null]);
   assert.equal(result.players.find(p => p.id !== own.id).handName, '');
-  assert.equal(await host.locator('#showdown .showdown-row').count(), 1);
+  // The board and the winning pot get their own rows; outside the board only
+  // the host's own four cards are drawn, and no card back stands in for the guest's.
+  assert.equal(await host.locator('#showdown .showdown-board').count(), 1);
+  assert.equal(await host.locator('#showdown .showdown-win').count(), 1);
+  assert.equal(await host.locator('#showdown .showdown-row:not(.showdown-board) .card').count(), 4);
+  assert.equal(await host.locator('#showdown .card.back').count(), 0);
   console.log('PASS real Omaha showdown settles the pot without revealing opted-out opponents');
 
   await host.locator('#organize-table').click();

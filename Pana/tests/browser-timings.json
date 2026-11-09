@@ -167,6 +167,7 @@
   "Pana/games/pintura/tests/spectator.browser.js": 81,
   "Pana/games/poquer/tests/browser.mjs": 112,
   "Pana/games/poquer/tests/options.browser.mjs": 246,
+  "Pana/games/poquer/tests/showdown.browser.mjs": 93,
   "Pana/games/qqsmp/tests/animations.browser.js": 29,
   "Pana/games/qqsmp/tests/browser.mjs": 332,
   "Pana/games/qqsmp/tests/friends.browser.js": 45,

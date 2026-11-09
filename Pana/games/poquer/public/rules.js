@@ -69,6 +69,40 @@ export function evaluateHand(hole, board, variant = 'texas') {
     }
   return best;
 }
+// The best five cards themselves (not just the score), for the end-of-hand view.
+export function bestHand(hole, board, variant = 'texas') {
+  const pick = (list, k, from = 0, acc = [], out = []) => { if (acc.length === k) out.push(acc); else for (let i = from; i < list.length; i++) pick(list, k, i + 1, [...acc, list[i]], out); return out; };
+  const combos = variant === 'omaha' ? pick(hole, 2).flatMap(h => pick(board, 3).map(b => [...h, ...b])) : pick([...hole, ...board], 5);
+  let best = { score: [-1], cards: [] };
+  for (const cards of combos) { const score = five(cards); if (compare(score, best.score) > 0) best = { score, cards }; }
+  return best;
+}
+const FACE = r => ({ 11: 'J', 12: 'Q', 13: 'K', 14: 'A' }[r] || String(r));
+// Why a hand beats the next best one: a higher category, a higher main rank,
+// or the first kicker that differs. Spanish source text plus values.
+export function reason(win, lose) {
+  if (!lose) return part(locKey('Los demás se retiraron.'));
+  const d = compare(win, lose);
+  if (d === 0) return part(locKey('Empate: misma mano en valor.'));
+  if (win[0] !== lose[0]) return part(locKey('{a} le gana a {b}.'), { a: HANDS[win[0]], b: HANDS[lose[0]] }, ['a', 'b']);
+  let i = 1; while (win[i] === lose[i]) i++;
+  const vars = { hand: HANDS[win[0]], a: FACE(win[i]), b: FACE(lose[i]) };
+  // Kickers exist for pairs, two pair, trips, quads and high card / flush ranks after the first.
+  const kicker = i > 1 && ![6].includes(win[0]) && !(win[0] === 2 && i === 2);
+  return part(kicker ? locKey('Mismo juego ({hand}); gana por carta alta: {a} contra {b}.') : locKey('Mismo juego ({hand}), pero más alto: {a} contra {b}.'), vars, ['hand']);
+}
+// What the table explains after a showdown, per contested pot: winners, their
+// hand, their best five and why they beat the best losing hand in that pot.
+export function explain(players, board, pots, variant = 'texas') {
+  return pots.filter(pot => !pot.refund).map(pot => {
+    const winners = pot.winners.map(id => players.find(p => p.id === id)), wb = bestHand(winners[0].hole, board, variant);
+    const rivals = (pot.eligible || []).filter(id => !pot.winners.includes(id)).map(id => ({ id, ...bestHand(players.find(p => p.id === id).hole, board, variant) }));
+    const runner = rivals.reduce((a, r) => !a || compare(r.score, a.score) > 0 ? r : a, null);
+    const boardPlays = winners.length > 1 && wb.cards.every(c => board.includes(c));
+    return { amount: pot.amount, winners: pot.winners, hand: HANDS[wb.score[0]], best: Object.fromEntries(winners.map(w => [w.id, bestHand(w.hole, board, variant).cards])),
+      rival: runner?.id ?? null, rivalHand: runner ? HANDS[runner.score[0]] : '', why: boardPlays ? part(locKey('La mesa juega: empate.')) : winners.length > 1 ? reason(wb.score, wb.score) : reason(wb.score, runner?.score) };
+  });
+}
 export function shuffle(random = Math.random) {
   const deck = Array.from({ length: 52 }, (_, i) => i);
   for (let i = 51; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
@@ -90,7 +124,7 @@ export function settle(players, board, dealer, variant = 'texas') {
     winners.sort((a, b) => ((players.findIndex(p => p.id === a) - dealer - 1 + players.length) % players.length) - ((players.findIndex(p => p.id === b) - dealer - 1 + players.length) % players.length));
     if (!winners.length) continue;
     winners.forEach((id, i) => { payouts[id] += Math.floor(amount / winners.length) + (i < amount % winners.length ? 1 : 0); });
-    pots.push({ amount, winners, refund: contributors.length === 1 });
+    pots.push({ amount, winners, refund: contributors.length === 1, eligible: eligible.map(p => p.id) });
   }
   return { payouts, pots };
 }
@@ -255,6 +289,8 @@ export class Poker {
     const total = this.players.reduce((sum, p) => sum + p.total, 0);
     const result = showdown ? settle(this.players, this.board, this.dealer, this.options.variant) : { payouts: Object.fromEntries(this.players.map(p => [p.id, p.id === this.live[0]?.id ? total : 0])), pots: [{ amount: total, winners: this.live.map(p => p.id) }] };
     for (const p of this.players) { p.chips += result.payouts[p.id] || 0; if (!p.chips && !this.busted.includes(p.id)) this.busted.push(p.id); }
+    if (showdown) result.explain = explain(this.players, this.board, result.pots, this.options.variant);
+    for (const pot of result.pots) delete pot.eligible;
     this.result = { ...result, showdown, total }; this.phase = 'finished'; this.turn = null;
     this.message = [showdown ? part(locKey('Cartas sobre la mesa.')) : this.live[0] ? part(locKey('{name} se lleva el pozo.'), { name: this.live[0].name }) : part(locKey('La mesa se lleva el pozo.'))];
   }
@@ -265,9 +301,25 @@ export class Poker {
     if (legal.raise && strength >= 2 && p.actedAt === null && legal.min <= legal.max && Math.random() < .4) return this.act(p.id, 'raise', legal.min);
     return this.act(p.id, 'call');
   }
+  // The result as one seat may see it. Best fives of winners stay hidden from
+  // the others when the table plays with cards face down at the end; a folded
+  // hand is only ever described to its owner, and only against the real board.
+  resultFor(id) {
+    if (!this.result) return null;
+    const result = { ...this.result }, me = this.players.find(p => p.id === id);
+    if (result.explain) result.explain = result.explain.map(pot => ({ ...pot, best: this.options.showCards || pot.winners.includes(id) ? pot.best : {} }));
+    if (me?.folded && me.hole.length && me.action === locKey('Se retiró')) {
+      const full = this.board.length === 5, mine = full ? bestHand(me.hole, this.board, this.options.variant) : null;
+      const live = this.live.map(p => evaluateHand(p.hole, this.board, this.options.variant));
+      // A claim only with the board as dealt, at a showdown, beating every live hand outright.
+      const wouldWin = !!(full && result.showdown && live.length && live.every(s => compare(mine.score, s) > 0));
+      result.folded = { hole: [...me.hole], hand: mine ? HANDS[mine.score[0]] : '', best: mine?.cards || [], wouldWin };
+    }
+    return result;
+  }
   view(id) {
     return { mapId: this.mapId, options: { ...this.options }, starter: this.phase === 'starter' ? JSON.parse(JSON.stringify(this.starter)) : null, smallBlind: this.smallBlind, bigBlind: this.bigBlind, canStart: this.funded.length >= 2, phase: this.phase, hand: this.hand, revision: this.revision, dealer: this.players[this.dealer]?.id, board: [...this.board], turn: this.turn,
-      currentBet: this.currentBet || 0, pot: this.players.reduce((sum, p) => sum + p.total, 0), message: this.message, result: this.result, legal: this.legal(id),
+      currentBet: this.currentBet || 0, pot: this.players.reduce((sum, p) => sum + p.total, 0), message: this.message, result: this.resultFor(id), legal: this.legal(id),
       players: this.players.map(({ hole, actedAt, key, ...p }) => ({ ...p, hole: p.id === id || (this.options.showCards && this.result?.showdown && !p.folded) ? [...hole] : hole.map(() => null),
         handName: this.result?.showdown && !p.folded && (p.id === id || this.options.showCards) ? HANDS[evaluateHand(hole, this.board, this.options.variant)[0]] : '' })) };
   }

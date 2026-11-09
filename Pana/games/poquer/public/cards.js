@@ -9,4 +9,5 @@ export function cardNode(card, empty = false) {
   node.setAttribute('aria-label', loc('{face} de {suit}', { face: face(card), suit: loc(suitName(card)) }));
   node.innerHTML = `<b>${face(card)}</b><svg viewBox="0 -2 24 26" aria-hidden="true"><path d="${paths[suit(card)]}"/></svg>`; return node;
 }
-export function renderCards(element, cards, placeholders = 0) { element.replaceChildren(...cards.map(c => cardNode(c)), ...Array.from({ length: Math.max(0, placeholders - cards.length) }, () => cardNode(null, true))); }
+// `best` marks the cards of the winning five; the rest dim.
+export function renderCards(element, cards, placeholders = 0, best = null) { element.replaceChildren(...cards.map(c => { const node = cardNode(c); if (best && c !== null) node.classList.add(best.includes(c) ? 'is-best' : 'is-dim'); return node; }), ...Array.from({ length: Math.max(0, placeholders - cards.length) }, () => cardNode(null, true))); }
