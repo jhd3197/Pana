@@ -20,7 +20,7 @@ const params = new URLSearchParams(location.search);
 const world = createScene($('world'), { onStarter: (input, power) => { if (!menu.isOpen) { sound.unlock(); room.cacho(input, power); } } }); let stopped = false, lastRevision = -1, lastPhase = 'lobby', lastTurn = null;
 let cameraView = 'plaza';
 const seatNodes = new Map();
-const room = new PokerConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
+const room = new PokerConnection({ code, name: loadName(), avatar: loadAvatar(), untimed: params.has('untimed'), onState: render, onStatus(text, failed = false) {
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
 const seating = createTableSeating($('table-seating'), (from, to) => {

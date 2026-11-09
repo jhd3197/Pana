@@ -1,11 +1,15 @@
 import { applyFriendNames } from '../../../engine/bot-names.js';
 import { PanaRoom, roomState, memberAvatar, fillBots, cleanKey } from '../../../server/src/room-kit.js';
 import { Poker } from '../public/rules.js';
+import { config } from '../../../server/src/config.js';
 
 export default class PokerRoom extends PanaRoom {
   state = new (roomState({}, undefined, 'PokerRoomState'))();
   onCreate(options) {
     super.onCreate(options); this.game = new Poker(); this.deadline = 0; this.lastTurn = '';
+    // ?untimed (browser suites only): no human turn is played by the clock, so a
+    // slow software-rendered screen never has its hand folded mid-check.
+    this.untimed = !!options?.untimed && config.debugRooms;
     const current = (fn) => (client, data) => { if (data?.revision === this.game.revision && fn(data)) this.publish(); };
     this.onHostMessage('options', current(data => this.game.configure(data.options, data.mapId)));
     this.onHostMessage('map', current(data => this.game.setMap(data.mapId)));
@@ -48,7 +52,7 @@ export default class PokerRoom extends PanaRoom {
   tick() {
     if (this.game.phase === 'starter') { if (this.game.stepStarter(.2)) this.publish(); return; }
     const p = this.game.players.find(p => p.id === this.game.turn);
-    if (!p || Date.now() < this.deadline) return;
+    if (!p || Date.now() < this.deadline || (this.untimed && !p.bot)) return;
     if (p.bot) this.game.botAction(); else this.game.act(p.id, this.game.legal(p.id)?.call ? 'fold' : 'call');
     this.publish();
   }

@@ -26,13 +26,13 @@ async function shot(p, name) {
   await p.setViewportSize({ width: 1280, height: 800 });
 }
 try {
-  const a = await openGame(browser, 'poquer', { name: 'Juan', room, query: 'debug' }), b = await openGame(browser, 'poquer', { name: 'María', room, query: 'debug' });
+  const a = await openGame(browser, 'poquer', { name: 'Juan', room, query: 'debug&untimed' }), b = await openGame(browser, 'poquer', { name: 'María', room, query: 'debug&untimed' });
   const pages = [a, b];
   await waitFor(a, () => poquerDebug.room.connected && poquerDebug.room.isHost && poquerDebug.room.state.players.length === 2);
   await waitFor(b, () => poquerDebug.room.connected && poquerDebug.room.state.players.length === 2);
-  // The host's seat order picks the dealer (no cachos), and the longest turn
-  // clock so a slow screen never has a hand folded for it.
-  await a.evaluate(() => poquerDebug.room.configure({ starter: 'anfitrion', turnSeconds: 40 })); await waitFor(b, () => poquerDebug.room.state.options.starter === 'anfitrion' && poquerDebug.room.state.options.turnSeconds === 40);
+  // The host's seat order picks the dealer (no cachos); ?untimed keeps the
+  // turn clock from folding a hand while a slow screen checks it.
+  await a.evaluate(() => poquerDebug.room.configure({ starter: 'anfitrion' })); await waitFor(b, () => poquerDebug.room.state.options.starter === 'anfitrion');
   await a.locator('#start').click(); await waitFor(b, () => poquerDebug.room.state.phase === 'preflop'); await synced(a, b);
 
   // Hand 1: check it down to a real showdown.

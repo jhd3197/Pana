@@ -118,6 +118,13 @@ before changing chips, options or the map, and publishes one new revision.
   opponents' hole cards and evaluated hand names remain private in every view.
 - Both practice and online play apply the selected turn deadline. Practice stops
   its timer in the shared pause menu; online play checks or folds on timeout.
+- Browser suites that are not about the clock open the room with `?untimed`
+  (honoured only with `PANA_DEBUG_ROOMS=1`, which the runner sets): the server
+  never plays a human turn on timeout. On software WebGL each Playwright click
+  costs several seconds, so the deal-to-first-raise stretch of the two-client
+  suite measured about 35 s of a 40 s clock locally, and on CI the clock folded
+  the opponent's hand before its card-back meshes were checked.
+  `options.browser.mjs` stays timed: it proves the deadline.
 
 `tests/options.test.js` covers every choice, exact Omaha combinations, limits,
 blind progression without wall-clock waits, elimination/rebuy, privacy, and 150
