@@ -146,6 +146,7 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
 /* results */
 #rank-toast{top:8%}
 #daily-line{flex-wrap:wrap}#daily-best{margin:0;white-space:nowrap}
+#ropero{display:grid;gap:12px}
 .titles .pk-row{gap:10px}
 .titles .title-name{font:400 17px var(--pk-display);color:var(--rel-gold)}
 .titles small{display:block;font:700 12px var(--pk-sans);color:var(--pk-muted)}

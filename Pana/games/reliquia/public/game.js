@@ -41,7 +41,9 @@ const notify = createToast($('toast'), { ms: 3400 });
 const qs = new URLSearchParams(location.search), code = roomCode();
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
 const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience(), samples = createSamples(), diver = createFosaProgress();
-const wearRank = () => view.wear(diver.progress.isUnlocked), stopWearing = diver.progress.onChange(wearRank);
+// The camp wardrobe's picks (ropero.js, once it loads); with none, the highest trim of each kind earned.
+let ropero = null;
+const wearRank = (picks = ropero?.picks.get()) => view.wear(diver.progress.isUnlocked, picks), stopWearing = diver.progress.onChange(() => wearRank());
 wearRank();
 // Scares are cosmetic and this screen's own; "Sustos" softens or stops them.
 let scares = loadScares(), dreadShown = -1; view.shakeScale = shakeFor(scares); view.scares = scares;
@@ -85,6 +87,7 @@ const showCalor = diver.calorChip($('room-options').querySelector('.pk-room-prim
 // The first load is at its module cap, so the Cuaderno lands just after it.
 let cuaderno = null;
 import('./cuaderno.js').then(m => { cuaderno = m.createFosaCuaderno({ diver, notify, lobby: $('room-options').querySelector('.pk-room-primary'), end: $('result-cuaderno'), clear: (a, b, s) => view.world.layout.lineClear(a, b, s, .1) }); }).catch(console.warn);
+import('./ropero.js').then(m => { ropero = m.createRopero({ parent: $('room-options').querySelector('.pk-room-primary'), progress: diver.progress, wear: wearRank }); }).catch(console.warn);
 const daily = createFosaDaily({ progress: diver.progress, shout, start: day => { sound.unlock(); room.action('start', { daily: day }); } });
 // A guest draws its own explorer where it predicts it, not a round trip behind.
 const me = () => { const p = state.players.find(p => p.id === room.id); const predicted = room.predicted; return predicted && p ? { ...p, x: predicted.x, z: predicted.z, y: predicted.y, vx: predicted.vx, vz: predicted.vz, moving: predicted.moving, stamina: predicted.stamina, jumpHeight: predicted.jumpHeight ?? p.jumpHeight } : p; };
@@ -275,8 +278,8 @@ view.onFx = e => {
   if (e.type !== 'break' && (keys.has('e') || touch.has('e')) && Math.hypot(e.x - p.x, e.z - p.z) < 5) { view.hands.knock(); if (!stillness.matches) view.shake(e.type === 'hit' ? .13 : .22); }
 };
 record.showLobby(name); show('loading', false); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { dead = true; clearInterval(ticker); stopWearing(); cuaderno?.dispose(); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
-if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record, saves,
+addEventListener('pagehide', () => { dead = true; clearInterval(ticker); stopWearing(); cuaderno?.dispose(); ropero?.dispose(); notify.dispose(); intel.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); fx.dispose(); view.dispose(); });
+if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money, record, saves, get ropero() { return ropero; },
   get state() { return state; }, get me() { return me(); },
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += .05) room.game.update(Math.min(.05, seconds - t), room.inputs); room.publish(); },
   place(id, x, z, h) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; if (h !== undefined) p.h = h; room.publish(); } },

@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: en el campamento eliges qué recortes ganados lleva tu traje.**
+  Traje, casco y farol: lo que tu rango ya ganó se puede escoger, lo que falta sale en gris con el rango que lo da. Sin escoger nada, llevas lo más alto, como antes.
+
 ## 0.10.0 - 2026-11-09
 
 - **Póquer: al final de la mano ves la mesa, la mano ganadora y por qué ganó.**

@@ -25,7 +25,7 @@ import { formatNumber } from '/engine/i18n.js';
 import { holds, alive, cartValue, liftView } from './rules.js';
 import { HOPPER, packCart } from './carga.js';
 import { SILBON } from './silbon.js';
-import { FAROLES, PLAIN, SEAT_COLORS, SUIT_HEAD, lookFor, lookKey, seatColor, suitedAvatar } from './suit-look.js';
+import { FAROLES, PLAIN, SEAT_COLORS, SUIT_HEAD, chosenLook, lookKey, seatColor, suitedAvatar } from './suit-look.js';
 import { dressExplorer, disposeSuits } from './explorer-suit.js';
 import { createHeadlamps } from './headlamps.js';
 import { createHands } from './hand-view.js';
@@ -447,9 +447,10 @@ export function createView(canvas, { seed = 1, depth = 1 } = {}) {
     get congo() { return congo; },
     get lookName() { return lookName; },
     get ownLook() { return ownLook; },
-    // isUnlocked: progress.isUnlocked. Sleeves and cuffs now; the suit on its next build.
-    wear(isUnlocked) {
-      const next = lookFor(isUnlocked);
+    // isUnlocked: progress.isUnlocked; picks: the camp wardrobe's (suit-look.js chosenLook).
+    // Sleeves and cuffs now; the suit on its next build.
+    wear(isUnlocked, picks) {
+      const next = chosenLook(isUnlocked, picks);
       if (lookKey(next) === lookKey(ownLook)) return;
       ownLook = next; hands.wear(next); tintHeadlamp();
     },
