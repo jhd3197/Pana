@@ -36,17 +36,7 @@ try {
   await page.locator('#search').fill('');
   const downloadPromise = page.waitForEvent('download'); await page.locator('#export').click(); const download = await downloadPromise;
   assert.equal(download.suggestedFilename(), 'pana-studio-seleccion.json'); await download.saveAs(`${output}/inventory.json`);
-  for (const asset of assets) {
-    await page.locator('#nav-library').click();
-    // Map constructors can occupy the main thread during the click itself.
-    // Use the same budget as the subsequent preview-ready check.
-    await page.locator(`[data-asset="${asset.id}"]`).click({ timeout: 90000 });
-    await page.waitForFunction(id => panaLibrary.selected === id && document.querySelector('#preview-status').hidden, asset.id, { timeout: 90000 });
-    assert.equal(await page.locator('#source').getAttribute('href'), asset.source);
-    assert.equal(await page.evaluate(() => Number.isFinite(panaLibrary.camera.position.length()) && panaLibrary.current.group.children.length > 0), true, asset.id);
-    if (['pana-chef', 'car-chamo', 'car-machito', 'plaza', 'track-estadio', 'mangoTree'].includes(asset.id)) await page.screenshot({ path: `${output}/${asset.id}.png` });
-    console.log(`preview ${asset.id}`);
-  }
+  // Every entry's preview is checked by the studio-previews-<n> suites.
   await page.locator('#nav-library').click(); await page.locator('[data-category="Mapas"]').click(); assert.ok(await page.locator('[data-asset]').count() >= 10);
   await page.setViewportSize({ width: 390, height: 844 }); await page.locator('[data-category="Personajes"]').click(); await page.locator('[data-asset="pana"]').click();
   await page.waitForFunction(() => panaLibrary.selected === 'pana' && document.querySelector('#preview-status').hidden);
@@ -67,5 +57,5 @@ try {
   });
   assert.deepEqual(adapter.wardrobe, ['hoodie', 'chef', 'round', true]); assert.equal(adapter.version, 'studio-v1');
   assert.equal(adapter.migratedOutfit, 'franela'); assert.ok(adapter.triangles < 80000); assert.deepEqual(adapter.driver, [1.3, -Math.PI / 2, true]);
-  assert.deepEqual(errors, []); console.log('PASS: all catalog previews, filters, inventory export, mobile, saved wardrobe and standing/seated game adapter', adapter);
+  assert.deepEqual(errors, []); console.log('PASS: filters, inventory export, mobile, saved wardrobe and standing/seated game adapter', adapter);
 } finally { await browser.close(); }

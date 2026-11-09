@@ -42,9 +42,23 @@ try {
   await guest.keyboard.up('a');
   await guest.keyboard.down(' ');
   await waitFor(guest, () => !document.getElementById('power-bar').hidden);
-  await guest.waitForFunction(() => parseInt(document.getElementById('power-value').textContent) >= 40, null, { timeout: 30_000, polling: 30 }).catch(async e => {
-    console.log('DIAG', await guest.evaluate(() => ({ hidden: document.hidden, bar: document.getElementById('power-bar').hidden, text: document.getElementById('power-value').textContent, phase: capisDebug.match.phase, ctl: capisDebug.room.state.controller, id: capisDebug.room.id, playing: capisDebug.playing })));
-    throw e; });
+  // The meter swings up and down every two seconds. On software GL the guest page can
+  // starve its own timers and frames, so drive the charge from here: each step reads the
+  // clock through update(), re-presses Space if the hold was dropped, and lets go through
+  // the game's own keyup handler the moment the power is past 40%.
+  let fired = false;
+  for (const end = Date.now() + 30_000; !fired && Date.now() < end;) {
+    fired = await guest.evaluate(() => {
+      const c = capisDebug.charge;
+      if (!c.active) { c.begin(' '); return false; }
+      if (!(c.update() >= .4) || parseInt(document.getElementById('power-value').textContent) < 40) return false;
+      dispatchEvent(new KeyboardEvent('keyup', { key: ' ' }));
+      return true;
+    });
+    if (!fired) await new Promise(r => setTimeout(r, 40));
+  }
+  if (!fired) console.log('DIAG', await guest.evaluate(() => ({ hidden: document.hidden, bar: document.getElementById('power-bar').hidden, text: document.getElementById('power-value').textContent, active: capisDebug.charge.active, phase: capisDebug.match.phase, ctl: capisDebug.room.state.controller, id: capisDebug.room.id, playing: capisDebug.playing })));
+  assert.ok(fired, 'the guest charged past 40% and let go of Space');
   await guest.keyboard.up(' ');
   await waitFor(host, () => capisDebug.room.state.events.some(e => e.type === 'fire' && e.team === 1));
   await waitFor(host, () => capisDebug.match.turn.team === 0 && capisDebug.match.phase === 'aim', null, 90_000);
@@ -68,6 +82,9 @@ try {
   assert.deepEqual(await beto.evaluate(() => capisDebug.room.state.players.map(p => [p.name, p.team])), [['Ana', 0], ['Beto', 1]], 'one capi each');
   assert.equal(await ana.locator('#capis-roster').isHidden(), true, 'no team cards');
   await ana.locator('#start').click();
+  // The setup comes first (setup.browser.js covers it); the host starts at once.
+  await waitFor(beto, () => capisDebug.inSetup);
+  await ana.locator('#setup-go').click();
   await waitFor(beto, () => capisDebug.playing && capisDebug.match.phase === 'aim' && capisDebug.match.teams === 6);
   const six = page => page.evaluate(() => capisDebug.match.capys.map(c => [c.id, c.team, +c.x.toFixed(1)]));
   assert.deepEqual(await six(beto), await six(ana), 'the same six capis at the same spots');
@@ -79,11 +96,16 @@ try {
   await waitFor(beto, () => capisDebug.match.turn.team === 2 && capisDebug.match.crates.length > 0, null, 60_000);
   const crate = page => page.evaluate(() => capisDebug.match.crates.map(k => [k.id, +k.x.toFixed(1), k.weapon]));
   assert.deepEqual(await crate(beto), await crate(ana), 'the crate on turn 3 reaches both');
-  await ana.evaluate(async () => {
+  const eliminated = await ana.evaluate(async () => {
     const m = capisDebug.match, c = m.capys.find(k => k.team === 1), { explode } = await import('/g/capis/rules.js');
     c.paint = 99; explode(m, c.x, c.y + .6, 2, 'grenade');
+    return { id: c.id, out: c.out, tomb: m.tombs.some(t => t.id === c.id) };
   });
-  await waitFor(beto, () => capisDebug.match.tombs.length === 1 && capisDebug.match.capys.find(c => c.team === 1).out === 'paint');
+  assert.equal(eliminated.out, 'paint', 'the host eliminates the intended capi');
+  assert.equal(eliminated.tomb, true, 'the host creates its tombstone');
+  // Another capi can already be out on an authored map. Check this capi's
+  // replicated tombstone rather than assuming it is the only one in the match.
+  await waitFor(beto, id => capisDebug.match.tombs.some(t => t.id === id) && capisDebug.match.capys.find(c => c.id === id).out === 'paint', eliminated.id);
   assert.deepEqual([...ana.errors, ...beto.errors], []);
   console.log('PASS capis online: todos contra todos, a capi per pana, the machine plays the rest, crates and tombstones on both screens.');
 } finally { await browser.close(); }

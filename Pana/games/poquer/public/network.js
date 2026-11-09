@@ -11,7 +11,7 @@ export class PokerConnection {
   async connect() {
     this.solo = false; this.onStatus(loc('Conectando con tus panas…'));
     try {
-      const link = await joinRoom('poquer', { code: this.code, name: this.name, avatar: this.avatar, lead: leadFromUrl() });
+      const link = await joinRoom('poquer', { code: this.code, name: this.name, avatar: this.avatar, lead: leadFromUrl(), untimed: !!this.untimed });
       if (this.local || this.disposed) { link.leave(); return; } this.link = link; this.connected = true;
       link.on('view', state => { if (!this.local) { this.state = state; this.onState(state); } });
       link.on('state', () => { if (!this.local) this.onState(this.state); });

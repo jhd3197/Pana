@@ -45,7 +45,8 @@ host selection, reconnection and invitations.
 
 `tests/rules.test.js` includes ranking, privacy, blinds, short raises, side
 pots, odd chips, departures and 200 deterministic randomized legal hands.
-`npm run test:browser -- poquer` proves distinct private views over real rooms,
+`npm run test:browser -- poquer` (browser, seats, mobile, showdown and options
+suites) proves distinct private views over real rooms,
 betting through showdown, conservation, rematch, host departure, new arrivals,
 local bots, shared pause, and mobile layouts. `qa/` screenshots stay ignored.
 
@@ -118,6 +119,29 @@ before changing chips, options or the map, and publishes one new revision.
   opponents' hole cards and evaluated hand names remain private in every view.
 - Both practice and online play apply the selected turn deadline. Practice stops
   its timer in the shared pause menu; online play checks or folds on timeout.
+- Browser suites that are not about the clock open the room with `?untimed`
+  (honoured only with `PANA_DEBUG_ROOMS=1`, which the runner sets): the server
+  never plays a human turn on timeout. On software WebGL each Playwright click
+  costs several seconds, so the deal-to-first-raise stretch of the two-client
+  suite measured about 35 s of a 40 s clock locally, and on CI the clock folded
+  the opponent's hand before its card-back meshes were checked.
+  `options.browser.mjs` stays timed: it proves the deadline.
+- `?untimed` also never slams a pana's cacho: the shake clock stops just short
+  of its 8 s limit (bots still slam on their own). Otherwise a slow screen saw
+  the whole ¿Quién empieza? (about 14 s) end before it drew the cachos. The
+  suite throws every round itself, ties included (about one start in six).
+- Under software WebGL a table frame costs 300 to 500 ms with two pages open
+  (about 1.6 M triangles, most of them the plaza and the seated panas) and it
+  blocks the page, so every Playwright call, even an `evaluate`, waits about one
+  frame; a click waits several. CI runs these steps four to five times slower
+  than a desktop. The suites share `tests/poker-kit.js`: shadows off, 75 %
+  resolution, no frame-rate guard (about 30 % less per call), and the online
+  proof is split so each suite stays well under the 600 s limit:
+  `browser.mjs` (cachos, privacy, one full hand), `seats.browser.mjs` (host
+  leaves, newcomer, all-in, rejoin) and `mobile.browser.mjs` (phone practice).
+- Two screens are "the same" only at the same revision: whichever is a message
+  behind waits for the other's newer revision. Waiting on one page for the
+  other's revision read first fails when that page is the one behind.
 
 `tests/options.test.js` covers every choice, exact Omaha combinations, limits,
 blind progression without wall-clock waits, elimination/rebuy, privacy, and 150

@@ -1,11 +1,14 @@
 // The TV narrator and the ref: what they shout for each fight event, plus
-// the ringside sounds (gloves, the bell, the crowd). Lines come from the
+// the ringside sounds (gloves, the bell, the crowd) and each fighter's own
+// little voice (engine/voice.js: the same pitch for a fighter on every screen). Lines come from the
 // event; the voice uses the browser's Spanish speech when sound is on.
 // Languages: LINES are the announcer's Venezuelan colour commentary and stay
 // Spanish everywhere. The other lines are interface (who won, what happened):
 // lineFor returns their Spanish source (locKey) plus vars, the HUD shows
 // loc(text, vars) and the voice always speaks the Spanish.
 import { sound } from '/engine/fx.js';
+import { pitch } from '/engine/sfx.js';
+import { createVoices } from '/engine/voice.js';
 import { locKey } from '/engine/i18n.js';
 
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -111,21 +114,22 @@ function bell(times = 3) {
 }
 export const crowd = (power = 1) => noise(1.2 + power * .6, { freq: 1100, q: .5, vol: .09 * power, attack: .15 });
 
+const voices = createVoices({ sound, pitch });
 export function sfx(e) {
   if (!sound.ctx || sound.muted) return;
   switch (e.type) {
-    case 'hit': noise(.055, {freq:1450,q:1.1,vol:.09,attack:.004}); sound.bonk(e.counter ? 1.6 : 1); break;
-    case 'trompon': sound.bonk(3); sound.sweep(260, 70, .3, 'sine', .2); crowd(1.2); break;
+    case 'hit': noise(.055, {freq:1450,q:1.1,vol:.09,attack:.004}); sound.bonk(e.counter ? 1.6 : 1); voices.say(e.id, e.move === 'jab' ? 'hurt' : 'oof', { volume: .9, delay: .03 }); break;
+    case 'trompon': sound.bonk(3); sound.sweep(260, 70, .3, 'sine', .2); crowd(1.2); voices.say(e.id, 'oof', { delay: .05 }); break;
     case 'block': sound.tone(220, 0, .06, 'square', .05); break;
     case 'wind': sound.sweep(180, 420, .5, 'triangle', .05); break;
     case 'jab': case 'dodge': case 'grab': sound.whoosh(); break;
     case 'shove': case 'empujon': sound.bonk(.8); sound.plop(); break;
-    case 'dizzy': sound.boing(); break;
-    case 'caida': sound.bonk(3.4); sound.boing(); crowd(1.6); break;
+    case 'dizzy': sound.boing(); voices.say(e.id, 'dizzy', { volume: .8, delay: .1 }); break;
+    case 'caida': sound.bonk(3.4); sound.boing(); crowd(1.6); voices.say(e.id, 'ko', { delay: .15 }); break;
     case 'count': sound.tone(e.n >= 8 ? 520 : 440, 0, .12, 'square', .08); break;
-    case 'rise': sound.pickup(2); crowd(.8); break;
+    case 'rise': sound.pickup(2); crowd(.8); voices.say(e.id, 'rise', { volume: .8 }); break;
     case 'bell': case 'campana': bell(e.type === 'bell' ? 1 : 3); break;
-    case 'fin': bell(3); crowd(2); break;
+    case 'fin': bell(3); crowd(2); voices.say(e.winner, 'win', { delay: .9 }); break;
     case 'moto': sound.sweep(300, 900, 1.2, 'sawtooth', .04); sound.sweep(900, 200, 1.4, 'sawtooth', .03); break;
     case 'mano': sound.pickup(3); break;
     case 'toro': noise(1.4, { freq: 180, q: .8, vol: .25 }); crowd(2); break;
@@ -134,9 +138,10 @@ export function sfx(e) {
     case 'throw': sound.whoosh(); break;
     case 'impacto': sound.bonk(3); sound.splat(); crowd(1.2); break;
     case 'relevo': sound.tone(660, 0, .1, 'square', .07); sound.tone(880, .1, .12, 'square', .07); break;
-    case 'fuera': sound.boing(); crowd(1.4); break;
+    case 'fuera': sound.boing(); crowd(1.4); voices.say(e.id, 'ko', { delay: .1 }); break;
     case 'bet': sound.tick(2); break;
-    case 'cheer': case 'taunt': crowd(.6); break;
+    case 'cheer': crowd(.6); break;
+    case 'taunt': crowd(.6); voices.say(e.id, 'taunt', { volume: .8 }); break;
     case 'noche': sound.horn('fiesta'); break;
     case 'ropes': sound.boing(); break;
     default: break;

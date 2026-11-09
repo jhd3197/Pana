@@ -28,7 +28,7 @@ try {
   await shot(page, 'lobby');
   // Todos contra todos: six sides on the big map, spread out, and back. The tombstone picker: one free, the rest locked.
   await page.locator('[data-room-option="mode"][data-value="ffa"]').click();
-  await waitFor(page, () => capisDebug.match.mode === 'ffa' && capisDebug.match.map.width === 180 && capisDebug.world.match === capisDebug.match);
+  await waitFor(page, () => capisDebug.match.mode === 'ffa' && capisDebug.match.map.width === 220 && capisDebug.world.match === capisDebug.match);
   assert.deepEqual(await page.evaluate(() => capisDebug.match.capys.map(c => c.team)), [0, 1, 2, 3, 4, 5]);
   assert.ok(await page.evaluate(() => { const xs = capisDebug.match.capys.map(c => c.x); return Math.max(...xs) - Math.min(...xs) > 100; }), 'spread over the map');
   assert.equal(await page.locator('[data-room-option="size"]').first().isVisible(), false, 'the big map is not a choice here');
@@ -97,10 +97,13 @@ try {
   if (shots) await page.screenshot({ path: path.join(shots, 'capis-models-charge.png') });
   await page.keyboard.up(' ');
   await page.evaluate(() => { capisDebug.world.closeUp = 0; });
-  await waitFor(page, () => capisDebug.match.shots === 1);
-  await waitFor(page, () => capisDebug.match.phase === 'flight');
+  // The match view renders at a few frames a second under software WebGL and
+  // the clock steps at most .25 s a frame, so a shell's flight can take a
+  // minute or more of wall time on a CI runner: wait on the phase, longer.
+  await waitFor(page, () => capisDebug.match.shots === 1, undefined, 120_000);
+  await waitFor(page, () => capisDebug.match.phase === 'flight', undefined, 120_000);
   await shot(page, 'flight');
-  await waitFor(page, () => capisDebug.match.phase !== 'flight');
+  await waitFor(page, () => capisDebug.match.phase !== 'flight', undefined, 240_000);
   const after = await page.evaluate(solid);
   assert.ok(after < before - 300, `the shell dug a crater (${before - after} cells)`);
   assert.ok(await page.evaluate(() => capisDebug.match.mask.stain.some(v => v > 0)), 'paint on the ground');

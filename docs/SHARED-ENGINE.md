@@ -176,7 +176,11 @@ mask, { palette, rockAt, grassAt, zBack, zFront, back, renderer })` builds the
 front face, a wall extruded from the outline and an optional back wall (the
 starting ground plus `mask.hollow`), three draws in all, with soil, strata,
 pebbles, roots, rock, sand, a grass band with short tufts and the paint all
-computed in the fragment shader (Lambert lighting and fog kept).
+computed in the fragment shader (Lambert lighting and fog kept). `lite: true`
+(opt-in; Capis sets it at low detail) keeps the silhouette, plain strata
+bands, rock layers, grass, sand, scorch and paint and drops the fine grain,
+seams, pebbles, roots, cracks and band blending: about twice the frame rate
+under a software renderer, where the full shader is most of a frame.
 `palette.strata` (keys of `DEFAULT_STRATA`: topsoil, ash, clay, pumice, ochre,
 loam, base and seam colours, `period`, `fold`, `tilt`, `phase`) sets the soil
 profile; `setStrata(strata)` swaps it for the next map without a rebuild.
@@ -228,7 +232,8 @@ max)` (removes ground not joined to the bottom row, reports bigger pieces),
 `walkTo(mask, x, dir)` (how far a walker gets one way, down ledges included),
 `skyExposure` and `headroom`; `floorGraph(mask, { water })` (every floor a
 walker stands on, caves, tunnels and bridges included, with walk, drop and
-hop edges: `reach`, `distance`, `near`, `layered`), `coverToward(mask, x, y,
+hop edges: `reach`, `reachedBy` (every floor that gets to one, in one
+search), `distance`, `near`, `layered`), `coverToward(mask, x, y,
 dir)` (how sheltered a spot is from one side) and `relief(mask)` (relief,
 bumpiness and dry share of the top). The game keeps its own design (Capis:
 `games/capis/public/map-rules.js`).
@@ -631,7 +636,26 @@ sfx.shot('scatter'); sfx.step('grass', { sprint: true, foot: 1 });
 ```
 
 Used by: Pepazo, Reliquia (steps, jump, landing), Capis a Pintazos (bazooka,
-boom with distance, debris, patter, splat, boing, squeak, splash, chime, tick, sting). Notes: `docs/knowledge/shared-sfx.md`.
+boom with distance, debris, patter, splat, boing, splash, chime, tick, sting). Notes: `docs/knowledge/shared-sfx.md`.
+
+### Character voices
+
+`engine/voice.js`. A cartoon voice per character for its own reactions:
+`hurt` ("eep"), `oof`, `jump`, `ko`, `win`, `taunt`, `dizzy`, `rise`, as tone
+glides from `sfx.js`'s `pitch`. The pitch, pace and timbre come from a hash of
+the character's id, so it sounds the same all match and on every screen. One
+character speaks at most every 0.35 s and at most two lines start within
+0.3 s; lines use voice priority 1, below shots, hits and cues. Nothing plays
+before audio is unlocked or while muted; the master volume applies.
+
+```js
+const voices = createVoices({ sound, pitch });   // sound from fx.js, pitch from sfx.js
+voices.say(capi.id, 'hurt', { volume: .8, delay: 0 });
+```
+
+Never for music, UI, shots, explosions or a cue the player needs. Used by:
+Capis a Pintazos (hit, jump, out, the winner), Trifulca (hit, trompón, dizzy,
+caída, rise, fuera, taunt, the winner). Test: `engine/tests/voice.test.js`.
 
 ### Sampled clips (short MP3s a game ships)
 
@@ -1275,3 +1299,15 @@ git ls-files 'Pana/engine/*.js' 'Pana/engine/play/*.js'
 Imports are matched by path, so a game that loads a module through a re-export or
 a dynamic `import()` with a variable path can be missed; fix the row if you find
 one.
+
+### Authored stair footing
+
+`engine/play/stair-footing.js`, used by `side-walker.js` when a caller passes
+`stairs: true` and supplies `mask.stairs` as world-space x intervals. It follows
+steps up to `STAIR_RISE` (1.05), requires standing headroom, and uses narrow foot
+contacts on those runs. Outside the runs the normal circular collision stays
+unchanged. Capis opts in for the authored studio tepuy flanks; jump height,
+gravity, movement speed and projectile hitboxes do not change. Its regression
+suite checks both directions, tall walls, ceilings and opt-in isolation.
+`floorGraph` also accepts a `stepUp(x)` callback and optional `hopSpeeds` for
+navigation that represents these runs and air steering without raising jumps.

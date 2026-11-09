@@ -45,6 +45,12 @@ on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
   costs nothing and the host never expires it; a new host gets it at once.
   An `inputMessage` that stamps a clock (Curiara's `now`) changes every
   tick and so still goes out every tick.
+  A guest whose own frames come slower than `inputTtl` (a busy phone, CI's
+  software WebGL at 1–2 s a frame) used to lose a held key between its
+  inputs: a 2.6 s hold of E took 14 s of wall time. The host now keeps each
+  guest's input for 1.5 of that guest's usual gaps (at most 3 s), judged on
+  the gap before the latest input, so a guest that stops sending still
+  expires at `inputTtl`.
   Unit tests: `engine/tests/live-room.test.js`.
 - **Prediction (`engine/predict.js`)**: pass `predict: { body(state, id),
   step(body, input, dt, state) }` as LiveRoom's second argument and draw your

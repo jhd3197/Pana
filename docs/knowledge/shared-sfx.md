@@ -47,6 +47,7 @@ to `PROFILES` in `vehicle-revs.js` (the test checks it fires in an audible band)
 ## Rules
 
 - Use `admit` priorities as the library does: footsteps 0, impacts and reload 1, shots 2, hit/hurt/countdown 3.
+- Character voices (`engine/voice.js`) ride at priority 1 and pass a rate gate, so a blast hitting several characters gives two squeaks, not a chorus; the gate drops the line rather than queueing it. Feed `say` the capi's distance volume the way Capis does with `world.hearing`.
 - Keep per-game code to the mapping: Carreritas maps a car id to a profile in `drift-audio.js`; Pepazo maps a weapon to a shot kind in `sounds.js`.
 - Check a change without a speaker: render with an `OfflineAudioContext`, then look at peak, RMS and the dominant frequency. All sounds peak under 0.35 at a master volume of 0.5.
 

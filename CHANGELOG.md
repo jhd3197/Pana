@@ -8,6 +8,25 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Póquer: al final de la mano ves la mesa, la mano ganadora y por qué ganó.**
+  Las cinco cartas ganadoras se iluminan, con el nombre de la mano y el desempate (kicker, mesa que juega, pozos laterales). Si te retiraste, solo tú ves tus cartas en gris, y "¡Habrías ganado!" solo cuando es cierto con la mesa real.
+- **Fosa: la Escalera de Calor guarda tu Calor máximo.**
+  Termina una expedición con más Calor que nunca y ganas XP extra una sola vez; tu Calor máx se ve en la sala y al terminar.
+- **Capis a Pintazos, todos contra todos: antes de empezar se elige el mapa y dónde arranca cada capi.**
+  El anfitrión escoge entre tres mapas; cada pana toca el mapa para poner a sus capis y la máquina pone al resto.
+- **Capis a Pintazos: juega en La Corona, El Cañón y Los Morochos del Map Studio.**
+  Los mapas conservan su terreno original; los capis suben sus escalones y arrancan separados, con cobertura. Cada partida reparte distinto quién arranca dónde; el anfitrión y sus panas ven el mismo mapa, bloqueado al empezar.
+- **Capis a Pintazos corre más fluido en calidad Rápida.**
+  En calidad Rápida el suelo se dibuja más simple (mantiene sus capas, la grama y la pintura), así las compus lentas van más rápido. Contra la máquina, el reloj y los disparos ya no van en cámara lenta cuando la compu dibuja pocos cuadros.
+- **Capis a Pintazos y Trifulca: cada capi tiene su propia vocecita.**
+  Chilla cuando le pegan, dice "hup" al saltar, se queja al caer y celebra al ganar, cada uno con su tono, igual en todas las pantallas.
+- **Capis a Pintazos: cada capi muestra cuánta vida le queda.**
+  Sobre cada capi, tuyo o rival, va su número de vida en un cuadrito que pasa de verde a amarillo y a rojo; la lista de equipos dice el mismo número.
+- **Capis a Pintazos: con mando, RT dispara y A salta.**
+  Mantén RT (R2) para cargar y suéltalo para pintar; A (Cruz) salta, como en Pepazo.
+- **Tu pana ya se puede vestir de samurái o del inframundo.**
+  En el vestidor hay armadura samurái con kabuto, y capucha del inframundo con huesos; cada pieza se combina y cambia de color.
+
 ## 0.9.0 - 2026-11-07
 
 - **Caída, Dominó y Ludo: ¿te dio rabia? Voltea la mesa.**
