@@ -3,6 +3,7 @@
 // diving suit's parts in the sculpt's own units. Renderer-free so tests can
 // read it; explorer-suit.js turns it into meshes. Looks only: nothing here
 // reaches the rules, and a suited pana walks exactly like any other.
+import { locKey } from '../../../engine/i18n.js';
 
 // One colour per seat: name tag, map dot, paint and suit all match.
 export const SEAT_COLORS = ['#f0392f', '#17b9d6', '#ffd93a', '#55c93a', '#a56bff', '#ff7fbe', '#3d78f5', '#ff7a2a'];
@@ -168,6 +169,28 @@ export const lookKey = look => `${look.traje || ''}|${look.casco || ''}|${look.f
 export function lookFor(isUnlocked) {
   const highest = (table, kind) => Object.keys(table).filter(id => isUnlocked(`${kind}:${id}`)).pop() ?? null;
   return { traje: highest(TRAJES, 'traje'), casco: highest(CASCOS, 'casco'), farol: highest(FAROLES, 'farol') };
+}
+
+// The camp's wardrobe (ropero.js): every look of each kind, plain first, with the
+// unlock id that earns it. Plain is always yours.
+const option = (kind, id, name) => ({ id, name, unlock: id ? `${kind}:${id}` : null });
+export const ROPERO = {
+  traje: [option('traje', null, locKey('Sin recorte')), option('traje', 'franja', locKey('Franja')), option('traje', 'remiendo', locKey('Remiendo')), option('traje', 'capataz', locKey('Capataz')), option('traje', 'leyenda', locKey('Leyenda'))],
+  casco: [option('casco', null, locKey('Latón')), option('casco', 'cobre', locKey('Cobre')), option('casco', 'plata', locKey('Plata')), option('casco', 'oro', locKey('Oro'))],
+  farol: [option('farol', null, locKey('Blanco')), option('farol', 'ambar', locKey('Ámbar'))],
+};
+export const ROPERO_KINDS = [['traje', locKey('Traje')], ['casco', locKey('Casco')], ['farol', locKey('Farol')]];
+// What this pana chose to wear: `picks` is { kind: id | null } (null = plain). A kind
+// with no pick, or a pick that is unknown or not (or no longer) earned, wears the
+// highest earned, so nobody's look changes until they choose.
+export function chosenLook(isUnlocked, picks) {
+  const best = lookFor(isUnlocked), saved = picks && typeof picks === 'object' && !Array.isArray(picks) ? picks : {};
+  const pick = kind => {
+    if (!Object.hasOwn(saved, kind)) return best[kind];
+    const found = ROPERO[kind].find(o => o.id === saved[kind]);
+    return found && (!found.unlock || isUnlocked(found.unlock)) ? found.id : best[kind];
+  };
+  return { traje: pick('traje'), casco: pick('casco'), farol: pick('farol') };
 }
 export const suitTones = (look = PLAIN) => ({ ...TONES, ...CASCOS[look.casco] });
 export function suitParts(look = PLAIN) {
