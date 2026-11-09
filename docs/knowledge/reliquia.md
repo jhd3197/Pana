@@ -1134,6 +1134,24 @@ rank can turn it off. No engine change was needed.
 - "¡Otra expedición!" starts straight from the results with the same options,
   since the lobby only shows before a room's first dive.
 
+### Escalera de Calor (`createCalorLadder` in `progress.js`)
+
+Each device keeps the highest Calor this pana finished at, under
+`pana:reliquia:calor-max`. A record and a reward, never a gate: pacts stay gated by
+rank only.
+
+- **What counts is the streak's test** (`countsForStreak`): a jornada cleared, or an
+  extraction with haul. Spectators and dives that do not count never climb.
+- **A new rung pays once:** 10 XP per level above the old best, receipt
+  `calor:<N>`, `dive: false`, on the same "+N XP" line as the daily bonus. Its toast
+  ("Nuevo Calor máximo: N") waits behind a rank-up and the daily's, 2.7 s apart.
+- **Idempotent twice over:** the ladder stores the last dive receipt it climbed on,
+  and the best only rises, so a reload of the results or another tab changes nothing.
+- **It lives in `progress.js`, not its own file,** because Fosa's first load sits at
+  the module cap.
+- The lobby shows "Calor máx N" beside the Calor chip, and the results row beside
+  "Calor +N %", only once N is above 0.
+
 ## Cuaderno del buzo (`cuaderno.js`)
 
 Each device keeps its own book on `engine/logbook.js`, under

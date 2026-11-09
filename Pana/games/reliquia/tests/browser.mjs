@@ -9,7 +9,11 @@ import { launch, openGame, waitFor, qaDir, base } from '../../../tests/browser-k
 const output = qaDir(import.meta.url), room = `reliquia-qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
 const browser = await launch();
-const open = async (name, mobile = false) => { const p = await openGame(browser, 'reliquia', { name, room, mobile, query: 'debug' }); p.setDefaultTimeout(90_000); await waitFor(p, () => window.reliquia?.room.connected); return p; };
+// The late phone gets a browser of its own, as a friend's phone would: pages in one
+// headless browser share a GPU process, and two panas already rendering there made
+// its scene take minutes to prepare on CI's software WebGL.
+let phone = null;
+const open = async (name, mobile = false, into = browser) => { const p = await openGame(into, 'reliquia', { name, room, mobile, query: 'debug' }); p.setDefaultTimeout(90_000); await waitFor(p, () => window.reliquia?.room.connected); return p; };
 const mine = page => page.evaluate(() => reliquia.state.players.find(p => p.id === reliquia.room.id));
 const place = (host, id, x, z, h) => host.evaluate(({ id, x, z, h }) => reliquia.place(id, x, z, h), { id, x, z, h });
 const settled = (page, x, z) => waitFor(page, ({ x, z }) => { const p = reliquia.state.players.find(p => p.id === reliquia.room.id); return Math.hypot(p.x - x, p.z - z) < .4; }, { x, z });
@@ -29,7 +33,9 @@ try {
   await b.keyboard.down('w'); await waitFor(b, z => reliquia.me.z < z - 1, z0); await b.keyboard.up('w');
   await waitFor(a, ({ id, z }) => reliquia.state.players.find(p => p.id === id).z < z - 1, { id: ids.b, z: z0 }); check('first-person W walks where the guest looks, on both screens');
 
-  await a.evaluate(id=>{window.jumpPeak=0;const previous=reliquia.room.onState;reliquia.room.onState=s=>{jumpPeak=Math.max(jumpPeak,s.players.find(p=>p.id===id)?.jumpHeight||0);previous(s);};},ids.b);
+  // Watch every host simulation step, not just publishes: on software WebGL one
+  // slow host frame catches up a whole second, and a jump fits inside it.
+  await a.evaluate(id=>{window.jumpPeak=0;const g=reliquia.room.game,update=g.update;g.update=function(...args){const r=update.apply(this,args);jumpPeak=Math.max(jumpPeak,this.players.find(p=>p.id===id)?.jumpHeight||0);return r;};},ids.b);
   await b.keyboard.press('Space');
   await waitFor(a, () => window.jumpPeak > .1);
   await waitFor(b, () => reliquia.state.players.find(p => p.id === reliquia.room.id).jumpHeight === 0);
@@ -42,9 +48,11 @@ try {
   await b.keyboard.press('e'); await waitFor(a, id => reliquia.state.players.find(p => p.id === id).hands.some(h => h?.kind === 'farol'), ids.b);
   await b.screenshot({ path: path.join(output, 'farol.png') }); check('a guest picks a farol off the camp table');
 
-  // Throw it: it flies, lands, and stays pickable.
+  // Throw it: it flies, lands, and stays pickable. The flight (under a second)
+  // fits inside one slow host tick, so watch the host's steps, not its publishes.
+  await a.evaluate(() => { window.farolFlew = false; const g = reliquia.room.game, update = g.update; g.update = function (...args) { const r = update.apply(this, args); farolFlew ||= this.items.some(i => i.kind === 'farol' && i.state === 'air'); return r; }; });
   await face(b, 0); await b.keyboard.press('g');
-  await waitFor(a, () => reliquia.state.items.some(i => i.kind === 'farol' && i.state === 'air'));
+  await waitFor(a, () => window.farolFlew);
   await waitFor(a, () => reliquia.state.items.some(i => i.kind === 'farol' && i.state === 'ground')); check('thrown loot flies and lands for everyone');
 
   // A big treasure needs both: each grabs a side and they walk it to the truck.
@@ -93,7 +101,7 @@ try {
   await waitFor(a, t => reliquia.state.time > t + .2, t); await a.locator('#pana-resume').click(); check('a multiplayer menu does not pause the expedition');
 
   // A late phone joins at the camp and walks with the touch pad.
-  const c = await open('Luisa', true); await waitFor(c, () => reliquia.state.phase === 'playing');
+  phone = await launch(); const c = await open('Luisa', true, phone); await waitFor(c, () => reliquia.state.phase === 'playing');
   const cid = await c.evaluate(() => reliquia.room.id); const start = await mine(c);
   assert.equal(Math.round(start.x / 220), 0, 'late arrivals start at the camp');
   const pad = await c.locator('[data-move="w"]').boundingBox(), touch = await c.context().newCDPSession(c);
@@ -128,7 +136,7 @@ try {
   assert.deepEqual(errors, []); check('no uncaught browser errors');
 } catch (error) {
   const clients = [];
-  for (const context of browser.contexts()) for (const p of context.pages()) clients.push(await p.evaluate(() => window.reliquia ? { id: reliquia.room.id, phase: reliquia.state.phase, me: reliquia.me, items: reliquia.state.items, events: reliquia.state.events.slice(-6) } : location.href).catch(() => null));
+  for (const context of [browser, phone].flatMap(x => x?.contexts() ?? [])) for (const p of context.pages()) clients.push(await p.evaluate(() => window.reliquia ? { id: reliquia.room.id, phase: reliquia.state.phase, me: reliquia.me, items: reliquia.state.items, events: reliquia.state.events.slice(-6) } : location.href).catch(() => null));
   await writeFile(path.join(output, 'failure.json'), JSON.stringify(clients, null, 2));
   throw error;
-} finally { await browser.close(); }
+} finally { await browser.close(); await phone?.close(); }

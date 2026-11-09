@@ -58,6 +58,26 @@ test('a slow host keeps a held key that arrived since its previous tick', () => 
   assert.equal(room.inputs.has(2), false);
 });
 
+test('a slow guest keeps its held key between its own inputs, a stopped one does not', () => {
+  const room = new WalkRoom();
+  room.practice();
+  // A guest whose frames come every 1.8 s: its key lives 1.5 of those gaps.
+  room.arrived(2, 0); room.receive(2, { kind: 'input', input: { x: 1 } });
+  room.arrivals.get(2).gap = 1800;
+  room.tick(STEP, {}); room.inputs.get(2).at -= 1500; room.tick(STEP, {});
+  assert.equal(room.inputs.get(2)?.x, 1, 'held past inputTtl');
+  room.inputs.get(2).at -= 1500; room.tick(STEP, {});
+  assert.equal(room.inputs.has(2), false, 'gone after 1.5 gaps');
+  // Never longer than SLOW_GUEST_TTL, however long the guest froze.
+  room.receive(2, { kind: 'input', input: { x: 1 } }); room.arrivals.get(2).gap = 60_000;
+  room.tick(STEP, {}); room.inputs.get(2).at -= 3100; room.tick(STEP, {});
+  assert.equal(room.inputs.has(2), false, 'capped');
+  // A guest that sent every frame and then stopped expires at inputTtl, as before.
+  room.receive(2, { kind: 'input', input: { x: 1 } }); room.arrivals.get(2).gap = 16;
+  room.tick(STEP, {}); room.inputs.get(2).at -= 700; room.tick(STEP, {});
+  assert.equal(room.inputs.has(2), false, 'a stopped guest still expires');
+});
+
 test('guests send their cleaned input instead of stepping', () => {
   const room = new WalkRoom();
   room.id = 2; room.hostId = 1; room.connected = true; room.link = {};

@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Fosa: la Escalera de Calor guarda tu Calor máximo.**
+  Termina una expedición con más Calor que nunca y ganas XP extra una sola vez; tu Calor máx se ve en la sala y al terminar.
 - **Capis a Pintazos, todos contra todos: antes de empezar se elige el mapa y dónde arranca cada capi.**
   El anfitrión escoge entre tres mapas; cada pana toca el mapa para poner a sus capis y la máquina pone al resto.
 - **Capis a Pintazos: juega en La Corona, El Cañón y Los Morochos del Map Studio.**
