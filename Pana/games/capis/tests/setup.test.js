@@ -3,7 +3,7 @@
 // ground, and launching locks the seed and every start.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSetup, candidateSeeds, choose, place, unplace, launch, setupGround, resolveSpawns, dropPlayer, setOwner, seedOf, groundOf, PLACE_GAP } from '../public/setup-rules.js';
+import { createSetup, candidateSeeds, choose, place, unplace, launch, setupGround, resolveSpawns, dropPlayer, setOwner, seedOf, groundOf, seatSpawns, PLACE_GAP } from '../public/setup-rules.js';
 import { generateMap, WATER } from '../public/map-rules.js';
 import { createMatch } from '../public/rules.js';
 import { surfaceY } from '../../../engine/play/terrain-mask.js';
@@ -145,4 +145,14 @@ test('the three candidates of a setup have distinct layouts and profiles', () =>
       assert.ok(different >= 8, `setup ${setupSeed}: maps ${a + 1} and ${b + 1} differ at only ${different}/36 samples`);
     }
   }
+});
+
+test('seats take the fair spots in an order shuffled by the setup seed, not fixed per map', () => {
+  const ground = groundOf(candidateSeeds(77)[0]), orders = new Set();
+  for (let setupSeed = 1; setupSeed <= 12; setupSeed++) {
+    const s = createSetup({ setupSeed }), xs = resolveSpawns(s, ground);
+    assert.deepEqual([...xs].sort((a, b) => a - b), [...ground.auto].sort((a, b) => a - b), 'the same six fair spots');
+    assert.deepEqual(xs, seatSpawns(s, ground)); orders.add(xs.join());
+  }
+  assert.ok(orders.size >= 8, `seat orders vary with the setup seed (${orders.size} of 12)`);
 });

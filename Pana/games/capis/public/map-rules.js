@@ -679,10 +679,10 @@ function shelterSpawns(map, mask, count) {
   let hub = -1;
   for (let d = 0; d < 40 && hub < 0; d += .5) for (const x of [map.width / 2 + d, map.width / 2 - d]) { const y = standable(mask, x); if (y !== null && hub < 0) hub = graph.near(x, y, .6); }
   if (hub < 0) return null;
-  const out = graph.reach(hub), node = (x, y) => graph.near(x, y, .6);
+  const out = graph.reach(hub), back = graph.reachedBy(hub), node = (x, y) => graph.near(x, y, .6);
   for (let x = margin; x <= map.width - margin; x += 1) {
     const y = standable(mask, x); if (y === null || y < WATER + 5) continue;
-    const n = node(x, y); if (n < 0 || !out[n] || !graph.reach(n)[hub]) continue;
+    const n = node(x, y); if (n < 0 || !out[n] || !back[n]) continue;
     cand.push({ x, y });
   }
   const n = cand.length, ideal = (map.width - 2 * margin) / count;

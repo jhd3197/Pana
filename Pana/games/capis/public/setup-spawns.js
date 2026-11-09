@@ -6,17 +6,18 @@ export const AUTO_GAP = 20;
 const candidates = new WeakMap();
 function legalStarts(ground) {
   if (candidates.has(ground)) return candidates.get(ground);
-  const { map, mask, graph, hub } = ground, fromHub = graph.reach(hub), xs = [];
+  const { map, mask, graph, fromHub, toHub } = ground, xs = [];
   for (let x = 8; x <= map.width - 8; x += .5) {
     const y = standable(mask, x); if (y === null) continue;
     const node = graph.near(x, y, .6);
-    if (node >= 0 && fromHub[node] && graph.reach(node)[hub]) xs.push(x);
+    if (node >= 0 && fromHub[node] && toHub[node]) xs.push(x);
   }
   candidates.set(ground, xs); return xs;
 }
 
-export function completeSpawns(places, ground, count = 6) {
-  const xs = Array(count).fill(null), { auto } = ground;
+// `auto`: the fair spots in seat order (setup-rules seatSpawns).
+export function completeSpawns(places, ground, count = 6, auto = ground.auto) {
+  const xs = Array(count).fill(null);
   for (const [capi, x] of Object.entries(places)) if (Number(capi) < count) xs[Number(capi)] = x;
   const fixed = xs.filter(x => x !== null), needed = count - fixed.length;
   if (!needed) return xs;

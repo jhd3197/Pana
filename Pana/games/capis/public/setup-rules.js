@@ -18,6 +18,7 @@ import { surfaceY } from '../../../engine/play/terrain-mask.js';
 import { spreadSpawns, standable, ffaGraph, generateMap, FFA_TEPUY } from './map-rules.js';
 import { studioCandidates } from './studio-maps.js';
 import { completeSpawns } from './setup-spawns.js';
+import { seededStream } from '../../../engine/play/terrain-gen.js';
 
 export const CANDIDATES = 3;
 export const PLACE_GAP = 10;   // the least room between two capis' starts (spreadSpawns keeps more)
@@ -33,11 +34,21 @@ export function createSetup({ setupSeed = 1, hostId = null, owners = {} } = {}) 
 }
 export const seedOf = s => s.seeds[s.pick];
 
+// Who stands on which fair spot: shuffled by the setup seed, so an authored
+// map (a fixed seed) does not hand every seat the same spot every match.
+export function seatSpawns(s, ground) {
+  const xs = [...ground.auto], r = seededStream(`capis-seats:${s.setupSeed}:${ground.map.seed}`);
+  for (let i = xs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; }
+  return xs;
+}
+
 // What placing reads about a candidate's ground, built once per map.
 export function setupGround(map, mask) {
   // The same strict graph the generator proves the starts with (map-rules ffaGraph).
-  const graph = ffaGraph(mask), auto = spreadSpawns(map, mask), y = surfaceY(mask, auto[0]);
-  return { map, mask, graph, auto, hub: graph.near(auto[0], y, .6) };
+  const graph = ffaGraph(mask), auto = spreadSpawns(map, mask), y = surfaceY(mask, auto[0]), hub = graph.near(auto[0], y, .6);
+  // Both ways to the hub, for every floor at once (a spot check is then a lookup).
+  const none = new Uint8Array(graph.y.length);
+  return { map, mask, graph, auto, hub, fromHub: hub < 0 ? none : graph.reach(hub), toHub: hub < 0 ? none : graph.reachedBy(hub) };
 }
 
 // A candidate's ground from its seed, the last few kept (making a map takes a moment).
@@ -72,8 +83,8 @@ export function spotProblem(s, capi, x, ground) {
   if (y === null) return 'unsafe';
   for (const [other, ox] of Object.entries(s.places)) if (Number(other) !== capi && Math.abs(ox - x) < PLACE_GAP) return 'overlap';
   const node = graph.near(x, y, .6);
-  if (node < 0 || hub < 0 || !graph.reach(node)[hub] || !graph.reach(hub)[node]) return 'unreachable';
-  if (!completeSpawns({ ...s.places, [capi]: Math.round(x * 100) / 100 }, ground)) return 'overlap';
+  if (node < 0 || hub < 0 || !ground.toHub[node] || !ground.fromHub[node]) return 'unreachable';
+  if (!completeSpawns({ ...s.places, [capi]: Math.round(x * 100) / 100 }, ground, 6, seatSpawns(s, ground))) return 'overlap';
   return null;
 }
 
@@ -107,7 +118,7 @@ export function dropPlayer(s, playerId) { for (const [capi, owner] of Object.ent
 // rest on a complete spaced set, preferring spreadSpawns' fair spots. Human
 // picks remain untouched; automatic starts stay twenty units from all others.
 export function resolveSpawns(s, ground, count = 6) {
-  const xs = completeSpawns(s.places, ground, count);
+  const xs = completeSpawns(s.places, ground, count, seatSpawns(s, ground));
   if (!xs) throw new Error('Setup has no complete spaced spawn assignment');
   return xs;
 }
