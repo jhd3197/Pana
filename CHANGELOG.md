@@ -10,6 +10,8 @@ becomes the GitHub release's notes.
 
 - **Póquer: al final de la mano ves la mesa, la mano ganadora y por qué ganó.**
   Las cinco cartas ganadoras se iluminan, con el nombre de la mano y el desempate (kicker, mesa que juega, pozos laterales). Si te retiraste, solo tú ves tus cartas en gris, y "¡Habrías ganado!" solo cuando es cierto con la mesa real.
+- **Fosa: la Escalera de Calor guarda tu Calor máximo.**
+  Termina una expedición con más Calor que nunca y ganas XP extra una sola vez; tu Calor máx se ve en la sala y al terminar.
 - **Capis a Pintazos, todos contra todos: antes de empezar se elige el mapa y dónde arranca cada capi.**
   El anfitrión escoge entre tres mapas; cada pana toca el mapa para poner a sus capis y la máquina pone al resto.
 - **Capis a Pintazos: juega en La Corona, El Cañón y Los Morochos del Map Studio.**
