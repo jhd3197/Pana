@@ -1,10 +1,12 @@
 // The game's own HUD over the 3D view: whose turn and its clock, the wind,
-// both teams with their paint bars, the weapon picker, floating name tags,
+// both teams with their health bars, the weapon picker, floating name and
+// health tags,
 // and the results card.
 import { loc } from '/engine/i18n.js';
 import { fillRoster } from '/engine/results.js';
 import { ICONS } from '/engine/icons.js';
-import { activeCapy, alive, standings, ammoLeft, isFfa } from './rules.js';
+import { activeCapy, alive, standings, ammoLeft, isFfa, healthOf, HEALTH } from './rules.js';
+import { tagHealth, stackTags } from './tags.js';
 import { WEAPONS, weaponOf } from './weapons.js';
 
 // The picker's icon for each weapon (engine/icons.js).
@@ -47,6 +49,8 @@ export function createHud($, { side = soloSide(), pick = () => {} } = {}) {
   // 'me', another pana's name, or null (the machine), for the capi on its turn.
   const playerOf = match => side.player(match);
   let rows = new Map(), tags = new Map(), shownTime = '', shownWind = null, shownWeapons = '';
+  // A resize may swap the tags to their small-screen look: measure them again.
+  addEventListener('resize', () => tags.forEach(t => { t.w = 0; }));
 
   // The weapon picker: one square button per weapon (icon, name, shots
   // left), the one in the active capi's paws lit, empty ones greyed out.
@@ -90,7 +94,10 @@ export function createHud($, { side = soloSide(), pick = () => {} } = {}) {
         row.dataset.side = c.team;
         name.translate = false; bar.append(fill); row.append(name, value, bar); list.append(row);
         rows.set(c.id, { row, value, bar, shown: '' });
-        const tag = el('span', `team-${c.team}`, c.name); tag.translate = false; $('labels').append(tag); tags.set(c.id, tag);
+        // The tag: the name in the capi's colour and its health on a chip that turns yellow, then red.
+        const tag = el('span', `capi-tag team-${c.team}`), tagName = el('b', 'tag-name', c.name), hp = el('i', 'tag-hp pk-num');
+        tag.translate = false; tag.dataset.capy = c.id; tag.append(tagName, hp); $('labels').append(tag);
+        tags.set(c.id, { tag, hp, shown: null, w: 0, h: 0 });
       }
     }
   }
@@ -118,20 +125,28 @@ export function createHud($, { side = soloSide(), pick = () => {} } = {}) {
     weapons(match);
     for (const c of match.capys) {
       const r = rows.get(c.id); if (!r) continue;
-      const shown = `${c.paint}|${c.out}|${c.id === active?.id}`;
+      const hp = healthOf(c), shown = `${hp}|${c.out}|${c.id === active?.id}`;
       if (shown === r.shown) continue; r.shown = shown;
-      r.value.textContent = c.out === 'water' ? loc('Al río') : c.out ? loc('Pintado') : `${c.paint}%`;
-      r.bar.style.setProperty('--pk-value', c.paint / 100);
+      r.value.textContent = c.out === 'water' ? loc('Al río') : c.out ? loc('Pintado') : String(hp);
+      r.bar.style.setProperty('--pk-value', hp / HEALTH);
       r.row.classList.toggle('is-out', !!c.out); r.row.classList.toggle('is-turn', c.id === active?.id && alive(c));
     }
   }
 
+  // Each drawn frame, from the scene: where every capi's head is on screen and the health
+  // it has right now (`hp`, from the same match the scene draws). Reads first, then writes.
   function labels(list) {
+    const shown = [];
     for (const p of list) {
-      const tag = tags.get(p.id); if (!tag) continue;
-      tag.hidden = !p.visible;
-      if (p.visible) tag.style.transform = `translate(${p.x.toFixed(0)}px, ${p.y.toFixed(0)}px) translate(-50%, -100%)`;
+      const t = tags.get(p.id); if (!t) continue;
+      t.tag.hidden = !p.visible;
+      if (!p.visible) continue;
+      if (p.hp !== t.shown) { const { text, band } = tagHealth(p.hp, HEALTH); t.hp.textContent = text; t.tag.dataset.hp = band; t.shown = p.hp; t.w = 0; }
+      shown.push({ p, t });
     }
+    for (const { t } of shown) if (!t.w) { t.w = t.tag.offsetWidth; t.h = t.tag.offsetHeight; }
+    const ys = stackTags(shown.map(({ p, t }) => ({ id: p.id, x: p.x, y: p.y, w: t.w, h: t.h })));
+    for (const { p, t } of shown) t.tag.style.transform = `translate(${p.x.toFixed(0)}px, ${ys.get(p.id).toFixed(0)}px) translate(-50%, -100%)`;
   }
 
   function results(match) {
@@ -145,7 +160,7 @@ export function createHud($, { side = soloSide(), pick = () => {} } = {}) {
       : win ? loc('Ni un capi rival quedó en pie.') : match.winner === -1 ? loc('No quedó ningún capi en pie.') : loc('Tus capis terminaron pintados o en el río.');
     fillRoster($('result-roster'), standings(match).map((c, i) => ({
       rank: i + 1, name: c.name, me: c.team === human, score: false,
-      detail: ffa ? '' : teamNames[c.team], end: c.out === 'water' ? loc('Al río') : c.out ? loc('Pintado') : loc('En pie · {n}%', { n: c.paint }),
+      detail: ffa ? '' : teamNames[c.team], end: c.out === 'water' ? loc('Al río') : c.out ? loc('Pintado') : loc('En pie · {n} de vida', { n: healthOf(c) }),
     })));
     $('results').hidden = false;
   }

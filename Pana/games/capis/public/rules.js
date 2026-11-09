@@ -53,6 +53,10 @@ export const TEAM_COLORS = ['#e8569b', '#2ad1b2', '#f5b301', '#8e5cf0', '#3fa7ff
 const NAMES = [['Toño', 'Chela', 'Nené'], ['Pancho', 'Lula', 'Gordo']]; // i18n-ignore
 
 export const alive = c => !c.out;
+// A capi soaks up to HEALTH paint and is out at that: what it has left is its health,
+// the number on its tag and in the team list (painted out or in the river: 0).
+export const HEALTH = 100;
+export const healthOf = c => c.out ? 0 : Math.max(0, Math.round(HEALTH - c.paint));
 export const center = c => ({ x: c.x, y: c.y + RULES.radius });
 export const activeCapy = m => m.capys.find(c => c.id === m.turn?.capy) || null;
 export const teamAlive = (m, team) => m.capys.filter(c => c.team === team && alive(c));
@@ -87,7 +91,7 @@ export const canUse = (m, team, weapon) => WEAPONS.some(w => w.id === weapon) &&
 
 // A match on the map of `seed` and `size` (map-rules.js): the same seed
 // gives the same ground, spawns and winds, so a match can be replayed.
-export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null, looks = {}, mode = 'teams' } = {}) {
+export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, size = DEFAULT_SIZE, humans = [0], generated = null, looks = {}, mode = 'teams', spawnXs = null } = {}) {
   mode = MODES.includes(mode) ? mode : 'teams';
   // A free-for-all needs the room: six capis, spread out, always on the big map.
   const { map, mask } = generated || generateMap(seed, mode === 'ffa' ? FFA_SIZE : size, { mode });
@@ -101,7 +105,7 @@ export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, 
   const capi = (id, team, slot, name, x, facing) => m.capys.push({ id, team, slot, name, x, y: surfaceY(mask, x) ?? map.height - 2, vx: 0, vy: 0,
     grounded: false, facing, aim: .55, paint: 0, out: null, jumpPress: 0, slide: 0, weapon: FIRST_WEAPON });
   // In a free-for-all each capi is its own side, facing the middle of the map.
-  if (mode === 'ffa') spreadSpawns(map, mask, FFA_CAPIS).forEach((x, team) => capi(`f${team}`, team, 0, NAMES.flat()[team], x, x < map.width / 2 ? 1 : -1));
+  if (mode === 'ffa') (spawnXs?.length === FFA_CAPIS ? spawnXs : spreadSpawns(map, mask, FFA_CAPIS)).forEach((x, team) => capi(`f${team}`, team, 0, NAMES.flat()[team], x, x < map.width / 2 ? 1 : -1));
   else map.spawns.forEach((xs, team) => xs.forEach((x, slot) => capi(`${team}-${slot}`, team, slot, NAMES[team][slot], x, team ? -1 : 1)));
   // Settle everyone onto the ground before the first turn.
   for (let i = 0; i < 60; i++) for (const c of m.capys) stepSideWalker(c, {}, 1 / 60, m.mask, walkerOptions(m, true));
@@ -111,7 +115,7 @@ export function createMatch({ seconds = 35, difficulty = 'normal', seed = 2026, 
 }
 
 // The held key steers a capi in the air: a hop started a little short of a ledge still reaches it.
-export const walkerOptions = (m, frozen = false) => ({ radius: RULES.radius, water: m.map.water, frozen, airControl: RULES.airControl, airSpeed: RULES.airSpeed });
+export const walkerOptions = (m, frozen = false) => ({ radius: RULES.radius, water: m.map.water, frozen, airControl: RULES.airControl, airSpeed: RULES.airSpeed, stairs: !!m.map.studio });
 
 export function takeEvents(m) { const out = m.events; m.events = []; return out; }
 
@@ -221,11 +225,11 @@ function hurt(m, x, y, w, team, victim = null) {
   }
 }
 function hit(m, c, paint, team, vx, vy, weapon) {
-  c.paint = Math.min(100, c.paint + paint);
+  c.paint = Math.min(HEALTH, c.paint + paint);
   c.by = team;   // whose colour soaks in
   knock(c, vx, vy);
   m.events.push({ type: 'hit', capy: c.id, team: c.team, paint, by: team, weapon });
-  if (c.paint >= 100) { c.out = 'paint'; layTomb(m, c, c.x, c.y); m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'paint' }); }
+  if (c.paint >= HEALTH) { c.out = 'paint'; layTomb(m, c, c.x, c.y); m.events.push({ type: 'out', capy: c.id, team: c.team, reason: 'paint' }); }
 }
 
 // A capi out leaves a tombstone where it fell: it falls with the ground like a

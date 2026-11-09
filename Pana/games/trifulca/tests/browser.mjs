@@ -32,7 +32,8 @@ try {
   assert.equal(await guest.evaluate(() => trifulcaDebug.world.cameraSide), 0, 'a 1v1 keeps the default camera side');
   const body = () => trifulcaDebug.room.state.bodies.find(b => b.id === trifulcaDebug.room.id);
   const start = await guest.evaluate(body);
-  await guest.locator('#world').click({ position: { x: 640, y: 400 } });
+  // A plain mouse click focuses the canvas; locator.click also waits for navigations, which stall on a busy runner.
+  await guest.mouse.click(640, 400);
   await guest.keyboard.down('a'); await guest.keyboard.down('w');
   await waitFor(host, ({ id, x, z }) => { const b = trifulcaDebug.room.state.bodies.find(b => b.id === id); return Math.hypot(b.x - x, b.z - z) > .8; }, start);
   await guest.keyboard.up('a'); await guest.keyboard.up('w');

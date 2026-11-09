@@ -150,9 +150,10 @@ export function headroom(mask, x, y, height = 2.4) {
 //   const g = floorGraph(mask, { water: 4.2 });
 //   const seen = g.reach(g.near(x, y));            // Uint8Array over g.y
 //   seen[g.near(x2, y2)]                           // can it get there?
+//   g.reachedBy(to)[i]                             // can floor i get to `to`? (all i at once)
 //   g.reach(from, { hops: false })                 // on foot only
 export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clearance = 1.7, maxSlope = Math.tan(50 * Math.PI / 180), stepUp = .35,
-  hop = { up: 7, forward: 2.6, gravity: 18 }, leap = 2.4, body = 1.5 } = {}) {
+  hop = { up: 7, forward: 2.6, gravity: 18 }, leap = 2.4, body = 1.5, hopSpeeds = null } = {}) {
   const { cols, rows, solid, cell } = mask, count = Math.floor(mask.width / step), need = Math.ceil(clearance / cell);
   const colOf = k => Math.min(cols - 1, Math.floor((k + .5) * step / cell));
   const air = (c, r) => r >= rows || (r >= 0 && !solid[r * cols + c]);
@@ -183,17 +184,17 @@ export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clear
   const clear = (k, from, to) => { const c = colOf(k); for (let r = Math.max(0, Math.floor(from / cell)); r <= Math.floor(to / cell); r++) if (!air(c, r)) return false; return true; };
   function edges(i, hops, out) {
     out.length = 0;
-    const k = col[i], h = y[i], rise = Math.max(stepUp, maxSlope * step);
+    const k = col[i], h = y[i], rise = Math.max(typeof stepUp === 'function' ? stepUp((k + .5) * step) : stepUp, maxSlope * step);
     for (const dir of [-1, 1]) {
       const n = k + dir;
       if (n >= 0 && n < count && clear(n, h + rise + cell, h + body)) { const j = landing(n, h + rise); if (j >= 0) out.push(j); }
       if (!hops || !clear(k, h + cell, h + body + hop.up * hop.up / (2 * hop.gravity))) continue;
       // The arc of a jump, column by column: blocked by ground in the body's
       // way, landed where the feet meet ground while coming down.
-      for (let s = 1; s * step <= leap; s++) {
+      for (const forward of hopSpeeds || [hop.forward]) for (let s = 1; s * step <= leap; s++) {
         const m = k + dir * s;
         if (m < 0 || m >= count) break;
-        const t = s * step / hop.forward, feet = h + hop.up * t - hop.gravity * t * t / 2;
+        const t = s * step / forward, feet = h + hop.up * t - hop.gravity * t * t / 2;
         if (!clear(m, feet + .1, feet + body)) break;
         if (hop.up - hop.gravity * t < 0) {
           const j = landing(m, feet + .1);
@@ -213,6 +214,22 @@ export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clear
     let head = 0, tail = 0;
     for (const f of [].concat(from)) if (f >= 0 && !seen[f]) { seen[f] = 1; queue[tail++] = f; }
     while (head < tail) for (const j of linked(queue[head++], hops)) if (!seen[j]) { seen[j] = 1; queue[tail++] = j; }
+    return seen;
+  }
+  // Every floor that can reach floor `to` (one id or a list): one search over
+  // the reversed edges, the same as reach(i)[to] for every i at once.
+  const reverse = [null, null];
+  function reachedBy(to, { hops = true } = {}) {
+    const k = hops ? 1 : 0;
+    if (!reverse[k]) {
+      const into = Array.from({ length: y.length }, () => []);
+      for (let i = 0; i < y.length; i++) for (const j of linked(i, hops)) into[j].push(i);
+      reverse[k] = into;
+    }
+    const into = reverse[k], seen = new Uint8Array(y.length), queue = new Int32Array(y.length);
+    let head = 0, tail = 0;
+    for (const f of [].concat(to)) if (f >= 0 && !seen[f]) { seen[f] = 1; queue[tail++] = f; }
+    while (head < tail) for (const j of into[queue[head++]]) if (!seen[j]) { seen[j] = 1; queue[tail++] = j; }
     return seen;
   }
   // How many floors a walker crosses from `from` to `to` (Infinity if it cannot), times the step: about the distance walked.
@@ -236,7 +253,7 @@ export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clear
   }
   // Columns with more than one floor: ledges over ground, caves, bridges, overhangs.
   let layered = 0; for (let k = 0; k < count; k++) if (start[k + 1] - start[k] > 1) layered++;
-  return { step, y, col, start, count, layered: layered / Math.max(1, count), near, reach, distance, edges: (i, hops = true) => [...linked(i, hops)] };
+  return { step, y, col, start, count, layered: layered / Math.max(1, count), near, reach, reachedBy, distance, edges: (i, hops = true) => [...linked(i, hops)] };
 }
 
 // How sheltered (x, y) is from shots coming from side `dir` (±1): the share
