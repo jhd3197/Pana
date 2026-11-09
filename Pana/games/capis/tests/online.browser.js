@@ -42,11 +42,23 @@ try {
   await guest.keyboard.up('a');
   await guest.keyboard.down(' ');
   await waitFor(guest, () => !document.getElementById('power-bar').hidden);
-  // The meter swings up and down every two seconds and repaints once a frame; a slow
-  // software-GL frame can keep landing on the low side, so sample it on the clock.
-  await guest.waitForFunction(() => capisDebug.charge.update() >= .4 && parseInt(document.getElementById('power-value').textContent) >= 40, null, { timeout: 30_000, polling: 30 }).catch(async e => {
-    console.log('DIAG', await guest.evaluate(() => ({ hidden: document.hidden, bar: document.getElementById('power-bar').hidden, text: document.getElementById('power-value').textContent, phase: capisDebug.match.phase, ctl: capisDebug.room.state.controller, id: capisDebug.room.id, playing: capisDebug.playing })));
-    throw e; });
+  // The meter swings up and down every two seconds. On software GL the guest page can
+  // starve its own timers and frames, so drive the charge from here: each step reads the
+  // clock through update(), re-presses Space if the hold was dropped, and lets go through
+  // the game's own keyup handler the moment the power is past 40%.
+  let fired = false;
+  for (const end = Date.now() + 30_000; !fired && Date.now() < end;) {
+    fired = await guest.evaluate(() => {
+      const c = capisDebug.charge;
+      if (!c.active) { c.begin(' '); return false; }
+      if (!(c.update() >= .4) || parseInt(document.getElementById('power-value').textContent) < 40) return false;
+      dispatchEvent(new KeyboardEvent('keyup', { key: ' ' }));
+      return true;
+    });
+    if (!fired) await new Promise(r => setTimeout(r, 40));
+  }
+  if (!fired) console.log('DIAG', await guest.evaluate(() => ({ hidden: document.hidden, bar: document.getElementById('power-bar').hidden, text: document.getElementById('power-value').textContent, active: capisDebug.charge.active, phase: capisDebug.match.phase, ctl: capisDebug.room.state.controller, id: capisDebug.room.id, playing: capisDebug.playing })));
+  assert.ok(fired, 'the guest charged past 40% and let go of Space');
   await guest.keyboard.up(' ');
   await waitFor(host, () => capisDebug.room.state.events.some(e => e.type === 'fire' && e.team === 1));
   await waitFor(host, () => capisDebug.match.turn.team === 0 && capisDebug.match.phase === 'aim', null, 90_000);
