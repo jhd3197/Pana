@@ -43,7 +43,7 @@ try {
     await page.locator(`[data-asset="${asset.id}"]`).click({ timeout: 90000 });
     await page.waitForFunction(id => panaLibrary.selected === id && document.querySelector('#preview-status').hidden, asset.id, { timeout: 90000 });
     assert.equal(await page.locator('#source').getAttribute('href'), asset.source);
-    assert.equal(await page.evaluate(() => Number.isFinite(panaLibrary.camera.position.length()) && panaLibrary.current.group.children.length > 0), true, asset.id);
+    assert.equal(await page.evaluate(() => Number.isFinite(panaLibrary.camera.position.length()) && (() => { let drawn = 0; panaLibrary.current.group.traverse(o => { if (o.geometry) drawn++; }); return drawn > 0; })()), true, asset.id);
     if (['pana-chef', 'car-chamo', 'car-machito', 'plaza', 'track-estadio', 'mangoTree'].includes(asset.id)) await page.screenshot({ path: `${output}/${asset.id}.png` });
     console.log(`preview ${asset.id}`);
   }

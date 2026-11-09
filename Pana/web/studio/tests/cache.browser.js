@@ -19,7 +19,8 @@ try {
   await page.goto(base + '/studio/library'); await ready();
   const count = await page.locator('[data-asset]').count(); assert.ok(count > 170);
   assert.equal(await page.evaluate(() => !!panaLibrary.renderer), false);
-  assert.equal(requests.some(path => /three|tracks\.js|cars\.js|track-runtime|preview\.js/.test(path)), false);
+  // The premium-tracks.js hook is plain data; only the heavy runtimes count.
+  assert.equal(requests.some(path => /three|\/tracks\.js|\/cars\.js|track-runtime|preview\.js/.test(path)), false);
   assert.equal(await page.evaluate(() => panaLibrary.thumbnails.state.generated), 0);
   await page.screenshot({ path: output + '/library.png' });
   await page.locator('#search').fill('barril'); await page.locator('[data-asset="barrel"]').click(); await preview('barrel');
