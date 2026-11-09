@@ -20,7 +20,11 @@ async function same(a, b) {
   const other = await b.evaluate(() => poquerDebug.room.state);
   assert.deepEqual(other.board, state.board); assert.equal(other.pot, state.pot); assert.equal(other.turn, state.turn);
 }
-async function act(p, selector) { const rev = await p.evaluate(() => poquerDebug.room.state.revision); await p.locator(selector).click(); await wait(p, rev => poquerDebug.room.state.revision > rev, rev); }
+// The deal and the cachos can hold the buttons after the turn arrives: wait
+// until it is this pana's turn and the button is live, never assume it.
+async function act(p, selector) {
+  await wait(p, sel => poquerDebug.room.state.turn === poquerDebug.room.id && !document.querySelector(sel)?.disabled, selector);
+  const rev = await p.evaluate(() => poquerDebug.room.state.revision); await p.locator(selector).click(); await wait(p, rev => poquerDebug.room.state.revision > rev, rev); }
 try {
   const a = await open('Juan'), b = await open('María');
   await wait(a, () => poquerDebug.room.state.players.length === 2); assert.ok(await b.locator('#start').isDisabled());
@@ -52,7 +56,7 @@ try {
   assert.equal(await a.evaluate(() => poquerDebug.world.camera.isPerspectiveCamera), true);
   await second.evaluate(() => poquerDebug.room.act('raise', 1000)); await second.waitForTimeout(300); await same(a, b); assert.equal(await a.evaluate(() => poquerDebug.room.state.pot), 30);
   console.log('ok: two real clients receive distinct private cards; wrong-turn action rejected');
-  await first.locator('#amount').fill('60'); await act(first, '#raise'); await same(first, second); assert.equal(await second.locator('#call').textContent(), 'Igualar 40');
+  await wait(first, () => !document.querySelector('#amount').disabled); await first.locator('#amount').fill('60'); await act(first, '#raise'); await same(first, second); assert.equal(await second.locator('#call').textContent(), 'Igualar 40');
   await act(second, '#call'); await same(second, first); assert.equal(await a.evaluate(() => poquerDebug.room.state.phase), 'flop');
   await wait(a, () => poquerDebug.room.state.board.every((value, i) => poquerDebug.world.cards.get(`board-${i}`)?.model.userData.card === value));
   await a.screenshot({ path: `${out}/playing.png` });
@@ -73,7 +77,7 @@ try {
   await b.locator('#again').click(); await wait(c, () => poquerDebug.room.state.hand === 4); await same(b, c);
   const bankroll = await b.evaluate(() => poquerDebug.room.state.pot + poquerDebug.room.state.players.reduce((n, p) => n + p.chips, 0));
   const shove = await b.evaluate(() => poquerDebug.room.state.turn === poquerDebug.room.id) ? b : c, caller = shove === b ? c : b;
-  const maximum = await shove.evaluate(() => poquerDebug.room.state.legal.max); await shove.locator('#amount').fill(String(maximum)); await act(shove, '#raise'); await same(b, c);
+  const maximum = await shove.evaluate(() => poquerDebug.room.state.legal.max); await wait(shove, () => !document.querySelector('#amount').disabled); await shove.locator('#amount').fill(String(maximum)); await act(shove, '#raise'); await same(b, c);
   await act(caller, '#call'); await same(b, c); assert.equal(await b.evaluate(() => poquerDebug.room.state.phase), 'finished'); assert.equal(await c.evaluate(() => poquerDebug.room.state.board.length), 5);
   assert.equal(await b.evaluate(() => poquerDebug.room.state.players.reduce((n, p) => n + p.chips, 0)), bankroll);
   console.log('ok: online all-in and call run out the board and conserve both stacks');
