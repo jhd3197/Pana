@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Tu pana ya se puede vestir de samurái o del inframundo.**
+  En el vestidor hay armadura samurái con kabuto, y capucha del inframundo con huesos; cada pieza se combina y cambia de color.
+
 ## 0.9.0 - 2026-11-07
 
 - **Caída, Dominó y Ludo: ¿te dio rabia? Voltea la mesa.**

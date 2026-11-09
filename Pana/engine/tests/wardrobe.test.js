@@ -43,3 +43,11 @@ test('editor remembers item colors while saved game avatars stay compact', () =>
   assert.equal(look.colors['unknown:any:main'], undefined);
   assert.deepEqual(wardrobeToAvatar(look).wardrobe.colors, { 'top:shirt:main': '#123456' });
 });
+
+test('samurai and inframundo costumes keep their headwear and drop prints', () => {
+  for (const [top, hat] of [['samurai', 'kabuto'], ['inframundo', 'capucha']]) {
+    const look = normalizeWardrobe({ top, hat, print: 'rayo', colors: { [`top:${top}:main`]: '#112233', [`hat:${hat}:main`]: '#445566' } });
+    assert.equal(look.top, top); assert.equal(look.hat, hat); assert.equal(look.print, 'none');
+    assert.deepEqual(look.colors, { [`top:${top}:main`]: '#112233', [`hat:${hat}:main`]: '#445566' });
+  }
+});

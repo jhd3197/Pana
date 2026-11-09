@@ -3,7 +3,7 @@ import { wardrobeMeta, wardrobeColor } from './wardrobe-data.js';
 // Both the editor and gameplay use this exact slot/color application.
 export function applyWardrobe(sculpt, accessories, look, previous = {}) {
   const wardrobe = sculpt.wardrobe;
-  const headwear = { gorra: 'cap', 'gorra-atras': 'cap', cinta: 'band', chef: 'chef' };
+  const headwear = { gorra: 'cap', 'gorra-atras': 'cap', cinta: 'band', chef: 'chef', kabuto: 'kabuto', capucha: 'hood' };
   if (previous.top !== look.top) {
     if (look.top === 'base') wardrobe.setOutfit('base');
     else wardrobe.setGarment(look.top);

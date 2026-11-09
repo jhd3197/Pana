@@ -43,6 +43,8 @@ var Nt = [
         { repo: "band", slots: { main: "#ee3024" } },
       ],
       ["chef", "Gorro de chef", { repo: "chef", slots: { main: "#ee3024" } }],
+      ["kabuto", "Kabuto", { repo: "kabuto", badge: "Nuevo", slots: { main: "#232a44" } }],
+      ["capucha", "Capucha", { repo: "hood", badge: "Nuevo", slots: { main: "#2a2233" } }],
       ["pesca", "Pescador", { badge: "Mejorado", slots: { main: "#e0c48f" } }],
       [
         "lana",
@@ -125,6 +127,8 @@ var Nt = [
       ["hoodie", "Su\xE9ter", { slots: { main: "#3479cb" } }],
       ["tropical", "Camisa tropical", { slots: { main: "#3479cb" } }],
       ["chef", "Chef", { slots: { main: "#ee3024" } }],
+      ["samurai", "Samurái", { badge: "Nuevo", slots: { main: "#2d3e6e" } }],
+      ["inframundo", "Inframundo", { badge: "Nuevo", slots: { main: "#2a2233" } }],
       ["base", "Sin camisa"],
     ],
     print: [
@@ -216,7 +220,8 @@ function dt(e, { history = false } = {}) {
       if (typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)) t.colors[key] = value.toLowerCase();
     }
   }
-  if (t.top === 'chef') t.print = 'none';
+  // Chef and costume tops carry their own front, so no print goes over them.
+  if (['chef', 'samurai', 'inframundo'].includes(t.top)) t.print = 'none';
   return t;
 }
 
