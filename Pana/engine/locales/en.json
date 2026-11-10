@@ -1,4 +1,11 @@
 {
+  "Destacados": "Featured",
+  "Favoritos": "Favorites",
+  "Guardar favorito": "Save favorite",
+  "Quitar favorito": "Remove favorite",
+  "Guarda tus juegos con el corazón.": "Save games using the heart.",
+  "Buscar juegos": "Search games",
+  "Sin resultados": "No results",
   " en local": " (local)",
   "¡{name} es el cuarto bate!": "{name} is the cleanup hitter!",
   "¡{name} es el cuarto bate! Calabaza, calabaza, cada quien para su casa.": "{name} is the cleanup hitter! That's a wrap, everybody home.",
@@ -90,10 +97,6 @@
     "one": "{n} change",
     "other": "{n} changes"
   },
-  "{n} juego disponible": {
-    "one": "{n} game available",
-    "other": "{n} games available"
-  },
   "{n} min": "{n} min",
   "{n} opción": {
     "one": "{n} option",
@@ -140,7 +143,6 @@
   "Ajustes": "Settings",
   "Ajustes · Pana": "Settings · Pana",
   "Ajustes de la sala": "Room settings",
-  "Ajustes y controles": "Settings and controls",
   "Al azar": "Random",
   "Al fondo": "All the way",
   "Al natural": "Au naturel",
@@ -152,7 +154,6 @@
   "Ametralladoras": "Machine guns",
   "Anfitrión": "Host",
   "Animal": "Animal",
-  "Anteriores: {row}": "Previous: {row}",
   "Antes: {name} · {value}": "Before: {name} · {value}",
   "Apellido": "Last name",
   "Apuntar": "Aim",
@@ -524,7 +525,6 @@
   "Marcador": "Scoreboard",
   "Más": "Plus",
   "Más ajustes": "More settings",
-  "Más juegos: {row}": "More games: {row}",
   "Más panas, menos drama.": "More friends, less drama.",
   "Más precisión cerca del centro para apuntar.": "More precision near the center for aiming.",
   "Mata": "Plant",

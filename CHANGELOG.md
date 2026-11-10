@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Encuentra más juegos sin pelear con el scroll.**
+  Vista previa con mouse o control, favoritos y búsqueda al final; el banner se recoge al bajar y el catálogo sigue sin saltos. Los sitios que alojan Pana pueden destacar sus juegos con ilustraciones propias.
+
 ## 0.11.0 - 2026-11-10
 
 - **Fosa: en el campamento eliges qué recortes ganados lleva tu traje.**

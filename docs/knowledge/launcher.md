@@ -11,17 +11,36 @@ links and saved game IDs continue to work.
 
 Below the banner the games sit in one row per category (`data-row`), plus
 "Seguir jugando" on top once `launch()` has saved recent ids in
-`pana:recent`. On a desktop the banner keeps the top of the screen and the
-rows scroll under it in a strip (`.games-wrap`): the row a controller or the
-keyboard moves into scrolls to the top of that strip. Stepping onto a card
+`pana:recent`. Each category stays in one horizontal, swipeable row.
+The document scrolls normally: never lock the body or put the catalog in a
+fixed-height strip. On desktop the banner stays pinned and shrinks as the page
+scrolls. Cards widen after a 450 ms mouse hover and update that banner; keyboard
+focus previews immediately. Search, Favorites and Settings are tiles at the end.
+Search opens only on request and matches names, descriptions and categories
+without accents; empty rows hide. Favorites use `pana:favorites` in localStorage,
+toggled with the hero's heart. Near the end, `catalog-loop.js` moves fully
+offscreen rows behind the utility tiles and compensates the document scroll
+by their exact height. Visible rows stay at the same screen position, so the
+catalog continues downward without a backwards animation or duplicate cards.
+A PANA divider marks each pass. Search pauses recycling and restores category
+order; scrolling back to the top also restores it. Scrollbars stay hidden,
+while swipe, trackpad and keyboard navigation still work. The skip link is
+keyboard-accessible but excluded from controller navigation.
+Keep the hero compact while filtering, since resizing it against the scroll
+limit of a short result list creates a feedback loop. Stepping onto a card
 with the pad or the keyboard (`.pana-pad-focus` or `:focus-visible`) features
-it, and pressing it then launches. A tap or a click still only features it.
+it, and pressing it then launches. A tap or click features it without changing
+the player's place in the catalog. Motion respects
+the reduced-motion preference.
+Controller focus uses the same expanded preview as mouse hover. Keep it open
+on pointerleave while the card still owns controller/keyboard focus, and observe
+the controller marker because taking over an already-focused mouse target emits
+no new focus event. Pending mouse hover previews must not steal controller
+selection. Search/Favorites expose the shared `data-pad-back` hook; closing with
+B restores their originating tile, matching their mouse close button.
 The hub and the Mi pana editor call `padControls({ playing: () => false })`,
-so the whole page is a menu for `engine/gamepad.js`. The rail arrows replace
-the scrollbar for the mouse: they show only on a row with more games than fit
-(`data-overflow`, kept by a ResizeObserver), dim at either end, hide on touch
-screens and carry `data-pad-skip`. The rail pads its inside so the focused
-card's outline and lift are not clipped by the scrolling box. Tiles below the strip load their art
+so the whole page is a menu for `engine/gamepad.js`. Each row pads its inside
+so the focused card's outline and lift are not clipped. Tiles below the fold load their art
 lazily, so a test scrolls a tile into view before decoding it.
 
 ## Art and rendering
@@ -108,6 +127,12 @@ positions. It only moves a node when its parent/location actually changes:
 re-inserting it on every HUD update loses focus and interrupts clicks.
 
 ## Hosting boundary
+
+The games API may supply `art` and `cardArt` as same-origin root-relative image
+paths, `category` as an existing category, and positive integer `featured`
+ranks. Ranked games appear in a six-card Destacados row before recent games.
+That row hides during search/favorites so results are not repeated. Hosting
+integrations choose ranks; the public launcher does not invent popularity.
 
 All new launcher actions dispatch a cancelable `pana:launch` event on `document`
 before navigating. `detail` is `{ game, url, source }`, with source `play`,

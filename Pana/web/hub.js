@@ -5,7 +5,8 @@ import { icon } from '/engine/icons.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { cachedPortrait } from '/engine/portrait-cache.js';
 import { categories, category, artUrl } from './launcher-art.js';
-import { padControls } from '/engine/gamepad.js';
+import { padControls, inputState } from '/engine/gamepad.js';
+import { catalogLoop } from './catalog-loop.js';
 import { bindPanaEditorLinks, openPanaEditor } from '/engine/pana-editor.js';
 import { loc, locn, language } from '/engine/i18n.js';
 
@@ -130,6 +131,24 @@ function gameUrl(game, room) {
 
 let games = [];
 let feat = null;
+let favorites = new Set();
+try { const saved = JSON.parse(localStorage.getItem('pana:favorites') || '[]'); if (Array.isArray(saved)) favorites = new Set(saved.filter(id => typeof id === 'string')); } catch { /* storage off */ }
+let favoritesOnly = false;
+const favoriteButton = document.getElementById('favorite-featured');
+favoriteButton.append(icon('heart'));
+function updateFavorite() {
+  const saved = favorites.has(feat?.id);
+  favoriteButton.setAttribute('aria-pressed', String(saved));
+  const label = saved ? loc('Quitar favorito') : loc('Guardar favorito');
+  favoriteButton.setAttribute('aria-label', label);
+  favoriteButton.title = label;
+}
+favoriteButton.addEventListener('click', () => {
+  if (!feat) return;
+  if (favorites.has(feat.id)) favorites.delete(feat.id); else favorites.add(feat.id);
+  try { localStorage.setItem('pana:favorites', JSON.stringify([...favorites])); } catch { /* keep this session */ }
+  updateFavorite(); filterGames();
+});
 function updateLinks() {
   for (const a of document.querySelectorAll('a[data-game]')) {
     const game = games.find((g) => g.id === a.dataset.game);
@@ -191,6 +210,22 @@ function gameCard(game) {
   name.setAttribute('aria-label', game.name);
   const body = el('div', 'game-body');
   body.append(name, showPlayers(el('span', 'game-meta'), game));
+  body.append(el('p', 'game-preview-copy', game.description));
+  let previewTimer;
+  const preview = () => {
+    gamesEl.querySelectorAll('.game.is-preview').forEach(other => { if (other !== card) other.classList.remove('is-preview'); });
+    card.classList.add('is-preview'); feature(game);
+  };
+  card.addEventListener('pointerenter', event => {
+    if (event.pointerType === 'mouse' && inputState().detected !== 'gamepad') previewTimer = setTimeout(() => {
+      if (inputState().detected !== 'gamepad') preview();
+    }, 450);
+  });
+  card.addEventListener('pointerleave', () => {
+    clearTimeout(previewTimer);
+    if (document.activeElement !== pick || !stepped()) card.classList.remove('is-preview');
+  });
+  card.addEventListener('focusout', () => { clearTimeout(previewTimer); card.classList.remove('is-preview'); });
   const pick = el('button', 'game-pick');
   pick.type = 'button';
   pick.setAttribute('aria-pressed', 'false');
@@ -198,11 +233,15 @@ function gameCard(game) {
   // A controller or the keyboard moving onto a card shows it in the banner,
   // so pressing it then plays; a tap or click only shows it.
   const stepped = () => pick.classList.contains('pana-pad-focus') || pick.matches(':focus-visible');
-  pick.addEventListener('focus', () => { if (stepped()) { feature(game); showRow(card); } });
+  pick.addEventListener('focus', () => { if (stepped()) { preview(); showRow(card); } });
+  // A controller can take over a button the mouse already focused. That changes
+  // its controller marker without emitting another DOM focus event.
+  new MutationObserver(() => {
+    if (document.activeElement === pick && pick.classList.contains('pana-pad-focus')) preview();
+  }).observe(pick, { attributes: true, attributeFilter: ['class'] });
   pick.addEventListener('click', () => {
     if (feat === game && stepped()) { launch(game, gameUrl(game, newRoomCode())); return; }
     feature(game);
-    if (matchMedia('(max-width: 760px)').matches) featureEl.scrollIntoView({ behavior: 'smooth' });
   });
   card.append(art, body, pick);
   if (!url) lazyArt(game, art);
@@ -224,6 +263,7 @@ function showPlayers(tag, game) {
 function feature(game) {
   if (feat === game) return;
   feat = game;
+  updateFavorite();
   try { localStorage.setItem('pana:featured', game.id); } catch { /* storage off */ }
   featureEl.style.setProperty('--tone', game.color || 'var(--pk-coral)');
   document.getElementById('feature-tag').textContent = loc(category(game));
@@ -251,43 +291,79 @@ function feature(game) {
   if (!url) mountArt(game, art);
 }
 
-// On a desktop the rows scroll under the banner: the row in focus moves to
-// the top of that strip, like a TV app.
+const scrollBehavior = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+let heroFrame = 0;
+function sizeHero() {
+  heroFrame = 0;
+  const searching = !document.getElementById('game-search-panel').hidden;
+  const progress = searching || document.body.classList.contains('catalog-cycling') ? 1 : Math.min(1, Math.max(0, scrollY / 240));
+  document.body.style.setProperty('--hero-collapse', progress);
+  document.body.classList.toggle('hero-compact', progress > .5);
+}
+addEventListener('scroll', () => { if (!heroFrame) heroFrame = requestAnimationFrame(sizeHero); }, { passive: true });
+sizeHero();
+// Keep keyboard/controller focus visible without trapping the page in a strip.
 function showRow(card) {
-  const wrap = gamesEl.parentElement, row = card.closest('.game-row');
-  if (!row || getComputedStyle(wrap).overflowY !== 'auto') return;
-  requestAnimationFrame(() => wrap.scrollTo({ top: wrap.scrollTop + row.getBoundingClientRect().top - wrap.getBoundingClientRect().top, behavior: 'smooth' }));
+  card.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: scrollBehavior() });
 }
 
+const gameSearch = document.getElementById('game-search');
+const searchToggle = document.getElementById('open-game-search');
+let searchOrigin = searchToggle;
+const loop = catalogLoop(gamesEl, featureEl, () => !document.getElementById('game-search-panel').hidden || !!document.querySelector('dialog[open]'), sizeHero);
+function toggleSearch(open, onlyFavorites = false) {
+  if (open) searchOrigin = onlyFavorites ? document.getElementById('open-favorites') : searchToggle;
+  loop.reset();
+  favoritesOnly = open && onlyFavorites;
+  document.getElementById('favorites-label').hidden = !favoritesOnly;
+  document.getElementById('game-search-panel').hidden = !open;
+  sizeHero();
+  searchToggle.hidden = open;
+  searchToggle.setAttribute('aria-expanded', String(open));
+  if (!open) { gameSearch.value = ''; filterGames(); }
+  filterGames();
+  (open ? gameSearch : searchOrigin).focus({ preventScroll: true });
+  if (open) document.getElementById('game-search-panel').scrollIntoView({ block: 'start', behavior: scrollBehavior() });
+}
+searchToggle.addEventListener('click', () => toggleSearch(true));
+document.getElementById('close-game-search').addEventListener('click', () => toggleSearch(false));
+gameSearch.addEventListener('keydown', event => {
+  if (event.key === 'Escape') { event.preventDefault(); toggleSearch(false); }
+});
+const normalizeSearch = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+function filterGames() {
+  const query = normalizeSearch(gameSearch.value), visible = new Set();
+  for (const row of gamesEl.querySelectorAll('.game-row')) {
+    if (row.dataset.featured === 'true' && !document.getElementById('game-search-panel').hidden) { row.hidden = true; continue; }
+    let count = 0;
+    for (const card of row.querySelectorAll('.game')) {
+      const game = games.find(g => g.id === card.dataset.id);
+      const matches = (!favoritesOnly || favorites.has(game.id)) && normalizeSearch(`${game.name} ${game.description || ''} ${loc(category(game))}`).includes(query);
+      card.hidden = !matches;
+      if (matches) { count++; visible.add(game.id); }
+    }
+    row.hidden = count === 0;
+  }
+  document.getElementById('game-empty').hidden = visible.size > 0;
+  document.getElementById('game-empty').textContent = favoritesOnly && favorites.size === 0 ? loc('Guarda tus juegos con el corazón.') : loc('Sin resultados');
+}
+gameSearch.addEventListener('input', filterGames);
+searchToggle.prepend(icon('search'));
+const favoritesTile = document.getElementById('open-favorites');
+favoritesTile.prepend(icon('heart'));
+favoritesTile.addEventListener('click', () => { gameSearch.value = ''; toggleSearch(true, true); });
+const settingsTile = document.getElementById('catalog-settings');
+settingsTile.prepend(icon('gear'));
+settingsTile.addEventListener('click', () => settings.open());
 // One row per category, plus the games played last on top.
 function gameRow(label, list) {
   const row = el('section', 'game-row');
   row.dataset.row = label;
   const title = el('h3', 'game-row-title', label);
-  title.append(el('span', 'game-row-count', String(list.length)));
   const head = el('div', 'game-row-head');
   const rail = el('div', 'games');
   for (const game of list) { const card = gameCard(game); card.dataset.category = category(game); rail.append(card); }
   head.append(title);
-  // Arrows instead of a scrollbar, only on a row with more games than fit;
-  // the keyboard and a controller step card by card instead.
-  const arrows = [-1, 1].map(step => {
-    const arrow = el('button', 'rail-arrow', step < 0 ? '←' : '→');
-    arrow.type = 'button'; arrow.tabIndex = -1; arrow.dataset.padSkip = '';
-    arrow.setAttribute('aria-label', step < 0 ? loc('Anteriores: {row}', { row: label }) : loc('Más juegos: {row}', { row: label }));
-    arrow.addEventListener('click', () => rail.scrollBy({ left: step * rail.clientWidth * .8, behavior: 'smooth' }));
-    head.append(arrow);
-    return arrow;
-  });
-  const fit = () => {
-    const room = rail.scrollWidth - rail.clientWidth;
-    row.toggleAttribute('data-overflow', room > 2);
-    arrows[0].disabled = rail.scrollLeft <= 2;
-    arrows[1].disabled = rail.scrollLeft >= room - 2;
-  };
-  rail.addEventListener('scroll', fit, { passive: true });
-  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(rail);
-  requestAnimationFrame(fit);
   row.append(head, rail);
   return row;
 }
@@ -341,6 +417,12 @@ async function loadGames() {
     // Unlisted (new) games go after the curated order, not before it.
     const rank = (g) => { const i = order.indexOf(g.id); return i < 0 ? order.length : i; };
     games.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+    const highlights = games.filter(g => Number.isInteger(g.featured) && g.featured > 0).sort((a, b) => a.featured - b.featured).slice(0, 6);
+    if (highlights.length) {
+      const row = gameRow(loc('Destacados'), highlights);
+      row.dataset.featured = 'true';
+      gamesEl.append(row);
+    }
     const recent = recentGames().map(id => games.find(g => g.id === id)).filter(Boolean);
     if (recent.length) gamesEl.append(gameRow(loc('Seguir jugando'), recent));
     for (const label of categories.filter(c => c !== 'Todos')) {
@@ -351,7 +433,10 @@ async function loadGames() {
     try { saved = localStorage.getItem('pana:featured'); } catch { /* storage off */ }
     const first = games.find((g) => g.id === saved) || games.find((g) => g.id === 'carreritas') || games[0];
     if (first) feature(first);
-    statusEl.textContent = locn(games.length, '{n} juego disponible', '{n} juegos disponibles');
+    gamesEl.append(document.querySelector('.catalog-end'));
+    loop.capture();
+    filterGames();
+    statusEl.textContent = '';
     loadRooms();
   } catch {
     statusEl.textContent = loc('no se pudo hablar con el servidor');

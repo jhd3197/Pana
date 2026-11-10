@@ -21,6 +21,62 @@ try {
   await page.screenshot({ path: `${output}/launcher-desktop.png` });
   assert.equal(await page.locator('[data-row="Mesa"] .game').count(), await page.locator('[data-id="ludo"]').count() ? 7 : 6);
   assert.deepEqual(await page.locator('.game-row-title').evaluateAll(n => n.map(t => t.firstChild.textContent)), ['Carreras', 'Mesa', 'Fiesta', 'Aventura']);
+  // A wheel over the banner scrolls the document; no small nested scroll trap.
+  await page.mouse.move(900, 250);
+  await page.mouse.wheel(0, 650);
+  await page.waitForFunction(() => scrollY > 300);
+  assert.equal(await page.locator('.games-wrap').evaluate(e => e.scrollTop), 0);
+  await page.waitForFunction(() => document.body.classList.contains('hero-compact'));
+  const heroBounds = await page.locator('#feature').boundingBox();
+  assert.ok(heroBounds.y >= -1 && heroBounds.y <= 1, 'hero remains pinned');
+  assert.ok(heroBounds.height < 250, 'hero leaves more room for browsing');
+  const mesaY = await page.locator('[data-row="Mesa"] .game').evaluateAll(cards => cards.map(c => Math.round(c.getBoundingClientRect().top)));
+  assert.equal(new Set(mesaY).size, 1, 'each category stays in one horizontal row');
+  await page.screenshot({ path: `${output}/launcher-browsing.png` });
+  assert.equal(await page.locator('.game-row-count, #game-results').count(), 0);
+  assert.equal(await page.locator('#game-search').isVisible(), false);
+  await page.locator('#open-game-search').click();
+  await page.locator('#game-search').fill('domino');
+  assert.equal(await page.locator('.game:not([hidden])').count(), 1);
+  assert.equal(await page.locator('.game:not([hidden])').getAttribute('data-id'), 'domino');
+  await page.locator('#game-search').fill('zz-no-game');
+  assert.equal(await page.locator('#game-empty').isVisible(), true);
+  await page.locator('#close-game-search').click();
+  assert.equal(await page.locator('#game-search').inputValue(), '');
+  assert.equal(await page.locator('#open-game-search').evaluate(e => e === document.activeElement), true);
+  assert.ok(await page.locator('.game:not([hidden])').count() > 12);
+  assert.equal(await page.locator('#game-search').isVisible(), false);
+  const cardCount = await page.locator('.game').count();
+  for (let pass = 0; pass < 3; pass++) {
+    const cycles = await page.locator('#games').getAttribute('data-cycles') || '0';
+    await page.evaluate(() => {
+      scrollTo(0, document.documentElement.scrollHeight);
+      window.loopRow = document.getElementById('games').children[1];
+      window.loopY = window.loopRow.getBoundingClientRect().top;
+    });
+    await page.waitForFunction(n => Number(document.getElementById('games').dataset.cycles) > Number(n), cycles);
+    assert.ok(await page.evaluate(() => Math.abs(window.loopRow.getBoundingClientRect().top - window.loopY) < 2), 'cycling preserves the visible row position');
+  }
+  assert.equal(await page.locator('.game').count(), cardCount, 'loop does not duplicate cards');
+  assert.equal(await page.locator('.games').first().evaluate(e => getComputedStyle(e).scrollbarWidth), 'none');
+  assert.equal(await page.locator('.skip-link').getAttribute('data-pad-skip'), '');
+  await page.locator('#favorite-featured').click();
+  assert.equal(await page.locator('#favorite-featured').getAttribute('aria-pressed'), 'true');
+  const favoriteId = await page.locator('#play-featured').getAttribute('data-game');
+  await page.locator('#open-favorites').click();
+  assert.equal(await page.locator('.game:not([hidden])').count(), 1);
+  assert.equal(await page.locator('.game:not([hidden])').getAttribute('data-id'), favoriteId);
+  await page.locator('#close-game-search').click();
+  await page.locator('#catalog-settings').click();
+  await page.locator('#pana-menu-dialog[open]').waitFor();
+  await page.keyboard.press('Escape');
+  const hoverCard = page.locator('[data-id="domino"]');
+  assert.equal(await hoverCard.evaluate(e => getComputedStyle(e).height), '180px');
+  await hoverCard.hover();
+  await page.locator('[data-id="domino"].is-preview').waitFor();
+  await page.waitForFunction(() => document.querySelector('[data-id="domino"]').getBoundingClientRect().width > 330);
+  await page.waitForFunction(() => document.querySelector('[data-id="domino"]').getBoundingClientRect().height >= 239);
+  assert.equal(await page.locator('#play-featured').getAttribute('data-game'), 'domino');
   for (const game of ['criollas', 'ludo', 'qqsmp']) {
     if (!await page.locator(`[data-id="${game}"]`).count()) continue;
     const card = page.locator(`[data-id="${game}"] img`);
@@ -63,16 +119,41 @@ try {
       await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     }
   };
-  await page.locator('.games-wrap').evaluate(wrap => wrap.scrollTo(0, 0));
-  await page.locator('#play-featured').focus();   // the pad stays where the mouse left focus
-  await press(13); await press(13);   // down to Carreras, down to Mesa
+  await page.locator('[data-row="Carreras"] .game-pick').first().focus();
+  // Focusing a recycled row scrolls it into view; wait for the loop to place
+  // its following row before asking the controller to move down into it.
+  await page.waitForFunction(() => document.querySelector('[data-row="Mesa"]').getBoundingClientRect().top > document.querySelector('[data-row="Carreras"]').getBoundingClientRect().top);
+  await press(13);   // down from the first grid row to Mesa
   assert.equal(await page.evaluate(() => document.activeElement.closest('[data-row]')?.dataset.row), 'Mesa');
   const padGame = await page.evaluate(() => document.activeElement.closest('.game').dataset.id);
+  await page.waitForFunction(id => document.querySelector(`[data-id="${id}"]`).getBoundingClientRect().height >= 239, padGame);
+  await page.evaluate(() => document.activeElement.closest('.game').dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' })));
+  assert.equal(await page.evaluate(() => document.activeElement.closest('.game').classList.contains('is-preview')), true, 'mouse leave cannot collapse controller preview');
+  await page.evaluate(() => {
+    const pick = document.activeElement;
+    pick.closest('.game').classList.remove('is-preview');
+    pick.classList.remove('pana-pad-focus');
+    pick.classList.add('pana-pad-focus');
+  });
+  await page.waitForFunction(() => document.activeElement.closest('.game').classList.contains('is-preview'));
   assert.equal(await page.evaluate(() => document.querySelector('.game-pick[aria-pressed="true"]').closest('.game').dataset.id), padGame);
   await page.evaluate(() => document.addEventListener('pana:launch', e => { e.preventDefault(); window.padIntent = e.detail; }, { once: true }));
   await press(0);
   assert.equal(await page.evaluate(() => window.padIntent.game), padGame);
   await press(9);   // the menu button (☰) opens Ajustes, B closes it
+  await page.locator('#pana-menu-dialog[open]').waitFor();
+  await press(1);
+  await page.waitForFunction(() => !document.querySelector('#pana-menu-dialog[open]'));
+  for (const tile of ['open-game-search', 'open-favorites']) {
+    await page.locator('#' + tile).focus();
+    await press(0);
+    await page.locator('#game-search-panel').waitFor({ state: 'visible' });
+    await press(1);
+    await page.locator('#game-search-panel').waitFor({ state: 'hidden' });
+    assert.equal(await page.evaluate(() => document.activeElement.id), tile, 'B returns to the originating tile');
+  }
+  await page.locator('#catalog-settings').focus();
+  await press(0);
   await page.locator('#pana-menu-dialog[open]').waitFor();
   await press(1);
   await page.waitForFunction(() => !document.querySelector('#pana-menu-dialog[open]'));

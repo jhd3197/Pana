@@ -14,8 +14,10 @@ export const artwork = {
   bochinche: ['Fiesta', 'bochinche.jpg', 'bochinche-card.jpg'], capis: ['Fiesta', 'capis.jpg', 'capis-card.jpg'],
   embuste: ['Aventura', 'embuste.jpg'], reliquia: ['Aventura', 'reliquia.jpg'],
 };
-export const category = game => artwork[game.id]?.[0] || 'Fiesta';
+export const category = game => artwork[game.id]?.[0] || (categories.includes(game.category) && game.category !== 'Todos' ? game.category : 'Fiesta');
 export const artUrl = (game, card = false) => {
+  const supplied = (card && game.cardArt) || game.art;
+  if (typeof supplied === 'string' && /^\/(?!\/)[a-zA-Z0-9/_ .-]+$/.test(supplied)) return supplied;
   const art = artwork[game.id];
   const file = (card && art?.[2]) || art?.[1];
   return file ? new URL(`./images/launcher/${file}`, import.meta.url).href : null;
