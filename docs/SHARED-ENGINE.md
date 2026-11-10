@@ -1312,3 +1312,11 @@ gravity, movement speed and projectile hitboxes do not change. Its regression
 suite checks both directions, tall walls, ceilings and opt-in isolation.
 `floorGraph` also accepts a `stepUp(x)` callback and optional `hopSpeeds` for
 navigation that represents these runs and air steering without raising jumps.
+
+### Sculpted farm animals
+
+`engine/models/core/soft-sculpt.js` builds coloured organic surfaces from soft
+ellipsoids. `fauna/capybara/chiguire.js`, `fauna/farm/cochino.js` and
+`fauna/farm/pato.js` provide animated capybaras, pigs and ducks, registered in
+Studio's Fauna catalog. Consumers retain the `userData.tick(t)` animation and
+owned-resource disposal contract. See `procedural-farm-animals.md`.

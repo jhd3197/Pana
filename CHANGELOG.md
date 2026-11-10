@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pana Studio suma chigüires, cochinos y patos para poblar tus escenas.**
+  Tres modelos animados con variantes de pelaje y un escultor compartido para cuerpos orgánicos.
+
 - **Disfruta el juego destacado en grande al volver a subir.**
   El banner empieza más alto y vuelve a ampliarse incluso tras dar una vuelta al catálogo; solo la tarjeta que usas queda seleccionada.
 

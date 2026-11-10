@@ -134,3 +134,19 @@ preserve its license and source attribution. Factories return owned native
 skinned meshes with absolute-time `userData.tick(t)` and an idempotent skeleton
 `userData.dispose()`. Keep animals outside static batches and racing lanes.
 See `docs/knowledge/procedural-farm-animals.md` for parameters and proof.
+
+## Sculpted farm collection
+
+`fauna/capybara/chiguire.js` exports `chiguire` and `chiguireFamily`;
+`fauna/farm/cochino.js` exports `cochino`; `fauna/farm/pato.js` exports `pato`.
+All use `core/soft-sculpt.js`, a MarchingCubes surface from blended ellipsoids,
+with vertex colours and a small articulated head. They are separate from the
+horse/cow locomotion rig. Studio registers the three factories in the Fauna
+catalog under the conuco pack. Keep their absolute-time `userData.tick(t)`
+callbacks alive; the duck also accepts whether it is afloat. Do not bake live
+animals into static surroundings.
+
+The authored collection can contain strings double-encoded as UTF-8. Normalize
+those strings before extracting JSON metadata, especially the Spanish damage
+key: a malformed key silently falls back to default combat damage. Keep pure
+catalog metadata separate from model factories so server rules never load Three.

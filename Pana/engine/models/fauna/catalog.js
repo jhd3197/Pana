@@ -1,5 +1,8 @@
 // Model metadata only: no Three.js, construction or game imports.
 export default [
+{"id": "conuco-chiguire", "name": "Chigüire del conuco", "category": "Fauna", "source": "/engine/models/fauna/capybara/chiguire.js", "factory": "chiguire", "usedBy": ["Conuco"], "previewOptions": {"seed": 7}, "pack": "conuco", "description": "Chigüire del conuco", "tags": ["conuco", "animal"]},
+{"id": "conuco-cochino", "name": "Cochino criollo", "category": "Fauna", "source": "/engine/models/fauna/farm/cochino.js", "factory": "cochino", "usedBy": ["Conuco"], "previewOptions": {"seed": 7}, "pack": "conuco", "description": "Cochino criollo", "tags": ["conuco", "animal"]},
+{"id": "conuco-pato", "name": "Pato real", "category": "Fauna", "source": "/engine/models/fauna/farm/pato.js", "factory": "pato", "usedBy": ["Conuco"], "previewOptions": {"seed": 7}, "pack": "conuco", "description": "Pato real", "tags": ["conuco", "animal"]},
   {
     id: 'flamingo', name: 'Flamenco de las salinas', category: 'Fauna',
     source: '/engine/models/fauna/birds/flamingo.js', factory: 'flamingo',
