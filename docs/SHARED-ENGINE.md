@@ -233,7 +233,8 @@ max)` (removes ground not joined to the bottom row, reports bigger pieces),
 `skyExposure` and `headroom`; `floorGraph(mask, { water })` (every floor a
 walker stands on, caves, tunnels and bridges included, with walk, drop and
 hop edges: `reach`, `reachedBy` (every floor that gets to one, in one
-search), `distance`, `near`, `layered`), `coverToward(mask, x, y,
+search), `distance`, `near`, `layered`, `edges(i)` (the cached list: read
+only)), `coverToward(mask, x, y,
 dir)` (how sheltered a spot is from one side) and `relief(mask)` (relief,
 bumpiness and dry share of the top). The game keeps its own design (Capis:
 `games/capis/public/map-rules.js`).

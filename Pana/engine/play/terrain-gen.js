@@ -27,31 +27,46 @@ export function bumps(d, list) {
 // 0 inside `from`, 1 past `to`, smooth between (either order).
 export const ramp = (d, from, to) => smoothstep((d - from) / (to - from));
 
+// A typed list copied into a longer one.
+const grow = (list, length) => { const out = new Int32Array(length); out.set(list); return out; };
+
 // Solid cells not joined to the bottom row (4-connected) float in the air.
 // Removes every floating piece of at most `maxCells` and returns how many cells
 // went and the sizes of the floating pieces that were too big to drop (the
 // caller decides whether that is a bad map).
+// Works on horizontal runs of solid cells, not cells: each run is joined
+// (union-find) to the runs it touches in the row below, so a large map costs
+// one pass over its rows instead of a flood through every solid cell. The
+// pieces are reported in the order of their first cell (row by row).
 export function dropFloating(mask, maxCells = 1500) {
-  const { cols, rows, solid } = mask, n = cols * rows, seen = new Uint8Array(n), queue = new Int32Array(n);
-  let head = 0, tail = 0;
-  for (let c = 0; c < cols; c++) if (solid[c]) { seen[c] = 1; queue[tail++] = c; }
-  const spread = () => {
-    while (head < tail) {
-      const i = queue[head++], c = i % cols;
-      if (c > 0 && solid[i - 1] && !seen[i - 1]) { seen[i - 1] = 1; queue[tail++] = i - 1; }
-      if (c < cols - 1 && solid[i + 1] && !seen[i + 1]) { seen[i + 1] = 1; queue[tail++] = i + 1; }
-      if (i >= cols && solid[i - cols] && !seen[i - cols]) { seen[i - cols] = 1; queue[tail++] = i - cols; }
-      if (i + cols < n && solid[i + cols] && !seen[i + cols]) { seen[i + cols] = 1; queue[tail++] = i + cols; }
+  const { cols, rows, solid } = mask;
+  let cap = 4096, from = new Int32Array(cap), to = new Int32Array(cap), parent = new Int32Array(cap), count = 0;
+  const root = i => { while (parent[i] !== i) i = parent[i] = parent[parent[i]]; return i; };
+  let below = 0, belowEnd = 0, bottom = 0;   // the runs of the previous row: ids [below, belowEnd); of the bottom row: [0, bottom)
+  for (let r = 0; r < rows; r++) {
+    const base = r * cols, first = count;
+    let j = below;
+    for (let c = 0; c < cols; c++) {
+      if (!solid[base + c]) continue;
+      const a = c; while (c < cols && solid[base + c]) c++;
+      if (count === cap) { cap *= 2; from = grow(from, cap); to = grow(to, cap); parent = grow(parent, cap); }
+      const id = count++; from[id] = base + a; to[id] = base + c; parent[id] = id;
+      // Join every run below that shares a column with [a, c).
+      while (j < belowEnd && to[j] - base + cols <= a) j++;
+      for (let k = j; k < belowEnd && from[k] - base + cols < c; k++) { const x = root(k), y = root(id); if (x !== y) { if (x < y) parent[y] = x; else parent[x] = y; } }
     }
-  };
-  spread();
+    below = first; belowEnd = count;
+    if (r === 0) { bottom = count; for (let id = 0; id < count; id++) parent[id] = 0; }   // the bottom row is one piece: the ground
+  }
+  // Each piece's size and whether it stands on the bottom row (run 0's piece).
+  const size = new Int32Array(count), ground = bottom ? root(0) : -1;
+  for (let id = 0; id < count; id++) size[root(id)] += to[id] - from[id];
   let removed = 0; const floating = [];
-  for (let i = 0; i < n; i++) {
-    if (!solid[i] || seen[i]) continue;
-    const start = tail; seen[i] = 1; queue[tail++] = i; spread();
-    const size = tail - start;
-    if (size <= maxCells) { for (let k = start; k < tail; k++) solid[queue[k]] = 0; removed += size; }
-    else floating.push(size);
+  for (let id = 0; id < count; id++) {
+    const p = root(id);
+    if (p === ground) continue;
+    if (size[p] <= maxCells) { solid.fill(0, from[id], to[id]); removed += to[id] - from[id]; }
+    else if (p === id) floating.push(size[p]);
   }
   if (removed) { mask.dirty = { c0: 0, r0: 0, c1: cols - 1, r1: rows - 1 }; mask.revision++; }
   return { removed, floating };
@@ -112,16 +127,23 @@ export function walkTo(mask, x, dir, { step = .2, maxSlope = Math.tan(50 * Math.
 
 // How much of the sky is open above (x, y): the share of `rays` rays fanned
 // from 10° to 170° that travel `length` without touching ground.
+const fans = new Map();   // rays → their directions, worked out once
+const fanOf = rays => {
+  let fan = fans.get(rays);
+  if (!fan) { fan = []; for (let k = 0; k < rays; k++) { const a = (10 + 160 * k / (rays - 1)) * Math.PI / 180; fan.push(Math.cos(a), Math.sin(a)); } fans.set(rays, fan); }
+  return fan;
+};
 export function skyExposure(mask, x, y, { rays = 13, length = 20, step = .25 } = {}) {
   let open = 0;
+  const fan = fanOf(rays), { height, cell, cols, solid } = mask;
   for (let k = 0; k < rays; k++) {
-    const a = (10 + 160 * k / (rays - 1)) * Math.PI / 180, dx = Math.cos(a), dy = Math.sin(a);
+    const dx = fan[2 * k], dy = fan[2 * k + 1];
     let clear = true;
     for (let t = step; t <= length && clear; t += step) {
       const px = x + dx * t, py = y + dy * t;
-      if (py >= mask.height) break;
-      const c = Math.floor(px / mask.cell), r = Math.floor(py / mask.cell);
-      if (c >= 0 && c < mask.cols && r >= 0 && mask.solid[r * mask.cols + c]) clear = false;
+      if (py >= height) break;
+      const c = Math.floor(px / cell), r = Math.floor(py / cell);
+      if (c >= 0 && c < cols && r >= 0 && solid[r * cols + c]) clear = false;
     }
     if (clear) open++;
   }
@@ -155,14 +177,18 @@ export function headroom(mask, x, y, height = 2.4) {
 export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clearance = 1.7, maxSlope = Math.tan(50 * Math.PI / 180), stepUp = .35,
   hop = { up: 7, forward: 2.6, gravity: 18 }, leap = 2.4, body = 1.5, hopSpeeds = null } = {}) {
   const { cols, rows, solid, cell } = mask, count = Math.floor(mask.width / step), need = Math.ceil(clearance / cell);
-  const colOf = k => Math.min(cols - 1, Math.floor((k + .5) * step / cell));
+  const colOf = k => Math.min(cols - 1, Math.floor((k + .5) * step / cell)), colAt = new Int32Array(count);
+  for (let k = 0; k < count; k++) colAt[k] = colOf(k);
   const air = (c, r) => r >= rows || (r >= 0 && !solid[r * cols + c]);
-  const start = new Int32Array(count + 1), ys = [], ks = [];
+  // Each column's runs of ground, bottom up: rows bottoms[j] to tops[j] for j in [topStart[k], topStart[k + 1]).
+  const start = new Int32Array(count + 1), ys = [], ks = [], topStart = new Int32Array(count + 1), topList = [], bottomList = [];
   for (let k = 0; k < count; k++) {
-    start[k] = ys.length;
-    const c = colOf(k);
+    start[k] = ys.length; topStart[k] = topList.length;
+    const c = colAt[k];
     for (let r = 0; r < rows; r++) {
+      if (solid[r * cols + c] && (r === 0 || !solid[(r - 1) * cols + c])) bottomList.push(r);
       if (!solid[r * cols + c] || !air(c, r + 1)) continue;
+      topList.push(r);
       const y = (r + 1) * cell;
       if (y <= water + dry) continue;
       let open = true;
@@ -170,28 +196,40 @@ export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clear
       if (open) { ys.push(y); ks.push(k); }
     }
   }
-  start[count] = ys.length;
-  const y = Float32Array.from(ys), col = Int32Array.from(ks);
+  start[count] = ys.length; topStart[count] = topList.length;
+  const y = Float32Array.from(ys), col = Int32Array.from(ks), tops = Int32Array.from(topList), bottoms = Int32Array.from(bottomList);
   // The floor of column k at height h (within half a cell), or -1.
   const at = (k, h) => { if (k < 0 || k >= count) return -1; for (let i = start[k]; i < start[k + 1]; i++) if (Math.abs(y[i] - h) < cell * .6) return i; return -1; };
   // The first ground at or under height h in column k: its floor id, or -1 (water, no room).
   const landing = (k, h) => {
     if (k < 0 || k >= count) return -1;
-    const c = colOf(k);
-    for (let r = Math.min(rows - 1, Math.floor(h / cell)); r >= 0; r--) if (solid[r * cols + c]) return at(k, (r + 1) * cell);
+    const r = Math.min(rows - 1, Math.floor(h / cell));
+    if (r < 0) return -1;
+    if (solid[r * cols + colAt[k]]) return at(k, (r + 1) * cell);
+    // In the air, the first ground under it is the highest top below.
+    for (let j = topStart[k + 1] - 1; j >= topStart[k]; j--) if (tops[j] < r) return at(k, (tops[j] + 1) * cell);
     return -1;
   };
-  const clear = (k, from, to) => { const c = colOf(k); for (let r = Math.max(0, Math.floor(from / cell)); r <= Math.floor(to / cell); r++) if (!air(c, r)) return false; return true; };
+  // No ground in column k from height `from` to `to` (rows past the top are air).
+  const clear = (k, from, to) => {
+    const first = Math.max(0, Math.floor(from / cell)), last = Math.min(rows - 1, Math.floor(to / cell));
+    if (first > last) return true;
+    for (let j = topStart[k]; j < topStart[k + 1] && bottoms[j] <= last; j++) if (tops[j] >= first) return false;
+    return true;
+  };
+  const speeds = hopSpeeds || [hop.forward], peak = hop.up * hop.up / (2 * hop.gravity);
   function edges(i, hops, out) {
     out.length = 0;
     const k = col[i], h = y[i], rise = Math.max(typeof stepUp === 'function' ? stepUp((k + .5) * step) : stepUp, maxSlope * step);
-    for (const dir of [-1, 1]) {
+    // Room to jump straight up from this floor (the same for both sides).
+    const jumps = hops && clear(k, h + cell, h + body + peak);
+    for (let dir = -1; dir <= 1; dir += 2) {
       const n = k + dir;
       if (n >= 0 && n < count && clear(n, h + rise + cell, h + body)) { const j = landing(n, h + rise); if (j >= 0) out.push(j); }
-      if (!hops || !clear(k, h + cell, h + body + hop.up * hop.up / (2 * hop.gravity))) continue;
+      if (!jumps) continue;
       // The arc of a jump, column by column: blocked by ground in the body's
       // way, landed where the feet meet ground while coming down.
-      for (const forward of hopSpeeds || [hop.forward]) for (let s = 1; s * step <= leap; s++) {
+      for (const forward of speeds) for (let s = 1; s * step <= leap; s++) {
         const m = k + dir * s;
         if (m < 0 || m >= count) break;
         const t = s * step / forward, feet = h + hop.up * t - hop.gravity * t * t / 2;
@@ -253,7 +291,8 @@ export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clear
   }
   // Columns with more than one floor: ledges over ground, caves, bridges, overhangs.
   let layered = 0; for (let k = 0; k < count; k++) if (start[k + 1] - start[k] > 1) layered++;
-  return { step, y, col, start, count, layered: layered / Math.max(1, count), near, reach, reachedBy, distance, edges: (i, hops = true) => [...linked(i, hops)] };
+  // edges(i): the floors floor i leads to, the graph's own cached list (read it, never change it).
+  return { step, y, col, start, count, layered: layered / Math.max(1, count), near, reach, reachedBy, distance, edges: (i, hops = true) => linked(i, hops) };
 }
 
 // How sheltered (x, y) is from shots coming from side `dir` (±1): the share
@@ -261,13 +300,14 @@ export function floorGraph(mask, { step = .2, water = -Infinity, dry = .3, clear
 // side, that meet ground within `length`. 0 in the open, 1 behind a wall.
 export function coverToward(mask, x, y, dir, { rays = 9, from = 5, to = 80, length = 12, step = .25 } = {}) {
   let blocked = 0;
+  const { height, cell, cols, solid } = mask;
   for (let k = 0; k < rays; k++) {
     const a = (from + (to - from) * k / (rays - 1)) * Math.PI / 180, dx = Math.cos(a) * dir, dy = Math.sin(a);
     for (let t = step; t <= length; t += step) {
       const px = x + dx * t, py = y + dy * t;
-      if (py >= mask.height) break;
-      const c = Math.floor(px / mask.cell), r = Math.floor(py / mask.cell);
-      if (c >= 0 && c < mask.cols && r >= 0 && mask.solid[r * mask.cols + c]) { blocked++; break; }
+      if (py >= height) break;
+      const c = Math.floor(px / cell), r = Math.floor(py / cell);
+      if (c >= 0 && c < cols && r >= 0 && solid[r * cols + c]) { blocked++; break; }
     }
   }
   return blocked / rays;

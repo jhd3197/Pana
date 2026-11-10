@@ -630,7 +630,14 @@ Trueno 3.5 to 12 % (before: under 0.5 %), La Licuadora 9 to 13 %, La Lejana
   than one floor + 2 × bumpiness + 0.6 a landmark (mesa, tunnel, room, cave,
   bridge, arch, ledge, pond, knoll). A flat field scores about 1; medians by
   kind: cuevas 11, islas 7.5, valle 6.7, cerros 6, terrazas 5.5.
-- **Numbers over 300 seeds a size**: 30–60 ms a map in Node (1.6–1.7 attempts
+- **Generation time.** `map-rules.test.js` fails a size over 120 ms a map,
+  and GitHub's runners take about 2.2× a desktop's time: large maps at 56 ms
+  locally failed there at 120–133 ms. The cost is whole-mask passes per
+  attempt (about a million cells on large): `dropFloating` labels runs of
+  cells, not cells; `floorGraph` answers its hop arcs' `clear` and `landing`
+  from each column's runs; the spawn sweep reads each column's surface once.
+  A speed-up must leave the hash of every seed's mask and map unchanged.
+- **Numbers over 300 seeds a size**: 24–35 ms a map in Node (1.6–1.7 attempts
   a map, 34–38 % of seeds re-roll at least once, none falls back to
   `suave`); front capis' heights differ by 0.1 (median), 2.0 (p90), 3.2 at
   most; team means by 0.63 / 2.13 / 2.6; 90 % of maps are walkable both
