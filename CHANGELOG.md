@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Disfruta el juego destacado en grande al volver a subir.**
+  El banner empieza más alto y vuelve a ampliarse incluso tras dar una vuelta al catálogo; solo la tarjeta que usas queda seleccionada.
+
 - **Encuentra más juegos sin pelear con el scroll.**
   Vista previa con mouse o control, favoritos y búsqueda al final; el banner se recoge al bajar y el catálogo sigue sin saltos. Los sitios que alojan Pana pueden destacar sus juegos con ilustraciones propias.
 

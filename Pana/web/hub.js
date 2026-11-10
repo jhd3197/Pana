@@ -214,7 +214,7 @@ function gameCard(game) {
   let previewTimer;
   const preview = () => {
     gamesEl.querySelectorAll('.game.is-preview').forEach(other => { if (other !== card) other.classList.remove('is-preview'); });
-    card.classList.add('is-preview'); feature(game);
+    card.classList.add('is-preview'); feature(game, card);
   };
   card.addEventListener('pointerenter', event => {
     if (event.pointerType === 'mouse' && inputState().detected !== 'gamepad') previewTimer = setTimeout(() => {
@@ -241,7 +241,7 @@ function gameCard(game) {
   }).observe(pick, { attributes: true, attributeFilter: ['class'] });
   pick.addEventListener('click', () => {
     if (feat === game && stepped()) { launch(game, gameUrl(game, newRoomCode())); return; }
-    feature(game);
+    feature(game, card);
   });
   card.append(art, body, pick);
   if (!url) lazyArt(game, art);
@@ -260,7 +260,10 @@ function showPlayers(tag, game) {
 
 // The hero shows one game at a time. card.js never unmounts, so the old
 // hero canvas loses its WebGL context instead of piling up live ones.
-function feature(game) {
+function feature(game, selected = gamesEl.querySelector(`.game[data-id="${game.id}"]`)) {
+  for (const card of gamesEl.querySelectorAll('.game')) {
+    card.querySelector('.game-pick').setAttribute('aria-pressed', String(card === selected));
+  }
   if (feat === game) return;
   feat = game;
   updateFavorite();
@@ -276,7 +279,6 @@ function feature(game) {
   document.getElementById('create-room').hidden = !isOnline(game);
   document.getElementById('join-code').hidden = !isOnline(game);
   document.dispatchEvent(new CustomEvent('pana:featured', { detail: { game: game.id } }));
-  for (const c of gamesEl.querySelectorAll('.game')) c.querySelector('.game-pick').setAttribute('aria-pressed', String(c.dataset.id === game.id));
 
   for (const old of featureArt.querySelectorAll('canvas')) {
     if ('live' in old.dataset) old.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
@@ -292,15 +294,18 @@ function feature(game) {
 }
 
 const scrollBehavior = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
-let heroFrame = 0;
-function sizeHero() {
+let heroFrame = 0, heroScroll = scrollY, heroTravel = Math.min(320, scrollY);
+function sizeHero(syncScroll = false) {
   heroFrame = 0;
+  if (!syncScroll) heroTravel = Math.max(0, Math.min(320, heroTravel + scrollY - heroScroll));
+  if (scrollY === 0) heroTravel = 0;
+  heroScroll = scrollY;
   const searching = !document.getElementById('game-search-panel').hidden;
-  const progress = searching || document.body.classList.contains('catalog-cycling') ? 1 : Math.min(1, Math.max(0, scrollY / 240));
+  const progress = searching ? 1 : heroTravel / 320;
   document.body.style.setProperty('--hero-collapse', progress);
   document.body.classList.toggle('hero-compact', progress > .5);
 }
-addEventListener('scroll', () => { if (!heroFrame) heroFrame = requestAnimationFrame(sizeHero); }, { passive: true });
+addEventListener('scroll', () => { if (!heroFrame) heroFrame = requestAnimationFrame(() => sizeHero()); }, { passive: true });
 sizeHero();
 // Keep keyboard/controller focus visible without trapping the page in a strip.
 function showRow(card) {
@@ -310,7 +315,7 @@ function showRow(card) {
 const gameSearch = document.getElementById('game-search');
 const searchToggle = document.getElementById('open-game-search');
 let searchOrigin = searchToggle;
-const loop = catalogLoop(gamesEl, featureEl, () => !document.getElementById('game-search-panel').hidden || !!document.querySelector('dialog[open]'), sizeHero);
+const loop = catalogLoop(gamesEl, featureEl, () => !document.getElementById('game-search-panel').hidden || !!document.querySelector('dialog[open]'), () => sizeHero(true));
 function toggleSearch(open, onlyFavorites = false) {
   if (open) searchOrigin = onlyFavorites ? document.getElementById('open-favorites') : searchToggle;
   loop.reset();

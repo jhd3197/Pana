@@ -16,6 +16,7 @@ try {
   await page.evaluate(() => document.fonts.ready);
   assert.equal(await page.locator('#feature-name').textContent(), 'Carreritas');
   assert.equal(await page.locator('#feature-art canvas').count(), 0);
+  assert.ok((await page.locator('#feature').boundingBox()).height >= 500, 'initial hero gives the artwork more space');
   // Every tile shows its illustration, or its live card.js art while it has none (Trifulca).
   assert.equal(await page.locator('.game-art[src]').count() + await page.locator('canvas.game-art').count(), await page.locator('.game').count());
   await page.screenshot({ path: `${output}/launcher-desktop.png` });
@@ -58,6 +59,9 @@ try {
     assert.ok(await page.evaluate(() => Math.abs(window.loopRow.getBoundingClientRect().top - window.loopY) < 2), 'cycling preserves the visible row position');
   }
   assert.equal(await page.locator('.game').count(), cardCount, 'loop does not duplicate cards');
+  await page.evaluate(() => scrollBy(0, -320));
+  await page.waitForFunction(() => document.getElementById('feature').getBoundingClientRect().height >= 500);
+  assert.ok(Number(await page.locator('#games').getAttribute('data-cycles')) > 0, 'hero expands again after cycling');
   assert.equal(await page.locator('.games').first().evaluate(e => getComputedStyle(e).scrollbarWidth), 'none');
   assert.equal(await page.locator('.skip-link').getAttribute('data-pad-skip'), '');
   await page.locator('#favorite-featured').click();
@@ -174,5 +178,24 @@ try {
   assert.equal(await page.evaluate(() => window.intent.game), 'pintura');
   assert.match(await page.evaluate(() => window.intent.url), /room=launcher-qa/);
   assert.deepEqual(errors, []);
+  const duplicates = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  await duplicates.route('**/api/games?*', async route => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.games.find(g => g.id === 'carreritas').featured = 1;
+    await route.fulfill({ response, json: body });
+  });
+  await duplicates.goto(base);
+  const repeated = duplicates.locator('[data-id="carreritas"] .game-pick');
+  await repeated.last().waitFor();
+  assert.equal(await repeated.count(), 2);
+  for (const row of ['Carreras', 'Destacados']) {
+    const card = duplicates.locator(`[data-row="${row}"] [data-id="carreritas"]`);
+    await card.locator('.game-pick').focus();
+    await card.locator('.game-pick[aria-pressed="true"]').waitFor();
+    assert.equal(await duplicates.locator('.game-pick[aria-pressed="true"]').count(), 1);
+    assert.equal(await card.locator('.game-pick').getAttribute('aria-pressed'), 'true');
+  }
+  await duplicates.close();
   console.log('Launcher: artwork, categories, names, private/code rooms, settings, mobile and hosting hook passed.');
 } finally { await browser.close(); }

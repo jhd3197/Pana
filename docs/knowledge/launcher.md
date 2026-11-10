@@ -14,7 +14,10 @@ Below the banner the games sit in one row per category (`data-row`), plus
 `pana:recent`. Each category stays in one horizontal, swipeable row.
 The document scrolls normally: never lock the body or put the catalog in a
 fixed-height strip. On desktop the banner stays pinned and shrinks as the page
-scrolls. Cards widen after a 450 ms mouse hover and update that banner; keyboard
+scrolls. Its expanded desktop height is 65vh (480–720px); upward scrolling
+expands it again anywhere in the catalog, including after recycling. The loop
+syncs the hero's scroll baseline after compensating row positions so that
+internal movement cannot masquerade as an upward gesture. Cards widen after a 450 ms mouse hover and update that banner; keyboard
 focus previews immediately. Search, Favorites and Settings are tiles at the end.
 Search opens only on request and matches names, descriptions and categories
 without accents; empty rows hide. Favorites use `pana:favorites` in localStorage,
@@ -26,7 +29,8 @@ A PANA divider marks each pass. Search pauses recycling and restores category
 order; scrolling back to the top also restores it. Scrollbars stay hidden,
 while swipe, trackpad and keyboard navigation still work. The skip link is
 keyboard-accessible but excluded from controller navigation.
-Keep the hero compact while filtering, since resizing it against the scroll
+Only the specific active card gets the pressed outline, even when its game
+also appears in Featured or recent games. Keep the hero compact while filtering, since resizing it against the scroll
 limit of a short result list creates a feedback loop. Stepping onto a card
 with the pad or the keyboard (`.pana-pad-focus` or `:focus-visible`) features
 it, and pressing it then launches. A tap or click features it without changing

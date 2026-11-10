@@ -421,7 +421,7 @@ body[data-view="jugar"] .home { min-height: 0; }
 /* Keep the selected game and its actions in view while the rows get more room. */
 body[data-view="jugar"] .home { overflow-anchor: none; }
 @media (min-width: 861px) {
-  body[data-view="jugar"] { --hero-collapse: 0; --hero-height: calc(400px - 190px * var(--hero-collapse)); }
+  body[data-view="jugar"] { --hero-collapse: 0; --hero-expanded: clamp(480px, 65dvh, 720px); --hero-height: calc(var(--hero-expanded) - (var(--hero-expanded) - 210px) * var(--hero-collapse)); }
   body[data-view="jugar"] .feature { position: sticky; top: 0; z-index: 3; isolation: isolate; height: var(--hero-height); min-height: 0; flex: none; overflow: hidden; }
   body[data-view="jugar"] .feature-art { height: 100%; }
   body[data-view="jugar"] .feature-body { position: relative; padding-block: 20px; margin-block: auto 0; gap: 12px; }
