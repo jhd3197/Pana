@@ -9,6 +9,7 @@ const svg = (body, label = '') =>
 const INK = '#16161a';
 
 export const ICONS = {
+  search: svg('<circle cx="17" cy="17" r="11" fill="none" stroke="currentColor" stroke-width="4"/><path d="M25 25l11 11" stroke="currentColor" stroke-width="4"/>'),
   kitBarrel: svg('<path d="M4 16h26v8H4z M30 14h6v12h-6z" fill="currentColor"/>'),
   kitHopper: svg('<path d="M7 27C7 9 33 9 33 27z M16 27h8v7h-8z" fill="currentColor"/>'),
   // A marker's stock in profile, and a sight on its rail (Pepazo's Culata and Mira).
