@@ -1334,3 +1334,9 @@ burst and the stains stay the thrower's colour, which says whose paint it is.
   flag (`ctfGoal`), and touching a dropped one returns it even while carrying.
 - Your own flag away, nothing scores on your pad, as in the rules. `scoreBlocked` drives
   a one-shot buzz and a kick of the banner as you step on it.
+
+Mouse button chords use `mousedown`/`mouseup` in the shared look controller:
+Pointer Events only send `pointerdown` for the first held mouse button and
+`pointerup` for the last release. Keep look/drag on pointer events, but never
+use those two edges alone for aim plus fire. The first click also acts when
+pointer lock is unavailable; the range needs no separate fallback handler.

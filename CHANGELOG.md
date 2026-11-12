@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo: apunta y dispara con ambos botones del mouse a la vez.**
+  El primer clic también responde y la retícula tiene un punto central de alto contraste.
+
 - **Pana Studio suma chigüires, cochinos y patos para poblar tus escenas.**
   Tres modelos animados con variantes de pelaje y un escultor compartido para cuerpos orgánicos.
 

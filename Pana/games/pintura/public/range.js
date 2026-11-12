@@ -58,12 +58,6 @@ ${button('range-back', 'back', loc('Volver'), loc('Volver'))}${button('range-res
     press(event) { sound.unlock(); if (event.button === 0) firing = queuedFire = true; if (event.button === 2) { if (throwable()) throwSends = 3; else mouseAim = true; } },
     release(event) { if (event.button === 0 || event.type === 'pointercancel') firing = false; if (event.button === 2 || event.type === 'pointercancel') mouseAim = false; },
     unlocked: () => close() });
-  // The click that asks for the pointer lock fires too: a refused or slow lock never leaves the trigger dead.
-  function unlockedPress(event) {
-    if (!ready || closed || look.locked || event.pointerType !== 'mouse') return;
-    sound.unlock(); if (event.button === 0) firing = queuedFire = true; if (event.button === 2) { if (throwable()) throwSends = 3; else mouseAim = true; }
-  }
-  canvas.addEventListener('pointerdown', unlockedPress);
   const pads = [
     holdButton($('range-fire'), { down: () => { sound.unlock(); touchFire = queuedFire = true; }, up: () => { touchFire = false; } }),
     holdButton($('range-aim'), { down: () => { if (throwable()) { throwSends = 3; return; } touchAim = !touchAim; $('range-aim').setAttribute('aria-pressed', String(touchAim)); }, up: () => {} }),
@@ -170,7 +164,7 @@ ${button('range-back', 'back', loc('Volver'), loc('Volver'))}${button('range-res
   }
   function close() {
     if (closed) return; closed = true;
-    look.dispose(); canvas.removeEventListener('pointerdown', unlockedPress); pads.forEach(p => p.release()); grenade.cancel();
+    look.dispose(); pads.forEach(p => p.release()); grenade.cancel();
     removeEventListener('keydown', onKey, true); removeEventListener('keyup', onKey, true); dialog.removeEventListener('cancel', onCancel);
     scopeView.dispose(); view.dispose(); root.remove(); onExit();
   }

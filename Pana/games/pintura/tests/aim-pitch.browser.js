@@ -35,6 +35,28 @@ try {
   await waitFor(a, playing, null, 120_000); await waitFor(b, playing, null, 120_000);
   const me = await a.evaluate(() => pinturaDebug.room.id), rival = await b.evaluate(() => pinturaDebug.room.id);
 
+  // Real mouse chords: both orders and releasing one button while holding the other.
+  await a.mouse.move(640, 360);
+  for (const first of ['right', 'left']) {
+    const second = first === 'right' ? 'left' : 'right';
+    const before = await a.evaluate(() => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).fired);
+    await a.mouse.down({ button: first }); await a.mouse.down({ button: second });
+    await waitFor(a, () => pinturaDebug.input().aim);
+    await waitFor(b, ({ me, before }) => {
+      const p = pinturaDebug.room.state.players.find(p => p.id === me);
+      return p.fired > before;
+    }, { me, before });
+    await a.mouse.up({ button: 'right' });
+    await waitFor(a, () => !pinturaDebug.input().aim);
+    await a.mouse.up({ button: 'left' });
+  }
+  const cross = await a.locator('.crosshair').evaluate(el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x + r.width / 2 - innerWidth / 2, y: r.y + r.height / 2 - innerHeight / 2, dot: getComputedStyle(el, '::after').content };
+  });
+  assert.ok(Math.abs(cross.x) < 1 && Math.abs(cross.y) < 1 && cross.dot !== 'none');
+  console.log('ok  mouse aim/fire chords and centered reticle');
+
   for (const pitch of [.4, -.3, 0]) {
     await setLook(a, pitch); const shot = await firedShot(a, b, me, pitch);
     assert.ok(onLine(shot, 1.55, pitch), `pitch ${pitch}: ${JSON.stringify(shot)}`);

@@ -81,3 +81,6 @@ body.spectating .crosshair, body.spectating .hitmarker, body.spectating .lock-cu
 body.spectating #touch { visibility: hidden; }
 body.spectating #hud .respawn { top: calc(100 * var(--u)); padding: 4px 14px 2px; font-size: clamp(13px, calc(20 * var(--u)), 22px); box-shadow: 3px 3px 0 var(--ink); }
 @media (pointer: coarse) { .spectate { bottom: 18px; gap: 8px; } .spectate-btn { height: 40px; min-width: 40px; } .spectate-btn svg { width: 18px; height: 18px; } }
+
+/* Keep a precise aim point visible against both bright sky and dark cover. */
+.crosshair::after { content: ""; position: absolute; left: 13px; top: 13px; width: 4px; height: 4px; background: #fff; box-shadow: 0 0 0 1px #000; border-radius: 50%; }

@@ -38,15 +38,20 @@ export function createLookControls(canvas, { enabled = () => true, look, press, 
   }
   function onDown(event) {
     if (!enabled()) return;
-    event.preventDefault(); canvas.focus?.({ preventScroll: true });
-    if (locked()) { press?.(event); return; }
+    if (event.pointerType !== 'mouse') event.preventDefault();
+    canvas.focus?.({ preventScroll: true });
+    if (locked()) { if (event.pointerType !== 'mouse') press?.(event); return; }
     canvas.setPointerCapture?.(event.pointerId); drag = { id: event.pointerId, x: event.clientX, y: event.clientY, touch:event.pointerType==='touch' };
     if (event.pointerType === 'mouse' && canvas.requestPointerLock) try { canvas.requestPointerLock()?.catch?.(() => {}); } catch {}
   }
   function onUp(event) {
     if (drag?.id === event.pointerId) drag = null;
-    release?.(event);
+    if (event.pointerType !== 'mouse' || event.type === 'pointercancel') release?.(event);
   }
+  // Mouse events report every button edge, including a second button held
+  // alongside the first. Pointer down/up only report the first/last edge.
+  const mouseDown = event => { if (enabled()) { event.preventDefault(); press?.(event); } };
+  const mouseUp = event => release?.(event);
   // A controller's right stick turns at a steady speed, with its own sensitivity and vertical settings.
   const stopPad = padLook((x, y, dt) => {
     if (!enabled()) return;
@@ -57,6 +62,8 @@ export function createLookControls(canvas, { enabled = () => true, look, press, 
   document.addEventListener('pointerlockchange', onLockChange);
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('mousedown', mouseDown);
+  document.addEventListener('mouseup', mouseUp);
   canvas.addEventListener('pointerup', onUp);
   canvas.addEventListener('pointercancel', onUp);
   canvas.addEventListener('contextmenu', prevent);
@@ -71,6 +78,7 @@ export function createLookControls(canvas, { enabled = () => true, look, press, 
       canvas.removeEventListener('pointermove', onMove); canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointerup', onUp); canvas.removeEventListener('pointercancel', onUp);
       canvas.removeEventListener('contextmenu', prevent);
+      canvas.removeEventListener('mousedown', mouseDown); document.removeEventListener('mouseup', mouseUp);
     },
   };
 }
