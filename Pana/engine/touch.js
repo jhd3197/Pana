@@ -85,15 +85,16 @@ export function wantedOrientation(gameDefault) {
 // On a phone held the other way, a "turn your phone" screen. On Android it can also go full screen
 // and lock the orientation (that needs a tap); iOS Safari cannot lock, so there it only asks.
 // "Jugar así" lets the player keep going as they are until they leave the page.
-export function guardOrientation(gameDefault = 'libre') {
+export function guardOrientation(gameDefault = 'libre', { required = false } = {}) {
   if (guarded) return;
   guarded = true;
   let dismissed = false, overlay = null;
   const canLock = !!(document.documentElement.requestFullscreen && screen.orientation?.lock);
 
   function build() {
-    overlay = document.createElement('div');
+    overlay = document.createElement(required ? 'dialog' : 'div');
     overlay.className = 'pana-rotate';
+    if(required){overlay.style.cssText='margin:0;width:100vw;height:100dvh;max-width:none;max-height:none;border:0;box-sizing:border-box';overlay.addEventListener('cancel',e=>e.preventDefault());overlay.addEventListener('keydown',e=>e.stopPropagation());}
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'pana-rotate-title');
@@ -107,18 +108,18 @@ export function guardOrientation(gameDefault = 'libre') {
         <p></p>
         <div class="pana-rotate-actions">
           ${canLock ? '<button type="button" class="pk-btn pk-btn--primary" data-act="lock">Pantalla completa</button>' : ''}
-          <button type="button" class="pk-btn pk-btn--ghost" data-act="stay">Jugar así</button>
+          ${required ? '' : `<button type="button" class="pk-btn pk-btn--ghost" data-act="stay">${loc('Jugar así')}</button>`}
         </div>
       </div>`;
     overlay.addEventListener('click', async e => {
       const act = e.target.closest('[data-act]')?.dataset.act;
       if (act === 'stay') { dismissed = true; update(); }
       if (act === 'lock') {
-        const wanted = wantedOrientation(gameDefault);
+        const wanted = required ? gameDefault : wantedOrientation(gameDefault);
         try {
           await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
           await screen.orientation.lock(wanted === 'horizontal' ? 'landscape' : 'portrait');
-        } catch { dismissed = true; }
+        } catch { if(!required)dismissed = true; }
         update();
       }
     });
@@ -126,16 +127,17 @@ export function guardOrientation(gameDefault = 'libre') {
   }
 
   function update() {
-    const wanted = wantedOrientation(gameDefault);
+    const wanted = required ? gameDefault : wantedOrientation(gameDefault);
     document.documentElement.dataset.panaOrientation = wanted;
     const wrongWay = (wanted === 'horizontal' && PORTRAIT.matches) || (wanted === 'vertical' && !PORTRAIT.matches);
-    const show = TOUCH.matches && wrongWay && !dismissed;
+    const show = (required || TOUCH.matches) && wrongWay && !dismissed;
     if (show && !overlay && document.body) build();
     if (!overlay) return;
     overlay.hidden = !show;
+    if(required){if(show&&!overlay.open)overlay.showModal();else if(!show&&overlay.open)overlay.close();}
     overlay.classList.toggle('to-landscape', wanted === 'horizontal');
     overlay.querySelector('h2').textContent = loc('Gira tu teléfono');
-    overlay.querySelector('p').textContent = wanted === 'horizontal'
+    overlay.querySelector('p').textContent = required ? ORIENTATIONS[wanted] : wanted === 'horizontal'
       ? loc('Este juego se ve mejor en horizontal. Puedes cambiarlo en Ajustes.')
       : loc('Elegiste jugar en vertical. Puedes cambiarlo en Ajustes.');
   }

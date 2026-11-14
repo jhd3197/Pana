@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los juegos pueden exigir una orientación de pantalla.**
+  El control compartido muestra una pantalla de giro obligatoria cuando el juego requiere horizontal o vertical, sin cambiar las preferencias del jugador.
+
 - **Explora los juegos con flechas, rueda del mouse y desplazamiento al borde.**
   Las filas muestran sus controles cuando hay más juegos; al llegar al extremo puedes seguir bajando por la página.
 
