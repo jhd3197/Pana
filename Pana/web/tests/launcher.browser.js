@@ -33,6 +33,40 @@ try {
   assert.ok(heroBounds.height < 250, 'hero leaves more room for browsing');
   const mesaY = await page.locator('[data-row="Mesa"] .game').evaluateAll(cards => cards.map(c => Math.round(c.getBoundingClientRect().top)));
   assert.equal(new Set(mesaY).size, 1, 'each category stays in one horizontal row');
+  const mesa = page.locator('[data-row="Mesa"] .games');
+  await page.locator('[data-row="Mesa"] .rail-arrow').last().click();
+  await page.waitForFunction(() => document.querySelector('[data-row="Mesa"] .games').scrollLeft > 100);
+  await mesa.evaluate(e => e.scrollTo({ left: 0, behavior: 'instant' }));
+  await mesa.scrollIntoViewIfNeeded();
+  // The sticky hero resizes while scrolling. Use the visible part of the rail,
+  // not its center, which can sit behind the hero or below the viewport.
+  const railPoint = async edge => {
+    await page.waitForFunction(() => {
+      const r = document.querySelector('[data-row="Mesa"] .games').getBoundingClientRect();
+      const key = [r.top, r.bottom, scrollY, document.querySelector('#feature').getBoundingClientRect().bottom].join(':');
+      const prev = window.__railLayout;
+      window.__railLayout = { key, frames: prev?.key === key ? prev.frames + 1 : 0 };
+      return window.__railLayout.frames >= 3;
+    }, null, { polling: 'raf' });
+    await page.waitForFunction(() => {
+      const r = document.querySelector('[data-row="Mesa"] .games').getBoundingClientRect();
+      const hero = document.querySelector('#feature').getBoundingClientRect();
+      return Math.min(r.bottom, innerHeight) - Math.max(r.top, hero.bottom) > 30;
+    });
+    return mesa.evaluate((e, edge) => {
+      const r = e.getBoundingClientRect(), top = Math.max(r.top, document.querySelector('#feature').getBoundingClientRect().bottom);
+      return { x: edge ? r.right - 8 : r.left + r.width / 2, y: (top + Math.min(r.bottom, innerHeight)) / 2 };
+    }, edge);
+  };
+  let point = await railPoint(false);
+  await page.mouse.move(point.x, point.y);
+  await page.mouse.wheel(0, 240);
+  await page.waitForFunction(() => document.querySelector('[data-row="Mesa"] .games').scrollLeft > 100);
+  await mesa.evaluate(e => e.scrollTo({ left: 0, behavior: 'instant' }));
+  point = await railPoint(true);
+  await page.mouse.move(point.x, point.y);
+  await page.waitForFunction(() => document.querySelector('[data-row="Mesa"] .games').scrollLeft > 60);
+  await page.mouse.move(5, 5);
   await page.screenshot({ path: `${output}/launcher-browsing.png` });
   assert.equal(await page.locator('.game-row-count, #game-results').count(), 0);
   assert.equal(await page.locator('#game-search').isVisible(), false);

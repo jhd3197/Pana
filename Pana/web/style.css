@@ -300,6 +300,7 @@ body[data-view="jugar"] .feature-body { width: min(var(--pk-page-width),100%); m
    scrolling box would otherwise clip; the negative margin keeps cards aligned. */
 .games { display: flex; gap: 16px; overflow-x: auto; padding: 14px 12px; margin-inline: -7px; scroll-snap-type: x proximity; scroll-padding-inline: 12px; scrollbar-width: none; }
 .games::-webkit-scrollbar { display: none; }
+.games.is-edge-scrolling { scroll-snap-type: none; }
 .game { flex: 0 0 198px; height: 128px; border: 2px solid transparent; box-shadow: none; background: var(--pk-raised); scroll-snap-align: start; }
 .game-art { position: absolute; inset: 0; height: 100%; width: 100%; object-fit: cover; background: none; }
 .game-body { margin-top: auto; position: relative; padding: 36px 12px 10px; background: linear-gradient(transparent,rgba(7,5,26,.9)); pointer-events: none; }
@@ -386,7 +387,7 @@ body[data-view="jugar"] .home { min-height: 0; }
 .game.is-preview .game-name { font-size: 27px; }
 @media (prefers-reduced-motion: reduce) { .game { transition: none; } }
 .game[hidden], .game-row[hidden] { display: none; }
-.game-row[data-overflow] .rail-arrow { display: none; }
+.rail-arrow:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 2px; }
 .browse-again { align-self: center; margin: 24px 0 16px; }
 @media (max-width: 560px) {
   .game-browser { flex-wrap: wrap; gap: 8px; }

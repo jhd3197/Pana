@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Explora los juegos con flechas, rueda del mouse y desplazamiento al borde.**
+  Las filas muestran sus controles cuando hay más juegos; al llegar al extremo puedes seguir bajando por la página.
+
 - **Las copas de Carreritas te mantienen con tus panas entre pistas.**
   Los resultados ya no ofrecen salir antes del final, abandonar pide confirmación y los cobros pendientes no arrastran acciones a la próxima carrera.
 

@@ -7,6 +7,7 @@ import { cachedPortrait } from '/engine/portrait-cache.js';
 import { categories, category, artUrl } from './launcher-art.js';
 import { padControls, inputState } from '/engine/gamepad.js';
 import { catalogLoop } from './catalog-loop.js';
+import { catalogRail } from './catalog-rail.js';
 import { bindPanaEditorLinks, openPanaEditor } from '/engine/pana-editor.js';
 import { loc, locn, language } from '/engine/i18n.js';
 
@@ -370,6 +371,7 @@ function gameRow(label, list) {
   for (const game of list) { const card = gameCard(game); card.dataset.category = category(game); rail.append(card); }
   head.append(title);
   row.append(head, rail);
+  catalogRail(row, head, rail);
   return row;
 }
 function recentGames() {

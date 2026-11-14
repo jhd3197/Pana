@@ -158,3 +158,12 @@ private rooms, room codes, mobile width and canceled hosting intents.
 Carreritas removes `lead` from its address immediately after passing it into
 `joinRace`. Verify the original navigation request and actual game host controls,
 not the final address bar, when testing party handoffs into that game.
+
+## Mouse browsing
+
+`web/catalog-rail.js` adds arrows only to overflowing category rows, maps the
+vertical mouse wheel to sideways movement while the row has room in that
+direction, and scrolls at its left/right edge for a mouse pointer. At the end
+of a row the wheel returns to document scrolling. Trackpad horizontal input,
+Ctrl-wheel zoom and touch swipes retain native behavior. ResizeObserver tracks
+card expansion and filtering; pagehide stops animation and observers.
