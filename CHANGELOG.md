@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.12.0 - 2026-11-14
+
 - **Los juegos pueden exigir una orientación de pantalla.**
   El control compartido muestra una pantalla de giro obligatoria cuando el juego requiere horizontal o vertical, sin cambiar las preferencias del jugador.
 
