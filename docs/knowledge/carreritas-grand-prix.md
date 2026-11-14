@@ -330,3 +330,17 @@ The physical-phone benchmark was explicitly waived by the user during the
 final audit. A Samsung SM-S134DL was detected over USB, but no phone frame-rate
 result was produced. Desktop GPU timings and mobile-layout/touch proof remain
 separate evidence; see `carreritas-performance.md` for that distinction.
+
+## Leaving a cup from results
+
+An online cup's results must not offer the garage between stages: the server
+advances automatically, while a reward ceremony can still be open. A delayed
+back click after that transition used to retire the entrant from the new stage.
+Hide the results exit until completion and reject stale back handlers while the
+cup is active. Preparing a new grid clears the prior receipt, pending action and
+cash scene generation. Explicit pause/loading exits ask before withdrawing.
+
+The loading-recovery fixture must inject its error into the selected track's
+constructor. After rebuilding Llanos, selecting another map while replacing
+Llanos.environment never exercises recovery. The test now returns to Estadio,
+throws from Estadio.environment, verifies the error/return UI and retries it.

@@ -85,8 +85,10 @@ try {
   assert.equal(await page.evaluate(() => race.cars.length), 4);
   // A failed constructor leaves a usable return path and can be retried.
   await page.evaluate(async () => {
-    toGarage(); document.getElementById('t-next').click();
-    const def = TRACKS.find(t => t.id === 'llanos'), original = def.environment;
+    // Llanos is already built. Switch to Estadio and fail that constructor,
+    // not a different track that this load will never call.
+    toGarage(); document.getElementById('t-prev').click();
+    const def = TRACKS.find(t => t.id === 'estadio'), original = def.environment;
     def.environment = () => { throw new Error('Expected loading recovery test'); };
     try { await startRace(0); } finally { def.environment = original; }
   });
@@ -95,7 +97,7 @@ try {
   await page.locator('#loading-back').click();
   assert.ok(await page.locator('#loading').isHidden());
   await page.evaluate(() => startRace(0));
-  assert.equal(await page.evaluate(() => getActiveTrack().id), 'llanos');
+  assert.equal(await page.evaluate(() => getActiveTrack().id), 'estadio');
   assert.equal(await page.evaluate(() => race.cars.length), 4);
   assert.deepEqual(errors, []);
   const metrics = { initial, tracks, cars, firstRace, replay };

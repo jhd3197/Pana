@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Las copas de Carreritas te mantienen con tus panas entre pistas.**
+  Los resultados ya no ofrecen salir antes del final, abandonar pide confirmación y los cobros pendientes no arrastran acciones a la próxima carrera.
+
 - **Pepazo: apunta y dispara con ambos botones del mouse a la vez.**
   El primer clic también responde y la retícula tiene un punto central de alto contraste.
 

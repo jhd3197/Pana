@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { confirmRaceExit } from './race-exit.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
 import { wheelById, composeTune } from './wheel-definitions.js';
@@ -1100,7 +1101,7 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
   note: () => mode === 'race' ? (race.state === 'end' ? loc('La carrera terminó.') : race.netRace ? loc('Carrera online: no se detiene.') : loc('La carrera está en pausa.')) : loc('Estás en el garaje.'),
   actions: [
     { id: 'restart', label: loc('Reiniciar carrera'), kind: 'secondary', visible: () => mode === 'race' && !race.netRace && (!race.cup || ['loading', 'racing'].includes(race.cup.session.status)), run: () => startRace(race.playerIndex, race.playerWheel) },
-    { id: 'to-garage', label: loc('Volver al garaje'), kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
+    { id: 'to-garage', label: loc('Volver al garaje'), kind: 'secondary', visible: () => mode === 'race', run: () => leaveRace() },
   ],
   invite: () => inviteLink(),
   canOpen: () => mode !== 'loading',
@@ -1129,10 +1130,13 @@ $('again').onclick = () => {
   }
 };
 $('back').onclick = () => {
+  // The room advances the whole cup. A delayed receipt click must not abandon it.
+  if (net?.cup && !['complete', 'abandoned'].includes(net.cup.status)) return;
   if (race.netRace && net.isHost && ['results', 'complete'].includes(net.state.phase)) { net.lobby(); net.garage(false); }
   else toGarage();
 };
-$('loading-back').onclick = toGarage;
+$('loading-back').onclick = leaveRace;
+function leaveRace() { if (confirmRaceExit(net)) toGarage(); }
 function itemAction(direction) {
   if (mode === 'race' && race.state === 'go') race.items.use(race.player, direction);
 }
@@ -1940,7 +1944,7 @@ function finish() {
   if (race.netRace) updateResultActions(net.state);
   else {
     $('again').textContent = race.cup ? (race.cup.session.status === 'complete' ? loc('Otra copa') : loc('Siguiente pista')) : loc('Otra vez');
-    $('again').disabled = false; $('back').textContent = loc('Garaje');
+    $('again').disabled = false; $('back').hidden = false; $('back').textContent = loc('Garaje');
   }
   race.resultKey = '';
   renderResults(standings(), p);
@@ -2118,6 +2122,7 @@ function updateResultActions(s) {
   const host = net.isHost;
   const inCupIntermission = net.cup?.status === 'intermission' && s.phase === 'results';
   const inCupComplete = net.cup?.status === 'complete' || s.phase === 'complete';
+  $('back').hidden = !!net.cup && !inCupComplete;
   if (inCupIntermission) {
     const remainingMs = s.intermissionEndsAt > 0 ? s.intermissionEndsAt - net.now() : 0;
     const waitReadWindow = remainingMs > (GP_INTERMISSION_MS - GP_MIN_READ_MS);

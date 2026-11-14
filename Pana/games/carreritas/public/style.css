@@ -324,6 +324,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .res-coins { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-color: var(--coin-line); }
 .res-coins .mango-symbol { width: 34px; height: 34px; font-size: 34px; }
 .res-actions { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+.res-actions #back[hidden] { display: none; }
 .res-actions .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 /* ---------- responsive ---------- */

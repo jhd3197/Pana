@@ -213,6 +213,11 @@ try {
     step(`stage ${stageIdx + 1} (${expectedTrack}) complete: ${hostOrder.slice(0, 3).join(', ')}`);
 
     if (stageIdx < 3) {
+      for (const page of [host, guest]) {
+        assert.equal(await page.locator('#back').isHidden(), true, 'unfinished cup has no results exit');
+        await page.evaluate(() => document.getElementById('back').onclick());
+        assert.equal(await page.evaluate(() => getNet().state.phase), 'results', 'stale back action cannot leave cup');
+      }
       // Wait for minimum read window so host can advance immediately.
       const leader = await host.evaluate(() => getNet().isHost) ? host : guest;
       await until(leader, () => !document.getElementById('again').disabled, null, 15000);
