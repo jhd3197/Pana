@@ -1340,3 +1340,7 @@ Pointer Events only send `pointerdown` for the first held mouse button and
 `pointerup` for the last release. Keep look/drag on pointer events, but never
 use those two edges alone for aim plus fire. The first click also acts when
 pointer lock is unavailable; the range needs no separate fallback handler.
+
+The aiming browser proof closes its two multiplayer pages before opening the
+solo practice scene. Keeping all three renderers running can stall the practice
+click under software WebGL even after the multiplayer assertions have passed.

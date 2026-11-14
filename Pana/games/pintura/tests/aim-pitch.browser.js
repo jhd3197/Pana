@@ -72,6 +72,8 @@ try {
   assert.ok(onLine(court, 1.1, 0), `Ver la cancha: ${JSON.stringify(court)}`);
   console.log('ok  Ver la cancha still shoots level at shot height');
   assert.deepEqual([...a.errors, ...b.errors], []);
+  // The multiplayer proof is done; release both renderers before the solo scene.
+  await Promise.all([a.close(), b.close()]);
 
   // First person, alone, in front of the tallest cover: where the paint lands on screen.
   const solo = await openGame(browser, 'pintura', { name: 'Juan', query: 'debug' });
