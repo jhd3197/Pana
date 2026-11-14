@@ -110,14 +110,16 @@ try {
   await page.keyboard.press('Escape');
   const hoverCard = page.locator('[data-id="domino"]');
   assert.equal(await hoverCard.evaluate(e => getComputedStyle(e).height), '180px');
-  await hoverCard.evaluate(e => e.scrollIntoView({block:'end',inline:'center',behavior:'instant'}));
+  // Start this independent pointer check from the top; catalog cycling can
+  // relocate rows while scrollIntoView is trying to reveal them.
+  await page.mouse.move(1270, 100);
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.waitForFunction(() => scrollY === 0 && document.querySelector('#feature').getBoundingClientRect().height >= 500);
+  await page.mouse.wheel(0, 350);
   await page.waitForFunction(() => {
     const r=document.querySelector('[data-id="domino"]').getBoundingClientRect();
-    const key=[r.x,r.y,r.width,r.height].map(n=>Math.round(n)).join(',');
-    const state=window.__hoverLayout ||= {key:'',frames:0};
-    state.frames=state.key===key?state.frames+1:0;state.key=key;
-    return state.frames>=4 && r.top+r.height/2>document.querySelector('#feature').getBoundingClientRect().bottom;
-  },null,{polling:'raf'});
+    return document.body.classList.contains('hero-compact') && r.top >= 210 && r.bottom <= innerHeight;
+  });
   await hoverCard.hover();
   await page.locator('[data-id="domino"].is-preview').waitFor();
   await page.waitForFunction(() => document.querySelector('[data-id="domino"]').getBoundingClientRect().width > 330);
