@@ -68,3 +68,6 @@ dist/voice-packs/
 /Pana/web/images/launcher/tambor.jpg
 /Pana/web/images/launcher/trifulca.jpg
 # End large runtime asset packs
+
+# Local playtest / friends-feedback transcripts (never commit)
+transcripts/
